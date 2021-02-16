@@ -2517,6 +2517,25 @@
                   (atom x)))
   :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
 
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/prefixp" :dir :system))
+
+  (defthm
+    abs-pwrite-correctness-lemma-15
+    (implies (fat32-filename-list-prefixp x y)
+             (fat32-filename-list-equiv (append x (nthcdr (len x) y))
+                                        y))
+    :hints
+    (("goal" :do-not-induct t
+      :in-theory
+      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
+           (append-when-prefixp))
+      :use (:instance append-when-prefixp
+                      (x (fat32-filename-list-fix x))
+                      (y (fat32-filename-list-fix y)))))))
+
 (defthm
   m1-read-after-write-lemma-1
   (implies (m1-regular-file-p file)

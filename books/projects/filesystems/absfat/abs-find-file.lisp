@@ -3855,7 +3855,7 @@
     :in-theory
     (e/d
      (abs-find-file collapse
-                    abs-separate-of-frame->frame-of-collapse-this-lemma-10
+                    hifat-equiv-when-absfat-equiv-lemma-2
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)
@@ -3979,7 +3979,7 @@
    (in-theory
     (e/d
      (abs-find-file collapse
-                    abs-separate-of-frame->frame-of-collapse-this-lemma-10
+                    hifat-equiv-when-absfat-equiv-lemma-2
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)

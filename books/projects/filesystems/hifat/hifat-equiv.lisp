@@ -851,3 +851,19 @@
      (m1-file-hifat-file-alist-fix)
      (hifat-equiv-of-cons-lemma-3 m1-file-hifat-file-alist-fix-normalisation))
     :use hifat-equiv-of-cons-lemma-3)))
+
+(defthm
+  hifat-place-file-when-hifat-equiv-3
+  (implies
+   (and (equal (m1-file->contents file1)
+               (m1-file->contents file2))
+        (syntaxp (not (term-order file1 file2)))
+        (m1-regular-file-p (m1-file-fix file1))
+        (m1-regular-file-p (m1-file-fix file2)))
+   (hifat-equiv (mv-nth 0 (hifat-place-file fs path file1))
+                (mv-nth 0 (hifat-place-file fs path file2))))
+  :hints
+  (("goal"
+    :in-theory (enable hifat-place-file)
+    :restrict
+    ((put-assoc-under-hifat-equiv-3 ((file2 file2)))))))

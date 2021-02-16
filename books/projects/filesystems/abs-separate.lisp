@@ -3916,19 +3916,75 @@
   (implies (m1-file-alist-p fs) (abs-complete fs))
   :hints (("goal" :in-theory (enable abs-complete))))
 
+(defthmd hifat-equiv-when-absfat-equiv-lemma-2
+  (implies (not (consp (abs-addrs fs)))
+           (abs-complete fs))
+  :hints (("goal" :in-theory (enable abs-complete))))
+
+(defthm
+  hifat-equiv-when-absfat-equiv-lemma-3
+  (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
+                (m1-file-alist-p (abs-fs-fix abs-file-alist1)))
+           (and
+            (equal (abs-addrs
+                    (abs-fs-fix abs-file-alist2))
+                   nil)
+            (abs-complete (abs-fs-fix abs-file-alist2))))
+  :hints
+  (("goal"
+    :in-theory (e/d (absfat-equiv
+                     hifat-equiv-when-absfat-equiv-lemma-2)
+                    (abs-addrs-when-absfat-equiv-lemma-1))
+    :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
+                     (abs-file-alist1 (abs-fs-fix abs-file-alist1))
+                     (abs-file-alist2 (abs-fs-fix abs-file-alist2)))
+          (:instance abs-addrs-when-absfat-equiv-lemma-1
+                     (abs-file-alist1 (abs-fs-fix abs-file-alist2))
+                     (abs-file-alist2 (abs-fs-fix abs-file-alist1))))))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
+                  (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+                  (abs-fs-p abs-file-alist2))
+             (and
+              (equal (abs-addrs abs-file-alist2) nil)
+              (abs-complete abs-file-alist2))))))
+
 ;; Probably tricky to get a refinement relationship (in the defrefinement
 ;; sense) between literally absfat-equiv and hifat-equiv. But we can still have
 ;; some kind of substitute...
 (defthm
   hifat-equiv-when-absfat-equiv
-  (implies (and (m1-file-alist-p (abs-fs-fix abs-file-alist1))
-                (m1-file-alist-p (abs-fs-fix abs-file-alist2)))
+  (implies (m1-file-alist-p (abs-fs-fix abs-file-alist1))
            (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
-                  (hifat-equiv (abs-fs-fix abs-file-alist1)
-                               (abs-fs-fix abs-file-alist2))))
+                  (and (hifat-equiv (abs-fs-fix abs-file-alist1)
+                                    (abs-fs-fix abs-file-alist2))
+                       (m1-file-alist-p (abs-fs-fix abs-file-alist2)))))
   :hints
-  (("goal" :in-theory (enable absfat-equiv hifat-equiv abs-fs-p
-                              absfat-subsetp-correctness-1 abs-fs-fix))))
+  (("goal"
+    :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
+                                  absfat-subsetp-correctness-1 abs-fs-fix)
+                    (hifat-equiv-when-absfat-equiv-lemma-3))
+    :use hifat-equiv-when-absfat-equiv-lemma-3
+    :do-not-induct t))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+             (equal (absfat-equiv abs-file-alist2 abs-file-alist1)
+                    (and (hifat-equiv (abs-fs-fix abs-file-alist2)
+                                      (abs-fs-fix abs-file-alist1))
+                         (m1-file-alist-p (abs-fs-fix abs-file-alist2)))))
+    :hints
+    (("goal"
+      :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
+                                    absfat-subsetp-correctness-1 abs-fs-fix)
+                      (hifat-equiv-when-absfat-equiv-lemma-3))
+      :use hifat-equiv-when-absfat-equiv-lemma-3
+      :do-not-induct t)))))
 
 (defund
   names-at (fs relpath)
@@ -4777,13 +4833,8 @@
                                                     frame))))))
   :hints (("goal" :in-theory (enable 1st-complete abs-complete))))
 
-(defthmd abs-separate-of-frame->frame-of-collapse-this-lemma-10
-  (implies (not (consp (abs-addrs fs)))
-           (abs-complete fs))
-  :hints (("goal" :in-theory (enable abs-complete))))
-
 (defthm
-  abs-separate-of-frame->frame-of-collapse-this-lemma-11
+  abs-separate-of-frame->frame-of-collapse-this-lemma-10
   (implies (and (mv-nth 1 (collapse frame))
                 (consp (assoc-equal y (frame->frame frame))))
            (< '0
@@ -5862,7 +5913,7 @@
                            (hifat-no-dups-p fs)))))
   :hints
   (("goal" :in-theory (enable collapse intersectp-equal
-                              abs-separate-of-frame->frame-of-collapse-this-lemma-10)
+                              hifat-equiv-when-absfat-equiv-lemma-2)
     :induct (collapse frame))))
 
 (defthm dist-names-of-append
@@ -6329,12 +6380,28 @@
            :induct (frame-addrs-before frame x n)
            :expand (collapse-iter frame 1))))
 
+(defund good-frame-p (frame)
+  (b*
+      (((mv & result) (collapse frame)))
+    (and result
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (consp (assoc-equal 0 frame))
+         (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+                0)
+         (frame-p frame)
+         (no-duplicatesp-equal (strip-cars frame))
+         (abs-separate frame)
+         (subsetp-equal (abs-addrs (frame->root frame))
+                        (frame-addrs-root (frame->frame frame))))))
+
 (defund collapse-equiv (frame1 frame2)
-  (b* (((mv root1 result1) (collapse frame1))
-       ((mv root2 result2) (collapse frame2)))
-    (or (not (or result1 result2))
-        (and result1
-             result2 (absfat-equiv root1 root2)))))
+  (b* ((good-frame-p1 (good-frame-p frame1))
+       (good-frame-p2 (good-frame-p frame2))
+       ((mv fs1 &) (collapse frame1))
+       ((mv fs2 &) (collapse frame2)))
+    (or (not (or good-frame-p1 good-frame-p2))
+        (and good-frame-p1
+             good-frame-p2 (absfat-equiv fs1 fs2)))))
 
 (defequiv collapse-equiv
   :hints (("goal" :in-theory (enable collapse-equiv))))
@@ -6364,12 +6431,4 @@
     :do-not-induct t
     :expand ((collapse frame)
              (collapse (frame-with-root (frame->root frame)
-                                        (frame->frame frame))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (collapse-equiv (frame-with-root (frame->root frame)
-                                     (frame->frame frame))
-                    frame)
-    :hints (("Goal" :in-theory (enable collapse-equiv))))))
+                                        (frame->frame frame)))))))
