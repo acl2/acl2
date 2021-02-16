@@ -15,7 +15,6 @@
 
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
 (include-book "tools/lift-r1cs-new") ;todo: reduce
-(include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
 (include-book "kestrel/utilities/split-list-fast-rules" :dir :system)
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system)
