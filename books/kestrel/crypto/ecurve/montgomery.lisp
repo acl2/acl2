@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -625,6 +625,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montogomery-add-zero-identity
+  :short "Left and right identity properties of the neutral point."
+
+  (defrule montgomery-add-of-montgomery-zero-left
+    (equal (montgomery-add (montgomery-zero) point curve)
+           (point-fix point))
+    :enable (montgomery-add montgomery-zero))
+
+  (defrule montgomery-add-of-montgomery-zero-right
+    (equal (montgomery-add point (montgomery-zero) curve)
+           (point-fix point))
+    :enable (montgomery-add montgomery-zero point-kind point-fix pointp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-neg ((point pointp) (curve montgomery-curvep))
   :guard (and (montgomery-curve-primep curve)
               (point-on-montgomery-p point curve))
@@ -686,7 +701,7 @@
                         (curve montgomery-curvep))
   :guard (and (montgomery-curve-primep curve)
               (point-on-montgomery-p point curve))
-  :returns (mv (okp booleanp) (point1 pointp))
+  :returns (point1 pointp)
   :short "Scalar multiplication in the Montgomery group."
   :long
   (xdoc::topstring
@@ -703,18 +718,23 @@
      Then we extend it to negative scalars,
      by negating the result of multiplying by the negated scalar.")
    (xdoc::p
-    "We also return a flag saying whether
-     the resulting point is on the curve or not.
-     This is always the case, because addition is closed in the group
-     (i.e. adding two points on the curve always yields a point on the curve).
-     However, we have not proved that yet,
-     and thus for now we resort to using this additional flag.
-     We plan to remove it eventually."))
+    "To verify the guards of the recursive auxiliary function,
+     we need to show that it returns a point on the curve,
+     which follows from closure.
+     However, to avoid putting the non-executable @(tsee montgomery-add-closure)
+     in the guard of this function and all its callers,
+     for now we check explicitly, in the function,
+     that the recursive call returns a point on the curve.
+     If it does not, we return an irrelevant point.
+     This lets us verify the guards.
+     Then we prove that, under the closure assumption,
+     multiplication always returns a point on the curve."))
   (b* ((scalar (ifix scalar))
        ((when (>= scalar 0)) (montgomery-mul-nonneg scalar point curve))
-       ((mv okp point1) (montgomery-mul-nonneg (- scalar) point curve))
-       ((when (not okp)) (mv nil (point-fix point))))
-    (mv t (montgomery-neg point1 curve)))
+       (point1 (montgomery-mul-nonneg (- scalar) point curve))
+       ((unless (point-on-montgomery-p point1 curve))
+        (ec-call (point-fix :irrelevant))))
+    (montgomery-neg point1 curve))
   :hooks (:fix)
 
   :prepwork
@@ -723,37 +743,75 @@
                                   (curve montgomery-curvep))
      :guard (and (montgomery-curve-primep curve)
                  (point-on-montgomery-p point curve))
-     :returns (mv (okp booleanp) (point1 pointp))
-     (b* (((when (zp scalar)) (mv t (montgomery-zero)))
-          ((mv okp point1) (montgomery-mul-nonneg (1- scalar) point curve))
-          ((when (not okp)) (mv nil (point-fix point)))
-          (point2 (montgomery-add point point1 curve)))
-       (if (point-on-montgomery-p point2 curve)
-           (mv t point2)
-         (mv nil (point-fix point))))
-     :hooks (:fix)
+     :returns (point1 pointp)
+     (b* (((when (zp scalar)) (montgomery-zero))
+          (point1 (montgomery-mul-nonneg (1- scalar) point curve))
+          ((unless (point-on-montgomery-p point1 curve))
+           (ec-call (point-fix :irrelevant))))
+       (montgomery-add point point1 curve))
      :verify-guards nil ; done below
+     :hooks (:fix)
      ///
-     (defrule point-on-montgomery-p-of-montgomery-mul-nonneg
-       (implies (and (montgomery-curvep curve)
-                     (montgomery-curve-primep curve)
-                     (pointp point)
-                     (point-on-montgomery-p point curve))
-                (point-on-montgomery-p
-                 (mv-nth 1 (montgomery-mul-nonneg scalar point curve))
-                 curve)))
+     (defret point-on-montgomery-p-of-montgomery-mul-nonneg
+       (point-on-montgomery-p point1 curve)
+       :hyp (and (montgomery-add-closure)
+                 (montgomery-curvep curve)
+                 (montgomery-curve-primep curve)
+                 (pointp point)
+                 (point-on-montgomery-p point curve)))
      (verify-guards montgomery-mul-nonneg)))
 
   ///
 
-  (defrule point-on-montgomery-p-of-montgomery-mul
-    (implies (and (montgomery-curvep curve)
+  (defret point-on-montgomery-p-of-montgomery-mul
+    (point-on-montgomery-p point1 curve)
+    :hyp (and (montgomery-add-closure)
+              (montgomery-curvep curve)
+              (montgomery-curve-primep curve)
+              (pointp point)
+              (point-on-montgomery-p point curve))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-mul-distributivity-over-scalar-addition
+  :short "Distributivity of scalar multiplication over scalar addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove it for non-negative scalars initially.
+     We will extend that to negative scalars eventually.
+     We keep these rules disabled,
+     because distribution is not always desired."))
+
+  (defruled montogomery-mul-nonneg-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curvep curve)
                   (montgomery-curve-primep curve)
                   (pointp point)
-                  (point-on-montgomery-p point curve))
-             (point-on-montgomery-p
-              (mv-nth 1 (montgomery-mul scalar point curve))
-              curve))))
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-mul-nonneg (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul-nonneg scalar1 point curve)
+                                    (montgomery-mul-nonneg scalar2 point curve)
+                                    curve)))
+    :enable montgomery-mul-nonneg)
+
+  (defruled montgomery-mul-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curvep curve)
+                  (montgomery-curve-primep curve)
+                  (pointp point)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -770,7 +828,7 @@
     "A point @($P$) has order @($n$) if and only if
      @($n > 0$),
      @($n P$) is the neutral element, and
-     @($m P$) is not for every @($m < n$).")
+     @($m P$) is not the neutral element for every @($0 < m < n$).")
    (xdoc::p
     "Every point on the curve has an order,
      so there should really be a function that returns that.
@@ -779,11 +837,9 @@
      thus, for now we define this predicate instead.
      We plan to define the function that returns the order eventually."))
   (b* ((order (nfix order))
-       ((mv okp order*point) (montgomery-mul order point curve)))
-    (and okp
-         (> order 0)
-         (equal order*point
-                (montgomery-zero))
+       (order*point (montgomery-mul order point curve)))
+    (and (> order 0)
+         (equal order*point (montgomery-zero))
          (montgomery-point-order-leastp point order curve)))
   :hooks (:fix)
 
@@ -797,11 +853,8 @@
              (implies (and (natp order1)
                            (< 0 order1)
                            (< order1 (nfix order)))
-                      (b* (((mv okp order1*point)
-                            (montgomery-mul order1 point curve)))
-                        (implies okp
-                                 (not (equal order1*point
-                                             (montgomery-zero)))))))
+                      (b* ((order1*point (montgomery-mul order1 point curve)))
+                        (not (equal order1*point (montgomery-zero))))))
      ///
      (fty::deffixequiv-sk montgomery-point-order-leastp
        :args ((point pointp) (order natp) (curve montgomery-curvep))))))

@@ -52,16 +52,6 @@
 (in-theory (disable last))
 (in-theory (disable member-equal))
 
-;this matches something in STD
-(defthm true-listp-when-symbol-listp
-  (implies (symbol-listp x)
-           (true-listp x))
-  :rule-classes :compound-recognizer)
-
-(defthmd true-listp-when-symbol-listp-rewrite-unlimited
-  (implies (symbol-listp x)
-           (true-listp x)))
-
 (defthm acl2-count-of-car-of-last-of-fargs
   (implies (consp x)
            (< (ACL2-COUNT (CAR (LAST (fargs x))))
