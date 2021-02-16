@@ -9,6 +9,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/alists/alist-fix" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 ;; To be compatible with Arithmetic books
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir
@@ -19,6 +20,7 @@
 (include-book "../utils/pseudo-term")
 (include-book "../utils/fresh-vars")
 (include-book "hint-interface")
+(include-book "generalize")
 (include-book "evaluator")
 (include-book "basics")
 
@@ -81,11 +83,6 @@
            (and (consp (assoc-equal x y))
                 (symbolp (cdr (assoc-equal x y))))))
 
-(local
- (defthm crock1
-   (implies (symbolp x) (pseudo-termp x)))
-)
-
 (define dont-generate-freshvar ((term pseudo-termp))
   :returns (ok booleanp)
   (b* ((term (pseudo-term-fix term)))
@@ -98,32 +95,234 @@
                     (acl2::fquotep term)))
        :name implies-of-dont-generate-freshvar)))
 
-(define new-vars-for-actuals ((actuals pseudo-term-listp)
-                              (alst pseudo-term-sym-alistp)
-                              (names symbol-listp))
-  :measure (len (pseudo-term-list-fix actuals))
+(local
+ (defthm symbol-is-pseudo-term
+   (implies (symbolp x) (pseudo-termp x)))
+ )
+
+(defthm subsetp-equal-over-simple-term-vars-lst
+  (implies (and (symbol-listp avoid)
+                (pseudo-term-listp term-lst)
+                (consp term-lst)
+                (subsetp-equal (acl2::simple-term-vars-lst term-lst)
+                               avoid))
+           (and (subsetp-equal (acl2::simple-term-vars (car term-lst))
+                               avoid)
+                (subsetp-equal (acl2::simple-term-vars-lst (cdr term-lst))
+                               avoid)))
+  :hints (("Goal"
+           :in-theory (enable acl2::simple-term-vars-lst))))
+
+(defthm subsetp-equal-over-simple-term-vars
+  (implies (and (symbol-listp avoid)
+                (pseudo-termp term)
+                (consp term)
+                (not (equal (car term) 'quote))
+                (subsetp-equal (acl2::simple-term-vars term) avoid))
+           (subsetp-equal (acl2::simple-term-vars-lst (cdr term)) avoid))
+  :hints (("Goal"
+           :in-theory (enable acl2::simple-term-vars))))
+
+(defthm subsetp-equal-of-assoc-equal
+  (implies (and (symbol-listp avoid)
+                (pseudo-termp term)
+                (pseudo-term-sym-alistp alst)
+                (assoc-equal term alst)
+                (subsetp-equal (strip-cdrs alst) avoid))
+           (subsetp-equal (acl2::simple-term-vars (cdr (assoc-equal term alst)))
+                          avoid))
+  :hints (("Goal"
+           :in-theory (enable acl2::simple-term-vars))))
+
+(define new-var-for-term ((term pseudo-termp)
+                          (alst pseudo-term-sym-alistp)
+                          (avoid symbol-listp))
+  :guard (and (subsetp-equal (acl2::simple-term-vars term) avoid)
+              (subsetp-equal (strip-cdrs alst) avoid))
+  :returns (mv (var pseudo-termp)
+               (new-alst pseudo-term-sym-alistp)
+               (new-avoid symbol-listp))
+  (b* ((term (pseudo-term-fix term))
+       (alst (pseudo-term-sym-alist-fix alst))
+       (avoid (symbol-list-fix avoid))
+       ((if (dont-generate-freshvar term))
+        (mv term alst avoid))
+       (new-var (new-fresh-var avoid)))
+    (mv new-var (acons term new-var alst) (cons new-var avoid)))
+  ///
+  ;; (defthm no-duplicatesp-of-new-var-for-term
+  ;;   (implies (and (pseudo-term-sym-alistp alst)
+  ;;                 (symbol-listp avoid)
+  ;;                 (no-duplicatesp-equal (strip-cdrs alst))
+  ;;                 (subsetp-equal (strip-cdrs alst) avoid))
+  ;;            (no-duplicatesp-equal
+  ;;             (strip-cdrs
+  ;;              (mv-nth 1 (new-var-for-term term alst avoid))))))
+
+  (defthm alst-subset-of-new-var-for-term
+    (b* (((mv & new-alst new-avoid)
+          (new-var-for-term term alst avoid)))
+    (implies (and (pseudo-termp term)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp avoid)
+                  (subsetp-equal (strip-cdrs alst) avoid))
+             (subsetp-equal (strip-cdrs new-alst) new-avoid))))
+
+  (defthm avoid-subset-of-new-var-for-term
+    (b* (((mv & & new-avoid)
+          (new-var-for-term term alst avoid)))
+      (implies (and (pseudo-termp term)
+                    (pseudo-term-sym-alistp alst)
+                    (symbol-listp avoid))
+               (subsetp-equal avoid new-avoid))))
+
+  (define new-var-for-term-env ((term pseudo-termp)
+                                (avoid symbol-listp)
+                                (a alistp))
+    :guard (subsetp-equal (acl2::simple-term-vars term) avoid)
+    :returns (new-a alistp)
+    (b* ((term (pseudo-term-fix term))
+         (avoid (symbol-list-fix avoid))
+         (a (acl2::alist-fix a))
+         ((if (dont-generate-freshvar term)) a)
+         (new-var (new-fresh-var avoid)))
+      (append (replace-alist-to-bindings `((,term . ,new-var)) a) a))))
+
+(defthm correctness-of-new-var-for-term
+  (implies (and (pseudo-termp term)
+                (pseudo-term-sym-alistp alst)
+                (symbol-listp avoid)
+                (alistp a))
+           (equal (ev-smtcp
+                   (mv-nth 0 (new-var-for-term term alst avoid))
+                   (new-var-for-term-env term avoid a))
+                  (ev-smtcp term a)))
+  :hints (("Goal"
+           :in-theory (enable new-var-for-term new-var-for-term-env))))
+
+(define new-vars-for-term-list ((term-lst pseudo-term-listp)
+                                (alst pseudo-term-sym-alistp)
+                                (avoid symbol-listp))
+  :measure (len (pseudo-term-list-fix term-lst))
+  :guard (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+              (subsetp-equal (strip-cdrs alst) avoid))
   :returns (mv (vars pseudo-term-listp)
                (new-alst pseudo-term-sym-alistp)
-               (new-names symbol-listp))
-  (b* ((actuals (pseudo-term-list-fix actuals))
+               (new-avoid symbol-listp))
+  (b* ((term-lst (pseudo-term-list-fix term-lst))
        (alst (pseudo-term-sym-alist-fix alst))
-       (names (symbol-list-fix names))
-       ((unless (consp actuals))
-        (mv nil alst names))
-       ((cons ac-hd ac-tl) actuals)
-       ((mv new-ac-tl alst-1 names-1)
-        (new-vars-for-actuals ac-tl alst names))
-       ((if (dont-generate-freshvar ac-hd))
-        (mv (cons ac-hd new-ac-tl) alst-1 names-1))
-       (new-var (new-fresh-var names)))
-    (mv (cons new-var new-ac-tl)
-        (acons ac-hd new-var alst-1)
-        (cons new-var names-1)))
+       (avoid (symbol-list-fix avoid))
+       ((unless (consp term-lst))
+        (mv nil alst avoid))
+       ((cons lst-hd lst-tl) term-lst)
+       ((mv var-hd alst-1 avoid-1)
+        (new-var-for-term lst-hd alst avoid))
+       ((mv vars-tl alst-2 avoid-2)
+        (new-vars-for-term-list lst-tl alst-1 avoid-1)))
+    (mv (cons var-hd vars-tl) alst-2 avoid-2))
   ///
   (more-returns
-   (vars (implies (pseudo-term-listp actuals)
-                  (equal (len vars) (len actuals)))
-         :name len-of-new-vars-for-actuals)))
+   (vars (implies (pseudo-term-listp term-lst)
+                  (equal (len vars) (len term-lst)))
+         :name len-of-new-vars-for-term-list))
+
+  ;; (defthm no-duplicatesp-of-new-var-for-term-list
+  ;;   (implies (and (pseudo-term-sym-alistp alst)
+  ;;                 (symbol-listp avoid)
+  ;;                 (no-duplicatesp-equal (strip-cdrs alst))
+  ;;                 (subsetp-equal (strip-cdrs alst) avoid))
+  ;;            (no-duplicatesp-equal
+  ;;             (strip-cdrs
+  ;;              (mv-nth 1 (new-vars-for-term-list term-lst alst avoid))))))
+
+  (defthm alst-subset-of-new-vars-for-term-list
+    (b* (((mv & new-alst new-avoid)
+          (new-vars-for-term-list term-lst alst avoid)))
+      (implies (and (pseudo-term-listp term-lst)
+                    (pseudo-term-sym-alistp alst)
+                    (symbol-listp avoid)
+                    (subsetp-equal (strip-cdrs alst) avoid))
+               (subsetp-equal (strip-cdrs new-alst) new-avoid))))
+
+  ;; (defthm avoid-subset-of-new-vars-for-term-lst
+  ;;   (b* (((mv & & new-avoid)
+  ;;         (new-vars-for-term-list term-lst alst avoid)))
+  ;;     (implies (and (pseudo-termp term)
+  ;;                   (pseudo-term-sym-alistp alst)
+  ;;                   (symbol-listp avoid))
+  ;;              (subsetp-equal avoid new-avoid))))
+
+  (define new-vars-for-term-list-env ((term-lst pseudo-term-listp)
+                                      (alst pseudo-term-sym-alistp)
+                                      (avoid symbol-listp)
+                                      (a alistp))
+    :guard (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+                (subsetp-equal (strip-cdrs alst) avoid))
+    :returns (new-a alistp)
+    (b* ((term-lst (pseudo-term-list-fix term-lst))
+         (alst (pseudo-term-sym-alist-fix alst))
+         (avoid (symbol-list-fix avoid))
+         (a (acl2::alist-fix a))
+         ((unless (consp term-lst)) a)
+         ((cons lst-hd lst-tl) term-lst)
+         ((mv & alst-1 avoid-1)
+          (new-var-for-term lst-hd alst avoid))
+         (a-hd (new-var-for-term-env lst-hd avoid a))
+         (a-tl (new-vars-for-term-list-env lst-tl alst-1 avoid-1 a-hd)))
+      a-tl)))
+
+(skip-proofs
+ (defthm lemma1
+   (equal (ev-smtcp
+           (mv-nth 0
+                   (new-var-for-term (car term-lst)
+                                     alst avoid))
+           (new-vars-for-term-list-env (cdr term-lst)
+                                       (mv-nth 1
+                                               (new-var-for-term (car term-lst)
+                                                                 alst avoid))
+                                       (mv-nth 2
+                                               (new-var-for-term (car term-lst)
+                                                                 alst avoid))
+                                       (new-var-for-term-env (car term-lst)
+                                                             avoid a)))
+          (ev-smtcp
+           (mv-nth 0
+                   (new-var-for-term (car term-lst)
+                                     alst avoid))
+           (new-var-for-term-env (car term-lst)
+                                 avoid a)))
+   ))
+
+(skip-proofs
+ (defthm lemma2
+   (implies (and (pseudo-term-listp term-lst)
+                 (symbol-listp avoid)
+                 (alistp a)
+                 (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid))
+            (equal (ev-smtcp-lst (cdr term-lst)
+                                 (new-var-for-term-env (car term-lst)
+                                                       avoid a))
+                   (ev-smtcp-lst (cdr term-lst) a)))
+   :hints (("Goal"
+            :in-theory (enable new-var-for-term-env))))
+ )
+
+(defthm correctness-of-new-vars-for-term-list
+  (implies (and (pseudo-term-listp term-lst)
+                (pseudo-term-sym-alistp alst)
+                (symbol-listp avoid)
+                (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+                (subsetp-equal (strip-cdrs alst) avoid)
+                (alistp a))
+           (equal (ev-smtcp-lst
+                   (mv-nth 0 (new-vars-for-term-list term-lst alst avoid))
+                   (new-vars-for-term-list-env term-lst alst avoid a))
+                  (ev-smtcp-lst term-lst a)))
+  :hints (("Goal"
+           :in-theory (e/d (new-vars-for-term-list
+                            new-vars-for-term-list-env)
+                           ()))))
 
 (encapsulate ()
   (local
@@ -132,7 +331,7 @@
                                 symbol-listp))))
 
   (local
-   (defthm crock
+   (defthm crock3
      (alistp (pairlis$ x y))))
 
   (define function-substitution ((term pseudo-termp)
@@ -197,6 +396,18 @@
                                          (cadr (meta-extract-formula (car term) state))
                                          term nil))
                                 a)))))))
+
+(skip-proofs
+(defthm term-vars-of-function-substitution
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (pseudo-lambda/fnp (car term))
+                (mv-nth 0 (function-substitution term state)))
+           (equal (acl2::simple-term-vars (mv-nth 1 (function-substitution term state)))
+                  (acl2::simple-term-vars term)))
+  :hints (("Goal"
+           :in-theory (enable function-substitution acl2::simple-term-vars))))
+)
 
 (define update-fn-lvls ((fn pseudo-lambda/fnp)
                         (hints smtlink-hint-p)
@@ -271,129 +482,468 @@
   :flag-local nil
   :verify-guards nil
   :hints (("Goal"
-           :in-theory (disable pseudo-termp
-                               pseudo-term-listp)))
+           :in-theory (disable pseudo-termp pseudo-term-listp)))
 
   (define expand-fncall/lambda ((term pseudo-termp)
                                 (hints smtlink-hint-p)
                                 (fn-lvls sym-int-alistp)
                                 (alst pseudo-term-sym-alistp)
-                                (names symbol-listp)
+                                (avoid symbol-listp)
                                 (clock natp)
                                 state)
     :guard (and (not (zp clock)) (consp term)
-                (pseudo-lambda/fnp (car term)))
+                (pseudo-lambda/fnp (car term))
+                (subsetp-equal (acl2::simple-term-vars term) avoid)
+                (subsetp-equal (strip-cdrs alst) avoid))
     :measure (list (nfix clock)
                    (acl2-count (pseudo-term-fix term))
                    1)
     :returns (mv (new-term pseudo-termp)
                  (new-alst pseudo-term-sym-alistp)
-                 (new-names symbol-listp))
+                 (new-avoid symbol-listp))
     (b* ((term (pseudo-term-fix term))
          (hints (smtlink-hint-fix hints))
          ((smtlink-hint h) hints)
          (alst (pseudo-term-sym-alist-fix alst))
+         (avoid (symbol-list-fix avoid))
          (clock (nfix clock))
-         (names (symbol-list-fix names))
          ((unless (mbt (and (not (zp clock)) (consp term)
-                            (pseudo-lambda/fnp (car term)))))
-          (mv term alst names))
+                            (pseudo-lambda/fnp (car term))
+                            (subsetp-equal (acl2::simple-term-vars term) avoid)
+                            (subsetp-equal (strip-cdrs alst) avoid))))
+          (mv term alst avoid))
          ((cons fn actuals) term)
-         ((mv new-actuals alst-1 names-1)
-          (expand-term-list actuals hints fn-lvls alst names clock state))
-         ((mv actual-vars alst-2 names-2)
-          (new-vars-for-actuals new-actuals alst-1 names-1))
+         ((mv new-actuals alst-1 avoid-1)
+          (expand-term-list actuals hints fn-lvls alst avoid clock state))
+         ((mv actual-vars alst-2 avoid-2)
+          (new-vars-for-term-list new-actuals alst-1 avoid-1))
          ((if (dont-expand fn h fn-lvls))
-          (mv `(,fn ,@actual-vars) alst-2 names-2))
+          (mv `(,fn ,@actual-vars) alst-2 avoid-2))
          ((mv ok substed-body) (function-substitution `(,fn ,@actual-vars) state))
-         ((unless ok) (mv term alst names))
+         ((unless ok) (mv term alst avoid))
          (new-lvls (update-fn-lvls fn hints fn-lvls))
-         ((mv new-body alst-3 names-3)
-          (expand-term substed-body hints new-lvls alst-2
-                       names-2 (1- clock) state))
-         ((if (dont-generate-freshvar new-body)) (mv new-body alst-3 names-3))
-         (body-var (new-fresh-var names-3)))
-      (mv body-var
-          (acons new-body body-var alst-3)
-          (cons body-var names-3))))
+         ((mv new-body alst-3 avoid-3)
+          (expand-term substed-body hints new-lvls alst-2 avoid-2 (1- clock)
+                       state))
+         ((mv body-var alst-4 avoid-4) (new-var-for-term new-body alst-3 avoid-3)))
+      (mv body-var alst-4 avoid-4)))
 
   (define expand-term ((term pseudo-termp)
                        (hints smtlink-hint-p)
                        (fn-lvls sym-int-alistp)
                        (alst pseudo-term-sym-alistp)
-                       (names symbol-listp)
+                       (avoid symbol-listp)
                        (clock natp)
                        state)
+    :guard (and (subsetp-equal (acl2::simple-term-vars term) avoid)
+                (subsetp-equal (strip-cdrs alst) avoid))
     :measure (list (nfix clock)
                    (acl2-count (pseudo-term-fix term))
                    2)
     :returns (mv (new-term pseudo-termp)
                  (new-alst pseudo-term-sym-alistp)
-                 (new-names symbol-listp))
+                 (new-avoid symbol-listp))
     (b* ((term (pseudo-term-fix term))
          (alst (pseudo-term-sym-alist-fix alst))
+         (avoid (symbol-list-fix avoid))
          (clock (nfix clock))
-         (names (symbol-list-fix names))
-         ((if (zp clock)) (mv term alst names))
+         ((unless (mbt (and (subsetp-equal (acl2::simple-term-vars term) avoid)
+                            (subsetp-equal (strip-cdrs alst) avoid))))
+          (mv term alst avoid))
+         ((if (zp clock)) (mv term alst avoid))
          (exist? (assoc-equal term alst))
-         ((if exist?) (mv (cdr exist?) alst names))
-         ((if (dont-generate-freshvar term)) (mv term alst names)))
-      (expand-fncall/lambda term hints fn-lvls alst names clock state)))
+         ((if exist?) (mv (cdr exist?) alst avoid))
+         ((if (dont-generate-freshvar term)) (mv term alst avoid)))
+      (expand-fncall/lambda term hints fn-lvls alst avoid clock state)))
 
   (define expand-term-list ((term-lst pseudo-term-listp)
                             (hints smtlink-hint-p)
                             (fn-lvls sym-int-alistp)
                             (alst pseudo-term-sym-alistp)
-                            (names symbol-listp)
+                            (avoid symbol-listp)
                             (clock natp)
                             state)
+    :guard (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+                (subsetp-equal (strip-cdrs alst) avoid))
     :measure (list (nfix clock)
                    (acl2-count (pseudo-term-list-fix term-lst))
                    0)
     :returns (mv (new-term-lst pseudo-term-listp)
                  (new-alst pseudo-term-sym-alistp)
-                 (new-names symbol-listp))
+                 (new-avoid symbol-listp))
     (b* ((term-lst (pseudo-term-list-fix term-lst))
          (alst (pseudo-term-sym-alist-fix alst))
+         (avoid (symbol-list-fix avoid))
          (clock (nfix clock))
-         (names (symbol-list-fix names))
-         ((unless (consp term-lst)) (mv nil alst names))
+         ((unless (mbt (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+                            (subsetp-equal (strip-cdrs alst) avoid))))
+          (mv term-lst alst avoid))
+         ((unless (consp term-lst)) (mv nil alst avoid))
          ((cons term-hd term-tl) term-lst)
-         ((mv new-hd alst-1 names-1)
-          (expand-term term-hd hints fn-lvls alst names clock state))
-         ((mv new-tl alst-2 names-2)
-          (expand-term-list term-tl hints fn-lvls alst-1 names-1 clock state)))
-      (mv (cons new-hd new-tl) alst-2 names-2))))
+         ((mv new-hd alst-1 avoid-1)
+          (expand-term term-hd hints fn-lvls alst avoid clock state))
+         ((mv new-tl alst-2 avoid-2)
+          (expand-term-list term-tl hints fn-lvls alst-1 avoid-1 clock state)))
+      (mv (cons new-hd new-tl) alst-2 avoid-2))))
 )
 
-(define cdr-induct-expand-term-list (term-lst hints fn-lvls alst names clock state)
+(define cdr-induct-expand-term-list (term-lst hints fn-lvls alst avoid clock state)
   :irrelevant-formals-ok t
   :verify-guards nil
   (b* (((if (atom term-lst)) nil)
-       ((mv & new-alst new-names)
-        (expand-term (car term-lst) hints fn-lvls alst names clock state)))
+       ((mv & new-alst new-avoid)
+        (expand-term (car term-lst) hints fn-lvls alst avoid clock state)))
     (cdr-induct-expand-term-list
-     (cdr term-lst) hints fn-lvls new-alst new-names clock state)))
+     (cdr term-lst) hints fn-lvls new-alst new-avoid clock state)))
 
 (defthm len-of-expand-term-list
   (implies (and (pseudo-term-listp term-lst)
                 (smtlink-hint-p hints)
                 (sym-int-alistp fn-lvls)
                 (pseudo-term-sym-alistp alst)
-                (symbol-listp names)
+                (symbol-listp avoid)
                 (natp clock))
            (equal (len (mv-nth 0 (expand-term-list term-lst hints fn-lvls
-                                                   alst names clock
+                                                   alst avoid clock
                                                    state)))
                   (len term-lst)))
   :hints (("Goal"
            :in-theory (enable expand-term-list cdr-induct-expand-term-list)
            :induct (cdr-induct-expand-term-list term-lst hints fn-lvls alst
-                                                names clock state))))
+                                                avoid clock state))))
 
+(skip-proofs
+(defthm-expand-term-flag
+  (defthm subset-equal-of-expand-fncall/lambda
+    (implies (and (pseudo-termp term)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp avoid)
+                  (natp clock)
+                  (subsetp-equal (acl2::simple-term-vars term) avoid)
+                  (subsetp-equal (strip-cdrs alst) avoid))
+             (b* (((mv new-term new-alst new-avoid)
+                   (expand-fncall/lambda term hints fn-lvls alst avoid clock
+                                         state)))
+               (and (subsetp-equal avoid new-avoid)
+                    (subsetp-equal (acl2::simple-term-vars new-term) new-avoid)
+                    (subsetp-equal (strip-cdrs new-alst) new-avoid))))
+    :flag expand-fncall/lambda
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-fncall/lambda term hints fn-lvls
+                                                  alst avoid clock state)
+                            (expand-fncall/lambda nil hints fn-lvls
+                                                  alst avoid clock state)
+                            (expand-fncall/lambda term hints fn-lvls alst names
+                                                  0 state))))))
+  (defthm subset-equal-of-expand-term
+    (implies (and (pseudo-termp term)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp avoid)
+                  (natp clock)
+                  (subsetp-equal (acl2::simple-term-vars term) avoid)
+                  (subsetp-equal (strip-cdrs alst) avoid))
+             (b* (((mv new-term new-alst new-avoid)
+                   (expand-term term hints fn-lvls alst avoid clock state)))
+               (and (subsetp-equal avoid new-avoid)
+                    (subsetp-equal (acl2::simple-term-vars new-term) new-avoid)
+                    (subsetp-equal (strip-cdrs new-alst) new-avoid))))
+    :flag expand-term
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term term hints fn-lvls alst avoid
+                                         clock state)
+                            (expand-term term hints fn-lvls alst avoid
+                                         0 state)
+                            (expand-term nil hints fn-lvls alst avoid
+                                         clock state))))))
+  (defthm subset-equal-of-expand-term-list
+    (implies (and (pseudo-term-listp term-lst)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp avoid)
+                  (natp clock)
+                  (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid)
+                  (subsetp-equal (strip-cdrs alst) avoid))
+             (b* (((mv new-term-lst new-alst new-avoid)
+                   (expand-term-list term-lst hints fn-lvls alst avoid
+                                     clock state)))
+               (and (subsetp-equal avoid new-avoid)
+                    (subsetp-equal (acl2::simple-term-vars-lst new-term-lst)
+                                   new-avoid)
+                    (subsetp-equal (strip-cdrs new-alst) new-avoid))))
+    :flag expand-term-list
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term-list term-lst hints fn-lvls alst
+                                              avoid clock state)
+                            (expand-term-list nil hints fn-lvls alst
+                                              avoid clock state)))))))
+)
+
+(defthm simple-term-vars-of-fncall
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (not (equal (car term) 'quote)))
+           (equal (acl2::simple-term-vars term)
+                  (acl2::simple-term-vars-lst (cdr term))))
+  :hints (("Goal"
+           :in-theory (enable acl2::simple-term-vars
+                              acl2::simple-term-vars-lst))))
+
+(skip-proofs
 (verify-guards expand-term
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (pseudo-lambda/fnp dont-generate-freshvar)
+                           (IMPLIES-OF-DONT-EXPAND DEFAULT-CDR strip-cdrs
+                                                   ;; term-vars-of-function-substitution
+                                                   ))
+           ;; :use ((:instance term-vars-of-function-substitution
+           ;;                  (term (CONS
+           ;;                         (CAR TERM)
+           ;;                         (MV-NTH
+           ;;                          0
+           ;;                          (NEW-VARS-FOR-TERM-LIST
+           ;;                           (MV-NTH 0
+           ;;                                   (EXPAND-TERM-LIST (CDR TERM)
+           ;;                                                     HINTS FN-LVLS ALST AVOID CLOCK STATE))
+           ;;                           (MV-NTH 1
+           ;;                                   (EXPAND-TERM-LIST (CDR TERM)
+           ;;                                                     HINTS FN-LVLS ALST AVOID CLOCK STATE))
+           ;;                           (MV-NTH 2
+           ;;                                   (EXPAND-TERM-LIST (CDR TERM)
+           ;;                                                     HINTS
+           ;;                                                     FN-LVLS ALST
+           ;;                                                     AVOID CLOCK
+           ;;                                                     STATE))))))))
+           )))
+)
+
+(defines expand-term-env
+  :well-founded-relation l<
+  :flag-local nil
+  :verify-guards nil
+  :hints (("Goal"
+           :in-theory (disable pseudo-termp pseudo-term-listp)))
+
+  (define expand-fncall/lambda-env ((term pseudo-termp)
+                                    (hints smtlink-hint-p)
+                                    (fn-lvls sym-int-alistp)
+                                    (alst pseudo-term-sym-alistp)
+                                    (avoid-vars symbol-listp)
+                                    (clock natp)
+                                    state
+                                    (a alistp))
+    :guard (and (not (zp clock)) (consp term)
+                (pseudo-lambda/fnp (car term))
+                (subsetp-equal (acl2::simple-term-vars term) avoid-vars)
+                (subsetp-equal (strip-cdrs alst) avoid-vars))
+    :measure (list (nfix clock)
+                   (acl2-count (pseudo-term-fix term))
+                   1)
+    :returns (new-a alistp)
+    (b* ((term (pseudo-term-fix term))
+         (hints (smtlink-hint-fix hints))
+         ((smtlink-hint h) hints)
+         (alst (pseudo-term-sym-alist-fix alst))
+         (avoid-vars (symbol-list-fix avoid-vars))
+         (clock (nfix clock))
+         (a (acl2::alist-fix a))
+         ((unless (mbt (and (not (zp clock)) (consp term)
+                            (pseudo-lambda/fnp (car term))
+                            (subsetp-equal (acl2::simple-term-vars term) avoid-vars)
+                            (subsetp-equal (strip-cdrs alst) avoid-vars))))
+          a)
+         ((cons fn actuals) term)
+         ((mv new-actuals alst-1 avoid-1)
+          (expand-term-list actuals hints fn-lvls alst avoid-vars clock state))
+         (a-1
+          (expand-term-list-env actuals hints fn-lvls alst avoid-vars clock
+                                state a))
+         ((mv actual-vars alst-2 avoid-2)
+          (new-vars-for-term-list new-actuals alst-1 avoid-1))
+         (a-2 (new-vars-for-term-list-env new-actuals alst-1 avoid-1 a-1))
+         ((if (dont-expand fn h fn-lvls)) a-2)
+         ((mv ok substed-body) (function-substitution `(,fn ,@actual-vars) state))
+         ((unless ok) a)
+         (new-lvls (update-fn-lvls fn hints fn-lvls))
+         ((mv new-body & avoid-3)
+          (expand-term substed-body hints new-lvls alst-2 avoid-2 (1- clock)
+                       state))
+         (a-3 (expand-term-env substed-body hints new-lvls alst-2 avoid-2
+                               (1- clock) state a-2))
+         (a-4 (new-var-for-term-env new-body avoid-3 a-3)))
+      a-4))
+
+  (define expand-term-env ((term pseudo-termp)
+                           (hints smtlink-hint-p)
+                           (fn-lvls sym-int-alistp)
+                           (alst pseudo-term-sym-alistp)
+                           (avoid-vars symbol-listp)
+                           (clock natp)
+                           state
+                           (a alistp))
+    :guard (and (subsetp-equal (acl2::simple-term-vars term) avoid-vars)
+                (subsetp-equal (strip-cdrs alst) avoid-vars))
+    :measure (list (nfix clock)
+                   (acl2-count (pseudo-term-fix term))
+                   2)
+    :returns (new-a alistp)
+    (b* ((term (pseudo-term-fix term))
+         (alst (pseudo-term-sym-alist-fix alst))
+         (clock (nfix clock))
+         (a (acl2::alist-fix a))
+         ((unless (mbt (and (subsetp-equal (acl2::simple-term-vars term) avoid-vars)
+                            (subsetp-equal (strip-cdrs alst) avoid-vars))))
+          a)
+         ((if (zp clock)) a)
+         (exist? (assoc-equal term alst))
+         ((if exist?)
+          (append (replace-alist-to-bindings (list exist?) a) a))
+         ((if (dont-generate-freshvar term)) a))
+      (expand-fncall/lambda-env term hints fn-lvls alst avoid-vars clock state
+                                a)))
+
+  (define expand-term-list-env ((term-lst pseudo-term-listp)
+                                (hints smtlink-hint-p)
+                                (fn-lvls sym-int-alistp)
+                                (alst pseudo-term-sym-alistp)
+                                (avoid-vars symbol-listp)
+                                (clock natp)
+                                state
+                                (a alistp))
+    :guard (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid-vars)
+                (subsetp-equal (strip-cdrs alst) avoid-vars))
+    :measure (list (nfix clock)
+                   (acl2-count (pseudo-term-list-fix term-lst))
+                   0)
+    :returns (new-a alistp)
+    (b* ((term-lst (pseudo-term-list-fix term-lst))
+         (alst (pseudo-term-sym-alist-fix alst))
+         (clock (nfix clock))
+         (a (acl2::alist-fix a))
+         ((unless (mbt (and (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid-vars)
+                            (subsetp-equal (strip-cdrs alst) avoid-vars))))
+          a)
+         ((unless (consp term-lst)) a)
+         ((cons term-hd term-tl) term-lst)
+         ((mv & alst-1 avoid-1)
+          (expand-term term-hd hints fn-lvls alst avoid-vars clock state))
+         (a-1 (expand-term-env term-hd hints fn-lvls alst avoid-vars clock
+                               state a)))
+      (expand-term-list-env term-tl hints fn-lvls alst-1 avoid-1 clock state
+                            a-1))))
+
+(verify-guards expand-term-env
   :hints (("Goal" :in-theory (e/d (pseudo-lambda/fnp dont-generate-freshvar)
                                   ()))))
+
+stop-here
+
+(defthm crock2
+  (implies (cdr (assoc-equal term alst))
+           (equal (car (assoc-equal term alst)) term)))
+
+(defthm-expand-term-env-flag
+  (defthm correctness-of-expand-fncall/lambda
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp term)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (pseudo-termp avoid-term)
+                  (natp clock)
+                  (alistp a))
+             (equal (ev-smtcp
+                     (mv-nth 0 (expand-fncall/lambda term hints fn-lvls alst
+                                                     avoid-term clock state))
+                     (mv-nth 0 (expand-fncall/lambda-env term hints fn-lvls alst
+                                                         avoid-term clock state
+                                                         a)))
+                    (ev-smtcp term a)))
+    :flag expand-fncall/lambda-env
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (equal-of-new-var-for-term-env
+                                    equal-of-new-vars-for-term-list-env)
+                                   (symbol-listp
+                                    ;; equivalence-of-expand-term-list-with-env
+                                    ;; equivalence-of-expand-term-with-env
+                                    ;; correctness-of-new-var-for-term
+                                    ;; correctness-of-function-substitution
+                                    ;; correctness-of-new-vars-for-term-list
+                                    ;; ev-smtcp-of-fncall-args
+                                    ))
+                              :expand ((expand-fncall/lambda term hints fn-lvls
+                                                             alst avoid-term clock state)
+                                       (expand-fncall/lambda-env term hints fn-lvls
+                                                                 alst avoid-term clock
+                                                                 state a)
+                                       (expand-fncall/lambda nil hints fn-lvls
+                                                             alst avoid-term clock state)
+                                       (expand-fncall/lambda-env nil hints fn-lvls
+                                                                 alst avoid-term clock
+                                                                 state a)
+                                       (expand-fncall/lambda term hints fn-lvls alst avoid-term
+                                                             0 state)
+                                       (expand-fncall/lambda-env term hints fn-lvls alst
+                                                                 avoid-term 0 state a))))))
+  (defthm correctness-of-expand-term
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp term)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (pseudo-termp avoid-term)
+                  (natp clock)
+                  (alistp a))
+             (equal (ev-smtcp
+                     (mv-nth 0 (expand-term term hints fn-lvls alst avoid-term
+                                            clock state))
+                     (mv-nth 0 (expand-term-env term hints fn-lvls alst
+                                                avoid-term clock state a)))
+                    (ev-smtcp term a)))
+    :flag expand-term-env
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term term hints fn-lvls alst avoid-term
+                                         clock state)
+                            (expand-term-env term hints fn-lvls alst avoid-term
+                                             clock state a)
+                            (expand-term term hints fn-lvls alst avoid-term
+                                         0 state)
+                            (expand-term-env term hints fn-lvls alst avoid-term
+                                             0 state a)
+                            (expand-term nil hints fn-lvls alst avoid-term
+                                         clock state)
+                            (expand-term-env nil hints fn-lvls alst avoid-term
+                                             clock state a))))))
+  (defthm correctness-of-expand-term-list
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-term-listp term-lst)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (pseudo-termp avoid-term)
+                  (natp clock)
+                  (alistp a))
+             (equal (ev-smtcp-lst
+                     (mv-nth 0 (expand-term-list term-lst hints fn-lvls alst
+                                                 avoid-term clock state))
+                     (mv-nth 0 (expand-term-list-env term-lst hints fn-lvls alst
+                                                     avoid-term clock state
+                                                     a)))
+                    (ev-smtcp-lst term-lst a)))
+    :flag expand-term-list-env
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term-list term-lst hints fn-lvls alst
+                                              avoid-term clock state)
+                            (expand-term-list-env term-lst hints fn-lvls alst
+                                                  avoid-term clock state a)
+                            (expand-term-list nil hints fn-lvls alst
+                                              avoid-term clock state)
+                            (expand-term-list-env nil hints fn-lvls alst
+                                                  avoid-term clock state
+                                                  a))))))
+  :hints(("Goal"
+          :in-theory (disable member-equal))))
+
+stop
 
 (define generate-equalities ((alst pseudo-term-sym-alistp))
   :returns (res pseudo-termp)
@@ -505,6 +1055,8 @@
                                               names clock state)
                             ))))))
 
+stop
+
 (defthm correctness-of-expand-term-inductive
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
@@ -533,6 +1085,100 @@
                                    0 state)
                       (expand-term nil hints fn-lvls alst names
                                    clock state)))))
+
+(defthm-expand-term-flag
+  (defthm correctness-of-expand-fncall/lambda
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp term)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp names)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp
+                   (mv-nth 0 (expand-fncall/lambda term hints fn-lvls alst
+                                                   names clock state))
+                   (mv-nth 0 (expand-fncall/lambda-env term hints fn-lvls alst
+                                                       names clock state a))))
+             (ev-smtcp term a))
+    :flag expand-fncall/lambda
+    :hints ((and stable-under-simplificationp
+                 '(;; :in-theory (e/d () (genequalities-of-acons
+                   ;;                     pseudo-term-sym-alistp-of-cons
+                   ;;                     pseudo-term-listp-of-symbol-listp))
+                   :expand ((expand-fncall/lambda term hints fn-lvls
+                                                  alst names clock state)
+                            (expand-fncall/lambda-env term hints fn-lvls
+                                                      alst names clock state a)
+                            (expand-fncall/lambda nil hints fn-lvls
+                                                  alst names clock state)
+                            (expand-fncall/lambda-env nil hints fn-lvls
+                                                      alst names clock state a)
+                            (expand-fncall/lambda term hints fn-lvls alst names
+                                                  0 state)
+                            (expand-fncall/lambda-env term hints fn-lvls alst names
+                                                      0 state a))
+                   ))))
+  (defthm correctness-of-expand-term
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp term)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp names)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp
+                   (mv-nth 0 (expand-term term hints fn-lvls alst names clock
+                                          state))
+                   (mv-nth 0 (expand-term-env term hints fn-lvls alst names
+                                              clock state a))))
+             (ev-smtcp term a))
+    :flag expand-term
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term term hints fn-lvls alst names
+                                         clock state)
+                            (expand-term-env term hints
+                                             fn-lvls alst names clock state a)
+                            (expand-term term hints fn-lvls alst names
+                                         0 state)
+                            (expand-term-env term
+                                             hints fn-lvls alst names 0 state a)
+                            (expand-term nil hints fn-lvls alst names
+                                         clock state)
+                            (expand-term-env nil hints fn-lvls alst names
+                                             clock state a))
+                   ))))
+  (defthm correctness-of-expand-term-list
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-term-listp term-lst)
+                  (smtlink-hint-p hints)
+                  (sym-int-alistp fn-lvls)
+                  (pseudo-term-sym-alistp alst)
+                  (symbol-listp names)
+                  (natp clock)
+                  (alistp a)
+                  (ev-smtcp-lst
+                   (mv-nth 0 (expand-term-list term-lst hints fn-lvls alst
+                                               names clock state))
+                   (mv-nth 0 (expand-term-list-env term-lst hints fn-lvls alst
+                                                   names clock state a))))
+             (ev-smtcp-lst term-lst a))
+    :flag expand-term-list
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((expand-term-list term-lst hints fn-lvls alst
+                                              names clock state)
+                            (expand-term-list-env term-lst hints fn-lvls alst
+                                                  names clock state a)
+                            (expand-term-list nil hints fn-lvls alst
+                                              names clock state)
+                            (expand-term-list-env nil hints fn-lvls alst
+                                                  names clock state a))
+                   ))))
+  :hints(("Goal"
+          :in-theory (disable member-equal))))
+
 
 (defthm correctness-of-expand-term-list-inductive
   (implies (and (ev-smtcp-meta-extract-global-facts)
