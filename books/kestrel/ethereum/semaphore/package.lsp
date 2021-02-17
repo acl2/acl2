@@ -26,6 +26,7 @@
             booland
             define
             define-sk
+            defmacro+
             defret
             defrule
             defruled
