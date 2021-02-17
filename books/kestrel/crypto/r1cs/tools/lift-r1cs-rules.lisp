@@ -945,13 +945,15 @@
 ;;            :in-theory (disable add-of-mul-of-2-when-bitp))))
 
 (defthm mul-of---arg2
-  (equal (MUL x (- y) P)
-         (neg (mul x y p) p))
-  :hints (("Goal" :in-theory (enable MUL add))))
+  (implies (syntaxp (not (quotep y))) ;defeat ACL2's overly aggressive matching
+           (equal (mul x (- y) p)
+                  (neg (mul x y p) p)))
+  :hints (("Goal" :in-theory (enable mul add))))
 
 (defthm mul-of---arg1
-  (equal (MUL (- y) x P)
-         (neg (mul y x p) p))
+  (implies (syntaxp (not (quotep y))) ;defeat acl2's overly aggressive matching
+           (equal (mul (- y) x p)
+                  (neg (mul y x p) p)))
   :hints (("Goal" :in-theory (enable MUL add))))
 
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))

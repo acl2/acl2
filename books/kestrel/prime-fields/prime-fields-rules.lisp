@@ -184,13 +184,16 @@
 
 (defthm mul-of-mul-of-inv
   (implies (and (fep a p)
-                (not (equal 0 a))
                 (fep x p)
                 (primep p))
            (equal (mul a (mul (inv a p) x p) p)
-                  x))
+                  (if (equal 0 a)
+                      0
+                    x)))
   :hints (("Goal" :use (:instance mul-associative (x a) (y (inv a p)) (z x))
-           :in-theory (disable mul-associative))))
+           :in-theory (disable mul-associative
+                               MUL-COMMUTATIVE
+                               MUL-COMMUTATIVE-2))))
 
 ;todo: swap mul args if one is the inv of the other... as a tiebreaker
 (defthm mul-of-inv-mul-of-inv
@@ -238,6 +241,14 @@
                   (mul
                    (* x y) ;we don't call mul here in case the p argument is not known (todo: do something similar for the add rule)
                    z p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthmd mul-combine-constants-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (integerp p))
+           (equal (mul x (mul y z p) p)
+                  (mul (mul x y p) z p)))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-when-constant-reduce-arg1
