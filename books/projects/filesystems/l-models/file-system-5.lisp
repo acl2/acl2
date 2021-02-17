@@ -648,29 +648,6 @@
                   (l5-regular-file-entry-p (l5-stat hns fs disk))))
   :hints (("goal" :in-theory (enable l3-regular-file-entry-p))))
 
-(defthm
-  l5-rdchs-correctness-1-lemma-2
-  (implies
-   (and (consp hns)
-        (consp (assoc-equal (car hns) fs))
-        (l5-regular-file-entry-p (cdr (assoc-equal (car hns) fs)))
-        (not (cdr hns))
-        (symbolp (car hns))
-        (l5-fs-p fs)
-        (block-listp disk))
-   (equal
-    (coerce (l3-stat hns (l5-to-l4-fs fs) disk)
-            'list)
-    (unmake-blocks
-     (fetch-blocks-by-indices
-      disk
-      (l5-regular-file-contents (cdr (assoc-equal (car hns) fs))))
-     (l5-regular-file-length (cdr (assoc-equal (car hns) fs))))))
-  :hints
-  (("goal" :in-theory (e/d (l3-regular-file-entry-p)
-                           (l5-stat-correctness-1-lemma-2)))
-   ("subgoal *1/1" :use l5-stat-correctness-1-lemma-2)))
-
 ;; This theorem proves the equivalence of the l5 and l4 versions of rdchs.
 (defthm l5-rdchs-correctness-1
   (implies (and (symbol-listp hns)
@@ -875,12 +852,6 @@
                 (fs (l5-to-l4-fs fs)))))))
 
 (defthmd
-  l5-read-after-write-2-lemma-4
-  (implies (and (l5-fs-p fs))
-           (equal (l5-regular-file-entry-p (l5-stat hns fs disk1))
-                  (l5-regular-file-entry-p (l5-stat hns fs disk2)))))
-
-(defthmd
   l5-read-after-write-2-lemma-6
   (implies
    (and (l5-fs-p fs))
@@ -1015,7 +986,6 @@
                (:rewrite find-n-free-blocks-correctness-2)
                (:rewrite zp-open)
                (:rewrite l3-fs-p-assoc)
-               (:rewrite l3-stat-correctness-2-lemma-2)
                (:type-prescription l3-fs-p)
                (:linear insert-text-correctness-3)
                (:definition make-character-list)
@@ -1203,7 +1173,6 @@
                         (:DEFINITION CHARACTER-LISTP)
                         (:DEFINITION FETCH-BLOCKS-BY-INDICES)
                         (:REWRITE DEFAULT-COERCE-1)
-                        (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2)
                         (:DEFINITION L5-TO-L4-FS)
                         (:TYPE-PRESCRIPTION FETCH-BLOCKS-BY-INDICES)
                         (:TYPE-PRESCRIPTION L3-FS-P)
@@ -1253,7 +1222,6 @@
                         (:REWRITE L5-STAT-CORRECTNESS-1-LEMMA-2)
                         (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV)
                         (:REWRITE L5-TO-L4-FS-CORRECTNESS-1 . 1)
-                        (:REWRITE L5-RDCHS-CORRECTNESS-1-LEMMA-2)
                         (:REWRITE
                          L5-REGULAR-FILE-ENTRY-P-CORRECTNESS-3 . 1)
                         (:REWRITE DEFAULT-UNARY-MINUS)

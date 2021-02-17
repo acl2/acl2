@@ -222,3 +222,20 @@ the list @('y')."
     (implies (prefixp y x)
              (equal (prefixp x y) (list-equiv x y)))
     :hints (("goal" :in-theory (enable prefixp)))))
+
+(encapsulate
+  ()
+
+  (local (in-theory (enable element-list-p true-list-fix prefixp)))
+
+  (def-listp-rule element-list-p-when-prefixp
+    (implies (and (prefixp x y)
+                  (element-list-p y)
+                  (not (element-list-final-cdr-p t)))
+             (element-list-p (true-list-fix x)))
+    :name element-list-p-when-prefixp
+    :requirement (and true-listp (not single-var))
+    :body
+    (implies (and (prefixp x y)
+                  (element-list-p y))
+             (element-list-p (true-list-fix x)))))

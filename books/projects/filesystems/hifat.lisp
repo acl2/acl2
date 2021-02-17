@@ -1396,12 +1396,6 @@
   :hints (("goal"
            :in-theory (enable prefixp fat32-filename-list-fix))))
 
-(defthm fat32-filename-list-p-when-prefixp
-  (implies (and (prefixp x y)
-                (fat32-filename-list-p y))
-           (fat32-filename-list-p (true-list-fix x)))
-  :hints (("goal" :in-theory (enable prefixp fat32-filename-list-p))))
-
 (defthm fat32-filename-list-p-correctness-1
   (implies (fat32-filename-list-p x)
            (not (member-equal nil x))))
@@ -1704,6 +1698,12 @@
   (implies (and (not (fat32-filename-p x))
                 (m1-file-alist-p fs))
            (not (member-equal x (strip-cars fs)))))
+
+(defthm abs-mkdir-correctness-lemma-16
+  (implies (and (m1-file-alist-p fs)
+                (consp (assoc-equal name fs)))
+           (d-e-p (cdr (cadr (assoc-equal name fs)))))
+  :hints (("goal" :in-theory (enable m1-file-alist-p assoc-equal))))
 
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
@@ -2510,6 +2510,31 @@
    (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
                                       (fat32-filename-list-prefixp x y))
                                  (fat32-filename-list-prefixp x z)))))
+
+(defthm fat32-filename-list-prefixp-when-atom-1
+  (implies (atom y)
+           (equal (fat32-filename-list-prefixp x y)
+                  (atom x)))
+  :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
+
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/prefixp" :dir :system))
+
+  (defthm
+    abs-pwrite-correctness-lemma-15
+    (implies (fat32-filename-list-prefixp x y)
+             (fat32-filename-list-equiv (append x (nthcdr (len x) y))
+                                        y))
+    :hints
+    (("goal" :do-not-induct t
+      :in-theory
+      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
+           (append-when-prefixp))
+      :use (:instance append-when-prefixp
+                      (x (fat32-filename-list-fix x))
+                      (y (fat32-filename-list-fix y)))))))
 
 (defthm
   m1-read-after-write-lemma-1
