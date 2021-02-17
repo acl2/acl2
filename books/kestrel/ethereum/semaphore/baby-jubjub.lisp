@@ -11,11 +11,12 @@
 
 (in-package "ZKSEMAPHORE")
 
+(include-book "baby-jubjub-prime")
+
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
-(include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system)
 (acl2::merge-io-pairs
  rtl::primep
- (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system))
+ (include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,44 +41,6 @@
     "That repo also shows that it satisfies the SafeCurves criteria."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define baby-jubjub-prime ()
-  :returns (prime rtl::primep)
-  :short "The prime that defines the field over which BabyJubjub is defined."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is @('primes::bn-254-group-prime'),
-     but we introduce a BabyJubjub-specific nullary function for it here.")
-   (xdoc::p
-    "This prime is 254 bits long.")
-   (xdoc::p
-    "The fact that this prims mod 4 is 1 is relevant for EdDSA.")
-   (xdoc::p
-    "The fact that this prime mod 8 is 1
-     means there is no simple formula for modular square root.
-     However, there are reasonably efficient algorithms
-     that require a starting non-residue.
-     For a fixed prime we can often get a starting non-residue from the table
-     in "
-    (xdoc::ahref "https://en.wikipedia.org/wiki/Quadratic_residue"
-                 "https://en.wikipedia.org/wiki/Quadratic_residue")
-    ". It is the case that 5 is a quadratic non-residue for this prime."))
-  (primes::bn-254-group-prime)
-  ///
-
-  (assert-event (equal (integer-length (baby-jubjub-prime)) 254))
-
-  (assert-event (equal (mod (baby-jubjub-prime) 4) 1))
-
-  (assert-event (equal (mod (baby-jubjub-prime) 8) 1))
-
-  (defrule baby-jubjub-prime-not-two
-    (not (equal (baby-jubjub-prime) 2)))
-
-  (in-theory (disable (:e baby-jubjub-prime))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
