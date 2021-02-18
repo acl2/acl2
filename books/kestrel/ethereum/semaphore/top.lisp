@@ -13,7 +13,7 @@
 (include-book "baby-jubjub")
 (include-book "base-points-for-pedersen-hash")
 (include-book "pedersen-hash")
-
+(include-book "prime-field-abbreviations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
