@@ -23,7 +23,6 @@
                   (:rewrite free-index-listp-correctness-1)
                   (:rewrite consp-of-assoc-of-hifat-file-alist-fix)
                   (:linear hifat-entry-count-when-hifat-subsetp)
-                  (:rewrite hifat-place-file-when-hifat-equiv-1)
                   (:rewrite consp-of-assoc-when-hifat-equiv-lemma-1)
                   (:rewrite hifat-subsetp-preserves-assoc)
                   (:rewrite abs-find-file-correctness-1-lemma-40)

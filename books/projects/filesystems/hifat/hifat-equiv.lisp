@@ -669,7 +669,24 @@
   :hints (("goal" :in-theory (enable hifat-place-file)
            :induct
            (mv (mv-nth 0 (hifat-place-file fs path file1))
-               (mv-nth 0 (hifat-place-file fs path file2))))))
+               (mv-nth 0 (hifat-place-file fs path file2)))))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (hifat-equiv (m1-file->contents file1)
+                               (m1-file->contents file2))
+                  (m1-directory-file-p (m1-file-fix file1))
+                  (m1-directory-file-p (m1-file-fix file2)))
+             (and
+              (equal
+               (hifat-equiv (mv-nth 0 (hifat-place-file fs path file1))
+                            (mv-nth 0 (hifat-place-file fs path file2)))
+               t)
+              (equal
+               (equal (mv-nth 1 (hifat-place-file fs path file1))
+                      (mv-nth 1 (hifat-place-file fs path file2)))
+               t))))))
 
 (defund m1-file-hifat-file-alist-fix (d-e fs)
   (m1-file d-e (hifat-file-alist-fix fs)))
@@ -794,7 +811,8 @@
                         (m1-file-hifat-file-alist-fix d-e contents2))))))
   :hints
   (("goal"
-    :in-theory (enable hifat-place-file)
+    :in-theory (e/d (hifat-place-file)
+                    ((:rewrite hifat-place-file-when-hifat-equiv-1 . 2)))
     :induct
     (mv
      (mv-nth 0

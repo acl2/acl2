@@ -72,7 +72,6 @@
     (:linear find-n-free-clusters-correctness-1)
     (:rewrite fat32-masked-entry-list-p-when-not-consp)
     (:rewrite fat32-masked-entry-list-p-when-bounded-nat-listp)
-    (:rewrite hifat-place-file-when-hifat-equiv-1)
     (:rewrite nat-listp-when-unsigned-byte-listp)
     (:rewrite bounded-nat-listp-correctness-1)
     (:rewrite hifat-subsetp-preserves-assoc)
