@@ -5,7 +5,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Main Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,11 +65,6 @@
  ))
 
 
-;; F_r is the order of the BN254 curve, and
-;; it is also the order of the field in which the BabyJubjub curve is defined.
-(defund F_r ()
-  primes::*bn-254-group-prime*)
-
 
 ;; adds the byte PAD-VALUE to the left of STARTING-BYTE-LIST until it has length GOAL-LENGTH
 (defun bytes-pad-left (goal-length pad-value starting-byte-list)
@@ -124,7 +120,10 @@
 ;;   x^2 = (1 - y^2)/(168700 - 168696.y^2)
 ;;   As long as y^2 is not 168700/168696, we can calculate x^2.
 
-(assert! (not (primes::has-square-root? (pfield::div 168700 168696 (F_r)) (F_r))))
+(assert! (not (primes::has-square-root? (pfield::div 168700
+                                                     168696
+                                                     (baby-jubjub-prime))
+                                        (baby-jubjub-prime))))
 
 ;; We first find y from the hash, then we see if the RHS has a square root.
 
@@ -140,19 +139,24 @@
     (mv-let (y sign?)
         (pedersen-base-calculate-y s i)
       ;; move this calculation to baby-jubjub.lisp (it is probably already there)
-      (if (<= (F_r) y) ; can happen, even when both are 254 bits
+      (if (<= (baby-jubjub-prime) y) ; can happen, even when both are 254 bits
           (pedersen-base-point-aux s (+ i 1))
-        (let* ((y^2 (pfield::mul y y (F_r)))
-               (numerator (pfield::sub 1 y^2 (F_r)))
-               (denominator (pfield::sub 168700 (pfield::mul 168696 y^2 (F_r)) (F_r)))
+        (let* ((y^2 (pfield::mul y y (baby-jubjub-prime)))
+               (numerator (pfield::sub 1 y^2 (baby-jubjub-prime)))
+               (denominator (pfield::sub 168700
+                                         (pfield::mul 168696
+                                                      y^2
+                                                      (baby-jubjub-prime))
+                                         (baby-jubjub-prime)))
                ;; the assert! above prevents the next expression from dividing by zero
-               (x^2 (pfield::div numerator denominator (F_r)))
-               (has-root? (primes::has-square-root? x^2 (F_r))))
+               (x^2 (pfield::div numerator denominator (baby-jubjub-prime)))
+               (has-root? (primes::has-square-root? x^2 (baby-jubjub-prime))))
           (if has-root?
-              (let ((x (primes::tonelli-shanks-sqrt x^2 (F_r) 5)))
-                ;; x will be the lesser square root (of the two in [0..(F_r)))
+              (let ((x (primes::tonelli-shanks-sqrt x^2 (baby-jubjub-prime) 5)))
+                ;; x will be the lesser square root
+                ;; (of the two in [0..(baby-jubjub-prime)))
                 (if sign?
-                    (cons (pfield::neg x (F_r)) y)
+                    (cons (pfield::neg x (baby-jubjub-prime)) y)
                   (cons x y)))
             (pedersen-base-point-aux s (+ i 1))))))))
 
