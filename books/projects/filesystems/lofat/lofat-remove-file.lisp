@@ -2132,7 +2132,6 @@
       (:rewrite not-intersectp-list-when-atom)
       (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
       (:rewrite another-lemma-about-member-intersectp)
-      (:rewrite lofat-remove-file-correctness-1-lemma-14)
       (:rewrite d-e-cc-of-update-dir-contents-coincident)
       (:rewrite lofat-place-file-correctness-lemma-56)
       (:rewrite lofat-place-file-correctness-lemma-83)
