@@ -38,11 +38,12 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
@@ -60,30 +61,10 @@
                            )))
 
 ;move
-(defthm bvchop-of-*-of-expt-when-<=
-  (implies (and (<= size n)
-                (integerp x)
-                (natp n)
-                ;(natp size)
-                )
-           (equal (BVCHOP SIZE (* X (EXPT 2 N)))
-                  0))
-  :hints (("Goal" :cases ((natp size)))))
-
-;move
 (defthm equal-of-append-same
   (equal (equal x (append x y))
          (equal y (finalcdr x)))
   :hints (("Goal" :in-theory (enable equal-of-append))))
-
-;move
-(defthm true-listp-of-nthcdr-3
-  (equal (true-listp (nthcdr n x))
-         (if (<= (nfix n) (len x))
-             (true-listp x)
-           t))
-  :hints (("Goal" :in-theory (e/d (nthcdr)
-                                  (nthcdr-of-cdr-combine-strong nthcdr-of-cdr-combine)))))
 
 ;move
 ;; In case we are not re-combining the cons with the repeat of n-1
@@ -464,10 +445,6 @@
                                    <-BECOMES-BVLT
                                    <-BECOMES-BVLT-alt
                                    anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
-
-
-;; (EQUAL (EXPT 2 (+ -1 SIZE))
-;;                 (EXPT 2 SIZE))
 
 ;move
 (defthm <-of-+-cancel
