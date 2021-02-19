@@ -734,7 +734,7 @@
               " in the " ,design-notes ".")))
     ,@(and presence
            `((xdoc::p
-              "This applicability condition if present if and only if "
+              "This applicability condition is present if and only if "
               ,presence ".")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
