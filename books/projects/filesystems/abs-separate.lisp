@@ -1610,8 +1610,9 @@
                       (abs-addrs (remove-assoc-equal name abs-file-alist1)))))
   :hints (("goal" :in-theory (enable abs-addrs))))
 
+;; Inductive, hence kept.
 (defthm
-  abs-addrs-of-ctx-app-1-lemma-13
+  abs-addrs-of-ctx-app-lemma-11
   (implies
    (and
     (not (member-equal x
@@ -1710,6 +1711,7 @@
        abs-file-alist1))
      y))))
 
+;; Inductive, hence kept.
 (defthm
   abs-addrs-of-ctx-app-lemma-9
   (implies
@@ -1768,8 +1770,9 @@
       (cons (car abs-file-alist1)
             (abs-addrs (remove-assoc-equal name (cdr abs-file-alist1)))))))))
 
+;; Inductive, hence kept.
 (defthm
-  abs-addrs-of-ctx-app-2-lemma-14
+  abs-addrs-of-ctx-app-lemma-12
   (implies
    (and (abs-directory-file-p (cdr (assoc-equal name abs-file-alist1)))
         (no-duplicatesp-equal (abs-addrs abs-file-alist1))
@@ -5753,50 +5756,6 @@
 
 (defthm
   abs-separate-correctness-lemma-6
-  (implies
-   (and (< 0 (1st-complete frame))
-        (ctx-app-ok root (1st-complete frame)
-                    (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                       frame))))
-        (frame-p frame)
-        (no-duplicatesp-equal (abs-addrs (abs-fs-fix root)))
-        (no-duplicatesp-equal (strip-cars frame)))
-   (not
-    (member-equal
-     (1st-complete frame)
-     (abs-addrs
-      (mv-nth
-       0
-       (collapse
-        (frame-with-root
-         (ctx-app root
-                  (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                    frame)))
-                  (1st-complete frame)
-                  (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                     frame))))
-         (remove-assoc-equal (1st-complete frame)
-                             frame))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (intersectp-equal))
-    :use
-    ((:instance
-      abs-separate-correctness-lemma-5
-      (frame
-       (frame-with-root
-        (ctx-app root
-                 (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                   frame)))
-                 (1st-complete frame)
-                 (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                    frame))))
-        (remove-assoc-equal (1st-complete frame)
-                            frame))))))))
-
-(defthm
-  abs-separate-correctness-lemma-8
   (implies
    (and
     (consp

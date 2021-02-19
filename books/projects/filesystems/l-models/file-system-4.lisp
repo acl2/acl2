@@ -506,12 +506,6 @@
   :hints (("Goal" :in-theory (enable not-intersectp-list)
            :expand (flatten l))))
 
-(defthm l4-wrchs-returns-stricter-fs-lemma-23
-  (implies (and (true-list-listp l)
-                (indices-marked-listp l alv)
-                (nat-listp (flatten l)))
-           (bounded-nat-listp (flatten l) (len alv))))
-
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-24
   (implies (and (l3-regular-file-entry-p (cdr (assoc-equal name fs)))

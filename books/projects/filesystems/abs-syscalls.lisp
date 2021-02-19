@@ -951,13 +951,8 @@
             (cdr frame))
      head-error-code)))
 
-(defthm abs-mkdir-guard-lemma-1
-  (implies (consp (assoc-equal 0 frame))
-           (consp (assoc-equal 0 (partial-collapse frame path))))
-  :hints (("goal" :in-theory (enable partial-collapse))))
-
 (defthm
-  abs-mkdir-guard-lemma-2
+  abs-mkdir-guard-lemma-1
   (implies
    (abs-directory-file-p (mv-nth 0 (abs-find-file frame path)))
    (abs-no-dups-p
@@ -3834,14 +3829,6 @@
                    (frame->frame (partial-collapse frame (dirname path))))))
     :hints (("goal" :do-not-induct t))
     :rule-classes :type-prescription)
-
-  (defthm
-    abs-mkdir-correctness-lemma-106
-    (implies
-     (consp (assoc-equal 0 frame))
-     (consp (assoc-equal 0
-                         (partial-collapse frame (dirname path)))))
-    :hints (("goal" :do-not-induct t)))
 
   (defthm abs-mkdir-correctness-lemma-3
     (abs-fs-p
@@ -10548,24 +10535,6 @@
      (x (abs-find-file-src (partial-collapse frame (dirname path))
                            (dirname path)))
      (root (frame->root (partial-collapse frame (dirname path))))))))
-
-(defthm
-  abs-pwrite-correctness-lemma-105
-  (abs-fs-p
-   (mv-nth '0
-           (hifat-place-file
-            (mv-nth '0
-                    (collapse (partial-collapse frame (dirname path))))
-            path
-            (m1-file '(0 0 0 0 0 0 0 0 0 0 0 0
-                         0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                     (implode$inline (insert-text 'nil offset buf))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d (assoc-of-frame->frame m1-file-contents-fix hifat-no-dups-p)
-         ((:rewrite collapse-hifat-place-file-2))))))
 
 (defthm
   abs-pwrite-correctness-lemma-19

@@ -1502,21 +1502,6 @@
                       (fa-table-to-alv fa-table))))
   :hints (("goal" :in-theory (enable fa-table-to-alv))))
 
-(defthmd
-  l6-wrchs-correctness-1-lemma-13
-  (implies
-   (and (fat32-masked-entry-p masked-current-cluster)
-        (>= masked-current-cluster
-            *ms-first-data-cluster*)
-        (member-equal
-         x
-         (mv-nth 0
-                 (fat32-build-index-list fa-table masked-current-cluster
-                                         length cluster-size))))
-   (and (integerp x)
-        (>= x *ms-first-data-cluster*)))
-  :hints (("goal" :in-theory (enable fat32-build-index-list))))
-
 (defthm
   l6-wrchs-correctness-1-lemma-15
   (implies (and (l6-regular-file-entry-p file)
@@ -3988,30 +3973,6 @@
        (mv-nth 2
                (l6-wrchs hns fs disk fa-table start text)))))
     :do-not-induct t)))
-
-(defthm
-  l6-stat-after-write-lemma-2
-  (implies
-   (and (symbol-listp hns)
-        (l6-fs-p fs)
-        (fat32-entry-list-p fa-table)
-        (stringp text)
-        (integerp start)
-        (<= 0 start)
-        (block-listp disk)
-        (equal (len fa-table) (len disk))
-        (<= *ms-first-data-cluster* (len disk))
-        (<= (len disk) *ms-bad-cluster*)
-        (consp (assoc-equal name fs)))
-   (equal
-    (consp
-     (assoc-equal
-      name
-      (mv-nth 0
-              (l6-wrchs hns fs disk fa-table start text))))
-    (consp (assoc-equal name fs))))
-  :hints (("goal" :induct t
-           :in-theory (enable l6-wrchs))))
 
 (defthm
   l6-stat-after-write-lemma-6
