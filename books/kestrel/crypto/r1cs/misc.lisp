@@ -13,12 +13,15 @@
 
 ;; Proof support for R1CS proofs -- TODO: Move this material to libraries
 
+(include-book "portcullis")
 (include-book "proof-support") ;reduce
+(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
+(include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (include-book "kestrel/bv/rules7" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/typed-lists-light/bit-listp" :dir :system) ;drop?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -45,9 +48,6 @@
                        (add pfield::y pfield::z pfield::p)
                        pfield::p)))
   :hints (("Goal" :in-theory (enable add))))
-
-(acl2::add-known-boolean FE-LISTP)
-(acl2::add-known-boolean acl2::bit-listp)
 
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper
   (implies (and (unsigned-byte-p lowsize lowval)
@@ -94,9 +94,6 @@
 
 ;; Try these rules after most rules (which have priority 0), since they have free vars:
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
-(table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
-(table acl2::axe-rule-priorities-table 'bitp-when-equal-1 1)
-(table acl2::axe-rule-priorities-table 'bitp-when-equal-2 1)
 (table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp 1)
 
 (defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
@@ -613,18 +610,6 @@
   (equal (equal (acl2::bitnot x) (acl2::bitnot y))
          (equal (acl2::getbit 0 x) (acl2::getbit 0 y)))
   :hints (("Goal" :in-theory (enable acl2::bitnot))))
-
-;; only for Axe
-(defthmd acl2::getbit-trim-dag-all-gen
-  (implies (and (<= 0 acl2::n)
-                (acl2::axe-syntaxp (acl2::term-should-be-trimmed-axe-plus-one
-                                    acl2::n acl2::x 'acl2::all
-                                    acl2::dag-array))
-                (natp acl2::n))
-           (equal (acl2::getbit acl2::n acl2::x)
-                  (acl2::getbit acl2::n
-                                (acl2::trim (+ 1 acl2::n) acl2::x))))
-  :hints (("Goal" :in-theory (enable acl2::trim))))
 
 (defthm bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
   (implies (and (equal high1minus1 (+ -1 mid1))

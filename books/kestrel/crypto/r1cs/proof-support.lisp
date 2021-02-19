@@ -10,6 +10,7 @@
 
 (in-package "R1CS")
 
+(include-book "portcullis")
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system)
 (include-book "kestrel/prime-fields/rules2" :dir :system) ;reduce?
@@ -21,14 +22,17 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system) ;for fe-listp, todo: reduce
-(include-book "kestrel/axe/axe-syntax-functions" :dir :system) ;for syntactic-variablep
+(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system) ;for fe-listp, todo: reduce
+(include-book "kestrel/axe/known-booleans" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/rules4" :dir :system))
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; for bvchop-not-0-when-getbit-not-0
+
+(acl2::add-known-boolean pfield::fe-listp)
+(acl2::add-known-boolean acl2::bit-listp)
 
 ;; TODO: Oraganize this material
 
@@ -121,111 +125,7 @@
                        (equal y (acl2::bvplus 8 w z)))))
   :hints (("Goal" :use (:instance acl2::adding-8-idiom))))
 
-;for acl2
-(defthm pfield::fep-when-fe-listp-and-member-equal
-  (implies (and (syntaxp (acl2::variablep x)) ;for now, we only generate the fe-listp assumptions for vars
-                (fe-listp free p)
-                (acl2::member-equal x free))
-           (fep x p)))
-
-;for axe, since member-equal is not a known boolean, todo: why isn't that ok (can't make the axe rule)?
-(defthm pfield::fep-when-fe-listp-and-memberp
-  (implies (and (acl2::axe-syntaxp (acl2::syntactic-variablep x dag-array)) ;for now, we only generate the fe-listp assumptions for vars
-                (fe-listp free p)
-                (acl2::memberp x free))
-           (fep x p)))
-
-(defun gen-fe-listp-assumption (vars prime)
-  (declare (xargs :guard (and (symbol-listp vars)
-                              (consp vars))))
-  `(fe-listp ,(acl2::make-append-with-key-nest vars) ,prime))
-
-;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10))
-
-(local (include-book "kestrel/lists-light/member-equal" :dir :system)) ;for member-equal-of-cons
-;test
-(thm
- (implies (fe-listp
-           (acl2::append-with-key
-            'x5
-            (acl2::append-with-key 'x2
-                             (acl2::append-with-key 'x10
-                                              (cons x1 nil)
-                                              (cons x10 nil))
-                             (acl2::append-with-key 'x3
-                                              (cons x2 nil)
-                                              (acl2::append-with-key 'x4
-                                                               (cons x3 nil)
-                                                               (cons x4 nil))))
-            (acl2::append-with-key 'x7
-                             (acl2::append-with-key 'x6
-                                              (cons x5 nil)
-                                              (cons x6 nil))
-                             (acl2::append-with-key 'x8
-                                              (cons x7 nil)
-                                              (acl2::append-with-key 'x9
-                                                               (cons x8 nil)
-                                                               (cons x9 nil)))))
-           prime)
-          (and (fep x1 prime)
-               (fep x2 prime)
-               (fep x3 prime)
-               (fep x4 prime)
-               (fep x5 prime)
-               (fep x6 prime)
-               (fep x7 prime)
-               (fep x8 prime)
-               (fep x9 prime)
-               (fep x10 prime)))
- :hints (("Goal" :in-theory (e/d (member-equal) (ACL2::MEMBER-EQUAL-BECOMES-MEMBERP)))))
-
-(include-book "kestrel/axe/dag-arrays" :dir :system)
-(include-book "kestrel/axe/axe-syntax" :dir :system)
-
-(defun acl2::var-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
-  (declare (xargs :guard (and (or (acl2::myquotep var-darg)
-                                  (and (natp var-darg)
-                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 var-darg))))
-                              (or (acl2::myquotep key-darg)
-                                  (and (natp key-darg)
-                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 key-darg)))))))
-  (and (consp key-darg) ;checks for quotep
-       (let ((unquoted-key (unquote key-darg)))
-         (and (symbolp unquoted-key)
-              (natp var-darg)
-              (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
-                (and (symbolp var-expr)
-                     (symbol-< var-expr unquoted-key)))))))
-
-(defun acl2::var-not-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
-  (declare (xargs :guard (and (or (acl2::myquotep var-darg)
-                                  (and (natp var-darg)
-                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 var-darg))))
-                              (or (acl2::myquotep key-darg)
-                                  (and (natp key-darg)
-                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 key-darg)))))))
-  (and (consp key-darg) ;checks for quotep
-       (let ((unquoted-key (unquote key-darg)))
-         (and (symbolp unquoted-key)
-              (natp var-darg)
-              (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
-                (and (symbolp var-expr)
-                     (not (symbol-< var-expr unquoted-key))))))))
-
-;; Restrict the search for VAR to the branch (namely, X) where we know it is.
-(defthm acl2::memberp-of-append-with-key-first-half-axe
-  (implies (and (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key acl2::dag-array))
-                (acl2::memberp var x))
-           (acl2::memberp var (acl2::append-with-key key x y)))
-  :hints (("Goal" :in-theory (enable acl2::append-with-key))))
-
-;; Restrict the search for VAR to the branch (namely, Y) where we know it is.
-(defthm acl2::memberp-of-append-with-key-second-half-axe
-  (implies (and (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key acl2::dag-array))
-                (acl2::memberp var y))
-           (acl2::memberp var (acl2::append-with-key key x y)))
-  :hints (("Goal" :in-theory (enable acl2::append-with-key))))
-
+;for Axe
 (defthm pfield::booleanp-of-fe-listp
   (booleanp (fe-listp elems prime)))
 
@@ -289,20 +189,19 @@
                   (- 1 x)))
   :hints (("Goal" :cases ((equal 0 x)))))
 
-(defthm add-of---arg2
+(defthmd add-of---arg1
   (implies (and (integerp x)
                 (integerp y))
-           (equal (ADD x (- y) P)
-                  (add x (neg y p) p)))
-  :hints (("Goal" :in-theory (enable neg add))))
-
-(defthm add-of---arg1
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (ADD (- x) y P)
+           (equal (add (- x) y p)
                   (add (neg x p) y p)))
   :hints (("Goal" :in-theory (enable neg add))))
 
+(defthmd add-of---arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (add x (- y) p)
+                  (add x (neg y p) p)))
+  :hints (("Goal" :in-theory (enable neg add))))
 
 (defthm add-of---arg1-fixed
   (implies (and (syntaxp (not (quotep x))) ;defeat acl2 matching (- x) with a constant
@@ -319,9 +218,6 @@
            (equal (add x (- y) p)
                   (add x (neg y p) p)))
   :hints (("Goal" :in-theory (enable neg add))))
-
-(in-theory (disable add-of---arg1
-                    add-of---arg2))
 
 
 (defthm getbit-of-+-of-constant-irrel
@@ -344,7 +240,6 @@
                                   (acl2::slice-becomes-getbit
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
-
 
 (defthm getbit-of-+-of-expt-same-arg2
   (implies (and (natp n)
@@ -808,9 +703,6 @@
                   (mod (acl2::bvcat highsize highval 1 lowval) p)))
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
-
-
-
 
 (defthm add-commute-constant
   (implies (syntaxp (and (quotep k)
