@@ -720,3 +720,13 @@
                          (bvchop size (+ k i)))
                   (equal (bvchop size j)
                          (bvchop size k)))))
+
+(defthm bvchop-of-*-of-expt-when-<=
+  (implies (and (<= size n)
+                (integerp x)
+                (natp n)
+                ;(natp size)
+                )
+           (equal (bvchop size (* x (expt 2 n)))
+                  0))
+  :hints (("Goal" :cases ((natp size)))))
