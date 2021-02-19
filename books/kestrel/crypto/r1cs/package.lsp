@@ -21,6 +21,7 @@
             pfield::inv
             pfield::pow
             pfield::div
+            pfield::fe-listp
             lookup-equal
             lookup-eq
 	    b*
