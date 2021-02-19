@@ -14,10 +14,6 @@
 ;; Proof support for R1CS proofs -- TODO: Move this material to libraries
 
 (include-book "proof-support") ;reduce
-;(include-book "tools/lift-r1cs-new") ;todo: reduce
-;(include-book "kestrel/utilities/split-list-fast-rules" :dir :system)
-;(include-book "kestrel/lists-light/append-with-key" :dir :system)
-;(include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system)
 (include-book "kestrel/bv/rules7" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
@@ -31,15 +27,6 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; for ACL2::MOVE-MINUS-HACK2?
 (local (include-book "kestrel/axe/basic-rules" :dir :system))
-
-(defthm mod-of-+-of---when-multiple-arg2
-  (implies (and (equal 0 (mod y p))
-                (integerp y)
-                (integerp x)
-                (posp p))
-           (equal (MOD (+ x (- y)) P)
-                  (mod x p)))
-  :hints (("Goal" :in-theory (enable ACL2::MOD-SUM-CASES))))
 
 (defthm add-of-bvnot-becomes-add-of-neg
   (implies (and (integerp y)
@@ -545,11 +532,6 @@
                        (EQUAL x (CAR k))
                        (EQUAL y (CDR k))))))
 
-(DEFTHM ACL2::BVCHOP-of-1-when-bitp
-  (IMPLIES (bitp x)
-           (EQUAL (ACL2::BVCHOP 1 x)
-                  x))
-  :HINTS (("Goal" :IN-THEORY (ENABLE UNSIGNED-BYTE-P))))
 
 (defthm equal-of-1-and-add-when-bitp-arg1
   (implies (and (bitp x)
@@ -1010,22 +992,6 @@
                 (posp p))
            (fep (acl2::bvxor size x y) p)))
 
-(DEFTHM ACL2::LEFTROTATE-32-OF-BVXOR-32-when-constant
-  (implies (syntaxp (quotep acl2::x))
-           (EQUAL (ACL2::LEFTROTATE 32 ACL2::AMT (ACL2::BVXOR 32 ACL2::X ACL2::Y))
-                  (ACL2::BVXOR 32
-                               (ACL2::LEFTROTATE 32 ACL2::AMT ACL2::X)
-                               (ACL2::LEFTROTATE 32 ACL2::AMT ACL2::Y))))
-  :HINTS (("Goal" :IN-THEORY (ENABLE ACL2::LEFTROTATE32))))
-
-(DEFTHM ACL2::LEFTROTATE32-OF-BVXOR-32-when-constant
-  (implies (syntaxp (quotep acl2::x))
-           (EQUAL (ACL2::LEFTROTATE32 ACL2::AMT (ACL2::BVXOR 32 ACL2::X ACL2::Y))
-                  (ACL2::BVXOR 32
-                               (ACL2::LEFTROTATE32 ACL2::AMT ACL2::X)
-                               (ACL2::LEFTROTATE32 ACL2::AMT ACL2::Y))))
-  :HINTS (("Goal" :IN-THEORY (ENABLE ACL2::LEFTROTATE32 NATP))))
-
 (defthmd bvcat-31-of-getbit-31-becomes-rightrotate
   (equal (acl2::bvcat 31 x 1 (acl2::getbit 31 x))
          (acl2::rightrotate 32 31 x)))
@@ -1033,27 +999,6 @@
 ;; (defthmd bvcat-1-of-getbit-0-becomes-rightrotate
 ;;   (equal (acl2::bvcat 1 (acl2::getbit 0 x) 31 x)
 ;;          (acl2::rightrotate 32 1 x)))
-
-;gen
-(defthm acl2::bvxor-of-leftrotate-trim-8-32-arg2
-  (equal (acl2::bvxor 8 x (acl2::leftrotate 32 amt y))
-         (acl2::bvxor 8 x (acl2::trim 8 (acl2::leftrotate 32 amt y))))
-  :hints (("Goal" :in-theory (enable acl2::trim))))
-
-(defthm acl2::bvxor-of-leftrotate-trim-8-32-arg1
-  (equal (acl2::bvxor 8 (acl2::leftrotate 32 amt y) x)
-         (acl2::bvxor 8 (acl2::trim 8 (acl2::leftrotate 32 amt y)) x))
-  :hints (("Goal" :in-theory (enable acl2::trim))))
-
-(defthm acl2::bvxor-of-leftrotate32-trim-8-arg2
-  (equal (acl2::bvxor 8 x (acl2::leftrotate32 amt y))
-         (acl2::bvxor 8 x (acl2::trim 8 (acl2::leftrotate32 amt y))))
-  :hints (("Goal" :in-theory (enable acl2::trim))))
-
-(defthm acl2::bvxor-of-leftrotate32-trim-8-arg1
-  (equal (acl2::bvxor 8 (acl2::leftrotate32 amt y) x)
-         (acl2::bvxor 8 (acl2::trim 8 (acl2::leftrotate32 amt y)) x))
-  :hints (("Goal" :in-theory (enable acl2::trim))))
 
 (defthm acl2::consp-when-len-equal-alt
   (implies (and (equal acl2::free (len acl2::x))

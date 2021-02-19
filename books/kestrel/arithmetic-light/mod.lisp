@@ -662,7 +662,7 @@
   :hints (("Goal"
            :in-theory (enable unsigned-byte-p))))
 
-(defthm mod-of-+-of---when-equal-of-mod
+(defthm mod-of-+-of---when-equal-of-mod-arg1
   (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
                 (equal (mod x1 y) k)
                 (syntaxp (quotep k))
@@ -672,3 +672,14 @@
                 )
            (equal (mod (+ (- x1) x2) y)
                   (mod (+ (- k) x2) y))))
+
+(defthm mod-of-+-of---when-equal-of-mod-arg2
+  (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
+                (equal (mod x1 y) k)
+                (syntaxp (quotep k))
+                (integerp x1)
+                (integerp x2)
+                (posp y)
+                )
+           (equal (mod (+ x2 (- x1)) y)
+                  (mod (+ x2 (- k)) y))))
