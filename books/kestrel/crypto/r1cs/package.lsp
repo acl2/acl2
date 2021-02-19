@@ -36,5 +36,7 @@
             bitnot
             bvnot
             bvshr
-            bvshl)
+            bvshl
+            bvplus
+            power-of-2p)
           *acl2-exports*))
