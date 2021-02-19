@@ -683,3 +683,20 @@
                 )
            (equal (mod (+ x2 (- x1)) y)
                   (mod (+ x2 (- k)) y))))
+
+(defthm equal-of-mod-of-+-when-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep y)))
+                (rationalp x)
+                (rationalp k1) ; gets computed
+                (rationalp k2) ; gets computed
+                (rationalp y) ; gets computed
+                (< 0 y) ; gets computed
+                )
+           (equal (equal k1 (mod (+ k2 x) y))
+                  (and (< k1 y) ; usually true, gets computed
+                       (<= 0 k1) ; usually true, gets computed
+                       (equal (mod (- k1 k2) y) ; gets computed
+                              (mod x y)))))
+  :hints (("Goal" :in-theory (enable mod-sum-cases))))
