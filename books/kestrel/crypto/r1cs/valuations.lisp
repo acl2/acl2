@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "fe-listp")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 
 ;; A true list of variables, with no duplicates
@@ -18,14 +18,6 @@
   (declare (xargs :guard t))
   (and (symbol-listp vars)
        (no-duplicatesp-eq vars)))
-
-;; A true list of field elements.
-(defun fe-listp (elems prime)
-  (declare (xargs :guard (rtl::primep prime)))
-  (if (atom elems)
-      (equal elems nil)
-    (and (fep (first elems) prime)
-         (fe-listp (rest elems) prime))))
 
 ;; A valuation is a map (alist) from vars to values that are field elements.
 (defund r1cs-valuationp (valuation prime)

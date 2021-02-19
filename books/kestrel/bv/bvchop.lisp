@@ -77,6 +77,11 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bvchop))))
 
+(defthm bvchop-upper-bound-linear-strong
+  (implies (natp n)
+           (<= (bvchop n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear)
+
 (local
  (defthm bvchop-of-bvchop2
    (implies (and (<= 0 size1)
