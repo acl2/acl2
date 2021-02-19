@@ -483,6 +483,13 @@ channel state))
                                      lofat-file-contents-p
                                      lofat-file->contents))))
 
+(defthm lofat-file-p-when-lofat-directory-file-p-or-lofat-regular-file-p
+  (implies (or (lofat-directory-file-p file)
+               (lofat-regular-file-p file))
+           (lofat-file-p file))
+  :hints (("goal" :in-theory (enable lofat-directory-file-p
+                                     lofat-regular-file-p))))
+
 (defun lofat-find-file (fat32$c d-e-list path)
   (declare (xargs :guard (and (lofat-fs-p fat32$c)
                               (fat32-filename-list-p path)

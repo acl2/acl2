@@ -753,7 +753,8 @@
           :stobjs fat32$c
           :verify-guards nil))
   (b*
-      ((update-dir-contents-error-code
+      ((file (mbe :exec file :logic (lofat-file-fix file)))
+       (update-dir-contents-error-code
         (lofat-place-file-helper fat32$c root-d-e path file))
        ((unless (consp path))
         (mv fat32$c *enoent*))
@@ -924,6 +925,24 @@
       fat32$c root-d-e path file)))
    (count-of-clusters fat32$c)))
 
+(defthm lofat-fs-p-of-lofat-place-file-lemma-2
+  (implies (and (lofat-file-p file)
+                (not (lofat-directory-file-p file)))
+           (stringp (lofat-file->contents file)))
+  :hints (("goal" :in-theory (enable lofat-directory-file-p
+                                     lofat-regular-file-p
+                                     lofat-file-p lofat-file-contents-p
+                                     lofat-file->contents))))
+
+(defthm
+  lofat-fs-p-of-lofat-place-file-lemma-8
+  (implies (not (lofat-directory-file-p (lofat-file-fix file)))
+           (stringp (lofat-file->contents file)))
+  :hints
+  (("goal" :use (:instance lofat-fs-p-of-lofat-place-file-lemma-2
+                           (file (lofat-file-fix file)))
+    :in-theory (disable lofat-fs-p-of-lofat-place-file-lemma-2))))
+
 (defthm
   lofat-fs-p-of-lofat-place-file
   (implies
@@ -1064,6 +1083,20 @@
   :hints (("goal" :in-theory (enable lofat-place-file)
            :induct (lofat-place-file fat32$c root-d-e path file)
            :do-not-induct t)))
+
+(defthmd lofat-place-file-of-lofat-file-fix
+  (equal (lofat-place-file fat32$c
+                           root-d-e path (lofat-file-fix file))
+         (lofat-place-file fat32$c root-d-e path file))
+  :hints (("goal" :in-theory (enable lofat-place-file))))
+
+(defcong
+  lofat-file-equiv equal
+  (lofat-place-file fat32$c root-d-e path file)
+  4
+  :hints
+  (("goal"
+    :in-theory (enable lofat-place-file-of-lofat-file-fix))))
 
 (defthm
   lofat-place-file-correctness-lemma-29

@@ -5515,40 +5515,6 @@
                                         abs-file-alist2 x x-path))
                     (abs-addrs abs-file-alist1))))))
 
-(defthm
-  abs-separate-correctness-1-lemma-9
-  (implies
-   (and (no-duplicatesp-equal (abs-addrs (abs-fs-fix abs-file-alist1)))
-        (abs-complete (abs-fs-fix abs-file-alist2))
-        (ctx-app-ok abs-file-alist1 x x-path))
-   (subsetp-equal (abs-addrs (abs-fs-fix (ctx-app abs-file-alist1
-                                                  abs-file-alist2 x x-path)))
-                  (remove-equal (nfix x)
-                                (abs-addrs (abs-fs-fix abs-file-alist1)))))
-  :hints
-  (("goal"
-    :in-theory (disable abs-addrs-of-ctx-app
-                        no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1)
-    :use
-    (abs-addrs-of-ctx-app
-     (:instance no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
-                (abs-file-alist (ctx-app abs-file-alist1
-                                         abs-file-alist2 x x-path))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies
-     (and (natp x)
-          (no-duplicatesp-equal (abs-addrs (abs-fs-fix abs-file-alist1)))
-          (abs-complete (abs-fs-fix abs-file-alist2))
-          (ctx-app-ok abs-file-alist1 x x-path))
-     (not
-      (member-equal
-       x
-       (abs-addrs (abs-fs-fix (ctx-app abs-file-alist1
-                                       abs-file-alist2 x x-path)))))))))
-
 ;; Inductive, hence kept.
 (defthm
   abs-separate-correctness-lemma-7
