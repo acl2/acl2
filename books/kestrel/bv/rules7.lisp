@@ -13,6 +13,7 @@
 
 (include-book "bvcat")
 (include-book "bitnot")
+(include-book "bitxor")
 (include-book "bvxor")
 (include-book "rotate")
 (local (include-book "rules"))
@@ -83,3 +84,44 @@
            (equal (bvchop 1 x)
                   x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;;
+;; Generalize these to handle x equal to any syntactically-bitp term?
+;;
+
+(defthmd bitp-when-equal-of-getbit-1
+  (implies (equal x (getbit free-n free-y))
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-getbit-2
+  (implies (equal (getbit free-n free-y) x)
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitxor-1
+  (implies (equal x (bitxor free-y free-z))
+           (bitp x)))
+
+(defthmd bitp-when-equal-of-bitxor-2
+  (implies (equal (bitxor free-y free-z) x)
+           (bitp x)))
+
+;; This can let you prove X satisfies bitp without waiting for substitution to
+;; happen.
+(defthmd bitp-when-equal-1
+  (implies (and (equal x free)
+                (bitp free))
+           (bitp x)))
+
+;; Only needed for Axe
+(defthmd bitp-when-equal-2
+  (implies (and (equal free x)
+                (bitp free))
+           (bitp x)))
+
+;; Try these rules late, since they require searching through hyps:
+(table axe-rule-priorities-table 'bitp-when-equal-of-getbit-1 1)
+(table axe-rule-priorities-table 'bitp-when-equal-of-getbit-2 1)
+(table axe-rule-priorities-table 'bitp-when-equal-of-bitxor-1 1)
+(table axe-rule-priorities-table 'bitp-when-equal-of-bitxor-2 1)
+(table axe-rule-priorities-table 'bitp-when-equal-1 1)
+(table axe-rule-priorities-table 'bitp-when-equal-2 1)

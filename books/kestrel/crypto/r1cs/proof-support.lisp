@@ -239,18 +239,6 @@
                               (consp vars))))
   `(acl2::bit-listp ,(acl2::make-append-with-key-nest vars)))
 
-
-;;  could let things happen earlier (before subst)?
-(defthm bitp-when-equal-1
-  (implies (and (equal x free)
-                (bitp free))
-           (bitp x)))
-
-(defthm bitp-when-equal-2
-  (implies (and (equal free x)
-                (bitp free))
-           (bitp x)))
-
 ;not true?
 ;; (DEFTHM PFIELD::MUL-WHEN-NOT-fep-ARG1-CHEAP
 ;;   (IMPLIES (NOT (fep PFIELD::X PFIELD::P))
