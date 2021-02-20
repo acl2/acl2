@@ -747,7 +747,7 @@
                     (entry-limit (max-entry-count fat32$c))))))
 
 (defthm
-  lofat-mkdir-refinement-lemma-11
+  lofat-mkdir-refinement-lemma-8
   (implies
    (and
     (lofat-fs-p fat32$c)
@@ -1494,7 +1494,7 @@
                                     (pseudo-root-d-e fat32$c))))))))))
 
 (defthm
-  lofat-mkdir-refinement-lemma-29
+  lofat-mkdir-refinement-lemma-9
   (implies
    (and
     (lofat-fs-p fat32$c)
@@ -1933,7 +1933,7 @@
                                   (abs-pwrite-correctness-lemma-37)))))
 
 (defthm
-  lofat-mkdir-refinement-lemma-34
+  lofat-mkdir-refinement-lemma-11
   (implies
    (and
     (equal (count-free-clusters (effective-fat fat32$c))
@@ -2147,14 +2147,8 @@
        (max-entry-count fat32$c))
     (not
      (equal
-      (mv-nth
-       1
-       (lofat-place-file fat32$c (pseudo-root-d-e fat32$c)
-                         path
-                         '((d-e 0 0 0 0 0 0 0 0 0 0 0 16
-                                0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                           (contents))))
-      28)))
+      (mv-nth 2 (lofat-mkdir fat32$c path))
+      *enospc*)))
    (and (equal (mv-nth 1
                        (lofat-to-hifat (mv-nth 0 (lofat-mkdir fat32$c path))))
                0)
@@ -2166,6 +2160,10 @@
                               path)))
         (equal (mv-nth 1 (lofat-mkdir fat32$c path))
                (mv-nth 1
+                       (hifat-mkdir (mv-nth 0 (lofat-to-hifat fat32$c))
+                                    path)))
+        (equal (mv-nth 2 (lofat-mkdir fat32$c path))
+               (mv-nth 2
                        (hifat-mkdir (mv-nth 0 (lofat-to-hifat fat32$c))
                                     path)))))
   :hints
@@ -2386,3 +2384,35 @@
 ;;                                      m1-file-hifat-file-alist-fix m1-file)
 ;;                    (m1-file-hifat-file-alist-fix-normalisation
 ;;                     abs-mkdir-correctness-lemma-36)))))
+
+(thm
+ (implies
+  (frame-reps-fs frame (lofat-to-hifat fat32$c))
+  (frame-reps-fs
+   (mv-nth 0 (abs-mkdir frame (lofat-st->path st)))
+   (lofat-to-hifat (mv-nth 0
+                           (lofat-mkdir fat32$c (lofat-st->path st))))))
+ :hints (("goal" :do-not-induct t :in-theory (disable
+                                              abs-mkdir-correctness-2
+                                              ;; Consider disabling later.
+                                              hifat-mkdir)
+          :use
+          (:instance
+           abs-mkdir-correctness-2 (path (lofat-st->path st)))))
+ :otf-flg t)
+
+;; How do we prove this? The best way seems to be to open up the definitions of
+;; the single-step functions and proceed from there.
+(defthm absfat-oracle-single-step-refinement
+  (implies
+   (frame-reps-fs
+    frame
+    (lofat-to-hifat fat32$c))
+   (frame-reps-fs
+    (mv-nth 0 (absfat-oracle-single-step frame syscall-sym st))
+    (lofat-to-hifat (mv-nth 0 (lofat-oracle-single-step fat32$c syscall-sym
+                                                        st)))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable absfat-oracle-single-step
+                              lofat-oracle-single-step)))
+  :otf-flg t)
