@@ -2012,6 +2012,80 @@
   (("goal" :in-theory (enable hifat-file-alist-fix
                               strip-cars-of-hifat-file-alist-fix-lemma-1))))
 
+;; This is pretty helpful in circumstances where the equivalent expression
+;; (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)) does not
+;; offer the same opportunities for congruential rewriting.
+(defun fat32-filename-list-prefixp (x y)
+  (declare (xargs :guard (and (fat32-filename-list-p x)
+                              (fat32-filename-list-p y))))
+  (if (consp x)
+      (and (consp y)
+           (fat32-filename-equiv (car x) (car y))
+           (fat32-filename-list-prefixp (cdr x) (cdr y)))
+    t))
+
+(defthm fat32-filename-list-prefixp-of-self
+  (fat32-filename-list-prefixp x x))
+
+(defthmd fat32-filename-list-prefixp-alt
+  (equal
+   (fat32-filename-list-prefixp x y)
+   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
+  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  1
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  2
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defthm
+  fat32-filename-list-prefixp-transitive
+  (implies (and (fat32-filename-list-prefixp x y)
+                (fat32-filename-list-prefixp y z))
+           (fat32-filename-list-prefixp x z))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
+                                      (fat32-filename-list-prefixp x y))
+                                 (fat32-filename-list-prefixp x z)))))
+
+(defthm fat32-filename-list-prefixp-when-atom-1
+  (implies (atom y)
+           (equal (fat32-filename-list-prefixp x y)
+                  (atom x)))
+  :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
+
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/prefixp" :dir :system))
+
+  (defthm
+    abs-pwrite-correctness-lemma-15
+    (implies (fat32-filename-list-prefixp x y)
+             (fat32-filename-list-equiv (append x (nthcdr (len x) y))
+                                        y))
+    :hints
+    (("goal" :do-not-induct t
+      :in-theory
+      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
+           (append-when-prefixp))
+      :use (:instance append-when-prefixp
+                      (x (fat32-filename-list-fix x))
+                      (y (fat32-filename-list-fix y)))))))
+
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
 ;; entry - and nowhere is there a directory entry for the root. Any
@@ -2147,6 +2221,33 @@
    (:type-prescription
     :corollary
     (natp (mv-nth 1 (hifat-find-file fs path))))))
+
+(defthm
+  abs-lstat-refinement-lemma-1
+  (implies (stringp (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
+           (m1-regular-file-p (mv-nth '0 (hifat-find-file fs path)))))
+
+(defthm abs-mkdir-correctness-lemma-49
+  (implies (and (consp x)
+                (equal (mv-nth 1 (hifat-find-file fs y))
+                       0)
+                (fat32-filename-list-prefixp x y))
+           (equal (mv-nth 1 (hifat-find-file fs x))
+                  0))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     hifat-find-file)
+           :induct (mv (fat32-filename-list-prefixp x y)
+                       (hifat-find-file fs x)))))
+
+(defthm abs-mkdir-correctness-lemma-51
+  (implies (and (zp (mv-nth 1 (hifat-find-file fs y)))
+                (m1-directory-file-p (mv-nth 0 (hifat-find-file fs y)))
+                (fat32-filename-list-prefixp x y))
+           (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     hifat-find-file)
+           :induct (mv (fat32-filename-list-prefixp x y)
+                       (hifat-find-file fs x)))))
 
 (defund
   hifat-place-file
@@ -2461,80 +2562,6 @@
            (equal (mv-nth 0 (hifat-remove-file fs path))
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (e/d (hifat-remove-file) (put-assoc-equal)))))
-
-;; We decided to keep this around even though the motivation of preserving
-;; fat32-filename-list-equiv is somewhat weak. The alternative is to use
-;; prefixp (:doc prefixp) which is not built-in.
-(defun fat32-filename-list-prefixp (x y)
-  (declare (xargs :guard (and (fat32-filename-list-p x)
-                              (fat32-filename-list-p y))))
-  (if (consp x)
-      (and (consp y)
-           (fat32-filename-equiv (car x) (car y))
-           (fat32-filename-list-prefixp (cdr x) (cdr y)))
-    t))
-
-(defthm fat32-filename-list-prefixp-of-self
-  (fat32-filename-list-prefixp x x))
-
-(defthmd fat32-filename-list-prefixp-alt
-  (equal
-   (fat32-filename-list-prefixp x y)
-   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
-  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
-
-(defcong
-  fat32-filename-list-equiv
-  equal (fat32-filename-list-prefixp x y)
-  1
-  :hints
-  (("goal"
-    :in-theory (enable fat32-filename-list-prefixp-alt))))
-
-(defcong
-  fat32-filename-list-equiv
-  equal (fat32-filename-list-prefixp x y)
-  2
-  :hints
-  (("goal"
-    :in-theory (enable fat32-filename-list-prefixp-alt))))
-
-(defthm
-  fat32-filename-list-prefixp-transitive
-  (implies (and (fat32-filename-list-prefixp x y)
-                (fat32-filename-list-prefixp y z))
-           (fat32-filename-list-prefixp x z))
-  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
-  :rule-classes
-  (:rewrite
-   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
-                                      (fat32-filename-list-prefixp x y))
-                                 (fat32-filename-list-prefixp x z)))))
-
-(defthm fat32-filename-list-prefixp-when-atom-1
-  (implies (atom y)
-           (equal (fat32-filename-list-prefixp x y)
-                  (atom x)))
-  :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
-
-(encapsulate
-  ()
-
-  (local (include-book "std/lists/prefixp" :dir :system))
-
-  (defthm
-    abs-pwrite-correctness-lemma-15
-    (implies (fat32-filename-list-prefixp x y)
-             (fat32-filename-list-equiv (append x (nthcdr (len x) y))
-                                        y))
-    :hints
-    (("goal" :do-not-induct t
-      :in-theory
-      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
-           (append-when-prefixp))
-      :use (:instance append-when-prefixp
-                      (x (fat32-filename-list-fix x))
-                      (y (fat32-filename-list-fix y)))))))
 
 (defthm
   m1-read-after-write-lemma-1
