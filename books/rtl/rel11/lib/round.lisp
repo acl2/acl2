@@ -486,7 +486,7 @@
                   (raz (+ x y) k2))))
   :rule-classes ())
 
-(defthmd raz-imp
+(defthmd raz-impl
     (implies (and (rationalp x)
 		  (> x 0)
 		  (integerp n)
@@ -951,6 +951,17 @@
 	     (>= (abs (- x y)) (abs (- x (rna x n)))))
   :rule-classes ())
 
+(defthm rna-force
+    (implies (and (integerp n)
+		  (> n 0)
+                  (rationalp x)
+                  (not (= x 0))
+		  (rationalp y)
+                  (exactp y n)
+		  (< (abs (- x y)) (expt 2 (- (expo x) n))))
+	     (= y (rna x n)))
+  :rule-classes ())
+
 (defthm rna-diff
     (implies (and (integerp n)
 		  (> n 0)
@@ -1008,31 +1019,31 @@
 		  (not (exactp x n)))
 	     (equal (rna x n) (raz x n))))
 
-(defthm rne-power-2
-    (implies (and (rationalp x) (> x 0)
-		  (integerp n) (> n 1)
-		  (>= (+ x (expt 2 (- (expo x) n)))
-		      (expt 2 (1+ (expo x)))))
-	     (= (rne x n)
-		(expt 2 (1+ (expo x)))))
+(defthm rne-pow-2
+  (implies (and (rationalp x) (> x 0)
+                (not (zp n))
+	        (>= (+ x (expt 2 (- (expo x) n)))
+	            (expt 2 (1+ (expo x)))))
+	   (= (rne x n)
+	      (expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-(defthm rtz-power-2
-    (implies (and (rationalp x) (> x 0)
-		  (integerp n) (> n 1)
-		  (>= (+ x (expt 2 (- (expo x) n)))
-		      (expt 2 (1+ (expo x)))))
-	     (= (rtz (+ x (expt 2 (- (expo x) n))) n)
-		(expt 2 (1+ (expo x)))))
+(defthm rtz-pow-2
+  (implies (and (rationalp x) (> x 0)
+                (not (zp n))
+	        (>= (+ x (expt 2 (- (expo x) n)))
+	            (expt 2 (1+ (expo x)))))
+	   (= (rtz (+ x (expt 2 (- (expo x) n))) n)
+	      (expt 2 (1+ (expo x)))))
   :rule-classes ())
 
-(defthm rna-power-2
-    (implies (and (rationalp x) (> x 0)
-		  (integerp n) (> n 1)
-		  (>= (+ x (expt 2 (- (expo x) n)))
-		      (expt 2 (1+ (expo x)))))
-	     (= (rna x n)
-		(expt 2 (1+ (expo x)))))
+(defthm rna-pow-2
+  (implies (and (rationalp x) (> x 0)
+                (not (zp n))
+	        (>= (+ x (expt 2 (- (expo x) n)))
+	            (expt 2 (1+ (expo x)))))
+	   (= (rna x n)
+	      (expt 2 (1+ (expo x)))))
   :rule-classes ())
 
 (defthm plus-rne
@@ -1059,19 +1070,17 @@
                     (+ k (- (expo (+ x y)) (expo y))))))
   :rule-classes ())
 
-(defthmd rne-imp
+(defthmd rne-impl
     (implies (and (rationalp x) (> x 0)
-		  (integerp n) (> n 1))
+		  (not (zp n)))
 	     (equal (rne x n)
-		    (if (and (exactp x (1+ n)) (not (exactp x n)))
+		    (if (and (> n 1) (exactp x (1+ n)) (not (exactp x n)))
 		        (rtz (+ x (expt 2 (- (expo x) n))) (1- n))
 		      (rtz (+ x (expt 2 (- (expo x) n))) n)))))
 
-(defthmd rna-imp
-    (implies (and (rationalp x)
-		  (> x 0)
-		  (integerp n)
-		  (> n 0))
+(defthmd rna-impl
+    (implies (and (rationalp x) (> x 0)
+		  (not (zp n)))
 	     (equal (rna x n)
 		    (rtz (+ x (expt 2 (- (expo x) n))) n))))
 
@@ -1534,15 +1543,15 @@
     ((rup raz) (1- (expt 2 (1+ (- e n)))))
     (otherwise 0)))
 
-(defthmd rnd-const-thm
+(defthmd rnd-const-lemma
     (implies (and (common-mode-p mode)
-		  (integerp n)
-		  (> n 1)
-		  (integerp x)
-		  (> x 0)
-		  (>= (expo x) n))
+		  (not (zp n))
+		  (not (zp x))
+		  (implies (or (= mode 'raz) (= mode 'rup))
+		           (>= (expo x) (1- n))))
 	     (equal (rnd x mode n)
 		    (if (and (eql mode 'rne)
+		             (> n 1)
 			     (exactp x (1+ n))
                              (not (exactp x n)))
                         (rtz (+ x (rnd-const (expo x) mode n)) (1- n))
@@ -1563,6 +1572,32 @@
                    (= sticky 1)
                    (= (bitn x (- (1+ e) n)) 1))))
     (otherwise ())))
+
+(defthmd rnd-const-cor-a
+  (implies (and (common-mode-p mode)
+                (posp n)
+                (posp m)
+		(> (expo m) n))
+	   (let* ((e (expo m))
+	          (sum (+ m (rnd-const e mode n)))
+		  (sh (bits sum (1+ e) (1+ (- e n))))
+		  (sl (bits sum (- e n) 0)))
+             (equal (rnd m mode n)
+	            (if (and (= mode 'rne) (= sl 0))
+		        (* (expt 2 (+ 2 (- e n))) (bits sh n 1))
+		      (* (expt 2 (1+ (- e n))) sh))))))
+
+(defthmd rnd-const-cor-b
+  (implies (and (common-mode-p mode)
+                (posp n)
+                (posp m)
+		(> (expo m) n))
+	   (let* ((e (expo m))
+                  (c (rnd-const e mode n))
+	          (sum (+ m c))
+		  (sl (bits sum (- e n) 0)))
+             (iff (= m (rnd m mode n))
+	          (= sl c)))))
 
 (defthmd roundup-pos-thm-1
   (implies (and (rationalp z)
@@ -1654,6 +1689,14 @@
 (defthmd drnd-minus
   (equal (drnd (- x) mode f)
          (- (drnd x (flip-mode mode) f))))
+
+(defthmd drnd-pos
+  (implies (and (formatp f)
+                (rationalp x)
+                (>= x 0)
+	        (<= x (spn f))
+	        (common-mode-p mode))
+	   (>= (drnd x mode f) 0)))
 
 (defthmd drnd-rewrite
   (implies (and (formatp f)
@@ -1829,6 +1872,10 @@
              (equal (drnd x mode f)
                     (drnd y mode f)))
     :rule-classes ())
+
+;;;**********************************************************************
+;;;                         Detecting Underflow
+;;;**********************************************************************
 
 (defthmd rnd-drnd
   (implies (and (formatp f)

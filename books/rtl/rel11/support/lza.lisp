@@ -1218,3 +1218,322 @@
 	          1))
   :hints (("Goal" :use ((:instance lza-special-36 (i (1- n))))
                   :in-theory (enable w0))))
+
+;;----------------------------------------------------------------------------------------
+
+(defund u0 (x y n)
+  (bits (logior x (lognot y)) (- n 2) 0))
+
+(local-defthm lza0-1
+  (implies (and (not (zp n))
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (and (>= x (expt 2 (1- n)))
+		(<= y (1- (expt 2 (1- n))))))
+  :rule-classes ()
+  :hints (("Goal" :nonlinearp t :use (expo-lower-bound (:instance expo-upper-bound (x y))))))
+
+(local-defthmd lza0-2
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (= (- x y) 1)
+	        (and (= x (expt 2 (1- n)))
+		     (= y (1- (expt 2 (1- n)))))))
+  :hints (("Goal" :nonlinearp t :use (lza0-1))))
+
+(local-defthmd lza0-3
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(= (expo x) (1- n)))
+	   (iff (= x (expt 2 (1- n)))
+	        (= (bits x (- n 2) 0) 0)))
+  :hints (("Goal" :in-theory (enable bvecp)
+                  :use (expo-upper-bound
+		        (:instance bitn-0-1 (n (1- n)))
+		        (:instance bitn-expt (n (1- n)))
+		        (:instance bitn-plus-bits (n (1- n)) (m 0))))))
+
+(local-defthmd lza0-4
+  (implies (and (natp n)
+                (> n 1)
+                (natp y)
+		(= (expo y) (- n 2)))
+	   (iff (= y (1- (expt 2 (1- n))))
+	        (= (bits (lognot y) (- n 2) 0) 0)))
+  :hints (("Goal" :in-theory (enable bits-lognot bvecp)
+                  :use ((:instance expo-upper-bound (x y))))))
+
+(local-defthmd lza0-5
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (and (= (bits x (- n 2) 0) 0)
+	             (= (bits (lognot y) (- n 2) 0) 0))
+	        (equal (u0 x y n) 0)))
+  :hints (("Goal" :in-theory (enable u0 bits-logior))))
+
+(defthmd lza-thm-0-a
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (equal (- x y) 1)
+	        (equal (u0 x y n) 0)))
+  :hints (("Goal" :use (lza0-2 lza0-3 lza0-4 lza0-5)
+                  :in-theory (theory 'minimal-theory))))
+
+(local-defthmd lza0-6
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (equal (fl (/ (u0 x y n) (expt 2 (1+ (expo (u0 x y n))))))
+	          0))
+  :hints (("Goal" :nonlinearp t
+                  :use ((:instance expo-upper-bound (x (u0 x y n)))))))
+
+(local-defthmd lza0-7
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (equal (bits (u0 x y n) (- n 2) (1+ (expo (u0 x y n))))
+	          0))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-6 (:instance bits-shift-down-1 (x (u0 x y n)) (k (1+ (expo (u0 x y n)))) (i (- n (+ (expo (u0 x y n)) 3))) (j 0))))))
+
+(local-defthmd lza0-8
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y))
+           (>= (expo (u0 x y n)) 0))
+  :hints (("Goal" :in-theory (enable u0)
+                  :use ((:instance expo-monotone (x 1) (y (u0 x y n)))))))
+
+(local-defthmd lza0-9
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y))
+           (<= (expo (u0 x y n)) (- n 2)))
+  :hints (("Goal" :in-theory (enable u0)
+                  :use ((:instance expo<= (x (u0 x y n)) (n (- n 2)))
+		        (:instance bits-bounds (x (logior x (lognot y))) (i (- n 2)) (j 0))))))
+
+(local-defthmd lza0-10
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (and (equal (bits x (- n 2) (1+ (expo (u0 x y n))))
+	               0)
+		(equal (bits (lognot y) (- n 2) (1+ (expo (u0 x y n))))
+	               0)))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-7 lza0-8)
+		  :in-theory (enable bits-bits bits-logior u0))))
+
+(local-defthmd lza0-11
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n)) (bits x (- n 2) 0))
+	          x))
+  :hints (("Goal" :in-theory (enable bvecp)
+                  :use (expo-upper-bound expo-lower-bound
+		        (:instance bits-bounds (i (- n 2)) (j 0))
+		        (:instance bitn-0-1 (n (1- n)))
+		        (:instance bitn-expt (n (1- n)))
+		        (:instance bitn-plus-bits (n (1- n)) (m 0))
+			(:instance bits-plus-bits (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0))))))
+
+(local-defthmd lza0-12
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0))
+		(not (= (expo (u0 x y n)) (- n 2))))
+	   (equal (bits x (- n 2) 0)
+	          (bits x (expo (u0 x y n)) 0)))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-10 (:instance bits-plus-bits (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0))))))
+
+(local-defthmd lza0-13
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n)) (bits x (expo (u0 x y n)) 0))
+	          x))
+  :hints (("Goal" :use (lza0-11 lza0-12))))
+
+(local-defthmd lza0-14
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (bits y (- n 2) (1+ (expo (u0 x y n))))
+	          (1- (expt 2 (- n (+ (expo (u0 x y n)) 2))))))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-10)
+                  :cases ((= (expo (u0 x y n)) (- n 2)))
+                  :in-theory (enable bits-lognot))))
+
+(local-defthmd lza0-15
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n))
+	             (- (expt 2 (1+ (expo (u0 x y n)))))
+		     (bits y (expo (u0 x y n)) 0))
+	          y))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-14
+                        (:instance expo-upper-bound (x y))
+			(:instance bits-plus-bits (x y) (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0)))
+                  :cases ((= (expo (u0 x y n)) (- n 2)))
+                  :in-theory (enable bvecp))))
+
+(local-defthmd lza0-16
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (- x y)
+	          (+ (expt 2 (1+ (expo (u0 x y n))))
+		     (- (bits x (expo (u0 x y n)) 0)
+		        (bits y (expo (u0 x y n)) 0)))))
+  :hints (("Goal" :use (lza0-13 lza0-15))))
+
+(local-defthmd lza0-16
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (- x y)
+	          (+ (expt 2 (1+ (expo (u0 x y n))))
+		     (- (bits x (expo (u0 x y n)) 0)
+		        (bits y (expo (u0 x y n)) 0)))))
+  :hints (("Goal" :use (lza0-13 lza0-15))))
+
+(local-defthmd lza0-17
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (< (- x y)
+	      (expt 2 (+ 2 (expo (u0 x y n))))))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-16 lza0-8 lza0-9
+                        (:instance bits-bounds (i (expo (u0 x y n))) (j 0))
+			(:instance bits-bounds (x y) (i (expo (u0 x y n))) (j 0))))))
+
+;; This should be in bits.lisp:
+
+(defthmd bitn-expo
+  (implies (not (zp x))
+           (equal (bitn x (expo x)) 1))
+  :hints (("Goal" :use (expo-upper-bound expo-lower-bound
+                        (:instance expo>= (n 0))
+                        (:instance bvecp-bitn-2 (n (1+ (expo x))) (k (expo x))))
+		  :in-theory (enable bvecp)
+                  :nonlinearp t)))
+
+(local-defthmd lza0-18
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (bitn (u0 x y n) (expo (u0 x y n)))
+	          1))
+  :hints (("Goal" :in-theory (enable bitn-expo))))
+
+(local-defthmd lza0-19
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (>= (- (bitn x (expo (u0 x y n)))
+	          (bitn y (expo (u0 x y n))))
+	       0))
+  :hints (("Goal" :use (lza0-18 lza0-8 lza0-9
+                        (:instance bitn-lognot (x y) (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x (lognot y)) (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x y) (n (expo (u0 x y n)))))
+		  :in-theory (enable bits-logior bitn-bits bitn-logior u0))))
+
+(local-defthmd lza0-20
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (> (- x y)
+	      (expt 2 (expo (u0 x y n)))))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-16 lza0-19 lza0-8 lza0-9
+			(:instance bitn-0-1 (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x y) (n (expo (u0 x y n))))
+			(:instance bitn-plus-bits (n (expo (u0 x y n))) (m 0))
+			(:instance bitn-plus-bits (x y) (n (expo (u0 x y n))) (m 0))
+                        (:instance bits-bounds (i (1- (expo (u0 x y n)))) (j 0))
+			(:instance bits-bounds (x y) (i (1- (expo (u0 x y n)))) (j 0))))))
+
+(defthmd lza-thm-0-b
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (and (<= (expo (u0 x y n)) (expo (- x y)))
+	        (<= (expo (- x y)) (1+ (expo (u0 x y n))))))
+  :hints (("Goal" :use (lza0-17 lza0-20 lza0-8 lza0-9
+			(:instance expo<= (x (- x y)) (n (1+ (expo (u0 x y n)))))
+			(:instance expo>= (x (- x y)) (n (expo (u0 x y n))))))))
+

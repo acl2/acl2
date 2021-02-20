@@ -1,6 +1,6 @@
 ; A lightwright library about lists whose elements have particular types
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,8 @@
 (include-book "pseudo-term-listp")
 (include-book "symbol-listp")
 (include-book "symbol-listp2")
+
+(include-book "character-list-listp")
 
 (include-book "all-true-listp")
 (include-book "all-natp")

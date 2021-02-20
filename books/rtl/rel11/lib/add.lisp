@@ -380,6 +380,30 @@
 
 (defsection-rtl |Leading One Prediction| |Addition|
 
+(defund u0 (x y n)
+  (bits (logior x (lognot y)) (- n 2) 0))
+
+(defthmd lza-thm-0-a
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (equal (- x y) 1)
+	        (equal (u0 x y n) 0))))
+
+(defthmd lza-thm-0-b
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (and (<= (expo (u0 x y n)) (expo (- x y)))
+	        (<= (expo (- x y)) (1+ (expo (u0 x y n)))))))
+
 (defund p0 (a b)
   (declare (xargs :guard (and (integerp a)
                               (integerp b))))

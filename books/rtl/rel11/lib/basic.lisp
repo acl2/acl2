@@ -427,13 +427,13 @@
 		(mod (* a b) n)))
   :rule-classes ())
 
-(defthm mod-plus-mod
+(defthm mod-plus-mod-iff
     (implies (and (integerp a)
 		  (integerp b)
 		  (integerp c)
-		  (not (zp n))
-		  (= (mod a n) (mod b n)))
-	     (= (mod (+ a c) n) (mod (+ b c) n)))
+		  (not (zp n)))
+             (iff (= (mod a n) (mod b n))
+	          (= (mod (+ a c) n) (mod (+ b c) n))))
   :rule-classes ())
 
 (defthm mod-times-mod
@@ -466,6 +466,11 @@
 (defthm mod-2*m+1-rewrite
   (implies (integerp m)
            (equal (mod (1+ (* 2 m)) 2) 1)))
+
+(defthmd mod-neg
+  (implies (and (posp n) (integerp m))
+	   (equal (mod (- m) n)
+	          (- (1- n) (mod (1- m) n)))))
 )
 
 ;;;**********************************************************************
