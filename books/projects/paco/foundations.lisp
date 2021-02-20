@@ -975,9 +975,12 @@
        (no-duplicatesp-equal lst)))
 
 
+
 (mutual-recursion
 
 (defun termp (x wrld)
+  (declare (xargs ; Matt K. change for ruler-extenders mod 2/2021
+            :ruler-extenders nil))
   (cond ((atom x) (legal-variablep x))
         ((eq (car x) 'quote)
          (and (consp (cdr x))
