@@ -204,15 +204,6 @@
                       'string))
               (l3-stat (cdr hns) contents disk))))))))
 
-(defthm
-  l3-stat-correctness-1-lemma-1
-  (implies (and (l3-fs-p fs)
-                (l3-regular-file-entry-p (cdr (assoc-equal name fs)))
-                (block-listp disk)
-                (consp (assoc-equal name fs)))
-           (stringp (cadr (assoc-equal name
-                                       (l3-to-l2-fs fs disk))))))
-
 (defthm l3-stat-correctness-1-lemma-2
   (implies (and (l3-fs-p fs) (block-listp disk))
            (equal (consp (assoc-equal name (l3-to-l2-fs fs disk)))
@@ -264,14 +255,6 @@
            (equal (consp (l3-to-l2-fs fs disk))
                   (consp fs))))
 
-(defthm l3-stat-correctness-2-lemma-2
-  (implies (and (consp (assoc-equal name fs))
-                (l3-fs-p fs)
-                (block-listp disk)
-                (stringp (cadr (assoc-equal name fs)))
-                (cdr hns))
-           (l3-regular-file-entry-p (cdr (assoc-equal name fs)))))
-
 ;; This is the second of two theorems showing the equivalence of the l3 and l2
 ;; versions of stat.
 (defthm l3-stat-correctness-2
@@ -280,8 +263,7 @@
                 (block-listp disk)
                 (l3-fs-p (l3-stat hns fs disk)))
            (equal (l2-stat hns (l3-to-l2-fs fs disk))
-                  (l3-to-l2-fs (l3-stat hns fs disk) disk)))
-  )
+                  (l3-to-l2-fs (l3-stat hns fs disk) disk))))
 
 ;; This is simply a useful property of stat.
 (defthm l3-stat-of-stat
@@ -459,16 +441,6 @@
   (implies (l3-fs-p fs)
            (l3-fs-p (remove1-assoc-equal s fs))))
 
-(defthmd l3-wrchs-returns-fs-lemma-2
-  (implies (and (consp (assoc-equal s fs))
-                (l3-fs-p fs)
-                (consp (cdr (assoc-equal s fs)))
-                (l3-regular-file-entry-p (cdr (assoc-equal s fs))))
-           (feasible-file-length-p
-            (len (cadr (assoc-equal s fs)))
-            (cddr (assoc-equal s fs))))
-  :hints ( ("Goal" :induct (assoc-equal s fs))))
-
 (defthm
   l3-wrchs-returns-fs-lemma-3
   (implies
@@ -492,19 +464,6 @@
              (and (l3-fs-p new-fs) (block-listp new-disk))))
   :hints (("Goal" :in-theory (enable l3-unlink-returns-fs-lemma-1)) ))
 
-(defthm
-  l3-wrchs-correctness-1-lemma-1
-  (implies (and (l3-fs-p fs)
-                (consp (assoc-equal name fs))
-                (not (l3-regular-file-entry-p (cdr (assoc-equal name fs)))))
-           (not (l3-regular-file-entry-p (cddr (assoc-equal name fs))))))
-
-(defthm l3-wrchs-correctness-1-lemma-2
-  (implies (and (consp fs)
-                (l3-fs-p fs)
-                (block-listp disk))
-           (consp (car (l3-to-l2-fs fs disk)))))
-
 (defthm l3-wrchs-correctness-1-lemma-3
         (implies (and (l3-bounded-fs-p fs (len disk))
                       (block-listp disk)
@@ -520,31 +479,11 @@
                   (l3-to-l2-fs fs disk)))
   :hints (("Goal" :in-theory (enable l3-bounded-fs-p l3-regular-file-entry-p))))
 
-(defthm
-  l3-wrchs-correctness-1-lemma-5
-  (implies
-   (and (consp (assoc-equal name fs))
-        (l3-fs-p (cdr (assoc-equal name fs)))
-        (l3-fs-p fs)
-        (block-listp disk))
-   (equal (cdr (assoc-equal name
-                            (l3-to-l2-fs fs (append disk extra-blocks))))
-          (l3-to-l2-fs (cdr (assoc-equal name fs))
-                       (append disk extra-blocks)))))
-
 (defthm l3-wrchs-correctness-1-lemma-6
   (implies (l3-bounded-fs-p fs disk-length)
            (l3-bounded-fs-p (remove1-assoc-equal name fs)
                             disk-length))
   :hints (("Goal" :in-theory (enable l3-bounded-fs-p))))
-
-(defthm
-  l3-wrchs-correctness-1-lemma-7
-  (implies (and (l3-regular-file-entry-p (cdr (assoc-equal (car hns) fs)))
-                (l3-fs-p fs)
-                (block-listp disk))
-           (consp (cdr (assoc-equal (car hns)
-                                    (l3-to-l2-fs fs disk))))))
 
 (defthm
   l3-wrchs-correctness-1-lemma-8
@@ -634,13 +573,6 @@
              (l3-create hns fs disk text)
              (and (l3-fs-p new-fs) (block-listp new-disk)))))
 
-(defthm l3-create-correctness-1-lemma-1
-  (equal (mv-nth 1
-                 (l3-create hns fs (binary-append disk1 disk2)
-                            text))
-         (binary-append disk1
-                        (mv-nth 1 (l3-create hns fs disk2 text)))))
-
 (defthm l3-create-correctness-1-lemma-2
   (implies (and (l3-bounded-fs-p fs1 (len disk))
                 (l3-fs-p fs2)
@@ -672,17 +604,6 @@
              :use (:instance l3-create-returns-fs (hns (cdr hns))
                              (fs nil)))
             ("Subgoal *1/3.1'" :in-theory (enable l3-bounded-fs-p))))
-
-(defthm l3-read-after-write-1-lemma-1
-  (implies (and (l3-fs-p fs) (stringp text) (block-listp disk) (integerp start)
-  (<= 0 start))
-           (equal (stringp (l3-stat hns (mv-nth 0 (l3-wrchs hns fs disk start text))
-                                    (mv-nth 1 (l3-wrchs hns fs disk start text))))
-                  (stringp (l3-stat hns fs disk))))
-  :hints (("Subgoal *1/7.2'"
-           :in-theory (disable l3-wrchs-returns-fs)
-           :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
-                           (fs (cdr (assoc-equal (car hns) fs))))) ))
 
 (defthm l3-read-after-write-1-lemma-2
   (implies (and (l3-fs-p fs)

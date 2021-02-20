@@ -184,13 +184,16 @@
 
 (defthm mul-of-mul-of-inv
   (implies (and (fep a p)
-                (not (equal 0 a))
                 (fep x p)
                 (primep p))
            (equal (mul a (mul (inv a p) x p) p)
-                  x))
+                  (if (equal 0 a)
+                      0
+                    x)))
   :hints (("Goal" :use (:instance mul-associative (x a) (y (inv a p)) (z x))
-           :in-theory (disable mul-associative))))
+           :in-theory (disable mul-associative
+                               MUL-COMMUTATIVE
+                               MUL-COMMUTATIVE-2))))
 
 ;todo: swap mul args if one is the inv of the other... as a tiebreaker
 (defthm mul-of-inv-mul-of-inv
@@ -238,6 +241,14 @@
                   (mul
                    (* x y) ;we don't call mul here in case the p argument is not known (todo: do something similar for the add rule)
                    z p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthmd mul-combine-constants-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (integerp p))
+           (equal (mul x (mul y z p) p)
+                  (mul (mul x y p) z p)))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-when-constant-reduce-arg1
@@ -794,3 +805,84 @@
            (equal (add x p p)
                   (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
+
+;move
+(defthm pow-of-mod-arg1
+  (equal (pow (mod x p) n p)
+         (pow x n p))
+  :hints (("Goal" :in-theory (enable pow))))
+
+;move
+(local
+ (defthm mod-of-*-of-mod-arg3
+   (implies (and (integerp x)
+                 (integerp y)
+                 (integerp z)
+                 (integerp p))
+            (equal (mod (* x y (mod z p)) p)
+                   (mod (* x y z) p)))
+   :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
+                                   (z p)
+                                   (x (* x y))
+                                   (y z))
+            :in-theory (disable acl2::mod-of-*-of-mod)))))
+
+(defthmd pow-of-*-arg1
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y))
+           (equal (pow (* x y) n p)
+                  (if (not (posp n))
+                      1
+                    (mod (* (pow x n p)
+                            (pow y n p))
+                         p))))
+  :hints (("Goal" :in-theory (enable pow mul))))
+
+(defthm pow-of-0-arg1
+  (equal (pow 0 n p)
+         (if (posp n)
+             0
+           1 ; 0^0 = 1
+           ))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-when-not-integerp-arg1-cheap
+  (implies (not (integerp x))
+           (equal (pow x n p)
+                  (pow 0 n p)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-when-not-integerp-arg2-cheap
+  (implies (not (integerp n))
+           (equal (pow x n p)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthmd pow-of-mul-arg1
+  (implies (posp p)
+           (equal (pow (mul x y p) n p)
+                  (if (not (posp n))
+                      1
+                    (mul (pow x n p)
+                         (pow y n p)
+                         p))))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable mul
+                              pow-of-*-arg1))))
+
+;move
+(defthm minus1-linear
+  (= (minus1 p) (+ -1 p))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable minus1))))
+
+;; todo: consider enabling
+(defthmd inv-of-mul
+  (implies (and (integerp p)
+                (< 1 p))
+           (equal (inv (mul x y p) p)
+                  (mul (inv x p) (inv y p) p)))
+  :hints (("Goal" :in-theory (enable inv POW-OF-MUL-ARG1))))

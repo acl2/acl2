@@ -989,7 +989,7 @@
    "}"
    ""
    "int h (int a, int b) {"
-   "    return f(a, g(b));"
+   "    return g(a & b);"
    "}")
   (xdoc::p
    "(We have chosen C operations that are well-defined over all @('int')s
@@ -1031,7 +1031,7 @@
    ""
    "(defun |h| (|a| |b|)"
    "  (declare (xargs :guard (and (c::sintp |a|) (c::sintp |b|))))"
-   "  (|f| |a| (|g| |b|)))")
+   "  (|g| (c::sint-bitand |a| |b|)))")
   (xdoc::p
    "These three functions must necessarily appear in this order,
     but of course they do not have to be contiguous events

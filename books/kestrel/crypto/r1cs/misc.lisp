@@ -13,12 +13,24 @@
 
 ;; Proof support for R1CS proofs -- TODO: Move this material to libraries
 
-(include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
-(include-book "tools/lift-r1cs-new") ;todo: reduce
-(include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
-(include-book "kestrel/utilities/split-list-fast-rules" :dir :system)
-(include-book "kestrel/lists-light/append-with-key" :dir :system)
-(include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system)
+(include-book "proof-support") ;reduce
+;(include-book "tools/lift-r1cs-new") ;todo: reduce
+;(include-book "kestrel/utilities/split-list-fast-rules" :dir :system)
+;(include-book "kestrel/lists-light/append-with-key" :dir :system)
+;(include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system)
+(include-book "kestrel/bv/rules7" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(include-book "kestrel/utilities/defopeners" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/axe/rules3" :dir :system)) ; for ACL2::MOVE-MINUS-HACK2?
+(local (include-book "kestrel/axe/basic-rules" :dir :system))
 
 (defthm mod-of-+-of---when-multiple-arg2
   (implies (and (equal 0 (mod y p))
@@ -56,7 +68,7 @@
                 (integerp extra)
                 (natp highsize)
                 )
-           (equal (add (acl2::bvcat highsize highval lowsize '0)
+           (equal (add (acl2::bvcat highsize highval lowsize 0)
                        ;; todo: why does the single bit here intercede?
                        (add (acl2::bvcat 1 bit 31 lowval)
                             extra
@@ -93,30 +105,6 @@
                        p)))
   :hints (("Goal" :in-theory (enable acl2::bvcat acl2::logapp add acl2::power-of-2p mul neg))))
 
-(defthmd bvcat-of-bitnot-and-bitnot
-  (equal (acl2::bvcat 1 (acl2::bitnot x) 1 (acl2::bitnot y))
-         (acl2::bvnot 2 (acl2::bvcat 1 x 1 y))))
-
-(defthmd bvcat-of-bvnot-and-bitnot
-  (implies (posp size) ;why not 0?
-           (equal (acl2::bvcat size (acl2::bvnot size x) 1 (acl2::bitnot y))
-                  (acl2::bvnot (+ 1 size) (acl2::bvcat size x 1 y))))
-  :hints (("Goal" :in-theory (e/d (acl2::bitnot-becomes-bvnot) (acl2::bvnot-1-becomes-bitnot-better)))))
-
-(defthmd bvcat-of-bitnot-and-bvnot
-  (implies (posp size) ;why not 0?
-           (equal (acl2::bvcat 1 (acl2::bitnot x) size (acl2::bvnot size y))
-                  (acl2::bvnot (+ 1 size) (acl2::bvcat 1 x size y))))
-  :hints (("Goal" :in-theory (e/d (acl2::bitnot-becomes-bvnot) (acl2::bvnot-1-becomes-bitnot-better)))))
-
-(defthmd bvcat-of-bvnot-and-bvnot
-  (implies (and (posp highsize) ;why not 0?
-                (posp lowsize) ;why not 0?
-                )
-           (equal (acl2::bvcat highsize (acl2::bvnot highsize highval) lowsize (acl2::bvnot lowsize lowval))
-                  (acl2::bvnot (+ highsize lowsize) (acl2::bvcat highsize highval lowsize lowval))))
-  :hints (("Goal" :in-theory (e/d (acl2::bitnot-becomes-bvnot) (acl2::bvnot-1-becomes-bitnot-better)))))
-
 ;; Try these rules after most rules (which have priority 0), since they have free vars:
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
 (table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
@@ -129,28 +117,24 @@
                 (integerp x)
                 (integerp y)
                 (integerp z)
-                (posp p)
-                )
-           (equal (EQUAL '0 (ADD x (ADD y (ADD z (NEG w p) p) p) p))
-                  (equal w (ADD x (ADD y z p) p))))
-; :hints (("Goal" :in-theory (enable add neg)))
-  )
+                (posp p))
+           (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
+                  (equal w (add x (add y z p) p)))))
 
 (defthm equal-of-0-and-add-of-add-of-neg-lemma
   (implies (and (fep w p)
                 (integerp x)
                 (integerp y)
-                (posp p)
-                )
-           (equal(EQUAL 0 (ADD x (ADD (NEG w p) y p) p))
-                 (equal w (ADD x y p)))))
+                (posp p))
+           (equal (equal 0 (add x (add (neg w p) y p) p))
+                  (equal w (add x y p)))))
 
-(DEFTHM ACL2::FEP-OF-BVChop
-  (IMPLIES (AND (< (EXPT 2 size) P)
-                (NATP size)
-                (POSP P))
-           (FEP (ACL2::BVChop size x)
-                P)))
+(defthm acl2::fep-of-bvchop
+  (implies (and (< (expt 2 size) p)
+                (natp size)
+                (posp p))
+           (fep (acl2::bvchop size x)
+                p)))
 
 (defthm acl2::getbit-of-0-when-bitp
   (implies (bitp x)
@@ -253,13 +237,12 @@
                   (acl2::bvplus 32 (acl2::bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
-
+;move
 (defthm equal-of-0-and-add-of-neg
   (implies (and (fep x p)
                 (fep y p)
-                (posp p)
-                )
-           (equal (EQUAL '0 (ADD (NEG x p) y p))
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
                   (equal x y))))
 
 (defthm bvcat-of-slice-tighten
@@ -1077,7 +1060,7 @@
                 (syntaxp (quotep acl2::free)))
            (equal (consp acl2::x)
                   (< 0 acl2::free)))
-  :hints (("Goal" :in-theory (e/d (len) (acl2::len-of-cdr)))))
+  :hints (("Goal" :in-theory (e/d (len) ()))))
 
 ;; Introduce BVPLUS
 (defthm mod-of-+-of-4294967296

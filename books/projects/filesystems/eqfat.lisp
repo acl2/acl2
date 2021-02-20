@@ -532,27 +532,6 @@ channel state))
                                   (lofat-find-file fat32$c d-e-list path)))))
   :hints (("goal" :in-theory (enable lofat-find-file))))
 
-(local
- (defthm
-   lofat-find-file-correctness-1-lemma-2
-   (implies
-    (and
-     (useful-d-e-list-p d-e-list)
-     (equal (mv-nth 3
-                    (lofat-to-hifat-helper fat32$c
-                                           d-e-list entry-limit))
-            0))
-    (equal
-     (m1-file->d-e
-      (cdr
-       (assoc-equal
-        name
-        (mv-nth 0
-                (lofat-to-hifat-helper fat32$c
-                                       d-e-list entry-limit)))))
-     (mv-nth 0 (find-d-e d-e-list name))))
-   :hints (("goal" :in-theory (enable lofat-to-hifat-helper)))))
-
 (defthm
   lofat-find-file-correctness-lemma-1
   (implies
@@ -2374,7 +2353,7 @@ channel state))
 
   (make-event
    `(defthm
-      make-d-e-list-of-append-3
+      make-d-e-list-of-append-of-clear-d-e-1
       (implies
        (equal (mod (len (explode dir-contents))
                    *ms-d-e-length*)
@@ -2436,83 +2415,6 @@ channel state))
      (lofat-to-hifat-helper clear-cc
                             lofat-to-hifat-helper-of-stobj-set-indices-in-fa-table)
      ((:rewrite nth-of-effective-fat))))))
-
-(defund m1-file-hifat-file-alist-fix (d-e fs)
-  (m1-file d-e (hifat-file-alist-fix fs)))
-
-;; The most natural form of this theorem is prone to infinite looping, so...
-(defthm
-  m1-file-hifat-file-alist-fix-congruence-lemma-1
-  (implies (and (hifat-equiv fs1 fs2)
-                (m1-file-alist-p fs1)
-                (m1-file-alist-p fs2))
-           (equal
-            (hifat-equiv (cons (cons name (m1-file d-e fs1))
-                               y)
-                         (cons (cons name (m1-file d-e fs2))
-                               y))
-            t))
-  :hints (("goal" :in-theory (enable hifat-equiv
-                                     hifat-subsetp hifat-file-alist-fix
-                                     hifat-no-dups-p m1-file-contents-fix
-                                     m1-file-contents-p))))
-
-(defthm
-  m1-file-hifat-file-alist-fix-congruence
-  (implies
-   (hifat-equiv fs1 fs2)
-   (hifat-equiv (cons (cons name
-                            (m1-file-hifat-file-alist-fix d-e fs1))
-                      y)
-                (cons (cons name
-                            (m1-file-hifat-file-alist-fix d-e fs2))
-                      y)))
-  :rule-classes :congruence
-  :hints (("goal" :in-theory (enable m1-file-hifat-file-alist-fix))))
-
-(defthm m1-file-hifat-file-alist-fix-normalisation
-  (implies (equal (hifat-file-alist-fix fs) fs)
-           (equal (m1-file d-e fs)
-                  (m1-file-hifat-file-alist-fix d-e fs)))
-  :hints (("goal" :in-theory (enable m1-file-hifat-file-alist-fix))))
-
-(theory-invariant (incompatible (:definition m1-file-hifat-file-alist-fix)
-                                (:rewrite m1-file-hifat-file-alist-fix-normalisation)))
-
-(defthm
-  m1-file->contents-of-m1-file-hifat-file-alist-fix
-  (equal (m1-file->contents (m1-file-hifat-file-alist-fix d-e fs))
-         (hifat-file-alist-fix fs))
-  :hints
-  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
-                           (m1-file-hifat-file-alist-fix-normalisation)))))
-
-(defthm
-  m1-file-p-of-m1-file-hifat-file-alist-fix
-  (m1-file-p (m1-file-hifat-file-alist-fix d-e fs))
-  :hints
-  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
-                           (m1-file-hifat-file-alist-fix-normalisation)))))
-
-(defthm
-  m1-directory-file-p-of-m1-file-hifat-file-alist-fix
-  (m1-directory-file-p (m1-file-hifat-file-alist-fix d-e fs))
-  :hints
-  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
-                           (m1-file-hifat-file-alist-fix-normalisation))
-    :do-not-induct t)))
-
-(defthm
-  m1-file->d-e-of-m1-file-hifat-file-alist-fix
-  (equal (m1-file->d-e (m1-file-hifat-file-alist-fix d-e fs))
-         (d-e-fix d-e))
-  :hints
-  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
-                           (m1-file-hifat-file-alist-fix-normalisation)))))
-
-(defthm not-m1-regular-file-p-of-m1-file-hifat-file-alist-fix
-  (not (m1-regular-file-p (m1-file-hifat-file-alist-fix d-e fs)))
-  :hints (("goal" :in-theory (e/d))))
 
 (defund make-d-e-with-filename (filename)
   (declare

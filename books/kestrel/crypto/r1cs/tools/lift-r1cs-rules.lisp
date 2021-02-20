@@ -697,14 +697,12 @@
          (bitp acl2::x)))
 
 ;; more standard hyps
-(DEFTHM PFIELD::EQUAL-OF-0-AND-ADD-OF-NEG-2
-  (IMPLIES (AND (fep x p)
+(defthm pfield::equal-of-0-and-add-of-neg-2
+  (implies (and (fep x p)
                 (fep y p)
-                (POSP p))
-           (EQUAL (EQUAL 0
-                         (ADD (NEG x p)
-                                      y p))
-                  (EQUAL x y))))
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
+                  (equal x y))))
 
 (defthm mul-when-constants
   (implies (and (syntaxp (and (quotep x)
@@ -722,8 +720,8 @@
                 (integerp y)
                 (integerp w)
                 (posp p))
-           (equal (EQUAL (MOD (+ K Z y) P)
-                         (MOD (+ Z w) P))
+           (equal (equal (mod (+ k z y) p)
+                         (mod (+ z w) p))
                   (equal (mod (+ k y) p)
                          (mod w p))))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
@@ -945,13 +943,15 @@
 ;;            :in-theory (disable add-of-mul-of-2-when-bitp))))
 
 (defthm mul-of---arg2
-  (equal (MUL x (- y) P)
-         (neg (mul x y p) p))
-  :hints (("Goal" :in-theory (enable MUL add))))
+  (implies (syntaxp (not (quotep y))) ;defeat ACL2's overly aggressive matching
+           (equal (mul x (- y) p)
+                  (neg (mul x y p) p)))
+  :hints (("Goal" :in-theory (enable mul add))))
 
 (defthm mul-of---arg1
-  (equal (MUL (- y) x P)
-         (neg (mul y x p) p))
+  (implies (syntaxp (not (quotep y))) ;defeat acl2's overly aggressive matching
+           (equal (mul (- y) x p)
+                  (neg (mul y x p) p)))
   :hints (("Goal" :in-theory (enable MUL add))))
 
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))

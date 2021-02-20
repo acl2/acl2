@@ -225,6 +225,13 @@
                   (signed-byte-p size x)))
   :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
 
+;; See also logext-identity
+(defthm logext-when-signed-byte-p
+  (implies (signed-byte-p size x)
+           (equal (logext size x)
+                  x))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
+
 (defthm acl2-numberp-of-logext
   (acl2-numberp (logext size i)))
 

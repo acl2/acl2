@@ -541,6 +541,13 @@
                       (fl (mod x m))))
       :enable fl))))
 
+(defthmd mod-neg
+  (implies (and (posp n) (integerp m))
+	   (equal (mod (- m) n)
+	          (- (1- n) (mod (1- m) n))))
+  :hints (("Goal" :use ((:instance mod-diff (a (1- n)) (b (1- m)))
+			(:instance mod-mult (m (- m)) (a 1))))))
+
 (in-theory (disable mod))
 
 

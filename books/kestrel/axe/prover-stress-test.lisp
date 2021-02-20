@@ -40,6 +40,7 @@
        ((mv failedp & state)
         (prove-implication-with-basic-prover-fn
          *t* ;use a hyp of t
+         '(:rep :rewrite :subst)
          formula
          nil ; no rules
          nil ; no global rules

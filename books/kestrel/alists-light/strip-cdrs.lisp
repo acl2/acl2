@@ -29,6 +29,12 @@
                (strip-cdrs x)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
+(defthm strip-cdrs-of-acons
+  (equal (strip-cdrs (acons key datum alist))
+         (cons datum
+               (strip-cdrs alist)))
+  :hints (("Goal" :in-theory (enable strip-cdrs))))
+
 (defthm car-of-strip-cdrs
   (equal (car (strip-cdrs x))
          (cdr (car x)))

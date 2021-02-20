@@ -414,13 +414,6 @@
   (implies (indices-marked-p l alv)
            (not (intersectp-equal l (find-n-free-blocks alv n)))))
 
-(defthm l4-wrchs-returns-stricter-fs-lemma-16
-  (implies (indices-marked-listp (l4-collect-all-index-lists fs)
-                                 alv)
-           (not-intersectp-list (find-n-free-blocks alv n)
-                                (l4-collect-all-index-lists fs)))
-  :hints (("goal" :in-theory (enable not-intersectp-list))))
-
 (encapsulate ()
 
   (set-default-hints
@@ -467,18 +460,6 @@
                 (not (intersectp-equal l index-list)))
            (indices-marked-p index-list
                              (set-indices-in-alv alv l nil))))
-
-(defthm
-  l4-wrchs-returns-stricter-fs-lemma-18
-  (implies (and (l3-fs-p fs)
-                (nat-listp l)
-                (boolean-listp alv)
-                (indices-marked-listp (l4-collect-all-index-lists fs)
-                                      alv)
-                (not-intersectp-list l (l4-collect-all-index-lists fs)))
-           (indices-marked-listp (l4-collect-all-index-lists fs)
-                                 (set-indices-in-alv alv l nil)))
-  :hints (("Goal" :in-theory (enable not-intersectp-list))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-19
@@ -640,38 +621,6 @@
   (("goal"
     :in-theory (enable l4-wrchs-returns-stricter-fs-lemma-27)
     :induct (indices-marked-listp l alv))))
-
-(defthm
-  l4-wrchs-returns-stricter-fs-lemma-29
-  (implies
-   (and (l3-fs-p fs)
-        (boolean-listp alv)
-        (indices-marked-listp (l4-collect-all-index-lists fs)
-                              alv))
-   (bounded-nat-listp
-    (flatten (l4-collect-all-index-lists (remove1-assoc-equal (car hns) fs)))
-    (len alv)))
-  :hints
-  (("Goal" :in-theory (disable l4-collect-all-index-lists-correctness-2))
-   ("Subgoal *1/2.2'"
-    :in-theory (disable indices-marked-p-correctness-1)
-    :use
-    ((:instance indices-marked-p-correctness-1
-                (index-list (flatten (l4-collect-all-index-lists (cdr fs))))
-                (b (len alv)))))
-   ("Subgoal *1/3.1'"
-    :in-theory (disable indices-marked-p-correctness-1)
-    :use
-    ((:instance
-      indices-marked-p-correctness-1
-      (index-list (flatten (l4-collect-all-index-lists (cdr (car fs)))))
-      (b (len alv)))))
-   ("Subgoal *1/3.2'"
-    :in-theory (disable indices-marked-p-correctness-1)
-    :use
-    ((:instance indices-marked-p-correctness-1
-                (index-list (flatten (l4-collect-all-index-lists (cdr fs))))
-                (b (len alv)))))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-30

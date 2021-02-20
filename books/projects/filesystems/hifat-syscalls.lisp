@@ -199,6 +199,21 @@
      (no-duplicatesp (strip-cars file-table))))
   :hints (("Goal" :in-theory (enable hifat-open))))
 
+(defthm hifat-open-correctness-4
+  (and
+   (natp (mv-nth 2
+                 (hifat-open path fd-table file-table)))
+   (natp (mv-nth 3
+                 (hifat-open path fd-table file-table))))
+  :hints (("goal" :in-theory (enable hifat-open)))
+  :rule-classes
+  ((:type-prescription :corollary
+                       (natp (mv-nth 2
+                                     (hifat-open path fd-table file-table))))
+   (:type-prescription :corollary
+                       (natp (mv-nth 3
+                                     (hifat-open path fd-table file-table))))))
+
 ;; Per the man page pread(2), this should not change the offset of the file
 ;; descriptor in the file table. Thus, there's no need for the file table to be
 ;; an argument.

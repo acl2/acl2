@@ -29,6 +29,12 @@
                (strip-cars x)))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
+(defthm strip-cars-of-acons
+  (equal (strip-cars (acons key datum alist))
+         (cons key
+               (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
 (defthm car-of-strip-cars
   (equal (car (strip-cars x))
          (car (car x)))
@@ -48,6 +54,13 @@
   (equal (strip-cars (append x y))
          (append (strip-cars x)
                  (strip-cars y)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+(defthm strip-cars-when-not-consp-cheap
+  (implies (not (consp x))
+           (equal (strip-cars x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
 ;; Not sure which form is better

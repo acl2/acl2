@@ -20,14 +20,6 @@
 ;;                   (equal (mul x y p) z)))
 ;;   :hints (("Goal" :in-theory (enable NEG mul SUB))))
 
-;move
-(defthm mul-when-not-integerp-arg1-cheap
-  (implies (not (integerp x))
-           (equal (mul x y p)
-                  0))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;; x = -y becomes -x = y
 ;;quite strong
 ;; This solves for y.

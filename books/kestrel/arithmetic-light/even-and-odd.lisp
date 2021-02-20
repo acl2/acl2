@@ -154,6 +154,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable evenp))))
 
+;; TODO: Consider enabling
 (defthmd integerp-of-*-of-1/2-becomes-evenp
   (equal (integerp (* 1/2 x))
          (evenp x))
@@ -166,3 +167,8 @@
            (evenp x))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable evenp))))
+
+;; Kept disabled since we may rewrite (oddp x) to (not (evenp x)).
+(defthmd not-evenp-when-oddp
+  (implies (oddp x)
+           (not (evenp x))))

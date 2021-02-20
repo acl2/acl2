@@ -503,17 +503,27 @@
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-0-arg1
-  (implies (and (integerp x) ;(fep x p)
-                (integerp p))
-           (equal (mul 0 x p)
-                  0))
+  (equal (mul 0 y p)
+         0)
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-0-arg2
-  (implies (and (integerp x) ;(fep x p)
-                (integerp p))
-           (equal (mul x 0 p)
+  (equal (mul x 0 p)
+         0)
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-not-integerp-arg1-cheap
+  (implies (not (integerp x))
+           (equal (mul x y p)
                   0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-not-integerp-arg2-cheap
+  (implies (not (integerp y))
+           (equal (mul x y p)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defun strip-inv (x)

@@ -1652,62 +1652,77 @@
                   :corollary
                   (natp (mv-nth 2 (lofat-mkdir fat32$c path))))))
 
-;; Semantics under consideration: each directory stream is a list of directory
-;; entries, and each readdir operation removes a directory entry from the front
-;; of the list, never to be seen again until a new directory stream should be
-;; opened.
-(fty::defalist
- dirstream-table
- :key-type nat
- :val-type d-e-list
- :true-listp t)
+(defthm dir-stream-table-p-correctness-1
+  (implies (dir-stream-table-p dir-stream-table)
+           (nat-listp (strip-cars dir-stream-table))))
 
-(defthm dirstream-table-p-correctness-1
-  (implies (dirstream-table-p dirstream-table)
-           (nat-listp (strip-cars dirstream-table))))
+;; Not sure how to define this! But I definitely do want a property of the
+;; output satisfying fat32-filename-list-p.
+(defund names-from-d-e-list (d-e-list)
+  (declare (xargs :guard (d-e-list-p d-e-list)
+                  :measure (len d-e-list)))
+  (b*
+      ((d-e-list (mbe :exec d-e-list :logic (d-e-list-fix d-e-list)))
+       ((when (atom d-e-list)) nil)
+       ((unless (fat32-filename-p (d-e-filename (car d-e-list))))
+        (names-from-d-e-list (cdr d-e-list))))
+    (cons (d-e-filename (car d-e-list))
+          (names-from-d-e-list (cdr d-e-list)))))
 
-;; The dirstream-table has to be returned, since it is potentially changed.
-(defund lofat-opendir (fat32$c dirstream-table path)
+(defthm fat32-filename-list-p-of-names-from-d-e-list
+  (fat32-filename-list-p (names-from-d-e-list d-e-list))
+  :hints (("goal" :in-theory (enable names-from-d-e-list))))
+
+;; The dir-stream-table has to be returned, since it is potentially changed.
+(defund lofat-opendir (fat32$c dir-stream-table path)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
-                              (dirstream-table-p dirstream-table)
+                              (dir-stream-table-p dir-stream-table)
                               (fat32-filename-list-p path))
-                  :guard-debug t))
+                  :guard-debug t
+                  :guard-hints
+                  (("Goal"
+                    :in-theory (enable alistp-when-m1-file-alist-p-rewrite)))))
   (b*
-      ((dirstream-table (mbe :exec dirstream-table
-                             :logic (dirstream-table-fix dirstream-table)))
+      ((dir-stream-table (mbe :exec dir-stream-table
+                             :logic (dir-stream-table-fix dir-stream-table)))
        ((mv root-d-e-list &) (root-d-e-list fat32$c))
        ((mv file error-code)
         (lofat-find-file fat32$c root-d-e-list path))
-       ((unless (zp error-code)) (mv dirstream-table -1 error-code))
-       ((unless (lofat-directory-file-p file)) (mv dirstream-table -1 *ENOTDIR*))
-       (dirstream-table-index
-        (find-new-index (strip-cars dirstream-table))))
+       ((unless (zp error-code)) (mv dir-stream-table -1 error-code))
+       ((unless (lofat-directory-file-p file)) (mv dir-stream-table -1 *ENOTDIR*))
+       (dir-stream-table-index
+        (find-new-index (strip-cars dir-stream-table))))
     (mv
-     (cons (cons dirstream-table-index (lofat-file->contents file))
-      dirstream-table)
-     dirstream-table-index
+     (cons
+      (cons dir-stream-table-index
+            (make-dir-stream
+             :file-list
+             (<<-sort
+              (names-from-d-e-list (lofat-file->contents file)))))
+      dir-stream-table)
+     dir-stream-table-index
      0)))
 
 (defthm lofat-opendir-correctness-1
   (and
-   (dirstream-table-p (mv-nth 0
-                              (lofat-opendir fat32$c dirstream-table path)))
+   (dir-stream-table-p (mv-nth 0
+                              (lofat-opendir fat32$c dir-stream-table path)))
    (integerp (mv-nth 1
-                     (lofat-opendir fat32$c dirstream-table path)))
+                     (lofat-opendir fat32$c dir-stream-table path)))
    (integerp (mv-nth 2
-                     (lofat-opendir fat32$c dirstream-table path))))
+                     (lofat-opendir fat32$c dir-stream-table path))))
   :hints (("goal" :do-not-induct t
            :in-theory (enable lofat-opendir)))
   :rule-classes
   ((:rewrite :corollary
-             (dirstream-table-p (mv-nth 0
-                                        (lofat-opendir fat32$c dirstream-table path))))
+             (dir-stream-table-p (mv-nth 0
+                                        (lofat-opendir fat32$c dir-stream-table path))))
    (:type-prescription
     :corollary
     (integerp (mv-nth 1
-                      (lofat-opendir fat32$c dirstream-table path))))
+                      (lofat-opendir fat32$c dir-stream-table path))))
    (:type-prescription
     :corollary
     (integerp (mv-nth 2
-                      (lofat-opendir fat32$c dirstream-table path))))))
+                      (lofat-opendir fat32$c dir-stream-table path))))))
