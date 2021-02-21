@@ -220,13 +220,15 @@
 
 (defthm
   lofat-mkdir-refinement-lemma-14
-  (equal
-   (lofat-place-file fat32$c root-d-e path
-                     (list (cons 'd-e d-e1)
-                           (cons 'contents contents)))
-   (lofat-place-file fat32$c root-d-e path
-                     (list (cons 'd-e d-e2)
-                           (cons 'contents contents))))
+  (implies
+   (true-equiv d-e1 d-e2)
+   (equal
+    (lofat-place-file fat32$c root-d-e path
+                      (list (cons 'd-e d-e1)
+                            (cons 'contents contents)))
+    (lofat-place-file fat32$c root-d-e path
+                      (list (cons 'd-e d-e2)
+                            (cons 'contents contents)))))
   :hints
   (("goal"
     :in-theory
@@ -251,18 +253,7 @@
       (:type-prescription hifat-bounded-file-alist-p)
       (:rewrite stringp-when-nonempty-stringp)))))
   :rule-classes
-  (:rewrite
-   (:congruence
-    :corollary
-    (implies
-     (true-equiv d-e1 d-e2)
-     (equal
-      (lofat-place-file fat32$c root-d-e path
-                        (list (cons 'd-e d-e1)
-                              (cons 'contents contents)))
-      (lofat-place-file fat32$c root-d-e path
-                        (list (cons 'd-e d-e2)
-                              (cons 'contents contents))))))))
+  (:rewrite :congruence))
 
 (in-theory (disable (:r
                      lofat-mkdir-refinement-lemma-14)))
@@ -2129,25 +2120,37 @@
 (encapsulate
   ()
 
+  (local (in-theory (disable lofat-place-file)))
+
   (local
    ;; The following event raises a question as to whether congruential
    ;; rewriting of quoted constants is happening as expected. It should go
    ;; through without any hints or instructions, I think, but the reader can
    ;; check that it doesn't by submitting it without instructions. The
-   ;; instructions, very simply, illustrate the rewrite I expect to happen
-   ;; automatically - the rewriter should use the rule
+   ;; instructions, very simply, illustrate the two rewrites I expect to happen
+   ;; automatically.
+   ;;
+   ;; For the first one, the rewriter should use the rule
    ;; (:congruence lofat-mkdir-refinement-lemma-14),
-   ;; which is identical (except for a vacuous hypothesis) to the rule
+   ;; which is identical to the rule
    ;; (:rewrite lofat-mkdir-refinement-lemma-14)
    ;; used in these instructions, to descend to the subexpression
-   ;; '(0 0 0 0 0 0 0 0 0 0 0 16 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0),
-   ;; a constant, and rewrite it with the expression
-   ;; (true-fix '(0 0 0 0 0 0 0 0 0 0 0 16 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+   ;; 1, a constant, and rewrite it with the expression (true-fix 1)
    ;; as dictated by the rule
    ;; (:rewrite-quoted-constant lofat-mkdir-refinement-lemma-12).
+   ;; (true-fix 1) should simplify to t, either by (:e true-fix) or by
+   ;; (:d true-fix) - it doesn't matter which.
+   ;;
+   ;; The same steps should happen for the constant 2, leading to it being
+   ;; rewritten to (true-fix 2) and simplified to t.
+   ;;
    ;; That should allow an equality substitution by making use of the
-   ;; hypothesis which completes the proof. Is there a simple explanation I'm
-   ;; missing as to why this doesn't happen?
+   ;; hypothesis, which should complete the proof.
+   ;;
+   ;; Is there a simple explanation I'm missing as to why this doesn't happen?
+   ;; The reader who has followed a discussion about this bug on Slack should
+   ;; note that disabling (:e true-fix), as suggested there, does not
+   ;; help.
    (defthm
      lemma
      (implies
@@ -2155,36 +2158,28 @@
        (mv-nth
         1
         (lofat-to-hifat
-         (mv-nth
-          0
-          (lofat-place-file
-           fat32$c (pseudo-root-d-e fat32$c)
-           path
-           (cons (cons 'd-e
-                       (true-fix '(0 0 0 0 0 0 0 0 0 0 0 16 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)))
-                 '((contents)))))))
+         (mv-nth 0
+                 (lofat-place-file fat32$c root-d-e path
+                                   (cons (cons 'd-e 1) '((contents)))))))
        0)
       (equal
        (mv-nth
         1
         (lofat-to-hifat
-         (mv-nth
-          0
-          (lofat-place-file fat32$c (pseudo-root-d-e fat32$c)
-                            path
-                            '((d-e 0 0 0 0 0 0 0 0 0 0 0 16
-                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                              (contents))))))
+         (mv-nth 0
+                 (lofat-place-file fat32$c root-d-e path
+                                   (cons (cons 'd-e 2) '((contents)))))))
        0))
-     :instructions
-     (:promote
-      (:dive 1 2 1 2)
-      (:rewrite lofat-mkdir-refinement-lemma-14
-                ((d-e2 (true-fix '(0 0 0 0 0 0 0 0 0 0 0 16 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)))))
-      :top (:dive 1)
-      :=))))
+     :instructions ((:dive 1 1 2 1 2)
+                    (:rewrite lofat-mkdir-refinement-lemma-14
+                              ((d-e2 (true-fix 1))))
+                    :top (:dive 1 1 2 1 2 4 1 2)
+                    :s :top (:dive 2 1 2 1 2)
+                    (:rewrite lofat-mkdir-refinement-lemma-14
+                              ((d-e2 (true-fix 2))))
+                    :top (:dive 2 1 2 1 2 4 1 2)
+                    :s :top :promote (:dive 1)
+                    :=))))
 
 ;; (defthm
 ;;   lofat-mkdir-refinement
