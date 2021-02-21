@@ -9875,6 +9875,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (*1*-symbol x))
 
 (defun set-attachment-symbol-form (fn val)
+
+; Warning: It may be important in add-trip that set-attachment-symbol-form
+; generates a defparameter whose form is quoted.  See the comment about this in
+; the attachment case in add-trip.
+
   `(defparameter ,(attachment-symbol fn) ',val))
 
 (defmacro defattach (&rest args)
