@@ -6370,3 +6370,52 @@
     :expand ((collapse frame)
              (collapse (frame-with-root (frame->root frame)
                                         (frame->frame frame)))))))
+
+;; I guess I should say that this function can only really do so much, and if
+;; we try to use this in our proofs we'll kinda be back to representing
+;; filesystem trees as... filesystem trees. When I say it can only do so much,
+;; I mean that it can only help us do some refinement proofs, which will tie
+;; lofat to hifat and hifat to absfat. Ultimately, I guess we'll want theorems
+;; that use the collapse-equiv relation defined previously...
+(defund frame-reps-fs
+    (frame fs)
+  (b*
+      (((mv fs-equiv result) (collapse frame)))
+    (and result
+         (hifat-equiv fs-equiv fs)
+         (frame-p frame)
+         (abs-separate frame)
+         (subsetp-equal
+          (abs-addrs (frame->root frame))
+          (frame-addrs-root (frame->frame frame)))
+         (no-duplicatesp-equal (strip-cars frame))
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (consp (assoc-equal 0 frame))
+         (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+                0))))
+
+(defthm frame-reps-fs-of-collapse-1
+  (implies (good-frame-p frame)
+           (frame-reps-fs frame (mv-nth 0 (collapse frame))))
+  :hints (("goal" :in-theory (enable good-frame-p frame-reps-fs))))
+
+(defthm good-frame-p-when-frame-reps-fs
+  (implies (frame-reps-fs frame fs)
+           (good-frame-p frame))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable good-frame-p frame-reps-fs))))
+
+(defcong hifat-equiv equal (frame-reps-fs frame fs) 2
+  :hints (("Goal" :in-theory (enable frame-reps-fs))))
+
+(defcong collapse-equiv equal (frame-reps-fs frame fs) 1
+  :hints (("Goal" :in-theory (enable frame-reps-fs collapse-equiv
+                                     good-frame-p)
+           :do-not-induct t))
+  :otf-flg t)
+
+(defthm frame-reps-fs-correctness-1
+  (implies (frame-reps-fs frame fs)
+           (hifat-equiv (mv-nth 0 (collapse frame))
+                        fs))
+  :hints (("goal" :in-theory (enable frame-reps-fs))))
