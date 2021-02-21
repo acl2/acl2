@@ -15,6 +15,8 @@
 (include-book "pedersen-hash")
 (include-book "prime-field-abbreviations")
 
+(include-book "json-to-r1cs/top")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semaphore
