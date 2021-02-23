@@ -14,7 +14,7 @@
 
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
 (include-book "kestrel/axe/make-axe-syntaxp-evaluator" :dir :system)
-(include-book "../proof-support") ;todo: reduce
+(include-book "axe-syntax-functions-r1cs")
 
 (make-axe-syntaxp-evaluator 'r1cs '(;; These are the additional functions needed for R1CS proofs:
                                     var-less-than-unquoted-keyp

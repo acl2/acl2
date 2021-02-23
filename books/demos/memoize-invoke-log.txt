@@ -579,97 +579,10 @@ Rules: ((:DEFINITION F3)
         (:DEFINITION G3)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
  |F3-is-G3|
-ACL2 !>>(MEMOIZE 'F3 :INVOKE 'G3 :COMMUTATIVE T)
-
-To verify that the three encapsulated events correctly extend the current
-theory we will evaluate them.  The theory thus constructed is only
-ephemeral.
-
-Encapsulated Events:
-
-
-ACL2 !>>>(VALUE-TRIPLE '(9655))
-(9655)
-
-
-ACL2 !>>>(DEFTHM F3-COMMUTATIVE (EQUAL (F3 X Y) (F3 Y X))
-                 :RULE-CLASSES NIL)
-
-Q.E.D.
-
-Summary
-Form:  ( DEFTHM F3-COMMUTATIVE ...)
-Rules: ((:DEFINITION F3)
-        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
-F3-COMMUTATIVE
-
-
-ACL2 !>>>(PROGN
-          (TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F3
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE 'F3-COMMUTATIVE)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G3)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-          (VALUE-TRIPLE (DEREF-MACRO-NAME 'F3
-                                          (MACRO-ALIASES (W STATE)))))
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F3
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE 'F3-COMMUTATIVE)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G3)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'F3
-                                         (MACRO-ALIASES (W STATE))))
-F3
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-F3
-
-End of Encapsulated Events.
-
-Having verified that the encapsulated events validate the signatures
-of the ENCAPSULATE event, we discard the ephemeral theory and extend
-the original theory as directed by the signatures and the non-LOCAL
-events.
-
-
-Summary
-Form:  ( ENCAPSULATE NIL (VALUE-TRIPLE ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (LET* ...))
-Rules: NIL
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (MEMOIZE 'F3
+                                   :INVOKE 'G3
+                                   :COMMUTATIVE T))
  T
 ACL2 !>>(TRACE$ G3)
  ((G3))

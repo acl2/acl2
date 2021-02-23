@@ -98,6 +98,7 @@
        (m1-file-alist1 m1-file-alist2)
      (declare
       (xargs
+       :ruler-extenders nil ; Matt K. change for ruler-extenders mod 2/2021
        :guard (and (m1-file-alist-p m1-file-alist1)
                    (m1-file-alist-p m1-file-alist2))
        :hints (("goal" :in-theory (enable m1-file->contents

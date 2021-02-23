@@ -155,7 +155,15 @@
 (defthmd getbit-trim-dag-all
   (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
                 (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
-                (natp n))
+                (integerp n))
+           (equal (getbit n x)
+                  (getbit n (trim (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd getbit-trim-dag-all-gen
+  (implies (and (<= 0 n)
+                (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
+                (integerp n))
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable trim))))

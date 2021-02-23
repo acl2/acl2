@@ -13216,6 +13216,9 @@
               *fchecksum-symbol-memo*
             (make-hash-table :test 'eq)))
          #-acl2-loop-only
+         (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
+                                         'stolen))
+         #-acl2-loop-only
          (*inside-include-book-fn* (if behalf-of-certify-flg
                                        'hcomp-build
                                      t))
@@ -30842,6 +30845,14 @@
         (ec-call
          (pairlis$ (lambda-object-formals ,fn)
                    ,args))))
+
+(defmacro our-quote-macro (x)
+
+; This odd little macro is just an alist for quote, which add-trip uses to
+; communicate information to install-for-add-trip (as described in comments in
+; those functions).
+
+  (list 'quote x))
 
 ; Essay on Memoization with Partial Functions (Memoize-partial)
 

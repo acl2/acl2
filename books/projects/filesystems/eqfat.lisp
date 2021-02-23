@@ -23,7 +23,6 @@
                   (:rewrite free-index-listp-correctness-1)
                   (:rewrite consp-of-assoc-of-hifat-file-alist-fix)
                   (:linear hifat-entry-count-when-hifat-subsetp)
-                  (:rewrite hifat-place-file-when-hifat-equiv-1)
                   (:rewrite consp-of-assoc-when-hifat-equiv-lemma-1)
                   (:rewrite hifat-subsetp-preserves-assoc)
                   (:rewrite abs-find-file-correctness-1-lemma-40)
@@ -483,6 +482,13 @@ channel state))
                                      lofat-regular-file-p lofat-file-p
                                      lofat-file-contents-p
                                      lofat-file->contents))))
+
+(defthm lofat-file-p-when-lofat-directory-file-p-or-lofat-regular-file-p
+  (implies (or (lofat-directory-file-p file)
+               (lofat-regular-file-p file))
+           (lofat-file-p file))
+  :hints (("goal" :in-theory (enable lofat-directory-file-p
+                                     lofat-regular-file-p))))
 
 (defun lofat-find-file (fat32$c d-e-list path)
   (declare (xargs :guard (and (lofat-fs-p fat32$c)
@@ -4449,211 +4455,7 @@ channel state))
     :expand (:free (y) (intersectp-equal nil y)))))
 
 (defthm
-  lofat-remove-file-correctness-1-lemma-14
-  (implies
-   (and
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit))))))))
-     0)
-    (d-e-directory-p (mv-nth 0
-                             (find-d-e (cdr d-e-list)
-                                       filename1)))
-    (equal
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (update-dir-contents
-         fat32$c
-         (d-e-first-cluster (mv-nth 0
-                                    (find-d-e (cdr d-e-list)
-                                              filename1)))
-         (nats=>string
-          (clear-d-e
-           (string=>nats (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                    filename1)))))
-           filename2))))
-       (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit))))))))
-     (put-assoc-equal
-      filename1
-      (m1-file
-       (mv-nth 0
-               (find-d-e (cdr d-e-list)
-                         filename1))
-       (remove-assoc-equal
-        filename2
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents
-                    fat32$c
-                    (mv-nth 0
-                            (find-d-e (cdr d-e-list)
-                                      filename1)))))
-          (+
-           -1 entry-limit
-           (-
-            (hifat-entry-count
-             (mv-nth
-              0
-              (lofat-to-hifat-helper
-               fat32$c
-               (make-d-e-list
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c (car d-e-list))))
-               (+ -1 entry-limit))))))))))
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        fat32$c (cdr d-e-list)
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth 0
-                      (d-e-cc-contents
-                       fat32$c (car d-e-list))))
-             (+ -1 entry-limit))))))))))
-    (useful-d-e-list-p d-e-list))
-   (equal
-    (mv-nth
-     0
-     (lofat-to-hifat-helper
-      (mv-nth
-       0
-       (update-dir-contents
-        fat32$c
-        (d-e-first-cluster (mv-nth 0
-                                   (find-d-e (cdr d-e-list)
-                                             filename1)))
-        (nats=>string
-         (clear-d-e
-          (string=>nats (mv-nth 0
-                                (d-e-cc-contents
-                                 fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                   filename1)))))
-          filename2))))
-      (cdr d-e-list)
-      (+
-       -1 entry-limit
-       (-
-        (hifat-entry-count
-         (mv-nth 0
-                 (lofat-to-hifat-helper
-                  fat32$c
-                  (make-d-e-list
-                   (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c (car d-e-list))))
-                  (+ -1 entry-limit))))))))
-    (put-assoc-equal
-     filename1
-     (m1-file
-      (mv-nth 0
-              (find-d-e (cdr d-e-list)
-                        filename1))
-      (remove-assoc-equal
-       filename2
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (mv-nth 0
-                                  (find-d-e (cdr d-e-list)
-                                            filename1)))))
-                entry-limit))))
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))))))
-  :hints
-  (("goal"
-    :in-theory (enable nfix)
-    :use
-    (:instance
-     (:rewrite lofat-to-hifat-helper-correctness-4)
-     (entry-limit1
-      (+
-       -1 entry-limit
-       (-
-        (hifat-entry-count
-         (mv-nth 0
-                 (lofat-to-hifat-helper
-                  fat32$c
-                  (make-d-e-list
-                   (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c (car d-e-list))))
-                  (+ -1 entry-limit)))))))
-     (entry-limit2 entry-limit)
-     (d-e-list (make-d-e-list
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c
-                         (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                           filename1))))))))))
-
-(defthm
-  lofat-remove-file-correctness-lemma-75
+  lofat-remove-file-correctness-lemma-2
   (implies
    (and
     (syntaxp (variablep entry-limit))

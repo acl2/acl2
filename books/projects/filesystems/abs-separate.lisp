@@ -1610,8 +1610,9 @@
                       (abs-addrs (remove-assoc-equal name abs-file-alist1)))))
   :hints (("goal" :in-theory (enable abs-addrs))))
 
+;; Inductive, hence kept.
 (defthm
-  abs-addrs-of-ctx-app-1-lemma-13
+  abs-addrs-of-ctx-app-lemma-11
   (implies
    (and
     (not (member-equal x
@@ -1710,6 +1711,7 @@
        abs-file-alist1))
      y))))
 
+;; Inductive, hence kept.
 (defthm
   abs-addrs-of-ctx-app-lemma-9
   (implies
@@ -1768,8 +1770,9 @@
       (cons (car abs-file-alist1)
             (abs-addrs (remove-assoc-equal name (cdr abs-file-alist1)))))))))
 
+;; Inductive, hence kept.
 (defthm
-  abs-addrs-of-ctx-app-2-lemma-14
+  abs-addrs-of-ctx-app-lemma-12
   (implies
    (and (abs-directory-file-p (cdr (assoc-equal name abs-file-alist1)))
         (no-duplicatesp-equal (abs-addrs abs-file-alist1))
@@ -3912,17 +3915,17 @@
                             (abs-file-alist1 (abs-fs-fix y))))))
   :rule-classes :congruence)
 
-(defthm hifat-equiv-when-absfat-equiv-lemma-1
+(defthm absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
   (implies (m1-file-alist-p fs) (abs-complete fs))
   :hints (("goal" :in-theory (enable abs-complete))))
 
-(defthmd hifat-equiv-when-absfat-equiv-lemma-2
+(defthmd absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2
   (implies (not (consp (abs-addrs fs)))
            (abs-complete fs))
   :hints (("goal" :in-theory (enable abs-complete))))
 
 (defthm
-  hifat-equiv-when-absfat-equiv-lemma-3
+  absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
   (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
                 (m1-file-alist-p (abs-fs-fix abs-file-alist1)))
            (and
@@ -3933,7 +3936,7 @@
   :hints
   (("goal"
     :in-theory (e/d (absfat-equiv
-                     hifat-equiv-when-absfat-equiv-lemma-2)
+                     absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2)
                     (abs-addrs-when-absfat-equiv-lemma-1))
     :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
                      (abs-file-alist1 (abs-fs-fix abs-file-alist1))
@@ -3952,6 +3955,19 @@
               (equal (abs-addrs abs-file-alist2) nil)
               (abs-complete abs-file-alist2))))))
 
+(defthm
+  absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-1
+  (implies (absfat-equiv abs-file-alist1 abs-file-alist2)
+           (equal (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+                  (m1-file-alist-p (abs-fs-fix abs-file-alist2))))
+  :hints (("goal" :in-theory (disable absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3)
+           :use (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+                 (:instance absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+                            (abs-file-alist1 abs-file-alist2)
+                            (abs-file-alist2 abs-file-alist1)))))
+  :rule-classes
+  :congruence)
+
 ;; Probably tricky to get a refinement relationship (in the defrefinement
 ;; sense) between literally absfat-equiv and hifat-equiv. But we can still have
 ;; some kind of substitute...
@@ -3966,8 +3982,8 @@
   (("goal"
     :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
                                   absfat-subsetp-correctness-1 abs-fs-fix)
-                    (hifat-equiv-when-absfat-equiv-lemma-3))
-    :use hifat-equiv-when-absfat-equiv-lemma-3
+                    (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3))
+    :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
     :do-not-induct t))
   :rule-classes
   (:rewrite
@@ -3982,8 +3998,8 @@
     (("goal"
       :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
                                     absfat-subsetp-correctness-1 abs-fs-fix)
-                      (hifat-equiv-when-absfat-equiv-lemma-3))
-      :use hifat-equiv-when-absfat-equiv-lemma-3
+                      (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3))
+      :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
       :do-not-induct t)))))
 
 (defund
@@ -5499,40 +5515,6 @@
                                         abs-file-alist2 x x-path))
                     (abs-addrs abs-file-alist1))))))
 
-(defthm
-  abs-separate-correctness-1-lemma-9
-  (implies
-   (and (no-duplicatesp-equal (abs-addrs (abs-fs-fix abs-file-alist1)))
-        (abs-complete (abs-fs-fix abs-file-alist2))
-        (ctx-app-ok abs-file-alist1 x x-path))
-   (subsetp-equal (abs-addrs (abs-fs-fix (ctx-app abs-file-alist1
-                                                  abs-file-alist2 x x-path)))
-                  (remove-equal (nfix x)
-                                (abs-addrs (abs-fs-fix abs-file-alist1)))))
-  :hints
-  (("goal"
-    :in-theory (disable abs-addrs-of-ctx-app
-                        no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1)
-    :use
-    (abs-addrs-of-ctx-app
-     (:instance no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
-                (abs-file-alist (ctx-app abs-file-alist1
-                                         abs-file-alist2 x x-path))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies
-     (and (natp x)
-          (no-duplicatesp-equal (abs-addrs (abs-fs-fix abs-file-alist1)))
-          (abs-complete (abs-fs-fix abs-file-alist2))
-          (ctx-app-ok abs-file-alist1 x x-path))
-     (not
-      (member-equal
-       x
-       (abs-addrs (abs-fs-fix (ctx-app abs-file-alist1
-                                       abs-file-alist2 x x-path)))))))))
-
 ;; Inductive, hence kept.
 (defthm
   abs-separate-correctness-lemma-7
@@ -5741,50 +5723,6 @@
 (defthm
   abs-separate-correctness-lemma-6
   (implies
-   (and (< 0 (1st-complete frame))
-        (ctx-app-ok root (1st-complete frame)
-                    (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                       frame))))
-        (frame-p frame)
-        (no-duplicatesp-equal (abs-addrs (abs-fs-fix root)))
-        (no-duplicatesp-equal (strip-cars frame)))
-   (not
-    (member-equal
-     (1st-complete frame)
-     (abs-addrs
-      (mv-nth
-       0
-       (collapse
-        (frame-with-root
-         (ctx-app root
-                  (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                    frame)))
-                  (1st-complete frame)
-                  (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                     frame))))
-         (remove-assoc-equal (1st-complete frame)
-                             frame))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (intersectp-equal))
-    :use
-    ((:instance
-      abs-separate-correctness-lemma-5
-      (frame
-       (frame-with-root
-        (ctx-app root
-                 (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                   frame)))
-                 (1st-complete frame)
-                 (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                    frame))))
-        (remove-assoc-equal (1st-complete frame)
-                            frame))))))))
-
-(defthm
-  abs-separate-correctness-lemma-8
-  (implies
    (and
     (consp
      (assoc-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
@@ -5913,7 +5851,7 @@
                            (hifat-no-dups-p fs)))))
   :hints
   (("goal" :in-theory (enable collapse intersectp-equal
-                              hifat-equiv-when-absfat-equiv-lemma-2)
+                              absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2)
     :induct (collapse frame))))
 
 (defthm dist-names-of-append
@@ -6432,3 +6370,52 @@
     :expand ((collapse frame)
              (collapse (frame-with-root (frame->root frame)
                                         (frame->frame frame)))))))
+
+;; I guess I should say that this function can only really do so much, and if
+;; we try to use this in our proofs we'll kinda be back to representing
+;; filesystem trees as... filesystem trees. When I say it can only do so much,
+;; I mean that it can only help us do some refinement proofs, which will tie
+;; lofat to hifat and hifat to absfat. Ultimately, I guess we'll want theorems
+;; that use the collapse-equiv relation defined previously...
+(defund frame-reps-fs
+    (frame fs)
+  (b*
+      (((mv fs-equiv result) (collapse frame)))
+    (and result
+         (hifat-equiv fs-equiv fs)
+         (frame-p frame)
+         (abs-separate frame)
+         (subsetp-equal
+          (abs-addrs (frame->root frame))
+          (frame-addrs-root (frame->frame frame)))
+         (no-duplicatesp-equal (strip-cars frame))
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (consp (assoc-equal 0 frame))
+         (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+                0))))
+
+(defthm frame-reps-fs-of-collapse-1
+  (implies (good-frame-p frame)
+           (frame-reps-fs frame (mv-nth 0 (collapse frame))))
+  :hints (("goal" :in-theory (enable good-frame-p frame-reps-fs))))
+
+(defthm good-frame-p-when-frame-reps-fs
+  (implies (frame-reps-fs frame fs)
+           (good-frame-p frame))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable good-frame-p frame-reps-fs))))
+
+(defcong hifat-equiv equal (frame-reps-fs frame fs) 2
+  :hints (("Goal" :in-theory (enable frame-reps-fs))))
+
+(defcong collapse-equiv equal (frame-reps-fs frame fs) 1
+  :hints (("Goal" :in-theory (enable frame-reps-fs collapse-equiv
+                                     good-frame-p)
+           :do-not-induct t))
+  :otf-flg t)
+
+(defthm frame-reps-fs-correctness-1
+  (implies (frame-reps-fs frame fs)
+           (hifat-equiv (mv-nth 0 (collapse frame))
+                        fs))
+  :hints (("goal" :in-theory (enable frame-reps-fs))))

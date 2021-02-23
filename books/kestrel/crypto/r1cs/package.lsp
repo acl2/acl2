@@ -21,6 +21,7 @@
             pfield::inv
             pfield::pow
             pfield::div
+            pfield::fe-listp
             lookup-equal
             lookup-eq
 	    b*
@@ -35,5 +36,7 @@
             bitnot
             bvnot
             bvshr
-            bvshl)
+            bvshl
+            bvplus
+            power-of-2p)
           *acl2-exports*))

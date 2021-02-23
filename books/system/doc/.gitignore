@@ -5,3 +5,4 @@ rendered-doc-combined.lsp.backup
 rendered-doc-combined-slow.lsp
 acl2-doc-search
 acl2-doc-search.backup
+shellpool-*.tmp

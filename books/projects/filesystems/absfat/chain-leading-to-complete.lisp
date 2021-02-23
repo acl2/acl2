@@ -858,7 +858,6 @@
           (:rewrite abs-fs-p-correctness-1)
           (:rewrite abs-fs-p-when-hifat-no-dups-p)
           (:type-prescription abs-directory-file-p-when-m1-file-p-lemma-1)
-          (:rewrite hifat-equiv-when-absfat-equiv-lemma-1)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:rewrite integerp-of-car-when-integer-listp)
           (:definition integer-listp)
