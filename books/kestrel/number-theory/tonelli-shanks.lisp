@@ -23,9 +23,11 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
+(local (include-book "kestrel/number-theory/quadratic-residue" :dir :system))
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
+
 
 (in-theory (disable acl2::mod-expt-fast))
 
@@ -187,13 +189,19 @@
 ;; Future work: prove correctness; improve guards
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
+  :guard (and (> p 2) (< z p) (rtl::primep p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root."
   :long "Finds the square root of n modulo p.  p must be prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp)
+  :verify-guards nil
   ;; It would be good to have a guards that p>2 and primep(p)
-  ;; and z<p and nonresidue(z) and ex(r) (r * r = z mod p)
-  (if (or (not (natp n)) (not (natp p)) (not (natp z))
+  ;; and z<p and nonresidue(z)
+  ;;
+  ;;related to proof:
+  ;; ex(r) : if there exists r such that if (r * r = n mod p) then returns r else return 0
+  (if (or
+       ;(not (natp n)) (not (natp p)) (not (natp z))
           (= n 0) (< p 3))
       0
     (mv-let (Q S)
