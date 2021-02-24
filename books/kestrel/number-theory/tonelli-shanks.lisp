@@ -24,6 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/number-theory/quadratic-residue" :dir :system))
+(local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
@@ -194,7 +195,7 @@
   :long "Finds the square root of n modulo p.  p must be prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp)
-  :verify-guards nil
+  ;:verify-guards nil
   ;; It would be good to have a guards that p>2 and primep(p)
   ;; and z<p and nonresidue(z)
   ;;
@@ -213,5 +214,6 @@
         (T-S-aux M c tt R p))))
   :guard-hints (("Goal"
                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
-                                  acl2::not-evenp-when-oddp)
+                                  acl2::not-evenp-when-oddp
+				  rtl::oddp-odd-prime)
                                  (oddp)))))
