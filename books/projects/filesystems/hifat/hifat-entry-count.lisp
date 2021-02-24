@@ -13,7 +13,9 @@
 (defund
   hifat-entry-count (fs)
   (declare (xargs :guard (and (m1-file-alist-p fs)
-                              (hifat-no-dups-p fs))))
+                              (hifat-no-dups-p fs))
+                  :guard-hints
+                  (("Goal" :in-theory (disable m1-directory-file-p-of-m1-file-fix)))))
   (if
    (atom fs)
    0
