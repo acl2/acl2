@@ -385,3 +385,27 @@
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+(defthmd *-both-sides
+  (implies (equal x y)
+           (equal (* z x) (* z y))))
+
+;; not exported here because it mentions /
+(local
+ (defthm *-of-/-same-arg2
+   (equal (* x (/ x) y)
+          (if (equal 0 (fix x))
+              0
+            (fix y)))
+   :hints (("Goal" :in-theory (disable associativity-of-*
+                                       commutativity-2-of-*)
+            :use (:instance associativity-of-* (y (/ x)) (z y))))))
+
+(defthm equal-of-*-and-*-cancel
+  (equal (equal (* x y) (* x z))
+         (or (equal (fix x) 0)
+             (equal (fix y) (fix z))))
+  :hints (("Goal" :use (:instance *-both-sides
+                                  (x (* x y))
+                                  (y (* x z))
+                                  (z (/ x))))))
