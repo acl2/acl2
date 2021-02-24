@@ -201,17 +201,17 @@
   ;;
   ;;related to proof:
   ;; ex(r) : if there exists r such that if (r * r = n mod p) then returns r else return 0
-  (if (or
+  ;(if (or
        ;(not (natp n)) (not (natp p)) (not (natp z))
-          (= n 0) (< p 3))
-      0
+      ;    (= n 0) (< p 3))
+     ; 0
     (mv-let (Q S)
         (Q*2^S (- p 1))
       (let ((M S) ; could replace S by M, but this matches
             (c (acl2::mod-expt-fast z Q p))
             (tt (acl2::mod-expt-fast n Q p))
             (R (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)))
-        (T-S-aux M c tt R p))))
+        (T-S-aux M c tt R p)))
   :guard-hints (("Goal"
                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
                                   acl2::not-evenp-when-oddp
