@@ -1681,7 +1681,7 @@
        (lhs `(run-fun (ident ,(symbol-name fn))
                       (list ,@formals)
                       ,const))
-       (rhs `(value-result-ok (,fn ,@formals)))
+       (rhs `(,fn ,@formals))
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
                                     ',(cons fn prec-fns))
