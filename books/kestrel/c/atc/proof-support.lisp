@@ -439,12 +439,6 @@
              (equal (value-result-fix x)
                     x)))
 
-  (defruled value-result-ok-when-valuep
-    (implies (valuep x)
-             (equal (value-result-ok x)
-                    x))
-    :enable value-result-ok)
-
   (defruled value-option-result-kind-when-value-optionp
     (implies (value-optionp x)
              (equal (value-option-result-kind x)
@@ -619,7 +613,6 @@
     value-result-fix-when-valuep
     value-result-kind-when-valuep
     value-result-ok->get-when-valuep
-    value-result-ok-when-valuep
     value-result-kind-of-if
     value-result-ok->get-of-if
     value-result-fix-of-if
