@@ -118,6 +118,16 @@
                            (a (dirname path))
                            (n n)))))
 
+(defthm
+  abs-pwrite-correctness-lemma-37
+  (implies (and (fat32-filename-list-p path)
+                (consp path)
+                (not (consp (cdr path))))
+           (equal (assoc-equal (car path) fs)
+                  (assoc-equal (basename path) fs)))
+  :hints (("goal" :in-theory (enable basename)
+           :do-not-induct t)))
+
 (defund hifat-lstat (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)

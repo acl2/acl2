@@ -3915,17 +3915,17 @@
                             (abs-file-alist1 (abs-fs-fix y))))))
   :rule-classes :congruence)
 
-(defthm absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
+(defthm abs-complete-when-m1-file-alist-p
   (implies (m1-file-alist-p fs) (abs-complete fs))
   :hints (("goal" :in-theory (enable abs-complete))))
 
-(defthmd absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2
+(defthmd abs-complete-when-atom-abs-addrs
   (implies (not (consp (abs-addrs fs)))
            (abs-complete fs))
   :hints (("goal" :in-theory (enable abs-complete))))
 
 (defthm
-  absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+  absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
   (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
                 (m1-file-alist-p (abs-fs-fix abs-file-alist1)))
            (and
@@ -3936,7 +3936,7 @@
   :hints
   (("goal"
     :in-theory (e/d (absfat-equiv
-                     absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2)
+                     abs-complete-when-atom-abs-addrs)
                     (abs-addrs-when-absfat-equiv-lemma-1))
     :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
                      (abs-file-alist1 (abs-fs-fix abs-file-alist1))
@@ -3960,9 +3960,9 @@
   (implies (absfat-equiv abs-file-alist1 abs-file-alist2)
            (equal (m1-file-alist-p (abs-fs-fix abs-file-alist1))
                   (m1-file-alist-p (abs-fs-fix abs-file-alist2))))
-  :hints (("goal" :in-theory (disable absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3)
-           :use (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
-                 (:instance absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+  :hints (("goal" :in-theory (disable absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1)
+           :use (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
+                 (:instance absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
                             (abs-file-alist1 abs-file-alist2)
                             (abs-file-alist2 abs-file-alist1)))))
   :rule-classes
@@ -3982,8 +3982,8 @@
   (("goal"
     :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
                                   absfat-subsetp-correctness-1 abs-fs-fix)
-                    (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3))
-    :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+                    (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1))
+    :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
     :do-not-induct t))
   :rule-classes
   (:rewrite
@@ -3998,8 +3998,8 @@
     (("goal"
       :in-theory (e/d (absfat-equiv hifat-equiv abs-fs-p
                                     absfat-subsetp-correctness-1 abs-fs-fix)
-                      (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3))
-      :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-3
+                      (absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1))
+      :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
       :do-not-induct t)))))
 
 (defund
@@ -5851,7 +5851,7 @@
                            (hifat-no-dups-p fs)))))
   :hints
   (("goal" :in-theory (enable collapse intersectp-equal
-                              absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2)
+                              abs-complete-when-atom-abs-addrs)
     :induct (collapse frame))))
 
 (defthm dist-names-of-append
