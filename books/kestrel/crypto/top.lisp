@@ -16,6 +16,7 @@
 (include-book "interfaces/top")
 (include-book "keccak/top")
 (include-book "hmac/top")
+(include-book "mimc/top")
 (include-book "padding/top")
 (include-book "pfcs/top")
 (include-book "sha-2/top")
