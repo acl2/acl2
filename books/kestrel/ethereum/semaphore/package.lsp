@@ -41,6 +41,7 @@
             pfield::add
             pfield::mul
             pfield::neg
+            pfield::inv
             pfield::fep
             rtl::primep
             acl2::keywords-to-acl2-package ; appears in proof examples
