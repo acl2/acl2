@@ -14495,7 +14495,7 @@
     :rule-classes (:linear :rewrite))
 
   (defthm
-    lofat-place-file-correctness-1-lemma-11
+    lofat-place-file-correctness-lemma-117
     (implies
      (and
       (useful-d-e-list-p d-e-list)
@@ -14727,7 +14727,7 @@
                      . 5))))))
 
   (defthm
-    lofat-place-file-correctness-1-lemma-1
+    lofat-place-file-correctness-lemma-116
     (implies
      (and
       (good-root-d-e-p root-d-e fat32$c)
@@ -14758,13 +14758,8 @@
          (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
          entry-limit)))
       (lofat-file-p file)
-      (or (and (lofat-regular-file-p file)
-               (<= (len (make-clusters (lofat-file->contents file)
-                                       (cluster-size fat32$c)))
-                   (count-free-clusters (effective-fat fat32$c))))
-          (and (equal (lofat-file->contents file) nil)
-               (<= 1
-                   (count-free-clusters (effective-fat fat32$c)))))
+      (or (stringp (lofat-file->contents file))
+          (equal (lofat-file->contents file) nil))
       (not (equal (mv-nth 1
                           (lofat-place-file fat32$c root-d-e path file))
                   *enospc*))
@@ -14849,7 +14844,6 @@
     (("goal"
       :induct (induction-scheme entry-limit
                                 fat32$c file path root-d-e x)
-      :do-not-induct t
       :expand ((lofat-place-file fat32$c root-d-e path file))
       :in-theory
       (e/d (hifat-place-file (:rewrite lofat-to-hifat-inversion-lemma-4)
@@ -14858,7 +14852,6 @@
            ((:definition find-d-e)
             (:definition place-d-e)
             (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
-            (:rewrite lofat-fs-p-of-lofat-place-file-lemma-1)
             (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
                       . 5)))))
     :rule-classes
@@ -14894,13 +14887,8 @@
            (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
            entry-limit)))
         (lofat-file-p file)
-        (or (and (lofat-regular-file-p file)
-                 (<= (len (make-clusters (lofat-file->contents file)
-                                         (cluster-size fat32$c)))
-                     (count-free-clusters (effective-fat fat32$c))))
-            (and (equal (lofat-file->contents file) nil)
-                 (<= 1
-                     (count-free-clusters (effective-fat fat32$c)))))
+        (or (lofat-regular-file-p file)
+            (equal (lofat-file->contents file) nil))
         (not (equal (mv-nth 1
                             (lofat-place-file fat32$c root-d-e path file))
                     *enospc*))
@@ -14952,13 +14940,8 @@
        (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
        entry-limit)))
     (lofat-file-p file)
-    (or (and (lofat-regular-file-p file)
-             (<= (len (make-clusters (lofat-file->contents file)
-                                     (cluster-size fat32$c)))
-                 (count-free-clusters (effective-fat fat32$c))))
-        (and (equal (lofat-file->contents file) nil)
-             (<= 1
-                 (count-free-clusters (effective-fat fat32$c)))))
+    (or (stringp (lofat-file->contents file))
+        (equal (lofat-file->contents file) nil))
     (not (equal (mv-nth 1
                         (lofat-place-file fat32$c root-d-e path file))
                 *enospc*))
@@ -15028,11 +15011,11 @@
   :hints
   (("goal"
     :in-theory
-    (disable lofat-place-file-correctness-1-lemma-1
+    (disable lofat-place-file-correctness-lemma-116
              (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
                        . 5)
              lofat-place-file)
-    :use (:instance lofat-place-file-correctness-1-lemma-1
+    :use (:instance lofat-place-file-correctness-lemma-116
                     (x nil))
     :do-not-induct t)))
 

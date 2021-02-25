@@ -666,7 +666,8 @@
                          (mv-nth 0 (hifat-place-file fs path file2)))
             (equal (mv-nth 1 (hifat-place-file fs path file1))
                    (mv-nth 1 (hifat-place-file fs path file2)))))
-  :hints (("goal" :in-theory (enable hifat-place-file)
+  :hints (("goal" :in-theory (e/d (hifat-place-file)
+                                  (m1-directory-file-p-of-m1-file-fix))
            :induct
            (mv (mv-nth 0 (hifat-place-file fs path file1))
                (mv-nth 0 (hifat-place-file fs path file2)))))

@@ -32,7 +32,8 @@
   (implies (and (natp r)
                 (<= 0 i))
            (natp (expt r i)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-expt-type
   (implies (and (integerp r)
@@ -63,7 +64,8 @@
                 (not (equal 0 r)))
            (equal (* (expt r (+ -1 x))
                      (expt r (+ 1 y)))
-                  (* (expt r x) (expt r y)))))
+                  (* (expt r x) (expt r y))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (local
  (defthm integerp-of-expt-helper
@@ -113,3 +115,13 @@
 (defthm expt-of-unary--
   (equal (expt r (- i))
          (/ (expt r i))))
+
+;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
+(defthm expt-half-linear
+  (implies (natp i)
+           (equal (expt 2 i)
+                  (+ (expt 2 (+ -1 i))
+                     (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable ;expt-of-+
+                              )))
+  :rule-classes :linear)

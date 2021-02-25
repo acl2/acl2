@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,6 +51,7 @@
 (include-book "bit-to-bool")
 (include-book "bitxnor")
 (include-book "slice2")
+(include-book "sbvlt-rules")
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -6096,22 +6097,6 @@
            (equal (equal x k)
                   nil)))
 
-;move
-(defthmd logext-when-negative
-  (implies (< (logext 32 x) 0)
-           (equal (logext 32 x)
-                  (+ (bvchop 31 x)
-                     (- (expt 2 31)))))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-;move
-(defthmd logext-when-positive
-  (implies (and (equal 0 (getbit (+ -1 size) x))
-                (posp size))
-           (equal (logext size x)
-                  (bvchop (+ -1 size) x)))
-  :hints (("Goal" :in-theory (enable logext))))
-
 (defthm bvchop-of-leftrotate-low
   (implies (and (<= size amount) ;this case
                 (<= amount width)
@@ -6740,34 +6725,7 @@
            (equal (bvchop size (+ (- (expt 2 size)) y))
                   (bvchop size y))))
 
-;move
-(defthmd logext-when-negative-2
-  (implies (and (posp size)
-                (equal 1 (getbit (+ -1 size) x)))
-           (equal (logext size x)
-                  (+ (bvchop (+ -1 size) x)
-                     (- (expt 2 (+ -1 size))))))
-  :hints (("Goal" :in-theory (e/d (logext LOGAPP bvchop)
-                                  (;hack-6 ;yuck!
-                                   LOGAPP-EQUAL-REWRITE
-                                   ;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                   )))))
 
-;move
-;newly disabled
-(defthmd sbvlt-rewrite
-  (implies (posp size)
-           (equal (sbvlt size x y)
-                  (if (equal 0 (getbit (+ -1 size) x))
-                      (if (equal 0 (getbit (+ -1 size) y))
-                          (bvlt (+ -1 size) x y)
-                        nil)
-                    (if (equal 0 (getbit (+ -1 size) y))
-                        t
-                      (bvlt (+ -1 size) x y)))))
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
-                                         logext-when-negative logext-when-positive logext-when-negative-2) (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free)))))
 
 ;prove floor of one less?
 (defthm logtail-of-one-less

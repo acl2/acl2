@@ -1584,6 +1584,12 @@
   (and (m1-file-p file)
        (m1-file-alist-p (m1-file->contents file))))
 
+(defthm m1-directory-file-p-of-m1-file-fix
+  (equal (m1-directory-file-p (m1-file-fix$inline file))
+         (m1-file-alist-p (m1-file->contents file)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable m1-directory-file-p))))
+
 (encapsulate
   ()
 
