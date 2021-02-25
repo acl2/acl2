@@ -20,6 +20,7 @@
 
 (define baby-jubjub-prime ()
   :returns (prime rtl::primep)
+  :parents (zksemaphore::baby-jubjub)
   :short "The prime that defines the field over which BabyJubjub is defined."
   :long
   (xdoc::topstring
@@ -27,9 +28,13 @@
     "This is @('primes::bn-254-group-prime'),
      but we introduce a BabyJubjub-specific nullary function for it here.")
    (xdoc::p
+    "Decimal value: " (xdoc::tt "21888242871839275222246405745257275088548364400416034343698204186575808495617"))
+   (xdoc::p
+    "Hex value: " (xdoc::tt "#x30644E72E131A029B85045B68181585D2833E84879B9709143E1F593F0000001"))
+   (xdoc::p
     "This prime is 254 bits long.")
    (xdoc::p
-    "The fact that this prims mod 4 is 1 is relevant for EdDSA.")
+    "The fact that this prime mod 4 is 1 is relevant for EdDSA.")
    (xdoc::p
     "The fact that this prime mod 8 is 1
      means there is no simple formula for modular square root.
