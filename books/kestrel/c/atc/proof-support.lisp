@@ -243,8 +243,6 @@
     (:e exprp)
     (:e frame-list-fix)
     (:e fun-env-lookup)
-    (:e fun-env-result-kind)
-    (:e fun-env-result-ok->get)
     (:e fun-info->body)
     (:e fun-info->params)
     (:e iconst->base)
@@ -350,7 +348,6 @@
     pop-frame
     push-frame
     read-var
-    run-fun
     sint-const
     sint01
     sint-logand
