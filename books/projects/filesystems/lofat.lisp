@@ -8,7 +8,7 @@
 (include-book "lofat/lofat-place-file")
 
 (local (in-theory (disable nth make-list-ac-removal last
-                           make-list-ac)))
+                           make-list-ac member-equal)))
 
 (defthm
   lofat-mkdir-refinement-lemma-14
@@ -31,7 +31,6 @@
      (m1-file-hifat-file-alist-fix-normalisation
       abs-mkdir-correctness-lemma-36
       (:rewrite lofat-file-contents-fix-when-lofat-file-contents-p)
-      (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-4)
       (:rewrite fat32-filename-p-correctness-1)
       (:rewrite lofat-file-contents-p-when-stringp)
       (:linear nth-when-d-e-p)

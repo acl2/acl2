@@ -86,8 +86,6 @@
     (:rewrite nth-of-effective-fat)
     (:rewrite
      not-intersectp-list-of-set-difference$-lemma-1)
-    (:rewrite
-     d-e-cc-contents-of-lofat-place-file-coincident-lemma-4)
     (:rewrite nats=>chars-of-take)
     (:rewrite intersectp-when-subsetp)
     (:rewrite take-of-len-free)))))
@@ -2718,8 +2716,9 @@
          d-e-list entry-limit))
        0)))
     :hints
-    (("goal" :in-theory (disable
-                         lofat-remove-file-correctness-1-lemma-2)
+    (("goal" :in-theory (e/d
+                         (non-free-index-listp)
+                         (lofat-remove-file-correctness-1-lemma-2))
       :use (:instance
             lofat-remove-file-correctness-1-lemma-2
             (x nil)))))
@@ -6001,8 +6000,9 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (disable
-                lofat-remove-file-correctness-lemma-1)
+    :in-theory (e/d
+                (non-free-index-listp)
+                (lofat-remove-file-correctness-lemma-1))
     :use
     (:instance
      lofat-remove-file-correctness-lemma-1

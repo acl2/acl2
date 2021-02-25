@@ -4139,7 +4139,7 @@
       (and (equal (fat32-entry-mask (nth (car index-list) fa-table)) 0)
            (free-index-listp (cdr index-list) fa-table))))
 
-(defun
+(defund
     non-free-index-listp (x fa-table)
   (if
       (atom x)
@@ -4158,7 +4158,8 @@
    (and (not (member-equal key x))
         (< key (len fa-table)))
    (equal (non-free-index-listp x (update-nth key val fa-table))
-          (non-free-index-listp x fa-table))))
+          (non-free-index-listp x fa-table)))
+  :hints (("Goal" :in-theory (enable non-free-index-listp))))
 
 (defthm
   non-free-index-listp-of-set-indices-in-fa-table
@@ -4169,7 +4170,7 @@
             (set-indices-in-fa-table fa-table index-list value-list)))
   :hints
   (("goal" :in-theory (enable set-indices-in-fa-table
-                              intersectp-equal)
+                              intersectp-equal non-free-index-listp)
     :induct (set-indices-in-fa-table fa-table index-list value-list))))
 
 (defthm
@@ -4178,6 +4179,7 @@
                 (equal (fat32-entry-mask (nth key fa-table))
                        0))
            (not (member-equal key x)))
+  :hints (("Goal" :in-theory (enable non-free-index-listp)))
   :rule-classes
   (:rewrite
    (:rewrite
@@ -4187,7 +4189,8 @@
           (equal (fat32-entry-mask (nth key fa-table))
                  0)
           (< key (len fa-table)))
-     (non-free-index-listp x (update-nth key val fa-table))))))
+     (non-free-index-listp x (update-nth key val fa-table)))
+    :hints (("Goal" :in-theory (enable non-free-index-listp))))))
 
 (defthm true-listp-when-non-free-index-listp
   (implies (non-free-index-listp x fa-table)
@@ -4263,14 +4266,15 @@
         (natp n)
         (fat32-entry-list-p fa-table))
    (not (intersectp-equal x (find-n-free-clusters fa-table n))))
-  :hints (("goal" :in-theory (enable intersectp-equal))))
+  :hints (("goal" :in-theory (enable intersectp-equal non-free-index-listp))))
 
 (defthm
   non-free-index-listp-of-append
   (equal (non-free-index-listp (append x y) fa-table)
          (and
           (non-free-index-listp (true-list-fix x) fa-table)
-          (non-free-index-listp y fa-table))))
+          (non-free-index-listp y fa-table)))
+  :hints (("goal" :in-theory (enable non-free-index-listp))))
 
 (defthm
   non-free-index-listp-of-fat32-build-index-list
@@ -4287,7 +4291,7 @@
             (fat32-build-index-list fa-table masked-current-cluster
                                     length cluster-size))
     fa-table))
-  :hints (("goal" :in-theory (enable fat32-build-index-list))))
+  :hints (("goal" :in-theory (enable fat32-build-index-list non-free-index-listp))))
 
 (defthm
   free-index-listp-of-update-nth
@@ -4319,7 +4323,7 @@
     (+ (count-free-clusters fa-table)
        (len index-list))))
   :hints
-  (("goal" :in-theory (enable set-indices-in-fa-table)
+  (("goal" :in-theory (enable set-indices-in-fa-table non-free-index-listp)
     :induct (set-indices-in-fa-table fa-table index-list
                                      (make-list-ac (len index-list)
                                                    0 nil))))
@@ -4393,7 +4397,7 @@
               (effective-fat fat32$c))))
   :hints
   (("goal"
-    :in-theory (enable lofat-to-hifat-helper)
+    :in-theory (enable lofat-to-hifat-helper non-free-index-listp)
     :induct
     (lofat-to-hifat-helper fat32$c
                            d-e-list entry-limit))))
@@ -4422,7 +4426,7 @@
                 (not-intersectp-list (list key) l))
            (non-free-index-list-listp l (update-nth key val fa-table)))
   :hints (("goal" :induct t
-           :in-theory (e/d (not-intersectp-list)
+           :in-theory (e/d (not-intersectp-list non-free-index-listp)
                            (intersectp-is-commutative))
            :expand ((intersectp-equal (list key) (car l))
                     (intersectp-equal nil (car l))))))
@@ -4456,7 +4460,7 @@
                (non-free-index-list-listp
                 l
                 (set-indices-in-fa-table fa-table index-list value-list))))
-     :hints (("goal" :in-theory (enable not-intersectp-list)))))
+     :hints (("goal" :in-theory (enable not-intersectp-list non-free-index-listp)))))
 
   (defthm
     non-free-index-list-listp-of-set-indices-in-fa-table
@@ -4473,7 +4477,7 @@
            (equal (non-free-index-listp (flatten l)
                                         fa-table)
                   (non-free-index-list-listp l fa-table)))
-  :hints (("goal" :in-theory (enable flatten))))
+  :hints (("goal" :in-theory (enable flatten non-free-index-listp))))
 
 (defthm
   not-intersectp-list-of-lofat-to-hifat-helper
@@ -7611,7 +7615,8 @@
             (:definition hifat-no-dups-p)
             remove1-d-e not-intersectp-list
             (:linear hifat-to-lofat-inversion-lemma-16)
-            hifat-bounded-file-alist-p-of-cdr)
+            hifat-bounded-file-alist-p-of-cdr
+            non-free-index-listp)
            ((:rewrite nth-of-nats=>chars)
             (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
@@ -7659,21 +7664,18 @@
         (>= entry-limit (hifat-entry-count fs)))
    (b*
        (((mv fat32$c d-e-list error-code)
-         (hifat-to-lofat-helper fat32$c
-                                fs current-dir-first-cluster)))
+         (hifat-to-lofat-helper fat32$c fs current-dir-first-cluster)))
      (implies
       (zp error-code)
-      (and
-       (equal (mv-nth 3
-                      (lofat-to-hifat-helper fat32$c
-                                             d-e-list entry-limit))
-              0)
-       (hifat-equiv
-        (mv-nth 0
-                (lofat-to-hifat-helper fat32$c
-                                       d-e-list entry-limit))
-        fs)))))
-  :hints (("goal" :in-theory (disable hifat-to-lofat-inversion-big-induction)
+      (and (equal (mv-nth 3
+                          (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+                  0)
+           (hifat-equiv
+            (mv-nth 0
+                    (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+            fs)))))
+  :hints (("goal" :in-theory (e/d (non-free-index-listp)
+                                  (hifat-to-lofat-inversion-big-induction))
            :use (:instance hifat-to-lofat-inversion-big-induction
                            (x nil)))))
 
@@ -7724,19 +7726,16 @@
        (update-fati
         (fat32-entry-mask (bpb_rootclus fat32$c))
         (fat32-update-lower-28
-         (fati
-          (fat32-entry-mask (bpb_rootclus fat32$c))
-          (stobj-set-indices-in-fa-table
-           fat32$c
-           (generate-index-list
-            2 (count-of-clusters fat32$c))
-           (make-list-ac (count-of-clusters fat32$c)
-                         0 nil)))
+         (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+               (stobj-set-indices-in-fa-table
+                fat32$c
+                (generate-index-list 2 (count-of-clusters fat32$c))
+                (make-list-ac (count-of-clusters fat32$c)
+                              0 nil)))
          268435455)
         (stobj-set-indices-in-fa-table
          fat32$c
-         (generate-index-list
-          2 (count-of-clusters fat32$c))
+         (generate-index-list 2 (count-of-clusters fat32$c))
          (make-list-ac (count-of-clusters fat32$c)
                        0 nil)))
        fs
@@ -7759,19 +7758,16 @@
          (update-fati
           (fat32-entry-mask (bpb_rootclus fat32$c))
           (fat32-update-lower-28
-           (fati
-            (fat32-entry-mask (bpb_rootclus fat32$c))
-            (stobj-set-indices-in-fa-table
-             fat32$c
-             (generate-index-list
-              2 (count-of-clusters fat32$c))
-             (make-list-ac (count-of-clusters fat32$c)
-                           0 nil)))
+           (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                 (stobj-set-indices-in-fa-table
+                  fat32$c
+                  (generate-index-list 2 (count-of-clusters fat32$c))
+                  (make-list-ac (count-of-clusters fat32$c)
+                                0 nil)))
            268435455)
           (stobj-set-indices-in-fa-table
            fat32$c
-           (generate-index-list
-            2 (count-of-clusters fat32$c))
+           (generate-index-list 2 (count-of-clusters fat32$c))
            (make-list-ac (count-of-clusters fat32$c)
                          0 nil)))
          fs
@@ -7786,19 +7782,16 @@
         (update-fati
          (fat32-entry-mask (bpb_rootclus fat32$c))
          (fat32-update-lower-28
-          (fati
-           (fat32-entry-mask (bpb_rootclus fat32$c))
-           (stobj-set-indices-in-fa-table
-            fat32$c
-            (generate-index-list
-             2 (count-of-clusters fat32$c))
-            (make-list-ac (count-of-clusters fat32$c)
-                          0 nil)))
+          (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                (stobj-set-indices-in-fa-table
+                 fat32$c
+                 (generate-index-list 2 (count-of-clusters fat32$c))
+                 (make-list-ac (count-of-clusters fat32$c)
+                               0 nil)))
           268435455)
          (stobj-set-indices-in-fa-table
           fat32$c
-          (generate-index-list
-           2 (count-of-clusters fat32$c))
+          (generate-index-list 2 (count-of-clusters fat32$c))
           (make-list-ac (count-of-clusters fat32$c)
                         0 nil)))
         fs
@@ -7809,19 +7802,16 @@
         (update-fati
          (fat32-entry-mask (bpb_rootclus fat32$c))
          (fat32-update-lower-28
-          (fati
-           (fat32-entry-mask (bpb_rootclus fat32$c))
-           (stobj-set-indices-in-fa-table
-            fat32$c
-            (generate-index-list
-             2 (count-of-clusters fat32$c))
-            (make-list-ac (count-of-clusters fat32$c)
-                          0 nil)))
+          (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                (stobj-set-indices-in-fa-table
+                 fat32$c
+                 (generate-index-list 2 (count-of-clusters fat32$c))
+                 (make-list-ac (count-of-clusters fat32$c)
+                               0 nil)))
           268435455)
          (stobj-set-indices-in-fa-table
           fat32$c
-          (generate-index-list
-           2 (count-of-clusters fat32$c))
+          (generate-index-list 2 (count-of-clusters fat32$c))
           (make-list-ac (count-of-clusters fat32$c)
                         0 nil)))
         fs
@@ -7830,8 +7820,8 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory
-    (disable (:rewrite not-intersectp-list-of-append-2))
+    :in-theory (e/d (non-free-index-listp)
+                    ((:rewrite not-intersectp-list-of-append-2)))
     :use
     (:instance
      (:rewrite not-intersectp-list-of-append-2)
@@ -7845,19 +7835,16 @@
           (update-fati
            (fat32-entry-mask (bpb_rootclus fat32$c))
            (fat32-update-lower-28
-            (fati
-             (fat32-entry-mask (bpb_rootclus fat32$c))
-             (stobj-set-indices-in-fa-table
-              fat32$c
-              (generate-index-list
-               2 (count-of-clusters fat32$c))
-              (make-list-ac (count-of-clusters fat32$c)
-                            0 nil)))
+            (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                  (stobj-set-indices-in-fa-table
+                   fat32$c
+                   (generate-index-list 2 (count-of-clusters fat32$c))
+                   (make-list-ac (count-of-clusters fat32$c)
+                                 0 nil)))
             268435455)
            (stobj-set-indices-in-fa-table
             fat32$c
-            (generate-index-list
-             2 (count-of-clusters fat32$c))
+            (generate-index-list 2 (count-of-clusters fat32$c))
             (make-list-ac (count-of-clusters fat32$c)
                           0 nil)))
           fs
@@ -7868,19 +7855,16 @@
           (update-fati
            (fat32-entry-mask (bpb_rootclus fat32$c))
            (fat32-update-lower-28
-            (fati
-             (fat32-entry-mask (bpb_rootclus fat32$c))
-             (stobj-set-indices-in-fa-table
-              fat32$c
-              (generate-index-list
-               2 (count-of-clusters fat32$c))
-              (make-list-ac (count-of-clusters fat32$c)
-                            0 nil)))
+            (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                  (stobj-set-indices-in-fa-table
+                   fat32$c
+                   (generate-index-list 2 (count-of-clusters fat32$c))
+                   (make-list-ac (count-of-clusters fat32$c)
+                                 0 nil)))
             268435455)
            (stobj-set-indices-in-fa-table
             fat32$c
-            (generate-index-list
-             2 (count-of-clusters fat32$c))
+            (generate-index-list 2 (count-of-clusters fat32$c))
             (make-list-ac (count-of-clusters fat32$c)
                           0 nil)))
           fs
@@ -7895,66 +7879,45 @@
           (update-fati
            (fat32-entry-mask (bpb_rootclus fat32$c))
            (fat32-update-lower-28
-            (fati
-             (fat32-entry-mask (bpb_rootclus fat32$c))
-             (stobj-set-indices-in-fa-table
-              fat32$c
-              (generate-index-list
-               2 (count-of-clusters fat32$c))
-              (make-list-ac (count-of-clusters fat32$c)
-                            0 nil)))
+            (fati (fat32-entry-mask (bpb_rootclus fat32$c))
+                  (stobj-set-indices-in-fa-table
+                   fat32$c
+                   (generate-index-list 2 (count-of-clusters fat32$c))
+                   (make-list-ac (count-of-clusters fat32$c)
+                                 0 nil)))
             268435455)
            (stobj-set-indices-in-fa-table
             fat32$c
-            (generate-index-list
-             2 (count-of-clusters fat32$c))
+            (generate-index-list 2 (count-of-clusters fat32$c))
             (make-list-ac (count-of-clusters fat32$c)
                           0 nil)))
           fs
           (fat32-entry-mask (bpb_rootclus fat32$c)))))
        n))
-     (x
-      (list
-       (fat32-entry-mask (bpb_rootclus fat32$c))))))))
+     (x (list (fat32-entry-mask (bpb_rootclus fat32$c))))))))
 
 (defthm
   hifat-to-lofat-inversion
-  (implies
-   (and (lofat-fs-p fat32$c)
-        (m1-file-alist-p fs)
-        (hifat-bounded-file-alist-p fs)
-        (hifat-no-dups-p fs)
-        (<=
-         (hifat-entry-count fs)
-         (max-entry-count fat32$c)))
-   (b*
-       (((mv fat32$c error-code)
-         (hifat-to-lofat
-          fat32$c fs)))
-     (implies
-      (zp error-code)
-      (and
-       (equal
-        (mv-nth 1
-                (lofat-to-hifat
-                 fat32$c))
-        0)
-       (hifat-equiv
-        (mv-nth 0
-                (lofat-to-hifat
-                 fat32$c))
-        fs)))))
+  (implies (and (lofat-fs-p fat32$c)
+                (m1-file-alist-p fs)
+                (hifat-bounded-file-alist-p fs)
+                (hifat-no-dups-p fs)
+                (<= (hifat-entry-count fs)
+                    (max-entry-count fat32$c)))
+           (b* (((mv fat32$c error-code)
+                 (hifat-to-lofat fat32$c fs)))
+             (implies (zp error-code)
+                      (and (equal (mv-nth 1 (lofat-to-hifat fat32$c))
+                                  0)
+                           (hifat-equiv (mv-nth 0 (lofat-to-hifat fat32$c))
+                                        fs)))))
   :hints
-  (("goal"
-    :in-theory (e/d
-                (lofat-to-hifat
-                 hifat-to-lofat
-                 root-d-e-list
-                 pseudo-root-d-e
-                 not-intersectp-list
-                 hifat-to-lofat-inversion-lemma-20
-                 painful-debugging-lemma-7)
-                ((:rewrite find-n-free-clusters-when-zp))))))
+  (("goal" :in-theory (e/d (lofat-to-hifat hifat-to-lofat root-d-e-list
+                                           pseudo-root-d-e not-intersectp-list
+                                           hifat-to-lofat-inversion-lemma-20
+                                           painful-debugging-lemma-7
+                                           non-free-index-listp)
+                           ((:rewrite find-n-free-clusters-when-zp))))))
 
 (defthm
   count-free-clusters-of-effective-fat-of-place-contents
@@ -8585,7 +8548,9 @@
     (non-free-index-listp x fa-table)
     (and
      (bounded-nat-listp x (len fa-table))
-     (lower-bounded-integer-listp x *ms-first-data-cluster*)))))
+     (lower-bounded-integer-listp x *ms-first-data-cluster*)))
+   :hints
+   (("Goal" :in-theory (enable non-free-index-listp)))))
 
 (encapsulate
   ()

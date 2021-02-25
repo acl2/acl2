@@ -11,7 +11,6 @@
 ;; This book happens to non-locally disable intersectp.
 (include-book "kestrel/utilities/strings/top" :dir :system)
 
-(include-book "utilities/insert-text")
 (include-book "fat32")
 
 ;; Some code from Matt, illustrating a technique to get a definition without
