@@ -41,9 +41,8 @@
 (defthm mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
-                (< (floor p 2) x)
-                (integerp x)
-                (integerp y))
+                (< (floor p 2) x) ;gets computed
+                )
            (equal (mul x y p)
                   (mul (- x p) ;gets computed
                        y
@@ -53,13 +52,12 @@
 (defthm mul-normalize-constant-arg1-alt
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
-                (< x (- (floor p 2)))
-                (integerp x)
-                (integerp y))
+                (< x (- (floor p 2))) ;gets computed
+                )
            (equal (mul x y p)
                   (mul (+ x p) ;gets computed
-                               y
-                               p)))
+                       y
+                       p)))
   :hints (("Goal" :in-theory (enable mul acl2::mod-sum-cases))))
 
 (defthm add-of-+-of--1
