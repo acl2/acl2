@@ -23,7 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
-(local (include-book "kestrel/number-theory/quadratic-residue" :dir :system))
+(include-book "kestrel/number-theory/quadratic-residue" :dir :system)
 (local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
@@ -188,23 +188,13 @@
 ;; that can't happen)
 
 ;; Future work: prove correctness; improve guards
-
+;; "p must be an odd prime"
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root."
   :long "Finds the square root of n modulo p.  p must be prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp)
-  ;:verify-guards nil
-  ;; It would be good to have a guards that p>2 and primep(p)
-  ;; and z<p and nonresidue(z)
-  ;;
-  ;;related to proof:
-  ;; ex(r) : if there exists r such that if (r * r = n mod p) then returns r else return 0
-  ;(if (or
-       ;(not (natp n)) (not (natp p)) (not (natp z))
-      ;    (= n 0) (< p 3))
-     ; 0
     (mv-let (Q S)
         (Q*2^S (- p 1))
       (let ((M S) ; could replace S by M, but this matches
@@ -217,3 +207,5 @@
                                   acl2::not-evenp-when-oddp
 				  rtl::oddp-odd-prime)
                                  (oddp)))))
+
+;;;; soundness -- 

@@ -5,6 +5,7 @@
 ; Syscalls for HiFAT. These syscalls usually return, among other things, a
 ; return value (corresponding to the C return value) and an errno.
 
+(include-book "utilities/insert-text")
 (include-book "hifat/hifat-equiv")
 
 ;; This implementation of basename+dirname is not exactly compliant with the
@@ -117,6 +118,16 @@
                            (b (list (basename path)))
                            (a (dirname path))
                            (n n)))))
+
+(defthm
+  abs-pwrite-correctness-lemma-37
+  (implies (and (fat32-filename-list-p path)
+                (consp path)
+                (not (consp (cdr path))))
+           (equal (assoc-equal (car path) fs)
+                  (assoc-equal (basename path) fs)))
+  :hints (("goal" :in-theory (enable basename)
+           :do-not-induct t)))
 
 (defund hifat-lstat (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)

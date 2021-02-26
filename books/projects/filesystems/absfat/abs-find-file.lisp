@@ -3855,7 +3855,7 @@
     :in-theory
     (e/d
      (abs-find-file collapse
-                    absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2
+                    abs-complete-when-atom-abs-addrs
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)
@@ -3979,7 +3979,7 @@
    (in-theory
     (e/d
      (abs-find-file collapse
-                    absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2
+                    abs-complete-when-atom-abs-addrs
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)

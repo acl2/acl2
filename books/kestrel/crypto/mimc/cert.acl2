@@ -1,0 +1,19 @@
+; MiMC Library
+;
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Eric McCarthy (mccarthy@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Add include-book forms for other packages that are used in this directory.
+(include-book "std/portcullis" :dir :system) ; for XDOC package
+(include-book "kestrel/number-theory/portcullis" :dir :system) ; for PRIMES package
+(include-book "kestrel/crypto/portcullis" :dir :system) ; for CRYPTO package
+(include-book "kestrel/crypto/keccak/portcullis" :dir :system) ; for KECCAK package
+(include-book "kestrel/prime-fields/portcullis" :dir :system) ; for PFIELD package
+(include-book "kestrel/ethereum/semaphore/portcullis" :dir :system) ; for ZKSEMAPHORE package
+
+(include-book "portcullis")

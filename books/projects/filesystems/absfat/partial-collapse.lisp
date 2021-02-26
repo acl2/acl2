@@ -6507,7 +6507,7 @@
       :do-not-induct t
       :in-theory
       (e/d (intersectp-equal
-            absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-2)
+            abs-complete-when-atom-abs-addrs)
            (lemma-1 1st-complete-correctness-2
                     subsetp-member))
       :use (lemma-1

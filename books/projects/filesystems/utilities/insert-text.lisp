@@ -16,44 +16,30 @@
                         (nthcdr end oldtext))))
     newtext))
 
-(defthm
-  insert-text-correctness-1
-  (implies (and (character-listp oldtext)
-                (natp start)
-                (stringp text))
+(defthm insert-text-correctness-1
+  (implies (character-listp oldtext)
            (character-listp (insert-text oldtext start text)))
   :hints (("goal" :in-theory (enable insert-text))))
 
-(defthm
-  insert-text-correctness-2
-  (implies
-   (and (character-listp oldtext)
-        (natp start)
-        (stringp text))
-   (equal
-    (take (+ start (- start)
-             (len (coerce text 'list)))
-          (nthcdr start (insert-text oldtext start text)))
-    (coerce text 'list)))
+(defthm insert-text-correctness-2
+  (equal (take (+ start (- start)
+                  (len (coerce text 'list)))
+               (nthcdr start (insert-text oldtext start text)))
+         (coerce text 'list))
   :hints (("goal" :in-theory (enable insert-text)
            :use (:theorem (equal (+ start (- start)
                                     (len (coerce text 'list)))
                                  (len (coerce text 'list)))))))
 
 (defthm insert-text-correctness-3
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
+  (implies (natp start)
            (<= (+ start (len (coerce text 'list)))
                (len (insert-text oldtext start text))))
   :hints (("goal" :in-theory (enable insert-text)))
   :rule-classes :linear)
 
-(defthmd
-  len-of-insert-text
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
+(defthmd len-of-insert-text
+  (implies (and (stringp text) (natp start))
            (equal (len (insert-text oldtext start text))
                   (max (+ start (len (coerce text 'list)))
                        (len oldtext))))

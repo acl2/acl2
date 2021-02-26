@@ -243,8 +243,6 @@
     (:e exprp)
     (:e frame-list-fix)
     (:e fun-env-lookup)
-    (:e fun-env-result-kind)
-    (:e fun-env-result-ok->get)
     (:e fun-info->body)
     (:e fun-info->params)
     (:e iconst->base)
@@ -350,7 +348,6 @@
     pop-frame
     push-frame
     read-var
-    run-fun
     sint-const
     sint01
     sint-logand
@@ -403,12 +400,12 @@
      Terms of this form may arise in the process of simplifying
      C non-strict expressions involving @('&&') and @('||').")
    (xdoc::p
-    "We also found it necessary to include two rules
+    "We also found it necessary to include rules
      to distribute two specific functions over @(tsee if)s.
      It seems that, in the course of these symbolic execution proofs,
      we will always want to distribute functions over @(tsee if)s.
      This distribution happens at the goal level,
-     but not in the rewriter by default"))
+     but not in the rewriter by default."))
 
   (defruled scope-result-kind-when-scopep
     (implies (scopep scope)
@@ -438,12 +435,6 @@
     (implies (valuep x)
              (equal (value-result-fix x)
                     x)))
-
-  (defruled value-result-ok-when-valuep
-    (implies (valuep x)
-             (equal (value-result-ok x)
-                    x))
-    :enable value-result-ok)
 
   (defruled value-option-result-kind-when-value-optionp
     (implies (value-optionp x)
@@ -512,6 +503,9 @@
            (1+ (len y)))
     :prep-books ((include-book "std/lists/len" :dir :system)))
 
+  (defruled 1+len-greater-than-0
+    (> (1+ (len x)) 0))
+
   (defruled sint-nonzerop-of-1
     (equal (sint-nonzerop (sint 1)) t))
 
@@ -525,6 +519,14 @@
   (defruled sint-lognot-of-1
     (equal (sint-lognot (sint 1))
            (sint 0)))
+
+  (defruled car-of-if
+    (equal (car (if a b c))
+           (if a (car b) (car c))))
+
+  (defruled value-option-result-kind-of-if
+    (equal (value-option-result-kind (if a b c))
+           (if a (value-option-result-kind b) (value-option-result-kind c))))
 
   (defruled value-result-kind-of-if
     (equal (value-result-kind (if a b c))
@@ -544,9 +546,24 @@
     (equal (errorp (if a b c))
            (if a (errorp b) (errorp c))))
 
+  (defruled valuep-of-if
+    (equal (valuep (if a b c))
+           (if a (valuep b) (valuep c))))
+
   (defruled ucharp-of-if
     (equal (ucharp (if a b c))
-           (if a (ucharp b) (ucharp c)))))
+           (if a (ucharp b) (ucharp c))))
+
+  (defruled 1+nat-greater-than-0
+    (implies (natp x)
+             (< 0 (1+ x))))
+
+  (defruled natp-of-1+
+    (implies (natp x)
+             (natp (1+ x))))
+
+  (defruled natp-of-len
+    (natp (len x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,6 +618,7 @@
     compustate-result-kind-when-compustatep
     compustate-result-ok->get-when-compustatep
     len-of-cons
+    1+len-greater-than-0
     not-errorp-when-valuep
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
@@ -613,21 +631,27 @@
     sint-lognot-of-1
     value-kind-when-sintp
     value-option-result-kind-when-value-optionp
+    value-option-result-kind-of-if
     value-option-result-ok->get-when-value-optionp
     value-list-result-kind-when-value-listp
     value-list-result-ok->get-when-value-listp
     value-result-fix-when-valuep
     value-result-kind-when-valuep
     value-result-ok->get-when-valuep
-    value-result-ok-when-valuep
     value-result-kind-of-if
     value-result-ok->get-of-if
     value-result-fix-of-if
     errorp-of-if
+    valuep-of-if
     ucharp-of-if
+    car-of-if
+    1+nat-greater-than-0
+    natp-of-1+
+    natp-of-len
     ;; introduced elsewhere:
     car-cons
     cdr-cons
+    compustate-of-fields
     compustate->frames-of-compustate
     compustate-fix-when-compustatep
     compustatep-of-compustate
@@ -635,6 +659,8 @@
     frame->scopes-of-frame
     frame-fix-when-framep
     frame-list-fix-of-cons
+    frame-list-fix-when-frame-listp
+    frame-listp-of-compustate->frames
     framep-of-frame
     not-errorp-when-compustatep
     omap::in-of-update

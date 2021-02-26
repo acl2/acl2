@@ -2609,18 +2609,6 @@
                         (equal (fix c1) c2))
                     nil))))
 
-(defthm logext-when-top-bit-0
-  (implies (and (equal (getbit (+ -1 n) x) 0)
-                (posp n))
-           (equal (logext n x)
-                  (bvchop (+ -1 n) x)))
-  :hints (("Goal" :use ((:instance logext-identity (size n) (i (bvchop n x))))
-           :in-theory (e/d (logext)
-                           ( logext-identity
-                             REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
-                             logext-does-nothing-rewrite)))))
-
-
 (defthm <-of-expt-and*-*-of-2-and-expt
   (IMPLIES (AND (INTEGERP N)
                 (< 0 N)

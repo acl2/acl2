@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 (local (include-book "times"))
 (local (include-book "complex"))
-(local (include-book "../library-wrappers/arithmetic-inequalities"))
+(local (include-book "../library-wrappers/arithmetic-inequalities")) ; todo: drop
 
 ;; Exported in times-and-divides.lisp
 (local
@@ -24,7 +24,13 @@
 
 (defthm /-of-/
   (equal (/ (/ x))
-         (fix x)))
+         (fix x))
+  :hints (("Goal"
+           :use (:instance equal-of-*-and-*-cancel
+                           (x (/ x))
+                           (y (/ (/ x)))
+                           (z x))
+           :in-theory (disable equal-of-*-and-*-cancel))))
 
 (defthm equal-of-/-constant
   (implies (syntaxp (quotep k))

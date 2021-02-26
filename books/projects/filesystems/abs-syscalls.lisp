@@ -10633,16 +10633,6 @@
                            (dirname path)))
      (root (frame->root (partial-collapse frame (dirname path))))))))
 
-(defthm
-  abs-pwrite-correctness-lemma-37
-  (implies (and (fat32-filename-list-p path)
-                (consp path)
-                (not (consp (cdr path))))
-           (equal (assoc-equal (car path) fs)
-                  (assoc-equal (basename path) fs)))
-  :hints (("goal" :in-theory (enable basename)
-           :do-not-induct t)))
-
 ;; This lemma could come into conflict with the definition of frame->root as
 ;; and when it is enabled...
 (defthm abs-pwrite-correctness-lemma-40
