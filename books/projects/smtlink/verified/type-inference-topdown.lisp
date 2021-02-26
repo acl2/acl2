@@ -47,8 +47,10 @@
     (b* ((judges (pseudo-term-fix judges))
          (term (pseudo-term-fix term))
          (acc (pseudo-term-fix acc))
-         ((unless (is-conjunct-list? acc term supertype))
-          (mv 0 ''t))
+         ((unless (is-judgements? judges term supertype))
+          (prog2$ (er hard? 'type-inference-topdown=>choose-judge-helper
+                      "Judges malformed: ~p0, term: ~p1~%" judges term)
+                  (mv 0 ''t)))
          (counter (nfix counter))
          ((if (equal judges ''t)) (mv counter acc))
          ((if (and (type-predicate-of-term judges term supertype)
@@ -58,8 +60,10 @@
          ((if (and (type-predicate-of-term judges term supertype)
                    (not (zp counter))))
           (mv counter acc))
+         ((if (judgement-of-term judges term supertype))
+          (mv counter `(if ,judges ,acc 'nil)))
          ((unless (is-conjunct? judges))
-          (prog2$ (er hard? 'type-inference-topdown=>choose-judge
+          (prog2$ (er hard? 'type-inference-topdown=>choose-judge-helper
                       "Judges should be a conjunct: ~q0" judges)
                   (mv counter acc)))
          ((list & cond then &) judges)
@@ -119,7 +123,7 @@
         (make-typed-term))
        ((typed-term tt) tterm)
        ((type-options to) options)
-       ((unless (is-conjunct-list? expected tt.term to.supertype))
+       ((unless (is-judgements? expected tt.term to.supertype))
         (prog2$
          (er hard? 'type-inference-topdown=>unify-variable
              "Expected ~p0 is not a conjunct list.~%" expected)
@@ -170,7 +174,7 @@
         (make-typed-term))
        ((typed-term tt) tterm)
        ((type-options to) options)
-       ((unless (is-conjunct-list? expected tt.term to.supertype))
+       ((unless (is-judgements? expected tt.term to.supertype))
         (prog2$
          (er hard? 'type-inference-topdown=>unify-variable
              "Expected ~p0 is not a conjunct list.~%" expected)
@@ -225,10 +229,9 @@
         (make-fast-judgements filter-judge filter-term
                               new-var supertype-alst nil 0))
        (ind-lst
-        (map-judgements judge term new-var supertype-alst filter-fast nil))
+        (map-judgements judge term new-var supertype-alst filter-fast))
        ((mv judge-common &)
-        (construct-judge-by-find judge term filter-judge filter-term
-                                 supertype-alst ind-lst ''t)))
+        (construct-judge-by-list judge term supertype-alst ind-lst ''t)))
     judge-common))
 
 (defthm correctness-of-unify-if-top
@@ -344,7 +347,7 @@
          (fn-description (cdr conspair))
          (expected-actuals
           (choose-returns judge-top fn actuals tta.judgements tta.path-cond
-                          fn-description to.supertype state))
+                          fn-description to state))
          (new-actuals (unify-type-list tt-actuals expected-actuals to names state))
          ;; in order to satisfy the guards of make-typed-fncall
          ((unless (make-typed-fncall-guard new-top new-actuals options))
@@ -379,10 +382,14 @@
          (new-top (make-typed-term :term tt-top.term
                                    :path-cond tt-top.path-cond
                                    :judgements judge-top))
-         (then-expected (unify-if-top tt-then.judgements tt-then.term
+         (judge-then-top
+          (type-judgement-top tt-then.judgements tt-then.term options))
+         (judge-else-top
+          (type-judgement-top tt-else.judgements tt-else.term options))
+         (then-expected (unify-if-top judge-then-top tt-then.term
                                       judge-top tt-top.term
                                       names options))
-         (else-expected (unify-if-top tt-else.judgements tt-else.term
+         (else-expected (unify-if-top judge-else-top tt-else.term
                                       judge-top tt-top.term
                                       names options))
          (new-then (unify-type tt-then then-expected to names state))

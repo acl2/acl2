@@ -195,17 +195,6 @@
 ;; ------------------------------------------------------------------
 ;;    The main type-judgements
 
-;; (local
-;;  (defthm pseudo-termp-of-lambda
-;;    (implies (and (symbol-listp formals)
-;;                  (pseudo-termp body-judgements)
-;;                  (pseudo-term-listp actuals)
-;;                  (equal (len formals) (len actuals)))
-;;             (pseudo-termp `((lambda ,formals
-;;                               ,body-judgements)
-;;                             ,@actuals))))
-;;  )
-
 (define type-judgement-if-top ((judge-then pseudo-termp)
                                (then pseudo-termp)
                                (judge-else pseudo-termp)
@@ -226,16 +215,14 @@
         (make-fast-judgements judge-else else new-var
                               supertype-alst nil 0))
        (ind-lst
-        (map-judgements judge-then then new-var
-                        supertype-alst fast-else nil))
+        (map-judgements judge-then then new-var supertype-alst fast-else))
        ((mv judge-then-common &)
         (construct-judge-by-list judge-then then
                                  supertype-alst ind-lst ''t))
-       ((mv judge-else-common &)
-        (construct-judge-by-find judge-then then judge-else else
-                                 supertype-alst ind-lst ''t))
+       (judge-else-common
+        (construct-judge-by-find judge-else else supertype-alst ind-lst ''t))
        (judge `(if ,cond ,judge-then-common ,judge-else-common)))
-    (merge-if-judgements judge then else supertype-alst)))
+    (merge-if-judgements (rearrange-if-judgements judge) then else supertype-alst)))
 
 (defthm correctness-of-type-judgement-if-top
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -260,42 +247,6 @@
   :flag-local nil
   :well-founded-relation l<
   :verify-guards nil
-
-  ;; (define type-judgement-lambda ((term pseudo-termp)
-  ;;                                (path-cond pseudo-termp)
-  ;;                                (options type-options-p)
-  ;;                                (names symbol-listp)
-  ;;                                state)
-  ;;   :measure (list (acl2-count (pseudo-term-fix term)) 0)
-  ;;   :guard (and (consp term)
-  ;;               (pseudo-lambdap (car term)))
-  ;;   :returns (judgements pseudo-termp)
-  ;;   (b* ((term (pseudo-term-fix term))
-  ;;        (path-cond (pseudo-term-fix path-cond))
-  ;;        (names (symbol-list-fix names))
-  ;;        ((unless (mbt (and (consp term) (pseudo-lambdap (car term))))) ''t)
-  ;;        ((cons fn actuals) term)
-  ;;        (formals (lambda-formals fn))
-  ;;        (body (lambda-body fn))
-  ;;        ;; (shadowed-path-cond (shadow-path-cond formals path-cond))
-  ;;        (actuals-judgements
-  ;;         (type-judgement-list actuals path-cond options names state))
-  ;;        (formals-judgements
-  ;;         (term-substitution actuals-judgements (pairlis$ actuals formals) t))
-  ;;        (body-judgements
-  ;;         (type-judgement body formals-judgements options names state))
-  ;;        (lambda-judgements
-  ;;         `((lambda ,formals
-  ;;             ,body-judgements)
-  ;;           ,@actuals))
-  ;;        (return-judgement
-  ;;         (term-substitution (type-judgement-top body-judgements body options)
-  ;;                            `((,body . ,term)) t)))
-  ;;     `(if ,return-judgement
-  ;;          (if ,lambda-judgements
-  ;;              ,actuals-judgements
-  ;;            'nil)
-  ;;        'nil)))
 
   (define type-judgement-if ((term pseudo-termp)
                              (path-cond pseudo-termp)

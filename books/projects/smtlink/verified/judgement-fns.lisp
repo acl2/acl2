@@ -44,8 +44,7 @@
 (verify-guards intersect-judgements-acc)
 
 (defthm correctness-of-intersect-judgements-acc-judge1
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge1)
+  (implies (and (pseudo-termp judge1)
                 (pseudo-termp judge2)
                 (pseudo-termp acc)
                 (alistp a)
@@ -63,8 +62,7 @@
                             acl2::symbol-listp-of-cdr-when-symbol-listp)))))
 
 (defthm correctness-of-intersect-judgements-acc-judge2
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge1)
+  (implies (and (pseudo-termp judge1)
                 (pseudo-termp judge2)
                 (pseudo-termp acc)
                 (alistp a)
@@ -88,8 +86,7 @@
   (intersect-judgements-acc judge1 judge2 ''t state)
   ///
   (defthm correctness-of-intersect-judgements-judge1
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp judge1)
+    (implies (and (pseudo-termp judge1)
                   (pseudo-termp judge2)
                   (alistp a)
                   (ev-smtcp judge1 a))
@@ -98,8 +95,7 @@
              :in-theory (enable intersect-judgements))))
 
   (defthm correctness-of-intersect-judgements-judge2
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp judge1)
+    (implies (and (pseudo-termp judge1)
                   (pseudo-termp judge2)
                   (alistp a)
                   (ev-smtcp judge2 a))
@@ -110,12 +106,12 @@
 #|
 (defthm test (implies (integerp x) (rationalp x)))
 (intersect-judgements '(if (rationalp x) (if (integerp x) 't 'nil) 'nil)
-'(if (rationalp x) (if (integerp x) 't 'nil) 'nil)
-state)
+                      '(if (rationalp x) (if (integerp x) 't 'nil) 'nil)
+                      state)
 
 (intersect-judgements '(if (rationalp x) 't 'nil)
-'(if (rationalp x) (if (integerp x) 't 'nil) 'nil)
-state)
+                      '(if (rationalp x) (if (integerp x) 't 'nil) 'nil)
+                      state)
 |#
 
 ;; --------------------------------------------------------------------
@@ -182,6 +178,23 @@ state)
            (substitute-term-in-single-var-fncall single-judge term new-var))
           (t nil))))
 
+#|
+(substitute-term-in-judge '(rationalp (foo x))
+                          '(foo x)
+                          'x0
+                          `((rationalp . (,(make-type-tuple)))))
+
+(substitute-term-in-judge '(< (foo x) '0)
+                          '(foo x)
+                          'x0
+                          `((rationalp . (,(make-type-tuple)))))
+
+(substitute-term-in-judge '(foo x)
+                          '(foo x)
+                          'x0
+                          `((rationalp . (,(make-type-tuple)))))
+|#
+
 (define make-fast-judgements ((judge pseudo-termp)
                               (term pseudo-termp)
                               (new-var symbolp)
@@ -197,7 +210,7 @@ state)
        (supertype-alst (type-to-types-alist-fix supertype-alst))
        (count (ifix count))
        (alst (pseudo-term-integer-fix alst))
-       ((unless (is-conjunct-list? judge term supertype-alst))
+       ((unless (is-judgements? judge term supertype-alst))
         (mv (er hard? 'judgement-fns=>make-fast-judgements
                 "Judgement for term ~p0 is malformed: ~p1~%" term judge)
             0))
@@ -215,12 +228,24 @@ state)
 
 (verify-guards make-fast-judgements)
 
-(define map-judgements ((judge pseudo-termp)
-                        (term pseudo-termp)
-                        (new-var symbolp)
-                        (supertype-alst type-to-types-alist-p)
-                        (alst pseudo-term-integerp)
-                        (acc maybe-integer-listp))
+#|
+(make-fast-judgements '(if (integerp (foo x))
+                           (rationalp (foo x))
+                         'nil)
+                      '(foo x)
+                      'x0
+                      `((rationalp . (,(make-type-tuple)))
+                        (integerp . (,(make-type-tuple))))
+                      nil
+                      0)
+|#
+
+(define map-judgements-helper ((judge pseudo-termp)
+                               (term pseudo-termp)
+                               (new-var symbolp)
+                               (supertype-alst type-to-types-alist-p)
+                               (alst pseudo-term-integerp)
+                               (acc maybe-integer-listp))
   :returns (ind-list maybe-integer-listp)
   :measure (acl2-count (pseudo-term-fix judge))
   :verify-guards nil
@@ -229,8 +254,8 @@ state)
        (supertype-alst (type-to-types-alist-fix supertype-alst))
        (alst (pseudo-term-integer-fix alst))
        (acc (maybe-integer-list-fix acc))
-       ((unless (is-conjunct-list? judge term supertype-alst))
-        (er hard? 'judgement-fns=>map-judgements
+       ((unless (is-judgements? judge term supertype-alst))
+        (er hard? 'judgement-fns=>map-judgements-helper
             "Judgement for term ~p0 is malformed: ~p1~%" term judge))
        ((if (equal judge ''t)) acc)
        ((if (judgement-of-term judge term supertype-alst))
@@ -241,10 +266,33 @@ state)
           (cons nil acc)))
        ((unless (consp judge)) acc)
        ((list & judge-hd judge-tl &) judge)
-       (new-acc (map-judgements judge-hd term new-var supertype-alst alst acc)))
-    (map-judgements judge-tl term new-var supertype-alst alst new-acc)))
+       (new-acc (map-judgements-helper judge-hd term new-var supertype-alst alst acc)))
+    (map-judgements-helper judge-tl term new-var supertype-alst alst new-acc)))
 
-(verify-guards map-judgements)
+(verify-guards map-judgements-helper)
+
+(define map-judgements ((judge pseudo-termp)
+                        (term pseudo-termp)
+                        (new-var symbolp)
+                        (supertype-alst type-to-types-alist-p)
+                        (alst pseudo-term-integerp))
+  :returns (ind-list maybe-integer-listp)
+  (reverse (map-judgements-helper judge term new-var supertype-alst alst nil)))
+
+#|
+(map-judgements '(if (integerp (bar x))
+                     (if (acl2-numberp (bar x))
+                         (rationalp (bar x))
+                       'nil)
+                   'nil)
+                '(bar x)
+                'x0
+                `((rationalp . (,(make-type-tuple)))
+                  (integerp . (,(make-type-tuple)))
+                  (acl2-numberp . (,(make-type-tuple))))
+                '(((rationalp x0) . 1)
+                  ((integerp x0) . 0)))
+|#
 
 ;; else judgements
 (define construct-judge-by-list ((judge pseudo-termp)
@@ -261,7 +309,7 @@ state)
        (supertype-alst (type-to-types-alist-fix supertype-alst))
        (ind-lst (maybe-integer-list-fix ind-lst))
        (acc (pseudo-term-fix acc))
-       ((unless (is-conjunct-list? judge term supertype-alst))
+       ((unless (is-judgements? judge term supertype-alst))
         (mv ''t
             (er hard? 'judgement-fns=>construct-judge-by-list
                 "Judgement for term ~p0 is malformed: ~p1~%" term judge)))
@@ -282,25 +330,39 @@ state)
 
 (verify-guards construct-judge-by-list)
 
-(defthm correctness-of-is-conjunct-list?
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+#|
+(construct-judge-by-list '(if (integerp (bar x))
+                              (if (acl2-numberp (bar x))
+                                  (rationalp (bar x))
+                                'nil)
+                            'nil)
+                         '(bar x)
+                         `((rationalp . (,(make-type-tuple)))
+                           (integerp . (,(make-type-tuple)))
+                           (acl2-numberp . (,(make-type-tuple))))
+                         '(0 nil 1)
+                         ''t)
+|#
+
+(defthm correctness-of-is-judgements?
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp term)
                 (type-to-types-alist-p supertype-alst)
                 (alistp a)
                 (ev-smtcp judge a)
-                (is-conjunct-list? judge term supertype-alst)
+                (is-judgements? judge term supertype-alst)
                 (not (equal judge ''t))
                 (not (judgement-of-term judge term supertype-alst))
                 (consp judge))
            (and (ev-smtcp (cadr judge) a)
                 (ev-smtcp (caddr judge) a)))
   :hints (("Goal"
-           :in-theory (enable is-conjunct-list?))))
+           :in-theory (e/d (is-judgements?)
+                           (pseudo-termp
+                            symbol-listp)))))
 
 (defthm correctness-of-construct-judge-by-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp term)
                 (pseudo-termp acc)
                 (type-to-types-alist-p supertype-alst)
@@ -324,16 +386,23 @@ state)
        (term (pseudo-term-fix term))
        (supertype-alst (type-to-types-alist-fix supertype-alst))
        (nth (ifix nth))
-       ((if (<= nth 0)) (mv judge 0))
-       ((unless (is-conjunct-list? judge term supertype-alst))
-        (mv (prog2$ (er hard? 'judgement-fns=>find-nth-judge
-                        "Judgement for term ~p0 is malformed: ~p1~%" term
-                        judge)
-                    ''t)
+       ((unless (is-judgements? judge term supertype-alst))
+        (mv (er hard? 'judgement-fns=>find-nth-judge
+                "Judgement for term ~p0 is malformed: ~p1~%" term
+                judge)
             0))
-       ((if (equal judge ''t)) (mv ''t nth))
-       ((if (judgement-of-term judge term supertype-alst)) (mv ''t (1- nth)))
-       ((unless (consp judge)) (mv ''t 0))
+       ((if (and (<= nth 0) (equal judge ''t)))
+        (mv nil nth))
+       ((if (and (<= nth 0)
+                 (judgement-of-term judge term supertype-alst)))
+        (mv judge 0))
+       ((if (equal judge ''t)) (mv nil nth))
+       ((if (judgement-of-term judge term supertype-alst)) (mv nil (1- nth)))
+       ((if (<= nth 0)) (mv (cadr judge) 0))
+       ((unless (consp judge))
+        (mv (er hard? 'judgement-fns=>find-nth-judge
+                "Can't find ~p0th term in judge ~p1~%" nth judge)
+            0))
        ((list & judge-hd judge-tl &) judge)
        ((mv new-judge new-nth)
         (find-nth-judge judge-hd term supertype-alst nth))
@@ -342,85 +411,86 @@ state)
 
 (verify-guards find-nth-judge)
 
+#|
+(find-nth-judge '(if (integerp (foo x))
+                     (rationalp (foo x))
+                   'nil)
+                '(foo x)
+                `((rationalp . (,(make-type-tuple)))
+                  (integerp . (,(make-type-tuple)))
+                  (acl2-numberp . (,(make-type-tuple))))
+                1)
+
+(find-nth-judge '(if (integerp (foo x))
+                     (rationalp (foo x))
+                   'nil)
+                '(foo x)
+                `((rationalp . (,(make-type-tuple)))
+                  (integerp . (,(make-type-tuple)))
+                  (acl2-numberp . (,(make-type-tuple))))
+                2)
+|#
+
 (defthm correctness-of-find-nth-judge
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp term)
                 (type-to-types-alist-p supertype-alst)
                 (alistp a)
-                (ev-smtcp judge a))
+                (ev-smtcp judge a)
+                (mv-nth 0 (find-nth-judge judge term supertype-alst nth)))
            (ev-smtcp
             (mv-nth 0 (find-nth-judge judge term supertype-alst nth)) a))
   :hints (("Goal"
            :in-theory (enable find-nth-judge))))
 
-(define construct-judge-by-find ((judge1 pseudo-termp)
-                                 (term1 pseudo-termp)
-                                 (judge2 pseudo-termp)
-                                 (term2 pseudo-termp)
+(define construct-judge-by-find ((judge pseudo-termp)
+                                 (term pseudo-termp)
                                  (supertype-alst type-to-types-alist-p)
                                  (ind-lst maybe-integer-listp)
                                  (acc pseudo-termp))
-  :returns (mv (new-judge pseudo-termp)
-               (rest-ind maybe-integer-listp))
-  :measure (acl2-count (pseudo-term-fix judge1))
-  :verify-guards nil
-  (b* ((judge1 (pseudo-term-fix judge1))
-       (term1 (pseudo-term-fix term1))
-       (judge2 (pseudo-term-fix judge2))
-       (term2 (pseudo-term-fix term2))
+  :returns (new-judge pseudo-termp)
+  :measure (len ind-lst)
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
        (supertype-alst (type-to-types-alist-fix supertype-alst))
        (ind-lst (maybe-integer-list-fix ind-lst))
        (acc (pseudo-term-fix acc))
-       ((unless (is-conjunct-list? judge1 term1 supertype-alst))
-        (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-find
-                        "Judgement for term ~p0 is malformed: ~p1~%" term1
-                        judge1)
-                    ''t)
-            nil))
-       ((if (equal judge1 ''t)) (mv acc ind-lst))
-       ((if (judgement-of-term judge1 term1 supertype-alst))
-        (b* (((unless (consp ind-lst))
-              (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-list
-                              "Run out of indices.~%")
-                          ''t)
-                  nil))
-             ((cons curr-ind rest-ind) ind-lst)
-             ((unless curr-ind) (mv acc rest-ind))
-             ((mv j2 &)
-              (find-nth-judge judge2 term2 supertype-alst curr-ind))
-             ((unless j2)
-              (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-find
-                              "Can't find ~p0th judgement in judgements ~p1~%"
-                              curr-ind judge2)
-                          ''t)
-                  nil)))
-          (mv `(if ,j2 ,acc 'nil) rest-ind)))
-       ((unless (consp judge1)) (mv acc ind-lst))
-       ((list & judge1-hd judge1-tl &) judge1)
-       ((mv new-acc new-ind)
-        (construct-judge-by-find judge1-hd term1 judge2 term2 supertype-alst
-                                 ind-lst acc)))
-    (construct-judge-by-find judge1-tl term1 judge2 term2 supertype-alst
-                             new-ind new-acc)))
+       ((unless (consp ind-lst)) acc)
+       ((cons curr-ind rest-ind) ind-lst)
+       ((unless curr-ind)
+        (construct-judge-by-find judge term supertype-alst rest-ind acc))
+       ((mv j &) (find-nth-judge judge term supertype-alst curr-ind))
+       ((unless j)
+        (prog2$ (er hard? 'judgement-fns=>construct-judge-by-find
+                    "Can't find ~p0-th judgement in judgements ~p1~%"
+                    curr-ind judge)
+                ''t)))
+    (construct-judge-by-find judge term supertype-alst rest-ind
+                             `(if ,j ,acc 'nil))))
 
-(verify-guards construct-judge-by-find)
+#|
+(construct-judge-by-find '(if (integerp (foo x))
+                              (rationalp (foo x))
+                            'nil)
+                         '(foo x)
+                         `((rationalp . (,(make-type-tuple)))
+                           (integerp . (,(make-type-tuple)))
+                           (acl2-numberp . (,(make-type-tuple))))
+                         '(0 nil 1)
+                         ''t)
+|#
 
 (defthm correctness-of-construct-judge-by-find
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge1)
-                (pseudo-termp term1)
-                (pseudo-termp judge2)
-                (pseudo-termp term2)
+  (implies (and (pseudo-termp judge)
+                (pseudo-termp term)
                 (pseudo-termp acc)
                 (type-to-types-alist-p supertype-alst)
                 (maybe-integer-listp ind-lst)
                 (alistp a)
-                (ev-smtcp judge2 a)
+                (ev-smtcp judge a)
                 (ev-smtcp acc a))
            (ev-smtcp
-            (mv-nth 0 (construct-judge-by-find judge1 term1 judge2 term2
-                                               supertype-alst ind-lst acc))
+            (construct-judge-by-find judge term supertype-alst ind-lst acc)
             a))
   :hints (("Goal"
            :in-theory (enable construct-judge-by-find))))
@@ -471,6 +541,16 @@ state)
 (verify-guards rearrange-if-judgements
   :hints (("Goal" :in-theory (disable symbol-listp))))
 
+#|
+(rearrange-if-judgements '(if (cond x)
+                              (if (rationalp (foo x))
+                                  (if (integerp (foo x)) 't 'nil)
+                                'nil)
+                            (if (rationalp (bar x))
+                                (if (integerp (bar x)) 't 'nil)
+                              'nil)))
+|#
+
 (defthm correctness-of-rearrange-if-judgements
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-termp judge)
@@ -502,28 +582,6 @@ state)
        ((if (equal then-hd else-hd)) `(,then-hd ,@rest-args)))
     `(,if-term ,@rest-args)))
 
-;; (defthm lemma-commute-if
-;;   (implies (and (ev-smtcp-meta-extract-global-facts)
-;;                 (pseudo-termp cond)
-;;                 (pseudo-termp x)
-;;                 (pseudo-termp y)
-;;                 (symbolp p)
-;;                 (not (equal p 'quote))
-;;                 (alistp a)
-;;                 (ev-smtcp `(if ,cond (,p ,x) (,p ,y)) a))
-;;            (ev-smtcp `(,p (if ,cond ,x ,y)) a))
-;;   :hints (("Goal"
-;;            :in-theory (disable ev-smtcp-of-fncall-args)
-;;            :use ((:instance ev-smtcp-of-fncall-args
-;;                             (x `(,p (if ,cond ,x ,y)))
-;;                             (a a))
-;;                  (:instance ev-smtcp-of-fncall-args
-;;                             (x (list p x))
-;;                             (a a))
-;;                  (:instance ev-smtcp-of-fncall-args
-;;                             (x (list p y))
-;;                             (a a))))))
-
 (encapsulate ()
 (local
  (defthm lemma
@@ -532,8 +590,7 @@ state)
  )
 
 (defthm correctness-of-commute-if-for-args-cond
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp if-cond)
+  (implies (and (pseudo-termp if-cond)
                 (pseudo-term-listp then-args)
                 (pseudo-term-listp else-args)
                 (alistp a)
@@ -547,8 +604,7 @@ state)
            )))
 
 (defthm correctness-of-commute-if-for-args-notcond
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp if-cond)
+  (implies (and (pseudo-termp if-cond)
                 (pseudo-term-listp then-args)
                 (pseudo-term-listp else-args)
                 (alistp a)
@@ -561,6 +617,10 @@ state)
            :induct (commute-if-for-args if-cond then-args else-args)
            )))
 )
+
+#|
+(commute-if-for-args '(cond x) '((foo x)) '((bar x)))
+|#
 
 (define commute-if ((judge pseudo-termp)
                     (then-term pseudo-termp)
@@ -603,10 +663,20 @@ state)
                          "Then or else judgement is malformed.~%")
                      ''t)))))
 
+#|
+(commute-if '(if (cond x)
+                 (rationalp (foo x))
+               (rationalp (bar x)))
+            '(foo x)
+            '(bar x)
+            `((rationalp . (,(make-type-tuple)))
+              (integerp . (,(make-type-tuple)))
+              (acl2-numberp . (,(make-type-tuple)))))
+|#
+
 ;; It takes a while
 (defthm correctness-of-commute-if
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp then-term)
                 (pseudo-termp else-term)
                 (type-to-types-alist-p supertype-alst)
@@ -616,7 +686,7 @@ state)
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (commute-if)
-                           (correctness-of-is-conjunct-list?
+                           (correctness-of-is-judgements?
                             correctness-of-path-test-list
                             correctness-of-path-test
                             consp-of-pseudo-lambdap
@@ -691,11 +761,27 @@ state)
        (new-first (commute-if first-judge then-term else-term supertype-alst))
        (new-rest
         (merge-if-judgements rest-judge then-term else-term supertype-alst)))
-    `(if ,new-first ,new-rest ''nil)))
+    `(if ,new-first ,new-rest 'nil)))
+
+#|
+(merge-if-judgements '(if (if (cond x)
+                              (rationalp (foo x))
+                              (rationalp (bar x)))
+                          (if (if (cond x)
+                                  (integerp (foo x))
+                                  (integerp (bar x)))
+                              't
+                              'nil)
+                        'nil)
+                     '(foo x)
+                     '(bar x)
+                     `((rationalp . (,(make-type-tuple)))
+                       (integerp . (,(make-type-tuple)))
+                       (acl2-numberp . (,(make-type-tuple)))))
+|#
 
 (defthm correctness-of-merge-if-judgements
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp then-term)
                 (pseudo-termp else-term)
                 (type-to-types-alist-p supertype-alst)
@@ -729,8 +815,7 @@ state)
 (verify-guards union-judgements-acc)
 
 (defthm correctness-of-union-judgements-acc
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp acc)
                 (alistp a)
                 (ev-smtcp acc a)
@@ -747,8 +832,7 @@ state)
   (union-judgements-acc judge2 judge1 state))
 
 (defthm correctness-of-union-judgements
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge1)
+  (implies (and (pseudo-termp judge1)
                 (pseudo-termp judge2)
                 (pseudo-termp acc)
                 (alistp a)
@@ -804,7 +888,7 @@ state)
        ((type-tuple tu) (type-tuple-fix type-tuple))
        (path-cond (pseudo-term-fix path-cond))
        (type-thm (acl2::meta-extract-formula-w tu.thm (w state)))
-       ((unless (pseudo-termp type-thm))
+       ((unless (and type-thm (pseudo-termp type-thm)))
         (prog2$
          (er hard? 'judgement-fns=>construct-one-super/subtype
              "Formula returned by meta-extract ~p0 is not a pseudo-termp: ~p1~%"
@@ -831,13 +915,13 @@ state)
               but we find ~p0~%" tu.formals)
          ''t))
        (substed-thm
-        (acl2::substitute-into-term type-thm `((,(car tu.formals) . ,term)))))
+        (acl2::substitute-into-term type-thm `((,(car tu.formals) . ,term))))
+       ((unless (pseudo-termp substed-thm))
+        (prog2$
+         (er hard? 'judgement-fns=>construct-one-super/subtype
+             "Substituted theorem is not pseudo-term ~p0~%" substed-thm)
+         ''t)))
     (case-match substed-thm
-      (('implies single-cond (!tu.neighbour-type !term))
-       (if (or (equal tu.neighbour-type 'quote)
-               (not (equal single-cond type-judge)))
-           ''t
-         (caddr substed-thm)))
       (('implies type-predicates (!tu.neighbour-type !term))
        (b* (((if (equal tu.neighbour-type 'quote)) ''t)
             ((unless (path-test-list `(if ,type-judge ,path-cond 'nil)
@@ -847,30 +931,42 @@ state)
       (& ''t))))
 )
 
-(defthm my-substitute-into-term-correct
-  (equal (ev-smtcp (acl2::substitute-into-term x subst) a)
-         (ev-smtcp x (ev-smtcp-alist subst a)))
-  :hints (("Goal"
-           :in-theory (disable acl2::substitute-into-term-correct)
-           :use ((:functional-instance
-                  acl2::substitute-into-term-correct
-                  (acl2::unify-ev ev-smtcp)
-                  (acl2::unify-ev-lst ev-smtcp-lst)
-                  (acl2::unify-ev-alist ev-smtcp-alist))))))
+#|
+(defthm test (implies (integerp x) (rationalp x)))
+(defoption maybe-integerp integerp :pred maybe-integerp)
+(defthm test1 (implies (integerp x) (maybe-integerp x)))
+(defthm test2 (implies (and (maybe-integerp y) y) (integerp y)))
+(construct-one-super/subtype '(maybe-integerp x)
+                             (make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                              :formals '(y)
+                                              :thm 'test2)
+                             `((maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                                                    :formals '(y)
+                                                                    :thm 'test2))))
+                             '(if x 't 'nil) state)
+|#
 
 (encapsulate ()
   (local
    (defthm crock
-     (implies (and (ev-smtcp-meta-extract-global-facts)
-                   (pseudo-termp term)
+     (implies (and (pseudo-termp term)
                    (alistp a)
                    (consp term)
                    (consp (cdr term))
-                   (consp (cddr term))
                    (equal (car term) 'implies)
                    (ev-smtcp term a)
                    (ev-smtcp (cadr term) a))
               (ev-smtcp (caddr term) a))))
+
+  (local
+   (defthm crock1
+     (implies (and (pseudo-termp x)
+                   (consp x)
+                   (not (equal (car x) 'quote))
+                   (consp (cdr x)))
+              (pseudo-termp (cadr x)))
+     :hints (("Goal"
+              :in-theory (enable pseudo-termp)))))
 
 (defthm correctness-of-construct-one-super/subtype
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -883,6 +979,7 @@ state)
                       type-judge type-tuple type-alst path-cond state)
                      a))
   :hints (("Goal"
+           :do-not-induct t
            :in-theory (e/d (construct-one-super/subtype)
                            (w
                             symbol-listp
@@ -898,24 +995,15 @@ state)
                             ev-smtcp-of-booleanp-call
                             ev-smtcp-of-lambda
                             implies-of-is-conjunct?
-                            ev-smtcp-meta-extract-formula
-                            my-substitute-into-term-correct
-                            crock
                             correctness-of-path-test-list
-                            ))
-           :do-not-induct t
-           :use ((:instance ev-smtcp-meta-extract-formula
-                            (name (type-tuple->thm type-tuple))
-                            (st state)
-                            (a (ev-smtcp-alist
-                                (list (cons (car (type-tuple->formals type-tuple))
-                                            (cadr type-judge)))
-                                a)))
-                 (:instance my-substitute-into-term-correct
-                            (x (meta-extract-formula (type-tuple->thm type-tuple)
-                                                                  state))
-                            (subst (list (cons (car (type-tuple->formals type-tuple))
-                                               (cadr type-judge))))
+                            crock))
+           :use ((:instance correctness-of-path-test-list
+                            (path-cond `(if ,type-judge ,path-cond 'nil))
+                            (expr-conj (cadr (acl2::substitute-into-term
+                                              (meta-extract-formula (type-tuple->thm type-tuple)
+                                                                    state)
+                                              (list (cons (car (type-tuple->formals type-tuple))
+                                                          (cadr type-judge))))))
                             (a a))
                  (:instance crock
                             (term (acl2::substitute-into-term
@@ -923,16 +1011,7 @@ state)
                                                          state)
                                    (list (cons (car (type-tuple->formals type-tuple))
                                                (cadr type-judge)))))
-                            (a a))
-                 (:instance correctness-of-path-test-list
-                            (path-cond (list* 'if type-judge path-cond '('nil)))
-                            (expr-conj (cadr (acl2::substitute-into-term
-                                              (meta-extract-formula (type-tuple->thm type-tuple)
-                                                                    state)
-                                              (list (cons (car (type-tuple->formals type-tuple))
-                                                          (cadr type-judge))))))
-                            (a a))
-                 ))))
+                            (a a))))))
 )
 
 (define construct-closure ((type-judge pseudo-termp)
@@ -948,13 +1027,44 @@ state)
        (super/subtype-tuple (type-tuple-list-fix super/subtype-tuple))
        (path-cond (pseudo-term-fix path-cond))
        ((unless (consp super/subtype-tuple)) acc)
-       ((cons first rest) super/subtype-tuple))
+       ((cons first rest) super/subtype-tuple)
+       (one (construct-one-super/subtype type-judge first type-alst path-cond
+                                         state))
+       ((if (equal one ''t))
+        (construct-closure type-judge rest type-alst path-cond acc state)))
     (construct-closure type-judge rest type-alst path-cond
-                       `(if ,(construct-one-super/subtype
-                              type-judge first type-alst path-cond state)
-                            ,acc
-                          'nil)
+                       `(if ,one ,acc 'nil)
                        state)))
+
+#|
+(construct-closure '(integerp x)
+                   `(,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
+                                       :formals '(x)
+                                       :thm 'test)
+                     ,(make-type-tuple :type 'integerp :neighbour-type
+                                       'maybe-integerp
+                                       :formals '(x)
+                                       :thm 'test1))
+                   `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
+                                                    :formals '(x)
+                                                    :thm 'test)
+                                  ,(make-type-tuple :type 'integerp :neighbour-type
+                                                    'maybe-integerp
+                                                    :formals '(x)
+                                                    :thm 'test1)))
+                     (rationalp . nil)
+                     (maybe-integerp . nil))
+                   ''t ''t state)
+
+(construct-closure '(maybe-integerp x)
+                   `(,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                       :formals '(y)
+                                       :thm 'test2))
+                   `((maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                                          :formals '(y)
+                                                          :thm 'test2))))
+                   '(if x 't 'nil) ''t state)
+|#
 
 (defthm correctness-of-construct-closure
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -993,17 +1103,21 @@ state)
          (type-alst (type-to-types-alist-fix type-alst))
          (clock (nfix clock))
          ((if (zp clock)) closure)
-         (exist? (look-up-path-cond type-judge closure type-alst))
+         (exist? (path-test closure type-judge))
          ((if exist?) closure)
          (new-closure `(if ,type-judge ,closure 'nil))
-         ((unless (type-predicate-p type-judge type-alst)) new-closure)
+         ((unless (type-predicate-p type-judge type-alst))
+          (prog2$
+           (er hard? 'type-inference-bottomup=>super/subtype
+               "Term ~p0 is not a type-predicate-p.~%" type-judge)
+           ''t))
          ((cons type &) type-judge)
          (item (assoc-equal type type-alst))
          ((unless item)
           (prog2$
            (er hard? 'type-inference-bottomup=>super/subtype
                "Type ~p0 doesn't exist in the supertype alist.~%" type)
-           new-closure))
+           ''t))
          ((unless (cdr item)) new-closure)
          (type-judge-lst
           (construct-closure type-judge (cdr item) type-alst path-cond
@@ -1037,17 +1151,25 @@ state)
 (verify-guards super/subtype)
 
 #|
-(super/subtype 'integerp '((integerp . (rationalp maybe-integerp))
-(maybe-integerp . (maybe-rationalp))
-(rationalp . (maybe-rationalp))
-(maybe-rationalp . nil))
-nil 4)
+(super/subtype '(integerp x) ''t
+               `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
+                                                :formals '(x)
+                                                :thm 'test)
+                              ,(make-type-tuple :type 'integerp :neighbour-type
+                                                'maybe-integerp
+                                                :formals '(x)
+                                                :thm 'test1)))
+                 (rationalp . nil)
+                 (maybe-integerp . nil))
+               ''t 4 state)
 
-(super/subtype 'rationalp '((integerp . (rationalp maybe-integerp))
-(maybe-integerp . (maybe-rationalp))
-(rationalp . (maybe-rationalp))
-(maybe-rationalp . nil))
-nil 4)
+(super/subtype '(maybe-integerp x) '(if x 't 'nil)
+               `((integerp . nil)
+                 (rationalp . nil)
+                 (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                                      :formals '(y)
+                                                      :thm 'test2))))
+               ''t 4 state)
 |#
 
 (encapsulate ()
@@ -1110,7 +1232,7 @@ nil 4)
        (acc (pseudo-term-fix acc))
        ((if (type-predicate-p judge type-alst))
         (super/subtype judge path-cond type-alst acc (len type-alst) state))
-       ((unless (is-conjunct? judge)) acc)
+       ((unless (is-conjunct? judge)) `(if ,judge ,acc 'nil))
        ((if (equal judge ''t)) acc)
        ((list* & cond then &) judge)
        (first-acc
@@ -1138,7 +1260,7 @@ nil 4)
                                      (type-alst type-to-types-alist-p)
                                      state)
   :returns (judgements pseudo-termp)
-  (super/subtype-judgements-acc judge path-cond type-alst judge state))
+  (super/subtype-judgements-acc judge path-cond type-alst ''t state))
 
 (defthm correctness-of-super/subtype-judgements-fn
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -1153,63 +1275,73 @@ nil 4)
            :in-theory (enable super/subtype-judgements-fn))))
 
 #|
-(defthm test (implies (integerp x) (rationalp x)))
-(defoption maybe-integerp integerp :pred maybe-integerp)
-(defthm test1 (implies (integerp x) (maybe-integerp x)))
 (super/subtype-judgements-fn '(if (integerp x) 't 'nil) ''t
-'((integerp . (rationalp maybe-integerp))
-(rationalp . nil)
-(maybe-integerp . nil))
-'((((type . integerp) (neighbour-type . rationalp)) .
-test)
-(((type . integerp) (neighbour-type . maybe-integerp)) .
-test1))
-state)
+                             `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
+                                                              :formals '(x)
+                                                              :thm 'test)
+                                            ,(make-type-tuple :type 'integerp :neighbour-type
+                                                              'maybe-integerp
+                                                              :formals '(x)
+                                                              :thm 'test1)))
+                               (rationalp . nil)
+                               (maybe-integerp . nil))
+                             state)
+
+(super/subtype-judgements-fn '(if (maybe-integerp x) 't 'nil) '(if x 't 'nil)
+                             `((integerp . nil)
+                               (rationalp . nil)
+                               (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                                                    :formals '(y)
+                                                                    :thm 'test2))))
+                             state)
 |#
 
-(defmacro super/subtype-judgements (judgements path-cond options state
+(defmacro super/subtype-judgements (judgements path-cond type-alst state
                                                &key which)
   `(if (equal ,which :super)
        (super/subtype-judgements-fn ,judgements ,path-cond
-                                    (type-options->supertype ,options)
-                                    ,state)
+                                    ,type-alst ,state)
      (super/subtype-judgements-fn ,judgements ,path-cond
-                                  (type-options->subtype ,options)
-                                  ,state)))
+                                  ,type-alst ,state)))
 
 #|
-(defthm test (implies (integerp x) (rationalp x)))
 (super/subtype-judgements '(if (integerp x) 't 'nil) ''t
-'((supertype (integerp rationalp)
-(rationalp))
-(supertype-thm (((type . integerp)
-(neighbour-type . rationalp))
-. test))
-(subtype)
-(subtype-thm)
-(functions)
-(consp)
-(basic)
-(list)
-(alist)
-(prod)
-(option)
-(sum)
-(abstract))
-state
-:which :super)
+                          `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
+                                                            :formals '(x)
+                                                            :thm 'test)
+                                          ,(make-type-tuple :type 'integerp :neighbour-type
+                                                            'maybe-integerp
+                                                            :formals '(x)
+                                                            :thm 'test1)))
+                             (rationalp . nil)
+                             (maybe-integerp . nil))
+                          state
+                          :which :super)
+
+(super/subtype-judgements '(if (maybe-integerp x) 't 'nil) '(if x 't 'nil)
+                          `((integerp . nil)
+                            (rationalp . nil)
+                            (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
+                                                                 :formals '(y)
+                                                                 :thm 'test2))))
+                          state
+                          :which :sub)
 |#
 
-;; extend-judgements first calcualte the subtypes then it calculate the
-;; supertypes based on the subtypes
+;; extend-judgements first calculate the subtypes then it calculate the
+;; supertypes
 (define extend-judgements ((judgements pseudo-termp)
                            (path-cond pseudo-termp)
                            (options type-options-p)
                            state)
   :returns (new-judgements pseudo-termp)
   (super/subtype-judgements
-   (super/subtype-judgements judgements path-cond options state :which :sub)
-   path-cond options state :which :super))
+   (super/subtype-judgements judgements path-cond
+                             (type-options->supertype (type-options-fix options))
+                             state :which :sub)
+   path-cond
+   (type-options->subtype (type-options-fix options))
+   state :which :super))
 
 (defthm correctness-of-extend-judgements
   (implies (and (ev-smtcp-meta-extract-global-facts)

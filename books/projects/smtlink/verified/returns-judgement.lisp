@@ -24,34 +24,34 @@
 ;;-------------------------------------------------------
 ;; Returns judgements
 
-(encapsulate ()
-  (local (in-theory (disable pseudo-termp
-                             assoc-equal
-                             symbol-listp)))
+;; (encapsulate ()
+;;   (local (in-theory (disable pseudo-termp
+;;                              assoc-equal
+;;                              symbol-listp)))
 
-(define get-formals ((fn symbolp) state)
-  :returns (formals symbol-listp)
-  :ignore-ok t
-  (b* ((fn (symbol-fix fn))
-       (formula (acl2::meta-extract-formula-w fn (w state)))
-       ((unless (pseudo-termp formula))
-        (prog2$
-         (er hard? 'returns-judgement=>get-formals
-             "Formula got by meta-extract ~p0 is not a pseudo-termp."
-             fn)
-         nil))
-       ((mv ok formals)
-        (case-match formula
-          (('equal (!fn . formals) &)
-           (mv t formals))
-          (& (mv nil nil))))
-       ((unless (and ok (symbol-listp formals)))
-        (prog2$ (er hard? 'returns-judgement=>get-formals
-                    "Formula got by meta-extract ~p0 is not an equality."
-                    fn)
-                nil)))
-    formals))
-)
+;; (define get-formals ((fn symbolp) state)
+;;   :returns (formals symbol-listp)
+;;   :ignore-ok t
+;;   (b* ((fn (symbol-fix fn))
+;;        (formula (acl2::meta-extract-formula-w fn (w state)))
+;;        ((unless (pseudo-termp formula))
+;;         (prog2$
+;;          (er hard? 'returns-judgement=>get-formals
+;;              "Formula got by meta-extract ~p0 is not a pseudo-termp."
+;;              fn)
+;;          nil))
+;;        ((mv ok formals)
+;;         (case-match formula
+;;           (('equal (!fn . formals) &)
+;;            (mv t formals))
+;;           (& (mv nil nil))))
+;;        ((unless (and ok (symbol-listp formals)))
+;;         (prog2$ (er hard? 'returns-judgement=>get-formals
+;;                     "Formula got by meta-extract ~p0 is not an equality ~p1"
+;;                     fn formula)
+;;                 nil)))
+;;     formals))
+;; )
 
 (define get-hypotheses-and-conclusion ((thm pseudo-termp)
                                        (fn symbolp)
@@ -66,6 +66,13 @@
       ((& (!fn . !actuals)) (mv t ''t thm))
       (('implies hypo concl) (mv t hypo concl))
       (& (mv nil nil nil)))))
+
+#|
+(get-hypotheses-and-conclusion '(implies (and (rationalp i1) (rational-list-p al))
+                                         (and (rational-list-p (cons i1 al))
+                                              (cons i1 al)))
+                               'cons '(i1 al))
+|#
 
 (defthm correctness-of-get-hypotheses-and-conclusion
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -103,14 +110,10 @@
            :expand (expand-lambda thm))))
 
 (define get-substed-theorem ((respec return-spec-p)
-                             (fn symbolp)
                              (actuals pseudo-term-listp)
                              state)
   :returns (substed-thm pseudo-termp)
-  :guard (not (equal fn 'quote))
-  (b* (((unless (mbt (not (equal fn 'quote)))) ''t)
-       (respec (return-spec-fix respec))
-       (fn (symbol-fix fn))
+  (b* ((respec (return-spec-fix respec))
        (actuals (pseudo-term-list-fix actuals))
        (returns-name (return-spec->returns-thm respec))
        (returns-thm-raw
@@ -121,20 +124,35 @@
                     returns-name returns-thm-raw)
                 ''t))
        (returns-thm-expanded (expand-lambda returns-thm-raw))
-       (formals (get-formals fn state)))
+       (formals (return-spec->formals respec)))
     (acl2::substitute-into-term returns-thm-expanded
                                 (pairlis$ formals actuals))))
+
+#|
+(deflist rational-list
+  :elt-type rationalp
+  :true-listp t)
+(defthm return-of-cons
+  (implies (and (rationalp x)
+                (rational-list-p y))
+           (and (rational-list-p (cons x y))
+                (cons x y))))
+(get-substed-theorem '((FORMALS X Y)
+                       (RETURNS-THM . RETURN-OF-CONS)
+                       (REPLACE-THM . REPLACE-OF-CONS))
+                     '(i1 l1)
+                     state)
+|#
 
 (defthm correctness-of-get-substed-theorem
    (implies (and (ev-smtcp-meta-extract-global-facts)
                  (alistp a)
-                 (symbolp fn)
                  (pseudo-term-listp actuals)
                  (return-spec-p respec))
-            (ev-smtcp (get-substed-theorem respec fn actuals state) a))
+            (ev-smtcp (get-substed-theorem respec actuals state) a))
    :hints (("Goal"
             :in-theory (e/d () (w))
-            :expand (get-substed-theorem respec fn actuals state))))
+            :expand (get-substed-theorem respec actuals state))))
 
 (defthm correctness-of-path-test-list-corollary
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -171,7 +189,7 @@
   (b* ((fn (symbol-fix fn))
        (acc (pseudo-term-fix acc))
        (returns-thm-substed
-        (get-substed-theorem return-spec fn actuals state))
+        (get-substed-theorem return-spec actuals state))
        ((mv ok hypo return-judge)
         (get-hypotheses-and-conclusion returns-thm-substed fn actuals))
        ((unless ok)
@@ -183,6 +201,29 @@
        ((unless hypo-implied) acc))
     `(if ,return-judge ,acc 'nil)))
 )
+
+#|
+(construct-returns-judgement 'cons '(i1 l1)
+                             '(IF (IF (RATIONALP I1)
+                                      (IF (MAYBE-INTEGERP I1)
+                                          (IF (INTEGERP I1) 'T 'NIL)
+                                          'NIL)
+                                      'NIL)
+                                  (IF (IF (RATIONAL-LIST-P L1) 'T 'NIL)
+                                      'T
+                                      'NIL)
+                                  'NIL)
+                             '((FORMALS X Y)
+                               (RETURNS-THM . RETURN-OF-CONS)
+                               (REPLACE-THM . REPLACE-OF-CONS))
+                             '(IF (IF (RATIONAL-LIST-P L1)
+                                      (IF (INTEGERP I1) L1 'NIL)
+                                      'NIL)
+                                  'T
+                                  'NIL)
+                             ''t
+                             state)
+|#
 
 (defthm correctness-of-construct-returns-judgement
    (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -233,6 +274,29 @@
                                      respec-hd path-cond acc state)))
     (returns-judgement fn actuals actuals-judgements
                        respec-tl path-cond acc-hd state)))
+
+#|
+(returns-judgement 'cons '(i1 l1)
+                  '(IF (IF (RATIONALP I1)
+                           (IF (MAYBE-INTEGERP I1)
+                               (IF (INTEGERP I1) 'T 'NIL)
+                               'NIL)
+                           'NIL)
+                       (IF (IF (RATIONAL-LIST-P L1) 'T 'NIL)
+                           'T
+                           'NIL)
+                       'NIL)
+                  '(((FORMALS X Y)
+                     (RETURNS-THM . RETURN-OF-CONS)
+                     (REPLACE-THM . REPLACE-OF-CONS)))
+                  '(IF (IF (RATIONAL-LIST-P L1)
+                           (IF (INTEGERP I1) L1 'NIL)
+                           'NIL)
+                       'T
+                       'NIL)
+                  ''t
+                  state)
+|#
 
 (defthm correctness-of-returns-judgement
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -362,7 +426,7 @@
                         (actuals-judge pseudo-termp)
                         (path-cond pseudo-termp)
                         (respec-lst return-spec-list-p)
-                        (supertypes type-to-types-alist-p)
+                        (options type-options-p)
                         state)
   :returns (expected-judge-lst pseudo-term-listp)
   :measure (len respec-lst)
@@ -373,23 +437,27 @@
        (actuals-judge (pseudo-term-fix actuals-judge))
        (path-cond (pseudo-term-fix path-cond))
        (respec-lst (return-spec-list-fix respec-lst))
+       (options (type-options-fix options))
+       (supertypes (type-options->supertype options))
        ((unless (consp respec-lst)) nil)
        ((cons respec-hd respec-tl) respec-lst)
-       (returns-thm-substed (get-substed-theorem respec-hd fn actuals state))
+       (returns-thm-substed (get-substed-theorem respec-hd actuals state))
        ((mv ok hypo concl)
         (get-hypotheses-and-conclusion returns-thm-substed fn actuals))
+       (extended-concl (extend-judgements concl path-cond options state))
        ((unless ok)
         (er hard? 'returns-judgement=>choose-returns
             "Malformed returns theorem ~p0.~%" returns-thm-substed))
        ;; (conclusion returns-thm-substed) => returns-judge
-       (ok1 (path-test-list concl returns-judge))
+       (ok1 (path-test-list extended-concl returns-judge))
        ;; actuals-judge & path-cond => (hypotheses returns-thm-substed)
        (ok2 (path-test-list `(if ,actuals-judge ,path-cond 'nil) hypo))
        ;; if returns-judge includes the conclusion of returns-thm-substed
        ;; and actuals-judge satisfy the hypotheses of returns-thm-substed
        ((unless (and ok1 ok2))
-        (choose-returns returns-judge fn actuals actuals-judge path-cond
-                        respec-tl supertypes state))
+        (cons ''t
+              (choose-returns returns-judge fn actuals actuals-judge path-cond
+                              respec-tl options state)))
        (judges (filter-judges actuals-judge hypo supertypes ''t))
        (judge-alst (generate-judge-alist judges actuals nil)))
     (strip-cdrs judge-alst)))

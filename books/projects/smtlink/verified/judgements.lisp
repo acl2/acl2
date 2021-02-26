@@ -77,8 +77,7 @@
 ;; (in-theory (disable implies-of-type-predicate-of-term))
 
 (defthm correctness-of-type-predicate-of-term
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
+  (implies (and (pseudo-termp judge)
                 (pseudo-termp term)
                 (type-to-types-alist-p supertype-alst)
                 (type-predicate-of-term judge term supertype-alst)
@@ -188,8 +187,7 @@
 )
 
 (defthm correctness-of-is-conjunct?
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp term)
+  (implies (and (pseudo-termp term)
                 (is-conjunct? term)
                 (not (equal term ''t))
                 (alistp a)
@@ -219,9 +217,9 @@
                             symbol-listp
                             pseudo-term-listp-of-cdr-of-pseudo-termp)))))
 
-(define is-conjunct-list? ((judges pseudo-termp)
-                           (term pseudo-termp)
-                           (supertype-alst type-to-types-alist-p))
+(define is-judgements? ((judges pseudo-termp)
+                        (term pseudo-termp)
+                        (supertype-alst type-to-types-alist-p))
   :returns (ok booleanp)
   :measure (acl2-count (pseudo-term-fix judges))
   :hints (("Goal"
@@ -237,8 +235,8 @@
        ((unless (consp judges)) nil)
        ((list if cond then else) judges))
     (and (equal if 'if)
-         (is-conjunct-list? cond term supertype-alst)
-         (is-conjunct-list? then term supertype-alst)
+         (is-judgements? cond term supertype-alst)
+         (is-judgements? then term supertype-alst)
          (equal else ''nil)))
   ///
   (more-returns
@@ -251,41 +249,28 @@
                      (consp judges)
                      (consp (cdr judges))
                      (consp (cddr judges))))
-       :name implies-of-is-conjunct-list?
-       :hints (("Goal" :in-theory (enable pseudo-termp))))
-   ;; (ok (implies (and ok (pseudo-termp judges) (pseudo-termp term)
-   ;;                   (type-to-types-alist-p supertype-alst)
-   ;;                   (not (equal judges ''t))
-   ;;                   (not (judgement-of-term judges term supertype-alst)))
-   ;;              (< (acl2-count (caddr judges))
-   ;;                 (acl2-count judges)))
-   ;;     :name acl2-count-of-caddr-of-is-conjunct-list?
-   ;;     :hints (("Goal"
-   ;;              :in-theory (disable implies-of-is-conjunct-list?)
-   ;;              :use ((:instance implies-of-is-conjunct-list?))))
-   ;;     :rule-classes :linear)
-   )
+       :name implies-of-is-judgements?
+       :hints (("Goal" :in-theory (enable pseudo-termp)))))
 
-  (defthm t-of-is-conjunct-list?
-    (is-conjunct-list? ''t term supertype-alst))
-  (defthm term-of-is-conjunct-list?
+  (defthm t-of-is-judgements?
+    (is-judgements? ''t term supertype-alst))
+  (defthm term-of-is-judgements?
     (implies (pseudo-termp term)
-             (is-conjunct-list? term term supertype-alst)))
-  (defthm judgement-of-term-is-conjunct-list?
+             (is-judgements? term term supertype-alst)))
+  (defthm judgement-of-term-is-judgements?
     (implies (and (pseudo-termp judges)
                   (pseudo-termp term)
                   (type-to-types-alist-p supertype)
                   (judgement-of-term judges term supertype))
-             (is-conjunct-list? judges term supertype)))
+             (is-judgements? judges term supertype)))
   )
 
-(defthm construct-is-conjunct-list?
+(defthm construct-is-judgements?
   (implies (and (pseudo-termp judges)
                 (pseudo-termp term)
                 (type-to-types-alist-p supertype)
-                (is-conjunct-list? judges term supertype)
+                (is-judgements? judges term supertype)
                 (type-predicate-of-term judge term supertype))
-           (is-conjunct-list? `(if ,judge ,judges 'nil) term supertype))
+           (is-judgements? `(if ,judge ,judges 'nil) term supertype))
   :hints (("Goal"
-           :in-theory (enable is-conjunct-list?))))
-
+           :in-theory (enable is-judgements?))))

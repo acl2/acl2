@@ -41,8 +41,7 @@
 (verify-guards look-up-path-cond-acc)
 
 (defthm correctness-of-lookup-path-cond-acc
-   (implies (and (ev-smtcp-meta-extract-global-facts)
-                 (pseudo-termp term)
+   (implies (and (pseudo-termp term)
                  (pseudo-termp path-cond)
                  (pseudo-termp acc)
                  (type-to-types-alist-p supertype-alst)
@@ -66,8 +65,7 @@
   (look-up-path-cond-acc term path-cond supertype-alst ''t)
   ///
   (defthm correctness-of-lookup-path-cond
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp term)
+    (implies (and (pseudo-termp term)
                   (pseudo-termp path-cond)
                   (type-to-types-alist-p supertype-alst)
                   (alistp a)
@@ -148,8 +146,7 @@
         (path-test path-tl expr)))
   ///
   (defthm correctness-of-path-test
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp expr)
+    (implies (and (pseudo-termp expr)
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a)
@@ -179,8 +176,7 @@
     nil))
 
 (defthm correctness-of-path-test-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp expr-conj)
+  (implies (and (pseudo-termp expr-conj)
                 (pseudo-termp path-cond)
                 (alistp a)
                 (ev-smtcp path-cond a)
@@ -255,8 +251,7 @@
 (verify-guards shadow-path-cond-acc)
 
 (defthm correctness-of-shadow-path-cond-acc
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (symbol-listp formals)
+  (implies (and (symbol-listp formals)
                 (pseudo-termp path-cond)
                 (pseudo-termp acc)
                 (alistp a)
@@ -275,8 +270,7 @@
   (shadow-path-cond-acc formals path-cond ''t)
   ///
   (defthm correctness-of-shadow-path-cond
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (symbol-listp formals)
+    (implies (and (symbol-listp formals)
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a))

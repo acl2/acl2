@@ -34,7 +34,8 @@
                 (type-tuple-list-p (cdr (assoc-equal y x))))))
 
 (defprod return-spec
-  ((returns-thm symbolp)
+  ((formals symbol-listp)
+   (returns-thm symbolp)
    (replace-thm symbolp)))
 
 (deflist return-spec-list
