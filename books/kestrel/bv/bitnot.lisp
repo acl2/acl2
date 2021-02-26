@@ -66,3 +66,6 @@
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-bitnot
   (unsigned-byte-p 1 (bitnot x)))
+
+(defthm bitp-of-bitnot
+  (bitp (bitnot x)))
