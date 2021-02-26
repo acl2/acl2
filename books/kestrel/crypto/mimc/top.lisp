@@ -11,8 +11,8 @@
 (in-package "CRYPTO")
 
 (include-book "round-constants-for-semaphore")
-;(include-book "mimcsponge")
-;(include-book "mimcsponge-tests")
+(include-book "mimcsponge")
+(include-book "mimcsponge-tests")
 (include-book "doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
