@@ -43,9 +43,8 @@
   :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm getbit-0-of-bitnot
-  (implies (integerp x)
-           (equal (getbit 0 (bitnot x))
-                  (bitnot x)))
+  (equal (getbit 0 (bitnot x))
+         (bitnot x))
   :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm unsigned-byte-p-of-bitnot
