@@ -427,33 +427,96 @@
                            (fd-table (lofat-st->fd-table st))
                            (file-table (lofat-st->file-table st))))))
 
-;; How do we prove this? The best way seems to be to open up the definitions of
-;; the single-step functions and proceed from there.
-(defthm absfat-oracle-single-step-refinement
+;; I have this single-step property relating two representations of
+;; my FAT32 filesystem, AbsFAT and LoFAT. The very next thing I want to do are
+;; derive from this a multi-step property for when multiple steps are executed,
+;; which is a refinement relation. Towards that end, I will need to define an
+;; interpreter which processes a sequence of system calls, and induct on the
+;; length of that sequence to apply this single-step property to the induction
+;; case.
+;;
+;; My problem, however, is that this single-step property has too many
+;; hypotheses. Currently, there are four hypotheses, and as you can see,
+;; hypotheses 1 and 2 are invariants. However, hypotheses 3 and 4 are not,
+;; because they ensure that
+;; we are not facing certain kinds of running-out-of-space errors in
+;; LoFAT. There is not really an equivalent concept of "running out of space"
+;; in AbsFAT, because it is a more abstract model and does not get into the
+;; byte level as much as LoFAT does. That means there isn't a way to ensure
+;; the same kind of running-out-of-space behaviour in AbsFAT, which would allow
+;; us to make these hypotheses invariants - there is simply no way in AbsFAT to
+;; draw out this information about how much space is available.
+;;
+;; This seems to present two ways to proceed:
+;;
+;; - Make a predicate which takes as arguments the current state of LoFAT
+;; (i.e. the stobj fat32$c and the auxiliary state st) and the list of
+;; instructions, and returns true or false depending on whether hypotheses 3
+;; and 4 are preserved as invariants throughout the execution. Use this as a
+;; hypothesis for the multi-step relation so that the induction hypothesis
+;; becomes strong enough to allow this single-step relation to be used. This
+;; seems clunky because I expect to spend a lot of time messing around with
+;; this new predicate holds in subgoals when I'm using this multi-step relation
+;; for code proofs.
+;;
+;; - Make some kind of intermediate model between LoFAT and AbsFAT, which does
+;; take space issues into account. This, too, seems clunky because AbsFAT is
+;; designed to simplify reasoning about sequences of instructions and I will
+;; potentially give up some of that if I have to reason about a new model.
+;;
+;; So, coming to the main questions: is there a third option which is better?
+;; Should I just pick one of these two and go with it until I actually start
+;; doing a code proof and run into difficulties? Or is one of these two
+;; obviously better, despite me not being able to see it yet? It's worth noting
+;; that I also want to reason about instructions being executed concurrently,
+;; i.e. not necessarily in parallel in the plet sense, but definitely in the
+;; sense of single-core concurrency where multiple threads of instructions each
+;; get their turn in an arbitrary order to execute one instruction at a
+;; time. I expect this to exacerbate any bad decisions I make now, which is why
+;; I'm hoping to get this right before I go too far.
+(defthm
+  absfat-oracle-single-step-refinement
   (implies
    (and
+    ;; Hypothesis 1
     (lofat-fs-p fat32$c)
-    (equal (mv-nth '1 (lofat-to-hifat fat32$c)) '0)
+    ;; Hypothesis 2
+    (equal (mv-nth '1 (lofat-to-hifat fat32$c))
+           '0)
+    ;; Hypothesis 3
     (< (hifat-entry-count (mv-nth 0 (lofat-to-hifat fat32$c)))
        (max-entry-count fat32$c))
-    (not (equal (lofat-st->errno
-                 (mv-nth 1
-                         (lofat-oracle-single-step fat32$c syscall-sym
-                                                   st)))
-                *enospc*))
+    ;; Hypothesis 4
+    (not
+     (equal (lofat-st->errno
+             (mv-nth 1
+                     (lofat-oracle-single-step fat32$c syscall-sym st)))
+            *enospc*))
+    ;; Predicate relating AbsFAT and LoFAT.
+    (frame-reps-fs frame
+                   (mv-nth 0 (lofat-to-hifat fat32$c))))
+   (and
+    ;; Hypothesis 1
+    (lofat-fs-p (mv-nth 0
+                        (lofat-oracle-single-step fat32$c syscall-sym st)))
+    ;; Hypothesis 2
+    (equal
+     (mv-nth '1
+             (lofat-to-hifat
+              (mv-nth 0
+                      (lofat-oracle-single-step fat32$c syscall-sym st))))
+     '0)
+    ;; Predicate relating AbsFAT and LoFAT.
     (frame-reps-fs
-     frame
      (mv-nth 0
-             (lofat-to-hifat fat32$c))))
-   (frame-reps-fs
-    (mv-nth 0 (absfat-oracle-single-step frame syscall-sym st))
-    (mv-nth 0
-            (lofat-to-hifat (mv-nth 0 (lofat-oracle-single-step fat32$c syscall-sym
-                                                                st))))))
-  :hints (("Goal" :do-not-induct t
-           :in-theory
-           (e/d (absfat-oracle-single-step
-                 lofat-oracle-single-step)
-                (hifat-mkdir
-                 hifat-pwrite))))
-  :otf-flg t)
+             (absfat-oracle-single-step frame syscall-sym st))
+     (mv-nth
+      0
+      (lofat-to-hifat
+       (mv-nth 0
+               (lofat-oracle-single-step fat32$c syscall-sym st)))))))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :in-theory (e/d (absfat-oracle-single-step lofat-oracle-single-step)
+                    (hifat-mkdir hifat-pwrite)))))
