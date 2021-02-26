@@ -187,11 +187,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags Library"))
 
    (xdoc::p
     "This is a library that represents bags (a.k.a. multisets)
-     as non-strictly ordered lists.
+     as non-strictly-ordered lists.
      Thus, they capture (up to isomorphism) the mathematical notion of bag;
      in particular, bag equality is @(tsee equal).")
 
@@ -200,6 +200,20 @@
     (xdoc::seetopic "set::std/osets" "the library of ordered sets")
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "mimc::mimc" "MiMC Library"))
+
+   (xdoc::p
+    "This is a library that formally specifies and implements
+     the Minimal Multiplicative Complexity (MiMC) hash function
+     as used by "
+    (xdoc::seetopic "zksemaphore::semaphore" "Ethereum's Semaphore")
+     ". "
+     "This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
