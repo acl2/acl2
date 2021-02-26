@@ -10,15 +10,15 @@
                               (natp start)
                               (stringp text))))
   (let*
-      ((end (+ start (length text)))
-       (newtext (append (make-character-list (take start oldtext))
-                        (coerce text 'list)
-                        (nthcdr end oldtext))))
-    newtext))
+      ((start (mbe :exec start :logic (nfix start)))
+       (oldtext (mbe :exec oldtext :logic (make-character-list oldtext)))
+       (end (+ start (length text))))
+    (append (make-character-list (take start oldtext))
+            (coerce text 'list)
+            (nthcdr end oldtext))))
 
 (defthm insert-text-correctness-1
-  (implies (character-listp oldtext)
-           (character-listp (insert-text oldtext start text)))
+  (character-listp (insert-text oldtext start text))
   :hints (("goal" :in-theory (enable insert-text))))
 
 (defthm insert-text-correctness-2
@@ -31,34 +31,48 @@
                                     (len (coerce text 'list)))
                                  (len (coerce text 'list)))))))
 
-(defthm insert-text-correctness-3
-  (implies (natp start)
-           (<= (+ start (len (coerce text 'list)))
-               (len (insert-text oldtext start text))))
+(defthm
+  insert-text-correctness-3
+  (<= (+ (nfix start)
+         (len (coerce text 'list)))
+      (len (insert-text oldtext start text)))
   :hints (("goal" :in-theory (enable insert-text)))
-  :rule-classes :linear)
+  :rule-classes
+  (:linear
+   (:linear
+    :corollary (implies (natp start)
+                        (<= (+ start (len (coerce text 'list)))
+                            (len (insert-text oldtext start text)))))))
 
 (defthmd len-of-insert-text
-  (implies (and (stringp text) (natp start))
+  (implies (stringp text)
            (equal (len (insert-text oldtext start text))
-                  (max (+ start (len (coerce text 'list)))
+                  (max (+ (nfix start)
+                          (len (coerce text 'list)))
                        (len oldtext))))
   :hints (("goal" :do-not-induct t
            :expand (insert-text oldtext start text))))
 
-(defthm
-  insert-text-correctness-4
-  (implies (and (character-listp oldtext)
-                (stringp text)
-                (natp start))
-           (iff (consp (insert-text oldtext start text))
-                (or (> start 0)
-                    (> (len (coerce text 'list)) 0)
-                    (consp oldtext))))
-  :hints
-  (("goal" :use len-of-insert-text)
-   ("subgoal 4'''" :expand (len (insert-text nil 0 text)))
-   ("subgoal 1'4'" :expand (len oldtext))))
+(encapsulate
+  ()
+
+  ;; Borrowed from books/std/lists/append.lisp.
+  (local
+   (defthm consp-of-append
+     (equal (consp (append x y))
+            (or (consp x)
+                (consp y)))))
+
+  (defthm insert-text-correctness-4
+    (implies (stringp text)
+             (iff (consp (insert-text oldtext start text))
+                  (or (not (zp start))
+                      (> (len (coerce text 'list)) 0)
+                      (consp oldtext))))
+    :hints (("goal" :do-not-induct t
+             :use len-of-insert-text
+             :in-theory (e/d (insert-text len-when-consp)
+                             (len-of-insert-text))))))
 
 (defthm true-listp-of-insert-text
   (implies (true-listp oldtext)
