@@ -26,7 +26,7 @@
         (my-sublis-var-and-eval-lst-name (pack$ 'my-sublis-var-and-eval- suffix '-lst))
         (apply-axe-evaluator-to-quoted-args-name (pack$ 'apply- evaluator-base-name '-to-quoted-args)))
     `(encapsulate ()
-       (local (include-book "replace-var-rules"))
+       (local (include-book "kestrel/axe/replace-var-rules" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
