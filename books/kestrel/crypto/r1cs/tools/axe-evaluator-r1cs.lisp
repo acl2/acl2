@@ -26,7 +26,8 @@
             (inv inv-unguarded)
             (pow pow-unguarded)
             pos-fix
-            (fep fep-unguarded))))
+            (fep fep-unguarded)
+            (acl2::floor acl2::floor-unguarded))))
 
 ;; Make the evaluator:
 (acl2::make-evaluator-simple axe-evaluator-r1cs *axe-evaluator-r1cs-fns-and-aliases*)
