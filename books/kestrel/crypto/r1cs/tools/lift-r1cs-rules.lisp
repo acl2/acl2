@@ -38,6 +38,7 @@
                                ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES
                                ACL2::UNSIGNED-BYTE-P-OF-BVCAT2))))
 
+;; Turn large constants into more readable negative constants
 (defthm mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
