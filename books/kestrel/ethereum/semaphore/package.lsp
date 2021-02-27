@@ -50,7 +50,6 @@
             ecurve::twisted-edwards-curvep
             ecurve::twisted-edwards-curve-completep
             ecurve::twisted-edwards-curve-primep
-            pfield::fep
             primes::*bn-254-group-prime*
             r1cs::lift-r1cs
             ) ; added symbols
