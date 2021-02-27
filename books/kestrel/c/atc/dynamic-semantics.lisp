@@ -1028,6 +1028,7 @@
 
 (defines exec
   :short "Mutually recursive functions for execution."
+  :flag-local nil
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
