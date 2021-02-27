@@ -1,6 +1,6 @@
 (NTH-NAT-EQUIV)
 (NTH-NAT-EQUIV-NECC)
-(NTH-NAT-EQUIV-REFL (26 2 (:DEFINITION NTH))
+(NTH-NAT-EQUIV-REFL (28 2 (:DEFINITION NTH))
                     (8 2 (:REWRITE ZP-OPEN))
                     (8 2 (:REWRITE NFIX-WHEN-NATP))
                     (6 2 (:REWRITE ZP-WHEN-GT-0))
@@ -9,6 +9,8 @@
                     (5 5 (:REWRITE DEFAULT-<-1))
                     (4 4 (:TYPE-PRESCRIPTION NATP))
                     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+                    (2 2
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                     (2 2 (:REWRITE ZP-WHEN-INTEGERP))
                     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
                     (2 2 (:REWRITE DEFAULT-CDR))
@@ -16,7 +18,7 @@
                     (2 2 (:REWRITE DEFAULT-+-2))
                     (2 2 (:REWRITE DEFAULT-+-1))
                     (2 2 (:DEFINITION NOT)))
-(NTH-NAT-EQUIV-SYMM (52 4 (:DEFINITION NTH))
+(NTH-NAT-EQUIV-SYMM (56 4 (:DEFINITION NTH))
                     (31 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
                     (28 7 (:REWRITE ZP-WHEN-GT-0))
                     (28 4 (:REWRITE NFIX-WHEN-NATP))
@@ -29,6 +31,8 @@
                     (15 15 (:REWRITE DEFAULT-<-2))
                     (15 15 (:REWRITE DEFAULT-<-1))
                     (8 8 (:REWRITE NATP-WHEN-INTEGERP))
+                    (4 4
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                     (4 4 (:REWRITE DEFAULT-CDR))
                     (4 4 (:REWRITE DEFAULT-CAR))
                     (4 4 (:REWRITE DEFAULT-+-2))
@@ -37,7 +41,7 @@
                     (1 1 (:TYPE-PRESCRIPTION ZP))
                     (1 1
                        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST)))
-(NTH-NAT-EQUIV-TRANS (78 6 (:DEFINITION NTH))
+(NTH-NAT-EQUIV-TRANS (84 6 (:DEFINITION NTH))
                      (62 2 (:REWRITE NFIX-EQUAL-TO-NONZERO))
                      (50 12 (:REWRITE ZP-WHEN-GT-0))
                      (42 6 (:REWRITE NFIX-WHEN-NATP))
@@ -50,6 +54,8 @@
                      (24 24 (:REWRITE DEFAULT-<-1))
                      (24 12 (:REWRITE NATP-WHEN-GTE-0))
                      (12 12 (:REWRITE NATP-WHEN-INTEGERP))
+                     (6 6
+                        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                      (6 6 (:REWRITE DEFAULT-CDR))
                      (6 6 (:REWRITE DEFAULT-CAR))
                      (6 6 (:REWRITE DEFAULT-+-2))
@@ -63,7 +69,7 @@
 (NTH-NAT-EQUIV-IMPLIES-NTH-NAT-EQUIV-UPDATE-NTH-3
      (35 2 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (30 9 (:REWRITE ZP-WHEN-GT-0))
-     (26 2 (:DEFINITION NTH))
+     (28 2 (:DEFINITION NTH))
      (22 9 (:REWRITE ZP-WHEN-INTEGERP))
      (22 2 (:DEFINITION UPDATE-NTH))
      (16 4 (:REWRITE NFIX-WHEN-NATP))
@@ -80,6 +86,8 @@
      (4 4 (:REWRITE DEFAULT-CAR))
      (4 4 (:REWRITE DEFAULT-+-2))
      (4 4 (:REWRITE DEFAULT-+-1))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE NTH-NAT-EQUIV-NECC))
      (2 2
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -119,24 +127,28 @@
      (7 7 (:REWRITE DEFAULT-<-1))
      (3 3
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (1 1 (:TYPE-PRESCRIPTION ZP)))
 (NTH-NAT-EQUIV-IMPLIES-NTH-NAT-EQUIV-CDR-1
-     (64 10 (:REWRITE NFIX-WHEN-NATP))
+     (57 9 (:REWRITE NFIX-WHEN-NATP))
      (46 13 (:REWRITE ZP-WHEN-GT-0))
-     (46 10 (:REWRITE NFIX-WHEN-NOT-NATP))
-     (36 36 (:TYPE-PRESCRIPTION NATP))
-     (36 18 (:REWRITE NATP-WHEN-GTE-0))
-     (33 3 (:REWRITE NFIX-EQUAL-TO-NONZERO))
-     (32 32 (:REWRITE DEFAULT-<-2))
-     (32 32 (:REWRITE DEFAULT-<-1))
+     (41 9 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (32 32 (:TYPE-PRESCRIPTION NATP))
+     (32 16 (:REWRITE NATP-WHEN-GTE-0))
+     (32 2 (:REWRITE NFIX-EQUAL-TO-NONZERO))
+     (31 31 (:REWRITE DEFAULT-<-2))
+     (31 31 (:REWRITE DEFAULT-<-1))
      (25 13 (:REWRITE ZP-WHEN-INTEGERP))
-     (18 18 (:REWRITE NATP-WHEN-INTEGERP))
      (18 2 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
+     (16 16 (:REWRITE NATP-WHEN-INTEGERP))
      (16 12 (:REWRITE DEFAULT-+-2))
      (12 12 (:REWRITE DEFAULT-+-1))
      (8 8 (:REWRITE DEFAULT-CAR))
-     (3 3
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (2 2
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
      (2 2
         (:REWRITE INEQUALITY-WITH-NFIX-HYP-1)))

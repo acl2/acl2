@@ -44,13 +44,19 @@
      (24 24 (:TYPE-PRESCRIPTION IFIX))
      (17 17
          (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (10 10 (:REWRITE DEFAULT-UNARY-MINUS))
+     (8 8
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (6 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (6 3 (:REWRITE IFIX-WHEN-INTEGERP))
      (5 5
         (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
      (2 2 (:TYPE-PRESCRIPTION SIGNED-BYTE-P))
      (2 2 (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV))
      (2 2 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
      (2 2 (:REWRITE FOLD-CONSTS-IN-+))
      (2 2 (:REWRITE EQUAL-CONSTANT-+)))
@@ -62,6 +68,10 @@
                     (64 64 (:TYPE-PRESCRIPTION BITMASKP$INLINE))
                     (40 40
                         (:REWRITE BITOPS::NORMALIZE-LOGBITP-WHEN-MODS-EQUAL))
+                    (38 38
+                        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                    (38 38
+                        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                     (24 21 (:REWRITE DEFAULT-+-2))
                     (21 21 (:REWRITE DEFAULT-+-1))
                     (21 7 (:REWRITE BITOPS::LOGBITP-0-OF-BIT))
@@ -81,7 +91,13 @@
             (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
          (2 2 (:REWRITE DEFAULT-*-2))
          (2 2 (:REWRITE DEFAULT-*-1)))
-(LOGCAR-OF-ASH-2 (4 1 (:REWRITE ASH-0))
+(LOGCAR-OF-ASH-2 (5 5
+                    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                 (4 1 (:REWRITE ASH-0))
+                 (3 3
+                    (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (3 3
+                    (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
                  (2 2 (:TYPE-PRESCRIPTION ZIP))
                  (1 1 (:REWRITE ZIP-OPEN))
                  (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
@@ -97,6 +113,12 @@
 (LOGCDR-OF-ASH-2 (30 30
                      (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE))
                  (12 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+                 (7 7
+                    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                 (4 4
+                    (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (4 4
+                    (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
                  (4 4 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
                  (4 2
                     (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-2))
@@ -152,6 +174,8 @@
                   (22 22
                       (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1))
                   (22 8 (:REWRITE EXPONENTS-ADD))
+                  (21 21
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (20 7
                       (:TYPE-PRESCRIPTION BITOPS::LOGCONS-NEGP))
                   (20 6 (:REWRITE DEFAULT-*-2))
@@ -233,8 +257,14 @@
                        (48 48 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
                        (46 46 (:TYPE-PRESCRIPTION POSP))
                        (24 24 (:REWRITE DEFAULT-UNARY-MINUS))
+                       (19 19
+                           (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                       (13 13
+                           (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                        (10 10
                            (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+                       (7 7
+                          (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
                        (6 3 (:REWRITE BFIX-WHEN-NOT-BITP))
                        (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
                        (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
@@ -323,9 +353,13 @@
      (25 25 (:TYPE-PRESCRIPTION ZIP))
      (24 6 (:REWRITE <-0-+-NEGATIVE-2))
      (20 5 (:REWRITE NATP-WHEN-GTE-0))
+     (15 15
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (14 14 (:REWRITE DEFAULT-UNARY-MINUS))
      (13 2 (:REWRITE <-+-NEGATIVE-0-2))
      (12 1 (:REWRITE NEGP-WHEN-INTEGERP))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (9 1 (:REWRITE NEGP-WHEN-LESS-THAN-0))
      (8 8 (:REWRITE NFIX-WHEN-NOT-NATP))
      (8 8 (:REWRITE NFIX-WHEN-NATP))
@@ -382,6 +416,8 @@
      (26 2 (:REWRITE BFIX-WHEN-NOT-1))
      (24 8 (:REWRITE EQUAL-CONSTANT-+))
      (24 5 (:REWRITE DEFAULT-UNARY-MINUS))
+     (23 23
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (22 22
          (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1))
      (21 21 (:TYPE-PRESCRIPTION POSP))
@@ -405,7 +441,9 @@
      (4 2 (:REWRITE BFIX-WHEN-NOT-BITP))
      (4 2 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
      (4 2 (:REWRITE BFIX-WHEN-BIT->BOOL))
-     (3 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
+     (3 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (BOOTH-ENC-COEFF-LOWER-BOUND
      (110 8 (:REWRITE BITOPS::LOGCAR-OF-BIT))
      (81 33
@@ -426,11 +464,15 @@
      (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
      (4 2 (:REWRITE DEFAULT-+-1))
      (4 1 (:REWRITE DEFAULT-<-1))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (2 1 (:REWRITE DEFAULT-*-2))
      (2 1 (:REWRITE BFIX-WHEN-NOT-BITP))
      (2 1 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
      (2 1 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1 (:REWRITE FOLD-CONSTS-IN-+))
      (1 1 (:REWRITE DEFAULT-<-2))
      (1 1 (:REWRITE DEFAULT-*-1))
@@ -453,12 +495,16 @@
      (8 8 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (8 8 (:META CANCEL_PLUS-EQUAL-CORRECT))
      (8 4 (:REWRITE DEFAULT-+-1))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (4 2 (:REWRITE DEFAULT-*-2))
      (4 2 (:REWRITE BFIX-WHEN-NOT-BITP))
      (4 2 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
      (4 2 (:REWRITE BFIX-WHEN-BIT->BOOL))
      (4 1 (:REWRITE DEFAULT-<-2))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (2 2 (:REWRITE FOLD-CONSTS-IN-+))
      (2 2 (:REWRITE DEFAULT-*-1))
      (1 1 (:REWRITE DEFAULT-<-1))
@@ -603,5 +649,11 @@
      (2 2 (:REWRITE NATP-RW))
      (2 2
         (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
      (1 1 (:REWRITE ZIP-OPEN))
      (1 1 (:REWRITE NFIX-WHEN-NOT-NATP)))

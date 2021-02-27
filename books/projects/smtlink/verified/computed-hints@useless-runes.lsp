@@ -1,30 +1,31 @@
-(SMT::MY-SPLIT-KWD-ALIST (47 1
+(SMT::MY-SPLIT-KWD-ALIST (90 1
                              (:REWRITE LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                         (41 1 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                         (33 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                         (22 11 (:REWRITE DEFAULT-+-2))
-                         (16 16 (:REWRITE DEFAULT-CDR))
-                         (11 11 (:REWRITE DEFAULT-+-1))
-                         (10 1 (:REWRITE LEN-WHEN-PREFIXP))
-                         (8 8
-                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                         (8 8
-                            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                         (8 8 (:LINEAR LEN-WHEN-PREFIXP))
-                         (4 4 (:TYPE-PRESCRIPTION PREFIXP))
-                         (4 4
+                         (84 1 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                         (65 3 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                         (44 3 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                         (26 13 (:REWRITE DEFAULT-+-2))
+                         (18 18 (:REWRITE DEFAULT-CDR))
+                         (13 13 (:REWRITE DEFAULT-+-1))
+                         (12 12
+                             (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                         (12 12
+                             (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+                         (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+                         (11 1 (:REWRITE LEN-WHEN-PREFIXP))
+                         (7 7 (:TYPE-PRESCRIPTION PREFIXP))
+                         (6 6
                             (:LINEAR STR::COUNT-LEADING-CHARSET-LEN))
-                         (2 2 (:TYPE-PRESCRIPTION SUBLISTP))
-                         (2 2
+                         (3 3
                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                         (2 2
+                         (3 3
                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                         (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                         (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                         (2 2
+                         (3 3 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                         (3 3 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                         (3 3
                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                         (2 2
+                         (3 3
                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                         (2 2 (:TYPE-PRESCRIPTION SUBLISTP))
                          (2 1 (:REWRITE DEFAULT-<-1))
                          (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
                          (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))

@@ -2194,81 +2194,82 @@
                            (21 21 (:REWRITE RP::PP-LIST-ORDER-SANITY))
                            (4 4 (:TYPE-PRESCRIPTION TRUE-LISTP))
                            (4 4 (:TYPE-PRESCRIPTION BOOLEANP)))
-(RP::SORT-PP-LISTS (26190 4 (:DEFINITION RP::EX-FROM-RP))
-                   (25264 8 (:DEFINITION APPLY$-BADGEP))
-                   (23660 1836 (:REWRITE RP::MEASURE-LEMMA1))
-                   (18550 1594 (:REWRITE RP::SORT-MEASURE-LEMMA2))
-                   (15198 16
+(RP::SORT-PP-LISTS (29842 4 (:DEFINITION RP::EX-FROM-RP))
+                   (28800 8 (:DEFINITION APPLY$-BADGEP))
+                   (27216 1956 (:REWRITE RP::MEASURE-LEMMA1))
+                   (19280 1696 (:REWRITE RP::SORT-MEASURE-LEMMA2))
+                   (17818 16
                           (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
-                   (14744 46
+                   (17636 46
                           (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
-                   (14738 4 (:REWRITE RP::NOT-INCLUDE-RP))
-                   (14726 4 (:DEFINITION RP::INCLUDE-FNC))
-                   (14670 8 (:DEFINITION TRUE-LISTP))
-                   (12876 40
+                   (17630 4 (:REWRITE RP::NOT-INCLUDE-RP))
+                   (17618 4 (:DEFINITION RP::INCLUDE-FNC))
+                   (17290 8 (:DEFINITION TRUE-LISTP))
+                   (15222 40
                           (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-                   (12812 24 (:DEFINITION RP::RP-TERMP))
-                   (11894 1352 (:REWRITE RP::MEASURE-LEMMA1-2))
-                   (10791 2325 (:REWRITE DEFAULT-CDR))
-                   (10784 8 (:DEFINITION RP::FALIST-CONSISTENT))
-                   (10778 110
+                   (15158 24 (:DEFINITION RP::RP-TERMP))
+                   (13498 1436 (:REWRITE RP::MEASURE-LEMMA1-2))
+                   (13083 465
+                          (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
+                   (12874 8 (:DEFINITION RP::FALIST-CONSISTENT))
+                   (12435 2325 (:REWRITE DEFAULT-CDR))
+                   (11450 124
                           (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
-                   (9211 465
-                         (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-                   (8256 8
+                   (10734 122 (:REWRITE LEN-WHEN-PREFIXP))
+                   (9872 8
                          (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-                   (8098 1004 (:REWRITE DEFAULT-CAR))
-                   (6862 122 (:REWRITE LEN-WHEN-PREFIXP))
+                   (8552 1004 (:REWRITE DEFAULT-CAR))
+                   (7112 240 (:REWRITE PREFIXP-WHEN-PREFIXP))
                    (4632 32 (:DEFINITION SUBSETP-EQUAL))
-                   (3712 120
-                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                   (3674 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                   (4452 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                   (4304 236
+                         (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                   (3832 236
+                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
                    (2864 240 (:DEFINITION MEMBER-EQUAL))
                    (2786 80 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
-                   (2188 120
-                         (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                   (2186 16 (:DEFINITION RP::RP-TERM-LISTP))
+                   (2460 16 (:DEFINITION RP::RP-TERM-LISTP))
+                   (2212 2212 (:LINEAR LEN-WHEN-PREFIXP))
                    (1800 128
                          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
-                   (1748 1748 (:LINEAR LEN-WHEN-PREFIXP))
                    (1185 465
                          (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
-                   (874 874 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
-                   (874 874 (:LINEAR BOUNDS-POSITION-EQUAL))
-                   (774 774 (:TYPE-PRESCRIPTION RP::RP-TERMP))
-                   (761 761
+                   (1106 1106 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                   (1106 1106 (:LINEAR BOUNDS-POSITION-EQUAL))
+                   (993 993
                         (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                   (774 774 (:TYPE-PRESCRIPTION RP::RP-TERMP))
                    (751 465 (:REWRITE DEFAULT-<-2))
+                   (688 236
+                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                   (592 592 (:TYPE-PRESCRIPTION PREFIXP))
                    (588 465 (:REWRITE DEFAULT-<-1))
                    (480 480 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                    (416 416 (:REWRITE SUBSETP-IMPLIES-MEMBER))
                    (384 384
                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-                   (350 128 (:REWRITE O-P-O-INFP-CAR))
+                   (368 146 (:REWRITE O-P-O-INFP-CAR))
                    (336 40
                         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
                    (330 8 (:DEFINITION ALL-NILS))
                    (320 96 (:REWRITE RP::IS-IF-RP-TERMP))
+                   (280 8
+                        (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
                    (256 256
                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
-                   (236 236 (:TYPE-PRESCRIPTION PREFIXP))
-                   (230 230 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                   (244 244 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                   (236 236 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                   (236 236 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                   (236 236
+                        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                   (236 236
+                        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                    (224 224 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                   (222 8
-                        (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
                    (216 16 (:DEFINITION NATP))
                    (212 44 (:DEFINITION QUOTEP))
                    (161 161
                         (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
                    (128 32 (:REWRITE RP::RP-TERMP-CADDDR))
-                   (124 116
-                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                   (120 120 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                   (120 120 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                   (120 120
-                        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                   (120 120
-                        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                    (104 26 (:REWRITE RP::RP-TERMP-CADDDDR))
                    (96 96
                        (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
@@ -2298,10 +2299,12 @@
                    (16 16
                        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
                    (12 12 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                   (12 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
                    (8 8
                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
                    (8 8
                       (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                   (8 4 (:DEFINITION ATOM))
                    (2 1 (:REWRITE DEFAULT-UNARY-MINUS))
                    (2 1 (:REWRITE DEFAULT-+-2))
                    (1 1 (:REWRITE DEFAULT-+-1)))
@@ -8308,7 +8311,9 @@
                        (4 4
                           (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                        (2 2 (:REWRITE DEFAULT-*-2))
-                       (2 2 (:REWRITE DEFAULT-*-1)))
+                       (2 2 (:REWRITE DEFAULT-*-1))
+                       (1 1
+                          (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV)))
 (RP::LEN-EQUALS-2 (12 7 (:REWRITE DEFAULT-+-2))
                   (7 7 (:REWRITE DEFAULT-+-1))
                   (5 5 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
@@ -8592,7 +8597,9 @@
                  (3 3 (:REWRITE FOLD-CONSTS-IN-+)))
 (RP::PP-SUM-OF-0 (5 5 (:TYPE-PRESCRIPTION RP::TYPE-FIX))
                  (2 2
-                    (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP)))
+                    (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+                 (1 1
+                    (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV)))
 (RP::TYPE-FIX-OF-FNCS (4 4
                          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                       (2 2 (:REWRITE DEFAULT-+-2))

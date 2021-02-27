@@ -6933,6 +6933,8 @@
                        (:REWRITE TARJAN-PREORDER-MEMBER-COND-NECC))
                    (23 23
                        (:REWRITE TARJAN-PREORDER-MEMBER-COND-LIST-NECC))
+                   (6 6
+                      (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV))
                    (3 3 (:REWRITE SUBSETP-TRANS2))
                    (3 3 (:REWRITE SUBSETP-TRANS))
                    (2 2 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -11579,7 +11581,9 @@
                    (25 25
                        (:LINEAR TARJAN-LOWLINK-NODE-LOWEST-INDEX-STRONG))
                    (25 25
-                       (:LINEAR TARJAN-LOWLINK-NODE-LOWEST-INDEX)))
+                       (:LINEAR TARJAN-LOWLINK-NODE-LOWEST-INDEX))
+                   (6 6
+                      (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV)))
 (TARJAN-LOWLINK-NODE-OF-TARJAN-LOWLINK-SUCCESSOR-EXTENDED
  (5863 133 (:DEFINITION MEMBER-EQUAL))
  (3598 112
@@ -13950,6 +13954,8 @@
                        (:REWRITE TARJAN-PREORDER-MEMBER-COND-NECC))
                    (23 23
                        (:REWRITE TARJAN-PREORDER-MEMBER-COND-LIST-NECC))
+                   (6 6
+                      (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV))
                    (3 3 (:REWRITE SUBSETP-TRANS2))
                    (3 3 (:REWRITE SUBSETP-TRANS))
                    (2 2 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -19690,6 +19696,10 @@
          (:LINEAR TARJAN-LOWLINK-NODE-LOWEST-INDEX))
      (46 46 (:REWRITE FN-CHECK-DEF-FORMALS))
      (40 20 (:REWRITE DEFAULT-UNARY-MINUS))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE TAKE-UNDER-IFF)))
 (TAKE-DIFFERENCE-IS-SET-DIFFERENCE
      (488 4 (:DEFINITION TAKE))

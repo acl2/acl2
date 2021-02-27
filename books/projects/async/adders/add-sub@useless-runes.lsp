@@ -764,54 +764,63 @@
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (1 1 (:REWRITE |(< (- x) 0)|)))
 (ADE::V-TO-NAT-OF-TAKE-OF-V-ADDER-SUB
+     (254 2 (:REWRITE TAKE-WHEN-PREFIXP))
+     (210 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (204 76 (:REWRITE DEFAULT-+-2))
      (202 4 (:REWRITE TAKE-OF-TOO-MANY))
-     (192 70 (:REWRITE DEFAULT-+-2))
      (176 2 (:DEFINITION TAKE))
-     (126 2 (:REWRITE TAKE-WHEN-PREFIXP))
-     (106 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (130 4 (:REWRITE PREFIXP-WHEN-PREFIXP))
      (97 23 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (90 70 (:REWRITE DEFAULT-+-1))
+     (96 76 (:REWRITE DEFAULT-+-1))
      (88 4 (:REWRITE ADE::NTHCDR-V-ADDER-SUB-2))
-     (71 21 (:REWRITE SIMPLIFY-SUMS-<))
-     (70 70
+     (78 6 (:REWRITE ADE::LEN-OF-V-ADDER))
+     (76 76
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (52 47 (:REWRITE DEFAULT-CDR))
-     (52 4 (:REWRITE ADE::LEN-OF-V-ADDER))
-     (39 16 (:REWRITE DEFAULT-UNARY-MINUS))
+     (71 21 (:REWRITE SIMPLIFY-SUMS-<))
+     (56 51 (:REWRITE DEFAULT-CDR))
+     (47 20 (:REWRITE DEFAULT-UNARY-MINUS))
      (32 23
          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
      (32 19 (:REWRITE DEFAULT-<-2))
+     (29 27 (:REWRITE |(+ c (+ d x))|))
      (28 19 (:REWRITE DEFAULT-<-1))
-     (27 25 (:REWRITE |(+ c (+ d x))|))
      (26 26
          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
      (26 26 (:REWRITE |(< (- x) (- y))|))
      (24 8 (:REWRITE DEFAULT-UNARY-/))
-     (21 21 (:REWRITE |(equal (- x) (- y))|))
+     (23 23 (:REWRITE |(equal (- x) (- y))|))
      (20 20 (:LINEAR LEN-WHEN-PREFIXP))
      (12 4 (:REWRITE TAKE-WHEN-ATOM))
+     (10 10 (:TYPE-PRESCRIPTION PREFIXP))
      (10 10
          (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
      (10 2 (:REWRITE DEFAULT-*-1))
+     (9 7 (:REWRITE |(equal (+ c x) d)|))
      (8 8
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
      (8 8
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (8 8 (:REWRITE |(< 0 (- x))|))
      (8 4 (:REWRITE DEFAULT-EXPT-2))
-     (7 5 (:REWRITE |(equal (+ c x) d)|))
+     (6 4
+        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (6 4
+        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (6 4 (:REWRITE ADE::NFIX-OF-NAT))
      (6 4 (:REWRITE |(expt 2^i n)|))
      (6 4 (:REWRITE |(< d (+ c x))|))
      (5 5 (:REWRITE FOLD-CONSTS-IN-+))
-     (4 4 (:TYPE-PRESCRIPTION PREFIXP))
      (4 4 (:TYPE-PRESCRIPTION NFIX))
+     (4 4 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (4 4 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (4 4
+        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (4 4
+        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (4 4 (:REWRITE DEFAULT-EXPT-1))
      (4 4 (:REWRITE |(expt x (- n))|))
      (4 4 (:REWRITE |(expt 1/c n)|))
      (4 4 (:REWRITE |(expt (- x) n)|))
-     (4 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
      (4 2 (:REWRITE DEFAULT-CAR))
      (4 2 (:REWRITE DEFAULT-*-2))
      (3 3
@@ -820,14 +829,6 @@
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (3 3 (:REWRITE |(equal (- x) 0)|))
      (3 3 (:REWRITE |(< (- x) 0)|))
-     (2 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (2 2
         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (2 2 (:REWRITE |(equal (+ d x) (+ c y))|))

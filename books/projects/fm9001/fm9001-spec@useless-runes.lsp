@@ -384,6 +384,17 @@
                (9 5
                   (:TYPE-PRESCRIPTION FM9001::BVP-CVZBV))
                (5 5 (:TYPE-PRESCRIPTION FM9001::BVP)))
+(FM9001::ST-PPRINT (12 6
+                       (:TYPE-PRESCRIPTION FM9001::BVP-CVZBV))
+                   (6 6 (:TYPE-PRESCRIPTION TRUE-LISTP)))
+(FM9001::FM9001-STATE-PPRINT (30 4 (:REWRITE FM9001::BVP-IS-TRUE-LISTP))
+                             (16 2 (:REWRITE FM9001::BVP-CVZBV))
+                             (12 6
+                                 (:TYPE-PRESCRIPTION FM9001::BVP-CVZBV))
+                             (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                             (7 7 (:REWRITE DEFAULT-CDR))
+                             (6 6 (:TYPE-PRESCRIPTION FM9001::BVP))
+                             (5 5 (:REWRITE DEFAULT-CAR)))
 (FM9001::FM9001-ALU-OPERATION
      (24 12
          (:TYPE-PRESCRIPTION FM9001::TRUE-LISTP-WRITE-MEM))

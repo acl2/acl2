@@ -177,6 +177,7 @@
                      (26 2
                          (:REWRITE ADE::GCD-COND$ACT0-INACTIVE))
                      (23 23 (:REWRITE DEFAULT-UNARY-MINUS))
+                     (22 11 (:REWRITE PREFIXP-WHEN-PREFIXP))
                      (21 7 (:REWRITE ADE::BVP-NTHCDR))
                      (20 1 (:REWRITE ADE::GCD-COND$ACT-INACTIVE))
                      (20 1 (:REWRITE ADE::BRANCH$ACT-INACTIVE))

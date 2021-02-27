@@ -1,36 +1,37 @@
-(STR::SUBSTRP$INLINE (104 3 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                     (83 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                     (38 2 (:DEFINITION LEN))
-                     (24 4 (:REWRITE LEN-WHEN-ATOM))
-                     (18 10 (:REWRITE STR::CONSP-OF-EXPLODE))
-                     (13 13 (:TYPE-PRESCRIPTION LEN))
-                     (12 12 (:REWRITE CONSP-BY-LEN))
-                     (10 2 (:REWRITE DEFAULT-CDR))
+(STR::SUBSTRP$INLINE (198 3 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                     (156 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                     (104 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                     (76 4 (:DEFINITION LEN))
+                     (38 8 (:REWRITE LEN-WHEN-ATOM))
+                     (28 16 (:REWRITE STR::CONSP-OF-EXPLODE))
+                     (26 26 (:TYPE-PRESCRIPTION LEN))
+                     (20 20 (:REWRITE CONSP-BY-LEN))
+                     (20 4 (:REWRITE DEFAULT-CDR))
+                     (12 12
+                         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                     (12 12
+                         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+                     (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+                     (12 2
+                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                     (12 2
+                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                     (8 4 (:REWRITE DEFAULT-+-2))
                      (8 3 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
                      (8 3 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                      (6 6
-                        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                     (6 6
-                        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                     (6 6 (:LINEAR LEN-WHEN-PREFIXP))
-                     (6 1
-                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                     (6 1
-                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                        (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
+                     (5 5 (:TYPE-PRESCRIPTION PREFIXP))
                      (4 4
                         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                     (4 2 (:REWRITE DEFAULT-+-2))
+                     (4 4 (:REWRITE DEFAULT-+-1))
+                     (4 4 (:REWRITE CONSP-OF-CDR-BY-LEN))
                      (3 3 (:REWRITE SUBLISTP-COMPLETE))
-                     (3 3
-                        (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
-                     (2 2 (:TYPE-PRESCRIPTION PREFIXP))
-                     (2 2 (:REWRITE DEFAULT-+-1))
-                     (2 2 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                     (1 1
+                     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                     (2 2
                         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                     (1 1
+                     (2 2
                         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))
 (STR::STREQV-IMPLIES-EQUAL-SUBSTRP-1)
 (STR::STREQV-IMPLIES-EQUAL-SUBSTRP-2)

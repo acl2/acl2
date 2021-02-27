@@ -1,7 +1,240 @@
 (SUBLISTP)
-(SUBLISTP-WHEN-ATOM-LEFT (16 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+(SUBLISTP-WHEN-ATOM-LEFT (32 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                         (26 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                         (16 16 (:TYPE-PRESCRIPTION LEN))
+                         (12 4 (:DEFINITION LEN))
+                         (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+                         (4 2 (:REWRITE DEFAULT-+-2))
+                         (3 2
+                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                         (2 2 (:TYPE-PRESCRIPTION PREFIXP))
+                         (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                         (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                         (2 2
+                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                         (2 2
+                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                         (2 2 (:REWRITE DEFAULT-CDR))
+                         (2 2 (:REWRITE DEFAULT-+-1))
+                         (1 1 (:DEFINITION NOT)))
+(SUBLISTP-WHEN-ATOM-RIGHT (16 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                          (8 8 (:TYPE-PRESCRIPTION LEN))
+                          (6 2 (:DEFINITION LEN))
+                          (2 2 (:LINEAR LEN-WHEN-PREFIXP))
+                          (2 1 (:REWRITE DEFAULT-+-2))
+                          (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+                          (1 1
+                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                          (1 1
+                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                          (1 1
+                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                          (1 1 (:REWRITE DEFAULT-CDR))
+                          (1 1 (:REWRITE DEFAULT-+-1)))
+(SUBLISTP-OF-CONS-RIGHT (726 24
+                             (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                        (603 24 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                        (324 324 (:TYPE-PRESCRIPTION LEN))
+                        (294 54 (:DEFINITION LEN))
+                        (231 3 (:REWRITE PREFIXP-OF-CONS-LEFT))
+                        (144 144 (:LINEAR LEN-WHEN-PREFIXP))
+                        (120 60 (:REWRITE DEFAULT-+-2))
+                        (64 64 (:REWRITE DEFAULT-CDR))
+                        (60 60 (:REWRITE DEFAULT-+-1))
+                        (24 24 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                        (24 24 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                        (24 24
+                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                        (24 24
+                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                        (21 21
+                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                        (18 18
+                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                        (7 7 (:REWRITE DEFAULT-CAR))
+                        (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+                        (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT)))
+(SUBLISTP-WHEN-PREFIXP (60 3 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                       (57 8 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                       (26 26 (:TYPE-PRESCRIPTION LEN))
+                       (20 4 (:DEFINITION LEN))
+                       (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+                       (8 4 (:REWRITE DEFAULT-+-2))
+                       (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                       (4 4
+                          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                       (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
+                       (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                       (4 4 (:REWRITE DEFAULT-CDR))
+                       (4 4 (:REWRITE DEFAULT-+-1))
+                       (3 3 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                       (2 2
+                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                       (2 2
+                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                       (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+                       (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT)))
+(SUBLISTP-OF-LIST-FIX-LEFT (1079 59
+                                 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                           (483 95 (:DEFINITION LEN))
+                           (404 8 (:REWRITE PREFIXP-OF-LIST-FIX-RIGHT))
+                           (267 194 (:LINEAR LEN-WHEN-PREFIXP))
+                           (194 97 (:REWRITE DEFAULT-+-2))
+                           (106 106 (:REWRITE DEFAULT-CDR))
+                           (97 97 (:REWRITE DEFAULT-+-1))
+                           (97 5 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+                           (90 15 (:REWRITE LEN-OF-LIST-FIX))
+                           (71 59 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                           (61 60
+                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                           (40 5 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                           (39 39
+                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                           (25 25 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                           (25 10 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+                           (25 5 (:DEFINITION TRUE-LISTP))
+                           (11 8 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                           (8 8 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                           (5 5 (:REWRITE LIST-FIX-WHEN-NOT-CONSP)))
+(SUBLISTP-OF-LIST-FIX-RIGHT (1461 80
+                                  (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                            (581 10 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
+                            (329 268 (:LINEAR LEN-WHEN-PREFIXP))
+                            (260 130 (:REWRITE DEFAULT-+-2))
+                            (156 23 (:REWRITE LEN-OF-LIST-FIX))
+                            (148 148 (:REWRITE DEFAULT-CDR))
+                            (130 130 (:REWRITE DEFAULT-+-1))
+                            (124 80 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                            (108 81
+                                 (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                            (80 10 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                            (52 11 (:DEFINITION TRUE-LISTP))
+                            (51 51
+                                (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                            (48 48 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                            (14 11 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                            (13 13 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+                            (11 11 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                            (9 9 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+                            (1 1 (:REWRITE LIST-EQUIV-OF-NIL-RIGHT)))
+(LIST-EQUIV-IMPLIES-EQUAL-SUBLISTP-1
+     (356 4 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (248 14 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (234 14
+          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (150 2 (:REWRITE PREFIXP-OF-LIST-FIX-RIGHT))
+     (90 18 (:DEFINITION LEN))
+     (52 52 (:LINEAR LEN-WHEN-PREFIXP))
+     (40 2 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
+     (36 18 (:REWRITE DEFAULT-+-2))
+     (28 2 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+     (24 24 (:TYPE-PRESCRIPTION PREFIXP))
+     (24 4 (:REWRITE LEN-OF-LIST-FIX))
+     (20 20 (:REWRITE DEFAULT-CDR))
+     (18 18 (:REWRITE DEFAULT-+-1))
+     (16 2 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+     (14 14 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (14 14 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (14 14
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (14 14
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (10 10
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (10 10
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (10 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+     (10 2 (:DEFINITION TRUE-LISTP))
+     (4 4 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+     (4 4 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+     (2 2 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+     (2 2 (:REWRITE CONSP-OF-LIST-FIX)))
+(LIST-EQUIV-IMPLIES-EQUAL-SUBLISTP-2
+     (356 4 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (248 14 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (234 14
+          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (150 2 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
+     (90 18 (:DEFINITION LEN))
+     (52 52 (:LINEAR LEN-WHEN-PREFIXP))
+     (40 2 (:REWRITE PREFIXP-OF-LIST-FIX-RIGHT))
+     (36 18 (:REWRITE DEFAULT-+-2))
+     (28 2 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+     (24 24 (:TYPE-PRESCRIPTION PREFIXP))
+     (24 4 (:REWRITE LEN-OF-LIST-FIX))
+     (20 20 (:REWRITE DEFAULT-CDR))
+     (18 18 (:REWRITE DEFAULT-+-1))
+     (16 2 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+     (14 14 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (14 14 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (14 14
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (14 14
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (10 10
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (10 10
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (10 4 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+     (10 2 (:DEFINITION TRUE-LISTP))
+     (4 4 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+     (4 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+     (2 2 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+     (2 2 (:REWRITE CONSP-OF-LIST-FIX)))
+(LOWER-BOUND-OF-LEN-WHEN-SUBLISTP
+     (369 7 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (354 24
+          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (295 25 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (174 3 (:REWRITE LEN-WHEN-PREFIXP))
+     (100 50 (:REWRITE DEFAULT-+-2))
+     (50 50 (:REWRITE DEFAULT-+-1))
+     (45 45 (:REWRITE DEFAULT-CDR))
+     (24 24
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (24 24
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (24 24 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (24 24 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (24 24
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (24 24
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (12 6 (:REWRITE DEFAULT-<-1))
+     (11 6 (:REWRITE DEFAULT-<-2))
+     (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+     (2 1
+        (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT)))
+(LISTPOS)
+(LISTPOS-WHEN-ATOM-LEFT (36 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                        (28 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                        (16 16 (:TYPE-PRESCRIPTION LEN))
+                        (12 4 (:DEFINITION LEN))
+                        (4 4
+                           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                        (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+                        (4 2 (:REWRITE DEFAULT-+-2))
+                        (3 2
+                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                        (2 2 (:TYPE-PRESCRIPTION PREFIXP))
+                        (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                        (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                        (2 2
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                        (2 2
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                        (2 2 (:REWRITE DEFAULT-CDR))
+                        (2 2 (:REWRITE DEFAULT-+-1))
+                        (1 1 (:DEFINITION NOT)))
+(LISTPOS-WHEN-ATOM-RIGHT (18 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
                          (8 8 (:TYPE-PRESCRIPTION LEN))
                          (6 2 (:DEFINITION LEN))
+                         (2 2
+                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
                          (2 2 (:LINEAR LEN-WHEN-PREFIXP))
                          (2 1 (:REWRITE DEFAULT-+-2))
                          (1 1
@@ -12,639 +245,429 @@
                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
                          (1 1
                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                         (1 1 (:REWRITE DEFAULT-CDR))
-                         (1 1 (:REWRITE DEFAULT-+-1)))
-(SUBLISTP-WHEN-ATOM-RIGHT (16 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                          (8 8 (:TYPE-PRESCRIPTION LEN))
-                          (6 2 (:DEFINITION LEN))
-                          (2 2 (:LINEAR LEN-WHEN-PREFIXP))
-                          (2 1 (:REWRITE DEFAULT-+-2))
-                          (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                          (1 1
-                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                          (1 1
-                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                          (1 1 (:REWRITE DEFAULT-CDR))
-                          (1 1 (:REWRITE DEFAULT-+-1)))
-(SUBLISTP-OF-CONS-RIGHT (279 9 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                        (123 123 (:TYPE-PRESCRIPTION LEN))
-                        (117 21 (:DEFINITION LEN))
-                        (54 54 (:LINEAR LEN-WHEN-PREFIXP))
-                        (48 24 (:REWRITE DEFAULT-+-2))
-                        (28 28 (:REWRITE DEFAULT-CDR))
-                        (24 24 (:REWRITE DEFAULT-+-1))
-                        (9 9 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                        (9 9 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                        (9 9
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                        (9 9
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                        (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                        (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                        (6 6
-                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                        (6 6
-                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                        (4 4 (:REWRITE DEFAULT-CAR)))
-(SUBLISTP-WHEN-PREFIXP (130 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                       (70 14 (:DEFINITION LEN))
-                       (60 12 (:LINEAR LEN-WHEN-PREFIXP))
-                       (55 55 (:TYPE-PRESCRIPTION LEN))
-                       (28 14 (:REWRITE DEFAULT-+-2))
-                       (14 14 (:REWRITE DEFAULT-CDR))
-                       (14 14 (:REWRITE DEFAULT-+-1))
-                       (11 6
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                       (4 4 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                       (3 3
-                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                       (3 3
-                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                       (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                       (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                       (1 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                       (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                       (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(SUBLISTP-OF-LIST-FIX-LEFT (657 34
-                                (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                           (330 66 (:DEFINITION LEN))
-                           (208 111 (:LINEAR LEN-WHEN-PREFIXP))
-                           (132 66 (:REWRITE DEFAULT-+-2))
-                           (97 5 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-                           (75 75 (:REWRITE DEFAULT-CDR))
-                           (66 66 (:REWRITE DEFAULT-+-1))
-                           (48 8 (:REWRITE LEN-OF-LIST-FIX))
-                           (42 36
-                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                           (40 5 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-                           (34 34 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                           (25 25 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                           (25 10 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                           (25 5 (:DEFINITION TRUE-LISTP))
-                           (19 19
-                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                           (5 5 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-                           (5 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                           (2 2 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                           (2 2
-                              (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT)))
-(SUBLISTP-OF-LIST-FIX-RIGHT (903 46
-                                 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                            (263 154 (:LINEAR LEN-WHEN-PREFIXP))
-                            (180 90 (:REWRITE DEFAULT-+-2))
-                            (124 1 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
-                            (119 48
-                                 (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                            (108 108 (:REWRITE DEFAULT-CDR))
-                            (90 90 (:REWRITE DEFAULT-+-1))
-                            (81 12 (:REWRITE LEN-OF-LIST-FIX))
-                            (80 10 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-                            (70 46 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                            (52 11 (:DEFINITION TRUE-LISTP))
-                            (48 48 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                            (25 25
-                                (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                            (13 13 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                            (9 9 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-                            (7 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                            (7 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                            (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV)))
-(LIST-EQUIV-IMPLIES-EQUAL-SUBLISTP-1
-     (162 4 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-     (116 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (72 2 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
-     (50 10 (:DEFINITION LEN))
-     (28 28 (:LINEAR LEN-WHEN-PREFIXP))
-     (28 2 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-     (20 10 (:REWRITE DEFAULT-+-2))
-     (16 2 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-     (12 12 (:REWRITE DEFAULT-CDR))
-     (12 2 (:REWRITE LEN-OF-LIST-FIX))
-     (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (10 10 (:REWRITE DEFAULT-+-1))
-     (10 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-     (10 2 (:DEFINITION TRUE-LISTP))
-     (8 8 (:TYPE-PRESCRIPTION PREFIXP))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (4 4 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
-     (4 4 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (2 2 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (2 2 (:REWRITE CONSP-OF-LIST-FIX)))
-(LIST-EQUIV-IMPLIES-EQUAL-SUBLISTP-2
-     (162 4 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-     (116 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (72 2 (:REWRITE PREFIXP-OF-LIST-FIX-RIGHT))
-     (50 10 (:DEFINITION LEN))
-     (28 28 (:LINEAR LEN-WHEN-PREFIXP))
-     (28 2 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-     (20 10 (:REWRITE DEFAULT-+-2))
-     (16 2 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-     (12 12 (:REWRITE DEFAULT-CDR))
-     (12 2 (:REWRITE LEN-OF-LIST-FIX))
-     (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (10 10 (:REWRITE DEFAULT-+-1))
-     (10 4 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-     (10 2 (:DEFINITION TRUE-LISTP))
-     (8 8 (:TYPE-PRESCRIPTION PREFIXP))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (4 4 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
-     (4 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (2 2 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (2 2 (:REWRITE CONSP-OF-LIST-FIX)))
-(LOWER-BOUND-OF-LEN-WHEN-SUBLISTP
-     (183 15
-          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (183 7 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-     (84 3 (:REWRITE LEN-WHEN-PREFIXP))
-     (66 33 (:REWRITE DEFAULT-+-2))
-     (33 33 (:REWRITE DEFAULT-+-1))
-     (30 30 (:REWRITE DEFAULT-CDR))
-     (16 15
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (15 15 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (15 15 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (15 15
-         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (15 15
-         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (14 14
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (12 6 (:REWRITE DEFAULT-<-1))
-     (11 6 (:REWRITE DEFAULT-<-2))
-     (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT)))
-(LISTPOS)
-(LISTPOS-WHEN-ATOM-LEFT (18 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                        (8 8 (:TYPE-PRESCRIPTION LEN))
-                        (6 2 (:DEFINITION LEN))
-                        (2 2
-                           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                        (2 2 (:LINEAR LEN-WHEN-PREFIXP))
-                        (2 1 (:REWRITE DEFAULT-+-2))
-                        (1 1
-                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                        (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                        (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                        (1 1
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                        (1 1
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                        (1 1 (:REWRITE DEFAULT-CDR))
-                        (1 1 (:REWRITE DEFAULT-+-1)))
-(LISTPOS-WHEN-ATOM-RIGHT (18 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                         (8 8 (:TYPE-PRESCRIPTION LEN))
-                         (6 2 (:DEFINITION LEN))
-                         (2 2
-                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                         (2 2 (:LINEAR LEN-WHEN-PREFIXP))
-                         (2 1 (:REWRITE DEFAULT-+-2))
-                         (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                         (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                         (1 1
-                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                         (1 1
-                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                          (1 1 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
                          (1 1 (:REWRITE DEFAULT-CDR))
                          (1 1 (:REWRITE DEFAULT-+-1)))
-(LISTPOS-OF-LIST-FIX-LEFT (1226 32
+(LISTPOS-OF-LIST-FIX-LEFT (1370 43
                                 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                          (618 118 (:DEFINITION LEN))
-                          (449 40
-                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                          (428 139 (:LINEAR LEN-WHEN-PREFIXP))
-                          (256 131 (:REWRITE DEFAULT-+-2))
-                          (150 150
+                          (590 106 (:DEFINITION LEN))
+                          (302 205 (:LINEAR LEN-WHEN-PREFIXP))
+                          (283 5 (:REWRITE PREFIXP-OF-LIST-FIX-RIGHT))
+                          (248 127 (:REWRITE DEFAULT-+-2))
+                          (208 208
                                (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                          (135 135 (:REWRITE DEFAULT-CDR))
-                          (131 131 (:REWRITE DEFAULT-+-1))
+                          (131 131 (:REWRITE DEFAULT-CDR))
+                          (127 127 (:REWRITE DEFAULT-+-1))
                           (125 6 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-                          (48 8 (:REWRITE LEN-OF-LIST-FIX))
+                          (66 11 (:REWRITE LEN-OF-LIST-FIX))
                           (48 6 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                          (46 46
+                              (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                          (43 43 (:REWRITE PREFIXP-TRANSITIVE . 1))
                           (35 14 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                          (32 32 (:REWRITE PREFIXP-TRANSITIVE . 1))
                           (30 30 (:TYPE-PRESCRIPTION TRUE-LISTP))
                           (30 6 (:DEFINITION TRUE-LISTP))
-                          (19 19
-                              (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                          (8 5 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                          (6 6 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-                          (5 5 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                          (5 5
-                             (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT)))
-(LISTPOS-OF-LIST-FIX-RIGHT (1116 33
+                          (29 29
+                              (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                          (17 14 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                          (14 14 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                          (6 6 (:REWRITE LIST-FIX-WHEN-NOT-CONSP)))
+(LISTPOS-OF-LIST-FIX-RIGHT (1667 58
                                  (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                           (313 156 (:LINEAR LEN-WHEN-PREFIXP))
-                           (236 122 (:REWRITE DEFAULT-+-2))
-                           (162 162
+                           (457 7 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
+                           (319 258 (:LINEAR LEN-WHEN-PREFIXP))
+                           (304 156 (:REWRITE DEFAULT-+-2))
+                           (260 260
                                 (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                           (141 141 (:REWRITE DEFAULT-CDR))
-                           (132 1 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
-                           (122 122 (:REWRITE DEFAULT-+-1))
-                           (117 37
-                                (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                           (175 175 (:REWRITE DEFAULT-CDR))
+                           (156 156 (:REWRITE DEFAULT-+-1))
+                           (144 18 (:REWRITE LEN-OF-LIST-FIX))
                            (117 14 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                           (88 61
+                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                           (81 58 (:REWRITE PREFIXP-TRANSITIVE . 1))
                            (78 16 (:DEFINITION TRUE-LISTP))
-                           (78 10 (:REWRITE LEN-OF-LIST-FIX))
                            (70 70 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                           (57 33 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                           (37 37
+                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                            (20 20 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                           (19 19
-                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                           (13 13 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-                           (8 5 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                           (8 5 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                           (5 5 (:TYPE-PRESCRIPTION LIST-EQUIV)))
+                           (17 14 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                           (14 14 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                           (13 13 (:REWRITE LIST-FIX-WHEN-NOT-CONSP)))
 (LIST-EQUIV-IMPLIES-EQUAL-LISTPOS-1
-     (666 18
+     (882 25
           (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (290 54 (:DEFINITION LEN))
-     (247 247 (:TYPE-PRESCRIPTION LEN))
-     (176 80 (:LINEAR LEN-WHEN-PREFIXP))
-     (124 65 (:REWRITE DEFAULT-+-2))
-     (84 84
-         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (65 65 (:REWRITE DEFAULT-+-1))
-     (63 63 (:REWRITE DEFAULT-CDR))
-     (32 22
+     (334 58 (:DEFINITION LEN))
+     (318 318 (:TYPE-PRESCRIPTION LEN))
+     (144 75 (:REWRITE DEFAULT-+-2))
+     (134 134
+          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (134 134 (:LINEAR LEN-WHEN-PREFIXP))
+     (75 75 (:REWRITE DEFAULT-+-1))
+     (73 73 (:REWRITE DEFAULT-CDR))
+     (27 27
          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (18 18 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (15 15
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (25 25 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (23 23
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
      (14 14 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (8 8 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-     (8 8 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
+     (14 14
+         (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
 (LIST-EQUIV-IMPLIES-EQUAL-LISTPOS-2
-     (206 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (80 16 (:DEFINITION LEN))
-     (64 4 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-     (44 44
+     (416 16
+          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (372 16 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (174 2 (:REWRITE PREFIXP-OF-LIST-FIX-LEFT))
+     (140 28 (:DEFINITION LEN))
+     (80 80
          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (44 44 (:LINEAR LEN-WHEN-PREFIXP))
-     (36 20 (:REWRITE DEFAULT-+-2))
+     (80 80 (:LINEAR LEN-WHEN-PREFIXP))
+     (64 4 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+     (60 32 (:REWRITE DEFAULT-+-2))
+     (36 36 (:REWRITE DEFAULT-CDR))
+     (32 32 (:REWRITE DEFAULT-+-1))
      (32 4 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-     (24 24 (:REWRITE DEFAULT-CDR))
+     (24 4 (:REWRITE LEN-OF-LIST-FIX))
      (20 20 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (20 20 (:REWRITE DEFAULT-+-1))
      (20 8 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
      (20 4 (:DEFINITION TRUE-LISTP))
-     (12 2 (:REWRITE LEN-OF-LIST-FIX))
+     (16 16 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (16 16 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (16 16
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (16 16
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (12 12
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (12 12
+         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (8 8 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (6 6
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (4 4 (:REWRITE LIST-FIX-WHEN-NOT-CONSP)))
-(LISTPOS-UNDER-IFF (1107 35
+(LISTPOS-UNDER-IFF (1956 57
                          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                   (466 90 (:DEFINITION LEN))
-                   (422 422 (:TYPE-PRESCRIPTION LEN))
-                   (261 141
+                   (800 152 (:DEFINITION LEN))
+                   (744 744 (:TYPE-PRESCRIPTION LEN))
+                   (502 262
                         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                   (194 100 (:REWRITE DEFAULT-+-2))
-                   (182 134 (:LINEAR LEN-WHEN-PREFIXP))
-                   (105 105 (:REWRITE DEFAULT-CDR))
-                   (100 100 (:REWRITE DEFAULT-+-1))
-                   (42 37
+                   (330 168 (:REWRITE DEFAULT-+-2))
+                   (252 252 (:LINEAR LEN-WHEN-PREFIXP))
+                   (173 173 (:REWRITE DEFAULT-CDR))
+                   (168 168 (:REWRITE DEFAULT-+-1))
+                   (58 58
                        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                   (35 35 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                   (32 32
-                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                   (57 57 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                   (56 56
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                    (14 14 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                    (13 13 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                   (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                   (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                   (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(NATP-OF-LISTPOS (2552 58
+                   (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                   (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
+(NATP-OF-LISTPOS (4937 107
                        (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                 (1277 221 (:DEFINITION LEN))
-                 (923 923 (:TYPE-PRESCRIPTION LEN))
-                 (822 283
-                      (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                 (540 276 (:REWRITE DEFAULT-+-2))
-                 (320 272 (:LINEAR LEN-WHEN-PREFIXP))
-                 (289 289 (:REWRITE DEFAULT-CDR))
-                 (276 276 (:REWRITE DEFAULT-+-1))
-                 (65 60
-                     (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                 (58 58 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                 (47 47
-                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                 (2461 421 (:DEFINITION LEN))
+                 (1778 1778 (:TYPE-PRESCRIPTION LEN))
+                 (1657 558
+                       (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                 (1032 522 (:REWRITE DEFAULT-+-2))
+                 (540 540 (:LINEAR LEN-WHEN-PREFIXP))
+                 (533 533 (:REWRITE DEFAULT-CDR))
+                 (522 522 (:REWRITE DEFAULT-+-1))
+                 (115 4 (:REWRITE PREFIXP-OF-CONS-LEFT))
+                 (108 108
+                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                 (107 107 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                 (98 98
+                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                  (26 26 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                  (25 25 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                 (10 10 (:REWRITE DEFAULT-CAR))
-                 (4 4 (:REWRITE CDR-CONS))
-                 (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                 (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                 (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                 (14 14 (:REWRITE DEFAULT-CAR))
+                 (8 8 (:REWRITE CDR-CONS))
+                 (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                 (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
                  (1 1 (:REWRITE DEFAULT-<-2))
                  (1 1 (:REWRITE DEFAULT-<-1)))
-(INTEGERP-OF-LISTPOS (2484 56
+(INTEGERP-OF-LISTPOS (4801 103
                            (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                     (1257 217 (:DEFINITION LEN))
-                     (897 897 (:TYPE-PRESCRIPTION LEN))
-                     (810 271
-                          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                     (531 271 (:REWRITE DEFAULT-+-2))
-                     (308 260 (:LINEAR LEN-WHEN-PREFIXP))
-                     (284 284 (:REWRITE DEFAULT-CDR))
-                     (271 271 (:REWRITE DEFAULT-+-1))
-                     (63 58
-                         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                     (56 56 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                     (45 45
-                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                     (2421 413 (:DEFINITION LEN))
+                     (1726 1726 (:TYPE-PRESCRIPTION LEN))
+                     (1633 534
+                           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                     (1015 513 (:REWRITE DEFAULT-+-2))
+                     (524 524 (:REWRITE DEFAULT-CDR))
+                     (516 516 (:LINEAR LEN-WHEN-PREFIXP))
+                     (513 513 (:REWRITE DEFAULT-+-1))
+                     (115 4 (:REWRITE PREFIXP-OF-CONS-LEFT))
+                     (104 104
+                          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                     (103 103 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                     (94 94
+                         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                      (25 25 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                      (23 23 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                     (10 10 (:REWRITE DEFAULT-CAR))
-                     (4 4 (:REWRITE CDR-CONS))
-                     (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                     (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                     (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(RATIONALP-OF-LISTPOS (2484 56
+                     (14 14 (:REWRITE DEFAULT-CAR))
+                     (8 8 (:REWRITE CDR-CONS))
+                     (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                     (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
+(RATIONALP-OF-LISTPOS (4801 103
                             (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                      (1257 217 (:DEFINITION LEN))
-                      (897 897 (:TYPE-PRESCRIPTION LEN))
-                      (810 271
-                           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                      (531 271 (:REWRITE DEFAULT-+-2))
-                      (308 260 (:LINEAR LEN-WHEN-PREFIXP))
-                      (284 284 (:REWRITE DEFAULT-CDR))
-                      (271 271 (:REWRITE DEFAULT-+-1))
-                      (63 58
-                          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                      (56 56 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                      (45 45
-                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                      (2421 413 (:DEFINITION LEN))
+                      (1726 1726 (:TYPE-PRESCRIPTION LEN))
+                      (1633 534
+                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                      (1015 513 (:REWRITE DEFAULT-+-2))
+                      (524 524 (:REWRITE DEFAULT-CDR))
+                      (516 516 (:LINEAR LEN-WHEN-PREFIXP))
+                      (513 513 (:REWRITE DEFAULT-+-1))
+                      (115 4 (:REWRITE PREFIXP-OF-CONS-LEFT))
+                      (104 104
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                      (103 103 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                      (94 94
+                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                       (25 25 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                       (23 23 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                      (10 10 (:REWRITE DEFAULT-CAR))
-                      (4 4 (:REWRITE CDR-CONS))
-                      (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                      (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                      (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(ACL2-NUMBERP-OF-LISTPOS (2678 60
+                      (14 14 (:REWRITE DEFAULT-CAR))
+                      (8 8 (:REWRITE CDR-CONS))
+                      (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                      (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
+(ACL2-NUMBERP-OF-LISTPOS (5189 111
                                (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                         (1345 233 (:DEFINITION LEN))
-                         (972 972 (:TYPE-PRESCRIPTION LEN))
-                         (885 294
-                              (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                         (622 287 (:REWRITE DEFAULT-+-2))
-                         (330 282 (:LINEAR LEN-WHEN-PREFIXP))
-                         (299 299 (:REWRITE DEFAULT-CDR))
-                         (287 287 (:REWRITE DEFAULT-+-1))
-                         (67 62
-                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                         (60 60 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                         (49 49
-                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                         (2597 445 (:DEFINITION LEN))
+                         (1876 1876 (:TYPE-PRESCRIPTION LEN))
+                         (1783 580
+                               (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                         (1192 547 (:REWRITE DEFAULT-+-2))
+                         (560 560 (:LINEAR LEN-WHEN-PREFIXP))
+                         (557 557 (:REWRITE DEFAULT-CDR))
+                         (547 547 (:REWRITE DEFAULT-+-1))
+                         (115 4 (:REWRITE PREFIXP-OF-CONS-LEFT))
+                         (112 112
+                              (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                         (111 111 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                         (102 102
+                              (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                          (36 36 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                          (17 17 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                         (10 10 (:REWRITE DEFAULT-CAR))
-                         (4 4 (:REWRITE CDR-CONS))
-                         (1 1 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                         (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                         (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
+                         (14 14 (:REWRITE DEFAULT-CAR))
+                         (8 8 (:REWRITE CDR-CONS))
+                         (4 4 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                         (4 4 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
 (LISTPOS-LOWER-BOUND-WEAK)
-(LISTPOS-UPPER-BOUND-WEAK (670 24
+(LISTPOS-UPPER-BOUND-WEAK (968 37
                                (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                          (200 6 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                          (138 73 (:REWRITE DEFAULT-+-2))
-                          (126 66 (:LINEAR LEN-WHEN-PREFIXP))
-                          (73 73 (:REWRITE DEFAULT-+-1))
-                          (43 43 (:REWRITE DEFAULT-CDR))
-                          (38 28
+                          (412 6 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                          (156 82 (:REWRITE DEFAULT-+-2))
+                          (118 118 (:LINEAR LEN-WHEN-PREFIXP))
+                          (82 82 (:REWRITE DEFAULT-+-1))
+                          (60 60 (:REWRITE DEFAULT-CDR))
+                          (39 39
                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                          (24 24 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                          (21 21
-                              (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                          (37 37 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                          (35 35
+                              (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
                           (14 14 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
                           (14 7 (:REWRITE DEFAULT-<-1))
+                          (8 8 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                          (8 8 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
                           (8 2
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                           (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                          (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                          (2 2 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                          (2 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                          (2 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(LISTPOS-UPPER-BOUND-STRONG-1 (162 6 (:REWRITE DEFAULT-<-1))
-                              (105 57 (:REWRITE DEFAULT-+-2))
-                              (68 68 (:REWRITE DEFAULT-CDR))
-                              (57 57 (:REWRITE DEFAULT-+-1))
-                              (50 50 (:LINEAR LEN-WHEN-PREFIXP))
-                              (17 17 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                              (16 16 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                              (16 16 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                              (16 16
+                          (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT)))
+(LISTPOS-UPPER-BOUND-STRONG-1 (614 31 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                              (292 6 (:REWRITE DEFAULT-<-1))
+                              (177 93 (:REWRITE DEFAULT-+-2))
+                              (105 105 (:REWRITE DEFAULT-CDR))
+                              (93 93 (:REWRITE DEFAULT-+-1))
+                              (92 92 (:LINEAR LEN-WHEN-PREFIXP))
+                              (30 30 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                              (30 30 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                              (30 30
                                   (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                              (16 16
+                              (30 30
                                   (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                              (16 15
+                              (29 29
                                   (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                              (17 17 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
                               (11 6 (:REWRITE DEFAULT-<-2))
                               (8 2
                                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                               (3 3 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                              (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
+                              (3 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
                               (1 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(LISTPOS-UPPER-BOUND-STRONG-2 (472 247 (:REWRITE DEFAULT-+-2))
-                              (257 247 (:REWRITE DEFAULT-+-1))
-                              (155 155 (:REWRITE DEFAULT-CDR))
-                              (67 52
+(LISTPOS-UPPER-BOUND-STRONG-2 (652 337 (:REWRITE DEFAULT-+-2))
+                              (347 337 (:REWRITE DEFAULT-+-1))
+                              (236 236 (:REWRITE DEFAULT-CDR))
+                              (79 79
                                   (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                              (46 46 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                              (42 42
+                              (76 76 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                              (72 72
                                   (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                              (42 42
+                              (72 72
                                   (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
                               (33 33 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
                               (23 9 (:REWRITE DEFAULT-<-1))
                               (18 9 (:REWRITE DEFAULT-UNARY-MINUS))
                               (14 14 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
                               (14 14 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+                              (12 12 (:TYPE-PRESCRIPTION LIST-EQUIV))
+                              (12 12 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
                               (12 3
                                   (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                              (6 6 (:REWRITE FOLD-CONSTS-IN-+))
-                              (3 3 (:TYPE-PRESCRIPTION LIST-EQUIV))
-                              (3 3 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT)))
-(L0 (6013 3148 (:REWRITE DEFAULT-+-2))
-    (3661 3148 (:REWRITE DEFAULT-+-1))
-    (2370 2272 (:REWRITE DEFAULT-CDR))
-    (2294 266
-          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-    (2219 266
+                              (6 6 (:REWRITE FOLD-CONSTS-IN-+)))
+(L0 (7874 563
+          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+    (6566 3443 (:REWRITE DEFAULT-+-2))
+    (3997 3443 (:REWRITE DEFAULT-+-1))
+    (2623 501
           (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-    (912 456
-         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+    (2589 2491 (:REWRITE DEFAULT-CDR))
+    (2529 501
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+    (1022 511
+          (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
     (912 108 (:REWRITE COMMUTATIVITY-2-OF-+))
-    (803 614 (:REWRITE DEFAULT-<-1))
-    (514 315
-         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-    (493 328 (:REWRITE DEFAULT-UNARY-MINUS))
-    (491 27 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-    (456 456 (:TYPE-PRESCRIPTION TRUE-LISTP))
-    (356 252 (:REWRITE FOLD-CONSTS-IN-+))
+    (909 685 (:REWRITE DEFAULT-<-1))
+    (637 71 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+    (511 511 (:TYPE-PRESCRIPTION TRUE-LISTP))
+    (511 343 (:REWRITE DEFAULT-UNARY-MINUS))
+    (452 276 (:REWRITE FOLD-CONSTS-IN-+))
     (108 17 (:REWRITE NTHCDR-WHEN-ZP))
     (92 30 (:REWRITE ZP-OPEN))
     (84 12
         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
-    (65 65 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-    (25 25 (:TYPE-PRESCRIPTION LIST-EQUIV))
+    (68 68 (:TYPE-PRESCRIPTION LIST-EQUIV))
+    (67 67 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
     (25 23 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
     (21 21 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
     (17 17 (:REWRITE NTHCDR-WHEN-ATOM))
     (16 4
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (LISTPOS-COMPLETE
-     (16226 854
+     (36724 1688
             (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-     (11974 593 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (7578 88 (:REWRITE CONSP-OF-NTHCDR))
-     (5460 2912 (:REWRITE DEFAULT-+-2))
-     (3438 2912 (:REWRITE DEFAULT-+-1))
-     (3236 565
+     (15636 1855 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (14291 8 (:REWRITE PREFIXP-OF-CONS-LEFT))
+     (13459 1858
+            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (10289 5423 (:REWRITE DEFAULT-+-2))
+     (10106 94 (:REWRITE CONSP-OF-NTHCDR))
+     (6410 1286 (:LINEAR LEN-WHEN-PREFIXP))
+     (6346 5423 (:REWRITE DEFAULT-+-1))
+     (5764 1807
            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (3189 646 (:LINEAR LEN-WHEN-PREFIXP))
-     (3176 4 (:REWRITE PREFIXP-OF-CONS-LEFT))
-     (2805 571
-           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (2691 122 (:REWRITE LEN-OF-NTHCDR))
-     (2427 734
+     (4769 1460
            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (1876 14 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-     (1557 459 (:REWRITE DEFAULT-<-2))
-     (1258 629
+     (4579 1815
+           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (3478 155 (:REWRITE LEN-OF-NTHCDR))
+     (2393 35 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+     (2335 530 (:REWRITE DEFAULT-<-2))
+     (1729 1 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
+     (1684 842
            (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
-     (1028 1 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
-     (715 600
-          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (629 629 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (582 459 (:REWRITE DEFAULT-<-1))
-     (536 536 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
-     (536 536 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (506 304 (:REWRITE DEFAULT-UNARY-MINUS))
-     (72 6 (:REWRITE COMMUTATIVITY-2-OF-+))
-     (68 68
-         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
-     (60 20 (:REWRITE UNICITY-OF-0))
-     (42 6
+     (970 970 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
+     (970 970 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+     (889 505 (:REWRITE DEFAULT-UNARY-MINUS))
+     (842 842 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (686 530 (:REWRITE DEFAULT-<-1))
+     (120 10 (:REWRITE COMMUTATIVITY-2-OF-+))
+     (118 118
+          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
+     (102 34 (:REWRITE UNICITY-OF-0))
+     (70 10
          (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
-     (40 20 (:DEFINITION FIX))
+     (68 34 (:DEFINITION FIX))
+     (35 35 (:TYPE-PRESCRIPTION LIST-EQUIV))
      (19 19 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
      (19 19 (:REWRITE OPEN-SMALL-NTHCDR))
-     (14 14 (:TYPE-PRESCRIPTION LIST-EQUIV))
-     (10 10 (:REWRITE DEFAULT-CAR))
+     (17 17 (:REWRITE DEFAULT-CAR))
      (8 8 (:REWRITE CDR-CONS))
      (1 1
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (SUBLISTP-SOUND
-     (4630 7 (:REWRITE ZP-OPEN))
-     (4627 6 (:REWRITE NTHCDR-WHEN-ZP))
-     (2683 876 (:REWRITE DEFAULT-CDR))
-     (2560 120 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (2136 1082 (:REWRITE DEFAULT-+-2))
-     (2084 324 (:LINEAR LEN-WHEN-PREFIXP))
-     (1948 2 (:REWRITE CONSP-OF-NTHCDR))
-     (1607 24 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
-     (1446 24 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
-     (1289 1082 (:REWRITE DEFAULT-+-1))
-     (1110 394
+     (7806 238 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (5609 7 (:REWRITE ZP-OPEN))
+     (5606 6 (:REWRITE NTHCDR-WHEN-ZP))
+     (2972 945 (:REWRITE DEFAULT-CDR))
+     (2319 1172 (:REWRITE DEFAULT-+-2))
+     (2168 2 (:REWRITE CONSP-OF-NTHCDR))
+     (1938 346 (:LINEAR LEN-WHEN-PREFIXP))
+     (1933 26 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
+     (1752 26 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
+     (1397 1172 (:REWRITE DEFAULT-+-1))
+     (1068 380
            (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
-     (394 394 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (295 115
-          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (278 116
+     (624 222 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (382 217
           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (208 104 (:REWRITE DEFAULT-UNARY-MINUS))
-     (198 198 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (158 125
+     (382 217
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (380 380 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (265 225
           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (43 24
+     (228 114 (:REWRITE DEFAULT-UNARY-MINUS))
+     (221 221 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+     (80 8 (:REWRITE COMMUTATIVITY-2-OF-+))
+     (64 26
          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
      (41 16 (:REWRITE DEFAULT-<-1))
-     (40 4 (:REWRITE COMMUTATIVITY-2-OF-+))
      (34 16 (:REWRITE DEFAULT-<-2))
-     (24 24 (:LINEAR LISTPOS-COMPLETE))
+     (26 26 (:LINEAR LISTPOS-COMPLETE))
+     (23 13 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
      (21 2 (:DEFINITION NFIX))
-     (12 3 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+     (12 12 (:TYPE-PRESCRIPTION LIST-EQUIV))
      (10 7 (:REWRITE INTEGERP-OF-LISTPOS))
      (7 1
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (6 6 (:REWRITE NTHCDR-WHEN-ATOM))
      (5 5 (:TYPE-PRESCRIPTION ZP))
-     (3 3 (:TYPE-PRESCRIPTION LIST-EQUIV))
-     (3 3 (:REWRITE LISTPOS-COMPLETE))
+     (5 5 (:REWRITE LISTPOS-COMPLETE))
      (2 2 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT)))
 (SUBLISTP-COMPLETE
-     (6099 196
+     (5085 279
            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (4470 63 (:DEFINITION LISTPOS))
-     (3594 382
+     (4908 68 (:DEFINITION LISTPOS))
+     (4259 434
            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-     (2379 196 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (1907 189
+     (2872 279
+           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (1769 964 (:REWRITE DEFAULT-+-2))
+     (1714 270
            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (1791 189
+     (1492 371 (:LINEAR LEN-WHEN-PREFIXP))
+     (1454 279 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (1365 270
            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (1665 922 (:REWRITE DEFAULT-+-2))
-     (1423 335 (:LINEAR LEN-WHEN-PREFIXP))
-     (1069 922 (:REWRITE DEFAULT-+-1))
-     (940 14 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
-     (856 14 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
-     (770 684 (:REWRITE DEFAULT-CDR))
-     (723 354
+     (1131 964 (:REWRITE DEFAULT-+-1))
+     (973 18 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
+     (890 400
           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (572 46 (:LINEAR LISTPOS-COMPLETE))
-     (474 237
+     (865 18 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
+     (829 743 (:REWRITE DEFAULT-CDR))
+     (489 56 (:LINEAR LISTPOS-COMPLETE))
+     (424 212
           (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
-     (326 267 (:REWRITE DEFAULT-<-2))
-     (323 267 (:REWRITE DEFAULT-<-1))
-     (281 196
-          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (240 20 (:REWRITE COMMUTATIVITY-2-OF-+))
-     (237 237 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (204 204 (:TYPE-PRESCRIPTION LISTPOS))
-     (149 105 (:REWRITE DEFAULT-UNARY-MINUS))
-     (141 141 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
-     (141 141 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (140 20
-          (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+     (272 224 (:REWRITE DEFAULT-<-1))
+     (265 224 (:REWRITE DEFAULT-<-2))
+     (248 248 (:TYPE-PRESCRIPTION LISTPOS))
+     (212 212 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (172 114 (:REWRITE DEFAULT-UNARY-MINUS))
+     (168 168 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
+     (168 168 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+     (120 10 (:REWRITE COMMUTATIVITY-2-OF-+))
+     (92 92 (:TYPE-PRESCRIPTION NFIX))
      (84 13 (:REWRITE NTHCDR-WHEN-ZP))
-     (77 77 (:TYPE-PRESCRIPTION NFIX))
      (74 25 (:REWRITE ZP-OPEN))
-     (52 45 (:REWRITE FOLD-CONSTS-IN-+))
-     (16 2 (:REWRITE ASSOCIATIVITY-OF-+))
-     (14 14
+     (70 10
+         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+     (32 25 (:REWRITE FOLD-CONSTS-IN-+))
+     (18 18
          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
+     (16 2 (:REWRITE ASSOCIATIVITY-OF-+))
      (13 13 (:REWRITE NTHCDR-WHEN-ATOM))
      (8 8 (:REWRITE OPEN-SMALL-NTHCDR))
      (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
      (6 6 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-     (4 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+     (6 3 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
      (3 3
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))

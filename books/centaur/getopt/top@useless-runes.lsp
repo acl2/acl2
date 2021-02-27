@@ -25,50 +25,53 @@
      (1 1 (:REWRITE DEFAULT-+-2))
      (1 1 (:REWRITE DEFAULT-+-1)))
 (GETOPT::RETURN-TYPE-OF-SPLIT-EQUALS.POST
-     (320 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-     (246 18 (:REWRITE DEFAULT-+-2))
-     (242 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (238 1 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
-     (102 10 (:DEFINITION LEN))
-     (98 2 (:REWRITE PREFIXP-OF-CONS-LEFT))
-     (93 13
-         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-     (82 82
-         (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-     (61 34 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (50 50 (:TYPE-PRESCRIPTION LEN))
-     (42 12 (:REWRITE DEFAULT-CDR))
-     (41 8 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
-     (36 12
+     (700 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (526 10
+          (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (511 36 (:REWRITE DEFAULT-+-2))
+     (497 1 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
+     (380 10 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (218 22 (:DEFINITION LEN))
+     (190 30
+          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (166 2 (:REWRITE PREFIXP-OF-CONS-LEFT))
+     (156 156
+          (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+     (116 116 (:TYPE-PRESCRIPTION LEN))
+     (105 62 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (96 2 (:REWRITE PREFIXP-OF-CONS-RIGHT))
+     (86 26 (:REWRITE DEFAULT-CDR))
+     (76 28
          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (21 18 (:REWRITE DEFAULT-+-1))
-     (20 1 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
-     (18 4
+     (66 13 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
+     (42 36 (:REWRITE DEFAULT-+-1))
+     (40 2 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
+     (38 8
          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (12 3 (:REWRITE COMMUTATIVITY-OF-+))
-     (10 10 (:LINEAR LEN-WHEN-PREFIXP))
+     (24 24 (:LINEAR LEN-WHEN-PREFIXP))
+     (24 6 (:REWRITE COMMUTATIVITY-OF-+))
+     (18 2 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
+     (16 4 (:REWRITE DEFAULT-CAR))
+     (13 13 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+     (12 12 (:TYPE-PRESCRIPTION PREFIXP))
+     (10 10 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (10 10 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (10 10
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (10 10
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (10 2 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-     (9 1 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
-     (8 8 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-     (8 2 (:REWRITE DEFAULT-CAR))
+     (10 2
+         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
      (5 4
         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (5 1
-        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
-     (4 4 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (4 4 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (4 4
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (4 4
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (3 3 (:REWRITE STR-FIX-WHEN-STRINGP))
      (3 3 (:REWRITE STR-FIX-DEFAULT))
-     (2 2 (:TYPE-PRESCRIPTION PREFIXP))
      (2 2 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
      (2 2 (:REWRITE SUBLISTP-COMPLETE))
      (2 2
         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (1 1 (:LINEAR LISTPOS-COMPLETE)))
+     (2 2 (:LINEAR LISTPOS-COMPLETE)))
 (GETOPT::FORMAL->LONGNAME)
 (GETOPT::FORMALLIST->LONGNAMES-EXEC)
 (GETOPT::FORMALLIST->LONGNAMES-NREV)
@@ -171,27 +174,28 @@
                             (12 12 (:REWRITE DEFAULT-CAR))
                             (10 10 (:REWRITE DEFAULT-+-1))
                             (8 8 (:REWRITE LIST-FIX-WHEN-NOT-CONSP)))
-(GETOPT::DEFOPTIONS-LEMMA-4 (26 11 (:REWRITE DEFAULT-CDR))
-                            (19 1 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                            (12 6 (:REWRITE DEFAULT-+-2))
+(GETOPT::DEFOPTIONS-LEMMA-4 (38 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                            (29 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                            (27 12 (:REWRITE DEFAULT-CDR))
+                            (14 7 (:REWRITE DEFAULT-+-2))
                             (7 7
                                (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                            (6 6 (:REWRITE DEFAULT-+-1))
-                            (5 2 (:REWRITE DEFAULT-CAR))
-                            (4 4
+                            (7 7 (:REWRITE DEFAULT-+-1))
+                            (6 6
                                (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                            (4 4
+                            (6 6
                                (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                            (4 4 (:LINEAR LEN-WHEN-PREFIXP))
-                            (2 1 (:REWRITE DEFAULT-<-1))
-                            (1 1
+                            (6 6 (:LINEAR LEN-WHEN-PREFIXP))
+                            (5 2 (:REWRITE DEFAULT-CAR))
+                            (3 2
                                (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                            (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                            (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                            (1 1
+                            (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                            (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                            (2 2
                                (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                            (1 1
+                            (2 2
                                (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                            (2 1 (:REWRITE DEFAULT-<-1))
                             (1 1 (:REWRITE DEFAULT-<-2)))
 (GETOPT::DEFOPTIONS-LEMMA-5
     (29 5
@@ -231,30 +235,33 @@
        (:REWRITE STR::DEC-DIGIT-CHAR-LISTP-OF-CDR-WHEN-DEC-DIGIT-CHAR-LISTP))
     (1 1 (:REWRITE DEFAULT-CDR))
     (1 1 (:REWRITE DEFAULT-CAR)))
-(GETOPT::DEFOPTIONS-LEMMA-8 (606 2 (:LINEAR GETOPT::DEFOPTIONS-LEMMA-4))
-                            (466 12
+(GETOPT::DEFOPTIONS-LEMMA-8 (1078 2 (:LINEAR GETOPT::DEFOPTIONS-LEMMA-4))
+                            (744 28
                                  (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                            (170 12
+                            (674 30 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                            (310 28
                                  (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                            (140 52 (:LINEAR LEN-WHEN-PREFIXP))
-                            (118 12 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                            (70 35 (:REWRITE DEFAULT-+-2))
-                            (66 12 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                            (63 39 (:REWRITE DEFAULT-CDR))
-                            (52 52
+                            (260 6 (:REWRITE PREFIXP-OF-CONS-RIGHT))
+                            (228 76 (:LINEAR LEN-WHEN-PREFIXP))
+                            (110 55 (:REWRITE DEFAULT-+-2))
+                            (94 28 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                            (89 65 (:REWRITE DEFAULT-CDR))
+                            (76 76
                                 (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                            (52 52
+                            (76 76
                                 (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                            (35 35 (:REWRITE DEFAULT-+-1))
-                            (26 12
+                            (66 28 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                            (55 55 (:REWRITE DEFAULT-+-1))
+                            (40 22
                                 (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                            (14 12
+                            (34 28
                                 (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                            (10 4 (:REWRITE DEFAULT-CAR))
-                            (6 6
-                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                            (6 6
-                               (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+                            (16 10 (:REWRITE DEFAULT-CAR))
+                            (12 12
+                                (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                            (8 8
+                               (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                            (4 2 (:REWRITE LIST-EQUIV-OF-NIL-RIGHT)))
 (GETOPT::USAGE-MESSAGE-PART)
 (GETOPT::MAKE-USAGE-AUX)
 (GETOPT::MAKE-USAGE-LOOP)

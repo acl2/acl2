@@ -794,9 +794,9 @@
                 (4 2 (:DEFINITION FIX))
                 (2 2 (:REWRITE DEFAULT-<-2))
                 (2 2 (:REWRITE DEFAULT-<-1)))
-(RTL::NTH-VAR-INDEX-VALS (191 54 (:REWRITE DEFAULT-+-2))
+(RTL::NTH-VAR-INDEX-VALS (193 55 (:REWRITE DEFAULT-+-2))
                          (166 29 (:DEFINITION =))
-                         (54 54 (:REWRITE DEFAULT-+-1))
+                         (55 55 (:REWRITE DEFAULT-+-1))
                          (50 6 (:REWRITE ZP-OPEN))
                          (50 5
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -2538,11 +2538,11 @@
             (1 1 (:REWRITE DEFAULT-+-2)))
 (RTL::NORM-NEG-NORM-NEG (156 52 (:REWRITE RTL::SHNFP-SHFP))
                         (104 104 (:TYPE-PRESCRIPTION RTL::SHNFP))
-                        (88 22 (:REWRITE DEFAULT-UNARY-MINUS))
-                        (42 18
+                        (82 21 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (39 17
                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                        (35 35 (:REWRITE DEFAULT-<-2))
-                        (35 35 (:REWRITE DEFAULT-<-1)))
+                        (33 33 (:REWRITE DEFAULT-<-2))
+                        (33 33 (:REWRITE DEFAULT-<-1)))
 (RTL::NA0-4 (33 11 (:REWRITE RTL::SHNFP-SHFP))
             (6 6 (:REWRITE DEFAULT-<-2))
             (6 6 (:REWRITE DEFAULT-<-1))

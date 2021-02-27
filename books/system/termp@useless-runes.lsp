@@ -20,16 +20,16 @@
 (TERM-LISTP-IMPLIES-TRUE-LISTP)
 (ARGLISTP1-IMPLIES-SYMBOL-LISTP (11 11 (:REWRITE DEFAULT-CAR))
                                 (4 4 (:REWRITE DEFAULT-CDR)))
-(STEP-1-LEMMA (452 452 (:REWRITE DEFAULT-CDR))
-              (390 390 (:REWRITE DEFAULT-CAR))
-              (202 101 (:REWRITE DEFAULT-+-2))
-              (101 101 (:REWRITE DEFAULT-+-1))
-              (46 46
+(STEP-1-LEMMA (390 390 (:REWRITE DEFAULT-CDR))
+              (334 334 (:REWRITE DEFAULT-CAR))
+              (168 84 (:REWRITE DEFAULT-+-2))
+              (84 84 (:REWRITE DEFAULT-+-1))
+              (43 43
                   (:REWRITE TERM-LISTP-IMPLIES-PSEUDO-TERM-LISTP))
-              (45 45
+              (42 42
                   (:REWRITE TERMP-IMPLIES-PSEUDO-TERMP))
-              (14 14 (:REWRITE DEFAULT-COERCE-2))
-              (14 14 (:REWRITE DEFAULT-COERCE-1)))
+              (13 13 (:REWRITE DEFAULT-COERCE-2))
+              (13 13 (:REWRITE DEFAULT-COERCE-1)))
 (STEP-2-LEMMA (122 1 (:DEFINITION TERMP))
               (45 4 (:DEFINITION LENGTH))
               (35 7 (:DEFINITION LEN))

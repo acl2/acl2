@@ -212,7 +212,7 @@
              (4 2 (:REWRITE DEFAULT-<-2))
              (4 2 (:REWRITE DEFAULT-<-1)))
 (STR::ISTR<-AUX (37200 826 (:REWRITE NTH-WHEN-BIGGER))
-                (24426 1416 (:DEFINITION LEN))
+                (24428 1416 (:DEFINITION LEN))
                 (15251 2832 (:REWRITE LEN-WHEN-ATOM))
                 (7493 1829 (:REWRITE DEFAULT-CDR))
                 (7177 772 (:REWRITE DEFAULT-CHAR-CODE))
@@ -235,6 +235,8 @@
                 (16 2 (:REWRITE <-+-NEGATIVE-0-1))
                 (10 2 (:REWRITE |(< 0 (len x))|))
                 (2 2
+                   (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                (2 2
                    (:REWRITE LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
                 (2 2 (:REWRITE DEFAULT-UNARY-MINUS))
                 (1 1 (:REWRITE EQUAL-CONSTANT-+)))
@@ -244,7 +246,7 @@
      (16480 14
             (:REWRITE STR::ICHARLIST<-TRICHOTOMY-STRONG))
      (13852 364 (:REWRITE NTH-WHEN-BIGGER))
-     (8976 534 (:DEFINITION LEN))
+     (8989 534 (:DEFINITION LEN))
      (5851 1086 (:REWRITE LEN-WHEN-ATOM))
      (5284 25
            (:REWRITE STR::ICHARLIST<-TRICHOTOMY-WEAK))
@@ -286,6 +288,8 @@
      (32 32
          (:REWRITE LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
      (26 2 (:REWRITE COMMUTATIVITY-2-OF-+))
+     (13 13
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (11 11
          (:TYPE-PRESCRIPTION STR::ICHARLISTEQV))
      (8 8 (:REWRITE EQUAL-CONSTANT-+))

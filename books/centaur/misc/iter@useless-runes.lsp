@@ -127,7 +127,11 @@
                       (8 8 (:TYPE-PRESCRIPTION ZIP))
                       (6 6
                          (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
-                      (6 2 (:REWRITE IFIX-EQUAL-TO-0)))
+                      (6 2 (:REWRITE IFIX-EQUAL-TO-0))
+                      (2 2
+                         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                      (2 2
+                         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (ITER-UP-IS-ITER-DOWN (327 16 (:REWRITE ZP-WHEN-GT-0))
                       (118 58 (:REWRITE DEFAULT-+-2))
                       (92 58 (:REWRITE DEFAULT-+-1))
@@ -140,7 +144,11 @@
                       (11 1 (:REWRITE COMMUTATIVITY-2-OF-+))
                       (10 4 (:REWRITE FOLD-CONSTS-IN-+))
                       (5 5 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                      (5 5 (:META CANCEL_PLUS-EQUAL-CORRECT)))
+                      (5 5 (:META CANCEL_PLUS-EQUAL-CORRECT))
+                      (1 1
+                         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                      (1 1
+                         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (DEFITERATION-SORT-ARGS)
 (GET-KW)
 (VAR/CONST-LISTP)

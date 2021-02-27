@@ -119,7 +119,7 @@
                           (469 458 (:REWRITE DEFAULT-<-2))
                           (460 460 (:REWRITE FOLD-CONSTS-IN-+))
                           (388 388 (:REWRITE DEFAULT-UNARY-MINUS))
-                          (374 374 (:REWRITE DEFAULT-CAR))
+                          (375 375 (:REWRITE DEFAULT-CAR))
                           (344 344 (:TYPE-PRESCRIPTION LEN))
                           (194 194 (:REWRITE NUMERATOR-WHEN-INTEGERP))
                           (194 194 (:REWRITE INTEGERP==>DENOMINATOR=1))

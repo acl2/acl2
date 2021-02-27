@@ -1,43 +1,50 @@
-(LOGIOR-ASH-LOGHEAD-LOGTAIL (4605 138 (:DEFINITION UNSIGNED-BYTE-P**))
-                            (3620 1744
-                                  (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-                            (2805 26 (:REWRITE LOGHEAD-IDENTITY))
-                            (2359 276 (:REWRITE UNSIGNED-BYTE-P-PLUS))
-                            (2308 24 (:REWRITE LOGTAIL-IDENTITY))
-                            (1658 170 (:REWRITE BITOPS::LOGCDR-OF-BIT))
-                            (776 23 (:REWRITE ASH-0))
-                            (572 22 (:REWRITE BITOPS::ASH-<-0))
-                            (547 146 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                            (510 14
-                                 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
-                            (423 332 (:REWRITE DEFAULT-<-1))
-                            (420 420 (:TYPE-PRESCRIPTION BITP))
-                            (370 370
-                                 (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                            (332 332 (:REWRITE DEFAULT-<-2))
-                            (300 48 (:REWRITE BITOPS::LOGCAR-OF-BIT))
-                            (246 82 (:REWRITE ZP-WHEN-GT-0))
-                            (233 14
-                                 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
-                            (165 165 (:REWRITE DEFAULT-+-2))
-                            (165 165 (:REWRITE DEFAULT-+-1))
-                            (134 134 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-                            (130 130 (:TYPE-PRESCRIPTION POSP))
-                            (130 25 (:REWRITE NATP-WHEN-INTEGERP))
-                            (75 25 (:REWRITE NATP-WHEN-GTE-0))
-                            (66 66
-                                (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                            (55 5 (:REWRITE BITOPS::LOGCAR-OF-LOGHEAD))
-                            (30 5
-                                (:REWRITE BITOPS::LOGCDR-OF-LEFT-SHIFT))
-                            (30 5
-                                (:REWRITE BITOPS::LOGCAR-OF-LEFT-SHIFT))
-                            (23 3 (:REWRITE BFIX-WHEN-NOT-1))
-                            (6 3 (:REWRITE BFIX-WHEN-NOT-BITP))
-                            (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
-                            (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
-                            (5 5 (:TYPE-PRESCRIPTION ZP))
-                            (1 1 (:INDUCTION BITOPS::LOGIOR-INDUCT)))
+(LOGIOR-ASH-LOGHEAD-LOGTAIL
+     (4605 138 (:DEFINITION UNSIGNED-BYTE-P**))
+     (3620 1744
+           (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
+     (2805 26 (:REWRITE LOGHEAD-IDENTITY))
+     (2359 276 (:REWRITE UNSIGNED-BYTE-P-PLUS))
+     (2308 24 (:REWRITE LOGTAIL-IDENTITY))
+     (1658 170 (:REWRITE BITOPS::LOGCDR-OF-BIT))
+     (776 23 (:REWRITE ASH-0))
+     (572 22 (:REWRITE BITOPS::ASH-<-0))
+     (547 146 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (510 14
+          (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
+     (423 332 (:REWRITE DEFAULT-<-1))
+     (420 420 (:TYPE-PRESCRIPTION BITP))
+     (370 370
+          (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (332 332 (:REWRITE DEFAULT-<-2))
+     (300 48 (:REWRITE BITOPS::LOGCAR-OF-BIT))
+     (246 82 (:REWRITE ZP-WHEN-GT-0))
+     (233 14
+          (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
+     (165 165 (:REWRITE DEFAULT-+-2))
+     (165 165 (:REWRITE DEFAULT-+-1))
+     (134 134 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
+     (130 130 (:TYPE-PRESCRIPTION POSP))
+     (130 25 (:REWRITE NATP-WHEN-INTEGERP))
+     (75 25 (:REWRITE NATP-WHEN-GTE-0))
+     (66 66
+         (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (55 5 (:REWRITE BITOPS::LOGCAR-OF-LOGHEAD))
+     (32 32
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (30 5
+         (:REWRITE BITOPS::LOGCDR-OF-LEFT-SHIFT))
+     (30 5
+         (:REWRITE BITOPS::LOGCAR-OF-LEFT-SHIFT))
+     (23 3 (:REWRITE BFIX-WHEN-NOT-1))
+     (20 20
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (20 20
+         (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
+     (6 3 (:REWRITE BFIX-WHEN-NOT-BITP))
+     (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
+     (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (5 5 (:TYPE-PRESCRIPTION ZP))
+     (1 1 (:INDUCTION BITOPS::LOGIOR-INDUCT)))
 (LOGIOR-OF-ASH (312 120
                     (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-2))
                (312 120
@@ -63,6 +70,12 @@
                (21 6
                    (:REWRITE BITOPS::LOGCAR-OF-LEFT-SHIFT))
                (20 4 (:REWRITE BITOPS::LOGIOR-EQUAL-0))
+               (18 18
+                   (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+               (13 13
+                   (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+               (13 13
+                   (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
                (12 6
                    (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
                (9 3 (:REWRITE NATP-WHEN-GTE-0))
@@ -79,31 +92,40 @@
                    (8 8 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
                    (5 3 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                    (4 4 (:TYPE-PRESCRIPTION ZIP))
+                   (3 3
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (2 2 (:REWRITE ZIP-OPEN))
                    (2 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (COMBINE16U-UNSIGNED-BYTE (4 1 (:REWRITE ASH-0))
                           (2 2 (:TYPE-PRESCRIPTION ZIP))
                           (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
                           (2 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+                          (1 1
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                           (1 1 (:REWRITE ZIP-OPEN)))
-(COMBINE16U-LOGHEAD-LOGTAIL (74 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
-                            (74 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
-                            (48 20 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                            (48 4 (:REWRITE BITOPS::ASH-<-0))
-                            (17 9 (:REWRITE DEFAULT-<-1))
-                            (11 1 (:REWRITE ASH-0))
-                            (9 9 (:REWRITE DEFAULT-<-2))
-                            (8 8 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                            (7 1 (:REWRITE ZIP-OPEN))
-                            (4 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                            (4 1 (:REWRITE LOGTAIL-IDENTITY))
-                            (4 1 (:REWRITE LOGHEAD-IDENTITY))
-                            (3 1 (:REWRITE NATP-WHEN-GTE-0))
-                            (2 2
-                               (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                            (2 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                            (1 1 (:TYPE-PRESCRIPTION ZIP))
-                            (1 1 (:REWRITE NATP-WHEN-INTEGERP)))
+(COMBINE16U-LOGHEAD-LOGTAIL
+     (74 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
+     (74 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
+     (48 20 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (48 4 (:REWRITE BITOPS::ASH-<-0))
+     (17 9 (:REWRITE DEFAULT-<-1))
+     (11 1 (:REWRITE ASH-0))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (8 8 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (7 1 (:REWRITE ZIP-OPEN))
+     (4 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (4 1 (:REWRITE LOGTAIL-IDENTITY))
+     (4 1 (:REWRITE LOGHEAD-IDENTITY))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (3 1 (:REWRITE NATP-WHEN-GTE-0))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (2 2
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (2 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (1 1 (:TYPE-PRESCRIPTION ZIP))
+     (1 1 (:REWRITE NATP-WHEN-INTEGERP)))
 (COMBINE16S$INLINE
      (54 2 (:LINEAR BITOPS::LOGIOR->=-0-LINEAR))
      (54 2 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
@@ -118,10 +140,14 @@
          (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER))
      (10 10
          (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (8 8
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (7 4 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (6 6 (:REWRITE DEFAULT-<-2))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (5 5 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
      (3 3 (:TYPE-PRESCRIPTION ZIP))
      (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
@@ -135,11 +161,15 @@
      (4 4
         (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
      (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (2 2
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (2 2 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
      (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
      (2 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-     (1 1 (:TYPE-PRESCRIPTION ZIP)))
+     (1 1 (:TYPE-PRESCRIPTION ZIP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (COMBINE32U$INLINE (1757 27
                          (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
                    (462 27
@@ -155,6 +185,8 @@
                        (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
                    (19 12 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                    (14 14 (:TYPE-PRESCRIPTION ZIP))
+                   (12 12
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (7 7 (:REWRITE ZIP-OPEN))
                    (4 4 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (COMBINE32U-UNSIGNED-BYTE (12 3 (:REWRITE ASH-0))
@@ -162,33 +194,40 @@
                           (6 6 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
                           (6 3 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                           (4 4 (:REWRITE NFIX-WHEN-NOT-NATP))
+                          (3 3
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                           (3 3 (:REWRITE ZIP-OPEN)))
-(COMBINE32U-LOGHEAD-LOGTAIL (1069 19
-                                  (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
-                            (336 19
-                                 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
-                            (310 107 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                            (310 21 (:REWRITE ASH-0))
-                            (232 20 (:REWRITE BITOPS::ASH-<-0))
-                            (228 17 (:REWRITE ZIP-OPEN))
-                            (105 41 (:REWRITE DEFAULT-<-1))
-                            (101 23 (:REWRITE LOGHEAD-IDENTITY))
-                            (77 26 (:REWRITE LOGTAIL-IDENTITY))
-                            (45 9 (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL))
-                            (41 41 (:REWRITE DEFAULT-<-2))
-                            (38 21 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                            (34 34
-                                (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                            (27 1 (:REWRITE BITOPS::LOGIOR-EQUAL-0))
-                            (18 18
-                                (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                            (17 17 (:TYPE-PRESCRIPTION ZIP))
-                            (14 7 (:REWRITE NFIX-WHEN-NOT-NATP))
-                            (11 11
-                                (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
-                            (3 1 (:REWRITE NATP-WHEN-GTE-0))
-                            (3 1
-                               (:REWRITE BITOPS::LOGHEAD-OF-LOGHEAD-2)))
+(COMBINE32U-LOGHEAD-LOGTAIL
+     (1069 19
+           (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
+     (336 19
+          (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
+     (310 107 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (310 21 (:REWRITE ASH-0))
+     (232 20 (:REWRITE BITOPS::ASH-<-0))
+     (228 17 (:REWRITE ZIP-OPEN))
+     (105 41 (:REWRITE DEFAULT-<-1))
+     (101 23 (:REWRITE LOGHEAD-IDENTITY))
+     (77 26 (:REWRITE LOGTAIL-IDENTITY))
+     (69 69
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (48 48
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (45 9 (:REWRITE UNSIGNED-BYTE-P-OF-LOGTAIL))
+     (41 41 (:REWRITE DEFAULT-<-2))
+     (38 21 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (34 34
+         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (27 1 (:REWRITE BITOPS::LOGIOR-EQUAL-0))
+     (18 18
+         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (17 17 (:TYPE-PRESCRIPTION ZIP))
+     (14 7 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (11 11
+         (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
+     (3 1 (:REWRITE NATP-WHEN-GTE-0))
+     (3 1
+        (:REWRITE BITOPS::LOGHEAD-OF-LOGHEAD-2)))
 (COMBINE32S$INLINE
      (884 12
           (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
@@ -209,9 +248,13 @@
      (20 20
          (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
      (19 12 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (17 17
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (16 16
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (9 9 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (4 4 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (COMBINE32S-SIGNED-BYTE
      (19 3 (:REWRITE ASH-0))
@@ -223,9 +266,13 @@
      (6 6 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
      (6 3 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 4
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (4 4 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
-     (4 4 (:REWRITE NFIX-WHEN-NOT-NATP)))
+     (4 4 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (COMBINE64U$INLINE (12707 105
                           (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
                    (2443 525 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
@@ -241,6 +288,8 @@
                    (73 28 (:REWRITE ASH-0))
                    (43 28 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                    (30 30 (:TYPE-PRESCRIPTION ZIP))
+                   (28 28
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (15 15 (:REWRITE ZIP-OPEN))
                    (8 8 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (COMBINE64U-UNSIGNED-BYTE (42 42
@@ -249,6 +298,8 @@
                           (14 14 (:TYPE-PRESCRIPTION ZIP))
                           (14 7 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                           (8 8 (:REWRITE NFIX-WHEN-NOT-NATP))
+                          (7 7
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                           (7 7 (:REWRITE ZIP-OPEN)))
 (COMBINE64S$INLINE
      (7520 56
@@ -267,13 +318,17 @@
      (68 68
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (43 28 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (34 34
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (22 22
          (:REWRITE BITOPS::SIGNED-BYTE-P-WHEN-SIGNED-BYTE-P-SMALLER))
      (22 22
          (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
      (20 6 (:REWRITE LOGEXT-IDENTITY))
      (9 9 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
-     (8 8 (:REWRITE NFIX-WHEN-NOT-NATP)))
+     (8 8 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (COMBINE64S-UNSIGNED-BYTE
      (42 42
          (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
@@ -284,7 +339,11 @@
          (:REWRITE BITOPS::SIGNED-BYTE-P-MONOTONICITY))
      (14 7 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (8 8
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (8 8
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (8 8 (:REWRITE BITOPS::SIGNED-BYTE-P-INCR))
      (8 8 (:REWRITE NFIX-WHEN-NOT-NATP))
-     (8 1 (:REWRITE LOGEXT-IDENTITY)))
+     (8 1 (:REWRITE LOGEXT-IDENTITY))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))

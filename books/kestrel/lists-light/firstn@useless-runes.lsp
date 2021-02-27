@@ -189,8 +189,8 @@
                  (1 1 (:TYPE-PRESCRIPTION NFIX))
                  (1 1 (:REWRITE DEFAULT-CDR)))
 (FIRSTN-OF-APPEND (217 171 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                  (213 124 (:REWRITE DEFAULT-<-1))
-                  (197 124 (:REWRITE DEFAULT-<-2))
+                  (215 125 (:REWRITE DEFAULT-<-1))
+                  (199 125 (:REWRITE DEFAULT-<-2))
                   (176 12 (:DEFINITION TRUE-LISTP))
                   (129 18 (:REWRITE CONSP-FROM-LEN-CHEAP))
                   (126 61 (:REWRITE DEFAULT-+-2))
@@ -198,8 +198,8 @@
                   (101 49
                        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
                   (88 4 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                  (61 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
                   (55 29 (:REWRITE DEFAULT-UNARY-MINUS))
-                  (44 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-2))
                   (39 3 (:DEFINITION POSP))
                   (33 3 (:REWRITE EQUAL-OF-LEN-AND-0))
                   (31 5

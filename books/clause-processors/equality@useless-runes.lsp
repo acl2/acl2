@@ -195,26 +195,26 @@
                    (12 4 (:DEFINITION SYMBOL-LISTP)))
 (FLAG::FLAG-EQUIV-LEMMA)
 (FLAG-PSEUDO-TERMP-EQUIVALENCES)
-(FLAG-LEMMA-FOR-LEMMA (572 570 (:REWRITE DEFAULT-CDR))
-                      (554 547 (:REWRITE DEFAULT-CAR))
-                      (180 90 (:REWRITE DEFAULT-+-2))
-                      (174 174
+(FLAG-LEMMA-FOR-LEMMA (531 529 (:REWRITE DEFAULT-CDR))
+                      (519 512 (:REWRITE DEFAULT-CAR))
+                      (168 168
                            (:TYPE-PRESCRIPTION ESC-ALIST-TO-EQUALITIES))
+                      (166 83 (:REWRITE DEFAULT-+-2))
                       (120 24 (:DEFINITION ASSOC-EQUAL))
-                      (90 90 (:REWRITE DEFAULT-+-1))
-                      (79 79
+                      (83 83 (:REWRITE DEFAULT-+-1))
+                      (74 74
                           (:REWRITE TERM-LISTP-IMPLIES-PSEUDO-TERM-LISTP))
-                      (69 69
+                      (65 65
                           (:REWRITE TERMP-IMPLIES-PSEUDO-TERMP))
                       (58 44 (:REWRITE ESC-EVAL-CONSTRAINT-9))
                       (58 44 (:REWRITE ESC-EVAL-CONSTRAINT-8))
                       (58 44 (:REWRITE ESC-EVAL-CONSTRAINT-10))
-                      (29 29
+                      (28 28
                           (:REWRITE ESC-ALIST-TO-EQUALITIES-WHEN-ATOM))
-                      (29 29 (:REWRITE ESC-ALIST-P-WHEN-ATOM))
+                      (28 28 (:REWRITE ESC-ALIST-P-WHEN-ATOM))
                       (25 5 (:DEFINITION PAIRLIS$))
-                      (13 13 (:REWRITE DEFAULT-COERCE-2))
-                      (13 13 (:REWRITE DEFAULT-COERCE-1)))
+                      (12 12 (:REWRITE DEFAULT-COERCE-2))
+                      (12 12 (:REWRITE DEFAULT-COERCE-1)))
 (LEMMA-TERM)
 (LEMMA-LIST)
 (ESC-EVAL-OF-ESC-SUBSTITUTE

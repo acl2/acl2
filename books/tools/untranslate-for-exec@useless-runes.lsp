@@ -316,6 +316,7 @@
                          (18 18 (:TYPE-PRESCRIPTION TRUE-LISTP))
                          (18 18 (:REWRITE CONSP-BY-LEN))
                          (2 2 (:REWRITE CONSP-OF-CDR-BY-LEN))
+                         (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                          (2 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
                          (2 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
                          (1 1 (:REWRITE SUBLISTP-COMPLETE))

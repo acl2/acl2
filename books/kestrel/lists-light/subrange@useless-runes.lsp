@@ -310,14 +310,14 @@
                  (1 1
                     (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT)))
 (SUBRANGE-UP-TO-END-BECOMES-NTHCDR
-     (55 3
+     (65 3
          (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (39 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
      (32 2 (:DEFINITION TRUE-LISTP))
-     (29 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-2))
      (20 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (12 12 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (8 6 (:REWRITE DEFAULT-<-2))
-     (7 6 (:REWRITE DEFAULT-<-1))
+     (9 7 (:REWRITE DEFAULT-<-2))
+     (9 7 (:REWRITE DEFAULT-<-1))
      (6 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
      (4 4 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (3 3
@@ -331,14 +331,14 @@
      (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (1 1 (:TYPE-PRESCRIPTION POSP)))
 (SUBRANGE-UP-TO-END-BECOMES-NTHCDR-STRONG
-     (36 2
+     (46 2
          (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
-     (29 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-2))
+     (39 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
      (16 1 (:DEFINITION TRUE-LISTP))
      (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (8 6 (:REWRITE DEFAULT-<-1))
      (7 7 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (6 5 (:REWRITE DEFAULT-<-2))
-     (6 5 (:REWRITE DEFAULT-<-1))
+     (7 6 (:REWRITE DEFAULT-<-2))
      (6 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
      (4 2
         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
@@ -841,24 +841,24 @@
                     (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
                  (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
                  (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER)))
-(SUBRANGE-OF-APPEND-IRREL (209 9
+(SUBRANGE-OF-APPEND-IRREL (213 9
                                (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
-                          (156 7 (:REWRITE TRUE-LISTP-OF-NTHCDR-2))
-                          (154 154 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                          (88 10 (:DEFINITION TRUE-LISTP))
-                          (84 77 (:REWRITE DEFAULT-<-2))
-                          (79 77 (:REWRITE DEFAULT-<-1))
-                          (58 22 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                          (57 57 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                          (160 7 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+                          (144 144 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                          (87 81 (:REWRITE DEFAULT-<-2))
+                          (85 81 (:REWRITE DEFAULT-<-1))
+                          (65 8 (:DEFINITION TRUE-LISTP))
                           (57 16 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                          (56 56 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                          (46 19 (:REWRITE CONSP-FROM-LEN-CHEAP))
                           (38 38 (:REWRITE DEFAULT-+-2))
                           (38 38 (:REWRITE DEFAULT-+-1))
                           (33 8 (:DEFINITION POSP))
                           (30 2 (:REWRITE EQUAL-OF-LEN-AND-0))
-                          (23 23
+                          (22 22
                               (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
-                          (18 10 (:REWRITE DEFAULT-CDR))
                           (17 17 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                          (15 8 (:REWRITE DEFAULT-CDR))
                           (12 12
                               (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
                           (12 12
@@ -870,7 +870,7 @@
                           (11 11 (:REWRITE +-COMBINE-CONSTANTS))
                           (8 8 (:TYPE-PRESCRIPTION POSP))
                           (8 8 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-                          (6 6 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                          (5 5 (:REWRITE CONSP-WHEN-LEN-GREATER))
                           (2 2
                              (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT)))
 (SUBRANGE-OF-APPEND-LEMMA2 (103 1 (:REWRITE EQUAL-OF-+-AND-+-CANCEL-1))
@@ -904,26 +904,26 @@
                          (:REWRITE SUBRANGE-TO-END-BECOMES-NTHCDR))
                     (276 34
                          (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
-                    (108 84 (:REWRITE DEFAULT-<-2))
+                    (109 85 (:REWRITE DEFAULT-<-2))
                     (95 95
                         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
                     (95 68 (:REWRITE DEFAULT-+-2))
-                    (88 84 (:REWRITE DEFAULT-<-1))
+                    (89 85 (:REWRITE DEFAULT-<-1))
                     (86 8 (:REWRITE SUBRANGE-OF-APPEND-LEMMA2))
-                    (86 4
-                        (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
                     (76 70 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                    (73 73 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                    (71 4
+                        (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
                     (69 68 (:REWRITE DEFAULT-+-1))
-                    (67 3 (:REWRITE TRUE-LISTP-OF-NTHCDR-2))
+                    (63 63 (:TYPE-PRESCRIPTION TRUE-LISTP))
                     (63 12
                         (:REWRITE SUBRANGE-OUT-OF-ORDER-OR-SINGLETON))
                     (61 5 (:REWRITE TAKE-DOES-NOTHING))
-                    (56 8 (:DEFINITION TRUE-LISTP))
+                    (52 3 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
                     (50 10 (:REWRITE SUBRANGE-OUT-OF-ORDER))
                     (48 2 (:REWRITE SUBRANGE-IS-ALL))
                     (47 15
                         (:REWRITE SUBRANGE-WHEN-END-IS-NEGATIVE))
+                    (42 6 (:DEFINITION TRUE-LISTP))
                     (39 11
                         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
                     (27 21 (:REWRITE DEFAULT-UNARY-MINUS))
@@ -933,10 +933,10 @@
                     (21 5 (:REWRITE NTHCDR-WHEN-NOT-POSP))
                     (20 20 (:REWRITE FOLD-CONSTS-IN-+))
                     (20 20 (:REWRITE +-COMBINE-CONSTANTS))
-                    (16 16 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                    (16 8 (:REWRITE DEFAULT-CDR))
+                    (12 12 (:REWRITE CONSP-FROM-LEN-CHEAP))
                     (12 8
                         (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+                    (12 6 (:REWRITE DEFAULT-CDR))
                     (12 4 (:DEFINITION POSP))
                     (10 10
                         (:REWRITE SUBRANGE-OUT-OF-ORDER-CHEAP))
