@@ -53,26 +53,16 @@
   :hints (("goal" :do-not-induct t
            :expand (insert-text oldtext start text))))
 
-(encapsulate
-  ()
-
-  ;; Borrowed from books/std/lists/append.lisp.
-  (local
-   (defthm consp-of-append
-     (equal (consp (append x y))
-            (or (consp x)
-                (consp y)))))
-
-  (defthm insert-text-correctness-4
-    (implies (stringp text)
-             (iff (consp (insert-text oldtext start text))
-                  (or (not (zp start))
-                      (> (len (coerce text 'list)) 0)
-                      (consp oldtext))))
-    :hints (("goal" :do-not-induct t
-             :use len-of-insert-text
-             :in-theory (e/d (insert-text len-when-consp)
-                             (len-of-insert-text))))))
+(defthm insert-text-correctness-4
+  (implies (stringp text)
+           (iff (consp (insert-text oldtext start text))
+                (or (not (zp start))
+                    (> (len (coerce text 'list)) 0)
+                    (consp oldtext))))
+  :hints (("goal" :do-not-induct t
+           :use len-of-insert-text
+           :in-theory (e/d (insert-text len-when-consp)
+                           (len-of-insert-text)))))
 
 (defthm true-listp-of-insert-text
   (implies (true-listp oldtext)

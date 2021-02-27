@@ -197,12 +197,15 @@
            (equal (len (make-blocks (unmake-blocks blocks n)))
                   (len blocks)))
   :hints
-  (("goal" :in-theory (enable make-blocks feasible-file-length-p))
+  (("goal" :in-theory (e/d (make-blocks feasible-file-length-p)
+                           (consp-of-append)))
    ("subgoal *1/8"
     :expand (append (car blocks)
                     (unmake-blocks (cdr blocks) (+ -8 n))))
-   ("subgoal *1/5.2" :cases ((atom (cdr blocks))) :expand (len (cdr blocks)))
+   ("subgoal *1/5.2" :cases ((atom (cdr blocks)))
+    :expand (len (cdr blocks)))
    ("subgoal *1/5.1'"
     :expand (append (car blocks)
                     (unmake-blocks (cdr blocks) (+ -8 n))))
-   ("subgoal *1/2" :expand (make-blocks (first-n-ac n (car blocks) nil)))))
+   ("subgoal *1/2"
+    :expand (make-blocks (first-n-ac n (car blocks) nil)))))
