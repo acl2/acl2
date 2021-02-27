@@ -107,7 +107,6 @@
 (theory-invariant (incompatible (:definition pair-list-equiv$inline)
                                 (:rewrite equal-pair-list-fix-to-pair-list-equiv)))
 
-(in-theory (disable CONS-OF-VARID-FIX-X-NORMALIZE-CONST-UNDER-VARID-LIST-EQUIV))
 ;;(in-theory (disable CONS-OF-WF-BINDING-FIX-X-NORMALIZE-CONST-UNDER-ENV-TYPE-EQUIV))
 
 (defthm car-pair-list-fix
@@ -990,12 +989,6 @@
 (in-theory (disable largest-nz-varid))
 
 ;; ----------------------------------------------------------------------
-
-(in-theory
- (disable
-  cons-of-pair-fix-x-normalize-const-under-pair-list-equiv
-  cons-of-wf-binding-fix-x-normalize-const-under-env-fix-equiv
-  ))
 
 (def::un sum-rlist (x)
   (declare (xargs :signature ((t) rationalp)))

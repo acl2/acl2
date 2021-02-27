@@ -458,7 +458,7 @@
 
   (local
    (in-theory (disable 4VEC-ZERO-EXT-IS-4VEC-CONCAT)))
-  
+
   (with-output
     :off :all
     :gag-mode nil
@@ -706,8 +706,7 @@
                               rp-evlt-of-ex-from-rp-reverse
                               natp)
                              (RP::RP-EVLT-OF-EX-FROM-RP
-                              rp-trans
-                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
+                              rp-trans))))))
 
 
 
@@ -824,8 +823,7 @@
                               FIX
                               RP::INCLUDE-FNC
                               RP::INCLUDE-FNC-SUBTERMS
-                              NTH-0-CONS
-                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
+                              NTH-0-CONS))))))
 
 (local
  (defthm bits-of-meta-fn-correct
