@@ -44,6 +44,14 @@
             pfield::inv
             pfield::fep
             rtl::primep
+            acl2::getbit
+            acl2::slice
+            acl2::bvchop
+            acl2::bvcat
+            acl2::bvplus
+            acl2::bvxor
+            acl2::bitxor
+            acl2::bitnot
             acl2::keywords-to-acl2-package ; appears in proof examples
             ecurve::make-twisted-edwards-curve
             ecurve::pfield-squarep
