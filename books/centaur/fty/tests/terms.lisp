@@ -63,7 +63,6 @@
                                   (atom x))
                            (and (consp x)
                                 (equal (len (cdr x)) (1- val))))))))
-(local (in-theory (disable len)))
 
 (defsection list-with-hint
   ;; bozo consider incorporating into std/util/cons and using for remaking

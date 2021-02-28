@@ -2326,11 +2326,6 @@ bits of @('foo'):</p>
   (mbe :logic (non-exec (lhslist-fix lhsarr))
        :exec lhsarr))
 
-(defthm nth-of-lhslist-fix
-  (equal (nth n (lhslist-fix x))
-         (lhs-fix (nth n x)))
-  :hints(("Goal" :in-theory (enable nth))))
-
 (fty::deffixcong lhslist-equiv lhs-equiv (nth n x) x)
 
 (fty::deffixcong lhslist-equiv lhslist-equiv (update-nth n v x) x

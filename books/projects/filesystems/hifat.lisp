@@ -1291,12 +1291,6 @@
      (d-e-directory-p d-e-set-first-cluster-file-size)
      (logbitp)))))
 
-(def-listfix-rule nth-of-element-list-fix
-  (equal (nth n (element-list-fix x))
-         (if (< (nfix n) (len x))
-             (element-fix (nth n x))
-           nil)))
-
 (def-listp-rule list-equiv-refines-element-list-equiv
   (implies (and (list-equiv x y)
                 (not (element-list-final-cdr-p t)))
@@ -1339,13 +1333,6 @@
   :hints
   (("goal" :in-theory (e/d (fat32-filename-list-fix)
                            (take-of-too-many take-when-atom take-of-cons)))))
-
-(defthm nth-of-fat32-filename-list-fix
-  (equal (nth n (fat32-filename-list-fix x))
-         (if (< (nfix n) (len x))
-             (fat32-filename-fix (nth n x))
-             nil))
-  :hints (("goal" :in-theory (enable fat32-filename-list-fix))))
 
 (defrefinement
   list-equiv fat32-filename-list-equiv
