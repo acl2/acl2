@@ -15,6 +15,7 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
+(include-book "exec-limit-theorems")
 (include-book "proof-support")
 
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
