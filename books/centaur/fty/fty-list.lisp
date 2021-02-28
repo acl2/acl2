@@ -366,9 +366,10 @@
                         (if (< (nfix n) (len x))
                             (,x.elt-fix (nth n x))
                           nil))
-                 :hints (("goal" :induct (nth n x)
+                 :hints (("goal"
+                          :induct (nth n x)
                           :expand ((,x.fix x))
-                          :in-theory (enable nth)))))))))
+                          :in-theory (enable nth len)))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))
