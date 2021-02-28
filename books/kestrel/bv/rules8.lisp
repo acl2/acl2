@@ -12,17 +12,17 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/bvchop" :dir :system)
-(include-book "kestrel/bv/slice" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
-(include-book "kestrel/bv/bvuminus" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
-(include-book "kestrel/bv/logext" :dir :system)
-(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
-(include-book "kestrel/bv/bv-syntax" :dir :system) ; for bind-var-to-unsigned-term-size
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;for bvchop-32-split-hack
-(local (include-book "kestrel/bv/logtail" :dir :system))
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(include-book "bvchop")
+(include-book "slice")
+(include-book "bvplus")
+(include-book "bvuminus")
+(include-book "sbvlt")
+(include-book "logext")
+(include-book "unsigned-byte-p-forced")
+(include-book "bv-syntax") ; for bind-var-to-unsigned-term-size
+(local (include-book "rules3")) ;for bvchop-32-split-hack
+(local (include-book "logtail"))
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))

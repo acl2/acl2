@@ -12,13 +12,13 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/sbvrem" :dir :system)
-(include-book "kestrel/bv/bvuminus" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
-(include-book "kestrel/bv/sbvlt-rules" :dir :system) ; for sbvlt-rewrite
-(include-book "kestrel/bv/rules" :dir :system) ; for SLICE-OF-SUM-CASES and BVCHOP-WHEN-TOP-BIT-1
-(local (include-book "kestrel/bv/arith" :dir :system)) ;for PLUS-OF-EXPT-AND-EXPT-ONE-LESS?
-(local (include-book "kestrel/bv/logext" :dir :system))
+(include-book "sbvrem")
+(include-book "bvuminus")
+(include-book "sbvlt")
+(include-book "sbvlt-rules") ; for sbvlt-rewrite
+(include-book "rules") ; for SLICE-OF-SUM-CASES and BVCHOP-WHEN-TOP-BIT-1
+(local (include-book "arith")) ;for PLUS-OF-EXPT-AND-EXPT-ONE-LESS?
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

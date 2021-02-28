@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "sbvrem-rules")
-(include-book "rules0")
+(include-book "rules8")
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
