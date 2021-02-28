@@ -1956,48 +1956,49 @@
 (ESIM-SIMPLIFY-UPDATE-FNS-ID)
 (ESIM-PRE-FIXPOINT-PRINT)
 (ESIM-PRE-FIXPOINT-PRINT-DEFAULT)
-(MK-SYMBOL-SUBSTITUTION (221 8 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                        (165 3 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                        (66 6 (:DEFINITION LEN))
-                        (42 42
+(MK-SYMBOL-SUBSTITUTION (443 8 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                        (330 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                        (222 6 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                        (132 12 (:DEFINITION LEN))
+                        (78 78 (:TYPE-PRESCRIPTION LEN))
+                        (72 72
                             (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-                        (42 24 (:REWRITE STR::CONSP-OF-EXPLODE))
-                        (39 39 (:TYPE-PRESCRIPTION LEN))
-                        (36 18 (:REWRITE DEFAULT-CDR))
+                        (72 42 (:REWRITE STR::CONSP-OF-EXPLODE))
+                        (60 24 (:REWRITE DEFAULT-CDR))
+                        (36 36
+                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                        (36 36
+                            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+                        (36 36 (:LINEAR LEN-WHEN-PREFIXP))
+                        (30 6
+                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                        (30 6
+                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                        (24 12 (:REWRITE DEFAULT-+-2))
                         (20 8 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
                         (20 8 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                        (18 18
-                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                        (18 18
-                            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                        (18 18 (:LINEAR LEN-WHEN-PREFIXP))
+                        (18 18 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                         (16 16
                             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                        (15 3
-                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                        (15 3
-                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                        (15 15 (:TYPE-PRESCRIPTION PREFIXP))
                         (14 14 (:REWRITE FN-CHECK-DEF-FORMALS))
-                        (12 6 (:REWRITE DEFAULT-+-2))
+                        (12 12 (:REWRITE DEFAULT-+-1))
                         (12 1 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
                         (11 11 (:REWRITE DEFAULT-CAR))
                         (10 10
                             (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
                         (10 10
                             (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP))
-                        (9 9 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                         (8 8 (:REWRITE SUBLISTP-COMPLETE))
-                        (6 6 (:TYPE-PRESCRIPTION PREFIXP))
-                        (6 6 (:REWRITE DEFAULT-+-1))
+                        (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                        (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                        (6 6
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                        (6 6
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                         (6 3 (:REWRITE DEFAULT-<-1))
                         (6 1 (:DEFINITION MEMBER-EQUAL))
                         (4 3 (:REWRITE DEFAULT-<-2))
-                        (3 3 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                        (3 3 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                        (3 3
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                        (3 3
-                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                         (2 2 (:REWRITE SUBSETP-MEMBER . 2))
                         (2 2 (:REWRITE SUBSETP-MEMBER . 1))
                         (2 1

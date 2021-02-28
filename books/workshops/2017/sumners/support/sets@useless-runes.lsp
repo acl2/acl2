@@ -309,10 +309,10 @@
 (UNITE-AUX-REFLEXES (81 21 (:REWRITE <<-TRICHOTOMY))
                     (57 12 (:REWRITE <<-ASYMMETRIC))
                     (36 3 (:REWRITE <<-IRREFLEXIVE-REWRITE))
-                    (31 31 (:REWRITE DEFAULT-CDR))
-                    (29 25 (:REWRITE DEFAULT-CAR))
+                    (29 23 (:REWRITE DEFAULT-CAR))
+                    (23 23 (:REWRITE DEFAULT-CDR))
                     (21 21 (:REWRITE <<-TRANSITIVE))
-                    (18 18
+                    (20 20
                         (:REWRITE ATOM-UNITE-AUX-IMPLIES-ATOM-PARAMS)))
 (UNITE-AUX-COMMUTES (232 202 (:REWRITE DEFAULT-CAR))
                     (197 197 (:REWRITE <<-TRANSITIVE))
@@ -375,8 +375,8 @@
 (ISECT-AUX-REFLEXES (81 21 (:REWRITE <<-TRICHOTOMY))
                     (57 12 (:REWRITE <<-ASYMMETRIC))
                     (36 3 (:REWRITE <<-IRREFLEXIVE-REWRITE))
-                    (29 29 (:REWRITE DEFAULT-CDR))
                     (27 23 (:REWRITE DEFAULT-CAR))
+                    (23 23 (:REWRITE DEFAULT-CDR))
                     (21 21 (:REWRITE <<-TRANSITIVE))
                     (18 18
                         (:REWRITE ATOM-UNITE-AUX-IMPLIES-ATOM-PARAMS)))

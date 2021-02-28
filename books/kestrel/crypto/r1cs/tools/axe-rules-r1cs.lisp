@@ -11,6 +11,7 @@
 (in-package "R1CS")
 
 (include-book "kestrel/axe/axe-syntax" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "../fe-listp")
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ;for syntactic-variablep
 (include-book "axe-syntax-functions-r1cs")
@@ -55,7 +56,19 @@
   (implies (and (syntaxp (acl2::variablep x)) ;for now, we only generate the fe-listp assumptions for vars
                 (fe-listp free p)
                 (acl2::member-equal x free))
+
            (fep x p)))
+
+(acl2::add-known-boolean r1cs::fe-listp)
+
+(defun fe-listp-rules ()
+  '(pfield::fep-when-fe-listp-and-memberp
+    acl2::memberp-of-append-with-key-first-half-axe
+    acl2::memberp-of-append-with-key-second-half-axe
+    acl2::memberp-of-cons
+    acl2::equal-same))
+
+;move:
 ;test:
 (thm
  (implies (fe-listp

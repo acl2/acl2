@@ -268,7 +268,11 @@
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (6 6 (:REWRITE CONSP-OF-CDR-BY-LEN))
      (5 5
-        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST)))
+        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (CLEX::UPPER-BOUND-1-OF-COL-AFTER-NTHCDR
      (142 34 (:REWRITE NFIX-WHEN-NOT-NATP))
      (120 40 (:REWRITE NATP-WHEN-GTE-0))
@@ -287,6 +291,10 @@
      (15 15 (:REWRITE DEFAULT-CDR))
      (14 7
          (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (9 9 (:REWRITE DEFAULT-CAR))
      (9 9 (:REWRITE CAR-WHEN-ALL-EQUALP))
      (7 7 (:TYPE-PRESCRIPTION TRUE-LISTP))
@@ -314,6 +322,10 @@
      (91 91 (:REWRITE DEFAULT-CDR))
      (48 48 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (48 48 (:REWRITE CONSP-BY-LEN))
+     (46 46
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (46 46
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (46 46 (:REWRITE DEFAULT-CAR))
      (46 46 (:REWRITE CAR-WHEN-ALL-EQUALP))
      (28 28 (:REWRITE CONSP-OF-CDR-BY-LEN))
@@ -354,6 +366,10 @@
                  (16 16 (:REWRITE CONSP-BY-LEN))
                  (16 10 (:REWRITE LEN-WHEN-ATOM))
                  (14 14 (:REWRITE NATP-RW))
+                 (13 13
+                     (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (13 13
+                     (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                  (12 12 (:REWRITE NATP-WHEN-INTEGERP))
                  (10 10 (:REWRITE CONSP-OF-CDR-BY-LEN))
                  (4 4 (:REWRITE EQUAL-CONSTANT-+))
@@ -503,10 +519,15 @@
                      (36 36 (:REWRITE NTH-WHEN-PREFIXP))
                      (29 29 (:REWRITE NATP-RW))
                      (24 24 (:REWRITE NATP-WHEN-INTEGERP))
+                     (21 21
+                         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                     (21 21
+                         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                      (19 1 (:REWRITE CHARACTERP-NTH))
                      (7 7 (:TYPE-PRESCRIPTION ZP))
                      (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
                      (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+                     (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                      (1 1 (:TYPE-PRESCRIPTION CHARACTER-LISTP))
                      (1 1 (:REWRITE SUBLISTP-COMPLETE))
                      (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
@@ -518,50 +539,56 @@
                      (1 1
                         (:REWRITE CHARACTER-LISTP-OF-EXPLODE)))
 (CLEX::LC-NTHCDR-STR-FAST)
-(CLEX::LC-NTHCDR-STR-FAST (916 37 (:REWRITE NTH-WHEN-INDEX-TOO-BIG))
-                          (808 240 (:REWRITE LEN-WHEN-ATOM))
-                          (759 37 (:REWRITE NTH-WHEN-TOO-LARGE-CHEAP))
-                          (582 37 (:REWRITE NTH-WHEN-BIGGER))
-                          (521 264 (:REWRITE NFIX-WHEN-NOT-NATP))
-                          (500 250 (:REWRITE STR::CONSP-OF-EXPLODE))
-                          (455 324 (:REWRITE DEFAULT-<-2))
-                          (388 324 (:REWRITE DEFAULT-<-1))
-                          (359 83 (:REWRITE NTHCDR-WHEN-ATOM))
-                          (285 83 (:REWRITE NTHCDR-WHEN-ZP))
-                          (239 239
-                               (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                          (234 106 (:REWRITE ZP-WHEN-GT-0))
-                          (199 198 (:REWRITE DEFAULT-+-2))
-                          (198 198 (:REWRITE DEFAULT-+-1))
-                          (185 37 (:REWRITE NTH-WHEN-ATOM))
-                          (145 61 (:REWRITE NATP-WHEN-INTEGERP))
-                          (140 140
-                               (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                          (140 140
-                               (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                          (140 140 (:LINEAR LEN-WHEN-PREFIXP))
-                          (120 40 (:REWRITE <-0-+-NEGATIVE-1))
-                          (98 98
-                              (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                          (83 83 (:REWRITE OPEN-SMALL-NTHCDR))
-                          (73 73 (:TYPE-PRESCRIPTION ZP))
-                          (70 70
-                              (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
-                          (70 70 (:LINEAR INDEX-OF-<-LEN))
-                          (66 66 (:REWRITE EQUAL-CONSTANT-+))
-                          (53 52 (:REWRITE DEFAULT-CDR))
-                          (53 52 (:REWRITE DEFAULT-CAR))
-                          (52 52 (:REWRITE CAR-WHEN-ALL-EQUALP))
-                          (37 37 (:REWRITE NTH-WHEN-PREFIXP))
-                          (37 37
-                              (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                          (33 33 (:LINEAR LISTPOS-COMPLETE))
-                          (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                          (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                          (1 1 (:REWRITE SUBLISTP-COMPLETE))
-                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                          (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                          (1 1
-                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                          (1 1
-                             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))
+(CLEX::LC-NTHCDR-STR-FAST
+     (916 37 (:REWRITE NTH-WHEN-INDEX-TOO-BIG))
+     (808 240 (:REWRITE LEN-WHEN-ATOM))
+     (759 37 (:REWRITE NTH-WHEN-TOO-LARGE-CHEAP))
+     (582 37 (:REWRITE NTH-WHEN-BIGGER))
+     (521 264 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (500 250 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (455 324 (:REWRITE DEFAULT-<-2))
+     (388 324 (:REWRITE DEFAULT-<-1))
+     (359 83 (:REWRITE NTHCDR-WHEN-ATOM))
+     (285 83 (:REWRITE NTHCDR-WHEN-ZP))
+     (239 239
+          (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+     (234 106 (:REWRITE ZP-WHEN-GT-0))
+     (199 198 (:REWRITE DEFAULT-+-2))
+     (198 198 (:REWRITE DEFAULT-+-1))
+     (185 37 (:REWRITE NTH-WHEN-ATOM))
+     (145 61 (:REWRITE NATP-WHEN-INTEGERP))
+     (140 140
+          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (140 140
+          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (140 140 (:LINEAR LEN-WHEN-PREFIXP))
+     (120 40 (:REWRITE <-0-+-NEGATIVE-1))
+     (98 98
+         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (83 83 (:REWRITE OPEN-SMALL-NTHCDR))
+     (73 73 (:TYPE-PRESCRIPTION ZP))
+     (70 70
+         (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
+     (70 70 (:LINEAR INDEX-OF-<-LEN))
+     (66 66 (:REWRITE EQUAL-CONSTANT-+))
+     (53 52 (:REWRITE DEFAULT-CDR))
+     (53 52 (:REWRITE DEFAULT-CAR))
+     (52 52 (:REWRITE CAR-WHEN-ALL-EQUALP))
+     (37 37 (:REWRITE NTH-WHEN-PREFIXP))
+     (37 37
+         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (33 33 (:LINEAR LISTPOS-COMPLETE))
+     (21 21
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (21 21
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
+     (5 1 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+     (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (1 1 (:REWRITE SUBLISTP-COMPLETE))
+     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (1 1
+        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (1 1
+        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))

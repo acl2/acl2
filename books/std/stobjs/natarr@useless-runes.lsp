@@ -154,6 +154,10 @@
                          (6 6 (:REWRITE DEFAULT-+-1))
                          (6 1 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
                          (4 4
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                         (4 4
                             (:REWRITE NATP-WHEN-MEMBER-EQUAL-OF-NAT-LISTP))
                          (4 4
                             (:REWRITE NAT-LISTP-WHEN-SUBSETP-EQUAL))
@@ -184,6 +188,10 @@
                          (7 1 (:REWRITE NATP-WHEN-GTE-0))
                          (7 1 (:REWRITE NATP-RW))
                          (6 1 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+                         (5 5
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (5 5
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (5 5 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                          (4 4
                             (:REWRITE NAT-LISTP-WHEN-SUBSETP-EQUAL))
@@ -243,6 +251,10 @@
      (7 1 (:REWRITE NATP-WHEN-GTE-0))
      (7 1 (:REWRITE NATP-RW))
      (6 1 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 5 (:REWRITE DEFAULT-+-1))
      (4 4
         (:REWRITE NAT-LISTP-WHEN-SUBSETP-EQUAL))

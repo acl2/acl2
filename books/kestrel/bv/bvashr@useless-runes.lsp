@@ -1,25 +1,26 @@
 (BVASHR)
 (INTEGERP-OF-BVASHR)
 (NATP-OF-BVASHR)
-(BVCHOP-OF-BVASHR (19 6 (:REWRITE BVCHOP-IDENTITY))
-                  (12 6
+(BVCHOP-OF-BVASHR (25 8 (:REWRITE BVCHOP-IDENTITY))
+                  (16 8
                       (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
-                  (12 6
+                  (16 8
                       (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
-                  (10 4
-                      (:REWRITE SLICE-WHEN-VAL-IS-NOT-AN-INTEGER))
                   (10 4 (:REWRITE SLICE-TOO-HIGH-IS-0))
-                  (6 6
+                  (8 8
                      (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
-                  (6 6 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
-                  (6 6
+                  (8 8 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
+                  (8 8
                      (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
-                  (6 6
+                  (8 8
                      (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
-                  (6 6 (:REWRITE BVCHOP-SUBST-CONSTANT))
-                  (6 3 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
+                  (8 8
+                     (:REWRITE BVCHOP-WHEN-NOT-NATP-ARG1-CHEAP))
+                  (8 8 (:REWRITE BVCHOP-SUBST-CONSTANT))
                   (4 4
                      (:REWRITE SLICE-WHEN-VAL-IS-NOT-AN-INTEGER-CHEAP))
+                  (4 4
+                     (:REWRITE SLICE-WHEN-VAL-IS-NOT-AN-INTEGER))
                   (4 4 (:REWRITE SLICE-WHEN-LOW-IS-NEGATIVE))
                   (4 4 (:REWRITE SLICE-WHEN-BVCHOP-KNOWN))
                   (4 4 (:REWRITE SLICE-TOO-HIGH-LEMMA))
@@ -28,7 +29,6 @@
                   (4 4 (:REWRITE SLICE-SUBST-IN-CONSTANT))
                   (4 4 (:REWRITE SLICE-OUT-OF-ORDER))
                   (4 4 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
-                  (3 3 (:TYPE-PRESCRIPTION POWER-OF-2P))
                   (3 1 (:REWRITE BVSX-WHEN-UNSIGNED-BYTE-P))
                   (2 2 (:TYPE-PRESCRIPTION NATP-OF-BVSHR))
                   (2 2 (:TYPE-PRESCRIPTION BVSX))

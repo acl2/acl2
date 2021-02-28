@@ -67,6 +67,7 @@
     pfield::ifix-when-fep
     ))
 
+;; TODO: Consider removing PFIELD::ADD-COMMUTATIVE-AXE and PFIELD::ADD-COMMUTATIVE-2-AXE from this
 (defun lift-r1cs-rules ()
   (declare (xargs :guard t))
   (append '(acl2::lookup-equal-of-filter-and-combine-symbol-alists-safe

@@ -1,0 +1,383 @@
+(PRIMES::Q*2^S (7 6 (:REWRITE DEFAULT-<-1))
+               (6 6 (:REWRITE DEFAULT-<-2))
+               (2 2
+                  (:REWRITE EVENP-WHEN-NOT-ACL2-NUMBERP-CHEAP))
+               (2 2 (:REWRITE DEFAULT-+-2))
+               (2 2 (:REWRITE DEFAULT-+-1))
+               (2 2 (:REWRITE DEFAULT-*-2))
+               (2 2 (:REWRITE DEFAULT-*-1))
+               (1 1 (:REWRITE DEFAULT-NUMERATOR))
+               (1 1 (:REWRITE DEFAULT-DENOMINATOR)))
+(PRIMES::NATP-OF-Q*2^S.Q (65 50 (:REWRITE DEFAULT-<-1))
+                         (50 50 (:REWRITE DEFAULT-<-2))
+                         (28 28 (:REWRITE DEFAULT-*-2))
+                         (28 28 (:REWRITE DEFAULT-*-1))
+                         (19 19
+                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                         (8 8
+                            (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                         (8 8 (:LINEAR <-OF-*-AND-*))
+                         (6 4 (:REWRITE DEFAULT-+-2))
+                         (6 4 (:REWRITE DEFAULT-+-1))
+                         (4 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(PRIMES::NATP-OF-Q*2^S.S (64 49 (:REWRITE DEFAULT-<-1))
+                         (49 49 (:REWRITE DEFAULT-<-2))
+                         (28 28 (:REWRITE DEFAULT-*-2))
+                         (28 28 (:REWRITE DEFAULT-*-1))
+                         (15 15
+                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                         (8 8
+                            (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                         (8 8 (:LINEAR <-OF-*-AND-*))
+                         (4 4 (:REWRITE DEFAULT-+-2))
+                         (4 4 (:REWRITE DEFAULT-+-1))
+                         (4 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                         (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(PRIMES::Q*2^S (27 1 (:DEFINITION PRIMES::Q*2^S))
+               (6 6 (:REWRITE DEFAULT-*-2))
+               (6 6 (:REWRITE DEFAULT-*-1))
+               (4 4
+                  (:REWRITE EVENP-WHEN-NOT-ACL2-NUMBERP-CHEAP))
+               (4 1 (:REWRITE COMMUTATIVITY-OF-+))
+               (3 3
+                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+               (3 3 (:REWRITE DEFAULT-<-2))
+               (3 3 (:REWRITE DEFAULT-<-1))
+               (3 2 (:REWRITE DEFAULT-+-2))
+               (3 2 (:REWRITE DEFAULT-+-1))
+               (3 1 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+               (2 1 (:REWRITE ODDP-OF-*-WHEN-ODD)))
+(PRIMES::Q2S-Q-IS-ODD (13 13
+                          (:REWRITE EVENP-WHEN-NOT-ACL2-NUMBERP-CHEAP))
+                      (9 6 (:REWRITE DEFAULT-+-2))
+                      (9 6 (:REWRITE DEFAULT-+-1))
+                      (8 8 (:REWRITE DEFAULT-<-2))
+                      (8 8 (:REWRITE DEFAULT-<-1))
+                      (6 6
+                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                      (6 6 (:REWRITE DEFAULT-*-2))
+                      (6 6 (:REWRITE DEFAULT-*-1)))
+(PRIMES::Q*2^S-TYPE-1)
+(PRIMES::Q2S-IS-CORRECT (235 14 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                        (57 18 (:REWRITE DEFAULT-<-2))
+                        (47 23 (:REWRITE DEFAULT-*-2))
+                        (28 28 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                        (28 28
+                            (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                        (28 28 (:LINEAR <-OF-*-AND-*))
+                        (28 23 (:REWRITE DEFAULT-*-1))
+                        (24 16 (:REWRITE DEFAULT-+-2))
+                        (24 16 (:REWRITE DEFAULT-+-1))
+                        (18 18 (:REWRITE DEFAULT-<-1))
+                        (14 14 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                        (14 14 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                        (14 14 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                        (14 14 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                        (5 5
+                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                        (4 4 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+                        (1 1
+                           (:REWRITE EVENP-WHEN-NOT-ACL2-NUMBERP-CHEAP)))
+(PRIMES::LEAST-REPEATED-SQUARE-AUX
+     (246 230 (:REWRITE DEFAULT-*-2))
+     (246 230 (:REWRITE DEFAULT-*-1))
+     (152 8 (:REWRITE MOD-WHEN-MULTIPLE))
+     (152 8
+          (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (80 72 (:REWRITE DEFAULT-<-1))
+     (80 16 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (72 72 (:REWRITE DEFAULT-<-2))
+     (64 8 (:REWRITE MOD-WHEN-<))
+     (56 56 (:LINEAR <-OF-*-AND-*))
+     (16 16 (:REWRITE INTEGERP-OF-*))
+     (16 16 (:REWRITE DEFAULT-UNARY-/))
+     (16 16 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (16 8
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (16 8
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (16 8
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (14 13 (:REWRITE DEFAULT-+-2))
+     (14 13 (:REWRITE DEFAULT-+-1))
+     (8 8
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (8 8
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (8 8
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (8 8
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (4 3 (:REWRITE DEFAULT-UNARY-MINUS))
+     (3 3
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (2 2 (:REWRITE FOLD-CONSTS-IN-+)))
+(PRIMES::LEAST-REPEATED-SQUARE-AUX-LESS-THAN-M
+     (640 590 (:REWRITE DEFAULT-*-2))
+     (632 590 (:REWRITE DEFAULT-*-1))
+     (269 15 (:REWRITE MOD-WHEN-MULTIPLE))
+     (269 15
+          (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (262 221 (:REWRITE DEFAULT-<-2))
+     (240 221 (:REWRITE DEFAULT-<-1))
+     (154 15 (:REWRITE MOD-WHEN-<))
+     (118 30 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (30 30 (:REWRITE INTEGERP-OF-*))
+     (30 30 (:REWRITE DEFAULT-UNARY-/))
+     (30 30 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (30 15
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (30 15
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (30 15
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (15 15
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (15 15
+         (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (15 15
+         (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (15 15
+         (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (12 12
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (7 7 (:REWRITE DEFAULT-+-2))
+     (7 7 (:REWRITE DEFAULT-+-1))
+     (6 2 (:REWRITE COMMUTATIVITY-OF-+)))
+(PRIMES::LEAST-REPEATED-SQUARE-AUX-LESS-THAN-M--VARIANT
+     (924 777 (:REWRITE DEFAULT-*-2))
+     (830 777 (:REWRITE DEFAULT-*-1))
+     (398 22 (:REWRITE MOD-WHEN-MULTIPLE))
+     (398 22
+          (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (381 180 (:REWRITE DEFAULT-+-2))
+     (352 322 (:REWRITE DEFAULT-<-1))
+     (336 322 (:REWRITE DEFAULT-<-2))
+     (295 22 (:REWRITE MOD-WHEN-<))
+     (239 180 (:REWRITE DEFAULT-+-1))
+     (208 208 (:LINEAR <-OF-*-AND-*))
+     (193 104 (:REWRITE DEFAULT-UNARY-MINUS))
+     (180 44 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (56 56 (:REWRITE FOLD-CONSTS-IN-+))
+     (44 44 (:REWRITE INTEGERP-OF-*))
+     (44 44 (:REWRITE DEFAULT-UNARY-/))
+     (44 44 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (44 22
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (44 22
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (44 22
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (22 22
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (22 22
+         (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (22 22
+         (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (22 22
+         (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1)))
+(PRIMES::LEAST-REPEATED-SQUARE)
+(PRIMES::LEAST-REPEATED-SQUARE-LESS-THAN-M
+     (228 2
+          (:DEFINITION PRIMES::LEAST-REPEATED-SQUARE-AUX))
+     (102 2 (:REWRITE MOD-WHEN-<))
+     (56 56
+         (:TYPE-PRESCRIPTION NONNEGATIVE-PRODUCT))
+     (38 2 (:REWRITE MOD-WHEN-MULTIPLE))
+     (38 2
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (34 8 (:REWRITE COMMUTATIVITY-OF-*))
+     (32 28 (:REWRITE DEFAULT-*-2))
+     (32 28 (:REWRITE DEFAULT-*-1))
+     (22 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (21 18 (:REWRITE DEFAULT-<-1))
+     (20 4 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (19 18 (:REWRITE DEFAULT-<-2))
+     (18 4
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (16 8 (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
+     (16 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (12 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (10 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (8 8
+        (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
+     (8 8
+        (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (8 4 (:REWRITE UNICITY-OF-1))
+     (4 4 (:REWRITE INTEGERP-OF-*))
+     (4 4 (:REWRITE DEFAULT-UNARY-/))
+     (4 4 (:REWRITE *-OF-0))
+     (4 4 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (4 4 (:LINEAR <-OF-*-AND-*))
+     (4 4 (:DEFINITION FIX))
+     (4 2
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (2 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (2 2
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(PRIMES::REPEATED-SQUARE
+     (31 31
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (31 30 (:REWRITE DEFAULT-<-1))
+     (30 30 (:REWRITE DEFAULT-<-2))
+     (25 1 (:REWRITE MOD-WHEN-<))
+     (22 4 (:REWRITE COMMUTATIVITY-OF-*))
+     (19 1
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (18 2 (:REWRITE COMMUTATIVITY-2-OF-*))
+     (18 1 (:REWRITE MOD-WHEN-MULTIPLE))
+     (12 10 (:REWRITE DEFAULT-*-1))
+     (10 10 (:REWRITE ZP-OPEN))
+     (10 10 (:REWRITE DEFAULT-*-2))
+     (4 4 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (4 2 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (4 2
+        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (3 3 (:REWRITE INTEGERP-OF-*))
+     (3 1 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (2 2 (:REWRITE DEFAULT-UNARY-/))
+     (2 2 (:REWRITE DEFAULT-+-2))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (2 2 (:LINEAR <-OF-*-AND-*))
+     (2 1
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (2 1
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (2 1
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (1 1
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (1 1
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (1 1
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (1 1
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(PRIMES::NATP-OF-REPEATED-SQUARE)
+(PRIMES::T-S-AUX
+     (228 2
+          (:DEFINITION PRIMES::LEAST-REPEATED-SQUARE-AUX))
+     (102 2 (:REWRITE MOD-WHEN-<))
+     (38 2 (:REWRITE MOD-WHEN-MULTIPLE))
+     (38 2
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (34 30 (:REWRITE DEFAULT-<-1))
+     (34 8 (:REWRITE COMMUTATIVITY-OF-*))
+     (32 28 (:REWRITE DEFAULT-*-2))
+     (32 28 (:REWRITE DEFAULT-*-1))
+     (30 30 (:REWRITE DEFAULT-<-2))
+     (22 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (20 4 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (18 4
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (16 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (12 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (10 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (8 4 (:REWRITE UNICITY-OF-1))
+     (4 4 (:REWRITE INTEGERP-OF-*))
+     (4 4 (:REWRITE DEFAULT-UNARY-/))
+     (4 4 (:REWRITE *-OF-0))
+     (4 4 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (4 4 (:LINEAR <-OF-*-AND-*))
+     (4 4 (:DEFINITION FIX))
+     (4 2
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (2 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (2 2
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(PRIMES::T-S-AUX
+     (228 2
+          (:DEFINITION PRIMES::LEAST-REPEATED-SQUARE-AUX))
+     (102 2 (:REWRITE MOD-WHEN-<))
+     (43 33 (:REWRITE DEFAULT-*-2))
+     (40 33 (:REWRITE DEFAULT-*-1))
+     (38 2 (:REWRITE MOD-WHEN-MULTIPLE))
+     (38 2
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (34 8 (:REWRITE COMMUTATIVITY-OF-*))
+     (31 28 (:REWRITE DEFAULT-<-1))
+     (28 28 (:REWRITE DEFAULT-<-2))
+     (22 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (20 4 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (18 4
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (16 8 (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
+     (16 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (13 7 (:REWRITE DEFAULT-+-2))
+     (12 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (10 5 (:REWRITE DEFAULT-UNARY-MINUS))
+     (10 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (8 8
+        (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
+     (8 8
+        (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (8 4 (:REWRITE UNICITY-OF-1))
+     (7 7 (:REWRITE DEFAULT-+-1))
+     (5 5 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (4 4 (:REWRITE INTEGERP-OF-*))
+     (4 4 (:REWRITE DEFAULT-UNARY-/))
+     (4 4 (:REWRITE *-OF-0))
+     (4 4 (:LINEAR <-OF-*-AND-*))
+     (4 4 (:DEFINITION FIX))
+     (4 2
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (4 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (3 3 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (2 2
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG2))
+     (2 2
+        (:REWRITE MOD-OF-*-SUBST-CONSTANT-ARG1))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(PRIMES::TONELLI-SHANKS-SQRT
+     (13 13 (:REWRITE DEFAULT-<-2))
+     (13 13 (:REWRITE DEFAULT-<-1))
+     (11 11 (:REWRITE DEFAULT-+-2))
+     (11 11 (:REWRITE DEFAULT-+-1))
+     (7 7 (:REWRITE DEFAULT-*-2))
+     (7 7 (:REWRITE DEFAULT-*-1))
+     (1 1
+        (:REWRITE EVENP-WHEN-NOT-ACL2-NUMBERP-CHEAP)))
+(PRIMES::NATP-OF-TONELLI-SHANKS-SQRT)

@@ -26,6 +26,10 @@
 (IMXE-ARR2-WFP)
 (IMXE-INDEX$INLINE (18 2
                        (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+                   (16 16
+                       (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                   (16 16
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (16 16 (:REWRITE NTH-WHEN-PREFIXP))
                    (15 3 (:DEFINITION IMXE-DATAP))
                    (11 10 (:REWRITE DEFAULT-<-1))
@@ -48,6 +52,10 @@
                    (1 1
                       (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
 (IMXE-GET2$INLINE (35 35 (:REWRITE NTH-WHEN-PREFIXP))
+                  (34 34
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (34 34
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (30 6 (:DEFINITION LEN))
                   (30 6 (:DEFINITION IMXE-DATAP))
                   (22 21 (:REWRITE NFIX-WHEN-NOT-NATP))
@@ -70,6 +78,10 @@
                   (4 2 (:DEFINITION TRUE-LISTP)))
 (IMXE-GET$INLINE (50 10 (:DEFINITION LEN))
                  (48 48 (:REWRITE NTH-WHEN-PREFIXP))
+                 (45 45
+                     (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (45 45
+                     (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                  (45 9 (:DEFINITION IMXE-DATAP))
                  (30 23 (:REWRITE DEFAULT-<-2))
                  (23 23 (:REWRITE DEFAULT-<-1))
@@ -97,32 +109,41 @@
                  (1 1 (:TYPE-PRESCRIPTION ZIP))
                  (1 1
                     (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST)))
-(IMXE-GET-IN-TERMS-OF-IMXE-GET2 (16 8
-                                    (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
-                                (16 2 (:REWRITE IFIX-EQUAL-TO-NONZERO))
-                                (12 2 (:REWRITE ZIP-OPEN))
-                                (12 2 (:REWRITE IMX-FIX-WHEN-ELT-TYPEP))
-                                (8 8 (:REWRITE NTH-WHEN-PREFIXP))
-                                (7 1 (:REWRITE NFIX-WHEN-NATP))
-                                (6 1 (:DEFINITION IMXE-DATAP))
-                                (5 5 (:TYPE-PRESCRIPTION IMXE-DATAP))
-                                (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                (5 1 (:REWRITE IFIX-EQUAL-TO-0))
-                                (4 4 (:TYPE-PRESCRIPTION NATP))
-                                (4 2 (:REWRITE NATP-WHEN-GTE-0))
-                                (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                                (4 2 (:REWRITE IFIX-WHEN-INTEGERP))
-                                (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                (2 2
-                                   (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
-                                (2 1 (:DEFINITION NOT))
-                                (1 1 (:TYPE-PRESCRIPTION ZIP))
-                                (1 1 (:REWRITE DEFAULT-CDR))
-                                (1 1 (:REWRITE DEFAULT-CAR))
-                                (1 1 (:REWRITE DEFAULT-<-2))
-                                (1 1 (:REWRITE DEFAULT-<-1)))
+(IMXE-GET-IN-TERMS-OF-IMXE-GET2
+     (16 8
+         (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+     (16 2 (:REWRITE IFIX-EQUAL-TO-NONZERO))
+     (12 2 (:REWRITE ZIP-OPEN))
+     (12 2 (:REWRITE IMX-FIX-WHEN-ELT-TYPEP))
+     (8 8 (:REWRITE NTH-WHEN-PREFIXP))
+     (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (6 1 (:DEFINITION IMXE-DATAP))
+     (5 5 (:TYPE-PRESCRIPTION IMXE-DATAP))
+     (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (5 1 (:REWRITE IFIX-EQUAL-TO-0))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (4 2 (:REWRITE IFIX-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2
+        (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
+     (2 1 (:DEFINITION NOT))
+     (1 1 (:TYPE-PRESCRIPTION ZIP))
+     (1 1 (:REWRITE DEFAULT-CDR))
+     (1 1 (:REWRITE DEFAULT-CAR))
+     (1 1 (:REWRITE DEFAULT-<-2))
+     (1 1 (:REWRITE DEFAULT-<-1)))
 (IMXE-SET2$INLINE (18 2
                       (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+                  (17 17
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (17 17
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (17 17 (:REWRITE NTH-WHEN-PREFIXP))
                   (15 3 (:DEFINITION LEN))
                   (15 3 (:DEFINITION IMXE-DATAP))
@@ -164,6 +185,10 @@
                         (16 3 (:REWRITE IFIX-WHEN-INTEGERP))
                         (13 4
                             (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+                        (10 10
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                        (10 10
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                         (7 7 (:LINEAR LISTPOS-COMPLETE))
                         (6 6 (:TYPE-PRESCRIPTION IMXE-DATAP))
                         (6 1 (:DEFINITION IMXE-DATAP))
@@ -175,34 +200,51 @@
                            (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
                         (1 1 (:REWRITE DEFAULT-CDR))
                         (1 1 (:REWRITE DEFAULT-CAR)))
-(IMXE-NCOLS-OF-IMXE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(IMXE-NROWS-OF-IMXE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(IMXE-ARR2-WFP-OF-IMXE-SET2 (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
-                            (42 22 (:REWRITE NATP-WHEN-GTE-0))
-                            (40 40 (:TYPE-PRESCRIPTION NATP))
-                            (34 22 (:REWRITE NATP-WHEN-INTEGERP))
-                            (19 19 (:REWRITE NTH-WHEN-PREFIXP))
-                            (18 15 (:REWRITE DEFAULT-<-1))
-                            (15 15 (:REWRITE DEFAULT-<-2))
-                            (15 3 (:DEFINITION LEN))
-                            (12 6
-                                (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
-                            (7 7 (:REWRITE DEFAULT-*-2))
-                            (7 7 (:REWRITE DEFAULT-*-1))
-                            (7 4 (:REWRITE DEFAULT-+-2))
-                            (6 6 (:TYPE-PRESCRIPTION IMXE-DATAP))
-                            (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                            (4 4 (:REWRITE DEFAULT-+-1))
-                            (4 4
-                               (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                            (4 4
-                               (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                            (4 4 (:LINEAR LEN-WHEN-PREFIXP))
-                            (3 3 (:REWRITE DEFAULT-CDR))
-                            (2 2 (:LINEAR LISTPOS-COMPLETE))
-                            (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+(IMXE-NCOLS-OF-IMXE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(IMXE-NROWS-OF-IMXE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(IMXE-ARR2-WFP-OF-IMXE-SET2
+     (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (42 22 (:REWRITE NATP-WHEN-GTE-0))
+     (40 40 (:TYPE-PRESCRIPTION NATP))
+     (34 22 (:REWRITE NATP-WHEN-INTEGERP))
+     (19 19 (:REWRITE NTH-WHEN-PREFIXP))
+     (18 15 (:REWRITE DEFAULT-<-1))
+     (15 15
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (15 15 (:REWRITE DEFAULT-<-2))
+     (15 3 (:DEFINITION LEN))
+     (14 14
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (12 6
+         (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+     (7 7 (:REWRITE DEFAULT-*-2))
+     (7 7 (:REWRITE DEFAULT-*-1))
+     (7 4 (:REWRITE DEFAULT-+-2))
+     (6 6 (:TYPE-PRESCRIPTION IMXE-DATAP))
+     (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (4 4 (:REWRITE DEFAULT-+-1))
+     (4 4
+        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (4 4
+        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (3 3 (:REWRITE DEFAULT-CDR))
+     (2 2 (:LINEAR LISTPOS-COMPLETE))
+     (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (IMXE-SET$INLINE (18 2
                      (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+                 (15 15
+                     (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (15 15
+                     (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                  (15 15 (:REWRITE NTH-WHEN-PREFIXP))
                  (15 3 (:DEFINITION LEN))
                  (15 3 (:DEFINITION IMXE-DATAP))
@@ -224,21 +266,30 @@
                  (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                  (1 1
                     (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
-(IMXE-SET-IN-TERMS-OF-IMXE-SET2 (15 2 (:REWRITE DEFAULT-CDR))
-                                (15 2 (:REWRITE DEFAULT-CAR))
-                                (7 1 (:REWRITE NFIX-WHEN-NATP))
-                                (6 6 (:REWRITE NTH-WHEN-PREFIXP))
-                                (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                (4 4 (:TYPE-PRESCRIPTION NATP))
-                                (4 2 (:REWRITE NATP-WHEN-GTE-0))
-                                (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                (1 1 (:REWRITE DEFAULT-<-2))
-                                (1 1 (:REWRITE DEFAULT-<-1)))
+(IMXE-SET-IN-TERMS-OF-IMXE-SET2
+     (15 2 (:REWRITE DEFAULT-CDR))
+     (15 2 (:REWRITE DEFAULT-CAR))
+     (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1 (:REWRITE DEFAULT-<-2))
+     (1 1 (:REWRITE DEFAULT-<-1)))
 (IMXE-RESIZE-ROWS$INLINE (18 2
                              (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
                          (15 3 (:DEFINITION IMXE-DATAP))
                          (9 9 (:REWRITE DEFAULT-<-2))
                          (9 9 (:REWRITE DEFAULT-<-1))
+                         (8 8
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (8 8
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (8 8 (:REWRITE NTH-WHEN-PREFIXP))
                          (5 5 (:REWRITE DEFAULT-CDR))
                          (5 1 (:DEFINITION LEN))
@@ -265,6 +316,10 @@
      (13 13 (:REWRITE NTH-WHEN-PREFIXP))
      (13 1 (:DEFINITION MAKE-LIST-AC-REDEF))
      (13 1 (:DEFINITION MAKE-LIST-AC))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (10 2 (:DEFINITION LEN))
      (8 8
         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
@@ -318,6 +373,8 @@
      (39 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (39 2 (:REWRITE IFIX-WHEN-INTEGERP))
      (36 1 (:REWRITE ZIP-OPEN))
+     (30 30
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (29 29 (:REWRITE NTH-WHEN-PREFIXP))
      (29 4 (:REWRITE ZP-WHEN-INTEGERP))
      (27 3 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
@@ -361,6 +418,10 @@
      (8 8 (:TYPE-PRESCRIPTION NATP))
      (8 6 (:REWRITE DEFAULT-+-2))
      (8 4 (:REWRITE NATP-WHEN-GTE-0))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 4 (:REWRITE NATP-WHEN-INTEGERP))
@@ -404,6 +465,10 @@
      (8 6 (:REWRITE DEFAULT-+-2))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4
         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
      (4 4
@@ -425,6 +490,10 @@
                          (20 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
                          (18 2
                              (:REWRITE ELT-TYPE-OF-NTH-OF-IMXE-DATAP))
+                         (16 16
+                             (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (16 16
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (15 3 (:DEFINITION IMXE-DATAP))
                          (12 12 (:REWRITE DEFAULT-<-2))
                          (12 12 (:REWRITE DEFAULT-<-1))
@@ -455,6 +524,10 @@
      (10 6 (:REWRITE DEFAULT-<-2))
      (8 4 (:REWRITE DEFAULT-*-2))
      (8 4 (:REWRITE DEFAULT-*-1))
+     (7 7
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-<-1))
      (5 1 (:DEFINITION LEN))
@@ -481,9 +554,6 @@
      (31 1
          (:REWRITE STOBJS::2DARR-INDEX-LESS-THAN-PRODUCT))
      (28 2 (:REWRITE ZP-WHEN-GT-0))
-     (28 1 (:REWRITE IMX-FIX-WHEN-ELT-TYPEP))
-     (28 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-     (28 1 (:REWRITE IFIX-WHEN-INTEGERP))
      (26 8 (:REWRITE NFIX-WHEN-NOT-NATP))
      (24 2 (:REWRITE ZP-WHEN-INTEGERP))
      (20 9 (:REWRITE DEFAULT-<-2))
@@ -491,6 +561,8 @@
      (13 13 (:REWRITE NTH-WHEN-PREFIXP))
      (12 12 (:TYPE-PRESCRIPTION NATP))
      (12 6 (:REWRITE NATP-WHEN-GTE-0))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (11 9 (:REWRITE DEFAULT-<-1))
      (10 2 (:DEFINITION NOT))
      (9 5 (:REWRITE DEFAULT-+-2))
@@ -515,9 +587,6 @@
      (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
-     (1 1
-        (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
-     (1 1 (:REWRITE IFIX-EQUAL-TO-NONZERO))
      (1 1 (:REWRITE DEFAULT-CDR))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (IMXE-NROWS-OF-IMXE-RESIZE-COLS
@@ -537,6 +606,10 @@
      (15 15 (:DEFINITION NOT))
      (12 12 (:LINEAR LISTPOS-COMPLETE))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (5 5 (:REWRITE NTH-WHEN-PREFIXP))
      (5 1 (:DEFINITION LEN))
@@ -568,6 +641,10 @@
      (14 14 (:REWRITE DEFAULT-<-2))
      (14 14 (:REWRITE DEFAULT-<-1))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (10 10 (:REWRITE NATP-WHEN-INTEGERP))
      (9 3 (:REWRITE ZP-WHEN-GT-0))
      (9 3 (:DEFINITION NOT))
@@ -767,7 +844,9 @@
           (6 4 (:REWRITE STR::CONSP-OF-EXPLODE))
           (6 2 (:DEFINITION IMXE-DATAP))
           (2 2
-             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+          (1 1
+             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (IMXL-SET2 (40 1 (:DEFINITION IMXL-ARR2-DATA-WFP))
            (30 4 (:DEFINITION LEN))
            (19 1 (:DEFINITION LENGTH))
@@ -915,7 +994,7 @@
      (2 2
         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
 (IMXL-ARR2-WFP-OF-IMXL-SET2
-     (44 6 (:DEFINITION LEN))
+     (46 6 (:DEFINITION LEN))
      (36 1 (:DEFINITION IMXL-ARR2-DATA-WFP))
      (32 14 (:REWRITE NFIX-WHEN-NOT-NATP))
      (19 1 (:DEFINITION LENGTH))
@@ -935,11 +1014,15 @@
      (3 2 (:REWRITE STR::CONSP-OF-EXPLODE))
      (3 1 (:DEFINITION LNFIX$INLINE))
      (3 1 (:DEFINITION IMXE-DATAP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-*-2))
      (2 2 (:REWRITE DEFAULT-*-1))
      (2 1
         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
      (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1 (:REWRITE NTH-WHEN-PREFIXP))
      (1 1
         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
@@ -958,7 +1041,9 @@
           (6 4 (:REWRITE STR::CONSP-OF-EXPLODE))
           (6 2 (:DEFINITION IMXE-DATAP))
           (2 2
-             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+          (1 1
+             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (IMXL-RESIZE-ROWS (2 1
                      (:TYPE-PRESCRIPTION CONSP-MAKE-LIST-AC))
                   (1 1 (:TYPE-PRESCRIPTION ZP)))
@@ -1043,6 +1128,8 @@
      (3 1 (:DEFINITION IMXE-DATAP))
      (2 1
         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE ZP-OPEN))
      (1 1
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -1251,7 +1338,7 @@
      (23 9 (:REWRITE NFIX-WHEN-NOT-NATP))
      (18 10 (:REWRITE DEFAULT-<-2))
      (16 10 (:REWRITE DEFAULT-+-2))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 10 (:REWRITE DEFAULT-+-1))
      (10 10 (:REWRITE DEFAULT-<-1))
      (8 8 (:TYPE-PRESCRIPTION NATP))
@@ -1271,9 +1358,13 @@
      (4 4
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-CDR))
      (2 2 (:LINEAR LISTPOS-COMPLETE))
      (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1
         (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
 (IMXL-GET2-OF-IMXL-RESIZE-COLS
@@ -1333,7 +1424,7 @@
      (22 8 (:REWRITE NFIX-WHEN-NOT-NATP))
      (21 21 (:REWRITE DEFAULT-<-1))
      (17 16 (:REWRITE DEFAULT-+-1))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 12 (:TYPE-PRESCRIPTION ZP))
      (12 12 (:TYPE-PRESCRIPTION NATP))
      (12 12
@@ -1349,6 +1440,10 @@
      (2 2
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (2 2 (:LINEAR LEN-WHEN-PREFIXP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (IMXL-NCOLS-OF-IMXL-RESIZE-COLS
      (228 39 (:REWRITE ZP-WHEN-GT-0))
@@ -1511,41 +1606,52 @@
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (4 4 (:REWRITE DEFAULT-*-2))
      (4 4 (:REWRITE DEFAULT-*-1))
-     (3 3 (:LINEAR LISTPOS-COMPLETE)))
+     (3 3 (:LINEAR LISTPOS-COMPLETE))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (IMX-RESIZE-ROWS$G{GUARD-THM} (3 3 (:REWRITE DEFAULT-<-2))
                               (3 3 (:REWRITE DEFAULT-<-1))
                               (1 1
                                  (:REWRITE INTMATRIX-LOOKUPS-CORR-EXPAND))
                               (1 1 (:REWRITE DEFAULT-*-2))
                               (1 1 (:REWRITE DEFAULT-*-1)))
-(IMX-RESIZE-ROWS$G{PRESERVED} (4 3 (:REWRITE DEFAULT-<-2))
-                              (4 2 (:REWRITE DEFAULT-*-2))
-                              (3 3 (:REWRITE DEFAULT-<-1))
-                              (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (2 2 (:REWRITE DEFAULT-*-1)))
-(IMX-RESIZE-COLS$G{CORRESPONDENCE} (13 9 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                   (10 9 (:REWRITE DEFAULT-<-1))
-                                   (9 9 (:REWRITE DEFAULT-<-2))
-                                   (4 4 (:TYPE-PRESCRIPTION NATP))
-                                   (4 4 (:REWRITE DEFAULT-*-2))
-                                   (4 4 (:REWRITE DEFAULT-*-1))
-                                   (4 2 (:REWRITE NATP-WHEN-GTE-0))
-                                   (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                   (1 1
-                                      (:REWRITE INTMATRIX-LOOKUPS-CORR-NECC))
-                                   (1 1
-                                      (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
+(IMX-RESIZE-ROWS$G{PRESERVED}
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 2 (:REWRITE DEFAULT-*-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE DEFAULT-*-1))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(IMX-RESIZE-COLS$G{CORRESPONDENCE}
+     (13 9 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (10 9 (:REWRITE DEFAULT-<-1))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4 (:REWRITE DEFAULT-*-2))
+     (4 4 (:REWRITE DEFAULT-*-1))
+     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1
+        (:REWRITE INTMATRIX-LOOKUPS-CORR-NECC))
+     (1 1
+        (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
 (IMX-RESIZE-COLS$G{GUARD-THM} (3 3 (:REWRITE DEFAULT-<-2))
                               (3 3 (:REWRITE DEFAULT-<-1))
                               (1 1
                                  (:REWRITE INTMATRIX-LOOKUPS-CORR-EXPAND))
                               (1 1 (:REWRITE DEFAULT-*-2))
                               (1 1 (:REWRITE DEFAULT-*-1)))
-(IMX-RESIZE-COLS$G{PRESERVED} (5 3 (:REWRITE DEFAULT-*-2))
-                              (4 3 (:REWRITE DEFAULT-<-2))
-                              (4 3 (:REWRITE DEFAULT-*-1))
-                              (3 3 (:REWRITE DEFAULT-<-1))
-                              (3 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
+(IMX-RESIZE-COLS$G{PRESERVED}
+     (5 3 (:REWRITE DEFAULT-*-2))
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 3 (:REWRITE DEFAULT-*-1))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (IMX-SET2)
 (IMX-SET)
 (IMX-RESIZE-ROWS)
@@ -1561,17 +1667,26 @@
                         (3 2 (:REWRITE DEFAULT-<-2))
                         (2 2 (:REWRITE NTH-WHEN-PREFIXP))
                         (2 2 (:REWRITE DEFAULT-<-1))
-                        (2 2 (:REWRITE DEFAULT-+-1)))
-(NONEMPTY-STR-FIX-WHEN-F-STRINGP (21 2 (:DEFINITION LEN))
-                                 (8 2 (:REWRITE DEFAULT-CDR))
-                                 (4 2 (:REWRITE DEFAULT-+-2))
-                                 (4 1 (:REWRITE DEFAULT-CAR))
-                                 (3 3
-                                    (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                                 (3 2 (:REWRITE DEFAULT-<-2))
-                                 (2 2 (:REWRITE DEFAULT-<-1))
-                                 (2 2 (:REWRITE DEFAULT-+-1))
-                                 (1 1 (:REWRITE NTH-WHEN-PREFIXP)))
+                        (2 2 (:REWRITE DEFAULT-+-1))
+                        (1 1
+                           (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                        (1 1
+                           (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(NONEMPTY-STR-FIX-WHEN-F-STRINGP
+     (21 2 (:DEFINITION LEN))
+     (8 2 (:REWRITE DEFAULT-CDR))
+     (4 2 (:REWRITE DEFAULT-+-2))
+     (4 1 (:REWRITE DEFAULT-CAR))
+     (3 3
+        (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (3 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1 (:REWRITE NTH-WHEN-PREFIXP)))
 (ELT-TYPE-OF-NTH-OF-FS2DE-DATAP
      (437 17 (:REWRITE F-STRINGP-WHEN-STRINGP))
      (210 15 (:DEFINITION LENGTH))
@@ -1633,6 +1748,10 @@
 (FS2DE-INDEX$INLINE (34 1 (:DEFINITION FS2DE-DATAP))
                     (29 1 (:REWRITE F-STRINGP-WHEN-STRINGP))
                     (21 3 (:DEFINITION LEN))
+                    (16 16
+                        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                    (16 16
+                        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                     (16 16 (:REWRITE NTH-WHEN-PREFIXP))
                     (12 11 (:REWRITE DEFAULT-<-2))
                     (12 11 (:REWRITE DEFAULT-<-1))
@@ -1665,6 +1784,10 @@
                    (58 2 (:REWRITE F-STRINGP-WHEN-STRINGP))
                    (57 9 (:DEFINITION LEN))
                    (35 35 (:REWRITE NTH-WHEN-PREFIXP))
+                   (34 34
+                       (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                   (34 34
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (30 28 (:REWRITE NFIX-WHEN-NOT-NATP))
                    (26 21 (:REWRITE DEFAULT-<-2))
                    (22 21 (:REWRITE DEFAULT-<-1))
@@ -1695,6 +1818,10 @@
                   (104 16 (:DEFINITION LEN))
                   (102 3 (:DEFINITION FS2DE-DATAP))
                   (48 48 (:REWRITE NTH-WHEN-PREFIXP))
+                  (45 45
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (45 45
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (42 29 (:REWRITE DEFAULT-<-2))
                   (34 22 (:REWRITE DEFAULT-CDR))
                   (32 16 (:REWRITE DEFAULT-+-2))
@@ -1751,6 +1878,10 @@
          (:REWRITE NONEMPTY-STR-FIX-WHEN-F-STRINGP))
      (8 8 (:REWRITE NTH-WHEN-PREFIXP))
      (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE DEFAULT-CAR))
      (6 6 (:REWRITE DEFAULT-<-1))
      (5 5 (:TYPE-PRESCRIPTION LENGTH))
@@ -1766,6 +1897,10 @@
 (FS2DE-SET2$INLINE (58 2 (:REWRITE F-STRINGP-WHEN-STRINGP))
                    (37 5 (:DEFINITION LEN))
                    (34 1 (:DEFINITION FS2DE-DATAP))
+                   (17 17
+                       (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                   (17 17
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (17 17 (:REWRITE NTH-WHEN-PREFIXP))
                    (16 12 (:REWRITE DEFAULT-<-2))
                    (13 12 (:REWRITE DEFAULT-<-1))
@@ -1823,6 +1958,10 @@
          (:REWRITE NONEMPTY-STR-FIX-WHEN-F-STRINGP))
      (10 10 (:TYPE-PRESCRIPTION FS2DE-DATAP))
      (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (10 10
          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
      (10 10
          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
@@ -1840,33 +1979,52 @@
      (4 4
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
      (4 4 (:REWRITE DEFAULT-CAR)))
-(FS2DE-NCOLS-OF-FS2DE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(FS2DE-NROWS-OF-FS2DE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(FS2DE-ARR2-WFP-OF-FS2DE-SET2 (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (42 22 (:REWRITE NATP-WHEN-GTE-0))
-                              (40 40 (:TYPE-PRESCRIPTION NATP))
-                              (22 22 (:REWRITE NATP-WHEN-INTEGERP))
-                              (19 19 (:REWRITE NTH-WHEN-PREFIXP))
-                              (18 15 (:REWRITE DEFAULT-<-1))
-                              (15 15 (:REWRITE DEFAULT-<-2))
-                              (15 3 (:DEFINITION LEN))
-                              (7 7 (:REWRITE DEFAULT-*-2))
-                              (7 7 (:REWRITE DEFAULT-*-1))
-                              (7 4 (:REWRITE DEFAULT-+-2))
-                              (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                              (4 4 (:REWRITE DEFAULT-+-1))
-                              (4 4
-                                 (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                              (4 4
-                                 (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                              (4 4 (:LINEAR LEN-WHEN-PREFIXP))
-                              (3 3 (:REWRITE LEN-NTH-OF-IMXL-DATA))
-                              (3 3 (:REWRITE DEFAULT-CDR))
-                              (2 2 (:LINEAR LISTPOS-COMPLETE))
-                              (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+(FS2DE-NCOLS-OF-FS2DE-SET2
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(FS2DE-NROWS-OF-FS2DE-SET2
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(FS2DE-ARR2-WFP-OF-FS2DE-SET2
+     (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (42 22 (:REWRITE NATP-WHEN-GTE-0))
+     (40 40 (:TYPE-PRESCRIPTION NATP))
+     (22 22 (:REWRITE NATP-WHEN-INTEGERP))
+     (19 19 (:REWRITE NTH-WHEN-PREFIXP))
+     (18 15 (:REWRITE DEFAULT-<-1))
+     (15 15
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (15 15 (:REWRITE DEFAULT-<-2))
+     (15 3 (:DEFINITION LEN))
+     (14 14
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (7 7 (:REWRITE DEFAULT-*-2))
+     (7 7 (:REWRITE DEFAULT-*-1))
+     (7 4 (:REWRITE DEFAULT-+-2))
+     (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (4 4 (:REWRITE DEFAULT-+-1))
+     (4 4
+        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (4 4
+        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (3 3 (:REWRITE LEN-NTH-OF-IMXL-DATA))
+     (3 3 (:REWRITE DEFAULT-CDR))
+     (2 2 (:LINEAR LISTPOS-COMPLETE))
+     (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (FS2DE-SET$INLINE (58 2 (:REWRITE F-STRINGP-WHEN-STRINGP))
                   (37 5 (:DEFINITION LEN))
                   (34 1 (:DEFINITION FS2DE-DATAP))
+                  (15 15
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (15 15
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (15 15 (:REWRITE NTH-WHEN-PREFIXP))
                   (13 9 (:REWRITE DEFAULT-<-2))
                   (13 7 (:REWRITE DEFAULT-CDR))
@@ -1894,21 +2052,30 @@
                   (2 1 (:DEFINITION TRUE-LISTP))
                   (1 1
                      (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
-(FS2DE-SET-IN-TERMS-OF-FS2DE-SET2 (15 2 (:REWRITE DEFAULT-CDR))
-                                  (15 2 (:REWRITE DEFAULT-CAR))
-                                  (7 1 (:REWRITE NFIX-WHEN-NATP))
-                                  (6 6 (:REWRITE NTH-WHEN-PREFIXP))
-                                  (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                  (4 4 (:TYPE-PRESCRIPTION NATP))
-                                  (4 2 (:REWRITE NATP-WHEN-GTE-0))
-                                  (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                  (1 1 (:REWRITE DEFAULT-<-2))
-                                  (1 1 (:REWRITE DEFAULT-<-1)))
+(FS2DE-SET-IN-TERMS-OF-FS2DE-SET2
+     (15 2 (:REWRITE DEFAULT-CDR))
+     (15 2 (:REWRITE DEFAULT-CAR))
+     (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1 (:REWRITE DEFAULT-<-2))
+     (1 1 (:REWRITE DEFAULT-<-1)))
 (FS2DE-RESIZE-ROWS$INLINE (34 1 (:DEFINITION FS2DE-DATAP))
                           (29 1 (:REWRITE F-STRINGP-WHEN-STRINGP))
                           (16 2 (:DEFINITION LEN))
                           (11 10 (:REWRITE DEFAULT-<-2))
                           (10 10 (:REWRITE DEFAULT-<-1))
+                          (8 8
+                             (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                          (8 8
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                           (8 8 (:REWRITE NTH-WHEN-PREFIXP))
                           (7 4 (:REWRITE DEFAULT-CDR))
                           (4 2 (:REWRITE DEFAULT-+-2))
@@ -1947,6 +2114,10 @@
      (13 13 (:REWRITE NTH-WHEN-PREFIXP))
      (13 1 (:DEFINITION MAKE-LIST-AC-REDEF))
      (13 1 (:DEFINITION MAKE-LIST-AC))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (10 10 (:REWRITE NATP-WHEN-INTEGERP))
      (10 2 (:DEFINITION LEN))
      (8 8
@@ -2000,6 +2171,10 @@
      (44 2 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
      (39 39 (:REWRITE NATP-WHEN-INTEGERP))
      (39 2 (:REWRITE RESIZE-LIST-WHEN-ZP))
+     (30 30
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (30 30
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (29 29 (:REWRITE NTH-WHEN-PREFIXP))
      (29 29 (:LINEAR LEQ-POSITION-EQUAL-LEN))
      (29 4 (:REWRITE ZP-WHEN-INTEGERP))
@@ -2050,6 +2225,10 @@
      (8 8 (:TYPE-PRESCRIPTION NATP))
      (8 6 (:REWRITE DEFAULT-+-2))
      (8 4 (:REWRITE NATP-WHEN-GTE-0))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 2 (:REWRITE FOLD-CONSTS-IN-+))
@@ -2091,6 +2270,10 @@
      (6 6 (:REWRITE NATP-WHEN-INTEGERP))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4
         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
      (4 4
@@ -2106,39 +2289,44 @@
      (2 1 (:REWRITE DEFAULT-*-1))
      (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
      (1 1 (:REWRITE DEFAULT-CAR)))
-(FS2DE-RESIZE-COLS$INLINE (34 1 (:DEFINITION FS2DE-DATAP))
-                          (29 1 (:REWRITE F-STRINGP-WHEN-STRINGP))
-                          (22 22 (:REWRITE NTH-WHEN-PREFIXP))
-                          (21 3 (:DEFINITION LEN))
-                          (21 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
-                          (14 13 (:REWRITE DEFAULT-<-2))
-                          (13 13 (:REWRITE DEFAULT-<-1))
-                          (8 5 (:REWRITE DEFAULT-CDR))
-                          (6 3 (:REWRITE DEFAULT-+-2))
-                          (4 4
-                             (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                          (4 4
-                             (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                          (4 4 (:LINEAR LEN-WHEN-PREFIXP))
-                          (3 3
-                             (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-                          (3 3 (:REWRITE DEFAULT-+-1))
-                          (3 3 (:REWRITE DEFAULT-*-2))
-                          (3 3 (:REWRITE DEFAULT-*-1))
-                          (3 2 (:REWRITE STR::CONSP-OF-EXPLODE))
-                          (3 1 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
-                          (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                          (2 2 (:REWRITE DEFAULT-CAR))
-                          (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                          (2 1
-                             (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-                          (2 1 (:DEFINITION TRUE-LISTP))
-                          (1 1 (:TYPE-PRESCRIPTION F-STRINGP))
-                          (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
-                          (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
-                          (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
-                          (1 1
-                             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+(FS2DE-RESIZE-COLS$INLINE
+     (34 1 (:DEFINITION FS2DE-DATAP))
+     (29 1 (:REWRITE F-STRINGP-WHEN-STRINGP))
+     (22 22 (:REWRITE NTH-WHEN-PREFIXP))
+     (21 3 (:DEFINITION LEN))
+     (21 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
+     (16 16
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (16 16
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (14 13 (:REWRITE DEFAULT-<-2))
+     (13 13 (:REWRITE DEFAULT-<-1))
+     (8 5 (:REWRITE DEFAULT-CDR))
+     (6 3 (:REWRITE DEFAULT-+-2))
+     (4 4
+        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (4 4
+        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (3 3
+        (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+     (3 3 (:REWRITE DEFAULT-+-1))
+     (3 3 (:REWRITE DEFAULT-*-2))
+     (3 3 (:REWRITE DEFAULT-*-1))
+     (3 2 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (3 1 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE DEFAULT-CAR))
+     (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (2 1
+        (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+     (2 1 (:DEFINITION TRUE-LISTP))
+     (1 1 (:TYPE-PRESCRIPTION F-STRINGP))
+     (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
+     (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
+     (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
+     (1 1
+        (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
 (FS2DE-ARR2-WFP-OF-FS2DE-RESIZE-COLS
      (22 5 (:REWRITE NFIX-WHEN-NOT-NATP))
      (21 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
@@ -2148,6 +2336,10 @@
      (8 8 (:REWRITE NATP-WHEN-INTEGERP))
      (8 4 (:REWRITE DEFAULT-*-2))
      (8 4 (:REWRITE DEFAULT-*-1))
+     (7 7
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-<-1))
      (5 1 (:DEFINITION LEN))
@@ -2185,6 +2377,10 @@
      (12 12 (:TYPE-PRESCRIPTION LEN))
      (12 10 (:REWRITE DEFAULT-<-1))
      (12 6 (:REWRITE NATP-WHEN-GTE-0))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (11 6 (:REWRITE DEFAULT-+-2))
      (11 3 (:DEFINITION NOT))
      (9 6 (:REWRITE DEFAULT-+-1))
@@ -2234,6 +2430,10 @@
      (15 15 (:DEFINITION NOT))
      (12 12 (:LINEAR LISTPOS-COMPLETE))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (5 5 (:REWRITE NTH-WHEN-PREFIXP))
      (5 1 (:DEFINITION LEN))
@@ -2263,6 +2463,10 @@
      (14 14 (:REWRITE DEFAULT-<-2))
      (14 14 (:REWRITE DEFAULT-<-1))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (10 10 (:REWRITE NATP-WHEN-INTEGERP))
      (9 3 (:REWRITE ZP-WHEN-GT-0))
      (9 3 (:DEFINITION NOT))
@@ -2567,7 +2771,9 @@
            (4 4 (:LINEAR LEN-WHEN-PREFIXP))
            (2 2 (:TYPE-PRESCRIPTION LENGTH))
            (2 2 (:TYPE-PRESCRIPTION F-STRINGP))
-           (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+           (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+           (1 1
+              (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (FS2DL-SET2 (71 1 (:DEFINITION FS2DL-ARR2-DATA-WFP))
             (58 2 (:REWRITE F-STRINGP-WHEN-STRINGP))
             (52 6 (:DEFINITION LEN))
@@ -2747,7 +2953,7 @@
         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
 (FS2DL-ARR2-WFP-OF-FS2DL-SET2
      (87 3 (:REWRITE F-STRINGP-WHEN-STRINGP))
-     (77 9 (:DEFINITION LEN))
+     (79 9 (:DEFINITION LEN))
      (67 1 (:DEFINITION FS2DL-ARR2-DATA-WFP))
      (61 4 (:DEFINITION LENGTH))
      (34 1 (:DEFINITION FS2DE-DATAP))
@@ -2778,9 +2984,13 @@
      (3 3 (:LINEAR LISTPOS-COMPLETE))
      (3 3 (:LINEAR LEQ-POSITION-EQUAL-LEN))
      (3 1 (:DEFINITION LNFIX$INLINE))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-*-2))
      (2 2 (:REWRITE DEFAULT-*-1))
      (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1 (:REWRITE NTH-WHEN-PREFIXP)))
 (FS2DL-SET (118 14 (:DEFINITION LEN))
            (116 4 (:REWRITE F-STRINGP-WHEN-STRINGP))
@@ -2805,7 +3015,9 @@
            (6 6
               (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
            (4 4 (:TYPE-PRESCRIPTION LENGTH))
-           (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+           (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+           (1 1
+              (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (FS2DL-RESIZE-ROWS (2 1
                       (:TYPE-PRESCRIPTION CONSP-MAKE-LIST-AC))
                    (1 1 (:TYPE-PRESCRIPTION ZP)))
@@ -2896,6 +3108,8 @@
      (2 2
         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
      (1 1 (:TYPE-PRESCRIPTION LENGTH))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE ZP-OPEN))
      (1 1
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -3102,7 +3316,7 @@
      (23 9 (:REWRITE NFIX-WHEN-NOT-NATP))
      (18 10 (:REWRITE DEFAULT-<-2))
      (16 10 (:REWRITE DEFAULT-+-2))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 10 (:REWRITE DEFAULT-+-1))
      (10 10 (:REWRITE DEFAULT-<-1))
      (10 4
@@ -3122,9 +3336,13 @@
      (4 4
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-CDR))
      (2 2 (:LINEAR LISTPOS-COMPLETE))
      (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1
         (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
 (FS2DL-GET2-OF-FS2DL-RESIZE-COLS
@@ -3194,7 +3412,7 @@
      (21 21 (:REWRITE DEFAULT-<-1))
      (17 16 (:REWRITE DEFAULT-+-1))
      (16 16 (:TYPE-PRESCRIPTION ZP))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 12 (:TYPE-PRESCRIPTION NATP))
      (12 12
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
@@ -3211,6 +3429,10 @@
      (2 2
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (2 2 (:LINEAR LEN-WHEN-PREFIXP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (FS2DL-NCOLS-OF-FS2DL-RESIZE-COLS
      (228 39 (:REWRITE ZP-WHEN-GT-0))
@@ -3519,18 +3741,23 @@
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (4 4 (:REWRITE DEFAULT-*-2))
      (4 4 (:REWRITE DEFAULT-*-1))
-     (3 3 (:LINEAR LISTPOS-COMPLETE)))
+     (3 3 (:LINEAR LISTPOS-COMPLETE))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (FS2D-RESIZE-ROWS$G{GUARD-THM} (3 3 (:REWRITE DEFAULT-<-2))
                                (3 3 (:REWRITE DEFAULT-<-1))
                                (1 1
                                   (:REWRITE FSTRING2D-LOOKUPS-CORR-EXPAND))
                                (1 1 (:REWRITE DEFAULT-*-2))
                                (1 1 (:REWRITE DEFAULT-*-1)))
-(FS2D-RESIZE-ROWS$G{PRESERVED} (4 3 (:REWRITE DEFAULT-<-2))
-                               (4 2 (:REWRITE DEFAULT-*-2))
-                               (3 3 (:REWRITE DEFAULT-<-1))
-                               (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                               (2 2 (:REWRITE DEFAULT-*-1)))
+(FS2D-RESIZE-ROWS$G{PRESERVED}
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 2 (:REWRITE DEFAULT-*-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE DEFAULT-*-1))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (FS2D-RESIZE-COLS$G{CORRESPONDENCE}
      (13 9 (:REWRITE NFIX-WHEN-NOT-NATP))
      (10 9 (:REWRITE DEFAULT-<-1))
@@ -3540,6 +3767,8 @@
      (4 4 (:REWRITE DEFAULT-*-1))
      (4 2 (:REWRITE NATP-WHEN-GTE-0))
      (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (1 1
         (:REWRITE FSTRING2D-LOOKUPS-CORR-NECC)))
@@ -3549,11 +3778,14 @@
                                   (:REWRITE FSTRING2D-LOOKUPS-CORR-EXPAND))
                                (1 1 (:REWRITE DEFAULT-*-2))
                                (1 1 (:REWRITE DEFAULT-*-1)))
-(FS2D-RESIZE-COLS$G{PRESERVED} (5 3 (:REWRITE DEFAULT-*-2))
-                               (4 3 (:REWRITE DEFAULT-<-2))
-                               (4 3 (:REWRITE DEFAULT-*-1))
-                               (3 3 (:REWRITE DEFAULT-<-1))
-                               (3 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
+(FS2D-RESIZE-COLS$G{PRESERVED}
+     (5 3 (:REWRITE DEFAULT-*-2))
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 3 (:REWRITE DEFAULT-*-1))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (FS2D-SET2)
 (FS2D-SET)
 (FS2D-RESIZE-ROWS)
@@ -3587,7 +3819,11 @@
                          (2 2 (:REWRITE DEFAULT-<-1))
                          (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
 (S61VE-ARR2-WFP)
-(S61VE-INDEX$INLINE (16 16 (:REWRITE NTH-WHEN-PREFIXP))
+(S61VE-INDEX$INLINE (16 16
+                        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                    (16 16
+                        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                    (16 16 (:REWRITE NTH-WHEN-PREFIXP))
                     (13 12 (:REWRITE DEFAULT-<-1))
                     (12 12 (:REWRITE DEFAULT-<-2))
                     (10 2 (:DEFINITION LEN))
@@ -3612,6 +3848,10 @@
                     (1 1
                        (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
 (S61VE-GET2$INLINE (35 35 (:REWRITE NTH-WHEN-PREFIXP))
+                   (34 34
+                       (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                   (34 34
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (30 6 (:DEFINITION LEN))
                    (26 23 (:REWRITE DEFAULT-<-2))
                    (24 23 (:REWRITE DEFAULT-<-1))
@@ -3637,6 +3877,10 @@
                    (2 2 (:REWRITE DEFAULT-CAR)))
 (S61VE-GET$INLINE (50 10 (:DEFINITION LEN))
                   (48 48 (:REWRITE NTH-WHEN-PREFIXP))
+                  (45 45
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (45 45
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (38 31 (:REWRITE DEFAULT-<-2))
                   (31 31 (:REWRITE DEFAULT-<-1))
                   (27 3 (:DEFINITION S61VE-DATAP))
@@ -3680,6 +3924,10 @@
      (7 7 (:REWRITE DEFAULT-<-2))
      (7 7 (:REWRITE DEFAULT-<-1))
      (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 5 (:TYPE-PRESCRIPTION S61VE-DATAP))
      (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
      (4 4 (:TYPE-PRESCRIPTION NATP))
@@ -3697,6 +3945,10 @@
      (1 1 (:DEFINITION NOT)))
 (S61VE-SET2$INLINE (50 46 (:REWRITE DEFAULT-<-2))
                    (47 46 (:REWRITE DEFAULT-<-1))
+                   (45 45
+                       (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                   (45 45
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (45 45 (:REWRITE NTH-WHEN-PREFIXP))
                    (35 7 (:DEFINITION LEN))
                    (27 3 (:DEFINITION S61VE-DATAP))
@@ -3718,67 +3970,91 @@
                    (4 4 (:REWRITE LEN-NTH-OF-IMXL-DATA))
                    (4 4 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
                    (3 3 (:REWRITE DEFAULT-CAR)))
-(S61VE-GET2-OF-S61VE-SET2 (140 4 (:REWRITE NFIX-EQUAL-TO-NONZERO))
-                          (76 20 (:REWRITE ZP-WHEN-GT-0))
-                          (72 20 (:REWRITE ZP-WHEN-INTEGERP))
-                          (72 18 (:REWRITE NFIX-WHEN-NOT-NATP))
-                          (65 3 (:REWRITE S61V-FIX-WHEN-ELT-TYPEP))
-                          (64 8 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
-                          (53 27 (:REWRITE NATP-WHEN-GTE-0))
-                          (52 52 (:TYPE-PRESCRIPTION NATP))
-                          (46 4 (:DEFINITION SIGNED-BYTE-P))
-                          (45 1 (:REWRITE IFIX-EQUAL-TO-NONZERO))
-                          (41 4 (:DEFINITION INTEGER-RANGE-P))
-                          (33 29 (:REWRITE DEFAULT-<-1))
-                          (31 1 (:REWRITE ZIP-OPEN))
-                          (29 29 (:REWRITE DEFAULT-<-2))
-                          (27 27 (:REWRITE NATP-WHEN-INTEGERP))
-                          (16 16 (:TYPE-PRESCRIPTION ZP))
-                          (16 16 (:REWRITE ZP-OPEN))
-                          (16 16 (:REWRITE NTH-WHEN-PREFIXP))
-                          (15 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                          (15 3 (:REWRITE IFIX-WHEN-INTEGERP))
-                          (15 1
-                              (:REWRITE ELT-TYPE-OF-NTH-OF-S61VE-DATAP))
-                          (12 1 (:DEFINITION S61VE-DATAP))
-                          (7 7 (:LINEAR LISTPOS-COMPLETE))
-                          (5 5 (:TYPE-PRESCRIPTION S61VE-DATAP))
-                          (5 5 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                          (4 4
-                             (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
-                          (3 3 (:TYPE-PRESCRIPTION SIGNED-BYTE-P))
-                          (2 2 (:TYPE-PRESCRIPTION INTEGER-RANGE-P))
-                          (1 1 (:TYPE-PRESCRIPTION ZIP))
-                          (1 1
-                             (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
-                          (1 1 (:REWRITE DEFAULT-CDR))
-                          (1 1 (:REWRITE DEFAULT-CAR)))
-(S61VE-NCOLS-OF-S61VE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(S61VE-NROWS-OF-S61VE-SET2 (6 6 (:REWRITE NTH-WHEN-PREFIXP)))
-(S61VE-ARR2-WFP-OF-S61VE-SET2 (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (42 22 (:REWRITE NATP-WHEN-GTE-0))
-                              (40 40 (:TYPE-PRESCRIPTION NATP))
-                              (22 22 (:REWRITE NATP-WHEN-INTEGERP))
-                              (19 19 (:REWRITE NTH-WHEN-PREFIXP))
-                              (18 15 (:REWRITE DEFAULT-<-1))
-                              (15 15 (:REWRITE DEFAULT-<-2))
-                              (15 3 (:DEFINITION LEN))
-                              (7 7 (:REWRITE DEFAULT-*-2))
-                              (7 7 (:REWRITE DEFAULT-*-1))
-                              (7 4 (:REWRITE DEFAULT-+-2))
-                              (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                              (4 4 (:REWRITE DEFAULT-+-1))
-                              (4 4
-                                 (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                              (4 4
-                                 (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                              (4 4 (:LINEAR LEN-WHEN-PREFIXP))
-                              (3 3 (:REWRITE LEN-NTH-OF-IMXL-DATA))
-                              (3 3 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
-                              (3 3 (:REWRITE DEFAULT-CDR))
-                              (2 2 (:LINEAR LISTPOS-COMPLETE))
-                              (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
-(S61VE-SET$INLINE (43 43 (:REWRITE NTH-WHEN-PREFIXP))
+(S61VE-GET2-OF-S61VE-SET2
+     (140 4 (:REWRITE NFIX-EQUAL-TO-NONZERO))
+     (76 20 (:REWRITE ZP-WHEN-GT-0))
+     (72 20 (:REWRITE ZP-WHEN-INTEGERP))
+     (72 18 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (65 3 (:REWRITE S61V-FIX-WHEN-ELT-TYPEP))
+     (64 8 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
+     (53 27 (:REWRITE NATP-WHEN-GTE-0))
+     (52 52 (:TYPE-PRESCRIPTION NATP))
+     (46 4 (:DEFINITION SIGNED-BYTE-P))
+     (45 1 (:REWRITE IFIX-EQUAL-TO-NONZERO))
+     (41 4 (:DEFINITION INTEGER-RANGE-P))
+     (33 29 (:REWRITE DEFAULT-<-1))
+     (31 1 (:REWRITE ZIP-OPEN))
+     (29 29 (:REWRITE DEFAULT-<-2))
+     (27 27 (:REWRITE NATP-WHEN-INTEGERP))
+     (16 16 (:TYPE-PRESCRIPTION ZP))
+     (16 16 (:REWRITE ZP-OPEN))
+     (16 16 (:REWRITE NTH-WHEN-PREFIXP))
+     (15 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (15 3 (:REWRITE IFIX-WHEN-INTEGERP))
+     (15 1
+         (:REWRITE ELT-TYPE-OF-NTH-OF-S61VE-DATAP))
+     (12 1 (:DEFINITION S61VE-DATAP))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (7 7 (:LINEAR LISTPOS-COMPLETE))
+     (5 5 (:TYPE-PRESCRIPTION S61VE-DATAP))
+     (5 5 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (4 4
+        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+     (3 3 (:TYPE-PRESCRIPTION SIGNED-BYTE-P))
+     (2 2 (:TYPE-PRESCRIPTION INTEGER-RANGE-P))
+     (1 1 (:TYPE-PRESCRIPTION ZIP))
+     (1 1
+        (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
+     (1 1 (:REWRITE DEFAULT-CDR))
+     (1 1 (:REWRITE DEFAULT-CAR)))
+(S61VE-NCOLS-OF-S61VE-SET2
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(S61VE-NROWS-OF-S61VE-SET2
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(S61VE-ARR2-WFP-OF-S61VE-SET2
+     (65 24 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (42 22 (:REWRITE NATP-WHEN-GTE-0))
+     (40 40 (:TYPE-PRESCRIPTION NATP))
+     (22 22 (:REWRITE NATP-WHEN-INTEGERP))
+     (19 19 (:REWRITE NTH-WHEN-PREFIXP))
+     (18 15 (:REWRITE DEFAULT-<-1))
+     (15 15
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (15 15 (:REWRITE DEFAULT-<-2))
+     (15 3 (:DEFINITION LEN))
+     (14 14
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (7 7 (:REWRITE DEFAULT-*-2))
+     (7 7 (:REWRITE DEFAULT-*-1))
+     (7 4 (:REWRITE DEFAULT-+-2))
+     (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (4 4 (:REWRITE DEFAULT-+-1))
+     (4 4
+        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (4 4
+        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (3 3 (:REWRITE LEN-NTH-OF-IMXL-DATA))
+     (3 3 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
+     (3 3 (:REWRITE DEFAULT-CDR))
+     (2 2 (:LINEAR LISTPOS-COMPLETE))
+     (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+(S61VE-SET$INLINE (43 43
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (43 43
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                  (43 43 (:REWRITE NTH-WHEN-PREFIXP))
                   (42 38 (:REWRITE DEFAULT-<-2))
                   (38 38 (:REWRITE DEFAULT-<-1))
                   (35 7 (:DEFINITION LEN))
@@ -3802,19 +4078,28 @@
                   (3 3
                      (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS))
                   (2 2 (:REWRITE NATP-WHEN-INTEGERP)))
-(S61VE-SET-IN-TERMS-OF-S61VE-SET2 (15 2 (:REWRITE DEFAULT-CDR))
-                                  (15 2 (:REWRITE DEFAULT-CAR))
-                                  (7 1 (:REWRITE NFIX-WHEN-NATP))
-                                  (6 6 (:REWRITE NTH-WHEN-PREFIXP))
-                                  (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                  (4 4 (:TYPE-PRESCRIPTION NATP))
-                                  (4 2 (:REWRITE NATP-WHEN-GTE-0))
-                                  (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                  (1 1 (:REWRITE DEFAULT-<-2))
-                                  (1 1 (:REWRITE DEFAULT-<-1)))
+(S61VE-SET-IN-TERMS-OF-S61VE-SET2
+     (15 2 (:REWRITE DEFAULT-CDR))
+     (15 2 (:REWRITE DEFAULT-CAR))
+     (7 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 6 (:REWRITE NTH-WHEN-PREFIXP))
+     (5 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 2 (:REWRITE NATP-WHEN-GTE-0))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1 (:REWRITE DEFAULT-<-2))
+     (1 1 (:REWRITE DEFAULT-<-1)))
 (S61VE-RESIZE-ROWS$INLINE (11 11 (:REWRITE DEFAULT-<-2))
                           (11 11 (:REWRITE DEFAULT-<-1))
                           (9 1 (:DEFINITION S61VE-DATAP))
+                          (8 8
+                             (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                          (8 8
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                           (8 8 (:REWRITE NTH-WHEN-PREFIXP))
                           (6 1 (:DEFINITION SIGNED-BYTE-P))
                           (5 1 (:DEFINITION LEN))
@@ -3841,6 +4126,10 @@
      (13 13 (:REWRITE NTH-WHEN-PREFIXP))
      (13 1 (:DEFINITION MAKE-LIST-AC-REDEF))
      (13 1 (:DEFINITION MAKE-LIST-AC))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (10 10 (:REWRITE NATP-WHEN-INTEGERP))
      (10 2 (:DEFINITION LEN))
      (8 8
@@ -3896,6 +4185,8 @@
      (38 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (38 2 (:REWRITE IFIX-WHEN-INTEGERP))
      (36 1 (:REWRITE ZIP-OPEN))
+     (30 30
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (29 29 (:REWRITE NTH-WHEN-PREFIXP))
      (29 4 (:REWRITE ZP-WHEN-INTEGERP))
      (27 3 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
@@ -3943,6 +4234,10 @@
      (8 8 (:TYPE-PRESCRIPTION NATP))
      (8 6 (:REWRITE DEFAULT-+-2))
      (8 4 (:REWRITE NATP-WHEN-GTE-0))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 2 (:REWRITE FOLD-CONSTS-IN-+))
@@ -3985,6 +4280,10 @@
      (6 6 (:REWRITE NATP-WHEN-INTEGERP))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4
         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
      (4 4
@@ -4001,32 +4300,37 @@
      (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
      (1 1 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
      (1 1 (:REWRITE DEFAULT-CAR)))
-(S61VE-RESIZE-COLS$INLINE (22 22 (:REWRITE NTH-WHEN-PREFIXP))
-                          (22 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
-                          (14 14 (:REWRITE DEFAULT-<-2))
-                          (14 14 (:REWRITE DEFAULT-<-1))
-                          (10 2 (:DEFINITION LEN))
-                          (9 1 (:DEFINITION S61VE-DATAP))
-                          (6 1 (:DEFINITION SIGNED-BYTE-P))
-                          (4 4 (:REWRITE DEFAULT-CDR))
-                          (4 2 (:REWRITE DEFAULT-+-2))
-                          (3 3 (:REWRITE DEFAULT-*-2))
-                          (3 3 (:REWRITE DEFAULT-*-1))
-                          (3 1 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
-                          (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                          (2 2 (:REWRITE DEFAULT-+-1))
-                          (2 2
-                             (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                          (2 2
-                             (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                          (2 2 (:LINEAR LEN-WHEN-PREFIXP))
-                          (2 1 (:DEFINITION TRUE-LISTP))
-                          (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
-                          (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
-                          (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
-                          (1 1 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
-                          (1 1 (:REWRITE DEFAULT-CAR))
-                          (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+(S61VE-RESIZE-COLS$INLINE
+     (22 22 (:REWRITE NTH-WHEN-PREFIXP))
+     (22 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
+     (16 16
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (16 16
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (14 14 (:REWRITE DEFAULT-<-2))
+     (14 14 (:REWRITE DEFAULT-<-1))
+     (10 2 (:DEFINITION LEN))
+     (9 1 (:DEFINITION S61VE-DATAP))
+     (6 1 (:DEFINITION SIGNED-BYTE-P))
+     (4 4 (:REWRITE DEFAULT-CDR))
+     (4 2 (:REWRITE DEFAULT-+-2))
+     (3 3 (:REWRITE DEFAULT-*-2))
+     (3 3 (:REWRITE DEFAULT-*-1))
+     (3 1 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (2 2
+        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (2 2
+        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (2 2 (:LINEAR LEN-WHEN-PREFIXP))
+     (2 1 (:DEFINITION TRUE-LISTP))
+     (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
+     (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
+     (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
+     (1 1 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
+     (1 1 (:REWRITE DEFAULT-CAR))
+     (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (S61VE-ARR2-WFP-OF-S61VE-RESIZE-COLS
      (22 5 (:REWRITE NFIX-WHEN-NOT-NATP))
      (22 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
@@ -4036,6 +4340,10 @@
      (8 8 (:REWRITE NATP-WHEN-INTEGERP))
      (8 4 (:REWRITE DEFAULT-*-2))
      (8 4 (:REWRITE DEFAULT-*-1))
+     (7 7
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (6 6 (:REWRITE NTH-WHEN-PREFIXP))
      (6 6 (:REWRITE DEFAULT-<-1))
      (5 1 (:DEFINITION LEN))
@@ -4056,16 +4364,11 @@
      (1 1 (:REWRITE DEFAULT-+-1))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (S61VE-GET2-OF-S61VE-RESIZE-COLS
-     (58 1 (:REWRITE S61V-FIX-WHEN-ELT-TYPEP))
-     (47 1 (:DEFINITION SIGNED-BYTE-P))
-     (46 1 (:DEFINITION INTEGER-RANGE-P))
      (35 1 (:DEFINITION MAKE-LIST-AC-REDEF))
      (35 1 (:DEFINITION MAKE-LIST-AC))
      (31 1
          (:REWRITE STOBJS::2DARR-INDEX-LESS-THAN-PRODUCT))
      (28 2 (:REWRITE ZP-WHEN-GT-0))
-     (28 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-     (28 1 (:REWRITE IFIX-WHEN-INTEGERP))
      (26 8 (:REWRITE NFIX-WHEN-NOT-NATP))
      (24 2 (:REWRITE ZP-WHEN-INTEGERP))
      (22 1 (:REWRITE RESIZE-LIST-OF-LEN-FREE))
@@ -4073,6 +4376,8 @@
      (13 13 (:REWRITE NTH-WHEN-PREFIXP))
      (12 12 (:TYPE-PRESCRIPTION NATP))
      (12 6 (:REWRITE NATP-WHEN-GTE-0))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (11 9 (:REWRITE DEFAULT-<-1))
      (10 2 (:DEFINITION NOT))
      (9 5 (:REWRITE DEFAULT-+-2))
@@ -4091,15 +4396,11 @@
      (2 2 (:LINEAR LEN-WHEN-PREFIXP))
      (2 2
         (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS))
-     (1 1 (:TYPE-PRESCRIPTION SIGNED-BYTE-P))
      (1 1 (:REWRITE RESIZE-LIST-WHEN-ATOM))
      (1 1 (:REWRITE LEN-NTH-OF-IMXL-DATA))
      (1 1 (:REWRITE LEN-NTH-OF-FS2DL-DATA))
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
-     (1 1
-        (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
-     (1 1 (:REWRITE IFIX-EQUAL-TO-NONZERO))
      (1 1 (:REWRITE DEFAULT-CDR))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (S61VE-NROWS-OF-S61VE-RESIZE-COLS
@@ -4119,6 +4420,10 @@
      (15 15 (:DEFINITION NOT))
      (12 12 (:LINEAR LISTPOS-COMPLETE))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (5 5 (:REWRITE NTH-WHEN-PREFIXP))
      (5 1 (:DEFINITION LEN))
@@ -4149,6 +4454,10 @@
      (14 14 (:REWRITE DEFAULT-<-2))
      (14 14 (:REWRITE DEFAULT-<-1))
      (12 4 (:REWRITE UPDATE-NTH-UPDATE-NTH . 1))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (11 11
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (10 10 (:REWRITE NATP-WHEN-INTEGERP))
      (9 3 (:REWRITE ZP-WHEN-GT-0))
      (9 3 (:DEFINITION NOT))
@@ -4368,7 +4677,9 @@
            (6 6 (:REWRITE DEFAULT-CAR))
            (6 4 (:REWRITE STR::CONSP-OF-EXPLODE))
            (2 2
-              (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+              (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+           (1 1
+              (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (S61VL-SET2 (46 1 (:DEFINITION S61VL-ARR2-DATA-WFP))
             (30 4 (:DEFINITION LEN))
             (19 1 (:DEFINITION LENGTH))
@@ -4520,7 +4831,7 @@
      (2 2
         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
 (S61VL-ARR2-WFP-OF-S61VL-SET2
-     (44 6 (:DEFINITION LEN))
+     (46 6 (:DEFINITION LEN))
      (42 1 (:DEFINITION S61VL-ARR2-DATA-WFP))
      (32 14 (:REWRITE NFIX-WHEN-NOT-NATP))
      (22 17 (:REWRITE DEFAULT-<-1))
@@ -4540,11 +4851,15 @@
      (3 3 (:LINEAR LISTPOS-COMPLETE))
      (3 2 (:REWRITE STR::CONSP-OF-EXPLODE))
      (3 1 (:DEFINITION LNFIX$INLINE))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-*-2))
      (2 2 (:REWRITE DEFAULT-*-1))
      (2 1
         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
      (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1 (:REWRITE NTH-WHEN-PREFIXP))
      (1 1
         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
@@ -4563,7 +4878,9 @@
            (6 6 (:REWRITE DEFAULT-CAR))
            (6 4 (:REWRITE STR::CONSP-OF-EXPLODE))
            (2 2
-              (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)))
+              (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+           (1 1
+              (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (S61VL-RESIZE-ROWS (2 1
                       (:TYPE-PRESCRIPTION CONSP-MAKE-LIST-AC))
                    (1 1 (:TYPE-PRESCRIPTION ZP)))
@@ -4650,6 +4967,8 @@
      (3 2 (:REWRITE STR::CONSP-OF-EXPLODE))
      (2 1
         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE ZP-OPEN))
      (1 1
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -4863,7 +5182,7 @@
      (23 9 (:REWRITE NFIX-WHEN-NOT-NATP))
      (18 10 (:REWRITE DEFAULT-<-2))
      (16 10 (:REWRITE DEFAULT-+-2))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 10 (:REWRITE DEFAULT-+-1))
      (10 10 (:REWRITE DEFAULT-<-1))
      (10 4
@@ -4883,9 +5202,13 @@
      (4 4
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE DEFAULT-CDR))
      (2 2 (:LINEAR LISTPOS-COMPLETE))
      (2 2 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1
         (:LINEAR STOBJS::2DARR-INDEX-IN-BOUNDS)))
 (S61VL-GET2-OF-S61VL-RESIZE-COLS
@@ -4938,7 +5261,7 @@
      (21 21 (:REWRITE DEFAULT-<-1))
      (17 16 (:REWRITE DEFAULT-+-1))
      (16 16 (:TYPE-PRESCRIPTION ZP))
-     (14 2 (:DEFINITION LEN))
+     (16 2 (:DEFINITION LEN))
      (12 12 (:TYPE-PRESCRIPTION NATP))
      (12 12
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
@@ -4955,6 +5278,10 @@
      (2 2
         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
      (2 2 (:LINEAR LEN-WHEN-PREFIXP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
 (S61VL-NCOLS-OF-S61VL-RESIZE-COLS
      (228 39 (:REWRITE ZP-WHEN-GT-0))
@@ -5114,17 +5441,22 @@
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (4 4 (:REWRITE DEFAULT-*-2))
      (4 4 (:REWRITE DEFAULT-*-1))
-     (3 3 (:LINEAR LISTPOS-COMPLETE)))
+     (3 3 (:LINEAR LISTPOS-COMPLETE))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (S61V-RESIZE-ROWS$G{GUARD-THM} (3 3 (:REWRITE DEFAULT-<-2))
                                (3 3 (:REWRITE DEFAULT-<-1))
                                (1 1 (:REWRITE S61V-LOOKUPS-CORR-EXPAND))
                                (1 1 (:REWRITE DEFAULT-*-2))
                                (1 1 (:REWRITE DEFAULT-*-1)))
-(S61V-RESIZE-ROWS$G{PRESERVED} (4 3 (:REWRITE DEFAULT-<-2))
-                               (4 2 (:REWRITE DEFAULT-*-2))
-                               (3 3 (:REWRITE DEFAULT-<-1))
-                               (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                               (2 2 (:REWRITE DEFAULT-*-1)))
+(S61V-RESIZE-ROWS$G{PRESERVED}
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 2 (:REWRITE DEFAULT-*-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE DEFAULT-*-1))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (S61V-RESIZE-COLS$G{CORRESPONDENCE}
      (13 9 (:REWRITE NFIX-WHEN-NOT-NATP))
      (10 9 (:REWRITE DEFAULT-<-1))
@@ -5134,6 +5466,8 @@
      (4 4 (:REWRITE DEFAULT-*-1))
      (4 2 (:REWRITE NATP-WHEN-GTE-0))
      (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE S61V-LOOKUPS-CORR-NECC))
      (1 1
         (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
@@ -5142,11 +5476,14 @@
                                (1 1 (:REWRITE S61V-LOOKUPS-CORR-EXPAND))
                                (1 1 (:REWRITE DEFAULT-*-2))
                                (1 1 (:REWRITE DEFAULT-*-1)))
-(S61V-RESIZE-COLS$G{PRESERVED} (5 3 (:REWRITE DEFAULT-*-2))
-                               (4 3 (:REWRITE DEFAULT-<-2))
-                               (4 3 (:REWRITE DEFAULT-*-1))
-                               (3 3 (:REWRITE DEFAULT-<-1))
-                               (3 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
+(S61V-RESIZE-COLS$G{PRESERVED}
+     (5 3 (:REWRITE DEFAULT-*-2))
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 3 (:REWRITE DEFAULT-*-1))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (S61V-SET2 (46 1 (:DEFINITION S61VL-ARR2-DATA-WFP))
            (30 4 (:DEFINITION LEN))
            (19 1 (:DEFINITION LENGTH))

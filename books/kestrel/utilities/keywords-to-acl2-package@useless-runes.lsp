@@ -13,8 +13,8 @@
                                      (4 4 (:REWRITE FOLD-CONSTS-IN-+))
                                      (4 4 (:REWRITE DEFAULT-CAR)))
 (SYMBOL-LISTP-OF-KEYWORDS-TO-ACL2-PACKAGE-AUX
-     (39 10 (:REWRITE SYMBOL-LISTP-OF-CDR))
-     (20 10
+     (51 10 (:REWRITE SYMBOL-LISTP-OF-CDR))
+     (24 10
          (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP-CHEAP))
      (15 13 (:REWRITE DEFAULT-CAR))
      (14 12 (:REWRITE DEFAULT-CDR)))
