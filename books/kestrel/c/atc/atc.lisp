@@ -102,6 +102,9 @@
 
   "@('const') is the symbol specified by @('const-name')."
 
+  "@('fun-env-const') is the symbol used to name the local constant
+   whose value is the function environment of the generated translation unit."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1563,6 +1566,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fun-env-const ((tunit transunitp)
+                               (names-to-avoid symbol-listp)
+                               (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (fun-env-const "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local event for a named constant whose value is
+          the function environment for the generated translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is not used for now,
+     but it will be used in an upcoming extension of ATC
+     in which the function correctness proofs are more modular.
+     The more modular theorems that will be generated in the future
+     reference the function environment for the translation unit.
+     Thus, by having a named constant for the function environment,
+     the resulting theorem is more readable.")
+   (xdoc::p
+    "This is a local-only named constant
+     so the exact name does not need to be under user control.
+     We use the name @('c::*environment*');
+     if that constant happens to be in use,
+     we add @('$') characters until we find an unused constant name
+     @('c::*environment$...$*')."))
+  (b* (((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix 'c::*environment*
+                                                 'acl2::const
+                                                 names-to-avoid
+                                                 wrld))
+       (fenv (init-fun-env tunit))
+       (event `(local (defconst ,name ',fenv))))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-wf-thm ((const symbolp)
                         (proofs booleanp)
                         (print-info/all booleanp)
@@ -1633,6 +1673,7 @@
 (define atc-gen-fn-lemma-thm ((fn symbolp)
                               (prec-fns symbol-listp)
                               (const symbolp)
+                              (fun-env-const symbolp)
                               (names-to-avoid symbol-listp)
                               (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -1713,7 +1754,7 @@
         `(b* (((mv result compst1) (exec-fun (ident ,(symbol-name fn))
                                              (list ,@formals)
                                              compst
-                                             (init-fun-env ,const)
+                                             ,fun-env-const
                                              1000000000)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@formals)))))
@@ -1739,6 +1780,7 @@
                         (const symbolp)
                         (proofs booleanp)
                         (print-info/all booleanp)
+                        (fun-env-const symbolp)
                         (names-to-avoid symbol-listp)
                         ctx
                         state)
@@ -1779,7 +1821,7 @@
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
-  (b* (((unless proofs) (acl2::value (list nil nil)))
+  (b* (((unless proofs) (acl2::value (list nil nil names-to-avoid)))
        (name (atc-gen-fn-thm-name fn const))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
@@ -1794,7 +1836,8 @@
                 nil))
        (wrld (w state))
        ((mv lemma-event lemma-name names-to-avoid)
-        (atc-gen-fn-lemma-thm fn prec-fns const names-to-avoid wrld))
+        (atc-gen-fn-lemma-thm fn prec-fns const fun-env-const
+                              names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (lhs `(run-fun (ident ,(symbol-name fn))
@@ -1833,6 +1876,7 @@
                              (const symbolp)
                              (proofs booleanp)
                              (print-info/all booleanp)
+                             (fun-env-const symbolp)
                              (names-to-avoid symbol-listp)
                              ctx
                              state)
@@ -1844,13 +1888,14 @@
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
-  (b* (((when (endp fns)) (acl2::value (list nil nil)))
+  (b* (((when (endp fns)) (acl2::value (list nil nil names-to-avoid)))
        ((er (list local-event? exported-event? names-to-avoid))
         (atc-gen-fn-thm (car fns)
                         prec-fns
                         const
                         proofs
                         print-info/all
+                        fun-env-const
                         names-to-avoid
                         ctx
                         state))
@@ -1860,6 +1905,7 @@
                              const
                              proofs
                              print-info/all
+                             fun-env-const
                              names-to-avoid
                              ctx
                              state)))
@@ -1983,15 +2029,17 @@
      it does not seem like ACL2's heuristic ancestor check
      would ever be helpful (if this turns out to be wrong, we will re-evaluate).
      Thus, we locally install the simpler ancestor check."))
-  (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
+  (b* ((names-to-avoid nil)
+       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit print-info/all))
+       ((mv fun-env-const-event fun-env-const names-to-avoid)
+        (atc-gen-fun-env-const tunit names-to-avoid (w state)))
        ((er (list wf-thm-local-event? wf-thm-exported-event?))
         (atc-gen-wf-thm const proofs print-info/all ctx state))
-       (names-to-avoid nil)
        ((er (list fn-thm-local-events? fn-thm-exported-events? &))
         (atc-gen-fn-thm-list fn1...fnp nil const proofs print-info/all
-                             names-to-avoid ctx state))
+                             fun-env-const names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit
                                                 output-file
                                                 print-info/all
@@ -2007,6 +2055,7 @@
             (evmac-prepare-proofs)
             ,local-const-event
             ,exported-const-event
+            ,fun-env-const-event
             ,@wf-thm-local-event?
             ,@wf-thm-exported-event?
             (local (acl2::use-trivial-ancestors-check))
