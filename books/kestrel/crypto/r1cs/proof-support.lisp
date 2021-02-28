@@ -752,3 +752,15 @@
                        (acl2::bvcat 1 (acl2::bitnot bit) (+ -1 (acl2::integer-length (- k))) 0) p)))
   :hints (("Goal" :cases ((equal 0 bit))
            :in-theory (enable add neg acl2::bvcat acl2::bitnot))))
+
+(defun acl2::make-bitp-claims-aux (terms acc)
+  (declare (xargs :guard (true-listp terms)))
+  (if (endp terms)
+      acc
+    (acl2::make-bitp-claims-aux (rest terms)
+                                (cons `(bitp ,(first terms)) acc))))
+
+
+(defun acl2::make-bitp-claims (terms)
+  (declare (xargs :guard (true-listp terms)))
+  (acl2::make-bitp-claims-aux (acl2::reverse-list terms) nil))
