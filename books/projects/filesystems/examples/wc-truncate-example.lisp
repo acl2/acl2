@@ -368,14 +368,6 @@
                        (explode (car path-list)))))))))))))
      (fat32$c fat32$c)))))
 
-;; Move later.
-(defthm
-  pseudo-root-d-e-of-lofat-place-file
-  (equal
-   (pseudo-root-d-e (mv-nth 0
-                            (lofat-place-file fat32$c root-d-e path file)))
-   (pseudo-root-d-e fat32$c)))
-
 ;; (defthm
 ;;   truncate-list-correctness-1-lemma-3
 ;;   (implies

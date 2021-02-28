@@ -704,6 +704,13 @@
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
 
+(defthm add-commute-constant-basic
+  (implies (syntaxp (and (quotep k)
+                         ;; avoid loops:
+                         (not (quotep x))))
+           (equal (add x k p)
+                  (add k x p))))
+
 (defthm add-commute-constant
   (implies (syntaxp (and (quotep k)
                          ;; avoid loops:
