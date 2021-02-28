@@ -76,7 +76,7 @@
    organized in nested scopes from innermost to outermost.
    This is like a symbol table for ACL2's representation of the C code."
 
-  "@('prec-fns') is an alist from ACL2 function symbols to C types.
+  "@('prec-fns') is an alist from ACL2 function symbols to function information.
    The function symbols are the ones in @('fn1...fnp') that precede,
    in the latter list,
    the symbol @('fn') in @('fn1...fnp') for which code is being generated;
@@ -394,10 +394,10 @@
    (xdoc::p
     "We generate C abstract syntax,
      which we pretty-print to a file
-     and also assign to a named constant..")
+     and also assign to a named constant.")
    (xdoc::p
     "Given the restrictions on the target functions,
-     the translation is straightforward -- intentionally so.")
+     the translation is fairly straightforward -- intentionally so.")
    (xdoc::p
     "Some events are generated in two slightly different variants:
      one that is local to the generated @(tsee encapsulate),
@@ -416,10 +416,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These represent scopes in the symbol tables for variables.")
-   (xdoc::p
-    "These also represent symbol tables for functions:
-     they associate output types to function symbols."))
+    "These represent scopes in the symbol tables for variables."))
   :key (symbolp x)
   :val (typep x)
   :true-listp t
@@ -439,7 +436,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These represent symbol tables.
+    "These represent symbol tables for variables.
      The @(tsee car) is the innermost scope."))
   (atc-symbol-type-alistp x)
   :true-listp t
@@ -511,6 +508,38 @@
       (and (not (member-equal var-name
                               (symbol-name-lst (strip-cars (car vars)))))
            (atc-var-newp var-name (cdr vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defaggregate atc-fn-info
+  :short "Information associated to an ACL2 function translated to C."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we capture only the C output type of the function.
+     We plan to extend it with more information."))
+  ((type typep))
+  :pred atc-fn-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defalist atc-symbol-fninfo-alistp (x)
+  :short "Recognize alists from symbols to function information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These represent symbol tables for functions."))
+  :key (symbolp x)
+  :val (atc-fn-infop x)
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  ///
+
+  (defrule atc-fn-infop-of-cdr-of-assoc-equal
+    (implies (and (atc-symbol-fninfo-alistp x)
+                  (assoc-equal k x))
+             (atc-fn-infop (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -641,9 +670,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-callable-fn ((term pseudo-termp)
-                               (prec-fns atc-symbol-type-alistp))
+                               (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
-               (fn symbolp :hyp (atc-symbol-type-alistp prec-fns))
+               (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
                (args pseudo-term-listp :hyp (pseudo-termp term))
                (type typep))
   :short "Check if a term represents a call to a callable target function."
@@ -658,11 +687,14 @@
                        (mv nil nil nil (irr-type)))
                       ((when (eq fn 'quote))
                        (mv nil nil nil (irr-type)))
-                      (fn+type (assoc-eq fn prec-fns))
-                      ((unless (consp fn+type))
+                      (fn+info (assoc-eq fn prec-fns))
+                      ((unless (consp fn+info))
                        (mv nil nil nil (irr-type)))
-                      (type (mbe :logic (type-fix (cdr fn+type))
-                                 :exec (cdr fn+type))))
+                      (type (mbe :logic (b* ((info (cdr fn+info)))
+                                          (if (atc-fn-infop info)
+                                              (atc-fn-info->type info)
+                                            (irr-type)))
+                                 :exec (atc-fn-info->type (cdr fn+info)))))
                    (mv t fn args type)))
     (& (mv nil nil nil (irr-type))))
   ///
@@ -1050,7 +1082,7 @@
 (define atc-gen-expr-nonbool ((term pseudo-termp)
                               (vars atc-symbol-type-alist-listp)
                               (fn symbolp)
-                              (prec-fns atc-symbol-type-alistp)
+                              (prec-fns atc-symbol-fninfo-alistp)
                               ctx
                               state)
   :returns (mv erp
@@ -1138,7 +1170,7 @@
 (define atc-gen-stmt ((term pseudo-termp)
                       (vars atc-symbol-type-alist-listp)
                       (fn symbolp)
-                      (prec-fns atc-symbol-type-alistp)
+                      (prec-fns atc-symbol-fninfo-alistp)
                       ctx
                       state)
   :returns (mv erp
@@ -1449,14 +1481,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-decl ((fn symbolp)
-                          (prec-fns atc-symbol-type-alistp)
+                          (prec-fns atc-symbol-fninfo-alistp)
                           ctx
                           state)
   :returns (mv erp
                (val (tuple (ext ext-declp)
-                           (updated-prec-fns atc-symbol-type-alistp)
+                           (updated-prec-fns atc-symbol-fninfo-alistp)
                            val)
-                    :hyp (atc-symbol-type-alistp prec-fns))
+                    :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
@@ -1491,7 +1523,8 @@
                                                        prec-fns
                                                        ctx
                                                        state))
-       ((when erp) (mv erp (list (irr-ext-decl) nil) state)))
+       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
+       (info (make-atc-fn-info :type type)))
     (acl2::value
      (list
       (ext-decl-fundef
@@ -1499,7 +1532,7 @@
                     :name (make-ident :name name)
                     :params params
                     :body (stmt-compound items)))
-      (acons fn type prec-fns))))
+      (acons fn info prec-fns))))
   ///
 
   (more-returns
@@ -1508,11 +1541,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-decl-list ((fns symbol-listp)
-                               (prec-fns atc-symbol-type-alistp)
+                               (prec-fns atc-symbol-fninfo-alistp)
                                ctx
                                state)
   :returns (mv erp
-               (exts ext-decl-listp :hyp (atc-symbol-type-alistp prec-fns))
+               (exts ext-decl-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
   :long
