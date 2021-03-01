@@ -518,8 +518,7 @@
     "This consists of
      the C output type of the function
      and the name of the locally generated theorem that asserts
-     that the function does not return an error
-     (this theorem will be generated soon).")
+     that the function does not return an error.")
    (xdoc::p
     "We may extend this with more information in the future."))
   ((type typep)
@@ -545,6 +544,27 @@
     (implies (and (atc-symbol-fninfo-alistp x)
                   (assoc-equal k x))
              (atc-fn-infop (cdr (assoc-equal k x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-not-error-thms
+  ((prec-fns atc-symbol-fninfo-alistp))
+  :returns (thms symbol-listp :hyp :guard)
+  :short "Project all the not-error theorems
+          out of a function information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof of each of these theorems for a function @('fn')
+     makes use of the same theorems for
+     the preceding functions in @('prec-fns').
+     This function serves to collect those theorem names from the alist.")
+   (xdoc::p
+    "The alist has no duplicate keys.
+     So this function is correct."))
+  (cond ((endp prec-fns) nil)
+        (t (cons (atc-fn-info->not-error-thm (cdr (car prec-fns)))
+                 (atc-symbol-fninfo-alist-to-not-error-thms (cdr prec-fns))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1487,6 +1507,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-not-error-thm ((fn symbolp)
+                                  (prec-fns atc-symbol-fninfo-alistp)
+                                  (names-to-avoid symbol-listp)
+                                  (wrld plist-worldp))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the theorem saying that
+          @('fn') does not return an error under the guard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a local theorem for now.
+     It will be used in upcoming proof generation extensions.")
+   (xdoc::p
+    "The restrictions on the form of the functions that ATC translated to C
+     ensures that, under the guard, these functions never return errors.
+     This is fairly easy to see,
+     thinking of the different allowed forms of these functions' bodies:")
+   (xdoc::ul
+    (xdoc::li
+     "A formal parameter is constrained to be a value by the guard.
+      A value is not an error.")
+    (xdoc::li
+     "Calls of @(tsee sint-const), @(tsee sint-add), etc.
+      are known to return values, which are not errors.")
+    (xdoc::li
+     "A @(tsee let) variable is equal to a term that,
+      recursively, always returns a value, which is not an error.")
+    (xdoc::li
+     "A call of a preceding function does not return an error,
+      as proved by the same theorems for the preceding functions.")
+    (xdoc::li
+     "An @(tsee if) reduces to the branches."))
+   (xdoc::p
+    "This suggests a coarse but adequate proof strategy:
+     We use the theory consisting of
+     the definition of @('fn'),
+     the return type theorems of @(tsee sint-const), etc.,
+     the theorems about the preceding functions,
+     and the theorem asserting that a value is not an error;
+     we also add a @(':use') hint fot the guard theorem of @('fn')."))
+  (b* ((name (add-suffix fn "-NOT-ERROR"))
+       ((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (formals (acl2::formals+ fn wrld))
+       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (formula `(implies ,guard (not (errorp (,fn ,@formals)))))
+       (theory `(,fn
+                 ,@(atc-symbol-fninfo-alist-to-not-error-thms prec-fns)
+                 sintp-of-sint-const
+                 sintp-of-sint01
+                 sintp-of-sint-plus
+                 sintp-of-sint-minus
+                 sintp-of-sint-bitnot
+                 sintp-of-sint-lognot
+                 sintp-of-sint-add
+                 sintp-of-sint-sub
+                 sintp-of-sint-mul
+                 sintp-of-sint-div
+                 sintp-of-sint-rem
+                 sintp-of-sint-shl-sint
+                 sintp-of-sint-shr-sint
+                 sintp-of-sint-lt
+                 sintp-of-sint-gt
+                 sintp-of-sint-le
+                 sintp-of-sint-ge
+                 sintp-of-sint-eq
+                 sintp-of-sint-ne
+                 sintp-of-sint-bitand
+                 sintp-of-sint-bitxor
+                 sintp-of-sint-bitior
+                 sintp-of-sint-logand
+                 sintp-of-sint-logor
+                 valuep-when-sintp
+                 not-errorp-when-valuep))
+       (hints `(("Goal"
+                 :in-theory ',theory
+                 :use (:guard-theorem ,fn))))
+       ((mv event &) (acl2::evmac-generate-defthm name
+                                                  :formula formula
+                                                  :hints hints
+                                                  :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-thm-name ((fn symbolp) (prog-const symbolp))
   :returns (name symbolp)
   :short "Name of the theorem generated by @(tsee atc-gen-fn-thm)."
@@ -1758,14 +1866,16 @@
                           :name (make-ident :name name)
                           :params params
                           :body (stmt-compound items))))
+       ((mv not-error-thm-event not-error-thm-name names-to-avoid)
+        (atc-gen-fn-not-error-thm fn prec-fns names-to-avoid wrld))
        ((er (list local-events exported-events names-to-avoid))
         (atc-gen-fn-thm fn prec-fns prog-const proofs print-info/all
                         fenv-const names-to-avoid ctx state))
-       (info (make-atc-fn-info :type type :not-error-thm nil)))
+       (info (make-atc-fn-info :type type :not-error-thm not-error-thm-name)))
     (acl2::value
      (list
       ext
-      local-events
+      (cons not-error-thm-event local-events)
       exported-events
       (acons fn info prec-fns)
       names-to-avoid))))
