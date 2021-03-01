@@ -985,13 +985,6 @@
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet)))))
 
-
-
-(local (defthm nth-of-bit-list-fix
-         (bit-equiv (nth n (bit-list-fix x))
-                    (nth n x))
-         :hints(("Goal" :in-theory (enable nth)))))
-
 (local (defthm id-eval-of-bit-list-fix-ins
          (equal (id-eval id (bit-list-fix ins) regs aignet)
                 (id-eval id ins regs aignet))

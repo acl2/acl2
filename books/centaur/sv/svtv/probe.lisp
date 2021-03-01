@@ -46,14 +46,6 @@
                   (svex-env-p (nth n x)))
          :hints(("Goal" :in-theory (enable svex-envlist-p)))))
 
-(local (defthm nth-of-svex-envlist-fix
-         (equal (nth n (svex-envlist-fix x))
-                (svex-env-fix (nth n x)))
-         :hints(("Goal" :in-theory (enable svex-envlist-fix)))))
-
-
-
-
 (define svtv-probealist-extract ((probes svtv-probealist-p)
                                  ;; Should all be fast alists
                                  (vals svex-envlist-p))
@@ -79,7 +71,7 @@
     (equal (svex-env-boundp name result)
            (and (hons-assoc-equal (svar-fix name) (svtv-probealist-fix probes)) t))
     :hints(("Goal" :in-theory (enable svex-env-boundp svtv-probealist-fix))))
-                
+
 
   (defcong svex-envlists-similar equal (svtv-probealist-extract probes vals) 2)
   (local (in-theory (enable svtv-probealist-fix))))
@@ -91,7 +83,7 @@
     :equiv-terms ((svex-alist-eval-equiv (nth n x))
                   (equal (len x)))
     :defquant t)
-  
+
   (in-theory (disable svex-alistlist-eval-equiv svex-alistlist-eval-equiv-necc))
 
   (defcong svex-alistlist-eval-equiv svex-alist-eval-equiv (car x) 1
@@ -111,20 +103,6 @@
     :hints ((witness)
             (and stable-under-simplificationp
                  '(:in-theory (enable svex-alistlist-eval-equiv))))))
-
-
-
-
-
-
-
-
-
-
-(local (defthm nth-of-svex-alistlist-fix
-         (equal (nth n (svex-alistlist-fix x))
-                (svex-alist-fix (nth n x)))
-         :hints(("Goal" :in-theory (enable svex-alistlist-fix)))))
 
 ;; (local (defthm svex-alist-eval-equiv-of-cons
 ;;          (implies (and (svex-alist-eval-equiv rest1 rest2)
@@ -197,7 +175,7 @@
          (implies (svarlist-list-p x)
                   (svarlist-p (nth n x)))
          :hints(("Goal" :in-theory (enable nth svarlist-p)))))
-  
+
 (define svtv-probealist-outvars ((probes svtv-probealist-p))
   :returns (outvars svarlist-list-p)
   (b* (((when (atom probes)) nil)
