@@ -56,3 +56,38 @@
  (defthm my97-prime-linear
    (= (my97-prime) *my97-prime*)
    :rule-classes :linear))
+
+(defprime-alias my97-prime-alias my97-prime)
+
+(acl2::must-be-redundant
+
+ ;; the constant:
+ (defconst *my97-prime-alias* 97)
+
+ ;; the 0-ary function:
+ (defund my97-prime-alias () (declare (xargs :guard t)) *my97-prime-alias*)
+
+ (defmacro eviscerate-my97-prime-alias ()
+   `(table acl2::evisc-table 97 "#.*MY97-PRIME-ALIAS*"))
+
+ (defmacro uneviscerate-my97-prime-alias ()
+   `(table acl2::evisc-table 97 nil))
+
+ ;; causes 97 to be printed as #.*my97-prime-alias*:
+ (eviscerate-my97-prime-alias)
+
+ ;; proof of primality:
+ (defthm primep-of-my97-prime-alias-constant
+   (rtl::primep *my97-prime-alias*))
+
+ ;; lift primality proof to the 0-ary function:
+ (defthm primep-of-my97-prime-alias
+   (rtl::primep (my97-prime-alias)))
+
+ ;; strong linear rule about the 0-ary function:
+ (defthm my97-prime-alias-linear
+   (= (my97-prime-alias) *my97-prime-alias*)
+   :rule-classes :linear))
+
+(defprime-alias my97-prime-alias2 my97-prime) ;second alias of same prime
+(defprime-alias my97-prime-alias2 my97-prime-alias) ;alias of alias
