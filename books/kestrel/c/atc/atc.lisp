@@ -515,9 +515,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we capture only the C output type of the function.
-     We plan to extend it with more information."))
-  ((type typep))
+    "This consists of
+     the C output type of the function
+     and the name of the locally generated theorem that asserts
+     that the function does not return an error
+     (this theorem will be generated soon).")
+   (xdoc::p
+    "We may extend this with more information in the future."))
+  ((type typep)
+   (not-error-thm symbolp))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1622,7 +1628,7 @@
    (xdoc::p
     "The execution of the C function according to the dynamic semantics
      is expressed by calling @(tsee run-fun) on
-     the name of @('fn'), the formals of @('fn'), and @('*const*').
+     the name of @('fn'), the formals of @('fn'), and @('*program*').
      This is equated to a call of @('fn') on its formals.
      The guard of @('fn') is used as hypothesis.")
    (xdoc::p
@@ -1632,7 +1638,7 @@
      We also need to enable some executable counterparts
      for the calculation of the function environment.
      The lemma does not quite apply as a rewrite rule
-     because of the presence of the @('(init-fun-env *const*)') term,
+     because of the presence of the @('(init-fun-env *program*)') term,
      which has to be expanded into a quoted constant so it would not match;
      thus we use a @(':use') hint instead.
      The @('compustatep-of-compustate') theorem is used to
@@ -1755,7 +1761,7 @@
        ((er (list local-events exported-events names-to-avoid))
         (atc-gen-fn-thm fn prec-fns prog-const proofs print-info/all
                         fenv-const names-to-avoid ctx state))
-       (info (make-atc-fn-info :type type)))
+       (info (make-atc-fn-info :type type :not-error-thm nil)))
     (acl2::value
      (list
       ext

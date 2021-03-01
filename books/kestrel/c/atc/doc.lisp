@@ -83,7 +83,7 @@
        "Any other symbol, to use as the name of the constant."))
      (xdoc::p
       "In the rest of this documentation page,
-       let @('*const*') be the symbol specified by this input."))
+       let @('*program*') be the symbol specified by this input."))
 
     (xdoc::desc
      "@(':proofs') &mdash; default @('t')"
@@ -454,7 +454,7 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defconst *const* ...)")
+      "(defconst *program* ...)")
      (xdoc::p
       "where @('...') is the abstract syntax tree of
        the generated C translation unit,
@@ -469,9 +469,9 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defthm *const*-well-formed ...)")
+      "(defthm *program*-well-formed ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('*const*') stating that
+      "where @('...') is a theorem about @('*program*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
        i.e. it compiles according to [C].")
@@ -482,9 +482,10 @@
      (xdoc::p
       "For each target function @('fn'), ATC generates an event")
      (xdoc::codeblock
-      "(defthm *const*-fn-correct ...)")
+      "(defthm *program*-fn-correct ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('fn') and @('*const*') stating that,
+      "where @('...') is a theorem about @('fn') and @('*program*')
+       stating that,
        under the guard of @('fn'),
        executing the C dynamic semantics on
        the C function generated from @('fn')
