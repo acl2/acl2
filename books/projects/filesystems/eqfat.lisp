@@ -490,6 +490,8 @@ channel state))
   :hints (("goal" :in-theory (enable lofat-directory-file-p
                                      lofat-regular-file-p))))
 
+(defthm lofat-file->d-e-under-true-equiv (true-equiv (lofat-file->d-e x) t))
+
 (defun lofat-find-file (fat32$c d-e-list path)
   (declare (xargs :guard (and (lofat-fs-p fat32$c)
                               (fat32-filename-list-p path)
