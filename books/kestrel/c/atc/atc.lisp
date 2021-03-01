@@ -83,9 +83,8 @@
    @('fn') is often also a parameter of
    the ATC function that has @('prec-fns') as parameter.
    According to the restrictions stated in the ATC user documentation,
-   @('prec-fns') consists of the target function symbols
-   that @('fn') is allowed to call.
-   The type associated to each symbol is the C result type of the function."
+   @('prec-fns') consists of (information about) the target function symbols
+   that @('fn') is allowed to call."
 
   (xdoc::evmac-topic-implementation-item-input "const-name")
 
@@ -1480,217 +1479,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl ((fn symbolp)
-                          (prec-fns atc-symbol-fninfo-alistp)
-                          ctx
-                          state)
-  :returns (mv erp
-               (val (tuple (ext ext-declp)
-                           (updated-prec-fns atc-symbol-fninfo-alistp)
-                           val)
-                    :hyp (atc-symbol-fninfo-alistp prec-fns))
-               state)
-  :short "Generate a C external declaration (a function definition)
-          from an ACL2 function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use the type of the value returned by the statement for the body
-     as the result type of the C function.
-     We also extend the alist @('prec-fns') with the function."))
-  (b* ((name (symbol-name fn))
-       ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-ext-decl) nil)
-                  "The symbol name ~s0 of the function ~x1 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name fn))
-       (wrld (w state))
-       (formals (acl2::formals+ fn wrld))
-       (guard (acl2::uguard+ fn wrld))
-       (guard-conjuncts (flatten-ands-in-lit guard))
-       ((mv erp (list params vars) state)
-        (atc-gen-param-decl-list formals
-                                 fn
-                                 guard-conjuncts
-                                 guard
-                                 ctx
-                                 state))
-       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
-       (body (acl2::ubody+ fn wrld))
-       ((mv erp (list items type) state) (atc-gen-stmt body
-                                                       vars
-                                                       fn
-                                                       prec-fns
-                                                       ctx
-                                                       state))
-       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
-       (info (make-atc-fn-info :type type)))
-    (acl2::value
-     (list
-      (ext-decl-fundef
-       (make-fundef :result (atc-gen-tyspecseq type)
-                    :name (make-ident :name name)
-                    :params params
-                    :body (stmt-compound items)))
-      (acons fn info prec-fns))))
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-ext-decl-list ((fns symbol-listp)
-                               (prec-fns atc-symbol-fninfo-alistp)
-                               ctx
-                               state)
-  :returns (mv erp
-               (exts ext-decl-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
-               state)
-  :short "Lift @(tsee atc-gen-ext-decl) to lists."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "After we process the first function @('fn') in @('fns'),
-     we use the extended @('prec-fns') for the subsequent functions."))
-  (b* (((when (endp fns)) (acl2::value nil))
-       ((cons fn rest-fns) fns)
-       (dup? (member-eq fn rest-fns))
-       ((when dup?)
-        (er-soft+ ctx t nil
-                  "The target functions must have distinct symbol names ~
-                   (i.e. they may not differ only in the package names), ~
-                   but the functions ~x0 and ~x1 ~
-                   have the same symbol name."
-                  fn (car dup?)))
-       ((mv erp (list ext prec-fns) state)
-        (atc-gen-ext-decl fn prec-fns ctx state))
-       ((when erp) (mv erp nil state))
-       ((er exts) (atc-gen-ext-decl-list rest-fns prec-fns ctx state)))
-    (acl2::value (cons ext exts))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-transunit ((fn1...fnp symbol-listp) ctx state)
-  :returns (mv erp (tunit transunitp) state)
-  :short "Generate a C translation unit from the ACL2 target functions."
-  (b* (((mv erp exts state) (atc-gen-ext-decl-list fn1...fnp nil ctx state))
-       ((when erp) (mv erp (irr-transunit) state)))
-    (acl2::value (make-transunit :decls exts))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-const ((const symbolp)
-                       (tunit transunitp)
-                       (print-info/all booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. translation unit)."
-  (b* ((progress-start?
-        (and print-info/all
-             `((cw-event "~%Generating the named constant ~x0..." ',const))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,const ',tunit))
-       (local-event `(progn ,@progress-start?
-                            (local ,defconst-event)
-                            ,@progress-end?)))
-    (mv local-event defconst-event)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-fun-env-const ((tunit transunitp)
-                               (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
-  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (fun-env-const "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Generate a local event for a named constant whose value is
-          the function environment for the generated translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is not used for now,
-     but it will be used in an upcoming extension of ATC
-     in which the function correctness proofs are more modular.
-     The more modular theorems that will be generated in the future
-     reference the function environment for the translation unit.
-     Thus, by having a named constant for the function environment,
-     the resulting theorem is more readable.")
-   (xdoc::p
-    "This is a local-only named constant
-     so the exact name does not need to be under user control.
-     We use the name @('c::*environment*');
-     if that constant happens to be in use,
-     we add @('$') characters until we find an unused constant name
-     @('c::*environment$...$*')."))
-  (b* (((mv name names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix 'c::*environment*
-                                                 'acl2::const
-                                                 names-to-avoid
-                                                 wrld))
-       (fenv (init-fun-env tunit))
-       (event `(local (defconst ,name ',fenv))))
-    (mv event name names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-wf-thm ((const symbolp)
-                        (proofs booleanp)
-                        (print-info/all booleanp)
-                        ctx
-                        state)
-  :returns (mv erp
-               (val "A @('(tuple (local-event? pseudo-event-form-listp)
-                                 (exported-event? pseudo-event-form-listp)
-                                 val)').")
-               state)
-  :mode :program
-  :short "Generate the theorem asserting
-          the static well-formedness of the generated C code
-          (referenced as the named constant)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since this is a ground theorem,
-     we expect that it should be easily provable
-     using just the executable counterpart of @(tsee check-transunit),
-     which is an executable function.")
-   (xdoc::p
-    "We generate singleton lists of events if @(':proofs') is @('t'),
-     empty lists otherwise."))
-  (b* (((unless proofs) (acl2::value (list nil nil)))
-       (name (add-suffix const "-WELL-FORMED"))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input ~
-                      must be such that ~x1 is a fresh theorem name, ~
-                      but it is not."
-                     const name)
-                nil
-                nil
-                t
-                nil))
-       ((mv local-event exported-event)
-        (acl2::evmac-generate-defthm
-         name
-         :formula `(check-transunit ,const)
-         :hints '(("Goal" :in-theory '((:e check-transunit))))
-         :enable nil))
-       (progress-start?
-        (and print-info/all
-             `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
-       (local-event `(progn ,@progress-start?
-                            ,local-event
-                            ,@progress-end?)))
-    (acl2::value (list (list local-event)
-                       (list exported-event)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-fn-thm-name ((fn symbolp) (const symbolp))
   :returns (name symbolp)
   :short "Name of the theorem generated by @(tsee atc-gen-fn-thm)."
@@ -1704,7 +1492,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-lemma-thm ((fn symbolp)
-                              (prec-fns symbol-listp)
+                              (prec-fns atc-symbol-fninfo-alistp)
                               (const symbolp)
                               (fun-env-const symbolp)
                               (names-to-avoid symbol-listp)
@@ -1793,7 +1581,7 @@
                 (equal result (,fn ,@formals)))))
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
-                                    ',(cons fn prec-fns))
+                                    ',(cons fn (strip-cars prec-fns)))
                  :use (:guard-theorem ,fn)
                  :expand :lambdas)))
        ((mv local-event &)
@@ -1809,7 +1597,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thm ((fn symbolp)
-                        (prec-fns symbol-listp)
+                        (prec-fns atc-symbol-fninfo-alistp)
                         (const symbolp)
                         (proofs booleanp)
                         (print-info/all booleanp)
@@ -1819,7 +1607,7 @@
                         state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-event? pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
@@ -1856,6 +1644,7 @@
      empty lists otherwise."))
   (b* (((unless proofs) (acl2::value (list nil nil names-to-avoid)))
        (name (atc-gen-fn-thm-name fn const))
+       (names-to-avoid (cons name names-to-avoid))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 ~
@@ -1904,15 +1693,176 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-thm-list ((fns symbol-listp)
-                             (prec-fns symbol-listp)
-                             (const symbolp)
-                             (proofs booleanp)
-                             (print-info/all booleanp)
-                             (fun-env-const symbolp)
-                             (names-to-avoid symbol-listp)
-                             ctx
-                             state)
+(define atc-gen-ext-decl ((fn symbolp)
+                          (prec-fns atc-symbol-fninfo-alistp)
+                          (const symbolp)
+                          (proofs booleanp)
+                          (print-info/all booleanp)
+                          (fun-env-const symbolp)
+                          (names-to-avoid symbol-listp)
+                          ctx
+                          state)
+  :returns (mv erp
+               (val "A @('(tuple (ext ext-declp)
+                                 (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (updated-prec-fns atc-symbol-fninfo-alistp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate a C external declaration (a function definition)
+          from an ACL2 function, with accompanying theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return local and exported events for the theorems about
+     the correctness of the C function definition.")
+   (xdoc::p
+    "We use the type of the value returned by the statement for the body
+     as the result type of the C function.
+     We also extend the alist @('prec-fns') with the function."))
+  (b* ((name (symbol-name fn))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t nil
+                  "The symbol name ~s0 of the function ~x1 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name fn))
+       (wrld (w state))
+       (formals (acl2::formals+ fn wrld))
+       (guard (acl2::uguard+ fn wrld))
+       (guard-conjuncts (flatten-ands-in-lit guard))
+       ((er (list params vars)) (atc-gen-param-decl-list formals
+                                                         fn
+                                                         guard-conjuncts
+                                                         guard
+                                                         ctx
+                                                         state))
+       (body (acl2::ubody+ fn wrld))
+       ((er (list items type)) (atc-gen-stmt body
+                                             vars
+                                             fn
+                                             prec-fns
+                                             ctx
+                                             state))
+       (ext (ext-decl-fundef
+             (make-fundef :result (atc-gen-tyspecseq type)
+                          :name (make-ident :name name)
+                          :params params
+                          :body (stmt-compound items))))
+       ((er (list local-events exported-events names-to-avoid))
+        (atc-gen-fn-thm fn prec-fns const proofs print-info/all fun-env-const
+                        names-to-avoid ctx state))
+       (info (make-atc-fn-info :type type)))
+    (acl2::value
+     (list
+      ext
+      local-events
+      exported-events
+      (acons fn info prec-fns)
+      names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-ext-decl-list ((fns symbol-listp)
+                               (prec-fns atc-symbol-fninfo-alistp)
+                               (const symbolp)
+                               (proofs booleanp)
+                               (print-info/all booleanp)
+                               (fun-env-const symbolp)
+                               (names-to-avoid symbol-listp)
+                               ctx
+                               state)
+  :returns (mv erp
+               (val "A @('(tuple (exts ext-decl-listp)
+                                 (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Lift @(tsee atc-gen-ext-decl) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After we process the first function @('fn') in @('fns'),
+     we use the extended @('prec-fns') for the subsequent functions."))
+  (b* (((when (endp fns)) (acl2::value (list nil nil nil names-to-avoid)))
+       ((cons fn rest-fns) fns)
+       (dup? (member-eq fn rest-fns))
+       ((when dup?)
+        (er-soft+ ctx t nil
+                  "The target functions must have distinct symbol names ~
+                   (i.e. they may not differ only in the package names), ~
+                   but the functions ~x0 and ~x1 ~
+                   have the same symbol name."
+                  fn (car dup?)))
+       ((er (list ext local-events exported-events prec-fns names-to-avoid))
+        (atc-gen-ext-decl fn prec-fns const proofs print-info/all fun-env-const
+                          names-to-avoid ctx state))
+       ((er (list exts more-local-events more-exported-events names-to-avoid))
+        (atc-gen-ext-decl-list rest-fns prec-fns const proofs print-info/all
+                               fun-env-const names-to-avoid ctx state)))
+    (acl2::value (list (cons ext exts)
+                       (append local-events more-local-events)
+                       (append exported-events more-exported-events)
+                       names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-const ((const symbolp)
+                       (tunit transunitp)
+                       (print-info/all booleanp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
+  :short "Generate the named constant for the abstract syntax tree
+          of the generated C code (i.e. translation unit)."
+  (b* ((progress-start?
+        (and print-info/all
+             `((cw-event "~%Generating the named constant ~x0..." ',const))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (defconst-event `(defconst ,const ',tunit))
+       (local-event `(progn ,@progress-start?
+                            (local ,defconst-event)
+                            ,@progress-end?)))
+    (mv local-event defconst-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fun-env-const ((const symbolp)
+                               (names-to-avoid symbol-listp)
+                               (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (fun-env-const "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local event for a named constant whose value is
+          the function environment for the generated translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a local-only named constant
+     so the exact name does not need to be under user control.
+     We use the name @('c::*environment*');
+     if that constant happens to be in use,
+     we add @('$') characters until we find an unused constant name
+     @('c::*environment$...$*')."))
+  (b* (((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix 'c::*environment*
+                                                 'acl2::const
+                                                 names-to-avoid
+                                                 wrld))
+       (event `(local (defconst ,name (init-fun-env ,const)))))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-wf-thm ((const symbolp)
+                        (proofs booleanp)
+                        (print-info/all booleanp)
+                        (names-to-avoid symbol-listp)
+                        ctx
+                        state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
@@ -1920,30 +1870,96 @@
                                  val)').")
                state)
   :mode :program
-  :short "Lift @(tsee atc-gen-fn-thm) to lists."
-  (b* (((when (endp fns)) (acl2::value (list nil nil names-to-avoid)))
-       ((er (list local-event? exported-event? names-to-avoid))
-        (atc-gen-fn-thm (car fns)
-                        prec-fns
-                        const
-                        proofs
-                        print-info/all
-                        fun-env-const
-                        names-to-avoid
-                        ctx
-                        state))
-       ((er (list local-events? exported-events? names-to-avoid))
-        (atc-gen-fn-thm-list (cdr fns)
-                             (cons (car fns) prec-fns)
-                             const
-                             proofs
-                             print-info/all
-                             fun-env-const
-                             names-to-avoid
-                             ctx
-                             state)))
-    (acl2::value (list (append local-event? local-events?)
-                       (append exported-event? exported-events?)
+  :short "Generate the theorem asserting
+          the static well-formedness of the generated C code
+          (referenced as the named constant)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this is a ground theorem,
+     we expect that it should be easily provable
+     using just the executable counterpart of @(tsee check-transunit),
+     which is an executable function.")
+   (xdoc::p
+    "We generate singleton lists of events if @(':proofs') is @('t'),
+     empty lists otherwise."))
+  (b* (((unless proofs) (acl2::value (list nil nil names-to-avoid)))
+       (name (add-suffix const "-WELL-FORMED"))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONST-NAME input ~
+                      must be such that ~x1 is a fresh theorem name, ~
+                      but it is not."
+                     const name)
+                nil
+                nil
+                t
+                nil))
+       (names-to-avoid (cons name names-to-avoid))
+       ((mv local-event exported-event)
+        (acl2::evmac-generate-defthm
+         name
+         :formula `(check-transunit ,const)
+         :hints '(("Goal" :in-theory '((:e check-transunit))))
+         :enable nil))
+       (progress-start?
+        (and print-info/all
+             `((cw-event "~%Generating the theorem ~x0..." ',name))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (local-event `(progn ,@progress-start?
+                            ,local-event
+                            ,@progress-end?)))
+    (acl2::value (list (list local-event)
+                       (list exported-event)
+                       names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-transunit ((fn1...fnp symbol-listp)
+                           (const symbolp)
+                           (proofs booleanp)
+                           (print-info/all booleanp)
+                           (names-to-avoid symbol-listp)
+                           ctx
+                           state)
+  :returns (mv erp
+               (val "A @('(tuple (tunit transunitp)
+                                 (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 (updated-names-to-avoid symbol-listp)
+                                 val)').")
+               state)
+  :mode :program
+  :short "Generate a C translation unit from the ACL2 target functions,
+          and accompanying event."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We first generate the event for the named constant with the environment,
+     because its name must be passed to the ACL2 functions
+     that generate the external declarations that form the translation unit."))
+  (b* (((mv fun-env-const-event fun-env-const names-to-avoid)
+        (atc-gen-fun-env-const const names-to-avoid (w state)))
+       ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
+        (atc-gen-wf-thm const proofs print-info/all names-to-avoid ctx state))
+       ((er
+         (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
+        (atc-gen-ext-decl-list fn1...fnp nil const proofs print-info/all
+                               fun-env-const names-to-avoid ctx state))
+       (tunit (make-transunit :decls exts))
+       ((mv local-const-event exported-const-event)
+        (atc-gen-const const tunit print-info/all))
+       (local-events (append (list local-const-event)
+                             (list fun-env-const-event)
+                             wf-thm-local-events
+                             fn-thm-local-events))
+       (exported-events (append (list exported-const-event)
+                                wf-thm-exported-events
+                                fn-thm-exported-events)))
+    (acl2::value (list tunit
+                       local-events
+                       exported-events
                        names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2012,24 +2028,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-print-result ((const-event pseudo-event-formp)
-                              (wf-thm-event pseudo-event-formp)
-                              (fn-thm-events pseudo-event-form-listp)
-                              (output-file stringp)
-                              (proofs booleanp))
+(define atc-gen-print-result ((events pseudo-event-form-listp)
+                              (output-file stringp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
-  (append (list `(cw-event "~%~x0~|" ',const-event))
-          (and proofs
-               (list `(cw-event "~%~x0~|" ',wf-thm-event)))
-          (and proofs
-               (atc-gen-print-result-aux fn-thm-events))
+  (append (atc-gen-print-result-aux events)
           (list `(cw-event "~%File ~s0.~%" ,output-file)))
-
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -2054,46 +2062,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Just before generating the theorems of functional correctness,
-     we locally install the ``trivial ancestor check'' from the library.
+    "We locally install the ``trivial ancestor check'' from the library.
      We found at least a case in which ACL2's default heuristic ancestor check
      prevented a valid functional correctness theorem from being proved.
      Since by construction the symbolic execution shoud always terminate,
      it does not seem like ACL2's heuristic ancestor check
      would ever be helpful (if this turns out to be wrong, we will re-evaluate).
      Thus, we locally install the simpler ancestor check."))
-  (b* ((names-to-avoid nil)
-       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
-       ((mv local-const-event exported-const-event)
-        (atc-gen-const const tunit print-info/all))
-       ((mv fun-env-const-event fun-env-const names-to-avoid)
-        (atc-gen-fun-env-const tunit names-to-avoid (w state)))
-       ((er (list wf-thm-local-event? wf-thm-exported-event?))
-        (atc-gen-wf-thm const proofs print-info/all ctx state))
-       ((er (list fn-thm-local-events? fn-thm-exported-events? &))
-        (atc-gen-fn-thm-list fn1...fnp nil const proofs print-info/all
-                             fun-env-const names-to-avoid ctx state))
+  (b* ((names-to-avoid (list const))
+       ((er (list tunit local-events exported-events &))
+        (atc-gen-transunit fn1...fnp const proofs print-info/all
+                           names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit
                                                 output-file
                                                 print-info/all
                                                 state))
        (print-events (and (member-eq print '(:result :info :all))
-                          (atc-gen-print-result exported-const-event
-                                                wf-thm-exported-event?
-                                                fn-thm-exported-events?
-                                                output-file
-                                                proofs)))
+                          (atc-gen-print-result exported-events output-file)))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
-            ,local-const-event
-            ,exported-const-event
-            ,fun-env-const-event
-            ,@wf-thm-local-event?
-            ,@wf-thm-exported-event?
             (local (acl2::use-trivial-ancestors-check))
-            ,@fn-thm-local-events?
-            ,@fn-thm-exported-events?
+            ,@local-events
+            ,@exported-events
             ,file-gen-event))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
