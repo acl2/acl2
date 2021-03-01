@@ -380,10 +380,6 @@
        (read-file-into-string2 filename start2 nil state))
       (read-file-into-string2 filename start1 nil state))))))
 
-;; This is to get the theorem about the nth element of a list of unsigned
-;; bytes.
-(local (include-book "std/typed-lists/integer-listp" :dir :system))
-
 (defthm
   subseq-of-implode-of-append
   (equal (subseq (implode (append x y))
@@ -1558,6 +1554,8 @@
     (("goal"
       :in-theory
       (enable m1-file-p m1-file->contents m1-file-contents-fix))))))
+
+(defthm m1-file->d-e-under-true-equiv (true-equiv (m1-file->d-e file) t))
 
 (defund m1-regular-file-p (file)
   (declare (xargs :guard t))
