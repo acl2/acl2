@@ -136,7 +136,7 @@
 ;; properties of it.
 (acl2::defmacrodoc defprime (name number pratt-cert &key (evisc 't))
   `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc (w state)))
-  :parents (number-theory)
+  :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
   :inputs (name
            "Name of the prime to introduce, a symbol."
@@ -150,7 +150,7 @@
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
 (acl2::defmacrodoc defprime-alias (name existing-prime-name &key (evisc 't))
    `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc (w state)))
-   :parents (number-theory)
+   :parents (acl2::number-theory)
    :short "Introduce an alias of an existing prime introduced with defprime."
    :inputs (name
             "Name of the prime to introduce, a symbol."
