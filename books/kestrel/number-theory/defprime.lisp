@@ -73,6 +73,7 @@
        (defconst ,pratt-cert-defconst-name
          ',pratt-cert)
 
+       ;; Primality theorem for the constant.
        ;; Since primep may often be disabled and this cannot be efficiently executed.
        (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name '-constant)
          (rtl::primep ,defconst-name)
@@ -81,6 +82,7 @@
                                   (p ,defconst-name)
                                   (c ,pratt-cert-defconst-name)))))
 
+       ;; Primality theorem for the 0-ary function.
        (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name)
          (rtl::primep (,name))
          :hints (("Goal" :in-theory (enable (:e rtl::certify-prime))
