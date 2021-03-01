@@ -101,7 +101,7 @@
 
   "@('prog-const') is the symbol specified by @('const-name')."
 
-  "@('fun-env-const') is the symbol used to name the local constant
+  "@('fenv-const') is the symbol used to name the local constant
    whose value is the function environment of the generated translation unit."
 
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
@@ -1496,7 +1496,7 @@
 (define atc-gen-fn-lemma-thm ((fn symbolp)
                               (prec-fns atc-symbol-fninfo-alistp)
                               (prog-const symbolp)
-                              (fun-env-const symbolp)
+                              (fenv-const symbolp)
                               (names-to-avoid symbol-listp)
                               (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -1577,7 +1577,7 @@
         `(b* (((mv result compst1) (exec-fun (ident ,(symbol-name fn))
                                              (list ,@formals)
                                              compst
-                                             ,fun-env-const
+                                             ,fenv-const
                                              1000000000)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@formals)))))
@@ -1603,7 +1603,7 @@
                         (prog-const symbolp)
                         (proofs booleanp)
                         (print-info/all booleanp)
-                        (fun-env-const symbolp)
+                        (fenv-const symbolp)
                         (names-to-avoid symbol-listp)
                         ctx
                         state)
@@ -1660,7 +1660,7 @@
                 nil))
        (wrld (w state))
        ((mv lemma-event lemma-name names-to-avoid)
-        (atc-gen-fn-lemma-thm fn prec-fns prog-const fun-env-const
+        (atc-gen-fn-lemma-thm fn prec-fns prog-const fenv-const
                               names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
@@ -1700,7 +1700,7 @@
                           (prog-const symbolp)
                           (proofs booleanp)
                           (print-info/all booleanp)
-                          (fun-env-const symbolp)
+                          (fenv-const symbolp)
                           (names-to-avoid symbol-listp)
                           ctx
                           state)
@@ -1754,7 +1754,7 @@
                           :body (stmt-compound items))))
        ((er (list local-events exported-events names-to-avoid))
         (atc-gen-fn-thm fn prec-fns prog-const proofs print-info/all
-                        fun-env-const names-to-avoid ctx state))
+                        fenv-const names-to-avoid ctx state))
        (info (make-atc-fn-info :type type)))
     (acl2::value
      (list
@@ -1771,7 +1771,7 @@
                                (prog-const symbolp)
                                (proofs booleanp)
                                (print-info/all booleanp)
-                               (fun-env-const symbolp)
+                               (fenv-const symbolp)
                                (names-to-avoid symbol-listp)
                                ctx
                                state)
@@ -1800,11 +1800,11 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-decl fn prec-fns prog-const proofs print-info/all fun-env-const
+        (atc-gen-ext-decl fn prec-fns prog-const proofs print-info/all fenv-const
                           names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-decl-list rest-fns prec-fns prog-const proofs print-info/all
-                               fun-env-const names-to-avoid ctx state)))
+                               fenv-const names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -1813,8 +1813,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                       (tunit transunitp)
-                       (print-info/all booleanp))
+                            (tunit transunitp)
+                            (print-info/all booleanp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
@@ -1831,11 +1831,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fun-env-const ((prog-const symbolp)
-                               (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
+(define atc-gen-fenv-const ((prog-const symbolp)
+                            (names-to-avoid symbol-listp)
+                            (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (fun-env-const "A @(tsee symbolp).")
+               (fenv-const "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a local event for a named constant whose value is
@@ -1941,20 +1941,20 @@
     "We first generate the event for the named constant with the environment,
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
-  (b* (((mv fun-env-const-event fun-env-const names-to-avoid)
-        (atc-gen-fun-env-const prog-const names-to-avoid (w state)))
+  (b* (((mv fenv-const-event fenv-const names-to-avoid)
+        (atc-gen-fenv-const prog-const names-to-avoid (w state)))
        ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
         (atc-gen-wf-thm prog-const proofs print-info/all
                         names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-decl-list fn1...fnp nil prog-const proofs print-info/all
-                               fun-env-const names-to-avoid ctx state))
+                               fenv-const names-to-avoid ctx state))
        (tunit (make-transunit :decls exts))
        ((mv local-const-event exported-const-event)
         (atc-gen-prog-const prog-const tunit print-info/all))
        (local-events (append (list local-const-event)
-                             (list fun-env-const-event)
+                             (list fenv-const-event)
                              wf-thm-local-events
                              fn-thm-local-events))
        (exported-events (append (list exported-const-event)
