@@ -21,12 +21,18 @@
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
+(include-book "kestrel/utilities/downcase" :dir :system)
 (include-book "std/util/add-io-pairs" :dir :system)
 
-(defund defprime-fn (name number pratt-cert
-                          existing-prime-name ;; nil, of the name of existing prime (created using defprime) equal to this prime
-                          evisc
-                          wrld)
+(defund defprime-fn (name
+                     number
+                     pratt-cert
+                     existing-prime-name ;; nil, of the name of existing prime (created using defprime) equal to this prime
+                     evisc
+                     parents
+                     short
+                     long
+                     wrld)
   (declare (xargs :guard (and (symbolp name)
                               (if existing-prime-name
                                   (eq :none number)
@@ -35,6 +41,12 @@
                                   (eq :none pratt-cert)
                                 (true-listp pratt-cert)) ;; todo: strengthen?
                               (booleanp evisc)
+                              (or (eq :auto parents)
+                                  (symbol-listp parents))
+                              (or (eq :auto short)
+                                  (stringp short))
+                              (or (eq :auto long)
+                                  (stringp long))
                               (symbolp existing-prime-name) ; may be nil, for none
                               (plist-worldp wrld))))
   (b* ((defprime-alist (table-alist 'defprime-table wrld))
@@ -46,8 +58,20 @@
        (number (if existing-prime-name
                    (cdr (assoc-eq existing-prime-name defprime-alist))
                  number))
+       ((when (not (natp number)))
+        (er hard? 'defprime "Bad value for existing prime: ~x0." number))
        (defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '*))
-       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '-pratt-cert*)))
+       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '-pratt-cert*))
+       (parents (if (eq :auto parents)
+                    (list 'acl2::number-theory) ;todo: use something better here, perhaps acl2::primes?
+                  parents))
+       (short (if (eq :auto short)
+                  "A prime defined by @(tsee defprime)."
+                short))
+       (long (if (eq :auto long)
+                 ;; Default :long documentation:
+                 (concatenate 'string "<p>The value of " (acl2::string-downcase-gen (symbol-name name)) " is " (acl2::nat-to-string number) ".</p>")
+               long)))
     `(encapsulate ()
 
        ,@(and (not existing-prime-name)
@@ -128,33 +152,46 @@
        ,@(and (not existing-prime-name)
               `((acl2::add-io-pairs (((rtl::primep (,name)) t)))))
 
+       (defxdoc ,name :parents ,parents :short ,short :long ,long)
+
        ;; record the prime in the table of primes
-       (table defprime-table ',name ,number)
-       )))
+       (table defprime-table ',name ,number))))
 
 ;; Introduce a prime (as a constant and as a 0-ary function) and prove helpful
 ;; properties of it.
-(acl2::defmacrodoc defprime (name number pratt-cert &key (evisc 't))
-  `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc (w state)))
+(acl2::defmacrodoc defprime (name number pratt-cert
+                                  &key
+                                  (evisc 't)
+                                  (parents ':auto)
+                                  (short ':auto)
+                                  (long ':auto))
+  `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc
+                 ',parents ',short ',long
+                 (w state)))
   :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
-  :inputs (name
-           "Name of the prime to introduce, a symbol."
-           number
-           "Numeric value of the prime, a natural number."
-           pratt-cert
-           "Pratt certificate for the prime."
-           :evisc
-           "Whether to print occurrences of the prime using its symbolic name."))
+  :inputs (name "Name of the prime to introduce, a symbol."
+           number "Numeric value of the prime, a natural number."
+           pratt-cert "Pratt certificate for the prime."
+           :evisc "Whether to print occurrences of the prime using its symbolic name."
+           :parents "Xdoc :parents for the prime."
+           :short "Xdoc :short description for the prime."
+           :long "Xdoc :long section for the prime."))
 
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
-(acl2::defmacrodoc defprime-alias (name existing-prime-name &key (evisc 't))
-   `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc (w state)))
-   :parents (acl2::number-theory)
-   :short "Introduce an alias of an existing prime introduced with defprime."
-   :inputs (name
-            "Name of the prime to introduce, a symbol."
-            existing-prime-name
-            "Name of the existing prime, a symbol."
-            :evisc
-            "Whether to print occurrences of the prime using its symbolic name."))
+(acl2::defmacrodoc defprime-alias (name existing-prime-name &key
+                                        (evisc 't)
+                                        (parents ':auto)
+                                        (short ':auto)
+                                        (long ':auto))
+  `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc
+                 ',parents ',short ',long
+                 (w state)))
+  :parents (acl2::number-theory)
+  :short "Introduce an alias of an existing prime introduced with defprime."
+  :inputs (name "Name of the prime to introduce, a symbol."
+           existing-prime-name "Name of the existing prime, a symbol."
+           :evisc "Whether to print occurrences of the prime using its symbolic name."
+           :parents "Xdoc :parents for the prime."
+           :short "Xdoc :short description for the prime."
+           :long "Xdoc :long section for the prime."))
