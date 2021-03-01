@@ -20,6 +20,7 @@
 
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
 (include-book "kestrel/utilities/pack" :dir :system)
+(include-book "kestrel/utilities/doc" :dir :system)
 (include-book "std/util/add-io-pairs" :dir :system)
 
 (defund defprime-fn (name number pratt-cert
@@ -133,9 +134,27 @@
 
 ;; Introduce a prime (as a constant and as a 0-ary function) and prove helpful
 ;; properties of it.
-(defmacro defprime (name number pratt-cert &key (evisc 't))
-  `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc (w state))))
+(acl2::defmacrodoc defprime (name number pratt-cert &key (evisc 't))
+  `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc (w state)))
+  :parents (number-theory)
+  :short "Introduce a prime and related machinery."
+  :inputs (name
+           "Name of the prime to introduce, a symbol."
+           number
+           "Numeric value of the prime, a natural number."
+           pratt-cert
+           "Pratt certificate for the prime."
+           :evisc
+           "Whether to print occurrences of the prime using its symbolic name."))
 
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
-(defmacro defprime-alias (name existing-prime-name &key (evisc 't))
-  `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc (w state))))
+(acl2::defmacrodoc defprime-alias (name existing-prime-name &key (evisc 't))
+   `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc (w state)))
+   :parents (number-theory)
+   :short "Introduce an alias of an existing prime introduced with defprime."
+   :inputs (name
+            "Name of the prime to introduce, a symbol."
+            existing-prime-name
+            "Name of the existing prime, a symbol."
+            :evisc
+            "Whether to print occurrences of the prime using its symbolic name."))
