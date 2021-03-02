@@ -77,7 +77,9 @@
 
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
+(include-book "sbvdivdown-rules")
 (include-book "sbvrem")
+(include-book "sbvrem-rules")
 
 ;; Sign extension and masks
 (include-book "repeatbit")
@@ -144,5 +146,7 @@
 (include-book "rules4")
 (include-book "rules5")
 (include-book "rules6")
+(include-book "rules7")
+(include-book "rules8")
 
 (include-book "doc")

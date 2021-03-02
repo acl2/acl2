@@ -263,7 +263,9 @@
        (foo-fix-of-cons   (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS") x.fix))
        (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
        (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix))
-       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-REPEAT") x.fix)))
+       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix)
+                                                            "-OF-REPEAT") x.fix))
+       (nth-of-foo-fix    (intern-in-package-of-symbol (cat "NTH-OF-" (symbol-name x.fix)) x.fix)))
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
         :pkg ,x.equiv
         :hints (("goal" :expand ((,x.fix x))
@@ -356,7 +358,18 @@
                           :expand ((repeat n x)
                                    (repeat n (,x.elt-fix x))
                                    (:free (a b) (,x.fix (cons a b))))
-                          :in-theory (enable (:i repeat))))))))))
+                          :in-theory (enable (:i repeat)))))))
+
+      ,@(and (not x.non-emptyp)
+             `((defthm ,nth-of-foo-fix
+                 (equal (nth n (,x.fix x))
+                        (if (< (nfix n) (len x))
+                            (,x.elt-fix (nth n x))
+                          nil))
+                 :hints (("goal"
+                          :induct (nth n x)
+                          :expand ((,x.fix x))
+                          :in-theory (enable nth len)))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))
