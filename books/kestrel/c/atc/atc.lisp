@@ -1699,7 +1699,6 @@
 
 (define atc-gen-fn-run-correct-thm ((fn symbolp)
                                     (prog-const symbolp)
-                                    (print-info/all booleanp)
                                     (fn-exec-correct-thm symbolp)
                                     (names-to-avoid symbol-listp)
                                     ctx
@@ -1707,6 +1706,7 @@
   :returns (mv erp
                (val "A @('(tuple (local-event pseudo-event-formp)
                                  (exported-event pseudo-event-formp)
+                                 (name symbolp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
@@ -1771,14 +1771,7 @@
          name
          :formula `(implies ,guard (equal ,lhs ,rhs))
          :hints hints
-         :enable nil))
-       (progress-start?
-        (and print-info/all
-             `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
-       (local-event `(progn ,@progress-start?
-                            ,local-event
-                            ,@progress-end?)))
+         :enable nil)))
     (acl2::value (list local-event
                        exported-event
                        names-to-avoid))))
@@ -1812,14 +1805,23 @@
                                      names-to-avoid wrld))
        ((er (list fn-run-correct-local-event
                   fn-run-correct-exported-event
+                  fn-run-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-run-correct-thm fn prog-const print-info/all
-                                    fn-exec-correct-thm names-to-avoid
-                                    ctx state)))
-    (acl2::value (list (list fn-not-error-event
-                             fn-exec-correct-event
-                             fn-run-correct-local-event)
-                       (list fn-run-correct-exported-event)
+        (atc-gen-fn-run-correct-thm fn prog-const fn-exec-correct-thm
+                                    names-to-avoid ctx state))
+       (progress-start?
+        (and print-info/all
+             `((cw-event "~%Generating the theorem ~x0..."
+                         ',fn-run-correct-thm))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (local-events (append progress-start?
+                             (list fn-not-error-event)
+                             (list fn-exec-correct-event)
+                             (list fn-run-correct-local-event)
+                             progress-end?))
+       (exported-events (list fn-run-correct-exported-event)))
+    (acl2::value (list local-events
+                       exported-events
                        fn-not-error-thm
                        names-to-avoid))))
 
