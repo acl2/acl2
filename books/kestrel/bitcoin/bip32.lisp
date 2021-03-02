@@ -229,7 +229,7 @@
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
        (parsed-big-i-l (bebytes=>nat big-i-l))
-       (n (secp256k1-order))
+       (n (secp256k1-group-prime))
        ((when (>= parsed-big-i-l n)) (mv t irrelevant-child))
        (child.key (mod (+ parsed-big-i-l parent.key) n))
        ((when (= child.key 0)) (mv t irrelevant-child))
@@ -240,7 +240,7 @@
                  :in-theory (e/d (ubyte32p
                                   bip32-chain-code-p
                                   secp256k1-priv-key-p
-                                  secp256k1-order)
+                                  secp256k1-group-prime)
                                  (mod))))
   :prepwork ((local (include-book "std/lists/nthcdr" :dir :system))
              (local (include-book "arithmetic-5/top" :dir :system)))
@@ -278,7 +278,7 @@
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
        (parsed-big-i-l (bebytes=>nat big-i-l))
-       (n (secp256k1-order))
+       (n (secp256k1-group-prime))
        ((when (>= parsed-big-i-l n)) (mv t irrelevant-child))
        (child.key (secp256k1-add (secp256k1-mul parsed-big-i-l
                                                 (secp256k1-point-generator))
@@ -1669,7 +1669,7 @@
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
        (parsed-big-i-l (bebytes=>nat big-i-l))
-       (n (secp256k1-order))
+       (n (secp256k1-group-prime))
        ((when (or (= parsed-big-i-l 0)
                   (>= parsed-big-i-l n)))
         (b* ((irrelevant-ext-key (bip32-ext-priv-key 1 big-i-r)))

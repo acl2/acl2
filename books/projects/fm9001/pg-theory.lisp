@@ -149,7 +149,7 @@
   :hints (("Goal"
            :in-theory (enable se-rules t-carry& f$t-carry f-gates))))
 
-;; Lemmas 
+;; Lemmas
 
 (defthm v-append-propagate
   (implies (equal (len a) (len c))

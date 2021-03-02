@@ -191,3 +191,28 @@ Skipping for now.
 (must-fail
  (defdata-alias r2 r1))
 
+(must-succeed
+ (test? (=> (^ (intp lo) (intp hi) (natp n) (<= lo hi))
+            (^ (<= lo (geometric-int-between lo hi n))
+               (>= hi (geometric-int-between lo hi n))))))
+
+(must-succeed
+ (test? (=> (^ (rationalp lo) (rationalp hi) (natp n) (<= lo hi))
+            (^ (<= lo (geometric-rat-between lo hi n))
+               (>= hi (geometric-rat-between lo hi n))))))
+
+(must-succeed
+ (test? (=> (^ (intp lo) (intp hi) (<= lo hi))
+            (b* (((mv mid1 mid2) (defdata::int-midpoints lo hi)))
+              (^ (<= lo mid1)
+                 (>= hi mid2))))))
+
+(must-succeed
+ (test? (=> (^ (rationalp lo) (rationalp hi) (<= lo hi))
+            (b* (((mv mid1 mid2) (defdata::rat-midpoints lo hi)))
+              (^ (<= lo mid1)
+                 (>= hi mid2))))))
+
+;(in-package "DEFDATA")
+;:redef!
+;(in-package "ACL2S")

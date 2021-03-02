@@ -45,8 +45,8 @@
             ecurve::secp256k1-fieldp
             ecurve::secp256k1-generator
             ecurve::secp256k1-negate
-            ecurve::secp256k1-order
-            ecurve::secp256k1-prime
+            ecurve::secp256k1-group-prime
+            ecurve::secp256k1-field-prime
             ecurve::secp256k1-priv-key-equiv
             ecurve::secp256k1-priv-key-fix
             ecurve::secp256k1-priv-key-p

@@ -1,127 +1,131 @@
-(STR::STRPOS-FAST (665 35 (:DEFINITION LEN))
-                  (557 5 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                  (380 70 (:REWRITE LEN-WHEN-ATOM))
-                  (311 4 (:REWRITE LEN-OF-NTHCDR))
-                  (205 40 (:REWRITE DEFAULT-CDR))
-                  (185 110 (:REWRITE STR::CONSP-OF-EXPLODE))
-                  (174 5
+(STR::STRPOS-FAST (1073 9 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                  (895 47 (:DEFINITION LEN))
+                  (790 9 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                  (602 8 (:REWRITE LEN-OF-NTHCDR))
+                  (464 94 (:REWRITE LEN-WHEN-ATOM))
+                  (306 8 (:REWRITE CONSP-OF-NTHCDR))
+                  (265 52 (:REWRITE DEFAULT-CDR))
+                  (229 138 (:REWRITE STR::CONSP-OF-EXPLODE))
+                  (198 9
                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                  (198 9
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                  (190 190 (:REWRITE CONSP-BY-LEN))
                   (155 5 (:DEFINITION NTHCDR))
-                  (153 4 (:REWRITE CONSP-OF-NTHCDR))
-                  (150 150 (:REWRITE CONSP-BY-LEN))
-                  (118 77 (:REWRITE DEFAULT-+-2))
-                  (83 77 (:REWRITE DEFAULT-+-1))
+                  (152 96 (:REWRITE DEFAULT-+-2))
+                  (106 96 (:REWRITE DEFAULT-+-1))
+                  (89 70 (:REWRITE DEFAULT-<-1))
+                  (81 70 (:REWRITE DEFAULT-<-2))
                   (77 10 (:REWRITE NTHCDR-WHEN-ZP))
-                  (71 57 (:REWRITE DEFAULT-<-1))
-                  (64 57 (:REWRITE DEFAULT-<-2))
-                  (55 10 (:REWRITE NTHCDR-WHEN-ATOM))
-                  (40 40 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                  (38 38
+                  (76 76
                       (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                  (38 38
+                  (76 76
                       (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                  (38 38 (:LINEAR LEN-WHEN-PREFIXP))
+                  (76 76 (:LINEAR LEN-WHEN-PREFIXP))
+                  (55 10 (:REWRITE NTHCDR-WHEN-ATOM))
+                  (52 52 (:REWRITE CONSP-OF-CDR-BY-LEN))
+                  (38 38
+                      (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
                   (33 33
                       (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                  (25 5
-                      (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                  (19 19
-                      (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
-                  (11 11 (:REWRITE DEFAULT-UNARY-MINUS))
-                  (10 2 (:REWRITE <-+-NEGATIVE-0-2))
-                  (5 5 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                  (5 5 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                  (5 5
+                  (20 4 (:REWRITE <-+-NEGATIVE-0-2))
+                  (15 15 (:REWRITE DEFAULT-UNARY-MINUS))
+                  (9 9 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                  (9 9 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                  (9 9
                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                  (5 5
+                  (9 9
                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                  (3 3 (:REWRITE EQUAL-CONSTANT-+))
+                  (6 6 (:REWRITE EQUAL-CONSTANT-+))
+                  (2 2
+                     (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                   (2 2 (:REWRITE FOLD-CONSTS-IN-+))
                   (1 1
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                   (1 1 (:LINEAR LISTPOS-COMPLETE)))
-(STR::L0 (763 5 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-         (330 32 (:DEFINITION LEN))
-         (297 24
+(STR::L0 (1492 5 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+         (651 63 (:DEFINITION LEN))
+         (592 46
               (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-         (143 143 (:REWRITE CONSP-BY-LEN))
-         (130 21
+         (260 260 (:REWRITE CONSP-BY-LEN))
+         (258 40
               (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-         (90 45 (:REWRITE DEFAULT-+-2))
-         (83 83 (:REWRITE CONSP-OF-CDR-BY-LEN))
-         (57 45 (:REWRITE DEFAULT-+-1))
-         (46 2 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
-         (30 10 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
-         (30 6 (:REWRITE COMMUTATIVITY-OF-+))
-         (20 20 (:REWRITE CONSP-OF-CDDR-BY-LEN))
-         (20 20 (:LINEAR LEN-WHEN-PREFIXP))
-         (20 10 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-         (18 7
-             (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-         (18 6
+         (178 89 (:REWRITE DEFAULT-+-2))
+         (158 158 (:REWRITE CONSP-OF-CDR-BY-LEN))
+         (113 89 (:REWRITE DEFAULT-+-1))
+         (92 4 (:LINEAR LISTPOS-UPPER-BOUND-WEAK))
+         (60 20 (:REWRITE LISTPOS-WHEN-ATOM-RIGHT))
+         (60 12 (:REWRITE COMMUTATIVITY-OF-+))
+         (40 20 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+         (38 38 (:REWRITE CONSP-OF-CDDR-BY-LEN))
+         (38 38 (:LINEAR LEN-WHEN-PREFIXP))
+         (36 12
              (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-         (17 17 (:TYPE-PRESCRIPTION LISTPOS))
-         (16 2 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
-         (12 6 (:REWRITE DEFAULT-UNARY-MINUS))
-         (10 6
+         (34 34 (:TYPE-PRESCRIPTION LISTPOS))
+         (32 4 (:LINEAR LISTPOS-LOWER-BOUND-WEAK))
+         (24 12 (:REWRITE DEFAULT-UNARY-MINUS))
+         (24 11
+             (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+         (23 11
              (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-         (8 8 (:REWRITE PREFIXP-TRANSITIVE . 2))
-         (8 8 (:REWRITE PREFIXP-TRANSITIVE . 1))
-         (8 8
-            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-         (8 8
-            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+         (12 12 (:REWRITE PREFIXP-TRANSITIVE . 2))
+         (12 12 (:REWRITE PREFIXP-TRANSITIVE . 1))
+         (12 12
+             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+         (12 12
+             (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+         (12 4
+             (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
          (8 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-         (6 2
-            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-1))
          (5 5 (:REWRITE SUBLISTP-COMPLETE))
+         (4 4 (:LINEAR LISTPOS-COMPLETE))
+         (4 1 (:REWRITE LIST-EQUIV-OF-NIL-RIGHT))
          (3 1 (:REWRITE |(equal 0 (len x))|))
-         (2 2 (:LINEAR LISTPOS-COMPLETE))
-         (1 1 (:REWRITE CONSP-OF-CDDDR-BY-LEN)))
-(STR::STRPOS-FAST-REMOVAL (13055 93
-                                 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                          (7858 428 (:DEFINITION LEN))
-                          (6589 45 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                          (4353 856 (:REWRITE LEN-WHEN-ATOM))
-                          (3468 583 (:REWRITE DEFAULT-CDR))
-                          (3400 878 (:REWRITE DEFAULT-+-2))
-                          (1997 1997 (:REWRITE CONSP-BY-LEN))
-                          (1956 14 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
-                          (1048 878 (:REWRITE DEFAULT-+-1))
-                          (835 835 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                          (829 114 (:REWRITE NTHCDR-WHEN-ZP))
-                          (599 114 (:REWRITE NTHCDR-WHEN-ATOM))
-                          (544 89
-                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                          (525 115 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
-                          (387 256 (:REWRITE DEFAULT-<-2))
-                          (341 45 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                          (289 15 (:REWRITE NATP-RW))
-                          (278 256 (:REWRITE DEFAULT-<-1))
-                          (230 230 (:LINEAR LEN-WHEN-PREFIXP))
-                          (182 97
-                               (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                          (159 159 (:REWRITE CONSP-OF-CDDR-BY-LEN))
-                          (155 18 (:REWRITE <-+-NEGATIVE-0-1))
-                          (150 4 (:REWRITE PREFIXP-NTHCDR-NTHCDR))
-                          (149 114 (:REWRITE DEFAULT-UNARY-MINUS))
-                          (140 45 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                          (127 127
-                               (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                          (93 93 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                          (87 87
-                              (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
-                          (82 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                          (82 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
-                          (57 57 (:REWRITE OPEN-SMALL-NTHCDR))
-                          (45 45 (:REWRITE SUBLISTP-COMPLETE))
-                          (21 21 (:REWRITE EQUAL-CONSTANT-+))
-                          (13 13 (:REWRITE LISTPOS-COMPLETE))
-                          (13 13 (:REWRITE CONSP-OF-CDDDR-BY-LEN))
-                          (12 3
-                              (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
-                          (7 7 (:LINEAR LISTPOS-COMPLETE))
-                          (2 2 (:TYPE-PRESCRIPTION LIST-EQUIV)))
+         (2 2 (:REWRITE CONSP-OF-CDDDR-BY-LEN)))
+(STR::STRPOS-FAST-REMOVAL
+     (25827 189
+            (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (14624 55 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (14068 770 (:DEFINITION LEN))
+     (7274 1540 (:REWRITE LEN-WHEN-ATOM))
+     (6870 1452 (:REWRITE DEFAULT-+-2))
+     (5193 956 (:REWRITE DEFAULT-CDR))
+     (4490 17 (:REWRITE ACL2-NUMBERP-OF-LISTPOS))
+     (3329 3329 (:REWRITE CONSP-BY-LEN))
+     (1760 1452 (:REWRITE DEFAULT-+-1))
+     (1400 1400 (:REWRITE CONSP-OF-CDR-BY-LEN))
+     (967 132 (:REWRITE NTHCDR-WHEN-ZP))
+     (785 165 (:REWRITE LISTPOS-WHEN-ATOM-LEFT))
+     (697 132 (:REWRITE NTHCDR-WHEN-ATOM))
+     (535 337 (:REWRITE DEFAULT-<-2))
+     (426 55 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+     (362 362 (:LINEAR LEN-WHEN-PREFIXP))
+     (355 337 (:REWRITE DEFAULT-<-1))
+     (276 276 (:REWRITE CONSP-OF-CDDR-BY-LEN))
+     (268 204 (:REWRITE DEFAULT-UNARY-MINUS))
+     (256 14 (:REWRITE NATP-RW))
+     (191 191
+          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (189 189 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (180 55 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+     (145 145
+          (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (137 16 (:REWRITE <-+-NEGATIVE-0-1))
+     (127 127
+          (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
+     (93 8 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
+     (70 2 (:REWRITE PREFIXP-NTHCDR-NTHCDR))
+     (66 66 (:REWRITE OPEN-SMALL-NTHCDR))
+     (55 55 (:REWRITE SUBLISTP-COMPLETE))
+     (45 45 (:REWRITE EQUAL-CONSTANT-+))
+     (26 26 (:REWRITE CONSP-OF-CDDDR-BY-LEN))
+     (17 17 (:REWRITE LISTPOS-COMPLETE))
+     (12 3
+         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+     (9 9 (:LINEAR LISTPOS-COMPLETE))
+     (8 8 (:TYPE-PRESCRIPTION LIST-EQUIV))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (STR::STRPOS$INLINE (76 4 (:DEFINITION LEN))
                     (48 8 (:REWRITE LEN-WHEN-ATOM))
                     (24 14 (:REWRITE STR::CONSP-OF-EXPLODE))

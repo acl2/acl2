@@ -32,6 +32,8 @@
 (include-book "defomap")
 (include-book "defset")
 (include-book "defsubtype")
+(include-book "defunit")
+(include-book "defunit-doc")
 (include-book "map")
 (include-book "nat-set")
 (include-book "nati")

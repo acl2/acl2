@@ -201,6 +201,7 @@
                       (:REWRITE ADE::QUEUE4$IN-ACT-INACTIVE))
                    (4 1 (:REWRITE COMMUTATIVITY-OF-+))
                    (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                   (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
                    (1 1
@@ -485,6 +486,8 @@
           (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
      (347 347 (:TYPE-PRESCRIPTION ADE::3VP))
      (297 99 (:REWRITE ADE::BVP-NTHCDR))
+     (243 243
+          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (199 100 (:REWRITE DEFAULT-<-2))
      (199 100 (:REWRITE DEFAULT-<-1))
      (128 128 (:REWRITE DEFAULT-UNARY-MINUS))

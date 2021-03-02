@@ -1,0 +1,10 @@
+(ENSURE-RULE-KNOWN)
+(ENSURE-RULES-KNOWN-FN (48 48 (:REWRITE DEFAULT-CAR))
+                       (44 4 (:DEFINITION FGETPROP))
+                       (41 41 (:REWRITE DEFAULT-CDR))
+                       (20 2 (:DEFINITION PLIST-WORLDP))
+                       (18 2
+                           (:DEFINITION WEAK-APPLY$-BADGE-ALISTP))
+                       (10 2 (:DEFINITION ASSOC-EQUAL))
+                       (8 2 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                       (6 2 (:DEFINITION ALISTP)))

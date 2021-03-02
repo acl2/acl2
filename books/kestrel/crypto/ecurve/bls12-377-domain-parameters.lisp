@@ -12,6 +12,8 @@
 
 (in-package "ECURVE")
 
+(include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
+
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -62,7 +64,9 @@
                         (+ (* 3 (expt 2 46) 7 13 499)
                            1))))
 
-(define bls12-377-scalar-field-prime ()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc bls12-377-scalar-field-prime
   :short "The prime @($r$)."
   :long
   (xdoc::topstring
@@ -71,34 +75,24 @@
      the curve @($E_{BLS}$), and is also the base field size of
      the twisted Edwards curve @($E_{Ed/BLS}$).")
    (xdoc::p
-    "@($r$) is computed from the <see topic='@(url bls12-377-parameter-x)'>parameter x</see>:
+    "@($r$) is computed from the
+     <see topic='@(url bls12-377-parameter-x)'>parameter x</see>:
      @([
         r = x^4 - x^2 + 1
       ])")
    (xdoc::p
     "Figure 16 lists its value in hexadecimal:")
    (xdoc::codeblock
-    "0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001"))
-   #x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
-   :no-function t
-   ///
+    "0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001")))
 
-   (assert-event (posp (bls12-377-scalar-field-prime)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (assert-event (equal (integer-length (bls12-377-scalar-field-prime)) 253))
+;; show that r was computed from x as stated
+(assert-event
+ (equal (bls12-377-scalar-field-prime)
+        (let ((x (bls12-377-parameter-x)))
+          (+ (- (expt x 4) (expt x 2)) 1))))
 
-   ;; show the decimal version
-   (assert-event
-    (equal (bls12-377-scalar-field-prime)
-           8444461749428370424248824938781546531375899335154063827935233455917409239041
-           ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   ;; show that r was computed from x as stated
-   (assert-event
-    (equal (bls12-377-scalar-field-prime)
-           (let ((x (bls12-377-parameter-x)))
-             (+ (- (expt x 4) (expt x 2)) 1))))
-
-   ;; other checks on this prime's properties can go here
-
-   (in-theory (disable (:e bls12-377-scalar-field-prime))))
+(in-theory (disable (:e bls12-377-scalar-field-prime)))

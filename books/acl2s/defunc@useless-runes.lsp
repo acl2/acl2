@@ -594,6 +594,8 @@
      (3 3 (:REWRITE SUBSETP-MEMBER . 1))
      (3 3
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
      (2 1 (:REWRITE O-INFP-O-FINP-O<=))
      (1 1 (:REWRITE |a < b & b < c  =>  a < c|))
      (1 1 (:REWRITE O-P-DEF-O-FINP-1)))

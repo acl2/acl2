@@ -3573,35 +3573,27 @@ of :?, namely, (:? X).
     (and (my-consp x)
          (natp (my-car x))
          (+ 2 3 (my-car x))))
-; fails
-  (must-fail
-; Failure message:
-#||
-ACL2 Error in event processing:  Guard verification has failed for
-FOO$1.  See :DOC apt::simplify-failure for some ways to address this
-failure.
-||#
-   (simplify foo
-             :theory (disable my-consp (:e tau-system))))
-  (must-fail
-; Failure has error messages that may be excessively verbose.
-; Consider suppressing them somehow.  I don't see how unless the VERBOSE flag
-; passed to apt::fn-simp-defs (in simplify-defun-impl.lisp) can take on
-; different values depending on whether :print was supplies as :info or :all.
-#||
-ACL2 Error in event processing:  Guard verification has failed for
-FOO$1.  See :DOC apt::simplify-guard-failure for some ways to address
-this failure.
-||#
-   (simplify foo
-             :theory (disable my-consp (:e tau-system))
-             :print :info))
-; succeeds
+
+; The following failed until late November, 2020.  The failure was in guard
+; verification, and that failure was overcome by making a final proof attempt
+; in the current-theory.
+  (simplify foo
+            :theory (disable my-consp (:e tau-system))
+            :print :info)
+  (must-be-redundant
+   (DEFUN FOO$1 (X)
+     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T))
+     (AND (MY-CONSP X)
+          (AND (INTEGERP (CAR X))
+               (NOT (< (CAR X) 0)))
+          (+ 5 (CAR X)))))
+
+; also succeeds
   (simplify foo
             :theory (disable my-consp (:e tau-system))
             :guard-hints nil)
   (must-be-redundant
-   (DEFUN FOO$1 (X)
+   (DEFUN FOO$2 (X)
      (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T))
      (AND (MY-CONSP X)
           (AND (INTEGERP (CAR X))

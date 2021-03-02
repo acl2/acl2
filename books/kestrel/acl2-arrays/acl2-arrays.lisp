@@ -49,7 +49,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (header name l)
                   (header :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (header) ()))))
+  :hints (("Goal" :in-theory (enable header))))
 
 (local (in-theory (enable normalize-header-name)))
 
@@ -57,7 +57,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (default name l)
                   (default :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (default) ()))))
+  :hints (("Goal" :in-theory (enable default))))
 
 (local (in-theory (enable normalize-default-name)))
 
@@ -65,7 +65,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (maximum-length name l)
                   (maximum-length :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (maximum-length) ()))))
+  :hints (("Goal" :in-theory (enable maximum-length))))
 
 (local (in-theory (enable normalize-maximum-length-name)))
 
@@ -73,7 +73,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (dimensions name l)
                   (dimensions :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (dimensions) ()))))
+  :hints (("Goal" :in-theory (enable dimensions))))
 
 (local (in-theory (enable normalize-dimensions-name)))
 
@@ -81,7 +81,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (compress11 name l i n default)
                   (compress11 :fake-name l i n default)))
-  :hints (("Goal" :in-theory (e/d (compress11) ()))))
+  :hints (("Goal" :in-theory (enable compress11))))
 
 (local (in-theory (enable normalize-compress11-name)))
 
@@ -89,9 +89,83 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (compress1 name l)
                   (compress1 :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (compress1) ()))))
+  :hints (("Goal" :in-theory (enable compress1))))
 
 (local (in-theory (enable normalize-compress1-name)))
+
+(defthmd normalize-compress211-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress211 name l i x j default)
+                  (compress211 :fake-name l i x j default)))
+  :hints (("Goal" :in-theory (enable compress211))))
+
+(local (in-theory (enable normalize-compress211-name)))
+
+(defthmd normalize-compress21-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress21 name l n i j default)
+                  (compress21 :fake-name l n i j default)))
+  :hints (("Goal" :in-theory (enable compress21))))
+
+(local (in-theory (enable normalize-compress21-name)))
+
+(defthmd normalize-compress2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress2 name l)
+                  (compress2 :fake-name l)))
+  :hints (("Goal" :in-theory (enable compress2))))
+
+(local (in-theory (enable normalize-compress2-name)))
+
+(defthmd normalize-aref1-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aref1 name l n)
+                  (aref1 :fake-name l n)))
+  :hints (("Goal" :in-theory (enable aref1))))
+
+;; (local (in-theory (enable normalize-aref1-name)))
+
+(defthmd normalize-aset1-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aset1 name l n val)
+                  (aset1 :fake-name l n val)))
+  :hints (("Goal" :in-theory (enable aset1))))
+
+;; (local (in-theory (enable normalize-aset1-name)))
+
+(defthmd normalize-aset2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aset2 name l i j val)
+                  (aset2 :fake-name l i j val)))
+  :hints (("Goal" :in-theory (enable aset2))))
+
+;; (local (in-theory (enable normalize-aset2-name)))
+
+(defthmd normalize-aref2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aref2 name l i j)
+                  (aref2 :fake-name l i j)))
+  :hints (("Goal" :in-theory (enable aref2))))
+
+;; (local (in-theory (enable normalize-aref2-name)))
+
+(defthmd normalize-array1p-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (array1p name l)
+                  (and (symbolp name)
+                       (array1p :fake-name l))))
+  :hints (("Goal" :in-theory (enable array1p))))
+
+;; (local (in-theory (enable normalize-array1p-name)))
+
+(defthmd normalize-array2p-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (array2p name l)
+                  (and (symbolp name)
+                       (array2p :fake-name l))))
+  :hints (("Goal" :in-theory (enable array2p))))
+
+;; (local (in-theory (enable normalize-array2p-name)))
 
 ;; The -1 is here because array1p requries the length to be strictly less than
 ;; the :MAXIMUM-LENGTH (why?), and the :MAXIMUM-LENGTH is at most
@@ -268,6 +342,11 @@
   (implies (array1p name2 l)
            (consp (header name l)))
   :hints (("Goal" :in-theory (e/d (array1p-rewrite dimensions) (dimensions-intro)))))
+
+(defthmd keyword-value-listp-of-cdr-of-header-when-array1p
+  (implies (array1p array-name array)
+           (keyword-value-listp (cdr (header array-name array))))
+  :hints (("Goal" :in-theory (enable array1p header))))
 
 (defthm integerp-of-alen1-gen
   (implies (array1p array-name2 array) ;array-name2 is a free var
@@ -866,7 +945,7 @@
                       val
                     (aref1 array-name array index2)))))
 
-(defun array-to-alist-aux (n len array-name array acc)
+(defund array-to-alist-aux (n len array-name array acc)
   (declare (xargs :measure (nfix (+ 1 (- len n)))
                   :guard (and (array1p array-name array)
                               (natp n)
@@ -883,15 +962,58 @@
 
 (defthm alistp-of-array-to-alist-aux
   (implies (alistp acc)
-           (alistp (array-to-alist-aux n len array-name array acc))))
+           (alistp (array-to-alist-aux n len array-name array acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm len-of-array-to-alist-aux
+  (implies (and (natp len)
+                (natp n))
+           (equal (len (array-to-alist-aux n len array-name array acc))
+                  (+ (nfix (- len n))
+                     (len acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm consp-of-array-to-alist-aux
+  (implies (and (natp len)
+                (natp n))
+           (equal (consp (array-to-alist-aux n len array-name array acc))
+                  (or (posp (nfix (- len n)))
+                      (consp acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm car-of-array-to-alist-aux
+  (equal (car (array-to-alist-aux n len array-name array acc))
+         (if (and (natp len)
+                  (natp n)
+                  (< n len))
+             ;; usual case:
+             (cons (+ -1 len) (aref1 array-name array (+ -1 len)))
+           (car acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
 ;; The indices in the result will be decreasing.
-(defun array-to-alist (len array-name array)
+(defund array-to-alist (len array-name array)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
                               (<= len (alen1 array-name array)))))
   (array-to-alist-aux 0 len array-name array nil))
 
+(defthm len-of-array-to-alist
+  (implies (natp len)
+           (equal (len (array-to-alist len array-name array))
+                  len))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm true-listp-of-array-to-alist-type
+  (true-listp (array-to-alist len array-name array))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm car-of-array-to-alist
+  (implies (posp len)
+           (equal (car (array-to-alist len array-name array))
+                  (cons (+ -1 len) (aref1 array-name array (+ -1 len)))))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
 
 (defun print-array-vals (high-index low-index array-name array)
   (declare (xargs :measure (+ 1 (nfix (- (+ 1 high-index) low-index)))
@@ -1200,12 +1322,13 @@
 
 (defthm aref1-of-cons-of-cons-of-header
   (implies (natp n)
-           (equal (aref1 array-name (cons (cons :header header) dag-lst) n)
-                  (if (assoc-equal n dag-lst)
-                      (aref1 array-name dag-lst n)
+           (equal (aref1 array-name (cons (cons :header header) alist) n)
+                  (if (assoc-equal n alist)
+                      (aref1 array-name alist n)
                     (cadr (assoc-keyword :default header)))))
   :hints (("Goal" :in-theory (enable aref1 header))))
 
+;; This one has no IF in the RHS
 (defthm aref1-of-cons-of-cons-of-header-alt
   (implies (and (natp n)
                 (equal (default array-name array)

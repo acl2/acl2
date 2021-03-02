@@ -144,7 +144,9 @@
 (READ-FILE-CHARACTERS (3 3 (:REWRITE SUBSETP-MEMBER . 4))
                       (3 3 (:REWRITE SUBSETP-MEMBER . 3))
                       (3 3 (:REWRITE SUBSETP-MEMBER . 2))
-                      (3 3 (:REWRITE SUBSETP-MEMBER . 1)))
+                      (3 3 (:REWRITE SUBSETP-MEMBER . 1))
+                      (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+                      (3 3 (:REWRITE INTERSECTP-MEMBER . 2)))
 (STATE-P1-OF-READ-FILE-CHARACTERS
      (60 20
          (:REWRITE STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1))
@@ -183,7 +185,9 @@
                           (3 3 (:REWRITE SUBSETP-MEMBER . 4))
                           (3 3 (:REWRITE SUBSETP-MEMBER . 3))
                           (3 3 (:REWRITE SUBSETP-MEMBER . 2))
-                          (3 3 (:REWRITE SUBSETP-MEMBER . 1)))
+                          (3 3 (:REWRITE SUBSETP-MEMBER . 1))
+                          (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+                          (3 3 (:REWRITE INTERSECTP-MEMBER . 2)))
 (READ-FILE-AS-STRING (18 6
                          (:REWRITE STATE-P-IMPLIES-AND-FORWARD-TO-STATE-P1))
                      (10 5 (:REWRITE REV-WHEN-NOT-CONSP))

@@ -1,0 +1,10 @@
+(FIRST-NON-MEMBER)
+(FIRST-NON-MEMBER-OF-APPEND (104 92 (:REWRITE DEFAULT-CAR))
+                            (67 61 (:REWRITE DEFAULT-CDR))
+                            (42 21
+                                (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+                            (21 21 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                            (21 21 (:TYPE-PRESCRIPTION BINARY-APPEND)))
+(FIRST-NON-MEMBER-WHEN-MEMBER-EQUAL)
+(FIRST-NON-MEMBER-WHEN-NOT-MEMBER-EQUAL (6 6 (:REWRITE DEFAULT-CAR))
+                                        (2 2 (:REWRITE DEFAULT-CDR)))

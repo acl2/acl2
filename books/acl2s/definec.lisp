@@ -163,7 +163,7 @@ both expand into
 
 (defxdoc definec
   :parents (acl2::acl2-sedan acl2::macro-libraries acl2s::defunc)
-  :short "Function definitions with contracts @(see acl2s::defunc)"
+  :short "Function definitions with contracts extending @(see defunc)."
   :long
   "
 <h3>Examples</h3>
@@ -195,7 +195,7 @@ both expand into
 
 <h3>Purpose</h3>
 <p>
-The macro @('definec') is an extension of @('acl2s::defunc')
+The macro @(see definec) is an extension of @(see defunc)
 that makes it more convient to specify simple contracts. 
 For example, the expansions of
 </p>
@@ -235,10 +235,10 @@ are equivalent and include the following events.
 })
 
 <p> Notice that nat was turned into natp. We convert type names into
-the corresponding predicates using @('defdata::defdata') and we
+the corresponding predicates using @(see defdata) and we
 support all (the type of the ACL2 universe), tl (the type of
 true-lists), int (the type of integers), bool (the type of booleans)
-and all other types @('defdata::defdata') knows.  </p>
+and all other types @(see defdata) knows.  </p>
 
 <p>
 When specifying types one can use keywords or regular symbols,
@@ -248,9 +248,9 @@ the variable name and the type, e.g., x:nat will lead to errors.
 
 <p>
 As the examples above show, the paramater types and the return type
-are used to generate @('acl2s::defunc') contracts and then the rest of
-the arguments are passed to @('acl2s::defunc'), so you can use all the
-bells and whistles of @('acl2s::defunc'). 
+are used to generate @(see defunc) contracts and then the rest of
+the arguments are passed to @(see defunc), so you can use all the
+bells and whistles of @(see defunc). 
 
 </p>
 "

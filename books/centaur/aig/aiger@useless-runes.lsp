@@ -96,6 +96,8 @@
      (22 22 (:META CANCEL_PLUS-LESSP-CORRECT))
      (12 6 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (11 11 (:REWRITE DEFAULT-CDR))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (8 6 (:REWRITE DEFAULT-+-2))
      (8 6 (:REWRITE ASH-0))
      (6 6 (:TYPE-PRESCRIPTION IFIX))
@@ -130,6 +132,8 @@
      (186 62
           (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
      (164 100 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (149 149
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (136 136 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (136 68 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (132 132 (:REWRITE DEFAULT-CAR))
@@ -163,6 +167,8 @@
                        (12 6 (:REWRITE DEFAULT-+-2))
                        (12 6 (:REWRITE ASH-0))
                        (11 11 (:REWRITE DEFAULT-CDR))
+                       (9 9
+                          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                        (6 6 (:TYPE-PRESCRIPTION IFIX))
                        (6 6 (:REWRITE DEFAULT-+-1))
                        (4 4
@@ -175,9 +181,15 @@
                           (:TYPE-PRESCRIPTION BITOPS::LOGXOR-NATP-TYPE-2)))
 (ASH-1-IS-*-2 (25 25
                   (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE))
+              (2 2
+                 (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
               (2 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
               (2 2 (:REWRITE DEFAULT-*-2))
               (2 2 (:REWRITE DEFAULT-*-1))
+              (1 1
+                 (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+              (1 1
+                 (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
               (1 1 (:REWRITE DEFAULT-+-2))
               (1 1 (:REWRITE DEFAULT-+-1)))
 (LOGXOR-1-BOUND (50 2 (:REWRITE BFIX-WHEN-NOT-1))
@@ -219,8 +231,9 @@
                 (4 2 (:REWRITE BFIX-WHEN-BIT->BOOL))
                 (2 1
                    (:LINEAR BITOPS::LOGXOR->=-0-LINEAR-1))
-                (2 1
-                   (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-1)))
+                (2 1 (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-1))
+                (1 1
+                   (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (NAMES-MAX-ENTRY-OF-AIG-TO-AIGER
      (1651 455 (:REWRITE NFIX-WHEN-NOT-NATP))
      (1378 623 (:REWRITE DEFAULT-+-2))
@@ -234,6 +247,8 @@
      (465 155
           (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
      (450 450 (:REWRITE DEFAULT-CAR))
+     (423 423
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (422 422
           (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP))
      (348 348 (:REWRITE NATP-WHEN-INTEGERP))
@@ -294,6 +309,8 @@
      (13 13
          (:REWRITE HONS-DUPLICITY-ALIST-P-WHEN-NOT-CONSP))
      (13 13 (:REWRITE ALISTP-WHEN-ATOM))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (3 3 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (3 3 (:META CANCEL_PLUS-EQUAL-CORRECT))
      (3 3 (:LINEAR LOOKUP-WHEN-NAMES-MAX-ENTRY))
@@ -320,6 +337,8 @@
      (216 72
           (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
      (195 15 (:DEFINITION MAX))
+     (177 177
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (160 40
           (:REWRITE ALISTP-WHEN-HONS-DUPLICITY-ALIST-P))
      (105 59
@@ -339,7 +358,7 @@
      (40 40 (:REWRITE ALISTP-WHEN-ATOM))
      (15 15
          (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
-(AIG-TO-AIGER (292 3 (:DEFINITION AIG-TO-AIGER))
+(AIG-TO-AIGER (301 3 (:DEFINITION AIG-TO-AIGER))
               (80 6 (:REWRITE ASH-1-IS-*-2))
               (46 6 (:REWRITE DISTRIBUTIVITY))
               (41 17 (:REWRITE AIG-ATOM-P-WHEN-AIG-VAR-P))
@@ -356,6 +375,8 @@
               (12 4 (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
               (10 7 (:REWRITE DEFAULT-<-2))
               (10 7 (:REWRITE DEFAULT-<-1))
+              (9 9
+                 (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
               (9 9 (:DEFINITION HONS-ACONS))
               (8 8
                  (:TYPE-PRESCRIPTION AIG-ATOM-P$INLINE))
@@ -1102,7 +1123,9 @@
      (9 9 (:REWRITE DEFAULT-CAR))
      (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
-     (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
+     (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (NAT-LISTP-OF-AIGS-TO-AIGER
      (92 4
          (:REWRITE AIGER-GATE-LISTP-IMPLIES-TRUE-LISTP))
@@ -1134,6 +1157,8 @@
      (2 2 (:TYPE-PRESCRIPTION STRIP-CDRS))
      (2 2 (:TYPE-PRESCRIPTION STRIP-CARS))
      (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE FOLD-CONSTS-IN-+))
      (1 1 (:REWRITE DEFAULT-CDR))
      (1 1 (:REWRITE DEFAULT-CAR)))
@@ -1168,6 +1193,8 @@
      (2 2 (:TYPE-PRESCRIPTION STRIP-CDRS))
      (2 2 (:TYPE-PRESCRIPTION STRIP-CARS))
      (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE FOLD-CONSTS-IN-+))
      (1 1 (:REWRITE DEFAULT-CDR))
      (1 1 (:REWRITE DEFAULT-CAR)))
@@ -1194,6 +1221,10 @@
      (161 161 (:REWRITE DEFAULT-<-2))
      (161 161 (:REWRITE DEFAULT-<-1))
      (161 161 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (147 147
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (145 145
+          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (100 25
           (:REWRITE ALISTP-WHEN-HONS-DUPLICITY-ALIST-P))
      (86 86
@@ -1265,7 +1296,11 @@
                    (3 1
                       (:REWRITE BITOPS::LOGAND-WITH-BITMASK))
                    (3 1 (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
+                   (2 2
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                   (1 1
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                    (1 1
                       (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                    (1 1 (:META CANCEL_TIMES-EQUAL-CORRECT))
@@ -1303,6 +1338,8 @@
                       (76 76 (:TYPE-PRESCRIPTION BITP))
                       (70 70
                           (:TYPE-PRESCRIPTION AIGER-GATE-LISTP))
+                      (68 68
+                          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                       (63 25
                           (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
                       (63 25
@@ -1319,6 +1356,8 @@
                       (39 39
                           (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                       (35 35 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                      (35 35
+                          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                       (30 6 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
                       (28 28 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
                       (28 14 (:REWRITE SET::NONEMPTY-MEANS-SET))
@@ -1347,6 +1386,8 @@
                 (61 25 (:REWRITE BITOPS::LOGBITP-0-OF-BIT))
                 (61 25
                     (:REWRITE HONS-ASSOC-EQUAL-WHEN-ATOM))
+                (49 49
+                    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                 (48 16
                     (:REWRITE BITOPS::LOGAND-WITH-BITMASK))
                 (45 45 (:REWRITE DEFAULT-CAR))
@@ -1358,6 +1399,8 @@
                 (42 42 (:REWRITE DEFAULT-<-1))
                 (42 42 (:META CANCEL_PLUS-LESSP-CORRECT))
                 (38 6 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
+                (33 33
+                    (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                 (21 21
                     (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                 (19 19 (:META CANCEL_TIMES-EQUAL-CORRECT))
@@ -1539,6 +1582,10 @@
                 (3 1 (:DEFINITION LEN))
                 (1 1 (:TYPE-PRESCRIPTION NFIX))
                 (1 1 (:TYPE-PRESCRIPTION LEN))
+                (1 1
+                   (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                (1 1
+                   (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                 (1 1 (:REWRITE CDR-CONS)))
 (READ-N-STR-SEPARATED-NATS-TR
      (228 4
@@ -2099,6 +2146,8 @@
              (3 3 (:REWRITE SUBSETP-MEMBER . 3))
              (3 3 (:REWRITE SUBSETP-MEMBER . 2))
              (3 3 (:REWRITE SUBSETP-MEMBER . 1))
+             (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+             (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
              (3 3
                 (:REWRITE HONS-DUPLICITY-ALIST-P-WHEN-NOT-CONSP))
              (3 3 (:REWRITE ALISTP-WHEN-ATOM))

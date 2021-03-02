@@ -973,7 +973,7 @@
                          (sub-pairs 'nil)
                          (preserved-vars 'nil)
                          (excluded-vars 'nil)
-                         (inter-fns-enabledp 'nil))
+                         (inter-fns-enabledp 't))
   ;; Generate a set of mutually recursive functions from the bindings declared
   ;; in the recursive definition of function "fn".  It is required that "fn" is
   ;; already defined.

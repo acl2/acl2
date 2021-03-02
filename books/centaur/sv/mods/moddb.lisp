@@ -41,6 +41,7 @@
 (include-book "coi/nary/nary" :dir :system)
 (include-book "std/strings/eqv" :dir :system)
 (include-book "std/stobjs/nested-stobjs" :dir :system)
+(include-book "centaur/misc/duplicates" :dir :system)
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
@@ -284,70 +285,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                           member-of-wirelist->names
                           index-of-when-nth-of-wirelist->names)))
 
-(local
- (defsection dup-witness
 
-   (defun dup-witness (x)
-     (if (atom x)
-         nil
-       (if (member (car x) (cdr x))
-           (car x)
-         (dup-witness (cdr x)))))
-
-
-   ;; (local (defthmd no-duplicatesp-implies-not-member-cdr-member
-   ;;          (implies (no-duplicatesp x)
-   ;;                   (not (member k (cdr (member k x)))))))
-
-   (defthmd no-duplicatesp-by-dup-witness
-     (implies (let ((k (dup-witness x)))
-                (not (member k (cdr (member k x)))))
-              (no-duplicatesp x))
-     :hints(("Goal" :in-theory (enable no-duplicatesp))))
-
-   (defthm indices-of-dup-witness
-     (implies (and (member j x)
-                   (member k (cdr (member j x))))
-              (equal (nth (+ 1
-                             (index-of j x)
-                             (index-of k (cdr (member j x))))
-                          x)
-                     k))
-     :hints(("Goal" :in-theory (enable index-of nth)
-             :induct (member j x))))
-
-   (defund dup-index-1 (x)
-     (index-of (dup-witness x) x))
-
-   (defthm len-member
-     (implies (member k x)
-              (equal (len (cdr (member k x)))
-                     (- (len x) (+ 1 (index-of k x)))))
-     :hints(("Goal" :in-theory (enable index-of))))
-
-   (defund dup-index-2 (x)
-     (+ 1 (dup-index-1 x)
-        (index-of (dup-witness x)
-                        (cdr (member (dup-witness x) x)))))
-
-   (defthmd no-duplicatesp-by-indices-of-dup-witness
-     (implies (let* ((i (dup-index-1 x))
-                     (j (dup-index-2 x)))
-                (not (and (natp i)
-                          (natp j)
-                          (< i (len x))
-                          (< j (len x))
-                          (not (equal i j))
-                          (equal (nth i x) (nth j x)))))
-              (no-duplicatesp x))
-     :hints (("Goal" :use no-duplicatesp-by-dup-witness
-              :in-theory (enable dup-index-1
-                                 dup-index-2)
-              :cases ((member (Dup-witness x) x)))))
-
-   (defthm dup-indices-unequal
-     (not (equal (dup-index-1 x) (dup-index-2 x)))
-     :hints(("Goal" :in-theory (enable dup-index-2))))))
 
 (defsection elab-modinst$c
   (defstobj elab-modinst$c
@@ -443,116 +381,20 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ///
     (deffixequiv elab-modinst$c-copy)))
 
-(local (defsection duplicates
-         (defthm remove-preserves-no-duplicates
-           (implies (no-duplicatesp x)
-                    (no-duplicatesp (remove y x))))
+(defsection remove-later-duplicates
+  (local (in-theory (enable acl2::remove-later-duplicates)))
 
-         (defthm remove-when-not-member
-           (implies (not (member k x))
-                    (equal (remove k x)
-                           (list-fix x))))))
-
-(define remove-later-duplicates (x)
-  :verify-guards nil
-  (if (atom x)
-      nil
-    (cons (car x)
-          (remove (car x)
-                  (remove-later-duplicates (cdr x)))))
-  ///
-  (defcong list-equiv equal (remove-later-duplicates x) 1
-    :hints (("goal" :induct (acl2::fast-list-equiv x x-equiv)
-             :in-theory (enable (:i acl2::fast-list-equiv)))))
-
-  (defthm remove-of-remove
-    (equal (remove b (remove a c))
-           (remove a (remove b c))))
-
-  (defthm remove-later-of-remove
-    (equal (remove-later-duplicates (remove a b))
-           (remove a (remove-later-duplicates b))))
-
-  (defthm remove-later-of-set-diff
-    (equal (remove-later-duplicates (set-difference$ a b))
-           (set-difference$ (remove-later-duplicates a) b)))
-
-  (defthm set-difference-of-cons-second
-    (equal (set-difference$ a (cons b c))
-           (remove b (set-difference$ a c))))
-
-
-  (local (defthm set-difference-of-atom
-           (implies (not (consp a))
-                    (list-equiv (set-difference$ b a)
-                                b))))
-  (local (defthm set-difference-of-remove-common
-           (equal (set-difference$ (remove x a)
-                                   (remove x b))
-                  (set-difference$ a
-                                   (cons x b)))))
-
-  (local (defthm remove-equal-of-append
-           (equal (remove a (append b c))
-                  (append (remove a b) (remove a c)))))
-
-  (local (defthm remove-of-equal-to-append
-           (implies (equal b (append c d))
-                    (equal (remove a b)
-                           (append (remove a c)
-                                   (remove a d))))))
-
-  ;; (local (defun ind (a b)
-  ;;          (if (atom a)
-  ;;              b
-  ;;            (ind (remove (car a) (cdr a))
-  ;;                 (remove (car a) b)))))
-
-  (defthm remove-later-duplicates-of-append
-    (equal (remove-later-duplicates (append a b))
-           (append (remove-later-duplicates a)
-                   (set-difference$
-                    (remove-later-duplicates b) a))))
-    ;; :hints (("goal" :induct (ind a b)
-    ;;          :expand ((:free (a b) (remove-later-duplicates (cons a b)))))))
-
-  ;; Mihir M. mod: a subgoal hint was necessary below after list-fix was
-  ;; migrated to the sources and renamed.
-
-  ;; Matt K. comment: After tracing acl2::rewrite in a couple of ways, I
-  ;; noticed that both the type-alist and linear pot are affected by the
-  ;; ordering of two terms: one is (REMOVE-LATER-DUPLICATES (CDR X))), and the
-  ;; other is either (ACL2::TRUE-LIST-FIX (CDR X)) after the change to list-fix
-  ;; or (LIST-FIX (CDR X)) before that change.  It seems reasonable to assume
-  ;; that this term-order change is responsible for the failure to prove this
-  ;; theorem without hints.  Moreover, the proof fails if "Subgoal *1/3''" is
-  ;; replaced by "Goal", so avoiding a subgoal hint isn't as trivial as that.
-  ;; We can live with Mihir's fix, so that's what we'll do.
-
-  (defthm remove-later-duplicates-when-no-duplicates
-    (implies (no-duplicatesp x)
-             (equal (remove-later-duplicates x)
-                    (list-fix x)))
-    :hints (("Subgoal *1/3''" :in-theory (e/d (list-equiv)
-                                              (acl2::list-equiv-implies-equal-remove-2))
-             :use (:instance acl2::list-equiv-implies-equal-remove-2
-                             (acl2::a (car x))
-                             (x (remove-later-duplicates (cdr x)))
-                             (acl2::x-equiv (cdr x))))))
-
-  (defthm no-duplicatesp-of-remove-later-duplicates
-    (no-duplicatesp (remove-later-duplicates x)))
 
   (defthm modnamelist-p-of-remove-later-duplicates
     (implies (modnamelist-p x)
-             (modnamelist-p (remove-later-duplicates x)))
+             (modnamelist-p (acl2::remove-later-duplicates x)))
     :hints(("Goal" :in-theory (enable modnamelist-p))))
 
   (defthm namelist-p-of-remove-later-duplicates
     (implies (namelist-p x)
-             (namelist-p (remove-later-duplicates x)))
-    :hints(("Goal" :in-theory (enable namelist-p))))
-  )
+             (namelist-p (acl2::remove-later-duplicates x)))
+    :hints(("Goal" :in-theory (enable namelist-p)))))
+
 
 (defsection elab-modinst-list
   (deflist elab-modinst-list :elt-type elab-modinst$cp :true-listp t)
@@ -560,12 +402,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
   (defthm len-elab-modinst-list-fix
     (equal (len (elab-modinst-list-fix x))
            (len x)))
-
-  (defthm nth-of-elab-modinst-list-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (elab-modinst-list-fix x))
-                    (elab-modinst-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable nth elab-modinst-list-fix))))
 
   (define elab-modinst-list-names ((x elab-modinst-list-p))
     :returns (names namelist-p)
@@ -726,12 +562,12 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 
     (defthm elab-modinst-list-names-of-remove-duplicate-names
       (equal (elab-modinst-list-names (elab-modinsts-rem-dups x))
-             (remove-later-duplicates (elab-modinst-list-names x)))
+             (acl2::remove-later-duplicates (elab-modinst-list-names x)))
       :hints(("Goal" :in-theory (enable elab-modinst-list-names
-                                        remove-later-duplicates)
+                                        acl2::remove-later-duplicates)
               :induct t)
              (and stable-under-simplificationp
-                  '(:expand ((:free (a b) (remove-later-duplicates (cons a b))))))))
+                  '(:expand ((:free (a b) (acl2::remove-later-duplicates (cons a b))))))))
 
     (defthm elab-modinsts-rem-dups-when-no-duplicates
       (implies (no-duplicatesp (elab-modinst-list-names x))
@@ -920,10 +756,10 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       :hints(("Goal" :in-theory (enable wirelist-remove-name-of-remove-names))))
 
     (defthm wirelist-remove-names-of-remove-later-duplicates
-      (equal (wirelist-remove-names (remove-later-duplicates names) x)
+      (equal (wirelist-remove-names (acl2::remove-later-duplicates names) x)
              (wirelist-remove-names names x))
-      :hints(("Goal" :in-theory (enable remove-later-duplicates)
-              :induct (remove-later-duplicates names))
+      :hints(("Goal" :in-theory (enable acl2::remove-later-duplicates)
+              :induct (acl2::remove-later-duplicates names))
              (and stable-under-simplificationp
                   '(:in-theory (enable wirelist-remove-name-of-remove-names)))
              (and stable-under-simplificationp
@@ -937,11 +773,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (implies (wirelist-nodups-p x)
                (wirelist-p x)))
 
-    (local (defthm no-duplicates-of-append
-             (equal (no-duplicatesp-equal (append a b))
-                    (and (no-duplicatesp-equal a)
-                         (no-duplicatesp-equal b)
-                         (not (intersection$ a b))))))
+    (local (in-theory (enable acl2::no-duplicates-of-append)))
 
     (defthm wirelist-nodups-p-of-append
       (implies (and (wirelist-nodups-p a)
@@ -973,12 +805,12 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 
     (defthm wirelist->names-of-remove-duplicate-names
       (equal (wirelist->names (wirelist-rem-dups x))
-             (remove-later-duplicates (wirelist->names x)))
+             (acl2::remove-later-duplicates (wirelist->names x)))
       :hints(("Goal" :in-theory (enable wirelist->names
-                                        remove-later-duplicates)
+                                        acl2::remove-later-duplicates)
               :induct t)
              (and stable-under-simplificationp
-                  '(:expand ((:free (a b) (remove-later-duplicates (cons a b))))))))
+                  '(:expand ((:free (a b) (acl2::remove-later-duplicates (cons a b))))))))
 
     (defthm wirelist-rem-dups-when-no-duplicates
       (implies (no-duplicatesp (wirelist->names x))
@@ -1128,7 +960,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (defthm no-duplicatesp-of-abstraction-when-wires-ok
       (implies (elab-mod$c-wires-ok elab-mod$c)
                (no-duplicatesp (wirelist->names (elab-mod$c-wire-abstraction elab-mod$c))))
-      :hints (("goal" :use ((:instance no-duplicatesp-by-indices-of-dup-witness
+      :hints (("goal" :use ((:instance acl2::no-duplicatesp-by-indices-of-dup-witness
                              (x (wirelist->names
                                  (elab-mod$c-wire-abstraction elab-mod$c)))))
                :in-theory (enable elab-mod$c-wires-ok-implies-no-duplicated-names)))
@@ -1188,12 +1020,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              (equal (wirelist-fix (take n x))
                     (take n (wirelist-fix x))))
     :hints(("Goal" :in-theory (enable wirelist-fix take))))
-
-  (defthm nth-of-wirelist-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (wirelist-fix x))
-                    (wire-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable nth wirelist-fix))))
 
   (local (defthm member-take
            (implies (<= (nfix n) (len x))
@@ -1444,7 +1270,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (implies (elab-mod$c-modinsts-ok elab-mod$c)
                (no-duplicatesp (elab-modinst-list-names
                                 (elab-mod$c-inst-abstraction elab-mod$c))))
-      :hints (("goal" :use ((:instance no-duplicatesp-by-indices-of-dup-witness
+      :hints (("goal" :use ((:instance acl2::no-duplicatesp-by-indices-of-dup-witness
                              (x (elab-modinst-list-names
                                  (elab-mod$c-inst-abstraction elab-mod$c)))))
                :in-theory (enable elab-mod$c-insts-ok-implies-no-duplicated-names)))
@@ -2246,12 +2072,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 (defsection elab-modlist
   (deflist elab-modlist :elt-type elab-mod :true-listp t)
 
-  (defthm nth-of-elab-modlist-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (elab-modlist-fix x))
-                    (elab-mod$a-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable elab-modlist-fix nth))))
-
   (defthm nth-of-elab-modlist-fix-under-elab-mod$a-equiv
     (elab-mod$a-equiv (nth n (elab-modlist-fix x))
                       (nth n x))
@@ -2534,6 +2354,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (moddb-norm-equiv (moddb-fix x)
                         x))))
 
+(local (in-theory (disable
+                   (:rewrite nth-of-elab-modlist-fix))))
+
 ;; We can't make moddb into an abstract stobj if we still want to let-bind
 ;; modules within it.  But we can define a strong interface that still
 ;; abstracts away the nastiness.
@@ -2770,14 +2593,14 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                     (equal (nfix (nth *moddb->nmods* moddb)) (acl2::count-keys (nth *moddb->modname-idxes-get* moddb))))
                (no-duplicatesp (take (nth *moddb->nmods* moddb)
                                      (elab-mods->names (nth *moddb->modsi* moddb)))))
-      :hints (("goal" :use ((:instance no-duplicatesp-by-indices-of-dup-witness
+      :hints (("goal" :use ((:instance acl2::no-duplicatesp-by-indices-of-dup-witness
                              (x (take (nth *moddb->nmods* moddb)
                                       (elab-mods->names (nth *moddb->modsi* moddb)))))
                             (:instance moddb-indices-ok-implies
-                             (idx (dup-index-1 (take (nth *moddb->nmods* moddb)
+                             (idx (acl2::dup-index-1 (take (nth *moddb->nmods* moddb)
                                                      (elab-mods->names (nth *moddb->modsi* moddb))))))
                             (:instance moddb-indices-ok-implies
-                             (idx (dup-index-2 (take (nth *moddb->nmods* moddb)
+                             (idx (acl2::dup-index-2 (take (nth *moddb->nmods* moddb)
                                                      (elab-mods->names (nth *moddb->modsi* moddb)))))))
                :do-not-induct t
                :in-theory (e/d ()
@@ -3560,8 +3383,15 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                                      moddb-find-bad-mod
                                                      moddb-indices-ok
                                                      moddb-find-bad-index))))
-  (b* ((moddb (moddb->modname-idxes-clear moddb)))
-    (update-moddb->nmods 0 moddb)))
+  (b* ((moddb (moddb->modname-idxes-clear moddb))
+       (moddb (update-moddb->nmods 0 moddb)))
+    (resize-moddb->mods 0 moddb))
+  ///
+  (defthm moddb-clear-normalize
+    (implies (syntaxp (not (equal moddb ''nil)))
+             (equal (moddb-clear moddb)
+                    (moddb-clear nil)))
+    :hints(("Goal" :in-theory (e/d (moddb-fix) ((moddb-fix)))))))
 
 (define moddb-maybe-grow (moddb)
   (b* ((moddb (moddb-fix moddb))
@@ -4347,6 +4177,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                              (g i y)))))))
 
 
+(local (in-theory (e/d
+                   ((:rewrite nth-of-elab-modlist-fix)))))
+
 (defsection moddb-add-modinst
   (define moddb-add-modinst-to-last ((instname name-p)
                                      (modidx natp "instantiated module")
@@ -4408,7 +4241,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (fty::deffixcong moddb-norm-equiv moddb-norm-equiv
       (moddb-add-modinst-to-last instname modidx moddb) moddb
       :hints (("goal" :in-theory (disable elab-mod$a->totalwires
-                                          elab-mod$a->totalinsts))
+                                          elab-mod$a->totalinsts
+                                      (:rewrite nth-of-elab-modlist-fix)))
               (and stable-under-simplificationp
                    '(:in-theory (e/d (moddb-norm)
                                      (elab-mod$a->totalwires
@@ -4461,12 +4295,12 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              :hints(("Goal" :in-theory (enable nth len)))))
 
     (local (defthm modinsts-len-nonzero-when-member-names
-             (implies (member instname (remove-later-duplicates
+             (implies (member instname (acl2::remove-later-duplicates
                                         (elab-modinst-list-names insts)))
                       (< 0 (len (elab-modinsts-rem-dups insts))))
              :hints(("Goal" :in-theory (enable elab-modinst-list-names
                                                elab-modinsts-rem-dups
-                                               remove-later-duplicates
+                                               acl2::remove-later-duplicates
                                                len)))
              :rule-classes :linear))
 
@@ -4859,6 +4693,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                 (moddb-add-modinst-to-last instname modidx moddb)))
       :hints(;; (and stable-under-simplificationp
              ;;      '(:in-theory (enable* elab-mod$a-add-inst)))
+             ("Goal" :in-theory (disable
+                                 (:rewrite nth-of-elab-modlist-fix)))
              (and stable-under-simplificationp
                   '(
                     :in-theory (e/d (moddb-mods-not-ok
@@ -5827,51 +5663,58 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 
 (defthm len-of-elab-modinsts-rem-dups
   (equal (len (elab-modinsts-rem-dups insts))
-         (len (remove-later-duplicates
+         (len (acl2::remove-later-duplicates
                (elab-modinst-list-names insts))))
   :hints (("goal" :Use ((:instance LEN-OF-ELAB-MODINST-LIST-NAMES
                          (x (elab-modinsts-rem-dups insts))))
            :in-theory (disable len-of-elab-modinst-list-names))))
 
+(local (in-theory (disable
+                   (:rewrite nth-of-elab-modlist-fix))))
 
-
-(define moddb-wireidx->path ((wireidx natp)
-                             (modidx natp)
-                             (moddb moddb-ok))
+(define moddb-wireidx->path/decl ((wireidx natp)
+                                  (modidx natp)
+                                  (moddb moddb-ok))
   :parents (moddb)
-  :short "Convert a wire index to a path relative to the module it's in."
+  :short "Convert a wire index to a path relative to the module it's in, and additionally
+          return the wire declaation."
   :verify-guards nil
   :guard (and (< modidx (moddb->nmods moddb))
               (< wireidx (moddb-mod-totalwires modidx moddb)))
   :measure (nfix modidx)
-  :returns (path path-p)
+  :returns (mv (path (path-p path))
+               (wire (wire-p wire)))
   :prepwork ((local (in-theory (disable acl2::nth-when-too-large-cheap
                                         acl2::nfix-when-not-natp
                                         acl2::nth-when-atom
                                         acl2::natp-rw))))
-  :hooks ((:fix :hints (("goal" :induct (moddb-wireidx->path wireidx modidx moddb)
-             :expand ((:free (moddb) (moddb-wireidx->path wireidx modidx moddb)))))))
+  :hooks ((:fix :hints (("goal" :induct (moddb-wireidx->path/decl wireidx modidx moddb)
+                         :expand ((:free (moddb) (moddb-wireidx->path/decl wireidx modidx moddb)))))))
   (b* ((wireidx (lnfix wireidx))
        (modidx (lnfix modidx))
        ((unless (mbt (< modidx (moddb->nmods moddb))))
-        (make-path-wire :name "ERROR"))
-       ((stobj-get donep name nextmod nextwire)
+        ;; impossible
+        (mv (path-fix nil) (wire-fix nil)))
+       ((stobj-get donep wire/name nextmod nextwire)
         ((elab-mod (moddb->modsi modidx moddb)))
         (b* (((unless (mbt (< wireidx (elab-mod->totalwires elab-mod))))
-              (mv t "ERROR" nil nil))
+              (mv t (wire-fix nil) nil nil))
              ((when (< wireidx (elab-mod-nwires elab-mod)))
-              (mv t (wire->name (elab-mod-wiretablei wireidx elab-mod)) nil nil))
+              (mv t (elab-mod-wiretablei wireidx elab-mod) nil nil))
              (inst (elab-mod-wire-find-inst wireidx elab-mod))
              (name (elab-mod->instname inst elab-mod))
              (nextmod (elab-mod->inst-modidx inst elab-mod))
              (offset (elab-mod->inst-wireoffset inst elab-mod))
              (nextwire (- wireidx offset)))
           (mv nil name nextmod nextwire)))
-       ((when donep) (make-path-wire :name name))
+       ((when donep) ;; done
+        (mv (make-path-wire :name (wire->name wire/name)) wire/name))
        ((unless (mbt (< nextmod modidx)))
-        (make-path-wire :name "ERROR")))
-    (make-path-scope :subpath (moddb-wireidx->path nextwire nextmod moddb)
-                     :namespace name))
+        (mv (path-fix nil) (wire-fix nil)))
+       ((mv subpath wire) (moddb-wireidx->path/decl nextwire nextmod moddb)))
+    (mv (make-path-scope :subpath subpath
+                         :namespace wire/name)
+        wire))
   ///
   (local (defthm have-insts-when-totalwires->-nwires
            (implies (and (elab-mod-of-good-moddb elab-mod)
@@ -5884,7 +5727,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
            :rule-classes (:rewrite :linear)))
 
 
-  (verify-guards moddb-wireidx->path
+  (verify-guards moddb-wireidx->path/decl
     :hints (("goal" :in-theory (disable elab-mod-of-good-moddb-redef
                                         elab-mod-wire-find-inst-correct1
                                         elab-mod-wire-find-inst-correct2)
@@ -5895,6 +5738,40 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                     (elab-mod (nth modidx (nth *moddb->modsi* moddb)))
                     (wire wireidx)))
              :do-not-induct t))))
+
+
+(define moddb-wireidx->path ((wireidx natp)
+                             (modidx natp)
+                             (moddb moddb-ok))
+  :parents (moddb)
+  :short "Convert a wire index to a path relative to the module it's in."
+  :guard (and (< modidx (moddb->nmods moddb))
+              (< wireidx (moddb-mod-totalwires modidx moddb)))
+  :returns (path path-p)
+  ;; (b* ((wireidx (lnfix wireidx))
+  ;;      (modidx (lnfix modidx))
+  ;;      ((unless (mbt (< modidx (moddb->nmods moddb))))
+  ;;       (make-path-wire :name "ERROR"))
+  ;;      ((stobj-get donep name nextmod nextwire)
+  ;;       ((elab-mod (moddb->modsi modidx moddb)))
+  ;;       (b* (((unless (mbt (< wireidx (elab-mod->totalwires elab-mod))))
+  ;;             (mv t "ERROR" nil nil))
+  ;;            ((when (< wireidx (elab-mod-nwires elab-mod)))
+  ;;             (mv t (wire->name (elab-mod-wiretablei wireidx elab-mod)) nil nil))
+  ;;            (inst (elab-mod-wire-find-inst wireidx elab-mod))
+  ;;            (name (elab-mod->instname inst elab-mod))
+  ;;            (nextmod (elab-mod->inst-modidx inst elab-mod))
+  ;;            (offset (elab-mod->inst-wireoffset inst elab-mod))
+  ;;            (nextwire (- wireidx offset)))
+  ;;         (mv nil name nextmod nextwire)))
+  ;;      ((when donep) (make-path-wire :name name))
+  ;;      ((unless (mbt (< nextmod modidx)))
+  ;;       (make-path-wire :name "ERROR")))
+  ;;   (make-path-scope :subpath (moddb-wireidx->path nextwire nextmod moddb)
+  ;;                    :namespace name))
+  (b* (((mv path ?wire) (moddb-wireidx->path/decl wireidx modidx moddb)))
+    path))
+
 
 (define moddb-path->wireidx/decl ((path path-p)
                                   (modidx natp)
@@ -5979,7 +5856,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
 
   (local (defthm len-of-wirelist-rem-dups
            (equal (len (wirelist-rem-dups wires))
-                  (len (remove-later-duplicates
+                  (len (acl2::remove-later-duplicates
                         (wirelist->names wires))))
            :hints (("goal" :Use ((:instance LEN-OF-wirelist->NAMES
                                   (x (wirelist-rem-dups wires))))
@@ -5999,10 +5876,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
   (deffixequiv moddb-path->wireidx/decl)
 
   (local (defthm rem-dups-of-wirelist->names
-           (equal (remove-later-duplicates (wirelist->names x))
+           (equal (acl2::remove-later-duplicates (wirelist->names x))
                   (wirelist->names (wirelist-rem-dups x)))
            :hints(("Goal" :in-theory (enable wirelist->names wirelist-rem-dups
-                                             remove-later-duplicates)))))
+                                             acl2::remove-later-duplicates)))))
   (local (in-theory (disable WIRELIST->NAMES-OF-REMOVE-DUPLICATE-NAMES
                              len-of-wirelist-rem-dups)))
 
@@ -6704,8 +6581,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
     (b* ((addr (svar->address x))
          ((address addr))
          ((unless (eql 0 addr.scope))
-          (mv nil (change-svar
-                   x :name (change-address addr :index nil))))
+          (mv nil (change-svar x :name (change-address addr :index nil)
+                               :override-test nil :override-val nil)))
          (idx (moddb-path->wireidx addr.path modidx moddb))
          ((unless idx)
           (mv (msg "Did not find wire: ~x0 in module ~s1~%"
@@ -6714,10 +6591,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
                               (name)
                               (elab-mod->name elab-mod)
                               name))
-              (change-svar
-               x :name (change-address addr :index nil)))))
-      (mv nil (change-svar
-               x :name (change-address addr :index idx))))
+              (change-svar x :name (change-address addr :index nil)
+                           :override-test nil :override-val nil))))
+      (mv nil (change-svar x  :name (change-address addr :index idx)
+                           :override-test nil :override-val nil)))
     ///
     (deffixequiv svar-named->indexed)
 

@@ -9,11 +9,14 @@
 (defthm make-character-list-makes-character-list
   (character-listp (make-character-list x)))
 
-;; The following is redundant with the definition in
-;; books/std/lists/append.lisp, from where it was taken with thanks.
+;; The following are redundant with the definition in
+;; books/std/lists/append.lisp, from where they were taken with thanks.
 (defthm len-of-append
   (equal (len (append x y))
          (+ (len x) (len y))))
+(defthm consp-of-append
+  (equal (consp (append x y))
+         (or (consp x) (consp y))))
 
 (defthm len-of-make-character-list
   (equal (len (make-character-list x)) (len x)))
@@ -656,38 +659,12 @@
   (implies (and (>= x 0) (>= y 0))
            (not (< (+ x y) 0))))
 
-(defthmd
-  painful-debugging-lemma-6
-  (equal (< x (+ x y)) (> y 0))
-  :hints
-  (("goal"
-    :use (:instance painful-debugging-lemma-4 (x (+ x y))
-                    (y (- y))))))
-
 (defthm
-  painful-debugging-lemma-7
+  painful-debugging-lemma-6
   (equal (- (- x)) (fix x)))
 
-(defthm
-  painful-debugging-lemma-8
-  (implies (not (zp x))
-           (iff (< (binary-* x (len y)) x)
-                (atom y))))
-
 (defthmd
-  painful-debugging-lemma-9
-  (implies (and (integerp x) (integerp y) (< x y))
-           (equal (< (+ 1 x) y)
-                  (not (equal (+ 1 x) y)))))
-
-(defthmd
-  painful-debugging-lemma-10
-  (implies (not (zp x1))
-           (iff (equal (* x1 (len x2)) 0)
-                (atom x2))))
-
-(defthmd
-  painful-debugging-lemma-11
+  painful-debugging-lemma-7
   (implies (not (zp x1))
            (equal (< 0 (* x1 (len x2)))
                   (consp x2))))
@@ -808,26 +785,30 @@
              (update-nth key val (take n l))
            (take n l))))
 
-(defthmd remember-that-time-with-update-nth-lemma-1
-  (implies (and (equal (nfix key) (- (len l) 1))
-                (true-listp l))
-           (equal (revappend ac (update-nth key val l))
-                  (append (first-n-ac key l ac)
-                          (list val))))
-  :hints (("goal" :induct (mv (first-n-ac key l ac)
-                              (update-nth key val l))
-           :expand ((len l) (len (cdr l))))))
+(encapsulate
+  ()
 
-(defthmd
-  remember-that-time-with-update-nth
-  (implies (and (equal (nfix key) (- (len l) 1))
-                (true-listp l))
-           (equal (update-nth key val l)
-                  (append (take key l) (list val))))
-  :hints
-  (("goal"
-    :use (:instance remember-that-time-with-update-nth-lemma-1
-                    (ac nil)))))
+  (local
+   (defthmd lemma
+     (implies (and (equal (nfix key) (- (len l) 1))
+                   (true-listp l))
+              (equal (revappend ac (update-nth key val l))
+                     (append (first-n-ac key l ac)
+                             (list val))))
+     :hints (("goal" :induct (mv (first-n-ac key l ac)
+                                 (update-nth key val l))
+              :expand ((len l) (len (cdr l)))))))
+
+  (defthmd
+    remember-that-time-with-update-nth
+    (implies (and (equal (nfix key) (- (len l) 1))
+                  (true-listp l))
+             (equal (update-nth key val l)
+                    (append (take key l) (list val))))
+    :hints
+    (("goal"
+      :use (:instance lemma
+                      (ac nil))))))
 
 (defthm append-of-take-and-cons
   (implies (and (natp n) (equal x (nth n l)))
@@ -972,8 +953,10 @@
            nil)))
 
 (defthm integerp-of-car-of-last-when-integer-listp
-  (implies (and (integer-listp l) (consp l))
-           (integerp (car (last l)))))
+  (implies (integer-listp l)
+           (equal
+            (integerp (car (last l)))
+            (consp l))))
 
 (defthm non-negativity-of-car-of-last-when-nat-listp
   (implies (nat-listp l)
@@ -1994,8 +1977,19 @@
 
 (encapsulate ()
   (local (in-theory (disable min)))
+
+  (defthm painful-debugging-lemma-11 (iff (< (min x y) y) (< x y))
+    :hints (("Goal" :in-theory (enable min))))
+
   (defthm painful-debugging-lemma-22
-    (implies (< z y) (iff (equal (min x y) z) (equal x z)))
+    (implies (equal (+ w y) z)
+             (iff (equal (+ w (min x y)) z)
+                  (<= y x)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-25
+    (zp (+ (- x) (min x y)))
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
 
 (defthm member-of-nth-when-not-intersectp
@@ -2020,3 +2014,9 @@
   (implies (true-list-listp l1)
            (true-list-listp (set-difference-equal l1 l2)))
   :hints (("goal" :in-theory (enable set-difference-equal true-list-listp))))
+
+(defthm last-of-append
+  (equal (last (append x y))
+         (cond ((consp y) (last y))
+               ((consp x) (cons (car (last x)) y))
+               (t y))))

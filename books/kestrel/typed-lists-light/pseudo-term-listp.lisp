@@ -38,9 +38,10 @@
               (pseudo-term-listp y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp union-equal))))
 
+;; The non-standard variable names are to match STD
 (defthm pseudo-term-listp-of-remove-equal
-  (implies (pseudo-term-listp l)
-           (pseudo-term-listp (remove-equal x l)))
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (remove-equal a x)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp remove-equal))))
 
 ;; Removing a pseudo-term shouldn't affect whether a list contains only pseudo-terms
@@ -51,8 +52,9 @@
                   (pseudo-term-listp l)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp remove-equal))))
 
+;; Matches the version in STD
 (defthm pseudo-term-listp-of-cons
-  (equal (pseudo-term-listp (cons x y))
-         (and (pseudo-termp x)
-              (pseudo-term-listp y)))
+  (equal (pseudo-term-listp (cons a x))
+         (and (pseudo-termp a)
+              (pseudo-term-listp x)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))

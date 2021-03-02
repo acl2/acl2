@@ -513,7 +513,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                                                            ,last))))))
             (t
              (cons (cond ((s-equal (car cur) '_)
-                          `',(sv::4vec-x))
+                          (sv::4vec-x))
                          (t (car cur)))
                    (svl-run-fix-inputs_phases-aux (cdr cur)
                                                   (1- phase-cnt)
@@ -554,8 +554,8 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                       (get-substr signame
                                   (nfix (1+ pos-of-colon))
                                   (nfix (+ pos-of-] (- pos-of-colon) -1)))))
-               ((unless (and (str::digit-listp pos1)
-                             (str::digit-listp pos2)))
+               ((unless (and (str::dec-digit-char-listp pos1)
+                             (str::dec-digit-char-listp pos2)))
                 (progn$
                  (hard-error 'svl-run-simplify-signame
                              "~p0 has an unexpected structure. It should be ~
@@ -563,8 +563,8 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                              (list (cons #\0 signame)))
                  (mv signame nil nil))))
             (mv (get-substr signame 0 pos-of-[)
-                (Str::digit-list-value pos1)
-                (str::digit-list-value pos2)))
+                (Str::dec-digit-chars-value pos1)
+                (str::dec-digit-chars-value pos2)))
         (mv signame nil nil))))
 
 
@@ -574,7 +574,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
 
       (if (atom new-binds)
           nil
-        (b* ((old-val (if (atom old-binds) `',(sv::4vec-x) (car old-binds)))
+        (b* ((old-val (if (atom old-binds) (sv::4vec-x) (car old-binds)))
              (new-bind (car new-binds)))
           (cons `(sv::partinst ,start ,size ,old-val ,new-bind)
                 (svl-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
@@ -638,7 +638,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                   (acons
                    (car wire-names)
                    (repeat (len (cdar sig-bind-alist))
-                           `',(sv::4vec-x))
+                           (sv::4vec-x))
                    rest))))))
 
   (define strip-cars$ (x)
@@ -758,8 +758,8 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
    (defthm alistp-append
      (implies (and (alistp x)
                    (alistp y))
-              (alistp (append x y))))) 
-  
+              (alistp (append x y)))))
+
   (define svl-run-aux ((modname sv::modname-p)
                        (inputs 4vec-list-listp)
                        (out-wires sv::svarlist-p)
@@ -859,7 +859,7 @@ For example:
 
 <code>
 @('
-(svl-run \"COUNTER\" 
+(svl-run \"COUNTER\"
          (make-fast-alist '((count_low1 . -5)
                             (count_low8 . 5)
                             (count_low10 . 10)))

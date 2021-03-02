@@ -167,6 +167,20 @@ argument.</p>
   :long "<p>This is identical to @('defrule') except that the theorem is
 generated using @(see defthmd) instead of @(see defthm).</p>")
 
+(defxdoc defrulel
+  :parents (defrule)
+  :short "Variant of @(see defrule) that makes the theorem local."
+  :long "<p>This is identical to @('defrule') except that the @(':local')
+argument is set to @('t').</p>")
+
+(defxdoc defruledl
+  :parents (defrule)
+  :short "Variant of @(see defrule) that disables the theorem afterwards and
+  makes it local."
+  :long "<p>This is identical to @('defrule') except that the theorem is
+ generated using @(see defthmd) instead of @(see defthm) and the @(':local')
+ argument is set to @('t').</p>")
+
 (defconst *defrule-keywords*
   (union-equal '(:hints
                  :rule-classes

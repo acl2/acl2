@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "../abstract-separate")
+(include-book "../abs-separate")
 (local (include-book "std/lists/intersectp" :dir :system))
 
 (local (in-theory (e/d (abs-file-p-when-m1-regular-file-p
@@ -30,7 +30,6 @@
                         (:rewrite natp-of-car-when-nat-listp)
                         (:rewrite when-zp-src-of-1st-collapse-1)
                         (:rewrite ctx-app-ok-of-abs-fs-fix-1)
-                        (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
                         (:rewrite
                          abs-fs-fix-of-put-assoc-equal-lemma-2)
                         (:rewrite hifat-file-alist-fix-guard-lemma-1)
@@ -259,7 +258,7 @@
      (put-assoc-equal
       (fat32-filename-fix (car path))
       (abs-file
-       (abs-file->dir-ent
+       (abs-file->d-e
         (cdr (assoc-equal (fat32-filename-fix (car path))
                           fs)))
        (mv-nth 1
@@ -280,7 +279,7 @@
      (alist fs)
      (val
       (abs-file
-       (abs-file->dir-ent
+       (abs-file->d-e
         (cdr (assoc-equal (fat32-filename-fix (car path))
                           fs)))
        (mv-nth 1
@@ -338,7 +337,7 @@
          (put-assoc-equal
           (fat32-filename-fix (car path))
           (abs-file
-           (abs-file->dir-ent
+           (abs-file->d-e
             (cdr (assoc-equal (fat32-filename-fix (car path))
                               fs)))
            (mv-nth

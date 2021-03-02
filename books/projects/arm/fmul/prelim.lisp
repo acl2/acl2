@@ -258,7 +258,7 @@
 (defund expovfl-special ()
   (mv-nth 4 (mv-list 5 (specialcase (opa) (opb) (classa) (classb) (dnp) (fused) (flags-b)))))
 
-(defund clz ()
+(defund clz* ()
   (let* ((clz (bits 0 5 0))
          (clz (if1 (log= (expa) 0)
                    (logior clz (clz53 (mana)))
@@ -277,37 +277,37 @@
 (defund expshftint ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 0 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 0 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 0 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund expinc ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 1 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 1 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 1 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund frac105 ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 2 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 2 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 2 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund stkfma ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 3 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 3 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 3 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund lsb ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 4 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 4 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 4 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund grd ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 5 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 5 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 5 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund stk ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 6 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 6 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 6 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund expzero () (log= (bits (expshftint) 11 0) 3072))
 
@@ -471,7 +471,7 @@
 	 (equal (expovfl) expovfl)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
            :in-theory '(signa expa mana classa flags-a signb expb manb classb flags-b
-	                data-special flags-special clz prod expprodint expbiasedzero expbiasedneg
+	                data-special flags-special clz* prod expprodint expbiasedzero expbiasedneg
 			stkfma stk grd lsb expshftint expinc frac105 expzero expmax expinf
 			expgtinf exp11 sign rndup fracunrnd fracp1 fracrnd exprndinc exprnd underflow overflow data-special
 			flags-special prodinfzero-special infnanzero-special expovfl-special data-fma flags-fma
@@ -482,7 +482,7 @@
 ;; on a constrained function:
 
 (in-theory (disable (input-constraints) (dnp) (fzp) (rmode) (signa) (expa) (mana) (classa) (flags-a) (signb) (expb) (manb)
-                    (classb) (flags-b) (data-special) (flags-special) (clz) (prod) (expprodint) (expbiasedzero) (expbiasedneg)
+                    (classb) (flags-b) (data-special) (flags-special) (clz*) (prod) (expprodint) (expbiasedzero) (expbiasedneg)
 		    (stkfma) (stk) (grd) (lsb) (expshftint) (expinc) (frac105) (expzero) (expmax) (expinf) (expgtinf) (exp11)
 		    (sign) (rndup) (fracunrnd) (fracp1) (fracrnd) (exprndinc) (exprnd) (underflow) (overflow) (data-special)
 		    (flags-special) (prodinfzero-special) (infnanzero-special) (expovfl-special) (data-fma) (flags-fma)

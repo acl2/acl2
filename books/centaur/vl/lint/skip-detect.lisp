@@ -47,11 +47,11 @@
 ; of modules.
 
 
-(defthm take-leading-digits-under-iff
+(defthm take-leading-dec-digit-chars-under-iff
   ;; BOZO consider moving to string library
-  (iff (str::take-leading-digits x)
-       (str::digitp (car x)))
-  :hints(("Goal" :in-theory (enable str::take-leading-digits))))
+  (iff (str::take-leading-dec-digit-chars x)
+       (str::dec-digit-char-p (car x)))
+  :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars))))
 
 
 
@@ -150,7 +150,7 @@ wire name, and accumulates them into @('acc')."
                  (key      (make-sd-key :pat x-honsed :index nil :orig x-honsed)))
             (cons key acc)))
          (char (char x n))
-         ((unless (str::digitp char))
+         ((unless (str::dec-digit-char-p char))
           (sd-keygen-aux (+ 1 n) x xl acc))
          ;; Else, we found a number.
          ((mv val len) (str::parse-nat-from-string x 0 0 n xl))
@@ -653,6 +653,3 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
       ps
     (vl-ps-seq (sd-pp-problem-long (car x))
                (sd-pp-problemlist-long (cdr x)))))
-
-
-

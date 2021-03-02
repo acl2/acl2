@@ -45,14 +45,14 @@
         '(v vb)
         'fd1slp
         (list (v (sis 'cvzbv 0 35)) 'clk (v-set (sis 'set-flags 0 4))
-              'n 'te))  
+              'n 'te))
   ;; C. Scan V to C
   (list 'c-latch
         '(c cb)
         'fd1slp
         (list (c (sis 'cvzbv 0 35)) 'clk (c-set (sis 'set-flags 0 4))
               'v 'te)))
- :guard t)    
+ :guard t)
 
 (defund flags& (netlist)
   (declare (xargs :guard (alistp netlist)))
@@ -100,10 +100,6 @@
               (c cvzbv)
               (c-flag flags))))
 
-;; (defthm true-listp-f$update-flags
-;;   (true-listp (f$update-flags flags set-flags cvzbv))
-;;   :rule-classes :type-prescription)
-
 (defthm len-f$update-flags
   (equal (len (f$update-flags flags set-flags cvzbv))
          4))
@@ -126,7 +122,7 @@
         (equal (caddr (sis s m n))
                (nth 2 (sis s m n))))
    :hints (("Goal" :in-theory (enable sis)))))
-           
+
 ;; (defthmd flags$state-help
 ;;   (implies (and (flags& netlist)
 ;;                 (true-listp flags) (equal (len flags) 4)

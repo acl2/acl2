@@ -48,7 +48,7 @@
            (eq (car x) :var))
          :var)
         ((or (atom x)
-             (eq (car x) 'quote))
+             (integerp (car x)))
          :quote)
         (t :call)))
 
@@ -165,7 +165,8 @@
                             (:REWRITE SV::4VEC-FIX-OF-4VEC)
                             (:DEFINITION INTEGER-LISTP)
                             (:REWRITE SV::4VEC-P-OF-NTH-WHEN-4VECLIST-P)
-                            (:TYPE-PRESCRIPTION INTEGER-LISTP))))))
+                            (:TYPE-PRESCRIPTION INTEGER-LISTP)
+                            (:REWRITE SV::NTH-OF-4VECLIST-FIX))))))
 
 (acl2::defines
  svex-eval-wog
@@ -189,9 +190,7 @@
    (let* ((x.kind (svex-kind-wog x)))
      (case
        x.kind
-       (:quote (cond ((atom x) x)
-                     ((atom (cdr x)) (sv::4vec-x))
-                     (t (cadr x))))
+       (:quote x)
        (:var (svex-env-fastlookup-wog x env))
        (otherwise
         (b* ((x.fn (car x))
@@ -215,23 +214,11 @@
 
  :prepwork
  ((local
-   (defthm returns-lemma1
+   (defthm returns-lemma
      (implies (and
                (equal (svex-kind-wog x) :quote)
-               (not (consp x))
-               (svex-env-p env)
                (svex-p x))
               (4vec-p x))
-     :hints (("goal"
-              :in-theory (e/d (svex-kind-wog svex-p 4vec-p) ())))))
-  (local
-   (defthm returns-lemma2
-     (implies (and
-               (equal (svex-kind-wog x) :quote)
-               (consp x)
-               (svex-env-p env)
-               (svex-p x))
-              (4vec-p (cadr x)))
      :hints (("goal"
               :in-theory (e/d (svex-kind-wog svex-p 4vec-p) ())))))
   )

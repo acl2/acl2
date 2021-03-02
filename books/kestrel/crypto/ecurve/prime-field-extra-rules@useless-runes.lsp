@@ -1,0 +1,366 @@
+(ECURVE::STEP1 (13 7
+                   (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+               (12 12 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+               (12 12 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
+               (12 7
+                   (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (7 7
+                  (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+               (6 6
+                  (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+               (6 6
+                  (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (6 2 (:DEFINITION NATP))
+               (5 3
+                  (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+               (4 4
+                  (:REWRITE PFIELD::ADD-COMBINE-CONSTANTS))
+               (4 3 (:REWRITE DEFAULT-<-1))
+               (3 3
+                  (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+               (3 3 (:REWRITE DEFAULT-<-2))
+               (2 2 (:TYPE-PRESCRIPTION NATP))
+               (2 2
+                  (:REWRITE PFIELD::NEG-OF-MUL-WHEN-CONSTANT))
+               (2 2
+                  (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS))
+               (1 1
+                  (:REWRITE PFIELD::SUB-WHEN-CONSTANTS)))
+(ECURVE::STEP2 (6 2 (:DEFINITION NATP))
+               (4 4 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
+               (4 3
+                  (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+               (3 3
+                  (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (2 2 (:TYPE-PRESCRIPTION NATP))
+               (2 2
+                  (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+               (2 2
+                  (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+               (2 2
+                  (:REWRITE PFIELD::EQUAL-OF-ADD-COMBINE-CONSTANTS))
+               (2 2
+                  (:REWRITE PFIELD::EQUAL-OF-0-AND-ADD-SAFE))
+               (2 2 (:REWRITE DEFAULT-<-2))
+               (2 2 (:REWRITE DEFAULT-<-1))
+               (2 1
+                  (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+               (2 1
+                  (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (1 1 (:REWRITE PFIELD::SUB-WHEN-CONSTANTS))
+               (1 1
+                  (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+               (1 1 (:REWRITE PFIELD::MUL-COMMUTATIVE))
+               (1 1 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+               (1 1
+                  (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS)))
+(ECURVE::EQUAL-OF-SQUARE-AND-SQUARE
+     (30 30 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
+     (29 17
+         (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (27 17
+         (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (26 26 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (16 16
+         (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (14 14
+         (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (14 14
+         (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (13 9
+         (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+     (12 4 (:DEFINITION NATP))
+     (9 9
+        (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+     (8 8
+        (:REWRITE PFIELD::ADD-COMBINE-CONSTANTS))
+     (8 6 (:REWRITE DEFAULT-<-1))
+     (6 6 (:REWRITE DEFAULT-<-2))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE PFIELD::NEG-OF-MUL-WHEN-CONSTANT))
+     (3 3
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS))
+     (2 2 (:REWRITE PFIELD::SUB-WHEN-CONSTANTS))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-ADD-COMBINE-CONSTANTS))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-0-AND-ADD-SAFE)))
+(ECURVE::EQUAL-OF-MUL-SAME-AND-1
+     (21 21 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
+     (17 12
+         (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (14 12
+         (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (7 7 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (6 6
+        (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+     (6 2 (:DEFINITION NATP))
+     (3 3
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (3 3
+        (:REWRITE PFIELD::ADD-COMBINE-CONSTANTS))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (2 2
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS)))
+(ECURVE::EQUAL-OF-DIV-AND-0
+     (19 3 (:REWRITE PFIELD::FEP-HOLDS))
+     (6 2 (:DEFINITION NATP))
+     (4 3 (:REWRITE DEFAULT-<-1))
+     (3 3 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (3 3 (:REWRITE DEFAULT-<-2))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (2 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (1 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS)))
+(ECURVE::MUL-OF-DIV-SAME-ARG1-ARG2
+     (10 2 (:REWRITE PFIELD::FEP-HOLDS))
+     (6 2 (:DEFINITION NATP))
+     (5 5 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (4 4
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (2 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (1 1
+        (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+     (1 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (1 1
+        (:REWRITE PFIELD::MUL-COMBINE-CONSTANTS)))
+(ECURVE::EQUAL-OF-DIV-AND-DIV-SAME-ARG2
+     (8 4
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (4 4
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (4 4
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (4 4 (:REWRITE PFIELD::MUL-COMMUTATIVE))
+     (4 4 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (3 3
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS))
+     (3 3 (:REWRITE DEFAULT-<-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 1 (:DEFINITION NATP))
+     (1 1 (:TYPE-PRESCRIPTION NATP)))
+(ECURVE::LEMMA1 (10 2 (:REWRITE PFIELD::FEP-HOLDS))
+                (7 7 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+                (6 2 (:DEFINITION NATP))
+                (5 5
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+                (2 2 (:TYPE-PRESCRIPTION NATP))
+                (2 2 (:REWRITE DEFAULT-<-2))
+                (2 2 (:REWRITE DEFAULT-<-1))
+                (2 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+                (1 1
+                   (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+                (1 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+                (1 1
+                   (:REWRITE PFIELD::MUL-COMBINE-CONSTANTS)))
+(ECURVE::LEMMA2)
+(ECURVE::EQUAL-OF-1-AND-DIV
+     (6 2 (:DEFINITION NATP))
+     (4 4
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (4 4 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (4 2
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (3 3 (:REWRITE DEFAULT-<-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (2 2
+        (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (2 2 (:REWRITE PFIELD::MUL-COMMUTATIVE))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS)))
+(ECURVE::EQUAL-OF-X-AND-NEG-X
+     (6 2 (:DEFINITION NATP))
+     (5 5 (:REWRITE DEFAULT-<-2))
+     (5 5 (:REWRITE DEFAULT-<-1))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2
+        (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (2 2
+        (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (2 2 (:REWRITE PFIELD::ADD-COMMUTATIVE))
+     (1 1
+        (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+     (1 1
+        (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-ADD-COMBINE-CONSTANTS))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-0-AND-ADD-SAFE)))
+(ECURVE::EQUAL-OF-MUL-CONSTANTS-MOD
+     (41 6 (:REWRITE PFIELD::MOD-WHEN-FEP))
+     (31 9 (:DEFINITION NATP))
+     (10 10 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (10 10 (:REWRITE DEFAULT-<-2))
+     (10 10 (:REWRITE DEFAULT-<-1))
+     (9 9 (:TYPE-PRESCRIPTION NATP))
+     (9 9
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (9 6
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (6 6
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (3 3
+        (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+     (2 2
+        (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS)))
+(ECURVE::MUL-OF-MINUS1-BECOMES-NEG-2
+     (2 2
+        (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+     (2 2 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+     (2 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (1 1 (:TYPE-PRESCRIPTION PFIELD::MINUS1))
+     (1 1
+        (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+     (1 1
+        (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+     (1 1
+        (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP)))
+(ECURVE::LEMMA1 (10 2 (:REWRITE PFIELD::FEP-HOLDS))
+                (6 2 (:DEFINITION NATP))
+                (5 5 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+                (4 4
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+                (2 2 (:TYPE-PRESCRIPTION NATP))
+                (2 2 (:REWRITE DEFAULT-<-2))
+                (2 2 (:REWRITE DEFAULT-<-1))
+                (2 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+                (1 1
+                   (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+                (1 1
+                   (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+                (1 1
+                   (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+                (1 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+                (1 1
+                   (:REWRITE PFIELD::MUL-COMBINE-CONSTANTS)))
+(ECURVE::LEMMA2 (3 3
+                   (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+                (3 3
+                   (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+                (2 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+                (1 1
+                   (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+                (1 1
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+                (1 1
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+                (1 1 (:REWRITE PFIELD::MUL-COMMUTATIVE))
+                (1 1 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+                (1 1 (:REWRITE DEFAULT-+-2))
+                (1 1 (:REWRITE DEFAULT-+-1)))
+(ECURVE::LEMMA3 (6 2 (:DEFINITION NATP))
+                (4 2
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+                (2 2
+                   (:TYPE-PRESCRIPTION PFIELD::NATP-OF-INV))
+                (2 2 (:TYPE-PRESCRIPTION NATP))
+                (2 2
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+                (2 2
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+                (2 2 (:REWRITE PFIELD::MUL-COMMUTATIVE))
+                (2 2 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+                (2 2 (:REWRITE DEFAULT-<-2))
+                (2 2 (:REWRITE DEFAULT-<-1))
+                (1 1
+                   (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+                (1 1
+                   (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+                (1 1
+                   (:REWRITE PFIELD::EQUAL-OF-MUL-CONSTANTS))
+                (1 1 (:REWRITE DEFAULT-+-2))
+                (1 1 (:REWRITE DEFAULT-+-1)))
+(ECURVE::LEMMA4 (33 2 (:REWRITE PFIELD::FEP-HOLDS))
+                (16 2 (:REWRITE CANCEL-MOD-+))
+                (14 1 (:DEFINITION NATP))
+                (5 5 (:META META-INTEGERP-CORRECT))
+                (3 3 (:REWRITE REDUCE-INTEGERP-+))
+                (3 3
+                   (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+                (3 3
+                   (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+                (3 3 (:REWRITE DEFAULT-UNARY-/))
+                (3 2 (:REWRITE SIMPLIFY-SUMS-<))
+                (3 2
+                   (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+                (3 2 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+                (3 2 (:REWRITE DEFAULT-<-1))
+                (2 2 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+                (2 2
+                   (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+                (2 2 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
+                (2 2 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+                (2 2
+                   (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+                (2 2
+                   (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+                (2 2
+                   (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+                (2 2 (:REWRITE NORMALIZE-ADDENDS))
+                (2 2 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+                (2 2 (:REWRITE MOD-MINUS-2))
+                (2 2 (:REWRITE MOD-CANCEL-*))
+                (2 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                (2 2 (:REWRITE DEFAULT-<-2))
+                (2 2 (:REWRITE DEFAULT-+-2))
+                (2 2 (:REWRITE DEFAULT-+-1))
+                (2 2 (:REWRITE |(equal (- x) (- y))|))
+                (2 2 (:REWRITE |(< (- x) (- y))|))
+                (2 2 (:REWRITE |(* (- x) y)|))
+                (1 1 (:TYPE-PRESCRIPTION NATP))
+                (1 1
+                   (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+                (1 1
+                   (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+                (1 1
+                   (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+                (1 1
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+                (1 1 (:REWRITE MOD-X-Y-=-X . 4))
+                (1 1 (:REWRITE |(equal (- x) 0)|))
+                (1 1 (:REWRITE |(< (- x) 0)|))
+                (1 1 (:REWRITE |(* 1 x)|)))
+(ECURVE::EQUAL-OF-MINUS1-AND-DIV
+     (6 6 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
+     (6 2 (:DEFINITION NATP))
+     (3 3
+        (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
+     (3 3
+        (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
+     (3 3
+        (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+     (3 3
+        (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (2 2 (:TYPE-PRESCRIPTION NATP))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-ADD-COMBINE-CONSTANTS))
+     (1 1
+        (:REWRITE PFIELD::EQUAL-OF-0-AND-ADD-SAFE)))

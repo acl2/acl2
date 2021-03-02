@@ -146,7 +146,7 @@
 (defthm bvp-cdr-tv-dec-pass-ng
   (bvp (cdr (tv-dec-pass-ng c a tree make-g)))
   :hints (("Goal"
-           :use bvp-tv-dec-pass-ng 
+           :use bvp-tv-dec-pass-ng
            :in-theory (e/d (bvp)
                            (bvp-tv-dec-pass-ng))))
   :rule-classes (:rewrite :type-prescription))
@@ -240,14 +240,6 @@
            (equal (len (cdr (f$tv-dec-pass-ng c a tree make-g)))
                   (tree-size tree)))
   :hints (("Goal" :in-theory (enable tree-size))))
-
-;; (defthm true-listp-f$tv-dec-pass-ng
-;;   (true-listp (f$tv-dec-pass-ng c a tree make-g))
-;;   :rule-classes :type-prescription)
-
-;; (defthm true-listp-cdr-f$tv-dec-pass-ng
-;;   (true-listp (cdr (f$tv-dec-pass-ng c a tree make-g)))
-;;   :rule-classes :type-prescription)
 
 (defthm f$tv-dec-pass-ng=tv-dec-pass-ng
   (implies (and (booleanp c)
@@ -514,7 +506,7 @@
                                                  t)))
                     (nthcdr (tree-size (car tree)) a)
                     (cdr tree)
-                    t)))))             
+                    t)))))
    :hints (("Goal"
             :do-not-induct t
             :in-theory (enable tree-size)
@@ -651,7 +643,7 @@
 
 ;; ======================================================================
 
-;; DEC-PASS* 
+;; DEC-PASS*
 
 ;; If the control line C is high does a decrement, else passes A.
 
@@ -685,10 +677,6 @@
 (defun f$dec-pass (c a)
   (declare (xargs :guard (true-listp a)))
   (f$tv-dec-pass-ng (f-not c) a (make-tree (len a)) nil))
-
-;; (defthm true-listp-f$dec-pass
-;;   (true-listp (f$dec-pass c a))
-;;   :rule-classes :type-prescription)
 
 (defthm len-f$dec-pass
   (implies (not (equal (len a) 0))

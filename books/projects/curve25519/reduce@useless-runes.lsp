@@ -1591,144 +1591,150 @@
  (1 1 (:REWRITE |(* c (expt d n))|))
  (1 1 (:REWRITE |(* (- x) y)|)))
 (RTL::SPLIT$
-     (21400 428 (:DEFINITION INTEGER-ABS))
-     (8504 3044 (:REWRITE DEFAULT-PLUS-2))
-     (8374 3044 (:REWRITE DEFAULT-PLUS-1))
-     (7490 214 (:REWRITE |(+ (if a b c) x)|))
-     (6206 214 (:REWRITE NUMERATOR-NEGATIVE))
-     (3618 379 (:REWRITE RATIONALP-X))
-     (3310 1655
-           (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))
-     (2607 2607 (:TYPE-PRESCRIPTION RTL::ECP))
-     (2140 214 (:DEFINITION LENGTH))
-     (2055 165 (:REWRITE ACL2-NUMBERP-X))
-     (1954 1954
-           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (1926 1926
-           (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
-     (1926 1926
-           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 2))
-     (1926 1926
-           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 1))
-     (1926 1926
-           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 2))
-     (1926 1926
-           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 1))
-     (1498 428 (:REWRITE DEFAULT-MINUS))
-     (1498 214 (:DEFINITION LEN))
-     (1466 1466 (:TYPE-PRESCRIPTION RTL::TRIPP))
-     (1364 652
+     (14678 7339
+            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))
+     (11600 232 (:DEFINITION INTEGER-ABS))
+     (9119 9119 (:TYPE-PRESCRIPTION RTL::ECP))
+     (7724 1352 (:REWRITE DEFAULT-PLUS-2))
+     (6000 1352 (:REWRITE DEFAULT-PLUS-1))
+     (4060 116 (:REWRITE |(+ (if a b c) x)|))
+     (3782 135 (:REWRITE RATIONALP-X))
+     (3364 348 (:REWRITE |(+ y x)|))
+     (3364 116 (:REWRITE NUMERATOR-NEGATIVE))
+     (2918 2918 (:TYPE-PRESCRIPTION RTL::TRIPP))
+     (2652 1296
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-X))
-     (1364 652
+     (2652 1296
            (:TYPE-PRESCRIPTION RTL::INT-CAR-TRIPP))
-     (1228 43
-           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (828 556
-          (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (798 798 (:REWRITE THE-FLOOR-BELOW))
-     (798 798 (:REWRITE THE-FLOOR-ABOVE))
-     (770 770 (:REWRITE REMOVE-WEAK-INEQUALITIES))
-     (770 770
-          (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (770 770
-          (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (770 770
-          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (770 770 (:REWRITE INTEGERP-<-CONSTANT))
-     (770 770 (:REWRITE CONSTANT-<-INTEGERP))
-     (770 770
-          (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (770 770
-          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (770 770
-          (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (770 770
-          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (770 770 (:REWRITE |(< c (- x))|))
-     (770 770
-          (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (770 770
-          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (770 770
-          (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (770 770
-          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (770 770 (:REWRITE |(< (/ x) (/ y))|))
-     (770 770 (:REWRITE |(< (- x) c)|))
-     (770 770 (:REWRITE |(< (- x) (- y))|))
-     (740 740 (:REWRITE FOLD-CONSTS-IN-+))
+     (1546 479
+           (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
+     (1358 669
+           (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
+     (1352 32
+           (:LINEAR ACL2-COUNT-OF-CONSP-POSITIVE))
+     (1160 116 (:DEFINITION LENGTH))
+     (1069 349 (:REWRITE DEFAULT-CDR))
+     (1044 1044
+           (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
+     (1044 1044
+           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 2))
+     (1044 1044
+           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 1))
+     (1044 1044
+           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 2))
+     (1044 1044
+           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 1))
+     (1034 194 (:REWRITE DEFAULT-CAR))
+     (888 888
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (888 888 (:REWRITE NORMALIZE-ADDENDS))
+     (812 232 (:REWRITE DEFAULT-MINUS))
+     (812 116 (:DEFINITION LEN))
      (681 2 (:REWRITE RTL::SHFP-POP-POW-ATOM))
      (667 2 (:DEFINITION RTL::SHFP))
-     (658 658 (:REWRITE |(< (/ x) 0)|))
-     (658 658 (:REWRITE |(< (* x y) 0)|))
-     (598 598 (:REWRITE REDUCE-INTEGERP-+))
-     (598 598 (:REWRITE INTEGERP-MINUS-X))
-     (598 598 (:META META-INTEGERP-CORRECT))
-     (444 444
+     (641 249 (:REWRITE SIMPLIFY-SUMS-<))
+     (641 249
+          (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (408 136 (:REWRITE RTL::INTEGERP-EC-Y))
+     (381 19 (:REWRITE ACL2-NUMBERP-X))
+     (371 371 (:REWRITE THE-FLOOR-BELOW))
+     (371 371 (:REWRITE THE-FLOOR-ABOVE))
+     (365 365 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (365 365
+          (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (365 365
+          (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (365 365
+          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (365 365 (:REWRITE INTEGERP-<-CONSTANT))
+     (365 365 (:REWRITE CONSTANT-<-INTEGERP))
+     (365 365
+          (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (365 365
+          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (365 365
+          (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (365 365
+          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (365 365 (:REWRITE |(< c (- x))|))
+     (365 365
+          (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (365 365
+          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (365 365
+          (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (365 365
+          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (365 365 (:REWRITE |(< (/ x) (/ y))|))
+     (365 365 (:REWRITE |(< (- x) c)|))
+     (365 365 (:REWRITE |(< (- x) (- y))|))
+     (364 7
+          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (353 353 (:REWRITE |(< (/ x) 0)|))
+     (353 353 (:REWRITE |(< (* x y) 0)|))
+     (318 106 (:REWRITE RTL::INTEGERP-EC-X))
+     (318 106 (:REWRITE RTL::INT-CAR-TRIPP))
+     (256 256 (:REWRITE REDUCE-INTEGERP-+))
+     (256 256 (:REWRITE INTEGERP-MINUS-X))
+     (256 256 (:META META-INTEGERP-CORRECT))
+     (252 252 (:REWRITE FOLD-CONSTS-IN-+))
+     (252 252 (:REWRITE |(+ c (+ d x))|))
+     (237 237
           (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
-     (444 444
+     (237 237
           (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
-     (418 143
-          (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
-     (379 379 (:REWRITE REDUCE-RATIONALP-+))
-     (379 379 (:REWRITE REDUCE-RATIONALP-*))
-     (379 379 (:REWRITE RATIONALP-MINUS-X))
-     (379 379 (:META META-RATIONALP-CORRECT))
-     (366 173
-          (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
-     (354 118 (:REWRITE RTL::INTEGERP-EC-X))
-     (354 118 (:REWRITE RTL::INT-CAR-TRIPP))
-     (214 214 (:TYPE-PRESCRIPTION LEN))
-     (214 214 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-     (214 214
-          (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-     (214 214 (:REWRITE DEFAULT-REALPART))
-     (214 214
-          (:REWRITE DEFAULT-RATIONAL-NUMERATOR))
-     (214 214
-          (:REWRITE DEFAULT-RATIONAL-DENOMINATOR))
-     (214 214 (:REWRITE DEFAULT-IMAGPART))
-     (214 214 (:REWRITE DEFAULT-COERCE-2))
-     (214 214 (:REWRITE DEFAULT-COERCE-1))
-     (201 67 (:REWRITE RTL::INT-CADR-TRIPP))
+     (225 75 (:REWRITE RTL::INT-CADR-TRIPP))
      (201 3 (:DEFINITION NATP))
-     (192 64 (:REWRITE RTL::INT-CADDR-TRIPP))
-     (96 32 (:REWRITE RTL::INTEGERP-EC-Y))
+     (168 56 (:REWRITE RTL::INT-CADDR-TRIPP))
+     (135 135 (:REWRITE REDUCE-RATIONALP-+))
+     (135 135 (:REWRITE REDUCE-RATIONALP-*))
+     (135 135 (:REWRITE RATIONALP-MINUS-X))
+     (135 135 (:META META-RATIONALP-CORRECT))
+     (116 116 (:TYPE-PRESCRIPTION LEN))
+     (116 116 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (116 116
+          (:REWRITE INTEGERP==>DENOMINATOR-=-1))
+     (116 116 (:REWRITE DEFAULT-REALPART))
+     (116 116
+          (:REWRITE DEFAULT-RATIONAL-NUMERATOR))
+     (116 116
+          (:REWRITE DEFAULT-RATIONAL-DENOMINATOR))
+     (116 116 (:REWRITE DEFAULT-IMAGPART))
+     (116 116 (:REWRITE DEFAULT-COERCE-2))
+     (116 116 (:REWRITE DEFAULT-COERCE-1))
      (82 7 (:REWRITE RTL::SHNFP-SHFP))
-     (70 70 (:REWRITE |(< y (+ (- c) x))|))
-     (70 70 (:REWRITE |(< x (+ c/d y))|))
-     (55 55
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
-     (55 55
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
-     (55 55 (:REWRITE |(< 0 (/ x))|))
-     (55 55 (:REWRITE |(< 0 (* x y))|))
-     (48 24 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
      (47 7 (:REWRITE RTL::SHNFP-INT))
-     (43 43 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (43 43
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (43 43
-         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (43 43
-         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (43 43 (:REWRITE |(equal c (/ x))|))
-     (43 43 (:REWRITE |(equal c (- x))|))
-     (43 43 (:REWRITE |(equal (/ x) c)|))
-     (43 43 (:REWRITE |(equal (/ x) (/ y))|))
-     (43 43 (:REWRITE |(equal (- x) c)|))
-     (43 43 (:REWRITE |(equal (- x) (- y))|))
      (21 21 (:TYPE-PRESCRIPTION RTL::SHNFP))
      (21 21 (:TYPE-PRESCRIPTION RTL::SHFP))
      (10 5 (:REWRITE RTL::SHNFP-POW-P))
+     (7 7 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (7 7
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (7 7
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (7 7
+        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (7 7 (:REWRITE |(equal c (/ x))|))
+     (7 7 (:REWRITE |(equal c (- x))|))
+     (7 7 (:REWRITE |(equal (/ x) c)|))
+     (7 7 (:REWRITE |(equal (/ x) (/ y))|))
+     (7 7 (:REWRITE |(equal (- x) c)|))
+     (7 7 (:REWRITE |(equal (- x) (- y))|))
      (6 6 (:TYPE-PRESCRIPTION RTL::NORM-POP))
      (4 4 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
      (4 4 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
      (4 4 (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
+     (4 4 (:REWRITE |(< y (+ (- c) x))|))
+     (4 4 (:REWRITE |(< x (+ c/d y))|))
      (4 2 (:REWRITE RTL::SHNFP-POW-Q))
      (2 2 (:TYPE-PRESCRIPTION RTL::NORM-POW))
      (2 2
-        (:REWRITE RTL::DISTINCT-SYMBOLS-ATOM)))
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
+     (2 2
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
+     (2 2 (:REWRITE RTL::DISTINCT-SYMBOLS-ATOM))
+     (2 2 (:REWRITE |(< 0 (/ x))|))
+     (2 2 (:REWRITE |(< 0 (* x y))|)))
 (RTL::SPLIT$-CASE-5-1
      (1570 1003
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))

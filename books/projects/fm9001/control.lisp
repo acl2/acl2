@@ -121,32 +121,32 @@
     (fetch1  . *v00001*)
     (fetch2  . *v00010*)
     (fetch3  . *v00011*)
-    
+
     (decode  . *v00100*)
     (rega    . *v00101*)
     (regb    . *v00110*)
     (update  . *v00111*)
-    
+
     (reada0  . *v01000*)
     (reada1  . *v01001*)
     (reada2  . *v01010*)
     (reada3  . *v01011*)
-    
+
     (readb0  . *v01100*)
     (readb1  . *v01101*)
     (readb2  . *v01110*)
     (readb3  . *v01111*)
-    
+
     (write0  . *v10000*)
     (write1  . *v10001*)
     (write2  . *v10010*)
     (write3  . *v10011*)
- 
+
     (sefa0   . *v10100*)
     (sefa1   . *v10101*)
     (sefb0   . *v10110*)
     (sefb1   . *v10111*)
- 
+
     (hold0   . *v11000*)
     (hold1   . *v11001*)
     (v11010  . *v11010*)
@@ -160,7 +160,7 @@
 (defmacro define-control-states-events ()
   `(progn
      ,@(define-control-states *control-states*)
-         
+
      (deftheory vector-states
        ',(add-prefix-to-state-names "V_" *control-states*))
 
@@ -181,7 +181,7 @@
   '((rw-                 b          t)
     (strobe-             b          t)
     (hdack-              b          t)
-    (we-regs             b          nil) 
+    (we-regs             b          nil)
     (we-a-reg            b          nil)
     (we-b-reg            b          nil)
     (we-i-reg            b          nil)
@@ -227,10 +227,10 @@
             alu-zero
             (alu-op (alu-inc-op))
             (alu-c (carry-in-help (cons c (cons t (alu-inc-op)))))
-            (alu-mpg (mpg (cons t (cons nil (alu-inc-op))))))         
+            (alu-mpg (mpg (cons t (cons nil (alu-inc-op))))))
 
     (fetch1 (if hold- fetch2 hold0))
-            
+
     (fetch2 fetch3 strobe-
             we-regs (regs-address pc-reg)
             (alu-c (carry-in-help (cons c (cons nil (alu-inc-op)))))
@@ -272,7 +272,7 @@
                           (mpg (cons nil (cons nil (alu-dec-op))))
                           (mpg (cons nil (cons nil (alu-inc-op))))))
             (regs-address rn-a) (we-regs side-effect-a))
-        
+
     (reada2 reada3 (regs-address rn-b) we-b-reg strobe-)
 
     (reada3 (if dtack-
@@ -335,7 +335,6 @@
            (alu-mpg (if* pre-dec-a
                          (mpg (cons nil (cons nil (alu-dec-op))))
                          (mpg (cons nil (cons nil (alu-inc-op)))))))
-                 
 
     (sefb0 sefb1 (regs-address rn-b) we-b-reg)
 
@@ -372,7 +371,7 @@
             (alu-c (carry-in-help (cons c (cons t (alu-inc-op)))))
             (alu-mpg (mpg (cons t (cons nil (alu-inc-op))))))
 
-    (reset1 reset2 (regs-address (make-list 4)) 
+    (reset1 reset2 (regs-address (make-list 4))
             we-addr-out we-a-reg we-b-reg we-i-reg
             alu-zero
             (alu-op (alu-inc-op))
@@ -571,7 +570,7 @@
       (implies (bvp decoded-state)
                (bvp (next-state
                      decoded-state store set-some-flags unary
-                     direct-a direct-b 
+                     direct-a direct-b
                      side-effect-a side-effect-b all-t-regs-address
                      dtack- hold-)))
       :hints (("Goal" :in-theory (enable bvp next-state)))
@@ -580,24 +579,16 @@
     (defthm len-next-state
       (equal (len (next-state
                    decoded-state store set-some-flags unary
-                   direct-a direct-b 
+                   direct-a direct-b
                    side-effect-a side-effect-b all-t-regs-address
                    dtack- hold-))
              32)
       :hints (("Goal" :in-theory (enable next-state))))
 
-    ;; (defthm true-listp-f$next-state
-    ;;   (true-listp (f$next-state
-    ;;                decoded-state store set-some-flags unary
-    ;;                direct-a direct-b 
-    ;;                side-effect-a side-effect-b all-t-regs-address
-    ;;                dtack- hold-))
-    ;;   :rule-classes :type-prescription)
-
     (defthm len-f$next-state
       (equal (len (f$next-state
                    decoded-state store set-some-flags unary
-                   direct-a direct-b 
+                   direct-a direct-b
                    side-effect-a side-effect-b all-t-regs-address
                    dtack- hold-))
              32)
@@ -629,7 +620,7 @@
                                  (si)
                                  (sis)
                                  tv-disabled-rules)))))
-    
+
     ))
 
 (define-next-state-events)
@@ -644,7 +635,7 @@
   (declare (xargs :guard t))
   (b* ((state-names (strip-cars *control-states*)))
     `(progn
-       
+
        (defund cv (decoded-state
                    rn-a rn-b op-code
                    pc-reg regs-address set-flags
@@ -678,16 +669,16 @@
                           readb2 readb3 write2 write3)
                   ;;hdack-
                   (b-not hold0)
-                  ;;we-regs 
+                  ;;we-regs
                   (b-nand5 (b-nand store update)
-                           (b-nand side-effect-a reada1) 
-                           (b-nand3 store- side-effect-b readb2) 
-                           (b-nand side-effect-b write1) 
+                           (b-nand side-effect-a reada1)
+                           (b-nand3 store- side-effect-b readb2)
+                           (b-nand side-effect-b write1)
                            (b-nor5 fetch2 sefa1 sefb1 reset0 reset2))
-                  ;;we-a-reg 
-                  (b-nand (b-nand direct-a readb1) 
+                  ;;we-a-reg
+                  (b-nand (b-nand direct-a readb1)
                           (b-nor6 fetch0 rega reada0 reada3 sefa0 reset1))
-                  ;;we-b-reg 
+                  ;;we-b-reg
                   (b-nand (b-nor4 regb update reada2 readb0)
                           (b-nor4 readb3 write0 sefb0 reset1))
                   ;;we-i-reg
@@ -703,12 +694,12 @@
                   (b-or hold0 reset0)
                   ;;data-in-select
                   (b-or3 fetch3 reada3 readb3)
-                  ;;dec-addr-out 
-                  (b-nand (b-nand pre-dec-a reada0) 
+                  ;;dec-addr-out
+                  (b-nand (b-nand pre-dec-a reada0)
                           (b-nand pre-dec-b (b-or readb0 write0)))
                   ;;select-immediate
                   (b-and a-immediate-p (b-or rega readb1))
-                  ;;alu-c 
+                  ;;alu-c
                   (carry-in-help (cons c (cons alu-zero alu-op)))
                   ;;alu-zero
                   alu-zero
@@ -735,9 +726,9 @@
                                        (v-if reset2
                                              (v-inc regs-address)
                                              pc-reg))))
- 
+
                      (append
-                      ;;alu-op 
+                      ;;alu-op
                       alu-op
                       ;;alu-mpg
                       (mpg (cons alu-zero (cons alu-swap alu-op)))))))))))))
@@ -775,16 +766,16 @@
                           readb2 readb3 write2 write3)
                   ;;hdack-
                   (f-not hold0)
-                  ;;we-regs 
+                  ;;we-regs
                   (f-nand5 (f-nand store update)
-                           (f-nand side-effect-a reada1) 
-                           (f-nand3 store- side-effect-b readb2) 
-                           (f-nand side-effect-b write1) 
+                           (f-nand side-effect-a reada1)
+                           (f-nand3 store- side-effect-b readb2)
+                           (f-nand side-effect-b write1)
                            (f-nor5 fetch2 sefa1 sefb1 reset0 reset2))
-                  ;;we-a-reg 
-                  (f-nand (f-nand direct-a readb1) 
+                  ;;we-a-reg
+                  (f-nand (f-nand direct-a readb1)
                           (f-nor6 fetch0 rega reada0 reada3 sefa0 reset1))
-                  ;;we-b-reg 
+                  ;;we-b-reg
                   (f-nand (f-nor4 regb update reada2 readb0)
                           (f-nor4 readb3 write0 sefb0 reset1))
                   ;;we-i-reg
@@ -800,12 +791,12 @@
                   (f-or hold0 reset0)
                   ;;data-in-select
                   (f-or3 fetch3 reada3 readb3)
-                  ;;dec-addr-out 
-                  (f-nand (f-nand pre-dec-a reada0) 
+                  ;;dec-addr-out
+                  (f-nand (f-nand pre-dec-a reada0)
                           (f-nand pre-dec-b (f-or readb0 write0)))
                   ;;select-immediate
                   (f-and a-immediate-p (f-or rega readb1))
-                  ;;alu-c 
+                  ;;alu-c
                   (f$carry-in-help (cons c (cons alu-zero alu-op)))
                   ;;alu-zero
                   alu-zero
@@ -830,9 +821,9 @@
                                          (fv-if reset2
                                                 (f$v-inc4$v regs-address)
                                                 pc-reg))))
- 
+
                      (append
-                      ;;alu-op 
+                      ;;alu-op
                       alu-op
                       ;;alu-mpg
                       (f$mpg (cons alu-zero (cons alu-swap alu-op)))))))))))))
@@ -900,18 +891,7 @@
      (and (equal (len rn-a) 4)
           (equal (len op-code) 4))
      (equal (len cv) 40)))
-  :hints (("Goal" :in-theory (e/d (cv)
-                                   (b-gates)))))
-
-;; (defthm true-listp-f$cv
-;;   (let ((f$cv (f$cv decoded-state
-;;                     rn-a rn-b op-code
-;;                     pc-reg regs-address set-flags
-;;                     store c a-immediate-p rw-
-;;                     direct-a side-effect-a side-effect-b
-;;                     pre-dec-a pre-dec-b)))
-;;     (true-listp f$cv))
-;;   :rule-classes :type-prescription)
+  :hints (("Goal" :in-theory (e/d (cv) (b-gates)))))
 
 (defthm len-f$cv
   (let ((f$cv (f$cv decoded-state
@@ -928,7 +908,7 @@
 (defmacro cv*-gen ()
   (declare (xargs :guard t))
   (b* ((state-names (strip-cars *control-states*)))
-    
+
     `(DEFUN CV* ()
        (declare (xargs :guard t))
        (LIST
@@ -944,7 +924,7 @@
                 '(STORE C A-IMMEDIATE-P RW- DIRECT-A SIDE-EFFECT-A SIDE-EFFECT-B
                         PRE-DEC-A PRE-DEC-B))
         ;; Outputs
-        (APPEND '(NEW-RW- STROBE- HDACK- 
+        (APPEND '(NEW-RW- STROBE- HDACK-
                           WE-REGS WE-A-REG WE-B-REG WE-I-REG
                           WE-DATA-OUT WE-ADDR-OUT WE-HOLD- WE-PC-REG
                           DATA-IN-SELECT DEC-ADDR-OUT SELECT-IMMEDIATE
@@ -976,7 +956,7 @@
          '(g10 (s10) b-not (rw-))
          '(g11 (s11) b-nand (s10 fetch0))
          '(g12 (s12) b-nor3 (write1 write2 write3))
-         '(g13 (new-rw-) b-and (s11 s12))    
+         '(g13 (new-rw-) b-and (s11 s12))
          ;;STROBE-
          '(g14 (strobe-) b-nor8
                (fetch2 fetch3 reada2 reada3 readb2 readb3 write2 write3))
@@ -985,13 +965,13 @@
          ;;G 16 was the old DRIVE-ADDR-OUT.
          ;;WE-REGS
          '(g17 (s17) b-nand (store update))
-         '(g18 (s18) b-nand (side-effect-a reada1)) 
-         '(g19 (s19) b-nand3 (store- side-effect-b readb2)) 
-         '(g20 (s20) b-nand (side-effect-b write1)) 
+         '(g18 (s18) b-nand (side-effect-a reada1))
+         '(g19 (s19) b-nand3 (store- side-effect-b readb2))
+         '(g20 (s20) b-nand (side-effect-b write1))
          '(g21 (s21) b-nor5 (fetch2 sefa1 sefb1 reset0 reset2))
          '(g22 (we-regs) b-nand5 (s17 s18 s19 s20 s21))
          ;;WE-A-REG
-         '(g23 (s23) b-nand (direct-a readb1)) 
+         '(g23 (s23) b-nand (direct-a readb1))
          '(g24 (s24) b-nor6 (fetch0 rega reada0 reada3 sefa0 reset1))
          '(g25 (we-a-reg) b-nand (s23 s24))
          ;;WE-B-REG
@@ -1018,7 +998,7 @@
          '(g39 (s39) b-nand (pre-dec-b s38))
          '(g40 (dec-addr-out) b-nand (s37 s39))
          ;;SELECT-IMMEDIATE
-         '(g41 (s41) b-or (rega readb1)) 
+         '(g41 (s41) b-or (rega readb1))
          '(g42 (select-immediate) b-and (a-immediate-p s41))
          ;;ALU-C
          (list 'g43 '(alu-c) 'carry-in-help
@@ -1228,12 +1208,6 @@
                 direct-a side-effect-a side-effect-b
                 pre-dec-a pre-dec-b))))))
 
-;; (defthm true-listp-f$next-cntl-state
-;;   (true-listp (f$next-cntl-state
-;;                reset- dtack- hold- rw-
-;;                st i-reg flags pc-reg regs-address))
-;;   :rule-classes :type-prescription)
-
 (defthm len-f$next-cntl-state
   (equal (len (f$next-cntl-state
                reset- dtack- hold- rw-
@@ -1328,7 +1302,7 @@
                   '(store c a-immediate-p rw- direct-a
                           side-effect-a side-effect-b
                           pre-dec-a pre-dec-b))))))
-          
+
 (defund next-cntl-state& (netlist)
   (and (equal (assoc 'next-cntl-state netlist)
               (next-cntl-state*))

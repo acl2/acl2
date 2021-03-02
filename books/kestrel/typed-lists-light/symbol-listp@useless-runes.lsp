@@ -37,3 +37,18 @@
                                (6 2 (:REWRITE FOLD-CONSTS-IN-+))
                                (2 2 (:REWRITE DEFAULT-<-2))
                                (2 2 (:REWRITE DEFAULT-<-1)))
+(SYMBOL-LISTP-OF-REVAPPEND (223 16
+                                (:REWRITE SYMBOL-LISTP-OF-TRUE-LIST-FIX))
+                           (70 58 (:REWRITE DEFAULT-CAR))
+                           (68 56 (:REWRITE DEFAULT-CDR)))
+(SYMBOL-LISTP-OF-REVERSE
+     (9 1 (:DEFINITION SYMBOL-LISTP))
+     (4 1 (:REWRITE SYMBOL-LISTP-OF-CDR))
+     (3 3 (:REWRITE DEFAULT-CDR))
+     (3 3 (:REWRITE DEFAULT-CAR))
+     (3 1 (:DEFINITION TRUE-LIST-FIX))
+     (3 1 (:DEFINITION REVAPPEND))
+     (2 1
+        (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP-CHEAP)))
+(TRUE-LISTP-WHEN-SYMBOL-LISTP)
+(TRUE-LISTP-WHEN-SYMBOL-LISTP-REWRITE-UNLIMITED)

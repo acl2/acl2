@@ -53,7 +53,7 @@
 
 (define stv2c-tailchar-p ((x characterp))
   :parents (stv2c-c-symbol-name)
-  (or (str::digitp x)
+  (or (str::dec-digit-char-p x)
       (str::down-alpha-p x)
       (str::up-alpha-p x)
       (eql x #\_)))

@@ -10,6 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
@@ -113,8 +116,8 @@
        ((er old) (ensure-function-name-or-numbered-wildcard$
                   old "The first input" t nil))
        (description (msg "The target function ~x0" old))
-       ((er &) (ensure-function-logic-mode$ old description t nil))
-       ((er &) (ensure-function-defined$ old description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old description t nil))
+       ((er &) (ensure-function-is-defined$ old description t nil))
        ((er &) (ensure-function-has-args$ old description t nil))
        ((er &) (ensure-function-number-of-results$ old 1
                                                    description t nil))
@@ -129,7 +132,7 @@
                                                    description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old)
@@ -236,7 +239,8 @@
                                     (new-to-old-enable symbolp)
                                     (verify-guards booleanp)
                                     (hints evmac-input-hints-p)
-                                    (names-to-avoid symbol-listp))').")
+                                    (names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process all the inputs."

@@ -31,7 +31,6 @@
          (bvplus size y x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;loop stopper?
 (defthm bvplus-commutative-2
   (equal (bvplus size y (bvplus size x z))
          (bvplus size x (bvplus size y z)))
@@ -75,6 +74,13 @@
   (implies (<= size 0)
            (equal (bvplus size x y)
                   0))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-when-not-natp-arg1-cheap
+  (implies (not (natp size))
+           (equal (bvplus size x y)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (1)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;drop?

@@ -10,13 +10,12 @@
 
 ;; We're not counting this very directory, because the root does not have a
 ;; directory entry for itself.
-;;
-;; Before disabling, this rule used to cause 436909 frames and 8297 tries in
-;; the main book; now those numbers are 4997 and 63 respectively.
 (defund
   hifat-entry-count (fs)
   (declare (xargs :guard (and (m1-file-alist-p fs)
-                              (hifat-no-dups-p fs))))
+                              (hifat-no-dups-p fs))
+                  :guard-hints
+                  (("Goal" :in-theory (disable m1-directory-file-p-of-m1-file-fix)))))
   (if
    (atom fs)
    0
@@ -101,6 +100,7 @@
        (m1-file-alist1 m1-file-alist2)
      (declare
       (xargs
+       :ruler-extenders nil ; Matt K. change for ruler-extenders mod 2/2021
        :guard (and (m1-file-alist-p m1-file-alist1)
                    (m1-file-alist-p m1-file-alist2))
        :hints (("goal" :in-theory (enable m1-file->contents
@@ -207,40 +207,6 @@
                  (not (fat32-filename-p x)))
             (not (consp (assoc-equal x fs))))
    :hints (("goal" :in-theory (enable m1-file-alist-p)))))
-
-(defthm
-  hifat-entry-count-of-put-assoc-equal-lemma-2
-  (implies
-   (and
-    (not (equal name (car (car fs))))
-    (equal
-     (hifat-entry-count (put-assoc-equal name val (cdr fs)))
-     (+ (hifat-entry-count (cdr fs))
-        (hifat-entry-count (m1-file->contents val))
-        (- (hifat-entry-count
-            (m1-file->contents (cdr (assoc-equal name (cdr fs))))))))
-    (m1-file-alist-p fs)
-    (hifat-no-dups-p fs)
-    (m1-directory-file-p (cdr (assoc-equal name (cdr fs))))
-    (m1-directory-file-p val)
-    (hifat-no-dups-p (m1-file->contents val))
-    (consp (assoc-equal
-            (car (car fs))
-            (hifat-file-alist-fix (put-assoc-equal name val (cdr fs))))))
-   (equal
-    (hifat-entry-count (put-assoc-equal name val (cdr fs)))
-    (+ (hifat-entry-count fs)
-       (hifat-entry-count (m1-file->contents val))
-       (- (hifat-entry-count
-           (m1-file->contents (cdr (assoc-equal name (cdr fs)))))))))
-  :hints
-  (("goal"
-    :in-theory (e/d (hifat-entry-count hifat-no-dups-p)
-                    (hifat-file-alist-fix-when-hifat-no-dups-p))
-    :use ((:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
-                     (hifat-file-alist (put-assoc-equal name val (cdr fs))))
-          (:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
-                     (hifat-file-alist (cdr fs)))))))
 
 (defthm
   consp-of-assoc-of-hifat-file-alist-fix

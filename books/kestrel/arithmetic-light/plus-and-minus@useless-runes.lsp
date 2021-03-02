@@ -13,3 +13,17 @@
                            (2 2 (:REWRITE DEFAULT-+-2))
                            (2 2 (:REWRITE DEFAULT-+-1))
                            (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+(<-OF-+-OF---AND-0-ARG2 (12 12
+                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                        (10 6 (:REWRITE DEFAULT-<-2))
+                        (10 6 (:REWRITE DEFAULT-<-1))
+                        (4 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (4 2 (:REWRITE DEFAULT-+-1))
+                        (2 2 (:REWRITE DEFAULT-+-2)))
+(<-OF-+-OF---AND-0-ARG1 (12 12
+                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                        (10 6 (:REWRITE DEFAULT-<-2))
+                        (10 6 (:REWRITE DEFAULT-<-1))
+                        (4 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (4 2 (:REWRITE DEFAULT-+-2))
+                        (2 2 (:REWRITE DEFAULT-+-1)))

@@ -130,3 +130,7 @@
   (equal (boolor x (bool-fix y))
          (boolor x y))
   :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+;; These help justify some things that Axe does:
+(defcong iff equal (boolor x y) 1 :hints (("Goal" :in-theory (enable boolor))))
+(defcong iff equal (boolor x y) 2 :hints (("Goal" :in-theory (enable boolor))))

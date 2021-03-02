@@ -1,6 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,14 +19,38 @@
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
                                   error
-                                  pprint-indent))
-             '(bool
+                                  pprint-indent
+                                  type
+                                  typep
+                                  value))
+             '(any
+               bool
                cw-event
+               define-sk
+               defmacro+
+               defopener
+               defopeners
+               defopeners-names
+               deftutorial
                defxdoc+
+               e/d*
+               enable*
                er-soft+
+               evmac-input-print-p
                evmac-prepare-proofs
                flatten-ands-in-lit
+               get-ruleset
                implode
+               impossible
                lnfix
+               make-event-terse
+               maybe-pseudo-event-formp
+               mbt$
                msg-listp
-               nat)))
+               nat
+               pos-listp
+               pseudo-event-form-listp
+               pseudo-event-formp
+               run-when
+               tuple
+               std::defret-mutual)))

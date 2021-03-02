@@ -5,6 +5,7 @@
 ; Syscalls for HiFAT. These syscalls usually return, among other things, a
 ; return value (corresponding to the C return value) and an errno.
 
+(include-book "utilities/insert-text")
 (include-book "hifat/hifat-equiv")
 
 ;; This implementation of basename+dirname is not exactly compliant with the
@@ -118,6 +119,16 @@
                            (a (dirname path))
                            (n n)))))
 
+(defthm
+  abs-pwrite-correctness-lemma-37
+  (implies (and (fat32-filename-list-p path)
+                (consp path)
+                (not (consp (cdr path))))
+           (equal (assoc-equal (car path) fs)
+                  (assoc-equal (basename path) fs)))
+  :hints (("goal" :in-theory (enable basename)
+           :do-not-induct t)))
+
 (defund hifat-lstat (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
@@ -198,6 +209,21 @@
          (hifat-open path fd-table file-table)))
      (no-duplicatesp (strip-cars file-table))))
   :hints (("Goal" :in-theory (enable hifat-open))))
+
+(defthm hifat-open-correctness-4
+  (and
+   (natp (mv-nth 2
+                 (hifat-open path fd-table file-table)))
+   (natp (mv-nth 3
+                 (hifat-open path fd-table file-table))))
+  :hints (("goal" :in-theory (enable hifat-open)))
+  :rule-classes
+  ((:type-prescription :corollary
+                       (natp (mv-nth 2
+                                     (hifat-open path fd-table file-table))))
+   (:type-prescription :corollary
+                       (natp (mv-nth 3
+                                     (hifat-open path fd-table file-table))))))
 
 ;; Per the man page pread(2), this should not change the offset of the file
 ;; descriptor in the file table. Thus, there's no need for the file table to be
@@ -295,23 +321,35 @@
        (path (file-table-element->fid (cdr file-table-entry)))
        ((mv file error-code)
         (hifat-find-file fs path))
-       ((mv oldtext dir-ent)
+       ((mv oldtext d-e)
         (if (and (equal error-code 0)
                  (m1-regular-file-p file))
             (mv (coerce (m1-file->contents file) 'list)
-                (m1-file->dir-ent file))
-          (mv nil (dir-ent-fix nil))))
-       ((unless (unsigned-byte-p 32 (+ OFFSET (length BUF))))
+                (m1-file->d-e file))
+          (mv nil (d-e-fix nil))))
+       ((unless (unsigned-byte-p 32 (+ offset (length buf))))
         (mv fs -1 *enospc*))
        (file
         (make-m1-file
-         :dir-ent dir-ent
+         :d-e d-e
          :contents (coerce (insert-text oldtext offset buf)
                            'string)))
        ((mv fs error-code)
         (hifat-place-file fs path file)))
     (mv fs (if (equal error-code 0) 0 -1)
         error-code)))
+
+(defthm hifat-pwrite-correctness-1
+ (implies
+  (hifat-equiv fs1 fs2)
+  (hifat-equiv
+   (mv-nth 0
+           (hifat-pwrite fd buf offset fs1 fd-table file-table))
+   (mv-nth 0
+           (hifat-pwrite fd buf offset fs2 fd-table file-table))))
+ :hints (("Goal" :do-not-induct t
+          :in-theory (enable hifat-no-dups-p)))
+ :rule-classes :congruence)
 
 (defun
     hifat-mkdir (fs path)
@@ -336,17 +374,25 @@
        (basename (basename path))
        ((unless (equal (length basename) 11))
         (mv fs -1 *enametoolong*))
-       (dir-ent
-        (dir-ent-install-directory-bit
-         (dir-ent-fix nil)
+       (d-e
+        (d-e-install-directory-bit
+         (d-e-fix nil)
          t))
-       (file (make-m1-file :dir-ent dir-ent
+       (file (make-m1-file :d-e d-e
                            :contents nil))
        ((mv fs error-code)
         (hifat-place-file fs path file))
        ((unless (equal error-code 0))
         (mv fs -1 error-code)))
     (mv fs 0 0)))
+
+(defthm
+  hifat-mkdir-correctness-1
+  (implies (hifat-equiv fs1 fs2)
+           (hifat-equiv (mv-nth 0 (hifat-mkdir fs1 path))
+                        (mv-nth 0 (hifat-mkdir fs2 path))))
+  :rule-classes
+  :congruence)
 
 (defun
     hifat-mknod (fs path)
@@ -367,28 +413,15 @@
         (mv fs -1 *eexist*))
        ((unless (equal (length basename) 11))
         (mv fs -1 *enametoolong*))
-       (dir-ent (dir-ent-set-filename (dir-ent-fix nil)
+       (d-e (d-e-set-filename (d-e-fix nil)
                                       basename))
-       (file (make-m1-file :dir-ent dir-ent
+       (file (make-m1-file :d-e d-e
                            :contents ""))
        ((mv fs error-code)
         (hifat-place-file fs path file))
        ((unless (equal error-code 0))
         (mv fs -1 error-code)))
     (mv fs 0 0)))
-
-(defthm
-  hifat-unlink-guard-lemma-1
-  (implies (m1-file-p file)
-           (and
-            (true-listp (m1-file->dir-ent file))
-            (equal (len (m1-file->dir-ent file)) *ms-dir-ent-length*)
-            (unsigned-byte-listp 8 (m1-file->dir-ent file))))
-  :hints
-  (("goal" :in-theory (e/d (dir-ent-p)
-                           (dir-ent-p-of-m1-file->dir-ent))
-    :use (:instance dir-ent-p-of-m1-file->dir-ent
-                    (x file)))))
 
 ;; The fat driver in Linux actually keeps the directory entries of files it is
 ;; deleting, while removing links to their contents. Thus, in the special case
@@ -564,16 +597,16 @@
                    (m1-directory-file-p file)))
         ;; Can't truncate a directory file.
         (mv fs -1 *eisdir*))
-       ((mv oldtext dir-ent)
+       ((mv oldtext d-e)
         (if (equal error-code 0)
             ;; Regular file
             (mv (coerce (m1-file->contents file) 'list)
-                (m1-file->dir-ent file))
+                (m1-file->d-e file))
           ;; Nonexistent file
-          (mv nil (dir-ent-fix nil))))
+          (mv nil (d-e-fix nil))))
        (file
         (make-m1-file
-         :dir-ent dir-ent
+         :d-e d-e
          :contents (coerce (make-character-list
                             (take size oldtext))
                            'string)))
@@ -582,105 +615,8 @@
     (mv fs (if (equal error-code 0) 0 -1)
         error-code)))
 
-(defthmd
-  hifat-find-file-correctness-3-lemma-4
-  (implies
-   (and (m1-file-alist-p m1-file-alist1)
-        (hifat-no-dups-p m1-file-alist1)
-        (m1-file-alist-p m1-file-alist2)
-        (hifat-no-dups-p m1-file-alist2)
-        (hifat-subsetp m1-file-alist1 m1-file-alist2))
-   (and
-    (implies
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist1 path))
-            0)
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist2 path))
-            0))
-    (implies
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist2 path))
-            *enoent*)
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist1 path))
-            *enoent*))
-    (implies
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist1 path))
-            *enotdir*)
-     (equal (mv-nth 1
-                    (hifat-find-file m1-file-alist2 path))
-            *enotdir*))))
-  :hints
-  (("goal"
-    :induct
-    (mv (mv-nth 1
-                (hifat-find-file m1-file-alist1 path))
-        (mv-nth 1
-                (hifat-find-file m1-file-alist2 path)))
-    :in-theory (enable m1-file-alist-p
-                       hifat-find-file))
-   ("subgoal *1/2"
-    :in-theory
-    (e/d (m1-file-alist-p hifat-find-file)
-         (hifat-subsetp-transitive-lemma-1))
-    :use (:instance hifat-subsetp-transitive-lemma-1
-                    (y m1-file-alist1)
-                    (z m1-file-alist2)
-                    (key (fat32-filename-fix (car path)))))))
-
-(defthmd
-  hifat-find-file-correctness-3-lemma-6
-  (or
-   (equal
-    (mv-nth 1
-            (hifat-find-file m1-file-alist path))
-    0)
-   (equal
-    (mv-nth 1
-            (hifat-find-file m1-file-alist path))
-    *enotdir*)
-   (equal
-    (mv-nth 1
-            (hifat-find-file m1-file-alist path))
-    *enoent*))
-  :hints
-  (("goal"
-    :in-theory (enable hifat-find-file)
-    :induct (hifat-find-file m1-file-alist path))))
-
 (defthm
-  hifat-equiv-implies-equal-mv-nth-1-hifat-find-file-2
-  (implies
-   (hifat-equiv m1-file-alist2 m1-file-alist1)
-   (mv-let
-     (file error-code)
-     (hifat-find-file m1-file-alist1 path)
-     (declare (ignore file))
-     (equal
-      (mv-nth 1
-              (hifat-find-file m1-file-alist2 path))
-      error-code)))
-  :rule-classes :congruence
-  :hints
-  (("goal"
-    :in-theory (enable hifat-equiv)
-    :use
-    ((:instance
-      hifat-find-file-correctness-3-lemma-4
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
-      (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
-     (:instance
-      hifat-find-file-correctness-3-lemma-4
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
-      (m1-file-alist2 (hifat-file-alist-fix m1-file-alist1)))
-     (:instance
-      hifat-find-file-correctness-3-lemma-6
-      (m1-file-alist (hifat-file-alist-fix m1-file-alist1)))))))
-
-(defthm
-  hifat-find-file-correctness-3-lemma-2
+  hifat-find-file-correctness-lemma-7
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -730,14 +666,6 @@
                                       (hifat-find-file m1-file-alist2 path)))
            :in-theory (enable m1-file-alist-p
                               hifat-find-file hifat-subsetp))))
-
-(defthm hifat-find-file-correctness-lemma-1
-  (and (equal (hifat-equiv (hifat-file-alist-fix fs1)
-                           fs2)
-              (hifat-equiv fs1 fs2))
-       (equal (hifat-equiv fs1 (hifat-file-alist-fix fs2))
-              (hifat-equiv fs1 fs2)))
-  :hints (("goal" :in-theory (enable hifat-equiv))))
 
 (local
  (defthm
@@ -844,145 +772,6 @@
                                  m1-file->contents hifat-equiv hifat-file-alist-fix)
                       ((:rewrite hifat-find-file-correctness-1)))))
     :rule-classes :congruence))
-
-;; This should be disabled because it causes infinite loops otherwise...
-(defthm
-  hifat-find-file-correctness-lemma-6
-  (implies
-   (and (m1-file-alist-p m1-file-alist1)
-        (hifat-subsetp m1-file-alist1 m1-file-alist2)
-        (m1-regular-file-p (cdr (assoc-equal name m1-file-alist1)))
-        (syntaxp (not (term-order m1-file-alist1 m1-file-alist2))))
-   (equal (m1-file->contents (cdr (assoc-equal name m1-file-alist1)))
-          (m1-file->contents (cdr (assoc-equal name m1-file-alist2)))))
-  :hints (("goal" :in-theory (enable m1-file-alist-p
-                                     hifat-no-dups-p hifat-subsetp))))
-
-
-(defthmd
-  hifat-find-file-correctness-3-lemma-5
-  (implies
-   (and (m1-file-alist-p m1-file-alist1)
-        (hifat-no-dups-p m1-file-alist1)
-        (m1-file-alist-p m1-file-alist2)
-        (hifat-no-dups-p m1-file-alist2)
-        (hifat-subsetp m1-file-alist1 m1-file-alist2))
-   (mv-let
-     (file error-code)
-     (hifat-find-file m1-file-alist1 path)
-     (declare (ignore error-code))
-     (implies
-      (m1-regular-file-p file)
-      (equal
-       (m1-file->contents
-        (mv-nth
-         0
-         (hifat-find-file m1-file-alist2 path)))
-       (m1-file->contents file)))))
-  :hints
-  (("goal"
-    :induct
-    (mv
-     (mv-nth 1
-             (hifat-find-file m1-file-alist1 path))
-     (mv-nth 1
-             (hifat-find-file m1-file-alist2 path)))
-    :in-theory
-    (e/d
-     (m1-file-alist-p hifat-find-file)
-     (hifat-find-file-correctness-lemma-6)))
-   ("subgoal *1/3"
-    :use
-    (:instance hifat-find-file-correctness-lemma-6
-               (name (fat32-filename-fix (car path)))))
-   ("subgoal *1/1"
-    :use
-    (:instance hifat-find-file-correctness-lemma-6
-               (name (fat32-filename-fix (car path)))))))
-
-(defthm
-  hifat-equiv-implies-equal-m1-regular-file-p-mv-nth-0-hifat-find-file-2
-  (implies
-   (hifat-equiv m1-file-alist2 m1-file-alist1)
-   (mv-let
-     (file error-code)
-     (hifat-find-file m1-file-alist1 path)
-     (declare (ignore error-code))
-     (equal
-      (m1-regular-file-p
-       (mv-nth 0
-               (hifat-find-file m1-file-alist2 path)))
-      (m1-regular-file-p file))))
-  :rule-classes :congruence
-  :hints (("goal" :do-not-induct t
-           :in-theory
-           (e/d
-            (m1-file-alist-p hifat-equiv)
-            ())
-           :use
-           ((:instance
-             hifat-find-file-correctness-3-lemma-5
-             (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
-             (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
-            (:instance
-             hifat-find-file-correctness-3-lemma-5
-             (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
-             (m1-file-alist2 (hifat-file-alist-fix m1-file-alist1))))
-           :expand
-           ((m1-regular-file-p
-             (mv-nth 0
-                     (hifat-find-file m1-file-alist1 path)))
-            (m1-regular-file-p
-             (mv-nth 0
-                     (hifat-find-file m1-file-alist2 path)))))))
-
-(defthm
-  hifat-equiv-implies-equal-m1-directory-file-p-mv-nth-0-hifat-find-file-2
-  (implies
-   (hifat-equiv fs1 fs2)
-   (equal (m1-directory-file-p
-           (mv-nth 0 (hifat-find-file fs1 path)))
-          (m1-directory-file-p
-           (mv-nth 0 (hifat-find-file fs2 path)))))
-  :hints
-  (("goal" :in-theory (enable hifat-find-file hifat-equiv)))
-  :rule-classes :congruence)
-
-(defthm
-  hifat-find-file-correctness-3
-  (implies
-   (and (hifat-equiv m1-file-alist1 m1-file-alist2)
-        (syntaxp (not (term-order m1-file-alist1 m1-file-alist2)))
-        (m1-file-alist-p m1-file-alist1)
-        (m1-file-alist-p m1-file-alist2)
-        (hifat-no-dups-p m1-file-alist1)
-        (hifat-no-dups-p m1-file-alist2))
-   (mv-let
-     (file error-code)
-     (hifat-find-file m1-file-alist1 path)
-     (declare (ignore error-code))
-     (implies
-      (m1-regular-file-p file)
-      (equal
-       (m1-file->contents file)
-       (m1-file->contents
-        (mv-nth 0
-                (hifat-find-file m1-file-alist2 path)))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d (m1-file-alist-p hifat-equiv))
-    :use
-    ((:instance
-      hifat-find-file-correctness-3-lemma-5
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
-      (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
-     (:instance
-      hifat-find-file-correctness-3-lemma-5
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
-      (m1-file-alist2
-       (hifat-file-alist-fix m1-file-alist1)))))))
 
 (fty::defprod
  dir-stream
@@ -1107,39 +896,39 @@
  (b*
      (((mv dirp dir-stream-table errno)
        (hifat-opendir
-        '(("INITRD  IMG" (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+        '(("INITRD  IMG" (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
            (CONTENTS . ""))
           ("RUN        "
-           (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+           (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-           (CONTENTS ("RSYSLOGDPID" (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+           (CONTENTS ("RSYSLOGDPID" (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
                       (CONTENTS . ""))))
           ("USR        "
-           (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+           (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
            (CONTENTS
-            ("LOCAL      " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+            ("LOCAL      " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
              (CONTENTS))
-            ("LIB        " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+            ("LIB        " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
              (CONTENTS))
-            ("SHARE      " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+            ("SHARE      " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
              (CONTENTS))
             ("BIN        "
-             (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+             (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
              (CONTENTS
-              ("CAT        " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+              ("CAT        " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
                (CONTENTS . ""))
-              ("TAC        " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+              ("TAC        " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
                (CONTENTS . ""))
-              ("COL        " (DIR-ENT 0 0 0 0 0 0 0 0 0 0 0 0
+              ("COL        " (D-E 0 0 0 0 0 0 0 0 0 0 0 0
                                       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
                (CONTENTS . "")))))))
         (list "USR        ")

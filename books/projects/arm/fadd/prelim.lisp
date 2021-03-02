@@ -490,9 +490,9 @@
 ;; let's also disable all the functions defined by the model and enable them only as needed:
 
 (in-theory (disable (computernddir) (gag) (sign) (expnt) (frac) (checkdenorm) (checkspecial)
-                    (isfar) (add) (clz) (lza128) (computelza) (computelshift) (rndinfo) (fadd64)
+                    (isfar) (add) (clz128) (lza128) (computelza) (computelshift) (rndinfo) (fadd64)
                     computernddir gag sign expnt frac checkdenorm checkspecial isfar
-                    add clz lza128 computelza computelshift rndinfo fadd64))
+                    add clz128 lza128 computelza computelshift rndinfo fadd64))
 
 ;;*******************************************************************************
 ;; Operand components
@@ -850,14 +850,14 @@
   (logand (bits (lognot (in1lza)) 127 0)
           (bits (lognot (in2lza)) 127 0)))
 
-(defund w1 () (bits (lognot (logxor (p1) (ash (k1) 1))) 127 0))
+(defund w3 () (bits (lognot (logxor (p1) (ash (k1) 1))) 127 0))
 
 (defthmd lza128-lemma
-  (equal (lza*) (clz (bits (ash (w1) (- 1)) 127 0)))
+  (equal (lza*) (clz128 (bits (ash (w3) (- 1)) 127 0)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
-           :in-theory '(lza128 lza* p1 k1 w1))))
+           :in-theory '(lza128 lza* p1 k1 w3))))
 
-(in-theory (disable (p1) (k1) (w1)))
+(in-theory (disable (p1) (k1) (w3)))
 
 
 ;;*******************************************************************************

@@ -45,6 +45,7 @@
 
 (include-book "solve")
 (include-book "solve-doc")
+(include-book "solve-method-acl2-rewriter")
 
 (include-book "tailrec")
 (include-book "tailrec-doc")

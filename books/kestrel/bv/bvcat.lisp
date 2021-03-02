@@ -63,7 +63,7 @@
   :hints (("Goal" :cases ((integerp lowval))
            :in-theory (enable bvcat))))
 
-(defthm unsigned-byte-p-of-+-when-<-of-logtail-and-expt
+(defthmd unsigned-byte-p-of-+-when-<-of-logtail-and-expt
   (implies (and (< (logtail size x) (expt 2 size2))
                 (natp size)
                 (natp size2)
@@ -395,14 +395,14 @@
   :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low1 n) (high1 n) (size1 1)))))
 
 (defthm bvcat-of-slice-and-getbit-adjacent
-  (implies (and (equal low1 (+ 1 n))
-                (equal size1 (+ 1 high1 (- low1)))
-                (<= low1 high1)
-                (natp low1)
+  (implies (and (equal low (+ 1 n))
+                (equal size (+ 1 high (- low)))
+                (<= low high)
+                (natp low)
                 (natp n)
-                (natp high1))
-           (equal (bvcat size1 (slice high1 low1 x) 1 (getbit n x))
-                  (slice high1 n x)))
+                (natp high))
+           (equal (bvcat size (slice high low x) 1 (getbit n x))
+                  (slice high n x)))
   :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low2 n) (high2 n) (size2 1))
            :in-theory (disable <-of-+-of---and-0-arg1
                                <-of-+-of---and-0-arg2))))

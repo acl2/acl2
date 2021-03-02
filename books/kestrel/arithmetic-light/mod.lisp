@@ -661,3 +661,42 @@
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"
            :in-theory (enable unsigned-byte-p))))
+
+(defthm mod-of-+-of---when-equal-of-mod-arg1
+  (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
+                (equal (mod x1 y) k)
+                (syntaxp (quotep k))
+                (integerp x1)
+                (integerp x2)
+                (posp y)
+                )
+           (equal (mod (+ (- x1) x2) y)
+                  (mod (+ (- k) x2) y))))
+
+(defthm mod-of-+-of---when-equal-of-mod-arg2
+  (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
+                (equal (mod x1 y) k)
+                (syntaxp (quotep k))
+                (integerp x1)
+                (integerp x2)
+                (posp y)
+                )
+           (equal (mod (+ x2 (- x1)) y)
+                  (mod (+ x2 (- k)) y))))
+
+(defthm equal-of-mod-of-+-when-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep y)))
+                (rationalp x)
+                (rationalp k1) ; gets computed
+                (rationalp k2) ; gets computed
+                (rationalp y) ; gets computed
+                (< 0 y) ; gets computed
+                )
+           (equal (equal k1 (mod (+ k2 x) y))
+                  (and (< k1 y) ; usually true, gets computed
+                       (<= 0 k1) ; usually true, gets computed
+                       (equal (mod (- k1 k2) y) ; gets computed
+                              (mod x y)))))
+  :hints (("Goal" :in-theory (enable mod-sum-cases))))

@@ -22,9 +22,9 @@
   :short "Check if a term is a (translated) call of @(tsee and)."
   :long
   (xdoc::topstring
-   "If it is, return its test and branches.
+   "If it is, return its conjuncts.
     If it is not, all results are @('nil').")
-  (b* (((mv ifp test then else) (acl2::check-if-call term))
+  (b* (((mv ifp test then else) (check-if-call term))
        ((when (not ifp)) (mv nil nil nil)))
     (if (equal else acl2::*nil*)
         (mv t test then)

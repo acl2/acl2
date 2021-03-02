@@ -56,6 +56,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defmax-nat-process-inputs
   (f y x1...xn body guard verify-guards ctx state)
   :returns (mv erp (nothing null) state)
@@ -81,6 +83,8 @@
   :short "Event generation performed by @(tsee defmax-nat)."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defmax-nat-gen-everything ((f symbolp)
                                    (y symbolp)
@@ -420,6 +424,8 @@
        (event (defmax-nat-gen-everything
                 f y x1...xn body guard verify-guards)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defmax-nat-macro-definition
   :parents (defmax-nat-implementation)

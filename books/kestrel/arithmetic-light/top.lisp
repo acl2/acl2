@@ -44,3 +44,9 @@
 (include-book "even-and-odd")
 (include-book "lg")
 (include-book "power-of-2p")
+(include-book "rem")
+(include-book "ash")
+
+(include-book "limit-expt")
+
+(include-book "doc")

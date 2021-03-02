@@ -10,6 +10,10 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
@@ -219,11 +223,7 @@
   (defrule isodata-isomapp-of-val-of-symbol-isomap-alist
     (implies (and (isodata-symbol-isomap-alistp x)
                   (consp (assoc-equal k x)))
-             (isodata-isomapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-isodata-symbol-isomap-alistp-rewrite
-    (implies (isodata-symbol-isomap-alistp x)
-             (alistp x))))
+             (isodata-isomapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,11 +245,7 @@
   (defrule isodata-isomapp-of-val-of-pos-isomap-alist
     (implies (and (isodata-pos-isomap-alistp x)
                   (consp (assoc-equal k x)))
-             (isodata-isomapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-isodata-pos-isomap-alistp-rewrite
-    (implies (isodata-pos-isomap-alistp x)
-             (alistp x))))
+             (isodata-isomapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,8 +261,8 @@
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-has-args$ old$ description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq predicate t)
@@ -287,7 +283,7 @@
                                                             description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -374,7 +370,7 @@
                           is not an atom, it"
                          (list k))
                     t nil))
-           ((er &) (ensure-list-no-duplicates$
+           ((er &) (ensure-list-has-no-duplicates$
                     arg/res-list
                     (msg "The list ~x0 that is ~
                           the ~n1 ARG/RES-LIST component of the second input"

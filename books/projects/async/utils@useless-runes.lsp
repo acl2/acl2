@@ -78,8 +78,8 @@
                           (5 5 (:TYPE-PRESCRIPTION TRUE-LISTP))
                           (3 3 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
 (ADE::SYMBOL-LISTP-REMOVE-DUPLICATES-EQ
+     (102 6 (:DEFINITION MEMBER-EQUAL))
      (98 14 (:REWRITE SUBSETP-CAR-MEMBER))
-     (90 6 (:DEFINITION MEMBER-EQUAL))
      (30 29 (:REWRITE DEFAULT-CAR))
      (27 26 (:REWRITE DEFAULT-CDR))
      (18 18 (:REWRITE SUBSETP-TRANS2))
@@ -87,12 +87,14 @@
      (16 16 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (16 16 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
      (14 14 (:REWRITE SUBSETP-MEMBER . 4))
+     (14 14 (:REWRITE INTERSECTP-MEMBER . 3))
+     (14 14 (:REWRITE INTERSECTP-MEMBER . 2))
      (14 2
          (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (13 13 (:REWRITE SUBSETP-MEMBER . 2))
      (12 12 (:REWRITE MEMBER-WHEN-ATOM)))
 (ADE::TRUE-LISTP-UNION-LEMMA (70 10 (:REWRITE SUBSETP-CAR-MEMBER))
-                             (60 4 (:DEFINITION MEMBER-EQUAL))
+                             (68 4 (:DEFINITION MEMBER-EQUAL))
                              (19 19 (:REWRITE DEFAULT-CDR))
                              (13 13 (:REWRITE DEFAULT-CAR))
                              (12 12 (:REWRITE SUBSETP-TRANS2))
@@ -100,6 +102,8 @@
                              (10 10 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                              (10 10 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                              (10 10 (:REWRITE SUBSETP-MEMBER . 4))
+                             (10 10 (:REWRITE INTERSECTP-MEMBER . 3))
+                             (10 10 (:REWRITE INTERSECTP-MEMBER . 2))
                              (9 9 (:REWRITE SUBSETP-MEMBER . 2))
                              (8 8 (:REWRITE MEMBER-WHEN-ATOM)))
 (ADE::MEMBER-APPEND (6 3
@@ -109,10 +113,12 @@
                     (3 3 (:REWRITE SUBSETP-TRANS2))
                     (3 3 (:REWRITE SUBSETP-TRANS))
                     (2 2 (:REWRITE SUBSETP-MEMBER . 4))
+                    (2 2 (:REWRITE INTERSECTP-MEMBER . 3))
+                    (2 2 (:REWRITE INTERSECTP-MEMBER . 2))
                     (1 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                     (1 1 (:REWRITE SUBSETP-WHEN-ATOM-LEFT)))
 (ADE::NOT-MEMBER-APPEND (98 6 (:REWRITE SUBSETP-APPEND1))
-                        (80 2 (:DEFINITION MEMBER-EQUAL))
+                        (84 2 (:DEFINITION MEMBER-EQUAL))
                         (76 5 (:REWRITE SUBSETP-MEMBER . 1))
                         (47 27 (:REWRITE SUBSETP-TRANS2))
                         (27 27 (:REWRITE SUBSETP-TRANS))
@@ -121,6 +127,8 @@
                         (14 2
                             (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
                         (7 7 (:REWRITE SUBSETP-MEMBER . 4))
+                        (7 7 (:REWRITE INTERSECTP-MEMBER . 3))
+                        (7 7 (:REWRITE INTERSECTP-MEMBER . 2))
                         (6 3
                            (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
                         (5 5 (:REWRITE SUBSETP-MEMBER . 2))
@@ -134,20 +142,22 @@
                         (2 2
                            (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
                         (1 1 (:REWRITE ADE::MEMBER-APPEND)))
-(ADE::NOT-MEMBER=>NOT-EQUAL-NTH (32 4 (:DEFINITION MEMBER-EQUAL))
+(ADE::NOT-MEMBER=>NOT-EQUAL-NTH (40 4 (:DEFINITION MEMBER-EQUAL))
                                 (20 20 (:REWRITE DEFAULT-CAR))
                                 (16 16 (:REWRITE NTH-WHEN-PREFIXP))
                                 (11 11 (:REWRITE ZP-OPEN))
                                 (10 10 (:REWRITE SUBSETP-MEMBER . 4))
                                 (10 10 (:REWRITE SUBSETP-MEMBER . 3))
                                 (10 10 (:REWRITE SUBSETP-MEMBER . 2))
+                                (10 10 (:REWRITE INTERSECTP-MEMBER . 3))
+                                (10 10 (:REWRITE INTERSECTP-MEMBER . 2))
                                 (10 10 (:REWRITE DEFAULT-CDR))
                                 (6 6 (:REWRITE DEFAULT-+-2))
                                 (6 6 (:REWRITE DEFAULT-+-1))
                                 (2 2 (:REWRITE SUBSETP-TRANS2))
                                 (2 2 (:REWRITE SUBSETP-TRANS)))
-(ADE::SUBSETP=>MEMBER-NTH (101 19 (:REWRITE SUBSETP-MEMBER . 2))
-                          (98 9 (:DEFINITION MEMBER-EQUAL))
+(ADE::SUBSETP=>MEMBER-NTH (104 9 (:DEFINITION MEMBER-EQUAL))
+                          (101 19 (:REWRITE SUBSETP-MEMBER . 2))
                           (21 13 (:REWRITE DEFAULT-<-1))
                           (19 13 (:REWRITE DEFAULT-<-2))
                           (17 12 (:REWRITE SUBSETP-TRANS2))
@@ -162,6 +172,8 @@
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                           (7 7 (:REWRITE SUBSETP-MEMBER . 4))
                           (7 7 (:REWRITE SUBSETP-MEMBER . 3))
+                          (7 7 (:REWRITE INTERSECTP-MEMBER . 3))
+                          (7 7 (:REWRITE INTERSECTP-MEMBER . 2))
                           (6 6 (:REWRITE ZP-OPEN))
                           (6 6 (:REWRITE MEMBER-WHEN-ATOM))
                           (4 4 (:REWRITE NTH-WHEN-PREFIXP)))
@@ -173,6 +185,8 @@
      (8 8 (:REWRITE SUBSETP-MEMBER . 4))
      (8 8 (:REWRITE SUBSETP-MEMBER . 2))
      (8 8 (:REWRITE SUBSETP-MEMBER . 1))
+     (8 8 (:REWRITE INTERSECTP-MEMBER . 3))
+     (8 8 (:REWRITE INTERSECTP-MEMBER . 2))
      (2 2 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (1 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (1 1 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
@@ -196,31 +210,33 @@
                       (12 12 (:REWRITE CONSP-OF-APPEND))
                       (10 10 (:REWRITE DEFAULT-+-1))
                       (8 8 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
-(ADE::PAIRLIS$-OF-TAKE (175 5 (:REWRITE TAKE-WHEN-PREFIXP))
+(ADE::PAIRLIS$-OF-TAKE (360 5 (:REWRITE TAKE-WHEN-PREFIXP))
+                       (260 10
+                            (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                       (185 10 (:REWRITE PREFIXP-WHEN-PREFIXP))
                        (132 6 (:REWRITE CONSP-OF-TAKE))
-                       (130 5 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                       (104 31 (:REWRITE DEFAULT-CDR))
+                       (112 39 (:REWRITE DEFAULT-CDR))
                        (95 22 (:REWRITE DEFAULT-CAR))
                        (80 10 (:REWRITE ZP-OPEN))
-                       (48 48 (:LINEAR LEN-WHEN-PREFIXP))
+                       (78 78 (:LINEAR LEN-WHEN-PREFIXP))
+                       (46 25 (:REWRITE DEFAULT-+-2))
                        (36 3 (:REWRITE CAR-OF-TAKE))
                        (35 19 (:REWRITE DEFAULT-<-2))
-                       (30 17 (:REWRITE DEFAULT-+-2))
+                       (25 25 (:TYPE-PRESCRIPTION PREFIXP))
+                       (25 25 (:REWRITE DEFAULT-+-1))
                        (22 19 (:REWRITE DEFAULT-<-1))
-                       (17 17 (:REWRITE DEFAULT-+-1))
                        (14 14 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
-                       (10 10 (:TYPE-PRESCRIPTION PREFIXP))
+                       (10 10
+                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                       (10 10
+                           (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                       (10 10 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                       (10 10 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                       (10 10
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                       (10 10
+                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                        (6 3 (:REWRITE ADE::NFIX-OF-NAT))
-                       (5 5
-                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                       (5 5
-                          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                       (5 5 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                       (5 5 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                       (5 5
-                          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                       (5 5
-                          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                        (3 3 (:TYPE-PRESCRIPTION NFIX)))
 (ADE::ALISTP-APPEND (30 13 (:REWRITE DEFAULT-CDR))
                     (21 19 (:REWRITE DEFAULT-CAR))
@@ -261,11 +277,15 @@
                     (6 6 (:REWRITE SUBSETP-MEMBER . 3))
                     (6 6 (:REWRITE SUBSETP-MEMBER . 2))
                     (6 6 (:REWRITE SUBSETP-MEMBER . 1))
+                    (6 6 (:REWRITE INTERSECTP-MEMBER . 3))
+                    (6 6 (:REWRITE INTERSECTP-MEMBER . 2))
                     (6 6 (:REWRITE DEFAULT-CAR))
                     (3 3 (:REWRITE DEFAULT-CDR)))
 (ADE::DISJOINT-CONS (420 51 (:REWRITE SUBSETP-CAR-MEMBER))
                     (83 83 (:REWRITE SUBSETP-MEMBER . 2))
                     (82 82 (:REWRITE SUBSETP-MEMBER . 4))
+                    (82 82 (:REWRITE INTERSECTP-MEMBER . 3))
+                    (82 82 (:REWRITE INTERSECTP-MEMBER . 2))
                     (75 75 (:REWRITE SUBSETP-TRANS2))
                     (75 75 (:REWRITE SUBSETP-TRANS))
                     (71 71 (:REWRITE DEFAULT-CAR))
@@ -277,12 +297,12 @@
                     (14 2
                         (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR)))
 (ADE::DISJOINT-APPEND
-     (4020 246 (:DEFINITION MEMBER-EQUAL))
+     (4412 246 (:DEFINITION MEMBER-EQUAL))
      (3779 492 (:REWRITE SUBSETP-CAR-MEMBER))
      (1200 25 (:REWRITE ADE::MEMBER-APPEND))
+     (925 25 (:REWRITE ADE::NOT-MEMBER-APPEND))
      (892 446
           (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
-     (825 25 (:REWRITE ADE::NOT-MEMBER-APPEND))
      (757 582 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (599 599 (:REWRITE SUBSETP-TRANS2))
      (599 599 (:REWRITE SUBSETP-TRANS))
@@ -293,6 +313,8 @@
      (446 446 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (446 446 (:TYPE-PRESCRIPTION BINARY-APPEND))
      (434 434 (:REWRITE SUBSETP-MEMBER . 4))
+     (434 434 (:REWRITE INTERSECTP-MEMBER . 3))
+     (434 434 (:REWRITE INTERSECTP-MEMBER . 2))
      (392 392 (:REWRITE MEMBER-WHEN-ATOM))
      (350 25
           (:REWRITE SUBSETP-OF-APPEND-WHEN-SUBSET-OF-EITHER))
@@ -300,7 +322,7 @@
           (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (227 227 (:TYPE-PRESCRIPTION ATOM))
      (18 18 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
-(ADE::DISJOINT=>NOT-MEMBER-NTH (157 10 (:DEFINITION MEMBER-EQUAL))
+(ADE::DISJOINT=>NOT-MEMBER-NTH (177 10 (:DEFINITION MEMBER-EQUAL))
                                (105 15 (:REWRITE SUBSETP-CAR-MEMBER))
                                (70 7 (:REWRITE ADE::SUBSETP=>MEMBER-NTH))
                                (27 27 (:REWRITE SUBSETP-TRANS2))
@@ -308,6 +330,8 @@
                                (25 25 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                                (25 25 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                                (22 22 (:REWRITE SUBSETP-MEMBER . 4))
+                               (22 22 (:REWRITE INTERSECTP-MEMBER . 3))
+                               (22 22 (:REWRITE INTERSECTP-MEMBER . 2))
                                (21 13 (:REWRITE DEFAULT-<-1))
                                (21 3
                                    (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
@@ -326,13 +350,15 @@
                                   (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                                (6 6 (:REWRITE ZP-OPEN))
                                (4 4 (:REWRITE NTH-WHEN-PREFIXP)))
-(ADE::DISJOINT-COMMUTATIVE (329 43 (:REWRITE SUBSETP-CAR-MEMBER))
-                           (322 21 (:DEFINITION MEMBER-EQUAL))
+(ADE::DISJOINT-COMMUTATIVE (364 21 (:DEFINITION MEMBER-EQUAL))
+                           (329 43 (:REWRITE SUBSETP-CAR-MEMBER))
                            (51 51 (:REWRITE SUBSETP-TRANS2))
                            (51 51 (:REWRITE SUBSETP-TRANS))
                            (47 47 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                            (47 47 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                            (46 46 (:REWRITE SUBSETP-MEMBER . 4))
+                           (46 46 (:REWRITE INTERSECTP-MEMBER . 3))
+                           (46 46 (:REWRITE INTERSECTP-MEMBER . 2))
                            (44 44 (:REWRITE DEFAULT-CAR))
                            (43 43 (:REWRITE SUBSETP-MEMBER . 2))
                            (42 42 (:REWRITE MEMBER-WHEN-ATOM))
@@ -355,21 +381,22 @@
                             (1 1 (:REWRITE DEFAULT-+-1)))
 (ADE::APPEND-TAKE-LEMMA (127 95 (:REWRITE DEFAULT-CDR))
                         (107 65 (:REWRITE DEFAULT-<-2))
-                        (95 55 (:REWRITE DEFAULT-+-2))
+                        (99 57 (:REWRITE DEFAULT-+-2))
                         (85 4 (:REWRITE CDR-OF-APPEND-WHEN-CONSP))
                         (65 65 (:REWRITE DEFAULT-<-1))
-                        (55 55 (:REWRITE DEFAULT-+-1))
+                        (57 57 (:REWRITE DEFAULT-+-1))
                         (54 54 (:REWRITE DEFAULT-CAR))
+                        (42 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                        (41 4 (:REWRITE PREFIXP-WHEN-PREFIXP))
                         (40 40 (:LINEAR LEN-WHEN-PREFIXP))
-                        (21 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
                         (11 11 (:REWRITE NTH-WHEN-PREFIXP))
-                        (2 2
+                        (4 4
                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                        (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                        (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                        (2 2
+                        (4 4 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                        (4 4 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                        (4 4
                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                        (2 2
+                        (4 4
                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))
 (ADE::OPEN-NTHCDR (10 4 (:REWRITE ZP-OPEN))
                   (8 8 (:REWRITE DEFAULT-+-2))
@@ -402,6 +429,8 @@
      (6 6 (:REWRITE ZP-OPEN))
      (6 6 (:REWRITE FOLD-CONSTS-IN-+))
      (5 1 (:REWRITE ADE::NFIX-OF-NAT))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV))
      (3 3
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (3 1 (:DEFINITION NATP))
@@ -460,6 +489,8 @@
                             (5 5 (:REWRITE SUBSETP-TRANS2))
                             (5 5 (:REWRITE SUBSETP-TRANS))
                             (5 5 (:REWRITE SUBSETP-MEMBER . 4))
+                            (5 5 (:REWRITE INTERSECTP-MEMBER . 3))
+                            (5 5 (:REWRITE INTERSECTP-MEMBER . 2))
                             (5 1 (:REWRITE SUBSETP-CAR-MEMBER))
                             (4 4 (:TYPE-PRESCRIPTION ZP))
                             (4 4 (:TYPE-PRESCRIPTION NATP))
@@ -479,6 +510,8 @@
      (21 3
          (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (17 17 (:REWRITE SUBSETP-MEMBER . 4))
+     (17 17 (:REWRITE INTERSECTP-MEMBER . 3))
+     (17 17 (:REWRITE INTERSECTP-MEMBER . 2))
      (15 15 (:REWRITE SUBSETP-MEMBER . 2))
      (9 9 (:REWRITE DEFAULT-CAR))
      (7 7 (:REWRITE DEFAULT-CDR))
@@ -535,9 +568,9 @@
 (ADE::SUBSETP-TAKE (15 3 (:DEFINITION LEN))
                    (10 7 (:REWRITE DEFAULT-<-1))
                    (10 2 (:REWRITE ADE::NFIX-OF-NAT))
+                   (10 1 (:DEFINITION MEMBER-EQUAL))
                    (8 7 (:REWRITE DEFAULT-<-2))
                    (8 1 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
-                   (8 1 (:DEFINITION MEMBER-EQUAL))
                    (7 4 (:REWRITE DEFAULT-+-2))
                    (6 2 (:DEFINITION NATP))
                    (6 1 (:DEFINITION TAKE))
@@ -551,6 +584,8 @@
                    (2 2 (:REWRITE SUBSETP-MEMBER . 2))
                    (2 2 (:REWRITE SUBSETP-MEMBER . 1))
                    (2 2 (:REWRITE MEMBER-WHEN-ATOM))
+                   (2 2 (:REWRITE INTERSECTP-MEMBER . 3))
+                   (2 2 (:REWRITE INTERSECTP-MEMBER . 2))
                    (2 2 (:REWRITE DEFAULT-CAR))
                    (2 2 (:LINEAR LEN-WHEN-PREFIXP))
                    (1 1 (:TYPE-PRESCRIPTION ZP))
@@ -592,7 +627,7 @@
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (14 14 (:LINEAR LEN-WHEN-PREFIXP))
      (10 2 (:REWRITE ADE::NFIX-OF-NAT))
-     (8 1 (:DEFINITION MEMBER-EQUAL))
+     (10 1 (:DEFINITION MEMBER-EQUAL))
      (7 7 (:REWRITE SUBSETP-TRANS2))
      (7 7 (:REWRITE SUBSETP-TRANS))
      (6 2 (:DEFINITION NATP))
@@ -602,9 +637,11 @@
      (2 2 (:REWRITE SUBSETP-MEMBER . 2))
      (2 2 (:REWRITE SUBSETP-MEMBER . 1))
      (2 2 (:REWRITE MEMBER-WHEN-ATOM))
+     (2 2 (:REWRITE INTERSECTP-MEMBER . 3))
+     (2 2 (:REWRITE INTERSECTP-MEMBER . 2))
      (2 2 (:REWRITE FOLD-CONSTS-IN-+)))
 (ADE::DISJOINT-TAKE (275 99 (:DEFINITION ATOM))
-                    (166 10 (:DEFINITION MEMBER-EQUAL))
+                    (186 10 (:DEFINITION MEMBER-EQUAL))
                     (139 25 (:REWRITE CONSP-OF-TAKE))
                     (132 20 (:REWRITE SUBSETP-CAR-MEMBER))
                     (96 42 (:REWRITE ZP-OPEN))
@@ -623,6 +660,8 @@
                     (20 20 (:REWRITE SUBSETP-MEMBER . 2))
                     (20 20 (:REWRITE SUBSETP-MEMBER . 1))
                     (20 20 (:REWRITE MEMBER-WHEN-ATOM))
+                    (20 20 (:REWRITE INTERSECTP-MEMBER . 3))
+                    (20 20 (:REWRITE INTERSECTP-MEMBER . 2))
                     (16 16 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                     (16 16 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                     (16 16 (:REWRITE ADE::SUBSETP-TRANSITIVITY))
@@ -644,7 +683,7 @@
      (3 3 (:REWRITE DEFAULT-<-2))
      (3 3 (:REWRITE DEFAULT-<-1)))
 (ADE::NO-DUPLICATESP-TAKE-LEMMA
-     (261 10 (:DEFINITION MEMBER-EQUAL))
+     (279 10 (:DEFINITION MEMBER-EQUAL))
      (190 19 (:REWRITE SUBSETP-CAR-MEMBER))
      (137 19 (:REWRITE SUBSETP-MEMBER . 3))
      (66 3
@@ -667,6 +706,8 @@
      (21 13 (:REWRITE DEFAULT-+-2))
      (20 4 (:REWRITE CAR-OF-TAKE))
      (19 19 (:REWRITE SUBSETP-MEMBER . 4))
+     (19 19 (:REWRITE INTERSECTP-MEMBER . 3))
+     (19 19 (:REWRITE INTERSECTP-MEMBER . 2))
      (15 3 (:REWRITE SECOND-OF-TAKE))
      (13 13 (:REWRITE DEFAULT-+-1))
      (10 1 (:REWRITE ADE::NOT-MEMBER-TAKE-LEMMA))
@@ -677,8 +718,8 @@
      (2 2
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (ADE::NO-DUPLICATESP-NTHCDR-LEMMA
+     (216 12 (:DEFINITION MEMBER-EQUAL))
      (200 25 (:REWRITE SUBSETP-CAR-MEMBER))
-     (192 12 (:DEFINITION MEMBER-EQUAL))
      (35 35 (:REWRITE DEFAULT-CDR))
      (26 26 (:REWRITE ADE::SUBSETP-TRANSITIVITY))
      (25 25 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -686,6 +727,8 @@
      (25 25 (:REWRITE SUBSETP-TRANS2))
      (25 25 (:REWRITE SUBSETP-TRANS))
      (25 25 (:REWRITE SUBSETP-MEMBER . 4))
+     (25 25 (:REWRITE INTERSECTP-MEMBER . 3))
+     (25 25 (:REWRITE INTERSECTP-MEMBER . 2))
      (25 25 (:REWRITE DEFAULT-CAR))
      (24 24 (:REWRITE SUBSETP-MEMBER . 2))
      (24 24 (:REWRITE SUBSETP-MEMBER . 1))
@@ -699,8 +742,8 @@
      (183 10 (:REWRITE ADE::DISJOINT-TAKE))
      (132 66
           (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (108 6 (:DEFINITION MEMBER-EQUAL))
      (105 14 (:REWRITE SUBSETP-CAR-MEMBER))
-     (96 6 (:DEFINITION MEMBER-EQUAL))
      (91 17 (:REWRITE CONSP-OF-TAKE))
      (66 66 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (63 39 (:REWRITE ZP-OPEN))
@@ -712,6 +755,8 @@
      (18 18 (:REWRITE DEFAULT-+-2))
      (18 18 (:REWRITE DEFAULT-+-1))
      (16 16 (:REWRITE SUBSETP-MEMBER . 4))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 3))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 2))
      (16 16 (:REWRITE DEFAULT-<-2))
      (16 16 (:REWRITE DEFAULT-<-1))
      (15 15 (:REWRITE ADE::SUBSETP-TRANSITIVITY))
@@ -1169,6 +1214,8 @@
      (18 18 (:REWRITE DEFAULT-CDR))
      (16 16 (:REWRITE SUBSETP-MEMBER . 4))
      (16 16 (:REWRITE SUBSETP-MEMBER . 2))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 3))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 2))
      (11 1
          (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (10 4 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -1291,6 +1338,8 @@
          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (16 16 (:REWRITE SUBSETP-MEMBER . 4))
      (16 16 (:REWRITE SUBSETP-MEMBER . 2))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 3))
+     (16 16 (:REWRITE INTERSECTP-MEMBER . 2))
      (16 4 (:REWRITE RATIONALP-X))
      (12 12 (:REWRITE DEFAULT-CAR))
      (12 8 (:REWRITE SIMPLIFY-SUMS-EQUAL))
@@ -1467,10 +1516,10 @@
                                  (192 24 (:REWRITE CAR-OF-APPEND))
                                  (96 24 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
 (ADE::SUBSETP-PREPEND-REC-INTERLEAVE-1
-     (7755 198 (:DEFINITION MEMBER-EQUAL))
+     (8005 198 (:DEFINITION MEMBER-EQUAL))
      (6265 3143 (:REWRITE DEFAULT-CDR))
      (5400 3124 (:REWRITE DEFAULT-CAR))
-     (2940 44 (:REWRITE ADE::NOT-MEMBER-APPEND))
+     (3108 44 (:REWRITE ADE::NOT-MEMBER-APPEND))
      (2631 283 (:REWRITE SUBSETP-MEMBER . 3))
      (2504 642 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (1908 426 (:REWRITE SUBSETP-MEMBER . 1))
@@ -1484,6 +1533,8 @@
      (285 204
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (283 283 (:REWRITE SUBSETP-MEMBER . 4))
+     (283 283 (:REWRITE INTERSECTP-MEMBER . 3))
+     (283 283 (:REWRITE INTERSECTP-MEMBER . 2))
      (277 204 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (277 204
           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
@@ -1512,10 +1563,10 @@
      (1 1 (:META META-RATIONALP-CORRECT))
      (1 1 (:META META-INTEGERP-CORRECT)))
 (ADE::SUBSETP-PREPEND-REC-INTERLEAVE-2
-     (8017 202 (:DEFINITION MEMBER-EQUAL))
+     (8275 202 (:DEFINITION MEMBER-EQUAL))
      (6297 3159 (:REWRITE DEFAULT-CDR))
      (5430 3138 (:REWRITE DEFAULT-CAR))
-     (2940 44 (:REWRITE ADE::NOT-MEMBER-APPEND))
+     (3108 44 (:REWRITE ADE::NOT-MEMBER-APPEND))
      (2715 291 (:REWRITE SUBSETP-MEMBER . 3))
      (2562 656 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (2028 434 (:REWRITE SUBSETP-MEMBER . 1))
@@ -1527,6 +1578,8 @@
           (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (526 434 (:REWRITE SUBSETP-MEMBER . 2))
      (291 291 (:REWRITE SUBSETP-MEMBER . 4))
+     (291 291 (:REWRITE INTERSECTP-MEMBER . 3))
+     (291 291 (:REWRITE INTERSECTP-MEMBER . 2))
      (289 208
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (281 208 (:REWRITE SIMPLIFY-SUMS-EQUAL))
@@ -1561,8 +1614,8 @@
      (72 8 (:DEFINITION ADE::CONS-REC))
      (58 28 (:REWRITE DEFAULT-CDR))
      (56 8 (:DEFINITION BINARY-APPEND))
+     (49 1 (:DEFINITION MEMBER-EQUAL))
      (48 28 (:REWRITE DEFAULT-CAR))
-     (47 1 (:DEFINITION MEMBER-EQUAL))
      (38 38 (:TYPE-PRESCRIPTION ADE::CONS-REC))
      (38 2
          (:REWRITE COMMUTATIVITY-OF-APPEND-UNDER-SET-EQUIV))
@@ -1581,6 +1634,8 @@
      (4 1 (:REWRITE RATIONALP-X))
      (3 3 (:REWRITE SUBSETP-MEMBER . 4))
      (3 3 (:REWRITE SUBSETP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
      (3 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (2 2 (:REWRITE SUBSETP-MEMBER . 1))
      (2 2 (:REWRITE CDR-OF-APPEND-WHEN-CONSP))
@@ -1614,8 +1669,8 @@
      (72 8 (:DEFINITION ADE::CONS-REC))
      (58 28 (:REWRITE DEFAULT-CDR))
      (56 8 (:DEFINITION BINARY-APPEND))
+     (49 1 (:DEFINITION MEMBER-EQUAL))
      (48 28 (:REWRITE DEFAULT-CAR))
-     (47 1 (:DEFINITION MEMBER-EQUAL))
      (38 38 (:TYPE-PRESCRIPTION ADE::CONS-REC))
      (34 16 (:REWRITE APPEND-WHEN-NOT-CONSP))
      (24 6
@@ -1632,6 +1687,8 @@
      (4 1 (:REWRITE RATIONALP-X))
      (3 3 (:REWRITE SUBSETP-MEMBER . 4))
      (3 3 (:REWRITE SUBSETP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
      (3 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (2 2 (:REWRITE SUBSETP-MEMBER . 1))
      (2 2 (:REWRITE CDR-OF-APPEND-WHEN-CONSP))
@@ -1739,267 +1796,256 @@
      (3 3 (:REWRITE |(equal (- x) c)|))
      (3 3 (:REWRITE |(equal (- x) (- y))|)))
 (ADE::INTERLEAVE-OF
-     (2205 42 (:DEFINITION INTEGER-ABS))
-     (1329 492 (:REWRITE DEFAULT-PLUS-2))
-     (1148 492 (:REWRITE DEFAULT-PLUS-1))
-     (735 21 (:REWRITE |(+ (if a b c) x)|))
-     (651 21 (:REWRITE NUMERATOR-NEGATIVE))
-     (588 21 (:DEFINITION LENGTH))
-     (525 21 (:DEFINITION LEN))
-     (315 42 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (271 271
+     (1785 34 (:DEFINITION INTEGER-ABS))
+     (1214 440 (:REWRITE DEFAULT-PLUS-2))
+     (1009 440 (:REWRITE DEFAULT-PLUS-1))
+     (595 17 (:REWRITE |(+ (if a b c) x)|))
+     (527 17 (:REWRITE NUMERATOR-NEGATIVE))
+     (476 17 (:DEFINITION LENGTH))
+     (425 17 (:DEFINITION LEN))
+     (255 34 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (236 236
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (204 79 (:REWRITE DEFAULT-LESS-THAN-1))
-     (189 189 (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
-     (189 189
+     (162 62 (:REWRITE DEFAULT-LESS-THAN-1))
+     (153 153 (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
+     (153 153
           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 2))
-     (189 189
+     (153 153
           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 1))
-     (189 189
+     (153 153
           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 2))
-     (189 189
+     (153 153
           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 1))
-     (152 89 (:REWRITE DEFAULT-CDR))
-     (147 42 (:REWRITE DEFAULT-MINUS))
-     (135 3 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
-     (123 3 (:DEFINITION MEMBER-EQUAL))
-     (109 79 (:REWRITE DEFAULT-LESS-THAN-2))
-     (108 27 (:REWRITE RATIONALP-X))
-     (106 106 (:REWRITE FOLD-CONSTS-IN-+))
-     (105 57
-          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (105 57 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (84 30
-         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (79 79 (:REWRITE THE-FLOOR-BELOW))
-     (79 79 (:REWRITE THE-FLOOR-ABOVE))
-     (79 79
-         (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (79 79
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (78 78 (:REWRITE REMOVE-WEAK-INEQUALITIES))
-     (78 78
+     (123 72 (:REWRITE DEFAULT-CDR))
+     (119 34 (:REWRITE DEFAULT-MINUS))
+     (99 99 (:REWRITE FOLD-CONSTS-IN-+))
+     (88 62 (:REWRITE DEFAULT-LESS-THAN-2))
+     (86 45
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (86 45 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (84 21 (:REWRITE RATIONALP-X))
+     (62 62 (:REWRITE THE-FLOOR-BELOW))
+     (62 62 (:REWRITE THE-FLOOR-ABOVE))
+     (62 62 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (62 62
          (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (78 78 (:REWRITE INTEGERP-<-CONSTANT))
-     (78 78 (:REWRITE CONSTANT-<-INTEGERP))
-     (78 78
+     (62 62
+         (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (62 62
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (62 62
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (62 62 (:REWRITE INTEGERP-<-CONSTANT))
+     (62 62 (:REWRITE CONSTANT-<-INTEGERP))
+     (62 62
          (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (78 78
+     (62 62
          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (78 78
+     (62 62
          (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (78 78
+     (62 62
          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (78 78 (:REWRITE |(< c (- x))|))
-     (78 78
+     (62 62 (:REWRITE |(< c (- x))|))
+     (62 62
          (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (78 78
+     (62 62
          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (78 78
+     (62 62
          (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (78 78
+     (62 62
          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (78 78 (:REWRITE |(< (/ x) (/ y))|))
-     (78 78 (:REWRITE |(< (- x) c)|))
-     (78 78 (:REWRITE |(< (- x) (- y))|))
-     (66 18 (:REWRITE ACL2-NUMBERP-X))
-     (63 63
+     (62 62 (:REWRITE |(< (/ x) (/ y))|))
+     (62 62 (:REWRITE |(< (- x) c)|))
+     (62 62 (:REWRITE |(< (- x) (- y))|))
+     (57 21
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (53 53 (:REWRITE DEFAULT-CAR))
+     (51 51
          (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-     (63 63 (:REWRITE |(< (/ x) 0)|))
-     (63 63 (:REWRITE |(< (* x y) 0)|))
-     (61 61 (:REWRITE DEFAULT-CAR))
-     (48 48 (:REWRITE REDUCE-INTEGERP-+))
-     (48 48 (:REWRITE INTEGERP-MINUS-X))
-     (48 48 (:META META-INTEGERP-CORRECT))
-     (42 42
+     (51 51 (:REWRITE |(< (/ x) 0)|))
+     (51 51 (:REWRITE |(< (* x y) 0)|))
+     (44 12 (:REWRITE ACL2-NUMBERP-X))
+     (38 38 (:REWRITE REDUCE-INTEGERP-+))
+     (38 38 (:REWRITE INTEGERP-MINUS-X))
+     (38 38 (:META META-INTEGERP-CORRECT))
+     (34 34
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
-     (42 42
+     (34 34
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
-     (42 21
+     (34 17
          (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-     (36 30 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (36 30
-         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
      (32 16 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
-     (30 30
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (30 30
-         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (30 30
-         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (30 30 (:REWRITE |(equal c (/ x))|))
-     (30 30 (:REWRITE |(equal c (- x))|))
-     (30 30 (:REWRITE |(equal (/ x) c)|))
-     (30 30 (:REWRITE |(equal (/ x) (/ y))|))
-     (30 30 (:REWRITE |(equal (- x) c)|))
-     (30 30 (:REWRITE |(equal (- x) (- y))|))
-     (27 27 (:REWRITE REDUCE-RATIONALP-+))
-     (27 27 (:REWRITE REDUCE-RATIONALP-*))
-     (27 27 (:REWRITE RATIONALP-MINUS-X))
-     (27 27 (:META META-RATIONALP-CORRECT))
-     (21 21 (:TYPE-PRESCRIPTION LEN))
-     (21 21 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (25 21 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (25 21
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (21 21 (:REWRITE REDUCE-RATIONALP-+))
+     (21 21 (:REWRITE REDUCE-RATIONALP-*))
      (21 21
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (21 21
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (21 21 (:REWRITE RATIONALP-MINUS-X))
+     (21 21
+         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (21 21 (:REWRITE |(equal c (/ x))|))
+     (21 21 (:REWRITE |(equal c (- x))|))
+     (21 21 (:REWRITE |(equal (/ x) c)|))
+     (21 21 (:REWRITE |(equal (/ x) (/ y))|))
+     (21 21 (:REWRITE |(equal (- x) c)|))
+     (21 21 (:REWRITE |(equal (- x) (- y))|))
+     (21 21 (:META META-RATIONALP-CORRECT))
+     (17 17 (:TYPE-PRESCRIPTION LEN))
+     (17 17 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (17 17
          (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-     (21 21
+     (17 17
          (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (21 21 (:REWRITE DEFAULT-REALPART))
-     (21 21
+     (17 17 (:REWRITE DEFAULT-REALPART))
+     (17 17
          (:REWRITE DEFAULT-RATIONAL-NUMERATOR))
-     (21 21
+     (17 17
          (:REWRITE DEFAULT-RATIONAL-DENOMINATOR))
-     (21 21 (:REWRITE DEFAULT-IMAGPART))
-     (13 13 (:REWRITE |(< x (+ c/d y))|))
-     (12 12 (:REWRITE |(< y (+ (- c) x))|))
-     (10 10 (:LINEAR ACL2-COUNT-WHEN-MEMBER))
-     (9 9 (:REWRITE |(< (+ c/d x) y)|))
-     (8 8 (:REWRITE |(< (+ (- c) x) y)|))
-     (6 6 (:REWRITE SUBSETP-MEMBER . 2))
-     (6 6 (:REWRITE SUBSETP-MEMBER . 1))
-     (3 3 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (3 3 (:REWRITE MEMBER-SELF))
-     (1 1
-        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
-     (1 1
-        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
-     (1 1 (:REWRITE |(< 0 (/ x))|))
-     (1 1 (:REWRITE |(< 0 (* x y))|)))
+     (17 17 (:REWRITE DEFAULT-IMAGPART))
+     (11 11 (:REWRITE |(< y (+ (- c) x))|))
+     (11 11 (:REWRITE |(< x (+ c/d y))|))
+     (8 8 (:REWRITE |(< (+ c/d x) y)|))
+     (8 8 (:REWRITE |(< (+ (- c) x) y)|)))
 (ADE::INTERLEAVE-OF-LIST-FIX
-     (407 111 (:REWRITE ACL2-NUMBERP-X))
-     (407 65
+     (352 96 (:REWRITE ACL2-NUMBERP-X))
+     (352 56
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (150 32 (:DEFINITION TRUE-LISTP))
-     (148 37 (:REWRITE RATIONALP-X))
-     (142 142 (:REWRITE DEFAULT-CAR))
-     (116 116 (:REWRITE DEFAULT-CDR))
-     (115 65
+     (145 31 (:DEFINITION TRUE-LISTP))
+     (140 140 (:REWRITE DEFAULT-CAR))
+     (128 32 (:REWRITE RATIONALP-X))
+     (112 112 (:REWRITE DEFAULT-CDR))
+     (100 56
           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (102 65 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (66 33 (:REWRITE DEFAULT-PLUS-2))
-     (65 65
+     (88 56 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (64 32 (:REWRITE DEFAULT-PLUS-2))
+     (56 56
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (65 65
+     (56 56
          (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (65 65
+     (56 56
          (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (65 65 (:REWRITE |(equal c (/ x))|))
-     (65 65 (:REWRITE |(equal c (- x))|))
-     (65 65 (:REWRITE |(equal (/ x) c)|))
-     (65 65 (:REWRITE |(equal (/ x) (/ y))|))
-     (65 65 (:REWRITE |(equal (- x) c)|))
-     (65 65 (:REWRITE |(equal (- x) (- y))|))
-     (37 37 (:REWRITE REDUCE-RATIONALP-+))
-     (37 37 (:REWRITE REDUCE-RATIONALP-*))
-     (37 37 (:REWRITE REDUCE-INTEGERP-+))
-     (37 37 (:REWRITE RATIONALP-MINUS-X))
-     (37 37 (:REWRITE INTEGERP-MINUS-X))
-     (37 37 (:META META-RATIONALP-CORRECT))
-     (37 37 (:META META-INTEGERP-CORRECT))
-     (33 33
+     (56 56 (:REWRITE |(equal c (/ x))|))
+     (56 56 (:REWRITE |(equal c (- x))|))
+     (56 56 (:REWRITE |(equal (/ x) c)|))
+     (56 56 (:REWRITE |(equal (/ x) (/ y))|))
+     (56 56 (:REWRITE |(equal (- x) c)|))
+     (56 56 (:REWRITE |(equal (- x) (- y))|))
+     (32 32 (:REWRITE REDUCE-RATIONALP-+))
+     (32 32 (:REWRITE REDUCE-RATIONALP-*))
+     (32 32 (:REWRITE REDUCE-INTEGERP-+))
+     (32 32 (:REWRITE RATIONALP-MINUS-X))
+     (32 32
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (33 33 (:REWRITE NORMALIZE-ADDENDS))
-     (33 33 (:REWRITE DEFAULT-PLUS-1))
-     (30 30 (:LINEAR LEN-WHEN-PREFIXP))
-     (22 22 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (15 15
+     (32 32 (:REWRITE NORMALIZE-ADDENDS))
+     (32 32 (:REWRITE INTEGERP-MINUS-X))
+     (32 32 (:REWRITE DEFAULT-PLUS-1))
+     (32 32 (:META META-RATIONALP-CORRECT))
+     (32 32 (:META META-INTEGERP-CORRECT))
+     (28 28 (:LINEAR LEN-WHEN-PREFIXP))
+     (21 21 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+     (14 14
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
-     (15 15
+     (14 14
          (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS)))
 (ADE::INTERLEAVE-OF-APPEND-1
-     (990 270 (:REWRITE ACL2-NUMBERP-X))
-     (967 128
+     (891 243 (:REWRITE ACL2-NUMBERP-X))
+     (879 118
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (565 356 (:REWRITE DEFAULT-CDR))
-     (453 421 (:REWRITE DEFAULT-CAR))
-     (360 90 (:REWRITE RATIONALP-X))
-     (283 5
+     (521 349 (:REWRITE DEFAULT-CDR))
+     (457 425 (:REWRITE DEFAULT-CAR))
+     (338 6
           (:REWRITE EQUAL-OF-APPEND-AND-APPEND-SAME-ARG2))
-     (247 128
+     (324 81 (:REWRITE RATIONALP-X))
+     (231 118
           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (245 128 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (133 5 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-     (128 128
+     (229 118 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (156 6 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+     (118 118
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (128 128
+     (118 118
           (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (128 128
+     (118 118
           (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (128 128 (:REWRITE |(equal c (/ x))|))
-     (128 128 (:REWRITE |(equal c (- x))|))
-     (128 128 (:REWRITE |(equal (/ x) c)|))
-     (128 128 (:REWRITE |(equal (/ x) (/ y))|))
-     (128 128 (:REWRITE |(equal (- x) c)|))
-     (128 128 (:REWRITE |(equal (- x) (- y))|))
-     (90 90 (:REWRITE REDUCE-RATIONALP-+))
-     (90 90 (:REWRITE REDUCE-RATIONALP-*))
-     (90 90 (:REWRITE REDUCE-INTEGERP-+))
-     (90 90 (:REWRITE RATIONALP-MINUS-X))
-     (90 90 (:REWRITE INTEGERP-MINUS-X))
-     (90 90 (:META META-RATIONALP-CORRECT))
-     (90 90 (:META META-INTEGERP-CORRECT))
-     (74 8 (:DEFINITION LEN))
-     (36 36 (:REWRITE |(equal x (if a b c))|))
-     (36 36 (:REWRITE |(equal (if a b c) x)|))
-     (33 33 (:TYPE-PRESCRIPTION LEN))
-     (22 11 (:REWRITE DEFAULT-PLUS-2))
-     (20 20 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
-     (11 11
+     (118 118 (:REWRITE |(equal c (/ x))|))
+     (118 118 (:REWRITE |(equal c (- x))|))
+     (118 118 (:REWRITE |(equal (/ x) c)|))
+     (118 118 (:REWRITE |(equal (/ x) (/ y))|))
+     (118 118 (:REWRITE |(equal (- x) c)|))
+     (118 118 (:REWRITE |(equal (- x) (- y))|))
+     (94 10 (:DEFINITION LEN))
+     (81 81 (:REWRITE REDUCE-RATIONALP-+))
+     (81 81 (:REWRITE REDUCE-RATIONALP-*))
+     (81 81 (:REWRITE REDUCE-INTEGERP-+))
+     (81 81 (:REWRITE RATIONALP-MINUS-X))
+     (81 81 (:REWRITE INTEGERP-MINUS-X))
+     (81 81 (:META META-RATIONALP-CORRECT))
+     (81 81 (:META META-INTEGERP-CORRECT))
+     (38 38 (:TYPE-PRESCRIPTION LEN))
+     (30 30 (:REWRITE |(equal x (if a b c))|))
+     (30 30 (:REWRITE |(equal (if a b c) x)|))
+     (28 14 (:REWRITE DEFAULT-PLUS-2))
+     (24 24 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+     (14 14
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (11 11 (:REWRITE NORMALIZE-ADDENDS))
-     (11 11 (:REWRITE DEFAULT-PLUS-1))
-     (5 5 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+     (14 14 (:REWRITE NORMALIZE-ADDENDS))
+     (14 14 (:REWRITE DEFAULT-PLUS-1))
+     (6 6 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
      (4 4 (:LINEAR LEN-WHEN-PREFIXP))
      (2 2
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (2 2
         (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS)))
 (ADE::INTERLEAVE-OF-APPEND-2
-     (941 132
+     (836 228 (:REWRITE ACL2-NUMBERP-X))
+     (835 117
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (935 255 (:REWRITE ACL2-NUMBERP-X))
-     (515 9
+     (477 283 (:REWRITE DEFAULT-CDR))
+     (403 377 (:REWRITE DEFAULT-CAR))
+     (346 6
           (:REWRITE EQUAL-OF-APPEND-AND-APPEND-SAME-ARG2))
-     (512 306 (:REWRITE DEFAULT-CDR))
-     (394 368 (:REWRITE DEFAULT-CAR))
-     (340 85 (:REWRITE RATIONALP-X))
-     (261 132
+     (304 76 (:REWRITE RATIONALP-X))
+     (227 117
           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (256 132 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (252 9 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
-     (132 132
+     (223 117 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (174 6 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+     (117 117
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (132 132
+     (117 117
           (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (132 132
+     (117 117
           (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (132 132 (:REWRITE |(equal c (/ x))|))
-     (132 132 (:REWRITE |(equal c (- x))|))
-     (132 132 (:REWRITE |(equal (/ x) c)|))
-     (132 132 (:REWRITE |(equal (/ x) (/ y))|))
-     (132 132 (:REWRITE |(equal (- x) c)|))
-     (132 132 (:REWRITE |(equal (- x) (- y))|))
-     (115 13 (:DEFINITION LEN))
-     (85 85 (:REWRITE REDUCE-RATIONALP-+))
-     (85 85 (:REWRITE REDUCE-RATIONALP-*))
-     (85 85 (:REWRITE REDUCE-INTEGERP-+))
-     (85 85 (:REWRITE RATIONALP-MINUS-X))
-     (85 85 (:REWRITE INTEGERP-MINUS-X))
-     (85 85 (:META META-RATIONALP-CORRECT))
-     (85 85 (:META META-INTEGERP-CORRECT))
-     (65 65 (:TYPE-PRESCRIPTION LEN))
-     (36 36 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
-     (36 36 (:REWRITE |(equal x (if a b c))|))
-     (36 36 (:REWRITE |(equal (if a b c) x)|))
-     (34 17 (:REWRITE DEFAULT-PLUS-2))
-     (17 17
+     (117 117 (:REWRITE |(equal c (/ x))|))
+     (117 117 (:REWRITE |(equal c (- x))|))
+     (117 117 (:REWRITE |(equal (/ x) c)|))
+     (117 117 (:REWRITE |(equal (/ x) (/ y))|))
+     (117 117 (:REWRITE |(equal (- x) c)|))
+     (117 117 (:REWRITE |(equal (- x) (- y))|))
+     (76 76 (:REWRITE REDUCE-RATIONALP-+))
+     (76 76 (:REWRITE REDUCE-RATIONALP-*))
+     (76 76 (:REWRITE REDUCE-INTEGERP-+))
+     (76 76 (:REWRITE RATIONALP-MINUS-X))
+     (76 76 (:REWRITE INTEGERP-MINUS-X))
+     (76 76 (:META META-RATIONALP-CORRECT))
+     (76 76 (:META META-INTEGERP-CORRECT))
+     (68 8 (:DEFINITION LEN))
+     (46 46 (:TYPE-PRESCRIPTION LEN))
+     (30 30 (:REWRITE |(equal x (if a b c))|))
+     (30 30 (:REWRITE |(equal (if a b c) x)|))
+     (24 24 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+     (20 10 (:REWRITE DEFAULT-PLUS-2))
+     (10 10
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (17 17 (:REWRITE NORMALIZE-ADDENDS))
-     (17 17 (:REWRITE DEFAULT-PLUS-1))
-     (10 10 (:LINEAR LEN-WHEN-PREFIXP))
-     (9 9 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (5 5
+     (10 10 (:REWRITE NORMALIZE-ADDENDS))
+     (10 10 (:REWRITE DEFAULT-PLUS-1))
+     (8 8 (:LINEAR LEN-WHEN-PREFIXP))
+     (6 6 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+     (4 4
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
-     (5 5
+     (4 4
         (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS)))
 (ADE::LEN-1-LISTP)
 (ADE::LEN-1-TRUE-LISTP)
@@ -2073,6 +2119,8 @@
      (7 7 (:REWRITE SUBSETP-MEMBER . 4))
      (7 7 (:REWRITE SUBSETP-MEMBER . 2))
      (7 7 (:REWRITE SUBSETP-MEMBER . 1))
+     (7 7 (:REWRITE INTERSECTP-MEMBER . 3))
+     (7 7 (:REWRITE INTERSECTP-MEMBER . 2))
      (6 6 (:REWRITE REDUCE-RATIONALP-+))
      (6 6 (:REWRITE REDUCE-RATIONALP-*))
      (6 6
@@ -2147,6 +2195,8 @@
          (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
      (47 41 (:REWRITE DEFAULT-PLUS-1))
      (41 41 (:REWRITE SUBSETP-MEMBER . 4))
+     (41 41 (:REWRITE INTERSECTP-MEMBER . 3))
+     (41 41 (:REWRITE INTERSECTP-MEMBER . 2))
      (39 39
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (39 39 (:REWRITE NORMALIZE-ADDENDS))

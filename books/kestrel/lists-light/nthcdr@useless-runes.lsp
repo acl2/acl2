@@ -172,6 +172,22 @@
                  (10 2 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
                  (6 6
                     (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
+(CDR-OF-NTHCDR (267 32 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (120 7 (:REWRITE CONSP-OF-NTHCDR))
+               (98 7 (:REWRITE LEN-OF-CDR))
+               (77 60 (:REWRITE DEFAULT-<-2))
+               (63 21 (:DEFINITION POSP))
+               (60 60 (:REWRITE DEFAULT-<-1))
+               (58 54 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+               (56 48 (:REWRITE DEFAULT-+-2))
+               (49 7 (:REWRITE EQUAL-OF-LEN-AND-0))
+               (48 48 (:REWRITE DEFAULT-+-1))
+               (40 40 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+               (29 17 (:REWRITE ZP-OPEN))
+               (21 21 (:TYPE-PRESCRIPTION POSP))
+               (18 18 (:REWRITE CONSP-WHEN-LEN-GREATER))
+               (5 5
+                  (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (NTHCDR-OPENER-ALT (339 23 (:REWRITE DEFAULT-CDR))
                    (206 22 (:REWRITE CONSP-FROM-LEN-CHEAP))
                    (114 114 (:TYPE-PRESCRIPTION LEN))
@@ -209,6 +225,14 @@
                     (6 6 (:TYPE-PRESCRIPTION POSP))
                     (5 4
                        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(NTHCDR-OF-+-OPENER (4 4 (:REWRITE DEFAULT-+-2))
+                    (4 4 (:REWRITE DEFAULT-+-1))
+                    (3 3 (:REWRITE DEFAULT-<-2))
+                    (3 3 (:REWRITE DEFAULT-<-1))
+                    (2 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                    (2 2
+                       (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                    (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN)))
 (CAR-OF-NTHCDR (233 24 (:REWRITE CONSP-FROM-LEN-CHEAP))
                (190 17 (:REWRITE CONSP-OF-NTHCDR))
                (120 87 (:REWRITE DEFAULT-<-2))
@@ -259,23 +283,7 @@
                          (4 4
                             (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (TRUE-LIST-FIX-OF-NTHCDR)
-(CDR-OF-NTHCDR (267 32 (:REWRITE CONSP-FROM-LEN-CHEAP))
-               (120 7 (:REWRITE CONSP-OF-NTHCDR))
-               (98 7 (:REWRITE LEN-OF-CDR))
-               (77 60 (:REWRITE DEFAULT-<-2))
-               (63 21 (:DEFINITION POSP))
-               (60 60 (:REWRITE DEFAULT-<-1))
-               (58 54 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-               (56 48 (:REWRITE DEFAULT-+-2))
-               (49 7 (:REWRITE EQUAL-OF-LEN-AND-0))
-               (48 48 (:REWRITE DEFAULT-+-1))
-               (40 40 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
-               (29 17 (:REWRITE ZP-OPEN))
-               (21 21 (:TYPE-PRESCRIPTION POSP))
-               (18 18 (:REWRITE CONSP-WHEN-LEN-GREATER))
-               (5 5
-                  (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
-(3-CDRS (160 15 (:REWRITE CONSP-FROM-LEN-CHEAP))
+(3-CDRS (162 15 (:REWRITE CONSP-FROM-LEN-CHEAP))
         (82 8 (:REWRITE LEN-OF-CDR))
         (30 6 (:REWRITE EQUAL-OF-LEN-AND-0))
         (26 14 (:REWRITE DEFAULT-+-2))
@@ -286,7 +294,9 @@
         (12 3 (:REWRITE FOLD-CONSTS-IN-+))
         (7 7 (:REWRITE DEFAULT-<-1))
         (4 4
-           (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
+           (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+        (2 2
+           (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (NTHCDR-OF-1 (22 11
                  (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
              (18 2 (:REWRITE DEFAULT-CDR))
@@ -457,3 +467,21 @@
                            (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
                         (1 1
                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(TRUE-LISTP-OF-NTHCDR-3
+     (26 2 (:DEFINITION TRUE-LISTP))
+     (24 12
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (20 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (9 7 (:REWRITE DEFAULT-<-2))
+     (9 7 (:REWRITE DEFAULT-<-1))
+     (5 1 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (4 4 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (3 1 (:DEFINITION POSP))
+     (2 2 (:REWRITE DEFAULT-CDR))
+     (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (2 2
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (1 1 (:TYPE-PRESCRIPTION POSP))
+     (1 1
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (1 1 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN)))

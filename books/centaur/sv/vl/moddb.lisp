@@ -992,8 +992,8 @@ constructed separately.)</p>"
                 (and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p)))
                 (and stable-under-simplificationp
-                     '(:in-theory (enable sv::lhssvex-p
-                                          sv::lhssvex-unbounded-p
+                     '(:in-theory (enable ;; sv::lhssvex-p
+                                          ;; sv::lhssvex-unbounded-p
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
@@ -1157,15 +1157,15 @@ constructed separately.)</p>"
                 (and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p)))
                 (and stable-under-simplificationp
-                     '(:in-theory (enable sv::lhssvex-p
-                                          sv::lhssvex-unbounded-p
+                     '(:in-theory (enable ;; sv::lhssvex-p
+                                          ;; sv::lhssvex-unbounded-p
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-  :prepwork ((local (defthm lhssvex-unbounded-p-of-svex-var-from-name
-                      (sv::lhssvex-unbounded-p (svex-var-from-name name))
-                      :hints(("Goal" :in-theory (enable svex-var-from-name
-                                                        sv::lhssvex-unbounded-p))))))
+  ;; :prepwork ((local (defthm lhssvex-unbounded-p-of-svex-var-from-name
+  ;;                     (sv::lhssvex-unbounded-p (svex-var-from-name name))
+  ;;                     :hints(("Goal" :in-theory (enable svex-var-from-name
+  ;;                                                       sv::lhssvex-unbounded-p))))))
   (b* (((fun (fail vttree)) (mv vttree (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (y (vl-port-fix y))
@@ -1590,7 +1590,10 @@ constructed separately.)</p>"
       (b* (((when (and (not x.conn-expr) (not x.port-lhs)))
             ;; Blank port connected to blank expr
             (mv (ok) nil nil))
-           (lhsp (sv::lhssvex-p x.conn-svex))
+           (xwidth (if (and range (not x.replicatedp))
+                       (* x.port-size (vl-range-size range))
+                     x.port-size))
+           (lhsp (sv::lhssvex-bounded-p xwidth x.conn-svex))
            ((when (and (not lhsp) x.interfacep))
             (mv (fatal :type :vl-interfaceport-bad-connection
                        :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
@@ -1605,15 +1608,23 @@ constructed separately.)</p>"
             ;; Blank port expression.  Assign Z to the connection if LHS, otherwise don't do anything.
             (mv (ok)
                 (and lhsp
-                     (list (cons (sv::svex->lhs x.conn-svex)
+                     (list (cons (sv::svex->lhs-bound xwidth x.conn-svex)
                                  (sv::make-driver :value (sv::svex-z)))))
                 nil))
+
+           ((unless (equal x.port-size (sv::lhs-width x.port-lhs)))
+            (mv (fatal :type :vl-port-resolution-programming-error
+                       :msg "On port ~s0: Port size ~a1 didn't match port expression width ~a2"
+                       :args (list x.portname x.port-size (sv::lhs-width x.port-lhs)))
+                nil nil))
+
            ;; In all other cases we're either going to create an alias or else
            ;; an assignment with the port expression on the LHS.
            (alias? (and lhsp x.conn-expr)) ;; when connection is blank, assign, don't alias!
            (conn (if alias?
-                     (sv::svex->lhs x.conn-svex)
+                     (sv::svex->lhs-bound xwidth x.conn-svex)
                    (sv::make-driver :value x.conn-svex))))
+
         (if range
             (b* ((size (vl-range-size range))
                  ;; LSB first since this is used to generate an svex-lhs in the
@@ -3086,6 +3097,34 @@ ourstruct, above.)</p>"
              :hints(("Goal" :in-theory (enable sv::lhspairs-vars sv::lhatom-vars))))))
 
 
+(define vl-datatype-dimension->mod-components-tr ((count natp)
+                                                  (msi integerp)
+                                                  (incr integerp)
+                                                  (subwire sv::wire-p)
+                                                  (submod (or (sv::modname-p submod)
+                                                              (not submod)))
+                                                  (wires sv::wirelist-p)
+                                                  (insts sv::modinstlist-p)
+                                                  (aliases sv::lhspairs-p))
+  :short "Iterates over the indices of an array, creating svex module components
+          for each index using @(see vl-datatype-elem->mod-components)"
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (mv (wires sv::wirelist-p)
+               (insts sv::modinstlist-p)
+               (aliases sv::lhspairs-p))
+  (b* (((when (zp count)) (mv (rev (sv::wirelist-fix wires))
+                              (rev (sv::modinstlist-fix insts))
+                              (rev (sv::lhspairs-fix aliases))))
+       (next-count (1- count))
+       ((mv wire1 insts1 aliases1)
+        (vl-datatype-elem->mod-components
+         (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod)))
+    (vl-datatype-dimension->mod-components-tr
+     next-count (+ (lifix incr) (lifix msi)) incr subwire submod
+     (cons wire1 wires)
+     (revappend-without-guard insts1 insts)
+     (revappend-without-guard aliases1 aliases))))
+
 (define vl-datatype-dimension->mod-components ((count natp)
                                                (msi integerp)
                                                (incr integerp)
@@ -3094,22 +3133,42 @@ ourstruct, above.)</p>"
                                                            (not submod))))
   :short "Iterates over the indices of an array, creating svex module components
           for each index using @(see vl-datatype-elem->mod-components)"
-  :guard-hints (("goal" :in-theory (enable sv::name-p)))
   :returns (mv (wires sv::wirelist-p)
                (insts sv::modinstlist-p)
                (aliases sv::lhspairs-p))
-  (b* (((when (zp count)) (mv nil nil nil))
-       (next-count (1- count))
-       ((mv wire1 insts1 aliases1)
-        (vl-datatype-elem->mod-components
-         (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod))
-       ((mv wires insts aliases)
-        (vl-datatype-dimension->mod-components
-         next-count (+ (lifix incr) (lifix msi)) incr subwire submod)))
-    (mv (cons wire1 wires)
-        (append-without-guard insts1 insts)
-        (append-without-guard aliases1 aliases)))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (zp count)) (mv nil nil nil))
+            (next-count (1- count))
+            ((mv wire1 insts1 aliases1)
+             (vl-datatype-elem->mod-components
+              (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod))
+            ((mv wires insts aliases)
+             (vl-datatype-dimension->mod-components
+              next-count (+ (lifix incr) (lifix msi)) incr subwire submod)))
+         (mv (cons wire1 wires)
+             (append-without-guard insts1 insts)
+             (append-without-guard aliases1 aliases)))
+       :exec (vl-datatype-dimension->mod-components-tr
+              count msi incr subwire submod nil nil nil))
   ///
+  (local (defthm vl-datatype-dimension->mod-components-tr-elim
+           (equal (vl-datatype-dimension->mod-components-tr count msi incr subwire submod
+                                                            wires1 insts1 aliases1)
+                  (b* (((mv wires insts aliases)
+                        (vl-datatype-dimension->mod-components
+                         count msi incr subwire submod)))
+                    (mv (revappend (sv::wirelist-fix wires1) wires)
+                        (revappend (sv::modinstlist-fix insts1) insts)
+                        (revappend (sv::lhspairs-fix aliases1) aliases))))
+           :hints(("Goal" :in-theory (enable vl-datatype-dimension->mod-components-tr)))))
+
+  (verify-guards vl-datatype-dimension->mod-components
+    :hints (("goal" :in-theory (e/d (sv::name-p)
+                                    (vl-datatype-dimension->mod-components))
+             :expand ((:free (count submod)
+                       (vl-datatype-dimension->mod-components
+                        count msi incr subwire submod))))))
   (more-returns
    (aliases :name vars-of-vl-datatype-dimension->mod-components
              (sv::svarlist-addr-p (sv::lhspairs-vars aliases))

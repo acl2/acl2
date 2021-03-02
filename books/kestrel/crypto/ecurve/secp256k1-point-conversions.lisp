@@ -45,7 +45,7 @@
 
   (defrule point-in-pxp-p-of-secp256k1-point-to-pointp
     (point-in-pxp-p (secp256k1-point-to-pointp secp-point)
-                    (secp256k1-prime))
+                    (secp256k1-field-prime))
     :enable (point-in-pxp-p
              secp256k1-point->x
              secp256k1-point->y
@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pointp-to-secp256k1-point ((point pointp))
-  :guard (and (point-in-pxp-p point (secp256k1-prime))
+  :guard (and (point-in-pxp-p point (secp256k1-field-prime))
               (not (equal point (cons 0 0))))
   :returns (secp-point secp256k1-pointp)
   :short "Convert the representation of a secp256k1 point
@@ -91,7 +91,7 @@
 
   (defrule secp256k1-point-to-pointp-of-pointp-to-secp256k1-point
     (implies (and (pointp point)
-                  (point-in-pxp-p point (secp256k1-prime))
+                  (point-in-pxp-p point (secp256k1-field-prime))
                   (not (equal point (cons 0 0))))
              (equal (secp256k1-point-to-pointp
                      (pointp-to-secp256k1-point point))

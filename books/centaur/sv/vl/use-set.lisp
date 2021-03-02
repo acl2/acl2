@@ -3183,7 +3183,7 @@
         (cw "In ~x0, ~x1 was not found in the moddb~%"
             __function__ name)
         (mv moddb aliases svexarr (make-use-set) nil mod))
-       (aliases (aliases-indexed->named aliases (make-modscope-top :modidx modidx) moddb))
+       ((mv aliases &) (aliases-indexed->named aliases (make-modscope-top :modidx modidx) moddb))
 
        ;; recreating a chunk of svex-normalize-assigns because we want the
        ;; substituted assigns, which it doesn't return

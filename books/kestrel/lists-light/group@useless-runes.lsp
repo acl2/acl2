@@ -1,0 +1,2116 @@
+(INTEGERP-OF-SMALL-HELPER (7 7 (:REWRITE DEFAULT-*-2))
+                          (7 7 (:REWRITE DEFAULT-*-1))
+                          (4 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                          (4 4
+                             (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                          (4 4 (:LINEAR <-OF-*-AND-*))
+                          (1 1 (:REWRITE DEFAULT-<-2))
+                          (1 1 (:REWRITE DEFAULT-<-1))
+                          (1 1
+                             (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+                          (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                          (1 1 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(INTEGERP-OF-SMALL-HELPER-2 (39 39 (:REWRITE DEFAULT-*-2))
+                            (39 39 (:REWRITE DEFAULT-*-1))
+                            (18 18 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                            (18 18 (:LINEAR <-OF-*-AND-*))
+                            (17 2 (:REWRITE <-OF-*-OF-/-ARG2-ARG1))
+                            (15 14 (:REWRITE DEFAULT-<-2))
+                            (15 3 (:REWRITE INTEGERP-SQUEEZE))
+                            (14 14 (:REWRITE DEFAULT-<-1))
+                            (7 7
+                               (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+                            (7 7 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                            (7 7 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                            (7 1 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+                            (6 6 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+                            (4 4 (:REWRITE DEFAULT-UNARY-/))
+                            (1 1 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+                            (1 1 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+                            (1 1 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+                            (1 1 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+                            (1 1 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+                            (1 1 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+                            (1 1
+                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                            (1 1 (:REWRITE INTEGERP-OF-*)))
+(INTEGERP-OF-SMALL (11 11 (:REWRITE DEFAULT-*-2))
+                   (11 11 (:REWRITE DEFAULT-*-1))
+                   (8 8 (:REWRITE DEFAULT-<-2))
+                   (8 8 (:REWRITE DEFAULT-<-1))
+                   (6 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                   (4 4 (:REWRITE DEFAULT-UNARY-/))
+                   (4 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                   (4 4 (:LINEAR <-OF-*-AND-*))
+                   (2 2
+                      (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+                   (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                   (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(<-OF-/-SAME (70 6 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+             (59 3 (:REWRITE <-OF-*-OF-/-ARG2-ARG2))
+             (38 38 (:REWRITE DEFAULT-*-2))
+             (38 38 (:REWRITE DEFAULT-*-1))
+             (12 12 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+             (12 12
+                 (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+             (12 12 (:LINEAR <-OF-*-AND-*))
+             (10 10 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+             (9 8 (:REWRITE DEFAULT-<-1))
+             (8 8
+                (:TYPE-PRESCRIPTION NONNEGATIVE-PRODUCT))
+             (8 8 (:REWRITE DEFAULT-<-2))
+             (8 4 (:REWRITE UNICITY-OF-1))
+             (4 4 (:DEFINITION FIX))
+             (3 3
+                (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+             (1 1 (:REWRITE DEFAULT-UNARY-/)))
+(<-OF-FLOOR-SAME
+     (457 2
+          (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (176 22 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (113 113
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (113 113
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (113 113
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (98 5
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (90 5 (:REWRITE MOD-WHEN-MULTIPLE))
+     (90 5 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (85 2 (:LINEAR MOD-BOUNDED-BY-MODULUS))
+     (84 69 (:REWRITE DEFAULT-*-2))
+     (84 1 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (77 1 (:LINEAR MOD-TYPE . 4))
+     (77 1 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (69 69 (:REWRITE DEFAULT-*-1))
+     (55 4 (:REWRITE FLOOR-=-X/Y . 2))
+     (53 48 (:REWRITE DEFAULT-<-1))
+     (48 48 (:REWRITE DEFAULT-<-2))
+     (42 42 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (42 42 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (42 42 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (42 42 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (42 42 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (42 42
+         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (42 42 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (38 22 (:REWRITE INTEGERP-OF-SMALL))
+     (32 4 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (32 4 (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (25 25 (:REWRITE DEFAULT-UNARY-/))
+     (22 22
+         (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (22 22 (:REWRITE INTEGERP-OF-*))
+     (20 1 (:LINEAR MOD-TYPE . 2))
+     (16 4 (:REWRITE FLOOR-MUST-BE-1))
+     (15 5
+         (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (15 5 (:REWRITE MOD-WHEN-<))
+     (15 5 (:REWRITE DEFAULT-+-2))
+     (11 5 (:REWRITE FLOOR-TYPE-3 . 2))
+     (11 2
+         (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (10 4 (:REWRITE FLOOR-WHEN-<=))
+     (10 4 (:REWRITE FLOOR-WHEN-<))
+     (6 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (5 5
+        (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (5 5
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (5 5
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (5 5 (:REWRITE FLOOR-TYPE-4 . 3))
+     (5 5 (:REWRITE FLOOR-TYPE-4 . 2))
+     (5 5 (:REWRITE FLOOR-TYPE-3 . 3))
+     (5 5
+        (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (5 5 (:REWRITE DEFAULT-+-1))
+     (5 1 (:REWRITE COMMUTATIVITY-OF-+))
+     (4 4
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (4 4
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (4 4
+        (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (4 4
+        (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (4 4
+        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (4 4 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (4 4
+        (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (4 4 (:LINEAR <-OF-*-AND-*))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (2 1 (:REWRITE UNICITY-OF-0))
+     (1 1
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN))
+     (1 1 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (1 1
+        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (1 1 (:LINEAR MOD-TYPE . 3))
+     (1 1 (:LINEAR MOD-TYPE . 1))
+     (1 1
+        (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (1 1
+        (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR)))
+(+-OF-MINUS-AND-*-SAME (8 7 (:REWRITE DEFAULT-*-2))
+                       (8 7 (:REWRITE DEFAULT-*-1))
+                       (6 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                       (4 4 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                       (4 4
+                          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                       (4 4 (:LINEAR <-OF-*-AND-*))
+                       (4 3 (:REWRITE DEFAULT-+-2))
+                       (3 3
+                          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                       (3 3 (:REWRITE DEFAULT-+-1))
+                       (2 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                       (2 2 (:REWRITE DEFAULT-<-2))
+                       (2 2 (:REWRITE DEFAULT-<-1))
+                       (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                       (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                       (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                       (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
+(CDR-OF-FIRSTN (46 3 (:REWRITE TAKE-DOES-NOTHING))
+               (21 3
+                   (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+               (13 1 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+               (12 2 (:REWRITE DEFAULT-CDR))
+               (11 1 (:REWRITE LEN-OF-CDR))
+               (10 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (8 6 (:REWRITE DEFAULT-<-2))
+               (8 6 (:REWRITE DEFAULT-<-1))
+               (7 7 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+               (6 4 (:REWRITE DEFAULT-+-2))
+               (4 4 (:REWRITE DEFAULT-+-1))
+               (4 1 (:REWRITE EQUAL-OF-LEN-AND-0))
+               (3 1 (:DEFINITION NFIX))
+               (2 2
+                  (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+               (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
+               (1 1 (:TYPE-PRESCRIPTION NFIX))
+               (1 1
+                  (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(FIRSTN-OF-CDR-BECOMES-SUBRANGE
+     (36 2 (:REWRITE TAKE-DOES-NOTHING))
+     (31 1 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (18 3
+         (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (13 3
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (12 9 (:REWRITE DEFAULT-+-2))
+     (11 11 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (9 9 (:REWRITE DEFAULT-+-1))
+     (7 5 (:REWRITE DEFAULT-<-1))
+     (6 5 (:REWRITE DEFAULT-<-2))
+     (6 2 (:REWRITE DEFAULT-CDR))
+     (3 1 (:DEFINITION NFIX))
+     (2 2
+        (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (2 2 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (1 1 (:TYPE-PRESCRIPTION NFIX))
+     (1 1 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (1 1
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(*-OF-/-SAME-ALT (32 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                 (8 8 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                 (8 8
+                    (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                 (8 8 (:LINEAR <-OF-*-AND-*))
+                 (4 4 (:REWRITE DEFAULT-<-2))
+                 (4 4 (:REWRITE DEFAULT-<-1))
+                 (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                 (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                 (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                 (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                 (2 2 (:REWRITE DEFAULT-*-2))
+                 (2 2 (:REWRITE DEFAULT-*-1))
+                 (2 2
+                    (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+                 (1 1 (:REWRITE DEFAULT-UNARY-/))
+                 (1 1 (:REWRITE *-OF-*-COMBINE-CONSTANTS)))
+(FLOOR-BOUND-HACK-1
+     (49 49
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (49 49
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (49 49
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (15 15
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (14 2 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (14 2 (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (10 10 (:REWRITE DEFAULT-<-2))
+     (10 10 (:REWRITE DEFAULT-<-1))
+     (7 7 (:REWRITE DEFAULT-*-2))
+     (7 7 (:REWRITE DEFAULT-*-1))
+     (6 2 (:REWRITE FLOOR-=-X/Y . 3))
+     (6 2 (:REWRITE FLOOR-=-X/Y . 2))
+     (6 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (4 4 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (4 4 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (4 4 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (4 4 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (4 4 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (4 4 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (4 4
+        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (4 4 (:LINEAR <-OF-*-AND-*))
+     (4 2 (:REWRITE FLOOR-WHEN-<=))
+     (4 2 (:REWRITE FLOOR-WHEN-<))
+     (4 2 (:REWRITE FLOOR-TYPE-4 . 2))
+     (4 2 (:REWRITE FLOOR-TYPE-3 . 3))
+     (4 2 (:REWRITE FLOOR-TYPE-3 . 2))
+     (4 2 (:REWRITE FLOOR-MUST-BE-1))
+     (3 3 (:REWRITE DEFAULT-UNARY-/))
+     (3 1 (:LINEAR FLOOR-TYPE-2 . 2))
+     (3 1 (:LINEAR FLOOR-TYPE-2 . 1))
+     (2 2 (:REWRITE INTEGERP-OF-*))
+     (2 2
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (2 2
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (2 2
+        (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (2 2
+        (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (2 2 (:REWRITE FLOOR-TYPE-4 . 3))
+     (2 2
+        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (2 2 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (2 2
+        (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (1 1 (:REWRITE *-OF-*-COMBINE-CONSTANTS)))
+(FLOOR-BOUND-HACK-2
+     (45 1 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (33 33
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (33 33
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (33 33
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (21 3 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (21 3 (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (18 18
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (16 16 (:REWRITE DEFAULT-*-2))
+     (16 16 (:REWRITE DEFAULT-*-1))
+     (15 3 (:REWRITE FLOOR-=-X/Y . 3))
+     (15 3 (:REWRITE FLOOR-=-X/Y . 2))
+     (13 13 (:REWRITE DEFAULT-<-2))
+     (13 13 (:REWRITE DEFAULT-<-1))
+     (9 3 (:REWRITE FLOOR-WHEN-<=))
+     (9 3 (:REWRITE FLOOR-WHEN-<))
+     (9 3 (:REWRITE FLOOR-TYPE-3 . 2))
+     (9 3 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (8 8 (:REWRITE DEFAULT-UNARY-/))
+     (6 6 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (6 6 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (6 6 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (6 6 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (6 6 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (6 6 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (6 6 (:REWRITE INTEGERP-OF-*))
+     (6 6
+        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (6 6 (:LINEAR <-OF-*-AND-*))
+     (3 3
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (3 3
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (3 3
+        (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (3 3
+        (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (3 3 (:REWRITE FLOOR-TYPE-4 . 3))
+     (3 3 (:REWRITE FLOOR-TYPE-4 . 2))
+     (3 3 (:REWRITE FLOOR-TYPE-3 . 3))
+     (3 3 (:REWRITE FLOOR-MUST-BE-1))
+     (3 3
+        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (3 3 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (3 3
+        (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (2 2 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (1 1 (:REWRITE DEFAULT-+-2))
+     (1 1 (:REWRITE DEFAULT-+-1))
+     (1 1 (:LINEAR FLOOR-TYPE-2 . 2)))
+(FLOOR-BOUND-HACK-3
+     (4720 19
+           (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (1621 12 (:REWRITE FLOOR-BOUND-HACK-2))
+     (1328 32 (:REWRITE FLOOR-MUST-BE-1))
+     (949 4 (:REWRITE FLOOR-BOUND-HACK-1))
+     (818 38 (:LINEAR MOD-BOUNDED-BY-MODULUS))
+     (685 19 (:LINEAR MOD-TYPE . 4))
+     (673 19 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (597 19
+          (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (559 19 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (517 472 (:REWRITE DEFAULT-*-2))
+     (492 472 (:REWRITE DEFAULT-*-1))
+     (462 114 (:REWRITE MOD-WHEN-MULTIPLE))
+     (462 114
+          (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (462 114 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (452 437 (:REWRITE DEFAULT-<-1))
+     (437 437 (:REWRITE DEFAULT-<-2))
+     (342 114
+          (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (340 340 (:REWRITE DEFAULT-UNARY-/))
+     (316 316 (:REWRITE INTEGERP-OF-*))
+     (311 311 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (311 311 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (311 311 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (311 311 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (311 311 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (311 311 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (297 9 (:REWRITE FLOOR-=-X/Y . 4))
+     (288 114 (:REWRITE MOD-WHEN-<))
+     (253 19
+          (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (241 9 (:REWRITE FLOOR-UNIQUE-EQUAL-VERSION))
+     (234 114
+          (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (228 216
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (224 32 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (224 32
+          (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (216 216
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (216 216
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (114 114
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (114 114
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (114 114
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (114 114
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (114 114
+          (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (114 114
+          (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (104 32 (:REWRITE FLOOR-=-X/Y . 3))
+     (104 32 (:REWRITE FLOOR-=-X/Y . 2))
+     (95 19 (:REWRITE COMMUTATIVITY-OF-+))
+     (95 19 (:LINEAR MOD-TYPE . 2))
+     (80 8 (:REWRITE <-OF-*-OF-/-ARG1-ARG2))
+     (76 2 (:REWRITE FLOOR-FLOOR-INTEGER))
+     (74 74 (:LINEAR <-OF-*-AND-*))
+     (72 67 (:REWRITE DEFAULT-+-2))
+     (68 32 (:REWRITE FLOOR-WHEN-<=))
+     (68 32 (:REWRITE FLOOR-WHEN-<))
+     (68 32 (:REWRITE FLOOR-TYPE-3 . 2))
+     (67 67 (:REWRITE DEFAULT-+-1))
+     (56 32 (:REWRITE FLOOR-TYPE-4 . 2))
+     (56 32 (:REWRITE FLOOR-TYPE-3 . 3))
+     (38 19 (:REWRITE UNICITY-OF-0))
+     (32 32
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (32 32
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (32 32
+         (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (32 32
+         (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (32 32 (:REWRITE FLOOR-TYPE-4 . 3))
+     (32 32
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (32 32 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (32 32
+         (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (22 8 (:LINEAR FLOOR-TYPE-2 . 2))
+     (19 19 (:LINEAR MOD-TYPE . 3))
+     (19 19 (:LINEAR MOD-TYPE . 1))
+     (9 9 (:REWRITE DEFAULT-UNARY-MINUS))
+     (9 9 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (9 9
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (8 8 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+     (3 3
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN)))
+(FLOOR-BOUND-HACK-4
+     (35 35
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (35 35
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (35 35
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (13 8 (:REWRITE DEFAULT-<-1))
+     (8 8 (:REWRITE DEFAULT-<-2))
+     (7 1 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (7 1 (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (5 1 (:REWRITE FLOOR-MUST-BE-1))
+     (5 1 (:REWRITE FLOOR-=-X/Y . 3))
+     (5 1 (:REWRITE FLOOR-=-X/Y . 2))
+     (4 4
+        (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (4 4 (:REWRITE DEFAULT-*-2))
+     (4 4 (:REWRITE DEFAULT-*-1))
+     (3 1 (:REWRITE FLOOR-WHEN-<=))
+     (3 1 (:REWRITE FLOOR-WHEN-<))
+     (3 1 (:REWRITE FLOOR-TYPE-4 . 2))
+     (3 1 (:REWRITE FLOOR-TYPE-3 . 3))
+     (3 1 (:REWRITE FLOOR-TYPE-3 . 2))
+     (2 2 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (2 2 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (2 2 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (2 2 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (2 2 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (2 2 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (2 2 (:REWRITE INTEGERP-OF-*))
+     (2 2 (:REWRITE DEFAULT-UNARY-/))
+     (1 1
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (1 1
+        (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (1 1
+        (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (1 1
+        (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (1 1 (:REWRITE FLOOR-TYPE-4 . 3))
+     (1 1
+        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (1 1 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (1 1
+        (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (1 1
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN)))
+(POSP-OF-ONE-LESS (2 2 (:REWRITE DEFAULT-<-2))
+                  (2 2 (:REWRITE DEFAULT-<-1))
+                  (1 1 (:REWRITE DEFAULT-+-2))
+                  (1 1 (:REWRITE DEFAULT-+-1)))
+(<-OF-+-CANCEL-FIRST-AND-FIRST)
+(FIRSTN-OF-SUBRANGE-GEN (73 3
+                            (:REWRITE SUBRANGE-TO-END-BECOMES-NTHCDR))
+                        (49 7
+                            (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+                        (29 27 (:REWRITE DEFAULT-+-2))
+                        (27 27 (:REWRITE DEFAULT-<-2))
+                        (27 27 (:REWRITE DEFAULT-<-1))
+                        (27 27 (:REWRITE DEFAULT-+-1))
+                        (24 1 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                        (14 14
+                            (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+                        (14 3
+                            (:REWRITE SUBRANGE-OUT-OF-ORDER-OR-SINGLETON))
+                        (14 3 (:REWRITE SUBRANGE-OUT-OF-ORDER))
+                        (13 2
+                            (:REWRITE SUBRANGE-UP-TO-END-BECOMES-NTHCDR))
+                        (12 5
+                            (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                        (10 10 (:REWRITE FOLD-CONSTS-IN-+))
+                        (10 10 (:REWRITE +-COMBINE-CONSTANTS))
+                        (10 3
+                            (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+                        (8 3
+                           (:REWRITE SUBRANGE-WHEN-END-IS-NEGATIVE))
+                        (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (5 5
+                           (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+                        (5 3 (:DEFINITION FIX))
+                        (5 1 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+                        (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+                        (3 3
+                           (:REWRITE SUBRANGE-WHEN-START-IS-NEGATIVE))
+                        (3 3
+                           (:REWRITE SUBRANGE-OUT-OF-ORDER-CHEAP))
+                        (3 3 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                        (2 2 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+                        (2 1 (:REWRITE +-OF-+-OF---SAME))
+                        (1 1 (:TYPE-PRESCRIPTION NFIX)))
+(<-OF-TIMES-OF-FLOOR-AND-SAME-HACK
+     (269 6
+          (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (225 5 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (192 192
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (192 192
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (192 192
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (192 192
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
+     (192 192
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (154 136 (:REWRITE DEFAULT-<-2))
+     (142 136 (:REWRITE DEFAULT-<-1))
+     (103 61 (:REWRITE DEFAULT-*-2))
+     (77 11 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (77 11
+         (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (73 61 (:REWRITE DEFAULT-*-1))
+     (45 11 (:REWRITE FLOOR-=-X/Y . 2))
+     (44 2 (:LINEAR MOD-BOUNDED-BY-MODULUS))
+     (39 11 (:REWRITE FLOOR-MUST-BE-1))
+     (39 1
+         (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (38 38 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (38 38 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (38 38 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (38 38 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (38 38 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (38 38 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (37 37 (:REWRITE DEFAULT-UNARY-/))
+     (37 1 (:LINEAR MOD-TYPE . 4))
+     (37 1 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (36 12 (:REWRITE FLOOR-TYPE-4 . 3))
+     (36 12 (:REWRITE FLOOR-TYPE-4 . 2))
+     (36 12 (:REWRITE FLOOR-TYPE-3 . 3))
+     (36 12 (:REWRITE FLOOR-TYPE-3 . 2))
+     (36 2 (:REWRITE FLOOR-TYPE-2))
+     (33 11 (:REWRITE FLOOR-WHEN-<=))
+     (33 11 (:REWRITE FLOOR-WHEN-<))
+     (25 7 (:REWRITE DEFAULT-+-2))
+     (25 5 (:REWRITE MOD-WHEN-MULTIPLE))
+     (25 5
+         (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (25 5 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (19 19 (:REWRITE INTEGERP-OF-*))
+     (15 5
+         (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (15 5
+         (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (15 5 (:REWRITE MOD-WHEN-<))
+     (15 5 (:LINEAR FLOOR-TYPE-2 . 2))
+     (15 5 (:LINEAR FLOOR-TYPE-2 . 1))
+     (15 5 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (12 4 (:DEFINITION NATP))
+     (11 11
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (11 11
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (11 11
+         (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (11 11
+         (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (11 11
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (11 11 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (11 11
+         (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (10 10 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (10 10
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (10 10 (:LINEAR <-OF-*-AND-*))
+     (10 2 (:REWRITE FLOOR-BOUND-HACK-4))
+     (10 2
+         (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
+     (7 7 (:REWRITE DEFAULT-+-1))
+     (6 6
+        (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (5 5
+        (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (5 5
+        (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (5 5
+        (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (5 5
+        (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (5 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (5 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (5 1 (:LINEAR MOD-TYPE . 2))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (3 1 (:REWRITE COMMUTATIVITY-OF-+))
+     (3 1 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (2 2 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (2 2
+        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (1 1 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (1 1 (:LINEAR MOD-TYPE . 3))
+     (1 1 (:LINEAR MOD-TYPE . 1)))
+(<-+-FLOOR-LEMMA
+     (1076 24
+           (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (761 15 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (742 15 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (571 571
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (571 571
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (571 571
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+     (571 571
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
+     (571 571
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (482 440 (:REWRITE DEFAULT-<-2))
+     (458 440 (:REWRITE DEFAULT-<-1))
+     (414 222 (:REWRITE DEFAULT-*-2))
+     (270 222 (:REWRITE DEFAULT-*-1))
+     (252 36 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (252 36
+          (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (176 8 (:LINEAR MOD-BOUNDED-BY-MODULUS))
+     (156 4
+          (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (150 36 (:REWRITE FLOOR-=-X/Y . 2))
+     (148 4 (:LINEAR MOD-TYPE . 4))
+     (148 4 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (140 36 (:REWRITE FLOOR-MUST-BE-1))
+     (139 139 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (139 139 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (128 128 (:REWRITE DEFAULT-UNARY-/))
+     (126 7 (:REWRITE FLOOR-TYPE-2))
+     (121 31 (:REWRITE DEFAULT-+-2))
+     (114 38 (:REWRITE FLOOR-TYPE-4 . 3))
+     (114 38 (:REWRITE FLOOR-TYPE-4 . 2))
+     (114 38 (:REWRITE FLOOR-TYPE-3 . 3))
+     (114 38 (:REWRITE FLOOR-TYPE-3 . 2))
+     (108 36 (:REWRITE FLOOR-WHEN-<=))
+     (108 36 (:REWRITE FLOOR-WHEN-<))
+     (100 20 (:REWRITE MOD-WHEN-MULTIPLE))
+     (100 20
+          (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (100 20 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (82 82 (:REWRITE INTEGERP-OF-*))
+     (60 20
+         (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (60 20
+         (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (60 20 (:REWRITE MOD-WHEN-<))
+     (42 14 (:DEFINITION NATP))
+     (39 13 (:LINEAR FLOOR-TYPE-2 . 2))
+     (39 13 (:LINEAR FLOOR-TYPE-2 . 1))
+     (39 13 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (36 36
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (36 36
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (36 36
+         (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (36 36
+         (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (36 36
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (36 36 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (36 36
+         (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (35 7 (:REWRITE FLOOR-BOUND-HACK-4))
+     (35 7
+         (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
+     (31 31 (:REWRITE DEFAULT-+-1))
+     (30 30
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (30 30 (:LINEAR <-OF-*-AND-*))
+     (24 24
+         (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (20 20
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (20 20
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (20 20
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (20 20
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (20 20
+         (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (20 20
+         (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (20 4 (:LINEAR MOD-TYPE . 2))
+     (15 15 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (15 15 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (14 14 (:TYPE-PRESCRIPTION NATP))
+     (12 4 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (5 5
+        (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (5 5
+        (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (5 5 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (5 5
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (4 4 (:LINEAR MOD-TYPE . 3))
+     (4 4 (:LINEAR MOD-TYPE . 1))
+     (3 3 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+     (1 1 (:REWRITE *-OF-*-COMBINE-CONSTANTS)))
+(FIRSTN-OF-NTHCDR-LEMMA (31 2
+                            (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                        (24 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+                        (15 1 (:DEFINITION TRUE-LISTP))
+                        (13 9 (:REWRITE DEFAULT-<-1))
+                        (10 9 (:REWRITE DEFAULT-<-2))
+                        (9 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                        (7 7 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                        (6 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                        (5 5 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                        (5 3 (:REWRITE DEFAULT-+-2))
+                        (4 3 (:REWRITE DEFAULT-+-1))
+                        (3 1 (:DEFINITION POSP))
+                        (2 2
+                           (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                        (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                        (2 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (1 1 (:TYPE-PRESCRIPTION POSP))
+                        (1 1 (:REWRITE DEFAULT-CDR))
+                        (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                        (1 1
+                           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(CDR-OF-FIRSTN-BETTER (354 8
+                           (:REWRITE SUBRANGE-TO-END-BECOMES-NTHCDR))
+                      (328 19
+                           (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+                      (227 29 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                      (184 9
+                           (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                      (161 7 (:DEFINITION TRUE-LISTP))
+                      (104 10 (:REWRITE LEN-OF-CDR))
+                      (99 61 (:REWRITE DEFAULT-<-2))
+                      (98 61 (:REWRITE DEFAULT-<-1))
+                      (92 46 (:TYPE-PRESCRIPTION MIN))
+                      (84 4
+                          (:REWRITE SUBRANGE-OUT-OF-ORDER-OR-SINGLETON))
+                      (84 4 (:REWRITE SUBRANGE-OUT-OF-ORDER))
+                      (78 8 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+                      (73 36 (:REWRITE DEFAULT-+-2))
+                      (66 11 (:REWRITE EQUAL-OF-LEN-AND-0))
+                      (51 5
+                          (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                      (50 4
+                          (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+                      (45 26
+                          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+                      (36 36 (:REWRITE DEFAULT-+-1))
+                      (35 35 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                      (27 27 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                      (14 1 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                      (8 8
+                         (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+                      (6 6
+                         (:REWRITE SUBRANGE-WHEN-START-IS-NEGATIVE))
+                      (5 5
+                         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+                      (4 4
+                         (:REWRITE SUBRANGE-OUT-OF-ORDER-CHEAP))
+                      (2 2 (:TYPE-PRESCRIPTION NATP))
+                      (2 2 (:REWRITE EQUAL-OF---WHEN-VARIABLE))
+                      (2 2 (:REWRITE EQUAL-OF---AND-CONSTANT))
+                      (1 1 (:TYPE-PRESCRIPTION NFIX))
+                      (1 1
+                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(GROUP (11 5 (:REWRITE DEFAULT-+-2))
+       (10 6 (:REWRITE DEFAULT-<-1))
+       (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+       (8 6 (:REWRITE DEFAULT-<-2))
+       (6 5 (:REWRITE DEFAULT-+-1))
+       (4 4 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+       (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
+       (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
+       (1 1
+          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(CONSP-OF-GROUP (95 9 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                (47 3 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                (37 24 (:REWRITE DEFAULT-<-2))
+                (32 29 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                (27 24 (:REWRITE DEFAULT-<-1))
+                (24 3
+                    (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                (23 23 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                (16 8
+                    (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+                (15 3 (:DEFINITION TRUE-LISTP))
+                (9 9 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                (3 3 (:REWRITE DEFAULT-CDR))
+                (2 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                (2 2
+                   (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN)))
+(ENDP-OF-GROUP (20 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (10 10 (:TYPE-PRESCRIPTION LEN))
+               (5 3 (:REWRITE DEFAULT-<-2))
+               (3 3 (:REWRITE DEFAULT-<-1))
+               (2 2 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+               (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
+               (2 2
+                  (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(CDR-OF-GROUP (150 10 (:REWRITE LEN-OF-NTHCDR))
+              (103 31 (:DEFINITION NFIX))
+              (67 4
+                  (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+              (63 3 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+              (55 49 (:REWRITE DEFAULT-<-2))
+              (51 49 (:REWRITE DEFAULT-<-1))
+              (43 6 (:REWRITE CONSP-FROM-LEN-CHEAP))
+              (39 2 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+              (33 31 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+              (30 10 (:REWRITE COMMUTATIVITY-OF-+))
+              (30 10 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+              (26 26 (:TYPE-PRESCRIPTION TRUE-LISTP))
+              (24 2 (:REWRITE NTHCDR-OF-NTHCDR))
+              (23 11
+                  (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+              (22 22 (:REWRITE DEFAULT-+-2))
+              (22 22 (:REWRITE DEFAULT-+-1))
+              (22 4 (:DEFINITION TRUE-LISTP))
+              (19 5 (:REWRITE DEFAULT-CDR))
+              (16 2 (:REWRITE CONSP-OF-NTHCDR))
+              (12 6
+                  (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+              (10 10 (:REWRITE DEFAULT-UNARY-MINUS))
+              (6 6 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+              (5 5 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+              (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+(CAR-OF-GROUP (135 12
+                   (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+              (95 73 (:REWRITE DEFAULT-<-1))
+              (94 73 (:REWRITE DEFAULT-<-2))
+              (92 15 (:REWRITE CONSP-FROM-LEN-CHEAP))
+              (80 9 (:REWRITE DEFAULT-CAR))
+              (76 31
+                  (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+              (71 12 (:DEFINITION TRUE-LISTP))
+              (59 59 (:TYPE-PRESCRIPTION TRUE-LISTP))
+              (56 6 (:REWRITE CONSP-OF-GROUP))
+              (31 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+              (15 10 (:REWRITE DEFAULT-+-2))
+              (15 10 (:REWRITE DEFAULT-+-1))
+              (15 1 (:REWRITE CONSP-OF-NTHCDR))
+              (11 11 (:REWRITE DEFAULT-CDR))
+              (11 11 (:REWRITE CONSP-WHEN-LEN-GREATER))
+              (6 6 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+              (6 6
+                 (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+              (6 6 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+              (6 3
+                 (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+              (5 5 (:REWRITE DEFAULT-UNARY-MINUS)))
+(LEN-OF-GROUP (476 342 (:REWRITE DEFAULT-<-2))
+              (453 342 (:REWRITE DEFAULT-<-1))
+              (428 306 (:REWRITE DEFAULT-*-2))
+              (400 306 (:REWRITE DEFAULT-*-1))
+              (327 41 (:REWRITE FLOOR-TYPE-3 . 3))
+              (294 29 (:REWRITE FLOOR-MUST-BE-1))
+              (281 41 (:REWRITE FLOOR-TYPE-4 . 2))
+              (274 14 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+              (249 29 (:REWRITE FLOOR-=-X/Y . 2))
+              (236 29 (:REWRITE FLOOR-WHEN-<=))
+              (234 234
+                   (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+              (226 29 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+              (226 29
+                   (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+              (178 78 (:REWRITE DEFAULT-+-2))
+              (176 29 (:REWRITE FLOOR-WHEN-<))
+              (171 62 (:REWRITE DEFAULT-UNARY-MINUS))
+              (148 12
+                   (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+              (145 18 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+              (141 76 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+              (122 122 (:REWRITE DEFAULT-UNARY-/))
+              (105 41 (:REWRITE FLOOR-TYPE-4 . 3))
+              (104 12 (:REWRITE <-OF-MINUS-AND-CONSTANT))
+              (97 16 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+              (79 78 (:REWRITE DEFAULT-+-1))
+              (76 76 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+              (76 76 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+              (76 76 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+              (76 76 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+              (76 76 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+              (72 72 (:TYPE-PRESCRIPTION TRUE-LISTP))
+              (68 12 (:DEFINITION TRUE-LISTP))
+              (68 1 (:REWRITE FLOOR-UNIQUE-EQUAL-VERSION))
+              (61 16 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+              (60 4 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+              (53 1 (:REWRITE <-OF-*-OF-/-ARG1-ARG1))
+              (52 29
+                  (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+              (52 29
+                  (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+              (52 29
+                  (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+              (52 29
+                  (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+              (48 4 (:REWRITE NTHCDR-OF-NTHCDR))
+              (41 32 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+              (34 18
+                  (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+              (32 32 (:LINEAR <-OF-*-AND-*))
+              (32 10 (:LINEAR FLOOR-TYPE-2 . 2))
+              (31 4 (:REWRITE CONSP-OF-NTHCDR))
+              (29 29
+                  (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+              (29 29 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+              (29 29
+                  (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+              (24 12
+                  (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+              (18 18 (:REWRITE INTEGERP-OF-*))
+              (16 16 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+              (16 16 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+              (16 12 (:REWRITE DEFAULT-CDR))
+              (15 15 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+              (15 15
+                  (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+              (15 15 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+              (12 1 (:REWRITE FLOOR-=-X/Y . 4))
+              (11 11
+                  (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+              (9 9 (:REWRITE CONSP-WHEN-LEN-GREATER))
+              (4 4 (:REWRITE EQUAL-OF---WHEN-VARIABLE))
+              (4 4 (:REWRITE EQUAL-OF---AND-CONSTANT))
+              (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+              (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+              (4 4
+                 (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+              (4 4
+                 (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+              (3 3 (:REWRITE EQUAL-OF-*-AND-CONSTANT)))
+(GROUP-OF-CONS (634 12 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+               (228 27
+                    (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+               (222 6 (:REWRITE LEN-OF-NTHCDR))
+               (194 5 (:REWRITE LEN-OF-CDR))
+               (179 34 (:DEFINITION NFIX))
+               (104 6 (:REWRITE CONSP-OF-NTHCDR))
+               (101 64 (:REWRITE DEFAULT-+-2))
+               (100 22
+                    (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+               (92 59 (:REWRITE DEFAULT-<-2))
+               (92 8 (:REWRITE COMMUTATIVITY-2-OF-+))
+               (70 64 (:REWRITE DEFAULT-+-1))
+               (69 23 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+               (65 59 (:REWRITE DEFAULT-<-1))
+               (58 6 (:REWRITE DEFAULT-CDR))
+               (52 25
+                   (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+               (44 2 (:REWRITE NTHCDR-OF-NTHCDR))
+               (36 36 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+               (36 12
+                   (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+               (34 22 (:REWRITE +-COMBINE-CONSTANTS))
+               (30 3 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (24 6
+                   (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+               (24 6 (:REWRITE COMMUTATIVITY-OF-+))
+               (19 6 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+               (16 16 (:REWRITE FOLD-CONSTS-IN-+))
+               (16 16
+                   (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+               (16 8
+                   (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+               (15 3 (:REWRITE ZP-OPEN))
+               (12 12 (:REWRITE FIRSTN-WHEN-ZP-CHEAP))
+               (12 2 (:REWRITE CAR-OF-NTHCDR))
+               (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
+               (8 5 (:REWRITE POSP-OF-ONE-LESS))
+               (6 6
+                  (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+               (6 6 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+               (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
+               (5 5 (:TYPE-PRESCRIPTION POSP))
+               (5 1 (:REWRITE LEN-OF-CONS))
+               (4 4 (:REWRITE DEFAULT-CAR))
+               (4 2 (:REWRITE NTH-WHEN-ZP-CHEAP))
+               (4 2 (:REWRITE NTH-WHEN-<=-LEN-CHEAP))
+               (3 3 (:REWRITE EQUAL-OF-LEN-AND-0))
+               (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
+               (2 2 (:TYPE-PRESCRIPTION ZP))
+               (2 2 (:REWRITE NTH-WHEN-NOT-CONSP-CHEAP)))
+(FIRSTN-OF-GROUP-INDUCT
+     (6 3
+        (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (3 3 (:TYPE-PRESCRIPTION TRUE-LISTP)))
+(FIRSTN-OF-NTHCDR (101 4
+                       (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                  (74 52 (:REWRITE DEFAULT-<-1))
+                  (64 2 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                  (63 4 (:DEFINITION TRUE-LISTP))
+                  (61 52 (:REWRITE DEFAULT-<-2))
+                  (39 4 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                  (39 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+                  (31 26 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                  (28 21 (:REWRITE DEFAULT-+-2))
+                  (27 21 (:REWRITE DEFAULT-+-1))
+                  (22 22 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                  (18 13
+                      (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+                  (18 6 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                  (13 6
+                      (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                  (9 3 (:DEFINITION POSP))
+                  (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
+                  (6 6 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                  (6 6 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+                  (6 6
+                     (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                  (6 1 (:REWRITE LEN-OF-TAKE))
+                  (4 4 (:REWRITE DEFAULT-CDR))
+                  (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                  (3 3 (:TYPE-PRESCRIPTION POSP))
+                  (3 3
+                     (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+                  (3 3
+                     (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+                  (3 1 (:REWRITE <-+-CANCEL-1-ALT))
+                  (2 2 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+                  (2 2
+                     (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+                  (1 1 (:REWRITE FOLD-CONSTS-IN-+))
+                  (1 1 (:REWRITE +-COMBINE-CONSTANTS)))
+(FIRSTN-OF-GROUP
+     (3359 81 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (1046 28 (:LINEAR CEILING-LOWER-BOUND-LINEAR))
+     (866 44 (:REWRITE CEILING-WHEN-MULTIPLE))
+     (681 16 (:REWRITE LEN-OF-GROUP))
+     (650 90
+          (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (539 25 (:REWRITE LEN-OF-NTHCDR))
+     (499 425 (:REWRITE DEFAULT-<-2))
+     (447 425 (:REWRITE DEFAULT-<-1))
+     (410 5 (:REWRITE CDR-OF-GROUP))
+     (300 40 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (286 22 (:REWRITE NTHCDR-OF-NTHCDR))
+     (226 44 (:REWRITE CEILING-WHEN-<=))
+     (222 40 (:REWRITE INTEGERP-OF-SMALL))
+     (210 186 (:REWRITE DEFAULT-+-2))
+     (207 22 (:REWRITE CONSP-OF-NTHCDR))
+     (191 27
+          (:REWRITE <-OF-+-CANCEL-FIRST-AND-FIRST))
+     (188 186 (:REWRITE DEFAULT-+-1))
+     (176 172 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (169 136 (:REWRITE DEFAULT-*-2))
+     (162 27 (:REWRITE LEN-OF-CDR))
+     (149 149 (:TYPE-PRESCRIPTION CEILING))
+     (149 136 (:REWRITE DEFAULT-*-1))
+     (125 5 (:REWRITE CAR-OF-GROUP))
+     (113 14 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (100 10 (:REWRITE COMMUTATIVITY-2-OF-+))
+     (79 79
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (78 2 (:REWRITE LEN-OF-CONS))
+     (68 68 (:REWRITE DEFAULT-UNARY-/))
+     (67 50
+         (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (60 40 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (60 40
+         (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (56 13
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (52 5 (:REWRITE CONSP-OF-GROUP))
+     (50 50 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (50 50 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (50 40 (:REWRITE +-COMBINE-CONSTANTS))
+     (50 10
+         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+     (44 22
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (40 40 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (40 40 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (40 40 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (40 40 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (40 40 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (40 40 (:REWRITE INTEGERP-OF-*))
+     (36 36 (:REWRITE DEFAULT-UNARY-MINUS))
+     (35 35 (:REWRITE FOLD-CONSTS-IN-+))
+     (34 4 (:REWRITE <-OF-CEILING-ARG1))
+     (32 29 (:REWRITE DEFAULT-CAR))
+     (30 28 (:REWRITE DEFAULT-CDR))
+     (28 28
+         (:LINEAR CEILING-UPPER-BOUND-WHEN-<-CONSTANT-LINEAR))
+     (28 18
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (27 9 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (26 2 (:REWRITE LEN-OF-FIRSTN))
+     (24 7 (:REWRITE ZP-OPEN))
+     (24 4 (:REWRITE <-OF-0-AND-CEILING))
+     (20 20 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (18 18 (:LINEAR <-OF-*-AND-*))
+     (11 11 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (9 9 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (9 9 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (9 9 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (3 3 (:TYPE-PRESCRIPTION POSP))
+     (1 1 (:REWRITE +-OF-MINUS-AND-*-SAME)))
+(TAKE-OF-GROUP (2151 10 (:REWRITE TAKE-DOES-NOTHING))
+               (1225 13
+                     (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+               (1006 30 (:DEFINITION FIRSTN))
+               (786 633 (:REWRITE DEFAULT-*-2))
+               (713 633 (:REWRITE DEFAULT-*-1))
+               (614 454 (:REWRITE DEFAULT-<-2))
+               (514 454 (:REWRITE DEFAULT-<-1))
+               (408 49 (:REWRITE INTEGERP-OF-SMALL))
+               (408 9 (:REWRITE <-OF-CEILING-ARG2))
+               (364 45 (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+               (241 30
+                    (:REWRITE <-OF-+-CANCEL-FIRST-AND-FIRST))
+               (203 5 (:REWRITE LEN-OF-GROUP))
+               (197 145 (:REWRITE DEFAULT-+-2))
+               (195 30 (:REWRITE LEN-OF-CDR))
+               (182 22 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (173 39
+                    (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+               (149 145 (:REWRITE DEFAULT-+-1))
+               (122 10 (:REWRITE NTHCDR-OF-NTHCDR))
+               (107 107 (:REWRITE DEFAULT-UNARY-/))
+               (94 45 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+               (93 45
+                   (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+               (89 13 (:REWRITE <-OF-0-AND-CEILING))
+               (64 35
+                   (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+               (45 45 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+               (45 45 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+               (45 45 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+               (45 45 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+               (45 45 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+               (45 45 (:REWRITE INTEGERP-OF-*))
+               (39 39 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+               (39 39
+                   (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+               (39 39
+                   (:LINEAR CEILING-UPPER-BOUND-WHEN-<-CONSTANT-LINEAR))
+               (39 1 (:REWRITE LEN-OF-CONS))
+               (38 38 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+               (34 3 (:REWRITE <-OF-*-OF-/-ARG2-ARG1))
+               (31 30 (:REWRITE DEFAULT-CDR))
+               (31 30 (:REWRITE DEFAULT-CAR))
+               (31 17 (:REWRITE EQUAL-OF-LEN-AND-0))
+               (26 2 (:REWRITE LEN-OF-FIRSTN))
+               (19 19 (:REWRITE CONSP-WHEN-LEN-GREATER))
+               (14 14 (:REWRITE DEFAULT-UNARY-MINUS))
+               (9 9 (:TYPE-PRESCRIPTION TRUE-LISTP))
+               (9 9
+                  (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+               (8 8 (:TYPE-PRESCRIPTION POSP))
+               (8 8 (:REWRITE FOLD-CONSTS-IN-+))
+               (8 8 (:REWRITE +-COMBINE-CONSTANTS))
+               (6 6 (:REWRITE ZP-OPEN))
+               (3 1
+                  (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+               (1 1 (:REWRITE EQUAL-OF-0-AND-+-OF---ALT))
+               (1 1 (:REWRITE +-OF-MINUS-AND-*-SAME))
+               (1 1 (:DEFINITION TRUE-LISTP)))
+(NTHCDR-OF-GROUP (317 27
+                      (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                 (265 71 (:REWRITE DEFAULT-CDR))
+                 (236 27 (:DEFINITION TRUE-LISTP))
+                 (192 177 (:REWRITE DEFAULT-<-2))
+                 (182 177 (:REWRITE DEFAULT-<-1))
+                 (165 131 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                 (163 162 (:REWRITE DEFAULT-+-2))
+                 (163 162 (:REWRITE DEFAULT-+-1))
+                 (138 6 (:REWRITE CDR-OF-TRUE-LIST-FIX))
+                 (120 120 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                 (74 74 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+                 (62 62 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+                 (35 35 (:REWRITE DEFAULT-*-2))
+                 (35 35 (:REWRITE DEFAULT-*-1))
+                 (30 6 (:REWRITE LEN-OF-CDR))
+                 (28 28
+                     (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+                 (28 28
+                     (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                 (24 24 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+                 (18 18 (:LINEAR <-OF-*-AND-*))
+                 (17 17 (:REWRITE FOLD-CONSTS-IN-+))
+                 (13 13
+                     (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+                 (12 12 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                 (11 11
+                     (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+                 (11 11
+                     (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+                 (9 9 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                 (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
+                 (6 6
+                    (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+                 (1 1 (:REWRITE +-OF-MINUS-AND-*-SAME)))
+(NTH-OF-GROUP (1042 45 (:DEFINITION NTHCDR))
+              (385 32
+                   (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+              (311 75 (:REWRITE DEFAULT-CDR))
+              (292 31 (:DEFINITION TRUE-LISTP))
+              (266 18 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+              (241 92 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+              (185 162 (:REWRITE DEFAULT-<-2))
+              (179 7 (:REWRITE CDR-OF-TRUE-LIST-FIX))
+              (175 162 (:REWRITE DEFAULT-<-1))
+              (161 161 (:TYPE-PRESCRIPTION TRUE-LISTP))
+              (158 157 (:REWRITE DEFAULT-+-2))
+              (158 157 (:REWRITE DEFAULT-+-1))
+              (150 92
+                   (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+              (106 106 (:REWRITE DEFAULT-*-2))
+              (106 106 (:REWRITE DEFAULT-*-1))
+              (104 45 (:REWRITE POSP-OF-ONE-LESS))
+              (92 92 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+              (74 10 (:REWRITE CONSP-OF-NTHCDR))
+              (50 50 (:LINEAR <-OF-*-AND-*))
+              (45 45 (:TYPE-PRESCRIPTION POSP))
+              (42 7 (:REWRITE LEN-OF-CDR))
+              (39 21
+                  (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+              (34 34 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+              (26 26
+                  (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+              (26 26
+                  (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+              (25 25 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+              (24 24 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+              (20 10 (:REWRITE NTH-WHEN-NOT-CONSP-CHEAP))
+              (20 10 (:REWRITE NTH-WHEN-<=-LEN-CHEAP))
+              (19 19 (:REWRITE CONSP-WHEN-LEN-GREATER))
+              (17 10 (:REWRITE NTH-WHEN-ZP-CHEAP))
+              (15 15
+                  (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+              (13 13
+                  (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+              (13 13
+                  (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+              (12 12 (:REWRITE FOLD-CONSTS-IN-+))
+              (12 12 (:REWRITE +-COMBINE-CONSTANTS))
+              (10 3 (:REWRITE <-OF-+-OF---AND-0-ARG2))
+              (7 7 (:REWRITE DEFAULT-UNARY-MINUS))
+              (7 7
+                 (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+              (5 5 (:REWRITE ZP-OPEN))
+              (5 1 (:REWRITE EQUAL-OF-LEN-AND-0))
+              (3 3
+                 (:REWRITE NTH-OF-CONS-CONSTANT-VERSION))
+              (1 1 (:REWRITE DEFAULT-UNARY-/))
+              (1 1 (:REWRITE +-OF-MINUS-AND-*-SAME)))
+(GROUP-WHEN-NOT-CONSP (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                      (5 5 (:TYPE-PRESCRIPTION LEN))
+                      (3 2 (:REWRITE DEFAULT-<-2))
+                      (2 2 (:REWRITE DEFAULT-<-1))
+                      (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                      (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                      (1 1
+                         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
+(GROUP-OF-TRUE-LIST-FIX
+     (151 14
+          (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (144 18 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (122 7 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (118 8 (:REWRITE CONSP-OF-NTHCDR))
+     (110 14 (:DEFINITION TRUE-LISTP))
+     (94 42
+         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (88 61 (:REWRITE DEFAULT-<-2))
+     (78 78 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (70 70 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (67 61 (:REWRITE DEFAULT-<-1))
+     (55 17 (:DEFINITION NFIX))
+     (55 1 (:REWRITE FIRSTN-OF-NTHCDR))
+     (30 15
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (18 18 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (15 8
+         (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (13 13 (:REWRITE DEFAULT-CDR))
+     (13 1 (:REWRITE NTHCDR-OF-NTHCDR))
+     (8 8 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (8 8 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (4 4
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (2 2 (:REWRITE DEFAULT-+-2))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (1 1
+        (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (1 1
+        (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (1 1 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (1 1
+        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT)))
+(CAR-OF-FIRSTN (46 4 (:REWRITE DEFAULT-CAR))
+               (42 4 (:REWRITE CONSP-FROM-LEN-CHEAP))
+               (21 11 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+               (21 7
+                   (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+               (19 1
+                   (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+               (16 1 (:DEFINITION TRUE-LISTP))
+               (14 1 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+               (9 7 (:REWRITE DEFAULT-<-2))
+               (9 7 (:REWRITE DEFAULT-<-1))
+               (5 5 (:TYPE-PRESCRIPTION TRUE-LISTP))
+               (3 1 (:DEFINITION NFIX))
+               (1 1 (:TYPE-PRESCRIPTION NFIX))
+               (1 1 (:REWRITE DEFAULT-CDR))
+               (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+(TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP
+     (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (5 5 (:TYPE-PRESCRIPTION LEN))
+     (3 1
+        (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (2 1 (:REWRITE DEFAULT-<-2))
+     (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (1 1 (:REWRITE DEFAULT-<-1))
+     (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (1 1
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (1 1 (:DEFINITION TRUE-LISTP)))
+(APPEND-OF-NTHCDR-OF-LEN-SAME
+     (58 1
+         (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (50 1 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+     (23 1 (:REWRITE TAKE-DOES-NOTHING))
+     (21 12 (:REWRITE DEFAULT-<-1))
+     (21 3 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (18 12 (:REWRITE DEFAULT-<-2))
+     (16 1 (:DEFINITION TRUE-LISTP))
+     (15 3
+         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+     (15 1 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (14 14 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (9 1 (:DEFINITION POSP))
+     (6 3 (:REWRITE DEFAULT-UNARY-MINUS))
+     (6 3 (:REWRITE DEFAULT-+-2))
+     (6 3 (:REWRITE DEFAULT-+-1))
+     (5 5
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (4 1
+        (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (3 3 (:TYPE-PRESCRIPTION BINARY-APPEND))
+     (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (2 2
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (1 1 (:TYPE-PRESCRIPTION POSP))
+     (1 1 (:REWRITE DEFAULT-CDR)))
+(FIRSTN-WHEN-ZP)
+(GROUP-OF-APPEND-1
+     (48662 112
+            (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (30703 5 (:DEFINITION FIRSTN))
+     (21325 174
+            (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (14860 13 (:REWRITE GROUP-WHEN-NOT-CONSP))
+     (11357 5
+            (:REWRITE <-OF-+-CANCEL-FIRST-AND-FIRST))
+     (10882 4 (:REWRITE CONSP-OF-APPEND))
+     (9202 5574 (:REWRITE DEFAULT-*-2))
+     (8757 3 (:REWRITE CONSP-OF-NTHCDR))
+     (7889 5574 (:REWRITE DEFAULT-*-1))
+     (7367 564
+           (:REWRITE MOD-WHEN-INTEGERP-OF-QUOTIENT))
+     (7201 83 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (7116 166 (:LINEAR MOD-BOUNDED-BY-MODULUS))
+     (6732 564 (:REWRITE MOD-WHEN-MULTIPLE))
+     (6732 564 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (6634 83
+           (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (6468 83 (:LINEAR MOD-TYPE . 4))
+     (6468 83 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (5843 4 (:REWRITE CONSP-OF-FIRSTN))
+     (5801 3687 (:REWRITE DEFAULT-<-2))
+     (5791 3687 (:REWRITE DEFAULT-<-1))
+     (5456 83 (:LINEAR MOD-TYPE . 2))
+     (4730 565
+           (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (4704 564
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (4382 2220 (:TYPE-PRESCRIPTION RATIONALP-MOD))
+     (4252 564 (:REWRITE MOD-WHEN-<))
+     (3677 564
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (3624 565 (:REWRITE INTEGERP-OF-SMALL))
+     (2914 255 (:REWRITE FLOOR-=-X/Y . 2))
+     (2581 2581 (:REWRITE DEFAULT-UNARY-/))
+     (2220 2220 (:TYPE-PRESCRIPTION MOD-TYPE . 4))
+     (2220 2220 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (2220 2220 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (2220 2220 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (2220 2220 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (2173 2173
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (2084 257 (:REWRITE FLOOR-TYPE-3 . 2))
+     (2018 255 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (2018 255
+           (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (1895 71 (:REWRITE CEILING-WHEN-<=))
+     (1856 255 (:REWRITE FLOOR-WHEN-<=))
+     (1856 255 (:REWRITE FLOOR-WHEN-<))
+     (1710 257 (:REWRITE FLOOR-TYPE-3 . 3))
+     (1360 257 (:REWRITE FLOOR-TYPE-4 . 2))
+     (1358 11 (:REWRITE <-OF-CEILING-ARG2))
+     (1340 565
+           (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (1271 255 (:REWRITE FLOOR-MUST-BE-1))
+     (1170 32 (:REWRITE FLOOR-TYPE-2))
+     (1016 564
+           (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (1016 564
+           (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (1016 564
+           (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (762 31
+          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
+     (565 565 (:REWRITE INTEGERP-OF-*))
+     (564 564
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (564 564
+          (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (564 564
+          (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (535 55 (:LINEAR FLOOR-TYPE-2 . 1))
+     (528 32 (:REWRITE FLOOR-BOUND-HACK-4))
+     (492 257 (:REWRITE FLOOR-TYPE-4 . 3))
+     (488 255
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (488 255
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (488 255
+          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (488 255
+          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (450 55 (:LINEAR FLOOR-TYPE-2 . 2))
+     (441 215 (:REWRITE DEFAULT-+-2))
+     (426 31
+          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+     (348 348 (:LINEAR <-OF-*-AND-*))
+     (304 266 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (284 215 (:REWRITE DEFAULT-+-1))
+     (255 255
+          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (255 255 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (255 255
+          (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (193 16 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (118 21
+          (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (112 112
+          (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (106 2 (:REWRITE CEILING-MONOTONE))
+     (83 83 (:LINEAR MOD-TYPE . 3))
+     (83 83 (:LINEAR MOD-TYPE . 1))
+     (71 71
+         (:LINEAR CEILING-UPPER-BOUND-WHEN-<-CONSTANT-LINEAR))
+     (62 51
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (56 31
+         (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
+     (46 46
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (40 5 (:REWRITE LEN-OF-CDR))
+     (37 37 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (36 18 (:REWRITE UNICITY-OF-1))
+     (36 7
+         (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (32 32 (:TYPE-PRESCRIPTION POSP))
+     (22 6 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+     (16 1 (:DEFINITION TRUE-LISTP))
+     (13 13 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (12 12
+         (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN))
+     (10 10 (:REWRITE FIRSTN-WHEN-ZP-CHEAP))
+     (10 5 (:REWRITE DEFAULT-UNARY-MINUS))
+     (7 7
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (7 7 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (7 5
+        (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (5 5 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (5 5 (:REWRITE DEFAULT-CAR))
+     (5 5 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (5 5
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (4 4 (:REWRITE FOLD-CONSTS-IN-+))
+     (4 4 (:REWRITE +-COMBINE-CONSTANTS))
+     (3 1 (:REWRITE <-OF-*-AND-*)))
+(GROUP-OF-APPEND-2
+     (108 71 (:REWRITE DEFAULT-<-2))
+     (91 9
+         (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (84 71 (:REWRITE DEFAULT-<-1))
+     (68 7 (:DEFINITION TRUE-LISTP))
+     (62 62 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (42 9 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (32 14
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (31 20 (:REWRITE DEFAULT-UNARY-MINUS))
+     (31 20 (:REWRITE DEFAULT-+-2))
+     (26 13
+         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+     (20 20 (:REWRITE DEFAULT-+-1))
+     (15 15 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (10 10
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (10 10
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (9 9
+        (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (9 9
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (9 9 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (7 7 (:REWRITE DEFAULT-CDR))
+     (6 6 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (6 6
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (3 3 (:TYPE-PRESCRIPTION POSP))
+     (3 3
+        (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (3 3
+        (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS)))
+(GROUP-OF-APPEND
+     (60101 475
+            (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (38324 314 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+     (37924 314 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (18417 1518 (:REWRITE FLOOR-=-X/Y . 2))
+     (16561 314
+            (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+     (15980 8309 (:REWRITE DEFAULT-*-2))
+     (13463 8968 (:REWRITE DEFAULT-<-1))
+     (13166 8309 (:REWRITE DEFAULT-*-1))
+     (13156 8968 (:REWRITE DEFAULT-<-2))
+     (12144 1518 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (12144 1518
+            (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (10078 1526 (:REWRITE FLOOR-TYPE-3 . 2))
+     (9920 1240
+           (:REWRITE MULTIPLE-WHEN-MOD-0-CHEAP))
+     (9035 1518 (:REWRITE FLOOR-WHEN-<=))
+     (9007 1518 (:REWRITE FLOOR-WHEN-<))
+     (8825 1526 (:REWRITE FLOOR-TYPE-3 . 3))
+     (8087 1526 (:REWRITE FLOOR-TYPE-4 . 2))
+     (7881 7881
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (7881 7881
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (6288 156 (:REWRITE FLOOR-TYPE-2))
+     (5243 1518 (:REWRITE FLOOR-MUST-BE-1))
+     (4954 4954 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (4954 4954 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (4954 4954 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (4464 1240 (:REWRITE INTEGERP-OF-SMALL))
+     (3871 251 (:REWRITE MOD-WHEN-MULTIPLE))
+     (3871 251 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (3526 3526 (:REWRITE DEFAULT-UNARY-/))
+     (3487 950 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (3239 517 (:REWRITE DEFAULT-+-2))
+     (3049 1526 (:REWRITE FLOOR-TYPE-4 . 3))
+     (3036 1518
+           (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (3036 1518
+           (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (3036 1518
+           (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (3036 1518
+           (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (2732 158 (:REWRITE FLOOR-BOUND-HACK-4))
+     (2687 324 (:LINEAR FLOOR-TYPE-2 . 2))
+     (2480 1240
+           (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (2180 252
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (1945 340 (:REWRITE DEFAULT-UNARY-MINUS))
+     (1939 251 (:REWRITE MOD-WHEN-<))
+     (1910 252
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (1518 1518
+           (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (1518 1518 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (1518 1518
+           (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (1240 1240 (:REWRITE INTEGERP-OF-*))
+     (950 950
+          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (950 950 (:LINEAR <-OF-*-AND-*))
+     (857 517 (:REWRITE DEFAULT-+-1))
+     (720 720
+          (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (502 251
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (502 251
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (502 251
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (475 475
+          (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (475 475
+          (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (475 475
+          (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (469 67 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (252 252
+          (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (251 251
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (251 251
+          (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (238 55
+          (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (224 14 (:REWRITE CONSP-OF-APPEND))
+     (223 223 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+     (171 15 (:DEFINITION TRUE-LISTP))
+     (168 4 (:REWRITE TRUE-LISTP-OF-NTHCDR-3))
+     (67 67
+         (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN))
+     (64 64 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (54 54 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (45 45
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (45 45
+         (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (38 38
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
+     (38 38
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (38 38 (:REWRITE FOLD-CONSTS-IN-+))
+     (38 38 (:REWRITE +-COMBINE-CONSTANTS))
+     (22 22
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (22 22
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (21 21 (:TYPE-PRESCRIPTION POSP))
+     (18 18
+         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (17 16 (:REWRITE DEFAULT-CDR))
+     (7 7
+        (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (7 7
+        (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (4 1 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+     (2 1 (:REWRITE DEFAULT-CAR)))
+(GROUP-OF-APPEND-NEW
+     (5771 10 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (5666 32
+           (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (4230 36 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (4044 36 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (3274 30
+           (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (3228 7 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (3130 30 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (3096 24 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+     (3016 24 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (2930 4 (:DEFINITION FIRSTN))
+     (2552 2 (:REWRITE CONSP-OF-TAKE))
+     (1984 104 (:REWRITE MOD-WHEN-MULTIPLE))
+     (1984 104 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (1734 8
+           (:LINEAR MY-FLOOR-LOWER-BOUND-ALT-LINEAR))
+     (1706 452 (:REWRITE INTEGERP-OF-SMALL))
+     (1690 1021 (:REWRITE DEFAULT-*-2))
+     (1680 1052 (:REWRITE DEFAULT-<-1))
+     (1622 8
+           (:LINEAR *-OF-FLOOR-UPPER-BOUND-LINEAR))
+     (1498 1021 (:REWRITE DEFAULT-*-1))
+     (1476 1052 (:REWRITE DEFAULT-<-2))
+     (1404 8
+           (:REWRITE <-OF-+-CANCEL-FIRST-AND-FIRST))
+     (1360 80 (:REWRITE FLOOR-=-X/Y . 2))
+     (1029 110
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (904 452
+          (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (900 110
+          (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (870 104 (:REWRITE MOD-WHEN-<))
+     (720 3 (:REWRITE CONSP-OF-NTHCDR))
+     (694 83 (:REWRITE FLOOR-TYPE-3 . 2))
+     (604 80 (:REWRITE FLOOR-WHEN-<=))
+     (604 80 (:REWRITE FLOOR-WHEN-<))
+     (593 83 (:REWRITE FLOOR-TYPE-3 . 3))
+     (497 83 (:REWRITE FLOOR-TYPE-4 . 2))
+     (477 477 (:REWRITE DEFAULT-UNARY-/))
+     (470 12 (:REWRITE FLOOR-TYPE-2))
+     (452 452 (:REWRITE INTEGERP-OF-*))
+     (346 80 (:REWRITE FLOOR-MUST-BE-1))
+     (322 322
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (322 322
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (240 80 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (240 80
+          (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (232 24 (:LINEAR FLOOR-TYPE-2 . 1))
+     (208 104
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (208 104
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (208 104
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (200 24 (:LINEAR FLOOR-TYPE-2 . 2))
+     (200 12 (:REWRITE FLOOR-BOUND-HACK-4))
+     (166 83 (:REWRITE FLOOR-TYPE-4 . 3))
+     (160 80
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (160 80
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (160 80
+          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (160 80
+          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (118 58 (:REWRITE DEFAULT-+-2))
+     (110 110
+          (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (104 104
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (104 104
+          (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (101 11 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (92 12 (:DEFINITION NFIX))
+     (84 4 (:REWRITE ZP-OPEN))
+     (80 80
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (80 80 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (80 80
+         (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (72 72 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (72 72
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (72 72 (:LINEAR <-OF-*-AND-*))
+     (68 68 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (58 58 (:REWRITE DEFAULT-+-1))
+     (56 2
+         (:REWRITE <-OF-TIMES-OF-FLOOR-AND-SAME))
+     (52 8 (:REWRITE LEN-OF-CDR))
+     (48 24
+         (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+     (36 36 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (36 36 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (36 36 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (36 8
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (32 32
+         (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (30 2 (:DEFINITION TRUE-LISTP))
+     (29 8
+         (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (28 2 (:REWRITE <-OF-*-AND-0))
+     (18 18 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (16 4 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+     (12 12
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (12 4 (:REWRITE DEFAULT-UNARY-MINUS))
+     (12 4 (:REWRITE <-OF-+-OF---AND-0-ARG2))
+     (10 6
+         (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (9 9 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (8 8 (:REWRITE FIRSTN-WHEN-ZP-CHEAP))
+     (8 8 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (8 8 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (8 8
+        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (8 8
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (8 4 (:REWRITE <-OF-MOD-SAME2))
+     (8 2 (:REWRITE <-OF-FLOOR-AND-0-2))
+     (7 7
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (7 7 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (6 6
+        (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (5 5 (:TYPE-PRESCRIPTION POSP))
+     (4 4 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (4 4 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (2 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+     (2 2
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN))
+     (2 2 (:REWRITE +-COMBINE-CONSTANTS)))
+(GROUP-OF-APPEND-NEW2
+     (6136 22
+           (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (4714 10 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (3902 2 (:REWRITE TAKE-DOES-NOTHING))
+     (3344 30
+           (:LINEAR MOD-BOUND-LINEAR-ARG2-STRONG))
+     (3228 7 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (3196 30 (:LINEAR MOD-BOUND-LINEAR-ARG2))
+     (2943 24 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (2930 4 (:DEFINITION FIRSTN))
+     (2810 24 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (2322 8 (:REWRITE GROUP-WHEN-NOT-CONSP))
+     (2168 16 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+     (2124 16 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (2047 107 (:REWRITE MOD-WHEN-MULTIPLE))
+     (2047 107 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (1564 1 (:REWRITE CONSP-OF-TAKE))
+     (1472 406 (:REWRITE INTEGERP-OF-SMALL))
+     (1443 889 (:REWRITE DEFAULT-*-2))
+     (1408 5
+           (:LINEAR MY-FLOOR-LOWER-BOUND-ALT-LINEAR))
+     (1404 8
+           (:REWRITE <-OF-+-CANCEL-FIRST-AND-FIRST))
+     (1370 848 (:REWRITE DEFAULT-<-1))
+     (1338 5
+           (:LINEAR *-OF-FLOOR-UPPER-BOUND-LINEAR))
+     (1311 889 (:REWRITE DEFAULT-*-1))
+     (1174 848 (:REWRITE DEFAULT-<-2))
+     (1030 110
+           (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 2))
+     (970 54 (:REWRITE FLOOR-=-X/Y . 2))
+     (901 110
+          (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (898 107 (:REWRITE MOD-WHEN-<))
+     (812 406
+          (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (720 3 (:REWRITE CONSP-OF-NTHCDR))
+     (460 55 (:REWRITE FLOOR-TYPE-3 . 2))
+     (422 422 (:REWRITE DEFAULT-UNARY-/))
+     (406 406 (:REWRITE INTEGERP-OF-*))
+     (404 54 (:REWRITE FLOOR-WHEN-<=))
+     (404 54 (:REWRITE FLOOR-WHEN-<))
+     (398 55 (:REWRITE FLOOR-TYPE-3 . 3))
+     (354 55 (:REWRITE FLOOR-TYPE-4 . 2))
+     (325 8 (:REWRITE FLOOR-TYPE-2))
+     (238 54 (:REWRITE FLOOR-WHEN-MOD-0-CHEAP))
+     (238 54
+          (:REWRITE FLOOR-WHEN-DIVISIBLE-CHEAP))
+     (230 54 (:REWRITE FLOOR-MUST-BE-1))
+     (215 215
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (215 215
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (214 107
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (214 107
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (214 107
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (156 16 (:LINEAR FLOOR-TYPE-2 . 1))
+     (136 16 (:LINEAR FLOOR-TYPE-2 . 2))
+     (136 8 (:REWRITE FLOOR-BOUND-HACK-4))
+     (110 110
+          (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (110 55 (:REWRITE FLOOR-TYPE-4 . 3))
+     (108 54
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (108 54
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (108 54
+          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (108 54
+          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (107 107
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (107 107
+          (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (97 55 (:REWRITE DEFAULT-+-2))
+     (71 11 (:DEFINITION NFIX))
+     (56 56 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (56 3 (:REWRITE ZP-OPEN))
+     (55 55 (:REWRITE DEFAULT-+-1))
+     (54 54
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (54 54 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (54 54
+         (:REWRITE FLOOR-DIVIDE-BY-COMMON-CONSTANT-FACTOR))
+     (52 8 (:REWRITE LEN-OF-CDR))
+     (48 48 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (48 48
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (48 48 (:LINEAR <-OF-*-AND-*))
+     (47 5 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (36 8
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (32 16
+         (:LINEAR FLOOR-UPPER-BOUND-STRONG-LINEAR))
+     (32 1
+         (:REWRITE <-OF-TIMES-OF-FLOOR-AND-SAME))
+     (24 24 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (24 24 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (24 24 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (23 5
+         (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (22 22
+         (:REWRITE SAME-REMAINDER-WHEN-CLOSE-LEMMA))
+     (16 4 (:REWRITE <-OF-+-OF---AND-0-ARG1))
+     (14 1 (:REWRITE <-OF-*-AND-0))
+     (12 4 (:REWRITE DEFAULT-UNARY-MINUS))
+     (12 4 (:REWRITE <-OF-+-OF---AND-0-ARG2))
+     (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (8 8
+        (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (8 8 (:REWRITE FIRSTN-WHEN-ZP-CHEAP))
+     (8 8 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (8 8 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (8 8
+        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (8 8
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (8 4 (:REWRITE <-OF-MOD-SAME2))
+     (7 7
+        (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (7 7 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (5 5 (:TYPE-PRESCRIPTION POSP))
+     (4 4
+        (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (4 4 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (4 4 (:REWRITE DEFAULT-CDR))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (4 2
+        (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (4 1 (:REWRITE <-OF-FLOOR-AND-0-2))
+     (2 2 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (2 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2 (:REWRITE +-COMBINE-CONSTANTS))
+     (1 1 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+     (1 1
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN)))
+(GROUP-OF-MYIF-ARG2)
+(IFF-OF-GROUP (76 8 (:REWRITE CONSP-FROM-LEN-CHEAP))
+              (59 8 (:REWRITE GROUP-WHEN-NOT-CONSP))
+              (49 36 (:REWRITE DEFAULT-<-2))
+              (48 6
+                  (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+              (40 40 (:TYPE-PRESCRIPTION TRUE-LISTP))
+              (40 40 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+              (38 36 (:REWRITE DEFAULT-<-1))
+              (30 6 (:DEFINITION TRUE-LISTP))
+              (20 10
+                  (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+              (7 7 (:REWRITE CONSP-WHEN-LEN-GREATER))
+              (6 6
+                 (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+              (6 6 (:REWRITE DEFAULT-CDR))
+              (3 3 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+              (3 3
+                 (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+              (3 3 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN)))
+(EQUAL-OF-NIL-AND-GROUP (18 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                        (9 1 (:REWRITE GROUP-WHEN-NOT-CONSP))
+                        (4 4 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                        (4 3 (:REWRITE DEFAULT-<-2))
+                        (3 3 (:REWRITE DEFAULT-<-1))
+                        (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+(ITEMS-HAVE-LEN-OF-GROUP
+     (524 30 (:REWRITE MOD-WHEN-MULTIPLE))
+     (524 30 (:REWRITE MOD-IS-0-WHEN-MULTIPLE))
+     (490 375 (:REWRITE DEFAULT-<-1))
+     (471 375 (:REWRITE DEFAULT-<-2))
+     (431 131 (:REWRITE INTEGERP-OF-SMALL))
+     (428 30 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+     (366 59
+          (:REWRITE MOD-X-Y-=-X-FOR-RATIONALS . 3))
+     (354 266 (:REWRITE DEFAULT-*-2))
+     (354 266 (:REWRITE DEFAULT-*-1))
+     (292 292 (:TYPE-PRESCRIPTION MOD-TYPE . 3))
+     (292 292 (:TYPE-PRESCRIPTION MOD-TYPE . 2))
+     (292 292 (:TYPE-PRESCRIPTION MOD-TYPE . 1))
+     (260 28
+          (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (220 220 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (208 131
+          (:REWRITE INTEGERP-OF-SMALL-HELPER-2))
+     (195 9 (:LINEAR MOD-TYPE . 2))
+     (176 28 (:DEFINITION TRUE-LISTP))
+     (170 30 (:REWRITE MOD-WHEN-<))
+     (160 80
+          (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (143 143 (:REWRITE DEFAULT-UNARY-/))
+     (131 131 (:REWRITE INTEGERP-OF-*))
+     (68 68
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
+     (68 68
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (67 67
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (67 67
+         (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (65 39
+         (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+     (56 56
+         (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
+     (53 47 (:REWRITE DEFAULT-+-2))
+     (52 30
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (52 30
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (52 30
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (51 47 (:REWRITE DEFAULT-+-1))
+     (46 46
+         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (46 28 (:REWRITE DEFAULT-CDR))
+     (39 39 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+     (39 39 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+     (30 30
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (30 30
+         (:REWRITE DIVISIBLE-WHEN-DIVISIBLE-BY-MULTIPLE))
+     (28 28
+         (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+     (23 23 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (23 23 (:TYPE-PRESCRIPTION TRUE-LIST-FIX))
+     (22 2 (:REWRITE DISTRIBUTIVITY))
+     (18 18 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (16 16
+         (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
+     (13 13
+         (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (13 13
+         (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (13 13
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (13 13
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (12 2
+         (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
+     (12 2 (:REWRITE *-OF---ARG2))
+     (9 9 (:LINEAR MOD-TYPE . 3))
+     (9 9 (:LINEAR MOD-TYPE . 1))
+     (6 6 (:REWRITE FOLD-CONSTS-IN-+))
+     (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
+     (6 6 (:REWRITE +-COMBINE-CONSTANTS)))
+(TRUE-LISTP-OF-GROUP)
+(ALL-TRUE-LISTP-OF-GROUP (122 12 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                         (111 7 (:REWRITE FIRSTN-WHEN-<=-OF-LEN))
+                         (86 39
+                             (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+                         (84 69 (:REWRITE DEFAULT-<-2))
+                         (83 81 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                         (72 69 (:REWRITE DEFAULT-<-1))
+                         (63 9 (:DEFINITION TRUE-LISTP))
+                         (56 7
+                             (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                         (51 51 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                         (22 22
+                             (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+                         (22 22
+                             (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                         (18 10
+                             (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                         (11 11 (:REWRITE DEFAULT-CDR))
+                         (10 10 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                         (10 10 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                         (8 8 (:TYPE-PRESCRIPTION POSP))
+                         (8 8 (:REWRITE DEFAULT-+-2))
+                         (8 8 (:REWRITE DEFAULT-+-1))
+                         (8 8 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                         (8 2 (:REWRITE ALL-TRUE-LISTP-OF-CDR))
+                         (7 7
+                            (:REWRITE TRUE-LIST-FIX-WHEN-NOT-CONSP-CHEAP))
+                         (4 4 (:REWRITE FOLD-CONSTS-IN-+))
+                         (4 4
+                            (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+                         (4 4
+                            (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+                         (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+                         (4 4
+                            (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+                         (4 4 (:REWRITE +-COMBINE-CONSTANTS))
+                         (4 2 (:REWRITE LEN-OF-GROUP))
+                         (2 2
+                            (:REWRITE LEN-OF-CAR-WHEN-ITEMS-HAVE-LEN))
+                         (2 2 (:REWRITE DEFAULT-CAR)))

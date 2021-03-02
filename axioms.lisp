@@ -7141,6 +7141,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro fargs (x) (list 'cdr x))
 
+(defun fargn1 (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (cond ((mbe :logic (or (zp n) (eql n 1))
+              :exec (eql n 1))
+         (list 'cdr x))
+        (t (list 'cdr (fargn1 x (- n 1))))))
+
+(defmacro fargn (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (list 'car (fargn1 x n)))
+
 (mutual-recursion
 
 (defun all-vars1 (term ans)
@@ -9862,6 +9875,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (*1*-symbol x))
 
 (defun set-attachment-symbol-form (fn val)
+
+; Warning: It may be important in add-trip that set-attachment-symbol-form
+; generates a defparameter whose form is quoted.  See the comment about this in
+; the attachment case in add-trip.
+
   `(defparameter ,(attachment-symbol fn) ',val))
 
 (defmacro defattach (&rest args)
@@ -13891,7 +13909,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     state-global-let* ; raw Lisp version for efficiency
     with-reckless-readtable
     with-lock
-    catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
     add-ld-keyword-alias! set-ld-keyword-aliases!
@@ -28015,61 +28032,106 @@ Lisp definition."
 #-acl2-loop-only
 (defg *inside-absstobj-update*
 
-; Warning: Do not use #(0) here, because this variable can be destructively
-; modified.  We actually used #(0) here through Version_8.3 and did not see a
-; problem with that, but we see the comment in *fncall-cache* for why we avoid
-; using a constant here.
+; Essay on Illegal-states
 
-  (vector 0))
+; An illegal state is one in which ld-pre-eval-filter is :illegal-state; see
+; illegal-state-p.  Such a state is entered and exited as explained below.  For
+; additional background information see :DOC illegal-state.  Below we start
+; with a few orienting remarks, and then we summarize how we manage illegal
+; states.
 
-(defun set-absstobj-debug-fn (val always)
-  (declare (xargs :guard t))
-  #+acl2-loop-only
-  (declare (ignore always))
+; An abstract stobj export may update its stobj non-atomically, in which case
+; an incomplete update may result in a state where that abstract stobj does not
+; satisfy its recognizer.  (See the discussion of :protect in :DOC
+; defabsstobj.)  The resulting illegal state is marked by ACL2 as an
+; illegal-state, from which continuing is at one's own risk.  Moreover, ACL2
+; requires the user to submit the form, (continue-from-illegal-state), before
+; LD will accept further input.
+
+; If an execution is incomplete, there was presumably an error or a call of
+; throw that took us out of the execution.  Because we extend the content of
+; *inside-absstobj-update* on entry to a non-interruptable abstract stobj
+; update (by adding 1 or pushing onto a stack) and revert only on exit, a
+; record of that interruption will persist until we clear it.  A key idea is
+; that we only transition to an illegal state near the end of book
+; certification, to prevent a bogus certificate from being written, and when
+; returning control to LD, which allows error messages (for example, from guard
+; violations and step-limit violations) to be printed first.
+
+; All that said, here is a more complete and organized summary of how illegal
+; states are managed.
+
+; (a) When entering a non-interruptable abstract stobj update, the content of
+;     *inside-absstobj-update* is updated correspondingly: either incremented
+;     if a natural number, or else pushed onto the stack in the case that
+;     set-absstobj-debug has activated debugging.  The value is restored on
+;     exit.
+
+; (b) Whenever ACL2 code exits a non-interruptable abstract stobj update before
+;     completion, the content of *inside-absstobj-update* will reflect the
+;     in-progress status until cleared; chk-absstobj-invariants will notice
+;     that status when control is returned to LD.  At that time we can abort to
+;     the top level, using (abort!), just to keep things sane.  Note that this
+;     evaluation of (abort!) will take us out of any wormhole and avoid
+;     re-entry to the proof-builder (see the calls of illegal-state-p in
+;     pc-main-loop).
+
+; (c) When ld-read-eval-print runs chk-absstobj-invariants to check whether
+;     *inside-absstobj-update* shows that a non-interruptable abstract stobj
+;     update didn't complete.  If we are not already at the top level, we will
+;     abort to the top level (with (abort!), as mentioned above).  Otherwise
+;     ld-pre-eval-filter will be set to :illegal-state and a message will print
+;     a failure, with *inside-absstobj-update* cleared out.  Note that
+;     ld-pre-eval-filter remains at :illegal-state when popping to lower ld
+;     levels; see f-put-ld-specials.
+
+; (d) With ld-pre-eval-filter = :illegal-state, only one input will be
+;     accepted: (continue-from-illegal-state).  When that happens,
+;     ld-pre-eval-filter will be set to :all (even if a query or REBUILD was
+;     aborted).
+
+  (vector
+
+; Warning: Do not use #(0) here in place of (vector 0), because variable
+; *inside-absstobj-update* can be destructively modified.  We actually used
+; #(0) here through Version_8.3 and did not see a problem with that, but see
+; the comment in *fncall-cache* for why we avoid using a constant here.
+
+   0))
+
+(defun set-absstobj-debug-fn (val)
+
+; See :DOC set-absstobj-debug and see *inside-absstobj-update*.
+
+  (declare (xargs :guard t :verify-guards t :mode :logic))
   #-acl2-loop-only
   (let ((temp (svref *inside-absstobj-update* 0)))
-    (cond ((or (and (eq val :ignore)
-                    (or (ttag (w *the-live-state*))
-                        (er hard 'set-absstobj-debug
-                            "It is illegal to supply the value :ignore to ~
-                             set-absstobj-debug unless there is an active ~
-                             trust tag.")))
-               (null temp)
-               (eql temp 0)
-               (and always
-                    (or (ttag (w *the-live-state*))
-                        (er hard 'set-absstobj-debug
-                            "It is illegal to supply a non-nil value for ~
-                             keyword :always, for set-absstobj-debug, unless ~
-                             there is an active trust tag."))))
-           (setf (aref *inside-absstobj-update* 0)
-                 (cond ((eq val :reset)
-                        (if (natp temp) 0 nil))
-                       ((eq val :ignore)
-                        :ignore)
-                       (val nil)
-                       (t 0))))
-          (t (er hard 'set-absstobj-debug
-                 "It is illegal to call set-absstobj-debug with value other ~
-                  than :ignore in a context where an abstract stobj ~
-                  invariance violation has already occurred but not yet been ~
-                  processed.  You can overcome this restriction either by ~
-                  waiting for the top-level prompt, or by evaluating the ~
-                  following form: ~x0."
-                 `(set-abbstobj-debug ,(if (member-eq val '(nil :reset))
-                                           nil
-                                         t)
-                                      :always t)))))
+
+; The following assertion should be true because otherwise, ACL2 is accepting
+; input in an illegal-state!
+
+    (assert (or (null temp) (eql temp 0)))
+    (cond ((eq val :IGNORE)
+           (cond ((ttag (w *the-live-state*))
+                  (setf (aref *inside-absstobj-update* 0) :IGNORE))
+                 (t
+                  (er hard 'set-absstobj-debug
+                      "It is illegal to supply the value :IGNORE to ~x0 ~
+                       unless there is an active trust tag."
+                      'set-absstobj-debug))))
+          (t (setf (aref *inside-absstobj-update* 0)
+                   (cond (val nil)
+                         (t 0))))))
   val)
 
-(defmacro set-absstobj-debug (val &key (event-p 't) always on-skip-proofs)
+(defmacro set-absstobj-debug (val)
 
 ; Here is a book that was certifiable in ACL2 Version_5.0, obtained from Sol
 ; Swords (shown here with only very trivial changes).  It explains why we need
 ; the :protect keyword for defabsstobj, as explained in :doc note-6-0.
-; Community book books/misc/defabsstobj-example-4.lisp is based on this
-; example, but focuses on invariance violation and avoids the work Sol did to
-; get a proof of nil.
+; Community book file books/demos/defabsstobj-example-4-input.lsp is based on
+; this example, but focuses on invariance violation and avoids the work Sol did
+; to get a proof of nil.
 
 ;   (in-package "ACL2")
 ;
@@ -28185,16 +28247,9 @@ Lisp definition."
 ;                             (my-clause-proc clause nil const-stobj)))
 ;      :rule-classes nil)
 
-  (declare (xargs :guard
-
-; We provide this guard as a courtesy: since on-skip-proofs is not evaluated, a
-; non-nil form that evaluates to nil (such as 'nil) would otherwise be passed
-; without evaluation and hence treated as being true.
-
-                  (booleanp on-skip-proofs)))
-  (let ((form `(set-absstobj-debug-fn ,val ,always)))
-    (cond (event-p `(value-triple ,form :on-skip-proofs ,on-skip-proofs))
-          (t form))))
+  (declare (xargs :guard t))
+  `(value-triple (set-absstobj-debug-fn ,val)
+                 :on-skip-proofs t))
 
 ; The following functions are defined in logic mode because they will be
 ; used in tau bounder correctness theorems.  We basically define two functions,

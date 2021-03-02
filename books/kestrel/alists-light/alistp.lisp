@@ -22,6 +22,11 @@
               (alistp x)))
   :hints (("Goal" :in-theory (enable alistp))))
 
+(defthm alistp-of-acons
+  (equal (alistp (acons key datum alist))
+         (alistp alist))
+  :hints (("Goal" :in-theory (enable alistp acons))))
+
 (defthm alistp-of-append
   ;; [Jared] changed for compatibility with std/alists/alistp.lisp
   (equal (alistp (append x y))
@@ -63,3 +68,8 @@
            (equal (consp (car x))
                   (consp x)))
   :hints (("Goal" :in-theory (enable alistp))))
+
+(defthm alistp-of-remove1-equal
+  (implies (alistp alist)
+           (alistp (remove1-equal pair alist)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))

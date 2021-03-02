@@ -1030,13 +1030,6 @@ literal:</p>
          (Equal (bit-list-fix (true-list-fix x))
                 (bit-list-fix x))
          :hints(("Goal" :in-theory (enable bit-list-fix)))))
-              
-
-(local (defthm nth-of-bit-list-fix
-         (implies (< (nfix n) (len x))
-                  (equal (nth n (bit-list-fix x))
-                         (bfix (nth n x))))
-         :hints(("Goal" :in-theory (enable bit-list-fix nth)))))
 
 (define aignet-val-okp ((n natp) vals aignet)
   :guard (and (<= (num-fanins aignet) (bits-length vals))

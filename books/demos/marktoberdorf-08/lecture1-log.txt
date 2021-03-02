@@ -4825,8 +4825,8 @@ Subgoal *1.12.1.1/6
          (EQUAL E X1)).
 
 This simplifies, using the :definitions HOW-MANY (if-intro), MEMBER!
-(if-intro), TRUE-LISTP and TWINS and the :type-prescription rule 
-MEMBER-EQUAL, to the following four conjectures.
+(if-intro), TRUE-LISTP and TWINS and the :type-prescription rule MEMBER-EQUAL,
+to the following four conjectures.
 
 Subgoal *1.12.1.1/6.4
 (IMPLIES (AND (CONSP R*)

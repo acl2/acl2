@@ -90,12 +90,13 @@
   :hints(("Goal" :use ((:instance set-equiv-breakdown-cons)))))
 
 
-(defthm remove-when-not-member
-  (implies (not (member-equal k x))
-           (equal (remove k x)
-                  (append x nil)))
-  :hints(("Goal" :induct t
-          :in-theory (enable remove))))
+(local
+ (defthm remove-when-not-member
+   (implies (not (member-equal k x))
+            (equal (remove k x)
+                   (append x nil)))
+   :hints(("Goal" :induct t
+           :in-theory (enable remove)))))
 
 
 

@@ -36,8 +36,8 @@
 
 (defthm rewrite-assoc-eq-value-4x
   (equal (assoc-eq-value a
-                         (cons (cons b c) 
-                               (cons (cons d e) 
+                         (cons (cons b c)
+                               (cons (cons d e)
                                      (cons (cons g h)
                                            (cons (cons i j)
                                                  k)))))

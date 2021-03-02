@@ -32,7 +32,7 @@
          (op1    (b-not op1-))
          (op2    (b-not op2-))
          (op3    (b-not op3-)))
-      
+
      (b-and (b-nand3 (b-nand4 op3- (b-nand op0- op1-) op2- result)
                      (b-nand3 op3- op2 result-)
                      (b-nand4 op3 op2- (b-nand op0 op1) a0))
@@ -89,7 +89,7 @@
                   (b-not (b-nand3 (b-nand op2 an-)
                                   (b-nand3 op0 op1- an)
                                   (b-nand op2- an))))))))
-  
+
 (defthmd overflow-help$value-zero
   (implies (and (overflow-help& netlist)
                 (booleanp rn))
@@ -213,7 +213,7 @@
            (equal (shift-or-buf c a an zero op0 op1 op2 op3)
                   a))
   :hints (("Goal" :in-theory (enable shift-or-buf-cntl))))
- 
+
 (defthm shift-or-buf-is-asr
   (implies (and (bvp a)
                 (equal an (nth (1- (len a)) a))
@@ -285,7 +285,7 @@
                               (tv-guard tree))))
   (and (equal (assoc (si 'tv-shift-or-buf (tree-number tree))
                      netlist)
-              (tv-shift-or-buf* tree))       
+              (tv-shift-or-buf* tree))
        (shift-or-buf-cntl& (delete-to-eq
                             (si 'tv-shift-or-buf (tree-number tree))
                             netlist))

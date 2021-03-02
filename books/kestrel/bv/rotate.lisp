@@ -13,6 +13,7 @@
 
 (include-book "leftrotate")
 (include-book "rightrotate")
+(include-book "rightrotate32")
 (include-book "bvif")
 (include-book "bvminus") ;todo
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
@@ -253,11 +254,6 @@
            (equal (bvchop (lg width) width)
                   0))
   :hints (("Goal" :in-theory (enable power-of-2p lg))))
-
-(defthm power-of-2p-forward-to-integerp
-  (implies (power-of-2p x)
-           (integerp x))
-  :rule-classes ((:forward-chaining)))
 
 (defthm rightrotate-becomes-leftrotate
   (implies (and (power-of-2p width)

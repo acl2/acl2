@@ -232,7 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-hints (&rest additional)
+(defmacro+ xdoc::evmac-input-hints (&key additional)
   :short "Construct a description of the @(':hints') input
           for the user documentation of an event macro."
   (let ((appconds-ref (concatenate 'string
@@ -273,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-print (macro &rest additional)
+(defmacro+ xdoc::evmac-input-print (macro &key additional)
   :short "Construct a description of the @(':print') input
           for the user documentation of an event macro."
   :long
@@ -283,71 +283,45 @@
     the @('macro-ref') variable is not a link.")
   (declare (xargs :guard (symbolp macro)))
   (b* ((macro-name (string-downcase (symbol-name macro)))
-       (macro-ref (concatenate 'string "@('" macro-name "')"))
-       (generated-ref (concatenate 'string
-                                   "`"
-                                   xdoc::*evmac-section-generated-title*
-                                   "' section"))
-       (redundancy-ref (concatenate 'string
-                                    "`"
-                                    xdoc::*evmac-section-redundancy-title*
-                                    "' section")))
+       (macro-ref (concatenate 'string "@('" macro-name "')")))
     `(xdoc::desc
       "@(':print') &mdash; default @(':result')"
       (xdoc::p
-       "Specifies what is printed on the screen:")
+       "Specifies what is printed on the screen
+        (see @(see acl2::event-macro-screen-printing)).")
+      (xdoc::p
+       "It must be one of the following:")
       (xdoc::ul
        (xdoc::li
         "@('nil'), to print nothing (not even error output).")
        (xdoc::li
         "@(':error'), to print only error output (if any).")
        (xdoc::li
-        (concatenate
-         'string
-         "@(':result'), to print,
-            besides any error output,
-            also the generated events described
-            in the "
-         ,generated-ref
-         ", i.e. the resulting events of "
-         ,macro-ref
-         ". This is the default value of the @(':print') input."))
+        "@(':result'), to print, besides any error output,
+         also the "
+        (xdoc::seetopic "acl2::event-macro-results" "results")
+        " of " ,macro-ref ".
+         This is the default value of the @(':print') input.")
        (xdoc::li
-        (concatenate
-         'string
-         "@(':info'), to print,
-            besides any error output and the resulting events,
-            also some additional information about the operations performed by "
-         ,macro-ref
-         "."))
+        "@(':info'), to print,
+         besides any error output and the results,
+         also some additional information about
+         the internal operations of " ,macro-ref ".")
        (xdoc::li
         "@(':all'), to print,
           besides any error output,
-          the resulting events,
+          the results,
           and the additional information,
-          also ACL2's output in response to all the submitted events
-          (the ones that form the result as well as some ancillary ones)."))
+          also ACL2's output in response to all the submitted events."))
       (xdoc::p
-       "These are ordered printing levels")
-      (xdoc::codeblock
-       "nil < :error < :result < :info < :all")
-      (xdoc::p
-       "where the amount of printed material increases monotonically.")
-      (xdoc::p
-       (concatenate
-        'string
-        "If the call of "
-        ,macro-ref
-        " is redundant
-           (as defined in the "
-        ,redundancy-ref
-        "), a message to that effect is printed on the screen,
-           unless @(':print') is @('nil')."))
+       "If the call of " ,macro-ref " is redundant,
+        an indication to that effect is printed on the screen,
+        unless @(':print') is @('nil').")
       ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-show-only (macro &rest additional)
+(defmacro+ xdoc::evmac-input-show-only (macro &key additional)
   :short "Construct a description of the @(':show-only') input
           for the user documentation of an event macro."
   :long
@@ -760,7 +734,7 @@
               " in the " ,design-notes ".")))
     ,@(and presence
            `((xdoc::p
-              "This applicability condition if present if and only if "
+              "This applicability condition is present if and only if "
               ,presence ".")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1012,13 +986,10 @@
                            "."))
        (long `(xdoc::topstring
                (xdoc::p
-                "This involves validating the inputs.
-                   When validation fails, "
-                (xdoc::seetopic "acl2::er" "soft errors")
-                " occur.
-                   Thus, generally the input processing functions return "
-                (xdoc::seetopic "acl2::error-triple" "error triples")
-                ".")
+                "See "
+                (xdoc::seetopic "acl2::event-macro-input-processing"
+                                "input processing")
+                " for general background.")
                ,@additional)))
     `(defxdoc+ ,this-topic
        :parents (,parent-topic)

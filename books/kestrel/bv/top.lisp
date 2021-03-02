@@ -14,6 +14,10 @@
 ;; Syntaxp support:
 (include-book "bv-syntax")
 
+(include-book "arith") ;todo deprecate
+(include-book "arith2") ;todo deprecate
+(include-book "floor-mod-expt") ;todo deprecate
+
 ;; Recognizers for BVs:
 (include-book "unsigned-byte-p")
 (include-book "unsigned-byte-p2")
@@ -40,6 +44,7 @@
 (include-book "bvchop")
 (include-book "getbit-def")
 (include-book "getbit")
+(include-book "getbit2")
 (include-book "slice-def")
 (include-book "slice")
 (include-book "slice2")
@@ -68,12 +73,17 @@
 (include-book "bvmult")
 (include-book "bvmod")
 (include-book "bvdiv")
+(include-book "overflow-and-underflow")
 
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
+(include-book "sbvdivdown-rules")
+(include-book "sbvrem")
+(include-book "sbvrem-rules")
 
 ;; Sign extension and masks
 (include-book "repeatbit")
+(include-book "repeatbit2")
 (include-book "bvsx-def")
 (include-book "bvsx")
 
@@ -83,16 +93,22 @@
 
 ;; If-then-else:
 (include-book "bvif")
+(include-book "bvif2")
 
 ;; Rotate operations:
 (include-book "leftrotate")
 (include-book "rightrotate")
+(include-book "rightrotate32")
 (include-book "rotate")
 
 ;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "bvashr")
 (include-book "defs-shifts")
+
+;; Counting one bits:
+(include-book "bvcount")
 
 ;; Trim (only for rewriting)
 (include-book "trim")
@@ -109,5 +125,28 @@
 (include-book "defs-bitwise")
 (include-book "defs")
 
+;; Conversions between booleans and bits
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
+
+;; Rules to replace BV ops with more common BV ops and sizes:
+(include-book "idioms")
+
+;; Proof of a ripple-carry adder:
+(include-book "adder")
+
+;; One's complement arithmetic:
+(include-book "ones-complement")
+
+;; Mixed rules:
+(include-book "rules0")
+(include-book "rules")
+(include-book "rules2")
+(include-book "rules3")
+(include-book "rules4")
+(include-book "rules5")
+(include-book "rules6")
+(include-book "rules7")
+(include-book "rules8")
+
+(include-book "doc")

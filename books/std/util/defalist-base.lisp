@@ -317,8 +317,10 @@ to override it.</p>")
           (if look (cadr look) (fgetprop inst-thm 'acl2::classes nil world))))
        (key-negatedp (getarg :key-negatedp nil kwd-alist))
        (val-negatedp (getarg :val-negatedp nil kwd-alist))
-       (rule-classes (defalist-ruleclasses-subst rule-classes key val name formals x key-negatedp val-negatedp)))
-    `((defthm ,thmname
+       (rule-classes (defalist-ruleclasses-subst rule-classes key val name formals x key-negatedp val-negatedp))
+       (disable (cdr (assoc :disable alist)))
+       (defthm/defthmd (if disable 'defthmd 'defthm)))
+    `((,defthm/defthmd ,thmname
         ,(defalist-thmbody-subst body key val name formals x key-negatedp val-negatedp)
         :hints (("goal" :use ((:functional-instance
                                ,inst-thm

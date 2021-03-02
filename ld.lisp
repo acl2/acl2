@@ -612,7 +612,9 @@
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
         (ld-pre-eval-filter
-         (f-put-global 'ld-pre-eval-filter (cdar alist) state))
+         (if (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state)
+             state ; See the Essay on Illegal-states.
+           (f-put-global 'ld-pre-eval-filter (cdar alist) state)))
         (ld-pre-eval-print
          (f-put-global 'ld-pre-eval-print (cdar alist) state))
         (ld-post-eval-print
@@ -861,6 +863,13 @@
      (declare (ignore col))
      state)))
 
+(defmacro continue-from-illegal-state ()
+
+; See the Essay on Illegal-states.
+
+  '(er-progn (set-ld-pre-eval-filter :all state)
+             (value :continuing)))
+
 (defun ld-filter-command (form state)
   (let ((filter (ld-pre-eval-filter state)))
     (cond ((eq filter :all) (value t))
@@ -882,6 +891,17 @@
                              (cons #\1 form)
                              (cons #\2 (ld-evisc-tuple state)))
                        state))
+          ((eq filter :illegal-state) ; See the Essay on Illegal-states.
+           (cond ((equal form '(exit-ld state)) ; from :q
+                  (value t))
+                 ((equal form '(continue-from-illegal-state))
+                  (er-progn (continue-from-illegal-state)
+                            (value t)))
+                 (t (er soft 'ld-filter-command
+                        "You are still in an illegal state!  See :DOC ~
+                         illegal-state.  You can submit the ~
+                         form~|:CONTINUE-FROM-ILLEGAL-STATE~|to continue -- ~
+                         AT YOUR OWN RISK."))))
           (t (value t)))))
 
 #-acl2-loop-only
@@ -1058,10 +1078,12 @@
           (print-deferred-ttag-notes-summary state))
          (t state))
    (f-put-global 'raw-guard-warningp t state)
+   (chk-absstobj-invariants state)
    (mv-let
     (col state)
     (if (and (eql (f-get-global 'in-verify-flg state) 1)
-             (eql (f-get-global 'ld-level state) 1))
+             (eql (f-get-global 'ld-level state) 1)
+             (not (illegal-state-p state)))
         (mv 0 state)
       (ld-print-prompt state))
     (mv-let
@@ -1070,7 +1092,8 @@
        (cond (in-verify-flg
               (pprogn (f-put-global 'in-verify-flg nil state)
                       (cond ((and (eql (f-get-global 'ld-level state) 1)
-                                  (eql in-verify-flg 1))
+                                  (eql in-verify-flg 1)
+                                  (not (illegal-state-p state)))
                              (pprogn
                               (print-re-entering-proof-builder nil state)
                               (mv nil nil nil '(verify) state)))
@@ -1127,7 +1150,6 @@
                              (er-progn
                               (assign last-ld-result (cons error-flg
                                                            trans-ans))
-                              (chk-absstobj-invariants nil state)
                               (cond
                                (error-flg (mv t nil state))
                                ((and (ld-error-triples state)
@@ -1181,6 +1203,7 @@
                              (cond
                               ((and (not (eq filter :all))
                                     (not (eq filter :query))
+                                    (not (eq filter :illegal-state))
                                     (not (new-namep filter
                                                     (w state))))
                                (er-progn

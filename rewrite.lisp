@@ -1372,10 +1372,13 @@
                          (symbolp (cdr erp))
                          (cdr erp))))
               (and fn
-                   (let* ((non-executablep (getpropc fn 'non-executablep nil wrld))
-                          (skip-pkg-prefix (symbol-in-current-package-p fn state))
+                   (let* ((non-executablep
+                           (getpropc fn 'non-executablep nil wrld))
+                          (skip-pkg-prefix
+                           (symbol-in-current-package-p fn state))
                           (str0 (if scons-term-p
-                                    "Failed attempt (when building a term) to call "
+                                    "Failed attempt (when building a term) to ~
+                                     call "
                                   "Failed attempt to call "))
                           (str1 (if non-executablep
                                     "non-executable function "
@@ -1446,7 +1449,7 @@
                  'string
                  "the warrant for "
                  fn-str
-                 " is false"))))
+                 " is not known to be true"))))
            term)))
         (& (er hard 'hide-with-comment
                "Unexpected reason supplied to ~x0!"

@@ -473,7 +473,40 @@ actually produced from a more primitive tree-based result, of the form @('(if c
 v1 v2)'), where @('v1') and @('v2') can themselves be calls of @('if').  If you
 prefer the more primitive form, use @(':flatten nil').</p>
 
-<p>None of the arguments of this macro is evaluated.</p>")
+<p>None of the arguments of this macro is evaluated.</p>
+
+<p>This tool is heuristic in nature, and failures are possible.  The error
+message might provide debugging clues.  Let us consider an example that
+actually occurred that generated an error message of the following form.</p>
+
+@({
+ACL2 Error in (DEFOPENER MY-DEFOPENER-RULE ...):  The last literal
+of each clause generated is expected to be of the form (equiv lhs rhs)
+for the same equiv and lhs. The equiv for the last literal of the first
+clause is EQUAL and its lhs is (HIDE (FOO X Y)) but the last literal of
+one clause generated is:
+
+(MY-PREDICATE (HIDE (FOO X Y)))
+})
+
+<p>The message suggests that each goal (i.e., clause) after the first should be
+of the form @('(implies ... (equal (HIDE (FOO X Y)) ...))') or simply
+@('(equal (HIDE (FOO X Y)) ...)'); but in this case, one goal was actually of
+the form @('(IMPLIES ... (MY-PREDICATE (HIDE (FOO X Y))))').  After first
+executing @('(set-gag-mode nil)') and then running @('defopener') again, the
+proof log helped to discover a rewrite rule of the following form.</p>
+
+@({
+(equal (equal (f1 a)
+              b)
+       (and (my-predicate b)
+            ...))
+})
+
+<p>ACL2 was able to match the term @('(EQUAL (HIDE (FOO X Y)) (F1 A)')) with
+the left-hand side of the above rule, thus rewriting it to a conjunction whose
+first conjunct was @('(MY-PREDICATE (HIDE (FOO X Y)))').  The error disappeared
+after that rule was disabled.</p>")
 
 (defmacro defopener (&whole ev-form
                             name call

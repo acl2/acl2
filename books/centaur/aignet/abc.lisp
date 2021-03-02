@@ -150,9 +150,9 @@
   (defret w-state-of-<fn>
     (equal (w new-state)
            (w state))))
-  
-  
-                           
+
+
+
 
 (define read-ctrex-into-frames ((fname stringp)
                                 (num-regs natp)
@@ -216,8 +216,8 @@
     (implies nonspace-pos
              (< nonspace-pos (length str)))
     :rule-classes :linear))
-       
-  
+
+
 
 
 ;; takes:
@@ -288,8 +288,8 @@
                                    ((:d read-ctrex-entries)))
             :induct (read-ctrex-entries str pos prompts strlen)
             :expand ((read-ctrex-entries str pos prompts strlen))))))
-      
-         
+
+
 
 
 
@@ -341,8 +341,8 @@
        (past-status (if negative (Cdr past-status) past-status))
        (status-code
         (* (if negative -1 1)
-           (str::digit-list-value
-            (str::take-leading-digits past-status))))
+           (str::dec-digit-chars-value
+            (str::take-leading-dec-digit-chars past-status))))
        (status (case status-code
                  (0 :refuted)
                  (1 :proved)
@@ -399,7 +399,7 @@
         (if (eq ctrex-type :comb)
             (mv 0 0)
           (mv (nth 2 ctrex-stats) (nth 1 ctrex-stats))))
-       
+
        (frames (frames-resize-rows 0 frames))
        (frames (frames-resize-cols num-ins frames))
        (frames (frames-resize-rows (+ 1 nframes) frames))
@@ -652,7 +652,7 @@ differently:</p>
                                          (stringp input-filename)
                                          (acl2::maybe-stringp output-filename)
                                          (acl2::maybe-stringp ctrex-filename)))
-                      
+
                       (ignore input-aignet
                               script
                               script-filename
@@ -813,7 +813,7 @@ differently:</p>
                              (stype-count :pi input-aignet))
                       (equal (stype-count :po output-aignet)
                              (stype-count :po input-aignet))))))
-      
+
 
     (defthm aignet-abc-seq-prove-simp-correct
       (b* (((mv status output-aignet ?frames)
@@ -1018,7 +1018,7 @@ for these various assumptions, modulo the correctness of ABC.</p>")
   scorr
   dretime
   &get
-  &w output-filename  
+  &w output-filename
  })
 </li>
 
@@ -1034,5 +1034,3 @@ for these various assumptions, modulo the correctness of ABC.</p>")
  })
 </li>
 </ul>")
-
-

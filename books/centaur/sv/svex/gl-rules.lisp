@@ -403,7 +403,7 @@
   (equal (svex-env-lookup k (svex-env-fix x))
          (svex-env-lookup k x)))
 
-(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+(gl::gl-set-uninterpreted base-fsm-symbolic-env)
 
 (gl::def-gl-rewrite svex-env-extract-when-non-term
   (implies (syntaxp (not (and (consp env)
@@ -413,14 +413,14 @@
                   (svex-env-extract-aux x (make-fast-alist env))))
   :hints(("Goal" :in-theory (enable svex-env-extract svex-env-extract-aux))))
 
-(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+(gl::gl-set-uninterpreted base-fsm-symbolic-env)
 
-(gl::def-gl-rewrite svex-env-fix-of-svtv-fsm-symbolic-env
-  (equal (svex-env-fix (svtv-fsm-symbolic-env ins vars prev-st))
-         (svtv-fsm-symbolic-env ins vars prev-st)))
+(gl::def-gl-rewrite svex-env-fix-of-base-fsm-symbolic-env
+  (equal (svex-env-fix (base-fsm-symbolic-env ins vars prev-st))
+         (base-fsm-symbolic-env ins vars prev-st)))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  ((svex-env-lookup var (base-fsm-symbolic-env ins statevars prev-st)) val)
   (ins (b* ((alist (nth (svex-cycle-var->cycle var) ins))
             (svar (svex-cycle-var->svar var))
             (lookup (hons-get svar alist))
@@ -433,7 +433,7 @@
              (svex-cycle-var-p (unquote var))))
 
 (gl::def-glcp-ctrex-rewrite
-  ((svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st)) val)
+  ((svex-env-lookup var (base-fsm-symbolic-env ins statevars prev-st)) val)
   (prev-st (b* ((lookup (hons-get var prev-st))
                 ((when (hons-equal (cdr lookup) val)) prev-st))
              (hons-acons var val prev-st)))
@@ -509,8 +509,10 @@
            (implies (and (not (equal (nfix cycle) (nfix ncycle)))
                          (svar-p var)
                          (svex-cycle-var-p var))
-                    (not (member var (alist-keys (svar-alist-add-cycle-num x cycle))))))
-         :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num alist-keys)))))
+                    (not (svex-env-boundp var  (svar-alist-add-cycle-num x cycle)))))
+         :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num
+                                           svex-env-boundp
+                                           alist-keys)))))
 
 (local (defthm svex-env-lookup-of-cycle-var-in-non-cycle-env
          (implies (and (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix x))))
@@ -574,12 +576,12 @@
                   (not (svarlist-has-svex-cycle-var (intersection$ (svarlist-fix vars) keys))))
          :hints(("Goal" :in-theory (enable intersection$ svarlist-fix svarlist-has-svex-cycle-var)))))
 
-(gl::def-gl-rewrite svex-env-lookup-of-svtv-fsm-symbolic-env
+(gl::def-gl-rewrite svex-env-lookup-of-base-fsm-symbolic-env
   (implies (and (syntaxp (and (gl::general-concretep var)
                               (gl::general-concretep statevars)))
                 (not (svarlist-has-svex-cycle-var-memo statevars))
                 (svar-p var))
-           (equal (svex-env-lookup var (svtv-fsm-symbolic-env ins statevars prev-st))
+           (equal (svex-env-lookup var (base-fsm-symbolic-env ins statevars prev-st))
                   (if (svex-cycle-var-p var)
                       (svex-env-lookup (svex-cycle-var->svar var)
                                        (nth (svex-cycle-var->cycle var) ins))

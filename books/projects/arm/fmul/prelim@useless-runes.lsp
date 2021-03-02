@@ -48,14 +48,14 @@
 (RTL::PRODINFZERO-SPECIAL)
 (RTL::INFNANZERO-SPECIAL)
 (RTL::EXPOVFL-SPECIAL)
-(RTL::CLZ (11 11
-              (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 2))
-          (11 11
-              (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 1))
-          (11 11
-              (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 2))
-          (11 11
-              (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 1)))
+(RTL::CLZ* (11 11
+               (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 2))
+           (11 11
+               (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 1))
+           (11 11
+               (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 2))
+           (11 11
+               (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 1)))
 (RTL::PROD)
 (RTL::EXPPRODINT)
 (RTL::EXPBIASEDZERO)

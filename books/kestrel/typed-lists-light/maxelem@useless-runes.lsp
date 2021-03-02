@@ -1,5 +1,5 @@
 (UPDATE-NTH-RW (58 22 (:REWRITE DEFAULT-CDR))
-               (57 8 (:REWRITE TAKE-DOES-NOTHING))
+               (58 8 (:REWRITE TAKE-DOES-NOTHING))
                (45 14 (:REWRITE DEFAULT-CAR))
                (42 37 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                (27 27 (:REWRITE DEFAULT-+-2))
@@ -16,7 +16,9 @@
                (4 4 (:REWRITE NTHCDR-WHEN-NOT-POSP))
                (4 4
                   (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
-               (4 4 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN)))
+               (4 4 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+               (1 1
+                  (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (NEGATIVE-INFINITY)
 (MAXELEM (192 192 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
          (171 61 (:REWRITE DEFAULT-CDR))
@@ -28,6 +30,8 @@
          (60 35 (:REWRITE DEFAULT-CAR))
          (26 26
              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+         (9 9
+            (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
          (9 3 (:REWRITE FOLD-CONSTS-IN-+))
          (5 5 (:TYPE-PRESCRIPTION MAX)))
 (MAXELEM-OF-APPEND-HELPER (491 491 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
@@ -48,6 +52,8 @@
                           (72 9 (:LINEAR LEN-OF-CDR-LINEAR))
                           (67 67
                               (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
+                          (45 45
+                              (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
                           (39 39 (:TYPE-PRESCRIPTION TRUE-LISTP)))
 (MAXELEM-OF-TRUE-LIST-FIX (191 175 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                           (159 85 (:REWRITE DEFAULT-<-2))
@@ -59,7 +65,9 @@
                           (58 58
                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                           (53 53 (:REWRITE DEFAULT-+-1))
-                          (12 4 (:REWRITE FOLD-CONSTS-IN-+)))
+                          (12 4 (:REWRITE FOLD-CONSTS-IN-+))
+                          (6 6
+                             (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (MAXELEM-WHEN-NON-CONSP (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
                         (5 5 (:TYPE-PRESCRIPTION LEN))
                         (2 1 (:REWRITE DEFAULT-<-2))
@@ -68,15 +76,6 @@
                         (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
                         (1 1
                            (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
-(MAXELEM-WHEN-NON-CONSP-HIDDEN
-     (10 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (5 5 (:TYPE-PRESCRIPTION LEN))
-     (2 1 (:REWRITE DEFAULT-<-2))
-     (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (1 1 (:REWRITE DEFAULT-<-1))
-     (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (1 1
-        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (MAXELEM-OF-APPEND (262 32 (:REWRITE CONSP-FROM-LEN-CHEAP))
                    (60 3 (:REWRITE CONSP-OF-APPEND))
                    (50 27
@@ -105,8 +104,8 @@
                        (4 2
                           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
                        (2 1 (:REWRITE MAXELEM-WHEN-NON-CONSP)))
-(MAXELEM-OF-CONS (227 8 (:REWRITE MAXELEM-SINGLETON-ALT))
-                 (201 14 (:REWRITE CONSP-FROM-LEN-CHEAP))
+(MAXELEM-OF-CONS (230 8 (:REWRITE MAXELEM-SINGLETON-ALT))
+                 (204 14 (:REWRITE CONSP-FROM-LEN-CHEAP))
                  (101 13 (:REWRITE LEN-OF-CDR))
                  (89 89 (:TYPE-PRESCRIPTION LEN))
                  (31 14 (:REWRITE DEFAULT-<-2))
@@ -126,7 +125,9 @@
                  (10 10
                      (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
                  (8 8 (:REWRITE MAXELEM-WHEN-NON-CONSP))
-                 (8 8 (:REWRITE DEFAULT-CAR)))
+                 (8 8 (:REWRITE DEFAULT-CAR))
+                 (3 3
+                    (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (INTEGERP-OF-MAXELEM (64 13 (:REWRITE LEN-OF-CDR))
                      (48 48 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                      (31 21 (:REWRITE DEFAULT-<-2))
@@ -161,6 +162,8 @@
                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                        (104 26 (:REWRITE LEN-OF-TAKE))
                        (85 23 (:REWRITE CAR-OF-TAKE-STRONG))
+                       (65 65
+                           (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
                        (63 18
                            (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
                        (56 18 (:REWRITE COMMUTATIVITY-OF-+))
@@ -214,7 +217,9 @@
      (16 2 (:LINEAR LEN-OF-CDR-LINEAR))
      (11 7 (:REWRITE MAXELEM-WHEN-NON-CONSP))
      (8 2 (:REWRITE FOLD-CONSTS-IN-+))
-     (6 6 (:REWRITE EQUAL-OF-LEN-AND-0)))
+     (6 6 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (2 2
+        (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (LESS-THAN-MAXELEM-WHEN-LESS-THAN-SOME-ELEM
      (96 31 (:REWRITE DEFAULT-<-1))
      (93 31 (:REWRITE DEFAULT-<-2))
@@ -235,7 +240,9 @@
      (16 2 (:LINEAR LEN-OF-CDR-LINEAR))
      (11 7 (:REWRITE MAXELEM-WHEN-NON-CONSP))
      (8 2 (:REWRITE FOLD-CONSTS-IN-+))
-     (6 6 (:REWRITE EQUAL-OF-LEN-AND-0)))
+     (6 6 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (2 2
+        (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (MAXELEM-CAR-LINEAR (19 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
                     (14 1 (:REWRITE MAXELEM-SINGLETON-ALT))
                     (5 1 (:REWRITE LEN-OF-CDR))
@@ -284,6 +291,8 @@
                       (72 12 (:DEFINITION INTEGER-LISTP))
                       (60 60 (:TYPE-PRESCRIPTION INTEGER-LISTP))
                       (54 18 (:REWRITE FOLD-CONSTS-IN-+))
+                      (46 46
+                          (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
                       (33 33 (:REWRITE MAXELEM-WHEN-NON-CONSP))
                       (32 32
                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
@@ -312,7 +321,7 @@
                                  (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
                               (2 2 (:REWRITE EQUAL-OF-LEN-AND-0)))
 (MAXELEM-OF-CDR-LINEAR
-     (340 10 (:REWRITE MAXELEM-SINGLETON-ALT))
+     (357 10 (:REWRITE MAXELEM-SINGLETON-ALT))
      (252 17 (:REWRITE DEFAULT-<-1))
      (201 165
           (:TYPE-PRESCRIPTION RATIONALP-OF-MAXELEM))
@@ -336,6 +345,8 @@
      (35 35 (:TYPE-PRESCRIPTION INTEGER-LISTP))
      (33 11 (:REWRITE RATIONAL-LISTP-OF-CDR))
      (30 30 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (17 17
+         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
      (13 13 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (13 13
          (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))

@@ -41,7 +41,9 @@
   :short "Fix up type (signedness) information between port and variable
 declarations."
 
-  :long "<p>This is a very early transform that should be run almost
+  :long "<p>See also the long comment in port-resolve.lisp.</p>
+
+<p>This is a very early transform that should be run almost
 immediately.  It needs to be run after @(see make-implicit-wires).  It
 is ordinarily run as part of @(see vl-annotate-design).</p>
 

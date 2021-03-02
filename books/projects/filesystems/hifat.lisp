@@ -11,7 +11,6 @@
 ;; This book happens to non-locally disable intersectp.
 (include-book "kestrel/utilities/strings/top" :dir :system)
 
-(include-book "insert-text")
 (include-book "fat32")
 
 ;; Some code from Matt, illustrating a technique to get a definition without
@@ -381,10 +380,6 @@
        (read-file-into-string2 filename start2 nil state))
       (read-file-into-string2 filename start1 nil state))))))
 
-;; This is to get the theorem about the nth element of a list of unsigned
-;; bytes.
-(local (include-book "std/typed-lists/integer-listp" :dir :system))
-
 (defthm
   subseq-of-implode-of-append
   (equal (subseq (implode (append x y))
@@ -508,164 +503,141 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
-(defthmd cons-equal-under-set-equiv-1
-  (iff (set-equiv (cons x y1) (cons x y2))
-       (set-equiv (remove-equal x y1)
-                  (remove-equal x y2)))
-  :instructions ((:= (cons x y2)
-                     (cons x (remove-equal x y2))
-                     :equiv set-equiv)
-                 (:= (cons x y1)
-                     (cons x (remove-equal x y1))
-                     :equiv set-equiv)
-                 (:dive 1)
-                 :x (:dive 1)
-                 (:= (subsetp-equal (remove-equal x y1)
-                                    (remove-equal x y2)))
-                 :top
-                 (:= (subsetp-equal (remove-equal x y2)
-                                    (cons x (remove-equal x y1)))
-                     (subsetp-equal (remove-equal x y2)
-                                    (remove-equal x y1)))
-                 (:dive 2)
-                 :x
-                 :top :bash))
-
-(defund dir-ent-p (x)
+(defund d-e-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)
-       (equal (len x) *ms-dir-ent-length*)))
+       (equal (len x) *ms-d-e-length*)))
 
-(defthm dir-ent-p-correctness-1
-  (implies (dir-ent-p x)
+(defthm d-e-p-correctness-1
+  (implies (d-e-p x)
            (not (stringp x)))
-  :hints (("goal" :in-theory (enable dir-ent-p)))
+  :hints (("goal" :in-theory (enable d-e-p)))
   :rule-classes :forward-chaining)
 
-(defthmd len-when-dir-ent-p
-  (implies (dir-ent-p dir-ent)
-           (equal (len dir-ent)
-                  *ms-dir-ent-length*))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+(defthmd len-when-d-e-p
+  (implies (d-e-p d-e)
+           (equal (len d-e)
+                  *ms-d-e-length*))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
 (defthmd
-  integer-listp-when-dir-ent-p
-  (implies (dir-ent-p x)
+  integer-listp-when-d-e-p
+  (implies (d-e-p x)
            (integer-listp x))
   :hints
   (("goal" :in-theory
-    (enable dir-ent-p
+    (enable d-e-p
             integer-listp-when-unsigned-byte-listp))))
 
 (defthmd
-  rational-listp-when-dir-ent-p
-  (implies (dir-ent-p x)
+  rational-listp-when-d-e-p
+  (implies (d-e-p x)
            (rational-listp x))
   :hints
   (("goal" :in-theory
-    (enable dir-ent-p
+    (enable d-e-p
             rational-listp-when-unsigned-byte-listp))))
 
-(defthm unsigned-byte-listp-when-dir-ent-p
-  (implies (dir-ent-p dir-ent)
-           (unsigned-byte-listp 8 dir-ent))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+(defthm unsigned-byte-listp-when-d-e-p
+  (implies (d-e-p d-e)
+           (unsigned-byte-listp 8 d-e))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
-(defthm true-listp-when-dir-ent-p
-  (implies (dir-ent-p dir-ent)
-           (true-listp dir-ent)))
+(defthm true-listp-when-d-e-p
+  (implies (d-e-p d-e)
+           (true-listp d-e)))
 
-(defthm dir-ent-p-of-update-nth
-  (implies (dir-ent-p l)
-           (equal (dir-ent-p (update-nth key val l))
-                  (and (< (nfix key) *ms-dir-ent-length*)
+(defthm d-e-p-of-update-nth
+  (implies (d-e-p l)
+           (equal (d-e-p (update-nth key val l))
+                  (and (< (nfix key) *ms-d-e-length*)
                        (unsigned-byte-p 8 val))))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
-(defthmd dir-ent-p-of-append
-  (equal (dir-ent-p (binary-append x y))
+(defthmd d-e-p-of-append
+  (equal (d-e-p (binary-append x y))
          (and (equal (+ (len x) (len y))
-                     *ms-dir-ent-length*)
+                     *ms-d-e-length*)
               (unsigned-byte-listp 8 y)
               (unsigned-byte-listp 8 (true-list-fix x))))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
 (defthm
-  nth-when-dir-ent-p
-  (implies (dir-ent-p dir-ent)
-           (equal (unsigned-byte-p 8 (nth n dir-ent))
-                  (< (nfix n) *ms-dir-ent-length*)))
+  nth-when-d-e-p
+  (implies (d-e-p d-e)
+           (equal (unsigned-byte-p 8 (nth n d-e))
+                  (< (nfix n) *ms-d-e-length*)))
   :hints (("Goal"
            :in-theory
-           (enable len-when-dir-ent-p)))
+           (enable len-when-d-e-p)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
-    (implies (dir-ent-p dir-ent)
-             (equal (integerp (nth n dir-ent))
-                    (< (nfix n) *ms-dir-ent-length*)))
+    (implies (d-e-p d-e)
+             (equal (integerp (nth n d-e))
+                    (< (nfix n) *ms-d-e-length*)))
     :hints
-    (("goal" :in-theory (enable integer-listp-when-dir-ent-p))))
+    (("goal" :in-theory (enable integer-listp-when-d-e-p))))
    (:rewrite
     :corollary
-    (implies (dir-ent-p dir-ent)
-             (equal (rationalp (nth n dir-ent))
-                    (< (nfix n) *ms-dir-ent-length*)))
+    (implies (d-e-p d-e)
+             (equal (rationalp (nth n d-e))
+                    (< (nfix n) *ms-d-e-length*)))
     :hints
-    (("goal" :in-theory (enable rational-listp-when-dir-ent-p
+    (("goal" :in-theory (enable rational-listp-when-d-e-p
                                 rationalp-of-nth-when-rational-listp))))
    (:linear
-    :corollary (implies (and (dir-ent-p dir-ent)
-                             (< (nfix n) *ms-dir-ent-length*))
-                        (and (<= 0 (nth n dir-ent))
-                             (< (nth n dir-ent) (ash 1 8))))
+    :corollary (implies (and (d-e-p d-e)
+                             (< (nfix n) *ms-d-e-length*))
+                        (and (<= 0 (nth n d-e))
+                             (< (nth n d-e) (ash 1 8))))
     :hints
     (("goal"
       :in-theory
       (e/d ()
            (unsigned-byte-p-of-nth-when-unsigned-byte-listp nth)))))))
 
-(defthm dir-ent-p-of-chars=>nats
-  (implies (equal (len chars) *ms-dir-ent-length*)
-           (dir-ent-p (chars=>nats chars)))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+(defthm d-e-p-of-chars=>nats
+  (implies (equal (len chars) *ms-d-e-length*)
+           (d-e-p (chars=>nats chars)))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
-(defund dir-ent-fix (x)
+(defund d-e-fix (x)
   (declare (xargs :guard t))
   (if
-      (dir-ent-p x)
+      (d-e-p x)
       x
-    (make-list *ms-dir-ent-length* :initial-element 0)))
+    (make-list *ms-d-e-length* :initial-element 0)))
 
-(defthm dir-ent-p-of-dir-ent-fix
-  (dir-ent-p (dir-ent-fix x))
-  :hints (("Goal" :in-theory (enable dir-ent-fix))))
+(defthm d-e-p-of-d-e-fix
+  (d-e-p (d-e-fix x))
+  :hints (("Goal" :in-theory (enable d-e-fix))))
 
-(defthm dir-ent-fix-of-dir-ent-fix
-  (equal (dir-ent-fix (dir-ent-fix x))
-         (dir-ent-fix x))
-  :hints (("Goal" :in-theory (enable dir-ent-fix))))
+(defthm d-e-fix-of-d-e-fix
+  (equal (d-e-fix (d-e-fix x))
+         (d-e-fix x))
+  :hints (("Goal" :in-theory (enable d-e-fix))))
 
-(defthm dir-ent-fix-when-dir-ent-p
-  (implies (dir-ent-p x)
-           (equal (dir-ent-fix x) x))
-  :hints (("Goal" :in-theory (enable dir-ent-fix))))
+(defthm d-e-fix-when-d-e-p
+  (implies (d-e-p x)
+           (equal (d-e-fix x) x))
+  :hints (("Goal" :in-theory (enable d-e-fix))))
 
 (fty::deffixtype
- dir-ent
- :pred dir-ent-p
- :fix dir-ent-fix
- :equiv dir-ent-equiv
+ d-e
+ :pred d-e-p
+ :fix d-e-fix
+ :equiv d-e-equiv
  :define t
  :forward t)
 
 (defthm
-  dir-ent-p-of-take
+  d-e-p-of-take
   (implies (and (unsigned-byte-listp 8 dir-contents)
                 (<= 32 (len dir-contents)))
-           (dir-ent-p (take 32 dir-contents)))
-  :hints (("goal" :in-theory (enable dir-ent-p))))
+           (d-e-p (take 32 dir-contents)))
+  :hints (("goal" :in-theory (enable d-e-p))))
 
 (defthm element-list-equiv-of-nthcdr-1
   (implies (not (element-list-final-cdr-p t))
@@ -673,12 +645,12 @@
                                nil)))
 (table listfix-rules 'element-list-equiv-of-nthcdr-1 t)
 
-(fty::deflist dir-ent-list
-              :elt-type dir-ent
+(fty::deflist d-e-list
+              :elt-type d-e
               :true-listp t
               )
 
-(defthm dir-ent-first-cluster-guard-lemma-1
+(defthm d-e-first-cluster-guard-lemma-1
   (implies (and (unsigned-byte-p 8 a3)
                 (unsigned-byte-p 8 a2)
                 (unsigned-byte-p 8 a1)
@@ -687,72 +659,72 @@
   :hints (("goal" :in-theory (e/d (fat32-entry-p)
                                   (unsigned-byte-p)))))
 
-(defund dir-ent-first-cluster (dir-ent)
+(defund d-e-first-cluster (d-e)
   (declare
-   (xargs :guard (dir-ent-p dir-ent)
-          :guard-hints (("Goal" :in-theory (enable dir-ent-p)))))
+   (xargs :guard (d-e-p d-e)
+          :guard-hints (("Goal" :in-theory (enable d-e-p)))))
   (fat32-entry-mask
-   (combine32u (nth 21 dir-ent)
-               (nth 20 dir-ent)
-               (nth 27 dir-ent)
-               (nth 26 dir-ent))))
+   (combine32u (nth 21 d-e)
+               (nth 20 d-e)
+               (nth 27 d-e)
+               (nth 26 d-e))))
 
-(defthm fat32-masked-entry-p-of-dir-ent-first-cluster
+(defthm fat32-masked-entry-p-of-d-e-first-cluster
   (implies
-   (dir-ent-p dir-ent)
-   (fat32-masked-entry-p (dir-ent-first-cluster dir-ent)))
-  :hints (("goal" :in-theory (e/d (dir-ent-first-cluster dir-ent-p)))))
+   (d-e-p d-e)
+   (fat32-masked-entry-p (d-e-first-cluster d-e)))
+  :hints (("goal" :in-theory (e/d (d-e-first-cluster d-e-p)))))
 
-(defund dir-ent-file-size (dir-ent)
+(defund d-e-file-size (d-e)
   (declare
-   (xargs :guard (dir-ent-p dir-ent)
-          :guard-hints (("Goal" :in-theory (enable dir-ent-p)))))
-  (combine32u (nth 31 dir-ent)
-              (nth 30 dir-ent)
-              (nth 29 dir-ent)
-              (nth 28 dir-ent)))
+   (xargs :guard (d-e-p d-e)
+          :guard-hints (("Goal" :in-theory (enable d-e-p)))))
+  (combine32u (nth 31 d-e)
+              (nth 30 d-e)
+              (nth 29 d-e)
+              (nth 28 d-e)))
 
 (defthm
-  dir-ent-file-size-correctness-1
-  (implies (dir-ent-p dir-ent)
-           (and (<= 0 (dir-ent-file-size dir-ent))
-                (< (dir-ent-file-size dir-ent)
+  d-e-file-size-correctness-1
+  (implies (d-e-p d-e)
+           (and (<= 0 (d-e-file-size d-e))
+                (< (d-e-file-size d-e)
                    (ash 1 32))))
   :rule-classes :linear
-  :hints (("goal" :in-theory (e/d (dir-ent-file-size)
+  :hints (("goal" :in-theory (e/d (d-e-file-size)
                                   (combine32u-unsigned-byte))
            :use (:instance combine32u-unsigned-byte
-                           (a3 (nth 31 dir-ent))
-                           (a2 (nth 30 dir-ent))
-                           (a1 (nth 29 dir-ent))
-                           (a0 (nth 28 dir-ent))))))
+                           (a3 (nth 31 d-e))
+                           (a2 (nth 30 d-e))
+                           (a1 (nth 29 d-e))
+                           (a0 (nth 28 d-e))))))
 
 (defund
-  dir-ent-set-first-cluster-file-size
-  (dir-ent first-cluster file-size)
+  d-e-set-first-cluster-file-size
+  (d-e first-cluster file-size)
   (declare
    (xargs
-    :guard (and (dir-ent-p dir-ent)
+    :guard (and (d-e-p d-e)
                 (fat32-masked-entry-p first-cluster)
                 (unsigned-byte-p 32 file-size))
     :guard-hints
-    (("goal" :in-theory (enable dir-ent-p)))))
+    (("goal" :in-theory (enable d-e-p)))))
   (let*
-      ((dir-ent (mbe :logic (dir-ent-fix dir-ent) :exec dir-ent))
-       (old-first-cluster (combine32u (nth 21 dir-ent)
-                                      (nth 20 dir-ent)
-                                      (nth 27 dir-ent)
-                                      (nth 26 dir-ent)))
+      ((d-e (mbe :logic (d-e-fix d-e) :exec d-e))
+       (old-first-cluster (combine32u (nth 21 d-e)
+                                      (nth 20 d-e)
+                                      (nth 27 d-e)
+                                      (nth 26 d-e)))
        (first-cluster (mbe :exec first-cluster :logic (fat32-masked-entry-fix first-cluster)))
        (new-first-cluster (fat32-update-lower-28 old-first-cluster first-cluster))
        (file-size (if (not (unsigned-byte-p 32 file-size))
                       0 file-size)))
     (append
-     (subseq dir-ent 0 20)
+     (subseq d-e 0 20)
      (list*
       (logtail 16 (loghead 24 new-first-cluster))
       (logtail 24 new-first-cluster)
-      (append (subseq dir-ent 22 26)
+      (append (subseq d-e 22 26)
               (list (loghead 8 new-first-cluster)
                     (logtail 8 (loghead 16 new-first-cluster))
                     (loghead 8 file-size)
@@ -760,13 +732,13 @@
                     (logtail 16 (loghead 24 file-size))
                     (logtail 24 file-size)))))))
 
-(defthm true-listp-of-dir-ent-fix
- (true-listp (dir-ent-fix dir-ent))
-  :hints (("goal" :in-theory (enable dir-ent-p dir-ent-fix)))
+(defthm true-listp-of-d-e-fix
+ (true-listp (d-e-fix d-e))
+  :hints (("goal" :in-theory (enable d-e-p d-e-fix)))
   :rule-classes :type-prescription)
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size-lemma-1
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size-lemma-1
   (implies (fat32-masked-entry-p masked-entry)
            (equal (logtail 16
                            (fat32-update-lower-28 entry masked-entry))
@@ -776,7 +748,7 @@
                                   (logapp loghead logtail)))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size-lemma-2
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size-lemma-2
   (implies (fat32-masked-entry-p masked-entry)
            (equal (logtail 24
                            (fat32-update-lower-28 entry masked-entry))
@@ -786,7 +758,7 @@
                                   (logapp loghead logtail)))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size-lemma-3
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size-lemma-3
   (implies (fat32-masked-entry-p masked-entry)
            (equal (logtail 8
                            (fat32-update-lower-28 entry masked-entry))
@@ -796,7 +768,7 @@
                                   (logapp loghead logtail)))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size-lemma-4
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size-lemma-4
   (implies (fat32-masked-entry-p masked-entry)
            (equal (loghead 8
                            (fat32-update-lower-28 entry masked-entry))
@@ -807,7 +779,7 @@
 ;; The hypotheses are somewhat weaker than this, but getting to them needs the
 ;; unsigned-byte-p terms to be expanded...
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size-lemma-5
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size-lemma-5
   (implies (and (unsigned-byte-p 8 a3)
                 (unsigned-byte-p 8 a2)
                 (unsigned-byte-p 8 a1)
@@ -820,19 +792,19 @@
    ("goal''" :in-theory (enable logtail ash))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-set-first-cluster-file-size
+  d-e-set-first-cluster-file-size-of-d-e-set-first-cluster-file-size
   (implies (and (fat32-masked-entry-p first-cluster1)
                 (fat32-masked-entry-p first-cluster2))
-           (equal (dir-ent-set-first-cluster-file-size
-                   (dir-ent-set-first-cluster-file-size
-                    dir-ent first-cluster1 file-size1)
+           (equal (d-e-set-first-cluster-file-size
+                   (d-e-set-first-cluster-file-size
+                    d-e first-cluster1 file-size1)
                    first-cluster2 file-size2)
-                  (dir-ent-set-first-cluster-file-size
-                   dir-ent first-cluster2 file-size2)))
+                  (d-e-set-first-cluster-file-size
+                   d-e first-cluster2 file-size2)))
   :hints
   (("goal" :in-theory
-    (e/d (dir-ent-set-first-cluster-file-size
-          dir-ent-p-of-append len-when-dir-ent-p)
+    (e/d (d-e-set-first-cluster-file-size
+          d-e-p-of-append len-when-d-e-p)
          (logapp loghead logtail)))))
 
 (defthm fat32-masked-entry-p-of-fat32-masked-entry-fix
@@ -840,19 +812,19 @@
   :hints (("goal" :in-theory (enable fat32-masked-entry-fix))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-fat32-masked-entry-fix
-  (equal (dir-ent-set-first-cluster-file-size
-          dir-ent
+  d-e-set-first-cluster-file-size-of-fat32-masked-entry-fix
+  (equal (d-e-set-first-cluster-file-size
+          d-e
           (fat32-masked-entry-fix first-cluster)
           file-size)
-         (dir-ent-set-first-cluster-file-size
-          dir-ent first-cluster file-size))
+         (d-e-set-first-cluster-file-size
+          d-e first-cluster file-size))
   :hints
   (("goal"
-    :in-theory (enable dir-ent-set-first-cluster-file-size))))
+    :in-theory (enable d-e-set-first-cluster-file-size))))
 
 (defthm
-  dir-ent-first-cluster-of-dir-ent-set-first-cluster-file-size-lemma-1
+  d-e-first-cluster-of-d-e-set-first-cluster-file-size-lemma-1
   (implies (and (unsigned-byte-p 8 a3)
                 (unsigned-byte-p 8 a2)
                 (unsigned-byte-p 8 a1)
@@ -862,15 +834,15 @@
   :hints (("goal" :in-theory (e/d (combine32u) (logior ash loghead logtail)))))
 
 (defthm
-  dir-ent-first-cluster-of-dir-ent-set-first-cluster-file-size
+  d-e-first-cluster-of-d-e-set-first-cluster-file-size
   (equal
-   (dir-ent-first-cluster
-    (dir-ent-set-first-cluster-file-size dir-ent first-cluster file-size))
+   (d-e-first-cluster
+    (d-e-set-first-cluster-file-size d-e first-cluster file-size))
    (fat32-masked-entry-fix first-cluster))
   :hints
   (("goal"
-    :in-theory (e/d (dir-ent-set-first-cluster-file-size
-                     dir-ent-first-cluster dir-ent-p
+    :in-theory (e/d (d-e-set-first-cluster-file-size
+                     d-e-first-cluster d-e-p
                      fat32-entry-mask fat32-masked-entry-p)
                     (loghead logtail
                              fat32-update-lower-28-correctness-1
@@ -879,10 +851,10 @@
                              fat32-masked-entry-p-of-fat32-masked-entry-fix))
     :use ((:instance fat32-update-lower-28-correctness-1
                      (masked-entry (fat32-masked-entry-fix first-cluster))
-                     (entry (combine32u (nth 21 dir-ent)
-                                        (nth 20 dir-ent)
-                                        (nth 27 dir-ent)
-                                        (nth 26 dir-ent))))
+                     (entry (combine32u (nth 21 d-e)
+                                        (nth 20 d-e)
+                                        (nth 27 d-e)
+                                        (nth 26 d-e))))
           (:instance (:rewrite loghead-identity)
                      (i (logtail 24
                                  (fat32-masked-entry-fix first-cluster)))
@@ -891,164 +863,164 @@
                      (x first-cluster))))))
 
 (defthm
-  dir-ent-file-size-of-dir-ent-set-first-cluster-file-size
+  d-e-file-size-of-d-e-set-first-cluster-file-size
   (implies
    (unsigned-byte-p 32 file-size)
    (equal
-    (dir-ent-file-size
-     (dir-ent-set-first-cluster-file-size dir-ent first-cluster file-size))
+    (d-e-file-size
+     (d-e-set-first-cluster-file-size d-e first-cluster file-size))
     file-size))
   :hints
   (("goal"
-    :in-theory (e/d (dir-ent-set-first-cluster-file-size dir-ent-file-size)
+    :in-theory (e/d (d-e-set-first-cluster-file-size d-e-file-size)
                     (loghead logtail)))))
 
 (defthm
-  dir-ent-p-of-dir-ent-set-first-cluster-file-size
+  d-e-p-of-d-e-set-first-cluster-file-size
   (implies
    (and (fat32-masked-entry-p first-cluster)
         (unsigned-byte-p 32 file-size))
    (and
     (unsigned-byte-listp 8
-                         (dir-ent-set-first-cluster-file-size
-                          dir-ent first-cluster file-size))
-    (equal (len (dir-ent-set-first-cluster-file-size
-                 dir-ent first-cluster file-size))
-           *ms-dir-ent-length*)))
+                         (d-e-set-first-cluster-file-size
+                          d-e first-cluster file-size))
+    (equal (len (d-e-set-first-cluster-file-size
+                 d-e first-cluster file-size))
+           *ms-d-e-length*)))
   :hints
   (("goal"
     :in-theory
-    (e/d (dir-ent-p dir-ent-set-first-cluster-file-size
+    (e/d (d-e-p d-e-set-first-cluster-file-size
                     fat32-masked-entry-p fat32-entry-p)
          (fat32-update-lower-28-correctness-1))
     :use
     (:instance
      fat32-update-lower-28-correctness-1
      (masked-entry first-cluster)
-     (entry (combine32u (nth 21 (dir-ent-fix dir-ent))
-                        (nth 20 (dir-ent-fix dir-ent))
-                        (nth 27 (dir-ent-fix dir-ent))
-                        (nth 26 (dir-ent-fix dir-ent)))))))
+     (entry (combine32u (nth 21 (d-e-fix d-e))
+                        (nth 20 (d-e-fix d-e))
+                        (nth 27 (d-e-fix d-e))
+                        (nth 26 (d-e-fix d-e)))))))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
     (implies (and (fat32-masked-entry-p first-cluster)
                   (unsigned-byte-p 32 file-size))
-             (dir-ent-p (dir-ent-set-first-cluster-file-size
-                         dir-ent first-cluster file-size)))
-    :hints (("goal" :in-theory (enable dir-ent-p))))))
+             (d-e-p (d-e-set-first-cluster-file-size
+                         d-e first-cluster file-size)))
+    :hints (("goal" :in-theory (enable d-e-p))))))
 
 (defthm
-  dir-ent-set-first-cluster-file-size-of-dir-ent-fix
+  d-e-set-first-cluster-file-size-of-d-e-fix
   (equal
-   (dir-ent-set-first-cluster-file-size
-    (dir-ent-fix dir-ent) first-cluster file-size)
-   (dir-ent-set-first-cluster-file-size
-    dir-ent first-cluster file-size))
-  :hints (("goal" :in-theory (enable dir-ent-set-first-cluster-file-size))))
+   (d-e-set-first-cluster-file-size
+    (d-e-fix d-e) first-cluster file-size)
+   (d-e-set-first-cluster-file-size
+    d-e first-cluster file-size))
+  :hints (("goal" :in-theory (enable d-e-set-first-cluster-file-size))))
 
 (defcong
-  dir-ent-equiv equal
-  (dir-ent-set-first-cluster-file-size
-   dir-ent first-cluster file-size)
+  d-e-equiv equal
+  (d-e-set-first-cluster-file-size
+   d-e first-cluster file-size)
   1
   :hints
   (("goal"
     :in-theory
     (e/d
-     (dir-ent-equiv)
+     (d-e-equiv)
      ((:rewrite
-       dir-ent-set-first-cluster-file-size-of-dir-ent-fix)))
+       d-e-set-first-cluster-file-size-of-d-e-fix)))
     :use
     ((:rewrite
-      dir-ent-set-first-cluster-file-size-of-dir-ent-fix)
+      d-e-set-first-cluster-file-size-of-d-e-fix)
      (:instance
       (:rewrite
-       dir-ent-set-first-cluster-file-size-of-dir-ent-fix)
-      (dir-ent dir-ent-equiv))))))
+       d-e-set-first-cluster-file-size-of-d-e-fix)
+      (d-e d-e-equiv))))))
 
 (defund
-  dir-ent-filename (dir-ent)
+  d-e-filename (d-e)
   (declare
    (xargs
-    :guard (dir-ent-p dir-ent)
-    :guard-hints (("goal" :in-theory (enable dir-ent-p)))))
-  (nats=>string (subseq (mbe :exec dir-ent
-                             :logic (dir-ent-fix dir-ent))
+    :guard (d-e-p d-e)
+    :guard-hints (("goal" :in-theory (enable d-e-p)))))
+  (nats=>string (subseq (mbe :exec d-e
+                             :logic (d-e-fix d-e))
                         0 11)))
 
-(defthm dir-ent-filename-of-dir-ent-fix
-  (equal (dir-ent-filename (dir-ent-fix dir-ent))
-         (dir-ent-filename dir-ent))
-  :hints (("goal" :in-theory (enable dir-ent-filename))))
+(defthm d-e-filename-of-d-e-fix
+  (equal (d-e-filename (d-e-fix d-e))
+         (d-e-filename d-e))
+  :hints (("goal" :in-theory (enable d-e-filename))))
 
 (defthm
-  dir-ent-filename-of-dir-ent-set-first-cluster-file-size
+  d-e-filename-of-d-e-set-first-cluster-file-size
   (equal
-   (dir-ent-filename
-    (dir-ent-set-first-cluster-file-size dir-ent first-cluster file-size))
-   (dir-ent-filename dir-ent))
+   (d-e-filename
+    (d-e-set-first-cluster-file-size d-e first-cluster file-size))
+   (d-e-filename d-e))
   :hints
   (("goal"
     :in-theory
-    (e/d (dir-ent-set-first-cluster-file-size dir-ent-filename
-                                              (:rewrite dir-ent-p-of-append)
-                                              len-when-dir-ent-p)
+    (e/d (d-e-set-first-cluster-file-size d-e-filename
+                                              (:rewrite d-e-p-of-append)
+                                              len-when-d-e-p)
          (loghead logtail logapp unsigned-byte-p)))))
 
-(defthm explode-of-dir-ent-filename
-  (equal (explode (dir-ent-filename dir-ent))
-         (nats=>chars (take 11 (dir-ent-fix dir-ent))))
-  :hints (("goal" :in-theory (enable dir-ent-filename))))
+(defthm explode-of-d-e-filename
+  (equal (explode (d-e-filename d-e))
+         (nats=>chars (take 11 (d-e-fix d-e))))
+  :hints (("goal" :in-theory (enable d-e-filename))))
 
 (defund
-  dir-ent-set-filename (dir-ent filename)
+  d-e-set-filename (d-e filename)
   (declare
    (xargs
-    :guard (and (dir-ent-p dir-ent)
+    :guard (and (d-e-p d-e)
                 (stringp filename)
                 (equal (length filename) 11))
     :guard-hints
     (("goal"
-      :in-theory (enable dir-ent-p-of-append
-                         len-when-dir-ent-p string=>nats)))))
+      :in-theory (enable d-e-p-of-append
+                         len-when-d-e-p string=>nats)))))
   (append
    (mbe :logic (chars=>nats (take 11 (coerce filename 'list)))
         :exec (string=>nats filename))
-   (subseq (mbe :exec dir-ent
-                :logic (dir-ent-fix dir-ent))
-           11 *ms-dir-ent-length*)))
+   (subseq (mbe :exec d-e
+                :logic (d-e-fix d-e))
+           11 *ms-d-e-length*)))
 
 (defthm
-  dir-ent-p-of-dir-ent-set-filename
-  (dir-ent-p (dir-ent-set-filename dir-ent filename))
+  d-e-p-of-d-e-set-filename
+  (d-e-p (d-e-set-filename d-e filename))
   :hints
-  (("goal" :in-theory (enable dir-ent-set-filename
-                              dir-ent-fix dir-ent-p-of-append)))
+  (("goal" :in-theory (enable d-e-set-filename
+                              d-e-fix d-e-p-of-append)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary (unsigned-byte-listp
                 8
-                (dir-ent-set-filename dir-ent filename))
-    :hints (("goal" :in-theory (enable dir-ent-p))))
+                (d-e-set-filename d-e filename))
+    :hints (("goal" :in-theory (enable d-e-p))))
    (:rewrite
     :corollary
-    (true-listp (dir-ent-set-filename dir-ent filename))
-    :hints (("goal" :in-theory (enable dir-ent-p))))))
+    (true-listp (d-e-set-filename d-e filename))
+    :hints (("goal" :in-theory (enable d-e-p))))))
 
 (defthm
-  dir-ent-set-filename-of-constant-1
+  d-e-set-filename-of-constant-1
   (implies
-   (and (dir-ent-p dir-ent)
+   (and (d-e-p d-e)
         (or (equal filename *current-dir-fat32-name*)
             (equal filename *parent-dir-fat32-name*)))
    (not (equal (nth 0
-                    (dir-ent-set-filename dir-ent filename))
+                    (d-e-set-filename d-e filename))
                0)))
   :hints
-  (("goal" :in-theory (e/d (dir-ent-set-filename dir-ent-p)
+  (("goal" :in-theory (e/d (d-e-set-filename d-e-p)
                            (nth)))))
 
 (encapsulate
@@ -1058,129 +1030,129 @@
 
   (local
    (defthm
-     dir-ent-p-of-set-first-cluster-file-size-lemma-1
+     d-e-p-of-set-first-cluster-file-size-lemma-1
      (< (* 16
-           (logtail 4 (nth 21 (dir-ent-fix dir-ent))))
+           (logtail 4 (nth 21 (d-e-fix d-e))))
         256)))
 
   (defthm
-    dir-ent-p-of-set-first-cluster-file-size
-    (dir-ent-p (dir-ent-set-first-cluster-file-size
-                dir-ent first-cluster file-size))
+    d-e-p-of-set-first-cluster-file-size
+    (d-e-p (d-e-set-first-cluster-file-size
+                d-e first-cluster file-size))
     :hints
     (("goal" :in-theory
-      (e/d (dir-ent-p dir-ent-set-first-cluster-file-size
+      (e/d (d-e-p d-e-set-first-cluster-file-size
                       fat32-masked-entry-fix
                       fat32-masked-entry-p)
            (loghead logtail logapp ash))))))
 
 ;; per table on page 24 of the spec.
 (defund
-  dir-ent-directory-p (dir-ent)
+  d-e-directory-p (d-e)
   (declare
    (xargs
-    :guard (dir-ent-p dir-ent)
+    :guard (d-e-p d-e)
     :guard-hints
     (("goal"
-      :in-theory (enable integer-listp-when-dir-ent-p)))))
-  (logbitp 4 (nth 11 dir-ent)))
+      :in-theory (enable integer-listp-when-d-e-p)))))
+  (logbitp 4 (nth 11 d-e)))
 
 (defund
-  dir-ent-install-directory-bit
-  (dir-ent val)
+  d-e-install-directory-bit
+  (d-e val)
   (declare
    (xargs
-    :guard (and (dir-ent-p dir-ent) (booleanp val))
+    :guard (and (d-e-p d-e) (booleanp val))
     :guard-hints
     (("goal"
-      :in-theory (enable integer-listp-when-dir-ent-p)))))
+      :in-theory (enable integer-listp-when-d-e-p)))))
   (update-nth 11
               (install-bit 4 (if val 1 0)
-                           (nth 11 dir-ent))
-              dir-ent))
+                           (nth 11 d-e))
+              d-e))
 
 (defthm
-  dir-ent-p-of-dir-ent-install-directory-bit
+  d-e-p-of-d-e-install-directory-bit
   (implies
-   (dir-ent-p dir-ent)
-   (dir-ent-p
-    (dir-ent-install-directory-bit dir-ent val)))
+   (d-e-p d-e)
+   (d-e-p
+    (d-e-install-directory-bit d-e val)))
   :hints
   (("goal"
     :in-theory
-    (e/d (dir-ent-install-directory-bit dir-ent-p))))
+    (e/d (d-e-install-directory-bit d-e-p))))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
     (implies
-     (dir-ent-p dir-ent)
+     (d-e-p d-e)
      (and
       (unsigned-byte-listp
        8
-       (dir-ent-install-directory-bit dir-ent val))
+       (d-e-install-directory-bit d-e val))
       (equal
        (len
-        (dir-ent-install-directory-bit dir-ent val))
-       *ms-dir-ent-length*)))
+        (d-e-install-directory-bit d-e val))
+       *ms-d-e-length*)))
     :hints
     (("goal"
       :in-theory
-      (e/d (dir-ent-p)))))))
+      (e/d (d-e-p)))))))
 
 (defthm
-  true-listp-of-dir-ent-install-directory-bit
+  true-listp-of-d-e-install-directory-bit
   (implies
-   (dir-ent-p dir-ent)
-   (true-listp (dir-ent-install-directory-bit dir-ent val))))
+   (d-e-p d-e)
+   (true-listp (d-e-install-directory-bit d-e val))))
 
 (defthm
-  dir-ent-install-directory-bit-correctness-1
+  d-e-install-directory-bit-correctness-1
   (equal (nth 0
-              (dir-ent-install-directory-bit dir-ent val))
-         (nth 0 dir-ent))
+              (d-e-install-directory-bit d-e val))
+         (nth 0 d-e))
   :hints
-  (("goal" :in-theory (enable dir-ent-install-directory-bit))))
+  (("goal" :in-theory (enable d-e-install-directory-bit))))
 
 (defthm
-  dir-ent-directory-p-of-dir-ent-install-directory-bit
-  (equal (dir-ent-directory-p
-          (dir-ent-install-directory-bit dir-ent val))
+  d-e-directory-p-of-d-e-install-directory-bit
+  (equal (d-e-directory-p
+          (d-e-install-directory-bit d-e val))
          (if val t nil))
   :hints
   (("goal"
     :in-theory
-    (e/d (dir-ent-install-directory-bit dir-ent-directory-p)
+    (e/d (d-e-install-directory-bit d-e-directory-p)
          (logbitp)))))
 
 (defthm
-  dir-ent-first-cluster-of-dir-ent-install-directory-bit
-  (equal (dir-ent-first-cluster
-          (dir-ent-install-directory-bit dir-ent val))
-         (dir-ent-first-cluster dir-ent))
+  d-e-first-cluster-of-d-e-install-directory-bit
+  (equal (d-e-first-cluster
+          (d-e-install-directory-bit d-e val))
+         (d-e-first-cluster d-e))
   :hints
-  (("goal" :in-theory (enable dir-ent-first-cluster
-                              dir-ent-install-directory-bit))))
+  (("goal" :in-theory (enable d-e-first-cluster
+                              d-e-install-directory-bit))))
 
 (defthm
-  dir-ent-file-size-of-dir-ent-install-directory-bit
-  (equal (dir-ent-file-size
-          (dir-ent-install-directory-bit dir-ent val))
-         (dir-ent-file-size dir-ent))
+  d-e-file-size-of-d-e-install-directory-bit
+  (equal (d-e-file-size
+          (d-e-install-directory-bit d-e val))
+         (d-e-file-size d-e))
   :hints
-  (("goal" :in-theory (enable dir-ent-file-size
-                              dir-ent-install-directory-bit))))
+  (("goal" :in-theory (enable d-e-file-size
+                              d-e-install-directory-bit))))
 
 (defthm
-  dir-ent-filename-of-dir-ent-install-directory-bit
+  d-e-filename-of-d-e-install-directory-bit
   (implies
-   (dir-ent-p dir-ent)
-   (equal (dir-ent-filename
-           (dir-ent-install-directory-bit dir-ent val))
-          (dir-ent-filename dir-ent)))
+   (d-e-p d-e)
+   (equal (d-e-filename
+           (d-e-install-directory-bit d-e val))
+          (d-e-filename d-e)))
   :hints
-  (("goal" :in-theory (enable dir-ent-filename
-                              dir-ent-install-directory-bit))))
+  (("goal" :in-theory (enable d-e-filename
+                              d-e-install-directory-bit))))
 
 (defund fat32-filename-p (x)
   (declare (xargs :guard t))
@@ -1237,89 +1209,83 @@
                 (not (equal x *parent-dir-fat32-name*))))
   :hints (("Goal" :in-theory (enable fat32-filename-p))))
 
-(defthm dir-ent-set-filename-correctness-1
+(defthm d-e-set-filename-correctness-1
   (implies
    (and (fat32-filename-p filename)
-        (dir-ent-p dir-ent))
+        (d-e-p d-e))
    (and
     (not (equal (nth 0
-                     (dir-ent-set-filename dir-ent filename))
+                     (d-e-set-filename d-e filename))
                 #x00))
     (not (equal (nth 0
-                     (dir-ent-set-filename dir-ent filename))
+                     (d-e-set-filename d-e filename))
                 #xe5))))
   :hints
-  (("goal" :in-theory (e/d (dir-ent-set-filename dir-ent-p)
+  (("goal" :in-theory (e/d (d-e-set-filename d-e-p)
                            (nth)))))
 
 (defthm
-  dir-ent-directory-p-of-dir-ent-set-filename
-  (implies (and (dir-ent-p dir-ent)
+  d-e-directory-p-of-d-e-set-filename
+  (implies (and (d-e-p d-e)
                 (fat32-filename-p filename))
-           (equal (dir-ent-directory-p
-                   (dir-ent-set-filename dir-ent filename))
-                  (dir-ent-directory-p dir-ent)))
-  :hints (("goal" :in-theory (e/d (dir-ent-directory-p
-                                   dir-ent-set-filename
-                                   dir-ent-p)
+           (equal (d-e-directory-p
+                   (d-e-set-filename d-e filename))
+                  (d-e-directory-p d-e)))
+  :hints (("goal" :in-theory (e/d (d-e-directory-p
+                                   d-e-set-filename
+                                   d-e-p)
                                   (logbitp)))))
 
 (defthm
-  dir-ent-first-cluster-of-dir-ent-set-filename
-  (implies (and (dir-ent-p dir-ent)
+  d-e-first-cluster-of-d-e-set-filename
+  (implies (and (d-e-p d-e)
                 (stringp filename)
                 (equal (length filename) 11))
-           (equal (dir-ent-first-cluster
-                   (dir-ent-set-filename dir-ent filename))
-                  (dir-ent-first-cluster dir-ent)))
+           (equal (d-e-first-cluster
+                   (d-e-set-filename d-e filename))
+                  (d-e-first-cluster d-e)))
   :hints
-  (("goal" :in-theory (enable dir-ent-first-cluster
-                              dir-ent-set-filename dir-ent-p))))
+  (("goal" :in-theory (enable d-e-first-cluster
+                              d-e-set-filename d-e-p))))
 
 (defthm
-  dir-ent-filename-of-dir-ent-set-filename
+  d-e-filename-of-d-e-set-filename
   (equal
-   (dir-ent-filename (dir-ent-set-filename dir-ent filename))
+   (d-e-filename (d-e-set-filename d-e filename))
    (coerce (take 11 (coerce filename 'list))
            'string))
   :hints
   (("goal"
-    :in-theory (enable dir-ent-filename dir-ent-set-filename
-                       dir-ent-fix dir-ent-p nats=>string))))
+    :in-theory (enable d-e-filename d-e-set-filename
+                       d-e-fix d-e-p nats=>string))))
 
 (defthm
-  dir-ent-file-size-of-dir-ent-set-filename
+  d-e-file-size-of-d-e-set-filename
   (implies
-   (and (dir-ent-p dir-ent)
+   (and (d-e-p d-e)
         (fat32-filename-p filename))
    (equal
-    (dir-ent-file-size (dir-ent-set-filename dir-ent filename))
-    (dir-ent-file-size dir-ent)))
-  :hints (("goal" :in-theory (enable dir-ent-file-size
-                                     dir-ent-set-filename
-                                     dir-ent-p-of-append
-                                     len-when-dir-ent-p))))
+    (d-e-file-size (d-e-set-filename d-e filename))
+    (d-e-file-size d-e)))
+  :hints (("goal" :in-theory (enable d-e-file-size
+                                     d-e-set-filename
+                                     d-e-p-of-append
+                                     len-when-d-e-p))))
 
 (defthm
-  dir-ent-directory-p-of-dir-ent-set-first-cluster-file-size
+  d-e-directory-p-of-d-e-set-first-cluster-file-size
   (implies
-   (dir-ent-p dir-ent)
+   (d-e-p d-e)
    (equal
-    (dir-ent-directory-p (dir-ent-set-first-cluster-file-size
-                          dir-ent first-cluster file-size))
-    (dir-ent-directory-p dir-ent)))
+    (d-e-directory-p (d-e-set-first-cluster-file-size
+                          d-e first-cluster file-size))
+    (d-e-directory-p d-e)))
   :hints
   (("goal"
     :in-theory
     (e/d
-     (dir-ent-directory-p dir-ent-set-first-cluster-file-size)
+     (d-e-directory-p d-e-set-first-cluster-file-size)
      (logbitp)))))
-
-(def-listfix-rule nth-of-element-list-fix
-  (equal (nth n (element-list-fix x))
-         (if (< (nfix n) (len x))
-             (element-fix (nth n x))
-           nil)))
 
 (def-listp-rule list-equiv-refines-element-list-equiv
   (implies (and (list-equiv x y)
@@ -1363,13 +1329,6 @@
   :hints
   (("goal" :in-theory (e/d (fat32-filename-list-fix)
                            (take-of-too-many take-when-atom take-of-cons)))))
-
-(defthm nth-of-fat32-filename-list-fix
-  (equal (nth n (fat32-filename-list-fix x))
-         (if (< (nfix n) (len x))
-             (fat32-filename-fix (nth n x))
-             nil))
-  :hints (("goal" :in-theory (enable fat32-filename-list-fix))))
 
 (defrefinement
   list-equiv fat32-filename-list-equiv
@@ -1418,12 +1377,6 @@
                            (fat32-filename-list-fix l2))))
   :hints (("goal"
            :in-theory (enable prefixp fat32-filename-list-fix))))
-
-(defthm fat32-filename-list-p-when-prefixp
-  (implies (and (prefixp x y)
-                (fat32-filename-list-p y))
-           (fat32-filename-list-p (true-list-fix x)))
-  :hints (("goal" :in-theory (enable prefixp fat32-filename-list-p))))
 
 (defthm fat32-filename-list-p-correctness-1
   (implies (fat32-filename-list-p x)
@@ -1478,6 +1431,18 @@
   :hints (("goal" :in-theory (enable fat32-filename-list-equiv
                                      fat32-filename-list-fix))))
 
+(defthm fat32-filename-list-equiv-implies-equal-consp-cdr
+  (implies (fat32-filename-list-equiv x y)
+           (equal (consp (cdr x)) (consp (cdr y))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable fat32-filename-list-equiv
+                              fat32-filename-list-fix)
+           :expand ((fat32-filename-list-fix (cdr x))
+                    (fat32-filename-list-fix (cdr y))
+                    (fat32-filename-list-fix x)
+                    (fat32-filename-list-fix y))))
+  :rule-classes :congruence)
+
 ;; We need to write this whole thing out - based on an idea we got from an
 ;; event generated by fty::defalist - because the induction scheme has to be
 ;; created by us, without assistance from fty, just this once.
@@ -1490,12 +1455,12 @@
        (file (cdr head))
        ((unless (and (alistp file)
                      (equal (strip-cars file)
-                            '(dir-ent contents))))
+                            '(d-e contents))))
         nil)
-       (dir-ent (cdr (std::da-nth 0 (cdr head))))
+       (d-e (cdr (std::da-nth 0 (cdr head))))
        (contents (cdr (std::da-nth 1 (cdr head)))))
     (and (fat32-filename-p (car head))
-         (dir-ent-p dir-ent)
+         (d-e-p d-e)
          (or (and (stringp contents)
                   (unsigned-byte-p 32 (length contents)))
              (m1-file-alist-p contents))
@@ -1567,7 +1532,7 @@
 
 (fty::defprod
  m1-file
- ((dir-ent dir-ent-p :default (dir-ent-fix nil))
+ ((d-e d-e-p :default (d-e-fix nil))
   (contents m1-file-contents-p :default (m1-file-contents-fix nil))))
 
 (defthm
@@ -1590,6 +1555,8 @@
       :in-theory
       (enable m1-file-p m1-file->contents m1-file-contents-fix))))))
 
+(defthm m1-file->d-e-under-true-equiv (true-equiv (m1-file->d-e file) t))
+
 (defund m1-regular-file-p (file)
   (declare (xargs :guard t))
   (and (m1-file-p file)
@@ -1600,6 +1567,12 @@
   (declare (xargs :guard t))
   (and (m1-file-p file)
        (m1-file-alist-p (m1-file->contents file))))
+
+(defthm m1-directory-file-p-of-m1-file-fix
+  (equal (m1-directory-file-p (m1-file-fix$inline file))
+         (m1-file-alist-p (m1-file->contents file)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable m1-directory-file-p))))
 
 (encapsulate
   ()
@@ -1630,7 +1603,7 @@
 (defthm
   m1-regular-file-p-of-m1-file
   (equal
-   (m1-regular-file-p (m1-file dir-ent contents))
+   (m1-regular-file-p (m1-file d-e contents))
    (and
     (stringp (m1-file-contents-fix contents))
     (unsigned-byte-p 32
@@ -1671,7 +1644,7 @@
 
 (defthm
   m1-directory-file-p-of-m1-file
-  (equal (m1-directory-file-p (m1-file dir-ent contents))
+  (equal (m1-directory-file-p (m1-file d-e contents))
          (m1-file-alist-p contents))
   :hints (("goal" :in-theory (enable m1-directory-file-p))))
 
@@ -1716,6 +1689,12 @@
                 (m1-file-alist-p fs))
            (not (member-equal x (strip-cars fs)))))
 
+(defthm abs-mkdir-correctness-lemma-16
+  (implies (and (m1-file-alist-p fs)
+                (consp (assoc-equal name fs)))
+           (d-e-p (cdr (cadr (assoc-equal name fs)))))
+  :hints (("goal" :in-theory (enable m1-file-alist-p assoc-equal))))
+
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))
@@ -1733,7 +1712,7 @@
          (if
              (m1-directory-file-p file)
              (and (hifat-bounded-file-alist-p-helper (m1-file->contents file)
-                                                     *ms-max-dir-ent-count*)
+                                                     *ms-max-d-e-count*)
                   (hifat-bounded-file-alist-p-helper (cdr x)
                                                      (- ac 1)))
            (hifat-bounded-file-alist-p-helper (cdr x)
@@ -1747,7 +1726,7 @@
 (defund
   hifat-bounded-file-alist-p (x)
   (declare (xargs :guard (m1-file-alist-p x)))
-  (hifat-bounded-file-alist-p-helper x *ms-max-dir-ent-count*))
+  (hifat-bounded-file-alist-p-helper x *ms-max-d-e-count*))
 
 ;; This can't be converted to forward-chaining - a lot of proofs stop
 ;; working. We'll just have to put up with a lot of useless frames and tries on
@@ -1755,26 +1734,26 @@
 (defthm
   len-when-hifat-bounded-file-alist-p
   (implies (hifat-bounded-file-alist-p x)
-           (<= (len x) *ms-max-dir-ent-count*))
+           (<= (len x) *ms-max-d-e-count*))
   :rule-classes
   (:linear
    (:linear
     :corollary (implies (hifat-bounded-file-alist-p x)
-                        (<= (* *ms-dir-ent-length* (len x))
-                            (* *ms-dir-ent-length*
-                               *ms-max-dir-ent-count*))))
+                        (<= (* *ms-d-e-length* (len x))
+                            (* *ms-d-e-length*
+                               *ms-max-d-e-count*))))
    (:linear
     :corollary (implies (and (hifat-bounded-file-alist-p x) (consp x))
-                        (<= (* *ms-dir-ent-length* (len (cdr x)))
+                        (<= (* *ms-d-e-length* (len (cdr x)))
                             (-
-                             (* *ms-dir-ent-length*
-                                *ms-max-dir-ent-count*)
-                             *ms-dir-ent-length*)))))
+                             (* *ms-d-e-length*
+                                *ms-max-d-e-count*)
+                             *ms-d-e-length*)))))
   :hints
   (("goal"
     :in-theory (enable hifat-bounded-file-alist-p)
     :use (:instance len-when-hifat-bounded-file-alist-p-helper
-                    (ac *ms-max-dir-ent-count*)))))
+                    (ac *ms-max-d-e-count*)))))
 
 (defthmd hifat-bounded-file-alist-p-of-cdr-lemma-1
   (implies (and (hifat-bounded-file-alist-p-helper x ac1)
@@ -1967,7 +1946,7 @@
          (m1-directory-file-p (cdr head))
          (cons
           (cons (car head)
-                (make-m1-file :dir-ent (m1-file->dir-ent (cdr head))
+                (make-m1-file :d-e (m1-file->d-e (cdr head))
                               :contents (hifat-file-alist-fix (m1-file->contents (cdr head)))))
           tail)
        (cons head tail)))))
@@ -2022,6 +2001,80 @@
   :hints
   (("goal" :in-theory (enable hifat-file-alist-fix
                               strip-cars-of-hifat-file-alist-fix-lemma-1))))
+
+;; This is pretty helpful in circumstances where the equivalent expression
+;; (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)) does not
+;; offer the same opportunities for congruential rewriting.
+(defun fat32-filename-list-prefixp (x y)
+  (declare (xargs :guard (and (fat32-filename-list-p x)
+                              (fat32-filename-list-p y))))
+  (if (consp x)
+      (and (consp y)
+           (fat32-filename-equiv (car x) (car y))
+           (fat32-filename-list-prefixp (cdr x) (cdr y)))
+    t))
+
+(defthm fat32-filename-list-prefixp-of-self
+  (fat32-filename-list-prefixp x x))
+
+(defthmd fat32-filename-list-prefixp-alt
+  (equal
+   (fat32-filename-list-prefixp x y)
+   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
+  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  1
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  2
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defthm
+  fat32-filename-list-prefixp-transitive
+  (implies (and (fat32-filename-list-prefixp x y)
+                (fat32-filename-list-prefixp y z))
+           (fat32-filename-list-prefixp x z))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
+                                      (fat32-filename-list-prefixp x y))
+                                 (fat32-filename-list-prefixp x z)))))
+
+(defthm fat32-filename-list-prefixp-when-atom-1
+  (implies (atom y)
+           (equal (fat32-filename-list-prefixp x y)
+                  (atom x)))
+  :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
+
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/prefixp" :dir :system))
+
+  (defthm
+    abs-pwrite-correctness-lemma-15
+    (implies (fat32-filename-list-prefixp x y)
+             (fat32-filename-list-equiv (append x (nthcdr (len x) y))
+                                        y))
+    :hints
+    (("goal" :do-not-induct t
+      :in-theory
+      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
+           (append-when-prefixp))
+      :use (:instance append-when-prefixp
+                      (x (fat32-filename-list-fix x))
+                      (y (fat32-filename-list-fix y)))))))
 
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
@@ -2159,6 +2212,33 @@
     :corollary
     (natp (mv-nth 1 (hifat-find-file fs path))))))
 
+(defthm
+  abs-lstat-refinement-lemma-1
+  (implies (stringp (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
+           (m1-regular-file-p (mv-nth '0 (hifat-find-file fs path)))))
+
+(defthm abs-mkdir-correctness-lemma-49
+  (implies (and (consp x)
+                (equal (mv-nth 1 (hifat-find-file fs y))
+                       0)
+                (fat32-filename-list-prefixp x y))
+           (equal (mv-nth 1 (hifat-find-file fs x))
+                  0))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     hifat-find-file)
+           :induct (mv (fat32-filename-list-prefixp x y)
+                       (hifat-find-file fs x)))))
+
+(defthm abs-mkdir-correctness-lemma-51
+  (implies (and (zp (mv-nth 1 (hifat-find-file fs y)))
+                (m1-directory-file-p (mv-nth 0 (hifat-find-file fs y)))
+                (fat32-filename-list-prefixp x y))
+           (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp
+                                     hifat-find-file)
+           :induct (mv (fat32-filename-list-prefixp x y)
+                       (hifat-find-file fs x)))))
+
 (defund
   hifat-place-file
   (fs path file)
@@ -2181,28 +2261,30 @@
        ((unless (consp alist-elem))
         (if (atom (cdr path))
             (mv (put-assoc-equal name file fs) 0)
-          (mv fs *enotdir*)))
+          (mv fs *enoent*)))
        ((when (and (not (m1-directory-file-p (cdr alist-elem)))
-                   (or (consp (cdr path))
-                       ;; This is the case where a regular file could get replaced by
-                       ;; a directory, which is a bad idea.
-                       (m1-directory-file-p file))))
+                   (consp (cdr path))))
         (mv fs *enotdir*))
+       ((when (and (not (m1-directory-file-p (cdr alist-elem)))
+                   ;; This is the case where a regular file could get replaced by
+                   ;; a directory, which is a bad idea.
+                   (m1-directory-file-p file)))
+        (mv fs *eexist*))
        ((when (not (or (m1-directory-file-p (cdr alist-elem))
                        (consp (cdr path))
                        (m1-directory-file-p file)
                        (and
                         (atom (assoc-equal name fs))
-                        (>= (len fs) *ms-max-dir-ent-count*)))))
+                        (>= (len fs) *ms-max-d-e-count*)))))
         (mv (put-assoc-equal name file fs) 0))
        ((when (not (or (m1-regular-file-p (cdr alist-elem))
                        (consp (cdr path))
                        (m1-regular-file-p file)
                        (and
                         (atom (assoc-equal name fs))
-                        (>= (len fs) *ms-max-dir-ent-count*)))))
+                        (>= (len fs) *ms-max-d-e-count*)))))
         (mv (put-assoc-equal name file fs) 0))
-       ((when (and (atom (assoc-equal name fs)) (>= (len fs) *ms-max-dir-ent-count*)))
+       ((when (and (atom (assoc-equal name fs)) (>= (len fs) *ms-max-d-e-count*)))
         (mv fs *enospc*))
        ((mv new-contents error-code)
         (hifat-place-file
@@ -2212,7 +2294,7 @@
     (mv
      (put-assoc-equal
       name
-      (make-m1-file :dir-ent (m1-file->dir-ent (cdr alist-elem))
+      (make-m1-file :d-e (m1-file->d-e (cdr alist-elem))
                     :contents new-contents)
       fs)
      error-code)))
@@ -2288,7 +2370,7 @@
       (put-assoc-equal
        (fat32-filename-fix (car path))
        (m1-file
-        (m1-file->dir-ent
+        (m1-file->d-e
          (cdr (assoc-equal (fat32-filename-fix (car path))
                            (hifat-file-alist-fix fs))))
         (mv-nth
@@ -2311,9 +2393,20 @@
   (equal
    (hifat-place-file fs (append x y) file)
    (cond
+    ((and (< 0 (mv-nth 1 (hifat-find-file fs x)))
+          (not (equal (mv-nth 1 (hifat-find-file fs x))
+                      2)))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    ((atom x) (hifat-place-file fs y file))
     ((atom y) (hifat-place-file fs x file))
-    ((and (zp (mv-nth 1 (hifat-find-file fs x)))
-          (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+    ((equal (mv-nth 1 (hifat-find-file fs x))
+            *enoent*)
+     (mv (hifat-file-alist-fix fs) *enoent*))
+    ((not (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    (t
      (mv
       (mv-nth
        0
@@ -2325,16 +2418,11 @@
                  (hifat-place-file
                   (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
                   y file))
-         :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
+         :d-e (m1-file->d-e (mv-nth 0 (hifat-find-file fs x))))))
       (mv-nth
        1
        (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                         y file))))
-    ((or (zp (mv-nth 1 (hifat-find-file fs x)))
-         (consp x))
-     (mv (hifat-file-alist-fix fs)
-         *enotdir*))
-    (t (hifat-place-file fs y file))))
+                         y file))))))
   :hints
   (("goal"
     :in-theory (enable hifat-place-file hifat-find-file)
@@ -2345,7 +2433,7 @@
       (hifat-place-file
        fs x
        (m1-file
-        (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x)))
+        (m1-file->d-e (mv-nth 0 (hifat-find-file fs x)))
         (mv-nth 0
                 (hifat-place-file
                  (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
@@ -2407,7 +2495,7 @@
     (mv
      (put-assoc-equal
       name
-      (make-m1-file :dir-ent (m1-file->dir-ent (cdr alist-elem))
+      (make-m1-file :d-e (m1-file->d-e (cdr alist-elem))
                     :contents new-contents)
       fs)
      error-code)))
@@ -2464,55 +2552,6 @@
            (equal (mv-nth 0 (hifat-remove-file fs path))
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (e/d (hifat-remove-file) (put-assoc-equal)))))
-
-;; We decided to keep this around even though the motivation of preserving
-;; fat32-filename-list-equiv is somewhat weak. The alternative is to use
-;; prefixp (:doc prefixp) which is not built-in.
-(defun fat32-filename-list-prefixp (x y)
-  (declare (xargs :guard (and (fat32-filename-list-p x)
-                              (fat32-filename-list-p y))))
-  (if (consp x)
-      (and (consp y)
-           (fat32-filename-equiv (car x) (car y))
-           (fat32-filename-list-prefixp (cdr x) (cdr y)))
-    t))
-
-(defthm fat32-filename-list-prefixp-of-self
-  (fat32-filename-list-prefixp x x))
-
-(defthmd fat32-filename-list-prefixp-alt
-  (equal
-   (fat32-filename-list-prefixp x y)
-   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
-  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
-
-(defcong
-  fat32-filename-list-equiv
-  equal (fat32-filename-list-prefixp x y)
-  1
-  :hints
-  (("goal"
-    :in-theory (enable fat32-filename-list-prefixp-alt))))
-
-(defcong
-  fat32-filename-list-equiv
-  equal (fat32-filename-list-prefixp x y)
-  2
-  :hints
-  (("goal"
-    :in-theory (enable fat32-filename-list-prefixp-alt))))
-
-(defthm
-  fat32-filename-list-prefixp-transitive
-  (implies (and (fat32-filename-list-prefixp x y)
-                (fat32-filename-list-prefixp y z))
-           (fat32-filename-list-prefixp x z))
-  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
-  :rule-classes
-  (:rewrite
-   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
-                                      (fat32-filename-list-prefixp x y))
-                                 (fat32-filename-list-prefixp x z)))))
 
 (defthm
   m1-read-after-write-lemma-1

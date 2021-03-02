@@ -114,30 +114,35 @@
 (GL::BFR-VARNAME-EQUIV-IS-AN-EQUIVALENCE)
 (GL::BFR-VARNAME-EQUIV-IMPLIES-EQUAL-BFR-VARNAME-FIX-1)
 (GL::BFR-VARNAME-FIX-UNDER-BFR-VARNAME-EQUIV)
-(GL::NFIX-OF-BFR-VARNAME-FIX (34 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
-                             (18 5 (:REWRITE ZP-WHEN-INTEGERP))
-                             (18 5 (:REWRITE ZP-WHEN-GT-0))
-                             (16 2 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
-                             (14 2 (:REWRITE NFIX-WHEN-NATP))
-                             (10 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                             (8 8 (:TYPE-PRESCRIPTION NATP))
-                             (8 4 (:REWRITE NATP-WHEN-GTE-0))
-                             (8 1
-                                (:REWRITE GL::AIG-VAR-FIX-WHEN-AIG-VAR-P))
-                             (6 2 (:REWRITE AIG-VAR-P-WHEN-AIG-ATOM-P))
-                             (4 4 (:TYPE-PRESCRIPTION ZP))
-                             (4 4 (:REWRITE ZP-OPEN))
-                             (4 4 (:REWRITE NATP-WHEN-INTEGERP))
-                             (3 3 (:TYPE-PRESCRIPTION AIG-VAR-P$INLINE))
-                             (3 3 (:REWRITE DEFAULT-<-2))
-                             (3 3 (:REWRITE DEFAULT-<-1))
-                             (2 2
-                                (:TYPE-PRESCRIPTION AIG-ATOM-P$INLINE))
-                             (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
-                             (2 1 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
-                             (2 1 (:REWRITE AIG-ATOM-P-WHEN-AIG-VAR-P))
-                             (1 1
-                                (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST)))
+(GL::NFIX-OF-BFR-VARNAME-FIX
+     (34 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
+     (18 5 (:REWRITE ZP-WHEN-INTEGERP))
+     (18 5 (:REWRITE ZP-WHEN-GT-0))
+     (16 2 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
+     (14 2 (:REWRITE NFIX-WHEN-NATP))
+     (10 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (8 8 (:TYPE-PRESCRIPTION NATP))
+     (8 4 (:REWRITE NATP-WHEN-GTE-0))
+     (8 1
+        (:REWRITE GL::AIG-VAR-FIX-WHEN-AIG-VAR-P))
+     (6 2 (:REWRITE AIG-VAR-P-WHEN-AIG-ATOM-P))
+     (4 4 (:TYPE-PRESCRIPTION ZP))
+     (4 4 (:REWRITE ZP-OPEN))
+     (4 4 (:REWRITE NATP-WHEN-INTEGERP))
+     (3 3 (:TYPE-PRESCRIPTION AIG-VAR-P$INLINE))
+     (3 3 (:REWRITE DEFAULT-<-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (2 2
+        (:TYPE-PRESCRIPTION AIG-ATOM-P$INLINE))
+     (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
+     (2 1 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
+     (2 1 (:REWRITE AIG-ATOM-P-WHEN-AIG-VAR-P))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1
+        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST)))
 (GL::BFR-VARNAME-FIX-OF-NFIX (9 4 (:REWRITE NFIX-WHEN-NOT-NATP))
                              (4 4 (:TYPE-PRESCRIPTION NATP))
                              (4 2 (:REWRITE NATP-WHEN-GTE-0))
@@ -1472,7 +1477,7 @@
      (4 4
         (:TYPE-PRESCRIPTION GL::BFR-SEMANTIC-DEPENDS-ON)))
 (GL::NON-VAR-IMPLIES-NOT-MEMBER-EXTRACT-ASSIGNS
-     (1409 24 (:DEFINITION MEMBER-EQUAL))
+     (1457 24 (:DEFINITION MEMBER-EQUAL))
      (667 59 (:REWRITE SUBSETP-MEMBER . 1))
      (592 16 (:REWRITE SUBSETP-APPEND1))
      (564 564
@@ -1497,6 +1502,8 @@
      (124 124 (:REWRITE DEFAULT-CAR))
      (108 108 (:REWRITE DEFAULT-CDR))
      (64 64 (:REWRITE SUBSETP-MEMBER . 4))
+     (64 64 (:REWRITE INTERSECTP-MEMBER . 3))
+     (64 64 (:REWRITE INTERSECTP-MEMBER . 2))
      (63 21 (:REWRITE SET::TAIL-WHEN-EMPTY))
      (59 59 (:REWRITE SUBSETP-MEMBER . 2))
      (52 52 (:REWRITE SET::INSERT-WHEN-EMPTY))

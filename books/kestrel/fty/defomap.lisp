@@ -225,6 +225,7 @@
        (pred-of-update (acl2::packn-pos (list pred '-of-update) pkg-witness))
        (pred-of-update* (acl2::packn-pos (list pred '-of-update*) pkg-witness))
        (pred-of-delete (acl2::packn-pos (list pred '-of-delete) pkg-witness))
+       (pred-of-delete* (acl2::packn-pos (list pred '-of-delete*) pkg-witness))
        (key-pred-when-in-pred (acl2::packn-pos (list key-pred
                                                      '-when-in-
                                                      pred
@@ -303,6 +304,10 @@
              (implies (,pred ,x)
                       (,pred (omap::delete ,k ,x)))
              :enable omap::delete)
+           (defrule ,pred-of-delete*
+             (implies (,pred ,x)
+                      (,pred (omap::delete* ,k ,x)))
+             :enable omap::delete*)
            (defrule ,key-pred-when-in-pred
              (implies (and (omap::in ,k ,x) ; binds free X
                            (,pred ,x))

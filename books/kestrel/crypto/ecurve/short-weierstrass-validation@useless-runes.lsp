@@ -18,12 +18,16 @@
                (26 18
                    (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
                (24 24 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+               (22 12
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
                (20 20
                    (:TYPE-PRESCRIPTION PFIELD::NATP-OF-NEG))
                (18 18
-                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
-               (14 14
                    (:TYPE-PRESCRIPTION PFIELD::NATP-OF-MUL))
+               (18 18
+                   (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+               (16 12
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
                (14 14
                    (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
                (12 12
@@ -39,13 +43,17 @@
                (2 2 (:REWRITE DEFAULT-CDR))
                (2 2 (:REWRITE DEFAULT-CAR))
                (1 1 (:META CANCEL_IPLUS-EQUAL-CORRECT)))
-(ECURVE::RULE5 (26 26 (:REWRITE PFIELD::MUL-BECOMES-NEG))
+(ECURVE::RULE5 (28 18
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+               (26 26 (:REWRITE PFIELD::MUL-BECOMES-NEG))
                (25 13
                    (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
                (23 13
                    (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
                (22 22
                    (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
+               (22 18
+                   (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
                (19 19 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
                (18 10
                    (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))

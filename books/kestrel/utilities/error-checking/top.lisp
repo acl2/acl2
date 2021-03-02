@@ -18,6 +18,8 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/error-checking/def-error-checker" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,14 +62,6 @@
   :body
   (((not (eq symb symb1))
     "~@0 must be different from ~@1." description description1)))
-
-(def-error-checker ensure-list-no-duplicates
-  ((list true-listp "List to check."))
-  :short
-  "Cause an error if a true list has duplicates."
-  :body
-  (((no-duplicatesp-equal list)
-    "~@0 must have no duplicates." description)))
 
 (def-error-checker ensure-list-subset
   ((list true-listp "List to check.")
@@ -404,14 +398,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-error-checker ensure-function-logic-mode
-  ((fn (function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is in program mode."
-  :body
-  (((logicp fn (w state))
-    "~@0 must be in logic mode." description)))
-
 (def-error-checker ensure-function-program-mode
   ((fn (function-namep fn (w state)) "Function to check."))
   :short
@@ -419,14 +405,6 @@
   :body
   (((programp fn (w state))
     "~@0 must be in program mode." description)))
-
-(def-error-checker ensure-function-defined
-  ((fn (logic-function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is not defined."
-  :body
-  (((definedp fn (w state))
-    "~@0 must be defined." description)))
 
 (def-error-checker ensure-function-non-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))
@@ -526,14 +504,6 @@
   "<p>
    The function must not be one whose @(tsee stobjs-out) are invalid.
    </p>")
-
-(def-error-checker ensure-function-guard-verified
-  ((fn (function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is not guard-verified."
-  :body
-  (((guard-verified-p fn (w state))
-    "~@0 must be guard-verified." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -810,7 +780,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-logic-mode$ fn/lambda description error-erp error-val)
+      (ensure-function-is-logic-mode$ fn/lambda description error-erp error-val)
     (ensure-lambda-logic-mode$ fn/lambda description error-erp error-val))
   ///
 
@@ -849,7 +819,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$
+      (ensure-function-is-guard-verified$
        fn/lambda description error-erp error-val)
     (ensure-lambda-guard-verified-fns$
      fn/lambda description error-erp error-val))
@@ -891,7 +861,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$
+      (ensure-function-is-guard-verified$
        fn/lambda description error-erp error-val)
     (ensure-lambda-guard-verified-exec-fns$
      fn/lambda description error-erp error-val))

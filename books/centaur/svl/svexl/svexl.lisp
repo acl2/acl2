@@ -50,7 +50,16 @@
             (local (defthm cons-fnsym-not-svar-p
                      (implies (not (eq x :var))
                               (not (sv::svar-p (cons x y))))
-                     :hints(("Goal" :in-theory (enable fnsym-p sv::svar-p))))))
+                     :hints(("Goal" :in-theory (enable fnsym-p sv::svar-p)))))
+            (local (defthm car-of-4vec-fix-integerp
+                      (implies (consp (4vec-fix x))
+                               (integerp (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))))
+            (local (defthm car-of-4vec-fix-type
+                      (or (integerp (car (4vec-fix x)))
+                          (not (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))
+                      :rule-classes ((:type-prescription :typed-term (car (4vec-fix x)))))))
  (fty::defflexsum
   svexl-node
   (:var
@@ -64,13 +73,10 @@
   (:quote
    :short "A ``quoted constant'' @(see 4vec), which represents itself."
    :cond (or (atom x)
-             (eq (car x) 'quote))
-   :shape (or (atom x) (and (consp (cdr x))
-                            (consp (cadr x))
-                            (not (cddr x))))
-   :fields ((val :acc-body (if (atom x) x (cadr x))
+             (integerp (car x)))
+   :fields ((val :acc-body x
                  :type 4vec))
-   :ctor-body (if (atom val) val (hons 'quote (hons val nil))))
+   :ctor-body val)
   (:node
    :cond (and (consp x)
               (consp (cdr x))
@@ -457,9 +463,10 @@
    (defthm lemma3
      (implies (and (equal (svexl-node-kind x) :quote)
                    (svexl-node-p x))
-              (svex-p x))
+              (svex-p (svexl-node-quote->val x)))
      :hints (("Goal"
-              :in-theory (e/d (svexl-node-p svex-p svexl-node-kind) ()))))))
+              :in-theory (e/d (svexl-node-p svex-p svexl-node-quote->val 4vec-p svexl-node-kind) ())))))
+  )
 
  (define svexl-node-to-svex ((x svexl-node-p)
                              (reverse-nodesdb reverse-nodesdb-p))
@@ -470,11 +477,11 @@
    (svexl-node-case
     x
     :var x
-    :quote x
+    :quote x.val
     :node (b* ((node (hons-get x.node-id reverse-nodesdb)))
             (if node
                 (cdr node)
-              (list 'quote (sv::4vec-x))))
+              (sv::4vec-x)))
     :call (cons
            x.fn
            (svexl-nodelist-to-svexlist x.args
@@ -731,7 +738,7 @@
              (or (stringp x) (and x (symbolp x)))
            (eq (car x) :var))
          :var)
-        ((or (atom x) (eq (car x) 'quote))
+        ((or (atom x) (integerp (car x)))
          :quote)
         ((and (consp x)
               (consp (cdr x))
@@ -776,10 +783,7 @@
    (b* ((kind (svexl-node-kind-wog x)))
      (cond ((eq kind :var)
             (svex-env-fastlookup-wog x env))
-           ((eq kind :quote)
-            (cond ((atom x) x)
-                  ((atom (cdr x)) (sv::4vec-x))
-                  (t (cadr x))))
+           ((eq kind :quote) x)
            ((eq kind :node)
             (svex-env-fastlookup-wog (cadr x) node-env))
            (t
@@ -824,9 +828,7 @@
  (def-rp-rule svexl-eval-node-of-quoted
    (implies (eq (svexl-node-kind-wog x) ':quote)
             (equal (svexl-node-eval-wog x node-env env-wires)
-                   (cond ((atom x) x)
-                         ((atom (cdr x)) (sv::4vec-x))
-                         (t (cadr x)))))
+                   x))
    :hints (("goal"
             :expand (svexl-node-eval-wog x node-env env-wires)
             :in-theory (e/d (svex-env-fastlookup-wog) ()))))

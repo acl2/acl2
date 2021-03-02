@@ -29,7 +29,7 @@
 (assert-event (not (json-patternp 'T)))
 (assert-event (not (json-patternp 'NIL)))
 (assert-event (not (json-patternp '||)))
-(assert-event (not (json-patternp '::_)))
+(assert-event (not (json-patternp ':_)))
 
 ;; *.. is not allowed at the top level.
 ;; Currently it is only allowed as the last array element or object member.
@@ -46,12 +46,12 @@
 
 ;; It is only json::match? that is let-bound to the full matching form
 (assert-event (not (json-patternp '(:string match?))))
-(assert-event (json-patternp '(:string acl2::::match?)))
+(assert-event (json-patternp '(:string acl2::match?)))
 
 (assert-event (json-patternp '(:number 4)))
 (assert-event (json-patternp '(:number 4/5)))
 (assert-event (json-patternp '(:number efg)))
-(assert-event (not (json-patternp '(:number ::fgh))))
+(assert-event (not (json-patternp '(:number :fgh))))
 
 (assert-event (json-patternp '(:array *..)))
 (assert-event (json-patternp '(:object *..)))
@@ -302,3 +302,43 @@
        ((unless (and (eq one :nomatch!) (eq four :nomatch!))) nil)
        )
     t))
+
+(assert-event (pat-test-4))
+
+;; test new SYMBOL.. pattern that binds a variable to a tail of a list
+
+(defun pat-test-5 ()
+  (b* ((parent-form (cons
+                     :mycar
+                     (make-value-array
+                      :elements (list (make-value-true)
+                                      (make-value-string :get "two")
+                                      (make-value-number :get 3)
+                                      (make-value-false)
+                                      (make-value-null)))))
+       ((pattern (:array one rest..)) (cdr parent-form))
+       ((unless match?) nil)
+       ((unless (jtruep one)) nil)
+       ((pattern (:array "two" cdr-rest..)) (make-value-array :elements rest..))
+       ((unless (and match?
+                     (equal (list* (make-value-true)
+                                   (make-value-string :get "two")
+                                   cdr-rest..)
+                            (value-array->elements (cdr parent-form)))))
+        nil))
+    t))
+
+(assert-event (pat-test-5))
+
+;; Also apply SYMBOL.. to the tail of a member list
+
+(defun pat-test-6 ()
+  (b* ((parent-form (make-value-object :members (list (make-member :name "var" :value (make-value-string :get "x"))
+                                                      (make-member :name "type" :value (make-value-string :get "int"))
+                                                      (make-member :name "val" :value (make-value-number :get 3)))))
+       ((pattern (:object (:member "var" v) type-and-val..)) parent-form)
+       ((unless (and match?
+                     (equal (len type-and-val..) 2))) nil))
+    t))
+
+(assert-event (pat-test-6))

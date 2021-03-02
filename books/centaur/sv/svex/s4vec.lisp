@@ -818,6 +818,38 @@
   ///
   (s4vec-correct))
 
+(define s4vec-bit?! ((test s4vec-p)
+                     (thens s4vec-p)
+                     (elses s4vec-p))
+  :returns (res s4vec-p)
+  (b* (((s4vec test))
+       (pick-then (sparseint-bitand test.upper test.lower))
+       ((when (sparseint-equal pick-then -1)) (s4vec-fix thens))
+       ((when (sparseint-equal pick-then 0)) (s4vec-fix elses))
+       (pick-else (sparseint-bitnot pick-then))
+       ((s4vec thens))
+       ((s4vec elses))
+       (upper (sparseint-bitor (sparseint-bitand pick-then thens.upper)
+                               (sparseint-bitand pick-else elses.upper)))
+       (lower (sparseint-bitor (sparseint-bitand pick-then thens.lower)
+                               (sparseint-bitand pick-else elses.lower))))
+    (s4vec upper lower))
+  ///
+  (local (defthm logand-a-b-c-when-a-b-equal-cons
+           (implies (and (equal k (logand x y))
+                         (syntaxp (quotep k)))
+                    (equal (logand x y z) (logand k z)))
+           :hints(("Goal" :use ((:instance bitops::associativity-of-logand
+                                 (a x) (b y) (c z)))
+                   :in-theory (disable bitops::associativity-of-logand)))))
+  (local (defthm logior-0
+           (equal (logior x 0) (ifix x))
+           :hints(("Goal" :in-theory (enable bitops::logior**)))))
+  (local (in-theory (disable acl2::commutativity-of-logand
+                             acl2::commutativity-of-logior
+                             bitops::commutativity-2-of-logand)))
+  (s4vec-correct))
+
 
 (define s3vec-?* ((test s4vec-p)
                   (then s4vec-p)

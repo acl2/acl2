@@ -9,7 +9,7 @@
                           (2 1 (:REWRITE DEFAULT-+-2))
                           (2 1 (:DEFINITION TRUE-LISTP))
                           (1 1 (:REWRITE DEFAULT-+-1)))
-(META-APPLY$-PRIM (4275 4275 (:REWRITE DEFAULT-CDR))
+(META-APPLY$-PRIM (4283 4283 (:REWRITE DEFAULT-CDR))
                   (306 6 (:DEFINITION APPLY$-BADGEP))
                   (240 6 (:DEFINITION NATP))
                   (169 7

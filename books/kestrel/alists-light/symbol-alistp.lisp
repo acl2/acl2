@@ -41,6 +41,12 @@
            (symbol-alistp (cdr alist)))
   :hints (("Goal" :in-theory (enable symbol-alistp))))
 
+(defthm symbol-alistp-of-take
+  (implies (symbol-alistp alist)
+           (equal (symbol-alistp (take n alist))
+                  (<= (nfix n) (len alist))))
+  :hints (("Goal" :in-theory (enable symbol-alistp take))))
+
 (defthm symbol-alistp-of-nthcdr
   (implies (symbol-alistp alist)
            (symbol-alistp (nthcdr n alist)))
@@ -80,3 +86,9 @@
 (defthmd true-listp-when-symbol-alistp
   (implies (symbol-alistp x)
            (true-listp x)))
+
+(defthm symbol-alistp-of-revappend
+  (equal (symbol-alistp (revappend x y))
+         (and (symbol-alistp (true-list-fix x))
+              (symbol-alistp y)))
+  :hints (("Goal" :in-theory (enable revappend))))

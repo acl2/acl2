@@ -13,6 +13,8 @@
 (include-book "solve-templates")
 
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
+(include-book "kestrel/soft/defun-inst" :dir :system)
+(include-book "kestrel/soft/defthm-inst" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,6 +29,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate functions and theorems with proofs.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro gen-solution-for-rw-eqterm (&key vars)
+  `(progn
+     (defthmd rw-theorem
+       (equal (m ,@vars (?f ,@vars))
+              (equal (?f ,@vars)
+                     (term ,@vars)))
+       :hints (("Goal" :in-theory '(rwrule))))
+     (gen-f :name f
+            :inputs ,vars
+            :body (term ,@vars)
+            :guard t
+            :guard-hints (("Goal" :in-theory nil)))
+     (soft::defun-inst old-instance
+       (old (?f . f)))
+     (soft::defthm-inst rw-theorem-instance
+       (rw-theorem (?f . f)))
+     (defthmd sol-theorem
+       (old-instance)
+       :instructions
+       ((:in-theory nil)
+        :x
+        (:rewrite rw-theorem-instance)
+        (:prove :hints (("Goal" :in-theory '(f))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro gen-f-body-correct-with-proofs-for-rw-eqterm (&key vars)
   `(progn
@@ -57,6 +87,8 @@
               (m ,@vars (?f ,@vars)))
      :hints (("Goal" :in-theory '(sat)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro gen-f-with-proofs-for-term (&key vars)
   `(gen-f :name f
           :inputs ,vars
@@ -76,6 +108,8 @@
             :f f
             :guard-hints (("Goal" :in-theory nil))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun gen-instantiation-1 ()
   '((x (old-witness))))
 
@@ -87,6 +121,8 @@
   '((x (mv-nth 0 (old-witness)))
     (y (mv-nth 1 (old-witness)))
     (z (mv-nth 2 (old-witness)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro gen-old-if-new-with-proofs (instantiation)
   (let ((lemma-instance `(:instance f-body-correct ,@instantiation)))

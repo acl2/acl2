@@ -1,0 +1,14 @@
+; Copyright (C) 2020, Regents of the University of Texas
+; Written by Matt Kaufmann, Dec., 2020
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; cert-flags: ? t :ttags (:bogus-cert)
+
+(include-book "tools/run-script" :dir :system)
+(run-script "memoize-invoke")
+
+; Help dependency scanner.
+#||
+(depends-on "memoize-invoke-input.lsp")
+(depends-on "memoize-invoke-log.txt")
+||#

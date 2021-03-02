@@ -16,7 +16,7 @@
 
 ;Changed this to match the version in the std library.
 ;maybe this should not be hyphenated by analogy with nfix, etc.
-(DEFUN BOOL-FIX$INLINE (X)
+(DEFUND BOOL-FIX$INLINE (X)
   (DECLARE (XARGS :GUARD T))
   (AND X T))
 
@@ -24,7 +24,7 @@
 (DEFMACRO BOOL-FIX (X)
   (LIST 'BOOL-FIX$INLINE X))
 
-;; TODO: Add macro alias
+(add-macro-alias bool-fix bool-fix$inline)
 
 ;; ;; old:
 ;; (defun bool-fix (x)
@@ -38,4 +38,18 @@
 (defthm bool-fix-when-booleanp
   (implies (booleanp x)
            (equal (bool-fix x)
-                  x)))
+                  x))
+  :hints (("Goal" :in-theory (enable bool-fix))))
+
+(defthm not-of-bool-fix
+  (equal (not (bool-fix x))
+         (not x))
+  :hints (("Goal" :in-theory (enable bool-fix))))
+
+(defthm bool-fix-iff
+  (iff (bool-fix x)
+       x)
+  :hints (("Goal" :in-theory (enable bool-fix))))
+
+;; This helps justify some things that Axe does:
+(defcong iff equal (bool-fix$inline x) 1 :hints (("Goal" :in-theory (enable bool-fix))))

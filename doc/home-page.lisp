@@ -445,12 +445,19 @@ file <code>books/doc/manual/index.html</code> under your ACL2 sources directory.
 <br><hr><br>
 <H2><a NAME=\"Tools\">Community Books: Lemma Libraries and Utilities, and How to Contribute</a></H2>
 
-A companion to ACL2 is the library of <em>community books</em>, which have
-been developed by many users over the years.  These books contain definitions
-and theorems that you might find useful in your models and proofs.  In
-addition, some books contain ACL2 reasoning or analysis tools built by users.
-The <a href=\"HTML/installation/installation.html\">installation instructions</a>
-explain how to download and install the community books.
+A companion to ACL2 is the library of <em>community books</em>, which have been
+developed by many users over the years.  These books contain definitions and
+theorems that you might find useful in your models and proofs.  In addition,
+some books contain ACL2 tools built by users to help with reasoning,
+programming, interfaces, debugging, and testing; see <a
+href='http://www.cs.utexas.edu/users/moore/acl2/v8-3/combined-manual/index.html'>
+the documentation</a>.  Some relevant papers may be found by following links in
+the pages on <a
+href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>
+Books and Papers about ACL2 and Its Applications</a> and the <a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
+Series</a>.  The <a href=\"HTML/installation/installation.html\">installation
+instructions</a> explain how to download and install the community books.
 
 <p>
 
@@ -466,14 +473,9 @@ documentation, and project members are welcome to improve it.
 
 <p>
 
-We also distribute a few interface
-tools.  For these, see the <a
-href=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html#Utilities\">Utilities</a>
-section of <a href=
-\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-Books and Papers about ACL2 and Its Applications</a>.  Some of the
-papers mentioned in that collection contain utilities, scripts, or
-ACL2 books for the problem domains in question.
+(Prior to ACL2 Version 7.0 (January, 2015) books were <a
+href='http://acl2.org/books-pre-7.0/'>distributed through a different
+mechanism</a>.)
 
 <br><hr><br>
 <H2><a NAME=\"search\">Searching documentation</a></H2>

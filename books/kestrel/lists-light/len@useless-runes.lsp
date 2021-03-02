@@ -68,3 +68,12 @@
                     (3 3 (:REWRITE DEFAULT-<-1))
                     (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
                     (2 2 (:REWRITE DEFAULT-+-1)))
+(LEN-OF-CDDR-WHEN-EQUAL-OF-LEN
+     (44 44 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (42 6 (:REWRITE DEFAULT-CDR))
+     (29 29 (:REWRITE DEFAULT-+-2))
+     (29 29 (:REWRITE DEFAULT-+-1))
+     (3 3
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (2 1 (:REWRITE DEFAULT-<-1))
+     (1 1 (:REWRITE DEFAULT-<-2)))

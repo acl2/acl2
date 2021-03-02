@@ -713,7 +713,7 @@
      (xdoc::p
       "Theorem that rewrites @('old') in terms of @('new'):")
      (xdoc::codeblock
-      ";; when the :variant input of tailrec is :monoir od :monoid-alt:"
+      ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
       "         (new x1 ... xn base<x1,...,xn>)))"

@@ -77,6 +77,8 @@ collect_bottom_out_of_date
 collect_top_up_to_date
 collect_top_up_to_date_modulo_local
 collect_all_up_to_date
+write_timestamps
+read_timestamps
 );
 
 
@@ -105,7 +107,7 @@ my $print_deps = 0;
 my $believe_cache = 0;
 my $pcert_all = 0;
 my $include_excludes = 0;
-
+my $debug_up_to_date = 0;
 
 # sub cert_bookdeps {
 #     my ($cert, $depdb) = @_;
@@ -142,6 +144,7 @@ sub certlib_set_opts {
     $believe_cache = $opts->{"believe_cache"};
     $pcert_all = $opts->{"pcert_all"};
     $include_excludes = $opts->{"include_excludes"};
+    $debug_up_to_date = $opts->{"debug_up_to_date"};
 }
 
 
@@ -889,14 +892,31 @@ sub lookup_colon_dir {
 #                              a pair of pipes with a series of intervening non-pipe characters.
 # For now, stick with a dumber, less error-prone method.
 
+my $timestamps = {};
+
 sub ftimestamp {
     my $file = shift;
+    if (exists $timestamps->{$file}) {
+	return $timestamps->{$file};
+    }
     my @statinfo = stat($file);
     if (@statinfo) {
+	$timestamps->{$file} = $statinfo[9];
 	return $statinfo[9];
     } else {
+	$timestamps->{$file} = -1;
 	return -1;
     }
+}
+
+sub write_timestamps {
+    my $tsfile = shift;
+    nstore($timestamps, $tsfile);
+}
+
+sub read_timestamps {
+    my $tsfile = shift;
+    $timestamps = retrieve($tsfile);
 }
 
 sub excludep {
@@ -961,8 +981,9 @@ sub src_events {
 	return $cache_entry->[0];
     }
 
+    my $timestamp = ftimestamp($fname);
     # check timestamp: to be valid, the entry's timestamp must equal the file's.
-    if ($entry && ! $entry_ok && (ftimestamp($fname) == $entry->[1])) {
+    if ($entry && ! $entry_ok && ($timestamp == $entry->[1])) {
 	# Print debugging output on stdout
 	print "timestamp of $fname ok\n" if $debugging;
 	$checked->{$fname} = 1;
@@ -977,7 +998,7 @@ sub src_events {
 
     print "reading events for $fname\n" if $debugging;
     my $events = scan_src($fname);
-    my $timestamp = ftimestamp($fname);
+    # my $timestamp = ftimestamp($fname);
     my $cache_entry = [$events, $timestamp];
     print "caching events for $fname\n" if $debugging;
     $evcache->{$fname} = $cache_entry;
@@ -1448,7 +1469,7 @@ sub propagate_reqparam {
 
 sub newer_than_or_equal {
     my ($f1, $f2) = @_;
-    return (stat($f1))[9] >= (stat($f2))[9];
+    return ftimestamp($f1) >= ftimestamp($f2);
 }
 
 # Returns a hash mapping each certificate to 1 if up to date, 0 if not.
@@ -1540,13 +1561,22 @@ sub collect_top_up_to_date {
     return \@top_up_to_date;
 }
 
+
 sub collect_top_up_to_date_modulo_local {
     # up_to_date is the hash returned by check_up_to_date
     my ($targets, $depdb, $up_to_date) = @_;
 
+    # We need to traverse non-up-to-date targets to find which of
+    # their up-to-date nonlocal dependencies need including.  We also
+    # traverse up-to-date targets to mark those that are included
+    # nonlocally under another up-to-date target (and therefore don't
+    # need to be included separately since they will be included by
+    # the ancestor).
+
     # This tracks whether each target is under an up-to-date target,
     # but also doubles as a seen list.
     my %under_up_to_date = ();
+    my $INDENT = "";
     my $dfs;
     $dfs = sub {
 	my ($target, $under) = @_;
@@ -1554,15 +1584,32 @@ sub collect_top_up_to_date_modulo_local {
 	    # Seen already. Skip, but first update under_up_to_date if
 	    # it needs it.
 	    if ($under) {
-		$under_up_to_date{$target} = 1;
+		print STDERR "${INDENT}$target set as under up to date $under\n" if $debug_up_to_date;
+		$under_up_to_date{$target} = $under;
+	    } else {
+	    	print STDERR "${INDENT}$target already seen\n" if $debug_up_to_date;
 	    }
 	    return;
 	}
 	$under_up_to_date{$target} = $under;
-
+	my $uptodate = $up_to_date->{$target} ? $target : 0;
+	if ($debug_up_to_date) {
+	    if ($uptodate) {
+		if ($under) {
+		    print STDERR "${INDENT}$target up to date (under $under)\n";
+		} else {
+		    print STDERR "${INDENT}$target up to date\n";
+		}
+	    } else {
+		print STDERR "${INDENT}$target out of date\n";
+	    }
+	}
 	my $certdeps = $depdb->cert_nonlocal_deps($target);
 	foreach my $cert (@$certdeps) {
-	    $dfs->($cert, $up_to_date->{$target});
+	    my $saved_indent = $INDENT;
+	    $INDENT = "${INDENT} " if $debug_up_to_date;
+	    $dfs->($cert, $uptodate);
+	    $INDENT = $saved_indent;
 	}
     };
 
@@ -1571,7 +1618,7 @@ sub collect_top_up_to_date_modulo_local {
     }
     my @top_up_to_date = ();
     while ((my $cert, my $updated) = each %$up_to_date) {
-	if ($updated && exists $under_up_to_date{$cert} && $under_up_to_date{$cert} == 0) {
+	if ($updated && exists $under_up_to_date{$cert} && ! $under_up_to_date{$cert}) {
 	    push (@top_up_to_date, $cert);
 	}
     }
@@ -1650,6 +1697,53 @@ sub collect_bottom_out_of_date {
 }
 
 
+sub clean_generated_files {
+    my ($base) = @_;
+
+    my @exts = ( ".cert",
+		 ".cert.out",
+		 ".cert.time",
+		 ".acl2x",
+		 ".lx64fsl",
+		 "\@expansion.lsp",
+		 ".date",
+		 ".cert.temp",
+		 ".pcert0",
+		 ".pcert1",
+		 ".pcert0.temp",
+		 ".port",
+		 ".h",
+		 ".c",
+		 ".data",
+		 ".o",
+		 ".sbin",
+		 ".lbin",
+		 ".fasl",
+		 ".ufsl",
+		 ".64ufasl",
+		 ".ufasl",
+		 ".pfsl",
+		 ".dfsl",
+		 ".dx32fsl",
+		 ".lx32fsl",
+		 ".d64fsl",
+		 ".dx64fsl",
+		 ".lx64fsl",
+		 ".bin",
+		 ".sparcf",
+		 ".axpf",
+		 ".x86f",
+		 ".ppcf",
+		 ".fas",
+		 ".lib"
+	);
+    foreach my $ext (@exts) {
+	my $tmpfile = $base . $ext;
+	unlink($tmpfile) if (-e $tmpfile);
+    }
+}
+
+
 # During a dependency search, this is run with $target set to each
 # cert and source file in the dependencies of the top-level targets.
 # If the target has been seen before, then it returns immediately.
@@ -1690,52 +1784,7 @@ sub add_deps {
     my $lispfile = $base . ".lisp";
 
     # Clean the cert and out files, etc., if we're cleaning.
-    if ($clean_certs) {
-	my $outfile = $target . ".out";
-	my $timefile = $target . ".time";
-	my $acl2xfile = $base . ".acl2x";
-	unlink($target) if (-e $target);
-	unlink($outfile) if (-e $outfile);
-	unlink($timefile) if (-e $timefile);
-	unlink($acl2xfile) if (-e $acl2xfile);
-	my $tmpfile;
-	# Keep what follows in sync with unversioned-files.txt.
-	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . "\@expansion.lsp"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . "*.out"; -- already covered by $outfile above
-	$tmpfile = $base . ".date"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . ".cert" -- already covered by $target above
-	$tmpfile = $base . ".cert.temp"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert0"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert1"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert0.temp"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".port"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . ".acl2x"; -- already covered by $acl2xfile above
-	$tmpfile = $base . ".h"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".c"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".data"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".o"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".sbin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lbin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".fasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ufsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".64ufasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ufasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pfsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dfsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dx32fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lx32fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".d64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".bin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".sparcf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".axpf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".x86f"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ppcf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".fas"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lib"; unlink($tmpfile) if (-e $tmpfile);
-    }
+    clean_generated_files($base) if ($clean_certs);
 
     # First check that the corresponding .lisp file exists.
     # if (! -e $lispfile) {

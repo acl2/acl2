@@ -82,14 +82,6 @@
       (list x y n)
     (floor2-floor2-sub1-induct (floor x 2) (floor y 2) (+ -1 n)))))
 
-(defthmd integerp-of-*-of-1/2-becomes-evenp
-  (implies (integerp x)
-           (equal (INTEGERP (* 1/2 x))
-                  (evenp x)))
-  :hints (("Goal" :in-theory (enable evenp))))
-
-(theory-invariant (incompatible (:rewrite integerp-of-*-of-1/2-becomes-evenp) (:definition evenp)))
-
 (local
  (defthm evenp-when-equal-of-mod-of-expt-and-0
   (implies (and (equal (mod x (expt 2 n)) 0) ;n is a free var

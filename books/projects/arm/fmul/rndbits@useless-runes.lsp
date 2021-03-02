@@ -516,6 +516,8 @@
  (130 130 (:REWRITE SUBSETP-MEMBER . 3))
  (130 130 (:REWRITE SUBSETP-MEMBER . 2))
  (130 130 (:REWRITE SUBSETP-MEMBER . 1))
+ (130 130 (:REWRITE INTERSECTP-MEMBER . 3))
+ (130 130 (:REWRITE INTERSECTP-MEMBER . 2))
  (126 126 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (126 126
       (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
@@ -1540,58 +1542,51 @@
  (3 3 (:TYPE-PRESCRIPTION RTL::PROD0))
  (3 3 (:TYPE-PRESCRIPTION NATP)))
 (RTL::RGRD-1
- (155 1 (:REWRITE RTL::BITS-TAIL-GEN))
+ (132 1 (:REWRITE RTL::BITS-TAIL-GEN))
  (46 3 (:LINEAR LOGAND-BOUNDS-NEG . 2))
  (46 3 (:LINEAR LOGAND-BOUNDS-NEG . 1))
- (41 41
+ (37 37
      (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
- (24 12 (:REWRITE DEFAULT-LOGAND-2))
- (24 12 (:REWRITE DEFAULT-LOGAND-1))
- (22 9
+ (18 7
      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
- (22 9 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
- (20 9 (:REWRITE DEFAULT-LESS-THAN-1))
- (12 12 (:REWRITE LOGAND-CONSTANT-MASK))
- (11 9 (:REWRITE DEFAULT-LESS-THAN-2))
+ (18 7 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+ (16 8 (:REWRITE DEFAULT-LOGAND-2))
+ (16 8 (:REWRITE DEFAULT-LOGAND-1))
+ (16 7 (:REWRITE DEFAULT-LESS-THAN-1))
  (10 5 (:REWRITE DEFAULT-PLUS-2))
- (9 9 (:REWRITE THE-FLOOR-BELOW))
- (9 9 (:REWRITE THE-FLOOR-ABOVE))
- (9 9 (:REWRITE SIMPLIFY-SUMS-<))
- (9 9 (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (9 9
-    (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (9 9
-    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (9 9 (:REWRITE INTEGERP-<-CONSTANT))
- (9 9 (:REWRITE CONSTANT-<-INTEGERP))
- (9 9
-    (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (9 9
-    (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (9 9
-    (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (9 9
-    (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (9 9 (:REWRITE |(< c (- x))|))
- (9 9
-    (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (9 9
-    (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (9 9
-    (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (9 9
-    (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (9 9 (:REWRITE |(< (/ x) (/ y))|))
- (9 9 (:REWRITE |(< (- x) c)|))
- (9 9 (:REWRITE |(< (- x) (- y))|))
+ (9 7 (:REWRITE DEFAULT-LESS-THAN-2))
+ (8 8 (:REWRITE LOGAND-CONSTANT-MASK))
  (8 5 (:REWRITE DEFAULT-PLUS-1))
+ (7 7 (:REWRITE THE-FLOOR-BELOW))
+ (7 7 (:REWRITE THE-FLOOR-ABOVE))
+ (7 7 (:REWRITE SIMPLIFY-SUMS-<))
+ (7 7 (:REWRITE REMOVE-STRICT-INEQUALITIES))
  (7 7
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+    (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
  (7 7
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
- (7 7 (:REWRITE |(< (/ x) 0)|))
- (7 7 (:REWRITE |(< (* x y) 0)|))
- (6 6 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+ (7 7 (:REWRITE INTEGERP-<-CONSTANT))
+ (7 7 (:REWRITE CONSTANT-<-INTEGERP))
+ (7 7
+    (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+ (7 7
+    (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+ (7 7
+    (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+ (7 7
+    (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+ (7 7 (:REWRITE |(< c (- x))|))
+ (7 7
+    (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+ (7 7
+    (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+ (7 7
+    (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+ (7 7
+    (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+ (7 7 (:REWRITE |(< (/ x) (/ y))|))
+ (7 7 (:REWRITE |(< (- x) c)|))
+ (7 7 (:REWRITE |(< (- x) (- y))|))
  (5
    5
    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT))
@@ -1606,8 +1601,15 @@
     (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
  (5 5
     (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A))
+ (5 5
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+ (5 5
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (5 5 (:REWRITE RTL::BITS-REVERSE-INDICES))
  (5 5 (:REWRITE RTL::BITS-NEG-INDICES))
+ (5 5 (:REWRITE |(< (/ x) 0)|))
+ (5 5 (:REWRITE |(< (* x y) 0)|))
+ (4 4 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (4 2 (:REWRITE DEFAULT-LOGNOT))
  (3 3
     (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -2217,6 +2219,8 @@
       (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
  (129 129
       (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+ (129 129 (:REWRITE INTERSECTP-MEMBER . 3))
+ (129 129 (:REWRITE INTERSECTP-MEMBER . 2))
  (129 129
       (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
  (129 129 (:REWRITE |(equal c (/ x))|))
@@ -2519,27 +2523,26 @@
  (3 1 (:REWRITE RTL::BVECP-BITN-0))
  (1 1 (:REWRITE RTL::BITN-NEG)))
 (RTL::BVECP-RGRDMASK
- (159 1 (:REWRITE RTL::BITS-TAIL-GEN))
- (39 13
-     (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 3))
+ (136 1 (:REWRITE RTL::BITS-TAIL-GEN))
  (39 1 (:LINEAR LOGAND-BOUNDS-POS . 2))
- (31 31
+ (33 11
+     (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 3))
+ (24 24
      (:TYPE-PRESCRIPTION RTL::BITS-NONNEGATIVE-INTEGERP-TYPE))
- (23 2 (:LINEAR RTL::LOGAND-BND))
  (19 1 (:LINEAR LOGAND-BOUNDS-POS . 1))
- (13 13
+ (11 11
      (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
- (10 5 (:REWRITE DEFAULT-LOGAND-2))
- (10 5 (:REWRITE DEFAULT-LOGAND-1))
  (7 2
     (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
  (7 2 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
  (7 2 (:REWRITE DEFAULT-LESS-THAN-1))
+ (6 3 (:REWRITE DEFAULT-LOGAND-2))
+ (6 3 (:REWRITE DEFAULT-LOGAND-1))
  (6 2
     (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (5 5 (:REWRITE LOGAND-CONSTANT-MASK))
  (4 1 (:LINEAR LOGAND-BOUNDS-NEG . 2))
  (4 1 (:LINEAR LOGAND-BOUNDS-NEG . 1))
+ (3 3 (:REWRITE LOGAND-CONSTANT-MASK))
  (3 3 (:REWRITE RTL::BITS-REVERSE-INDICES))
  (3 3 (:REWRITE RTL::BITS-NEG-INDICES))
  (2 2 (:REWRITE THE-FLOOR-BELOW))
@@ -4413,6 +4416,8 @@
  (130 130 (:REWRITE SUBSETP-MEMBER . 3))
  (130 130 (:REWRITE SUBSETP-MEMBER . 2))
  (130 130 (:REWRITE SUBSETP-MEMBER . 1))
+ (130 130 (:REWRITE INTERSECTP-MEMBER . 3))
+ (130 130 (:REWRITE INTERSECTP-MEMBER . 2))
  (128 128 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (128 128
       (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
@@ -4961,9 +4966,9 @@
        (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
  (1204 1204
        (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A))
- (974 389
-      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
  (950 13 (:LINEAR EXPT->=-1-ONE))
+ (938 371
+      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
  (881 13 (:LINEAR EXPT-<=-1-TWO))
  (872 13 (:LINEAR EXPT-<-1-TWO))
  (863 13 (:LINEAR EXPT-X->=-X))
@@ -4971,7 +4976,7 @@
  (863 13 (:LINEAR EXPT->-1-ONE))
  (852 44
       (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
- (814 389 (:REWRITE DEFAULT-LESS-THAN-2))
+ (796 371 (:REWRITE DEFAULT-LESS-THAN-2))
  (766 12 (:REWRITE MOD-X-Y-=-X+Y . 2))
  (709 2 (:REWRITE MOD-X-Y-=-X-Y . 1))
  (696 12 (:REWRITE DEFAULT-MOD-RATIO))
@@ -4982,12 +4987,11 @@
       (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
  (672 12 (:REWRITE MOD-X-Y-=-X . 4))
  (670 12 (:REWRITE MOD-X-Y-=-X . 3))
- (666 18 (:LINEAR RTL::LOGAND-BND))
  (624 78 (:TYPE-PRESCRIPTION MOD-ZERO . 2))
- (600 389 (:REWRITE DEFAULT-LESS-THAN-1))
  (581 68 (:REWRITE DEFAULT-TIMES-2))
- (575 271 (:REWRITE SIMPLIFY-SUMS-<))
  (567 27 (:REWRITE |(/ (expt x n))|))
+ (564 371 (:REWRITE DEFAULT-LESS-THAN-1))
+ (557 253 (:REWRITE SIMPLIFY-SUMS-<))
  (480 12 (:REWRITE MOD-ZERO . 4))
  (473 473
       (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
@@ -4997,39 +5001,39 @@
       (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
  (473 473
       (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1))
- (443 389 (:REWRITE |(< c (- x))|))
- (439 389 (:REWRITE |(< (- x) c)|))
- (439 389 (:REWRITE |(< (- x) (- y))|))
+ (425 371 (:REWRITE |(< c (- x))|))
+ (421 371 (:REWRITE |(< (- x) c)|))
+ (421 371 (:REWRITE |(< (- x) (- y))|))
  (412 4 (:REWRITE RTL::BITS-TAIL-GEN))
  (402 42 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
- (395 389
+ (377 371
       (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (389 389 (:REWRITE THE-FLOOR-BELOW))
- (389 389 (:REWRITE THE-FLOOR-ABOVE))
- (389 389
-      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (389 389
-      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (389 389 (:REWRITE INTEGERP-<-CONSTANT))
- (389 389 (:REWRITE CONSTANT-<-INTEGERP))
- (389 389
-      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (389 389
-      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (389 389
-      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (389 389
-      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (389 389
-      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (389 389
-      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (389 389
-      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (389 389
-      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (389 389 (:REWRITE |(< (/ x) (/ y))|))
  (372 4 (:REWRITE RTL::BITS-NEG-INDICES))
+ (371 371 (:REWRITE THE-FLOOR-BELOW))
+ (371 371 (:REWRITE THE-FLOOR-ABOVE))
+ (371 371
+      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+ (371 371
+      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+ (371 371 (:REWRITE INTEGERP-<-CONSTANT))
+ (371 371 (:REWRITE CONSTANT-<-INTEGERP))
+ (371 371
+      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+ (371 371
+      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+ (371 371
+      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+ (371 371
+      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+ (371 371
+      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+ (371 371
+      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+ (371 371
+      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+ (371 371
+      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+ (371 371 (:REWRITE |(< (/ x) (/ y))|))
  (360 12 (:REWRITE MOD-X-Y-=-X . 2))
  (351 9 (:LINEAR LOGAND-BOUNDS-POS . 1))
  (348 12 (:REWRITE MOD-X-Y-=-X-Y . 3))
@@ -5042,7 +5046,7 @@
  (270 27 (:REWRITE |(- (+ x y))|))
  (267 42 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (255 131 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
- (246 242 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+ (228 224 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (228 12
       (:REWRITE MOD-CANCEL-*-REWRITING-GOAL-LITERAL))
  (228 12
@@ -5055,19 +5059,15 @@
  (164 75 (:REWRITE DEFAULT-MINUS))
  (163 114
       (:REWRITE EXPT-WITH-VIOLATED-GUARDS))
- (147 147 (:REWRITE |(< (/ x) 0)|))
- (147 147 (:REWRITE |(< (* x y) 0)|))
  (134 68 (:REWRITE DEFAULT-TIMES-1))
  (132 12
       (:REWRITE THIS-NEEDS-TO-BE-ADDED-TO-QUOTIENT-REMAINDER-LEMMAS))
  (132 12 (:REWRITE DEFAULT-MOD-2))
+ (129 129 (:REWRITE |(< (/ x) 0)|))
+ (129 129 (:REWRITE |(< (* x y) 0)|))
  (128 1 (:REWRITE MOD-ZERO . 1))
  (116 4 (:LINEAR MOD-BOUNDS-2))
  (106 57 (:REWRITE DEFAULT-EXPT-2))
- (83 83
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
- (83 83
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (82 82 (:REWRITE |(< (+ c/d x) y)|))
  (82 82 (:REWRITE |(< (+ (- c) x) y)|))
  (78 78 (:TYPE-PRESCRIPTION MOD-ZERO . 3))
@@ -5081,6 +5081,10 @@
      (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
  (69 69 (:REWRITE |(< y (+ (- c) x))|))
  (69 69 (:REWRITE |(< x (+ c/d y))|))
+ (65 65
+     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+ (65 65
+     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (64 44 (:REWRITE |(equal (- x) (- y))|))
  (63 63 (:REWRITE |(< 0 (/ x))|))
  (63 63 (:REWRITE |(< 0 (* x y))|))
@@ -5617,59 +5621,58 @@
  (118 118
       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
  (112 3 (:REWRITE RTL::NEG-BITN-1))
- (74 2 (:LINEAR RTL::LOGAND-BND))
- (70 43
+ (66 41
      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
- (61 43 (:REWRITE DEFAULT-LESS-THAN-2))
- (60 43 (:REWRITE DEFAULT-LESS-THAN-1))
- (55 43 (:REWRITE |(< (- x) c)|))
- (55 43 (:REWRITE |(< (- x) (- y))|))
+ (59 41 (:REWRITE DEFAULT-LESS-THAN-2))
+ (56 41 (:REWRITE DEFAULT-LESS-THAN-1))
+ (53 41 (:REWRITE |(< (- x) c)|))
+ (53 41 (:REWRITE |(< (- x) (- y))|))
  (45 6
      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
- (43 43 (:REWRITE THE-FLOOR-BELOW))
- (43 43 (:REWRITE THE-FLOOR-ABOVE))
- (43 43
+ (41 41 (:REWRITE THE-FLOOR-BELOW))
+ (41 41 (:REWRITE THE-FLOOR-ABOVE))
+ (41 41
      (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (43 43
+ (41 41
      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (43 43
+ (41 41
      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (43 43 (:REWRITE INTEGERP-<-CONSTANT))
- (43 43 (:REWRITE CONSTANT-<-INTEGERP))
- (43 43
+ (41 41 (:REWRITE INTEGERP-<-CONSTANT))
+ (41 41 (:REWRITE CONSTANT-<-INTEGERP))
+ (41 41
      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (43 43 (:REWRITE |(< c (- x))|))
- (43 43
+ (41 41 (:REWRITE |(< c (- x))|))
+ (41 41
      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (43 43 (:REWRITE |(< (/ x) (/ y))|))
+ (41 41 (:REWRITE |(< (/ x) (/ y))|))
  (39 6 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (33 6 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
- (32 32 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (31 31
      (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
+ (30 30 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (28 16 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
- (27 27 (:REWRITE SIMPLIFY-SUMS-<))
+ (25 25 (:REWRITE SIMPLIFY-SUMS-<))
  (22 22
      (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
  (22 3 (:REWRITE DEFAULT-TIMES-1))
- (21 21 (:REWRITE |(< (/ x) 0)|))
- (21 21 (:REWRITE |(< (* x y) 0)|))
  (20 1 (:LINEAR LOGAND-BOUNDS-POS . 2))
  (20 1 (:LINEAR LOGAND-BOUNDS-POS . 1))
  (20 1 (:LINEAR LOGAND-BOUNDS-NEG . 2))
  (20 1 (:LINEAR LOGAND-BOUNDS-NEG . 1))
+ (19 19 (:REWRITE |(< (/ x) 0)|))
+ (19 19 (:REWRITE |(< (* x y) 0)|))
  (16 16 (:REWRITE |(< (+ c/d x) y)|))
  (16 16 (:REWRITE |(< (+ (- c) x) y)|))
  (16 10 (:REWRITE DEFAULT-MINUS))
@@ -5692,10 +5695,6 @@
  (6 6 (:REWRITE |(equal (/ x) (/ y))|))
  (6 6 (:REWRITE |(equal (- x) c)|))
  (6 6 (:REWRITE |(equal (- x) (- y))|))
- (5 5
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
- (5 5
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (4 4
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
  (4 4
@@ -5707,6 +5706,10 @@
  (4 4 (:REWRITE |(< 0 (* x y))|))
  (4 4 (:REWRITE |(+ c (+ d x))|))
  (3 3 (:TYPE-PRESCRIPTION NATP))
+ (3 3
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+ (3 3
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (3 3 (:REWRITE LOGAND-CONSTANT-MASK))
  (1 1
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
@@ -5941,7 +5944,6 @@
  (1055 6 (:REWRITE RTL::NEG-BITN-0))
  (571 298 (:REWRITE DEFAULT-PLUS-2))
  (529 298 (:REWRITE DEFAULT-PLUS-1))
- (518 14 (:LINEAR RTL::LOGAND-BND))
  (491 7 (:LINEAR LOGAND-BOUNDS-POS . 1))
  (486 7 (:LINEAR LOGAND-BOUNDS-NEG . 2))
  (486 7 (:LINEAR LOGAND-BOUNDS-NEG . 1))
@@ -5957,71 +5959,71 @@
       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
  (354 354
       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A))
- (288 155
+ (260 141
       (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
- (235 155 (:REWRITE DEFAULT-LESS-THAN-2))
- (234 155 (:REWRITE DEFAULT-LESS-THAN-1))
  (224 6 (:REWRITE RTL::NEG-BITN-1))
+ (221 141 (:REWRITE DEFAULT-LESS-THAN-2))
+ (206 141 (:REWRITE DEFAULT-LESS-THAN-1))
  (194 2 (:LINEAR EXPT-<=-1-TWO))
  (192 2 (:LINEAR EXPT-<-1-TWO))
  (190 2 (:LINEAR EXPT-X->=-X))
  (190 2 (:LINEAR EXPT-X->-X))
  (190 2 (:LINEAR EXPT->-1-ONE))
- (186 155 (:REWRITE |(< (- x) c)|))
- (186 155 (:REWRITE |(< (- x) (- y))|))
  (175 21
       (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
- (163 155 (:REWRITE |(< c (- x))|))
- (161 155
+ (172 141 (:REWRITE |(< (- x) c)|))
+ (172 141 (:REWRITE |(< (- x) (- y))|))
+ (149 141 (:REWRITE |(< c (- x))|))
+ (147 141
       (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (155 155 (:REWRITE THE-FLOOR-BELOW))
- (155 155 (:REWRITE THE-FLOOR-ABOVE))
- (155 155
-      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (155 155
-      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (155 155 (:REWRITE INTEGERP-<-CONSTANT))
- (155 155 (:REWRITE CONSTANT-<-INTEGERP))
- (155 155
-      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (155 155
-      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (155 155
-      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (155 155
-      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (155 155
-      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (155 155
-      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (155 155
-      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (155 155
-      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (155 155 (:REWRITE |(< (/ x) (/ y))|))
  (142 21 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
+ (141 141 (:REWRITE THE-FLOOR-BELOW))
+ (141 141 (:REWRITE THE-FLOOR-ABOVE))
+ (141 141
+      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+ (141 141
+      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+ (141 141 (:REWRITE INTEGERP-<-CONSTANT))
+ (141 141 (:REWRITE CONSTANT-<-INTEGERP))
+ (141 141
+      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+ (141 141
+      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+ (141 141
+      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+ (141 141
+      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+ (141 141
+      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+ (141 141
+      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+ (141 141
+      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+ (141 141
+      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+ (141 141 (:REWRITE |(< (/ x) (/ y))|))
  (135 135
       (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
  (130 2 (:LINEAR EXPT->=-1-ONE))
- (123 112 (:REWRITE SIMPLIFY-SUMS-<))
  (121 21 (:REWRITE SIMPLIFY-SUMS-EQUAL))
- (113 109 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+ (109 98 (:REWRITE SIMPLIFY-SUMS-<))
+ (99 95 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (84 45 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
  (75 14 (:REWRITE DEFAULT-TIMES-2))
  (75 14 (:REWRITE DEFAULT-TIMES-1))
- (74 74 (:REWRITE |(< (/ x) 0)|))
- (74 74 (:REWRITE |(< (* x y) 0)|))
  (65 65
      (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+ (60 60 (:REWRITE |(< (/ x) 0)|))
+ (60 60 (:REWRITE |(< (* x y) 0)|))
  (47 20 (:REWRITE DEFAULT-MINUS))
  (46 32 (:REWRITE EXPT-WITH-VIOLATED-GUARDS))
- (39 39
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
- (39 39
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (39 39 (:REWRITE |(< (+ c/d x) y)|))
  (39 39 (:REWRITE |(< (+ (- c) x) y)|))
  (30 16 (:REWRITE DEFAULT-EXPT-2))
+ (25 25
+     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+ (25 25
+     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (23 12 (:REWRITE DEFAULT-LOGAND-1))
  (21 21
      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
@@ -6525,59 +6527,58 @@
  (118 118
       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
  (112 3 (:REWRITE RTL::NEG-BITN-1))
- (74 2 (:LINEAR RTL::LOGAND-BND))
- (70 43
+ (66 41
      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
- (61 43 (:REWRITE DEFAULT-LESS-THAN-2))
- (60 43 (:REWRITE DEFAULT-LESS-THAN-1))
- (55 43 (:REWRITE |(< (- x) c)|))
- (55 43 (:REWRITE |(< (- x) (- y))|))
+ (59 41 (:REWRITE DEFAULT-LESS-THAN-2))
+ (56 41 (:REWRITE DEFAULT-LESS-THAN-1))
+ (53 41 (:REWRITE |(< (- x) c)|))
+ (53 41 (:REWRITE |(< (- x) (- y))|))
  (45 6
      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
- (43 43 (:REWRITE THE-FLOOR-BELOW))
- (43 43 (:REWRITE THE-FLOOR-ABOVE))
- (43 43
+ (41 41 (:REWRITE THE-FLOOR-BELOW))
+ (41 41 (:REWRITE THE-FLOOR-ABOVE))
+ (41 41
      (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (43 43
+ (41 41
      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (43 43
+ (41 41
      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (43 43 (:REWRITE INTEGERP-<-CONSTANT))
- (43 43 (:REWRITE CONSTANT-<-INTEGERP))
- (43 43
+ (41 41 (:REWRITE INTEGERP-<-CONSTANT))
+ (41 41 (:REWRITE CONSTANT-<-INTEGERP))
+ (41 41
      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (43 43 (:REWRITE |(< c (- x))|))
- (43 43
+ (41 41 (:REWRITE |(< c (- x))|))
+ (41 41
      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (43 43
+ (41 41
      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (43 43 (:REWRITE |(< (/ x) (/ y))|))
+ (41 41 (:REWRITE |(< (/ x) (/ y))|))
  (39 6 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (33 6 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
- (32 32 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (31 31
      (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
+ (30 30 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (28 16 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
- (27 27 (:REWRITE SIMPLIFY-SUMS-<))
+ (25 25 (:REWRITE SIMPLIFY-SUMS-<))
  (22 22
      (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
  (22 3 (:REWRITE DEFAULT-TIMES-1))
- (21 21 (:REWRITE |(< (/ x) 0)|))
- (21 21 (:REWRITE |(< (* x y) 0)|))
  (20 1 (:LINEAR LOGAND-BOUNDS-POS . 2))
  (20 1 (:LINEAR LOGAND-BOUNDS-POS . 1))
  (20 1 (:LINEAR LOGAND-BOUNDS-NEG . 2))
  (20 1 (:LINEAR LOGAND-BOUNDS-NEG . 1))
+ (19 19 (:REWRITE |(< (/ x) 0)|))
+ (19 19 (:REWRITE |(< (* x y) 0)|))
  (16 16 (:REWRITE |(< (+ c/d x) y)|))
  (16 16 (:REWRITE |(< (+ (- c) x) y)|))
  (16 10 (:REWRITE DEFAULT-MINUS))
@@ -6600,10 +6601,6 @@
  (6 6 (:REWRITE |(equal (/ x) (/ y))|))
  (6 6 (:REWRITE |(equal (- x) c)|))
  (6 6 (:REWRITE |(equal (- x) (- y))|))
- (5 5
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
- (5 5
-    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (4 4
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
  (4 4
@@ -6615,6 +6612,10 @@
  (4 4 (:REWRITE |(< 0 (* x y))|))
  (4 4 (:REWRITE |(+ c (+ d x))|))
  (3 3 (:TYPE-PRESCRIPTION NATP))
+ (3 3
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+ (3 3
+    (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
  (3 3 (:REWRITE LOGAND-CONSTANT-MASK))
  (1 1
     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))

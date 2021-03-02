@@ -48,6 +48,13 @@
            (equal (bvchop n x) 0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
+(defthm bvchop-when-not-natp-arg1-cheap
+  (implies (not (natp n))
+           (equal (bvchop n x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
 (defthm bvchop-when-i-is-not-an-integer
   (implies (not (integerp i))
            (equal (bvchop size i)
@@ -69,6 +76,11 @@
   (< (bvchop n x) (expt 2 n))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-upper-bound-linear-strong
+  (implies (natp n)
+           (<= (bvchop n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear)
 
 (local
  (defthm bvchop-of-bvchop2
@@ -424,7 +436,7 @@
 
 ;gen
 ;strength reduction
-(defthm mod-by-4-becomes-bvchop
+(defthmd mod-by-4-becomes-bvchop
   (implies (integerp i)
            (equal (mod i 4)
                   (bvchop 2 i)))
@@ -688,3 +700,38 @@
                            (m (+ -1 (integer-length k)))))))
 
 (theory-invariant (incompatible (:definition bvchop) (:rewrite MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+
+(defthm bitp-of-bvchop-of-1
+  (bitp (acl2::bvchop 1 x)))
+
+(defthm bvchop-+-cancel-cross
+  (implies (and (force (integerp size))
+                (>= size 0)
+                (force (integerp i))
+                (force (integerp j))
+                (force (integerp k)))
+           (equal (equal (bvchop size (+ j i))
+                         (bvchop size (+ i k)))
+                  (equal (bvchop size j)
+                         (bvchop size k)))))
+
+(defthm bvchop-+-cancel-cross2
+  (implies (and (force (integerp size))
+                (>= size 0)
+                (force (integerp i))
+                (force (integerp j))
+                (force (integerp k)))
+           (equal (equal (bvchop size (+ i j))
+                         (bvchop size (+ k i)))
+                  (equal (bvchop size j)
+                         (bvchop size k)))))
+
+(defthm bvchop-of-*-of-expt-when-<=
+  (implies (and (<= size n)
+                (integerp x)
+                (natp n)
+                ;(natp size)
+                )
+           (equal (bvchop size (* x (expt 2 n)))
+                  0))
+  :hints (("Goal" :cases ((natp size)))))

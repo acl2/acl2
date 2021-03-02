@@ -988,13 +988,27 @@ implementations.")
 
 (defmacro our-with-standard-io-syntax (&rest args)
 
+; See comment about SBCL below.
+
 ; Note for GCL:
 ; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
 ; GCL.
 
-  (cons #-cltl2 'progn
-        #+cltl2 'with-standard-io-syntax
-        args))
+  #-cltl2
+  (cons 'progn args)
+
+  #+(and cltl2 (not sbcl))
+  (cons 'with-standard-io-syntax args)
+
+; For sbcl we bind *print-readably* to nil.  Otherwise, there is a problem with
+; the call of write-exec-file in save-acl2-in-sbcl-aux: write-exec-file uses
+; our-with-standard-io-syntax, which (without the fix below) has caused the
+; printing of variable PROG (using format directive ~s) to produce not a
+; string, but rather, a structure like this: #A((62) BASE-CHAR . "<string>").
+  #+(and cltl2 sbcl)
+  `(with-standard-io-syntax
+    (let ((*print-readably* nil))
+      ,@args)))
 
 (defun user-args-string (inert-args &optional (separator '"--"))
 
@@ -1700,10 +1714,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; probably later), which has the correct path (doesn't need "lisp" appended).
 
                          ((equal (subseq prog1 (- len 4) len) "bin/")
-                          (concatenate 'string prog1 "lisp"))
+                          (our-truename (concatenate 'string prog1 "lisp") t))
                          ((equal (subseq prog1 (- len 3) len) "bin")
-                          (concatenate 'string prog1 "/lisp"))
-                         (t prog1))))
+                          (our-truename (concatenate 'string prog1 "/lisp") t))
+                         (t (our-truename prog1 t)))))
        (write-exec-file str
                         ("~a"
                          (if use-thisscriptdir-p *thisscriptdir-def* ""))
@@ -1916,7 +1930,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
             (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
       (str sysout-name :direction :output)
-      (let* ((prog (car sb-ext:*posix-argv*)))
+      (let* ((prog (our-truename (car sb-ext:*posix-argv*) t)))
         (write-exec-file
          str
          ("~a~a~%"
@@ -2053,7 +2067,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ;         "~s -I ~s -L ~s ~s~%"
 
           "~s -I ~s~s ~a~%"
-          (system::command-line-argument 0)
+          (our-truename (system::command-line-argument 0) t)
           eventual-sysout-dxl
           (insert-string host-lisp-args)
           (user-args-string inert-args)))
@@ -2179,7 +2193,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
               (error "Unable to determine CCL program pathname!")))
          (os (get-os))
          (ccl-program (qfuncall pathname-os-to-unix
-                                ccl-program0
+                                (our-truename ccl-program0 t)
                                 os
                                 *the-live-state*))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))

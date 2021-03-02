@@ -552,6 +552,8 @@
   :returns (call svex-p)
   (b* ((fn (fnsym-fix fn))
        (args (svexlist-fix args))
+       ((when (svexlist-quotesp args))
+        (svex-quote (svex-apply fn (svexlist-unquote args))))
        ((unless (and (member fn '(concat rsh signx zerox))
                      (if (eq fn 'concat)
                          (eql (len args) 3)
@@ -579,13 +581,34 @@
   (defret svex-call*-correct
     (equal (svex-eval call env)
            (svex-eval (svex-call fn args) env))
-    :hints(("Goal" :in-theory (enable svex-apply
-                                      svexlist-eval
-                                      4veclist-nth-safe))))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable svex-apply
+                                     svexlist-eval
+                                     4veclist-nth-safe)))))
 
   (defret svex-call*-vars
     (implies (not (member v (svexlist-vars args)))
              (not (member v (svex-vars call))))))
+
+
+(defsection svcall*
+  :parents (svex)
+  :short "Safely construct an @(see svex) for a function call, with evaluation
+          of quotes and simplification of concatenations and right-shifts."
+
+
+  (defun svcall*-fn (fn args)
+    (declare (xargs :guard t))
+    (b* ((look (assoc fn *svex-op-table*))
+         ((unless look)
+          (er hard? 'svcall* "Svex function doesn't exist: ~x0" fn))
+         (formals (third look))
+         ((unless (eql (len formals) (len args)))
+          (er hard? 'svcall* "Wrong arity for call of ~x0" fn)))
+      `(svex-call* ',fn (list . ,args))))
+
+  (defmacro svcall* (fn &rest args)
+    (svcall*-fn fn args)))
 
 
 

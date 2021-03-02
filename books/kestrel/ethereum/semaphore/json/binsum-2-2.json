@@ -1,0 +1,154 @@
+{
+ "mainCode": "{\n    {\n        {\n        }\n    }\n}\n",
+ "signalName2Idx": {
+  "one": 0,
+  "main.in[0][0]": 4,
+  "main.in[0][1]": 5,
+  "main.in[1][0]": 6,
+  "main.in[1][1]": 7,
+  "main.out[0]": 1,
+  "main.out[1]": 2,
+  "main.out[2]": 3
+ },
+ "components": [
+  {
+   "name": "main",
+   "params": {
+    "n": "2",
+    "ops": "2"
+   },
+   "template": "BinSum",
+   "inputSignals": 4
+  }
+ ],
+ "componentName2Idx": {
+  "main": 0
+ },
+ "signals": [
+  {
+   "names": [
+    "one"
+   ],
+   "triggerComponents": []
+  },
+  {
+   "names": [
+    "main.out[0]"
+   ],
+   "triggerComponents": []
+  },
+  {
+   "names": [
+    "main.out[1]"
+   ],
+   "triggerComponents": []
+  },
+  {
+   "names": [
+    "main.out[2]"
+   ],
+   "triggerComponents": []
+  },
+  {
+   "names": [
+    "main.in[0][0]"
+   ],
+   "triggerComponents": [
+    0
+   ]
+  },
+  {
+   "names": [
+    "main.in[0][1]"
+   ],
+   "triggerComponents": [
+    0
+   ]
+  },
+  {
+   "names": [
+    "main.in[1][0]"
+   ],
+   "triggerComponents": [
+    0
+   ]
+  },
+  {
+   "names": [
+    "main.in[1][1]"
+   ],
+   "triggerComponents": [
+    0
+   ]
+  }
+ ],
+ "constraints": [
+  [
+   {
+    "1": "1"
+   },
+   {
+    "0": "21888242871839275222246405745257275088548364400416034343698204186575808495616",
+    "1": "1"
+   },
+   {}
+  ],
+  [
+   {
+    "2": "1"
+   },
+   {
+    "0": "21888242871839275222246405745257275088548364400416034343698204186575808495616",
+    "2": "1"
+   },
+   {}
+  ],
+  [
+   {
+    "3": "1"
+   },
+   {
+    "0": "21888242871839275222246405745257275088548364400416034343698204186575808495616",
+    "3": "1"
+   },
+   {}
+  ],
+  [
+   {},
+   {},
+   {
+    "1": "1",
+    "2": "2",
+    "3": "4",
+    "4": "21888242871839275222246405745257275088548364400416034343698204186575808495616",
+    "5": "21888242871839275222246405745257275088548364400416034343698204186575808495615",
+    "6": "21888242871839275222246405745257275088548364400416034343698204186575808495616",
+    "7": "21888242871839275222246405745257275088548364400416034343698204186575808495615"
+   }
+  ]
+ ],
+ "templates": {
+  "BinSum": "function(ctx) {\n    ctx.setVar(\"nout\", [], ctx.callFunction(\"nbits\", [bigInt(bigInt(bigInt(\"2\").modPow(bigInt(ctx.getVar(\"n\",[])), __P__)).add(__P__).sub(bigInt(\"1\")).mod(__P__)).mul(bigInt(ctx.getVar(\"ops\",[]))).mod(__P__)]));\n    ctx.setVar(\"lin\", [], \"0\");\n    ctx.setVar(\"lout\", [], \"0\");\n    for (ctx.setVar(\"k\", [], \"0\");bigInt(bigInt(ctx.getVar(\"k\",[])).lt(bigInt(ctx.getVar(\"n\",[]))) ? 1 : 0).neq(bigInt(0));(ctx.setVar(\"k\", [], bigInt(ctx.getVar(\"k\",[])).add(bigInt(\"1\")).mod(__P__))).add(__P__).sub(bigInt(1)).mod(__P__)) { \n    {\n        for (ctx.setVar(\"j\", [], \"0\");bigInt(bigInt(ctx.getVar(\"j\",[])).lt(bigInt(ctx.getVar(\"ops\",[]))) ? 1 : 0).neq(bigInt(0));(ctx.setVar(\"j\", [], bigInt(ctx.getVar(\"j\",[])).add(bigInt(\"1\")).mod(__P__))).add(__P__).sub(bigInt(1)).mod(__P__)) { \n        {\n            ctx.setVar(\"lin\", [], bigInt(ctx.getVar(\"lin\",[])).add(bigInt(bigInt(ctx.getSignal(\"in\", [ctx.getVar(\"j\",[]),ctx.getVar(\"k\",[])])).mul(bigInt(bigInt(\"2\").modPow(bigInt(ctx.getVar(\"k\",[])), __P__))).mod(__P__))).mod(__P__));\n        }\n\n         }\n    }\n\n     }\n    for (ctx.setVar(\"k\", [], \"0\");bigInt(bigInt(ctx.getVar(\"k\",[])).lt(bigInt(ctx.getVar(\"nout\",[]))) ? 1 : 0).neq(bigInt(0));(ctx.setVar(\"k\", [], bigInt(ctx.getVar(\"k\",[])).add(bigInt(\"1\")).mod(__P__))).add(__P__).sub(bigInt(1)).mod(__P__)) { \n    {\n        ctx.setSignal(\"out\", [ctx.getVar(\"k\",[])], bigInt(bigInt(ctx.getVar(\"k\",[])).greater(bigInt(256)) ? 0 : bigInt(ctx.getVar(\"lin\",[])).shr(bigInt(ctx.getVar(\"k\",[]))).and(__MASK__)).and(bigInt(\"1\")).and(__MASK__));\n        ctx.assert(bigInt(ctx.getSignal(\"out\", [ctx.getVar(\"k\",[])])).mul(bigInt(bigInt(ctx.getSignal(\"out\", [ctx.getVar(\"k\",[])])).add(__P__).sub(bigInt(\"1\")).mod(__P__))).mod(__P__), \"0\", \"/Users/mccarthy/semaphore/circuits/node_modules/circomlib/circuits/binsum.circom:92:8\");\n        ctx.setVar(\"lout\", [], bigInt(ctx.getVar(\"lout\",[])).add(bigInt(bigInt(ctx.getSignal(\"out\", [ctx.getVar(\"k\",[])])).mul(bigInt(bigInt(\"2\").modPow(bigInt(ctx.getVar(\"k\",[])), __P__))).mod(__P__))).mod(__P__));\n    }\n\n     }\n    ctx.assert(ctx.getVar(\"lin\",[]), ctx.getVar(\"lout\",[]), \"/Users/mccarthy/semaphore/circuits/node_modules/circomlib/circuits/binsum.circom:99:4\");\n}\n"
+ },
+ "functions": {
+  "assert": {
+   "params": [
+    "condition"
+   ],
+   "func": "function(ctx) {\n    if (bigInt((bigInt(ctx.getVar(\"condition\",[])).eq(bigInt(\"0\")) ? 1 : 0)).neq(bigInt(0))) {\n    {\n        ctx.setVar(\"x\", [], \"0\");\n        ctx.setVar(\"x\", [], bigInt(ctx.getVar(\"x\",[])).div( bigInt(\"0\")));\n    }\n\n    }\n}\n"
+  },
+  "nbits": {
+   "params": [
+    "a"
+   ],
+   "func": "function(ctx) {\n    ctx.setVar(\"babyjub_scalar_field_size\", [], \"2736030358979909402780800718157159386076813972158567259200215660948447373041\");\n    ctx.callFunction(\"assert\", [bigInt(ctx.getVar(\"a\",[])).lt(bigInt(bigInt(ctx.getVar(\"babyjub_scalar_field_size\",[])).mul( bigInt(\"2\").inverse(__P__) ).mod(__P__))) ? 1 : 0]);\n    ctx.setVar(\"n\", [], \"1\");\n    ctx.setVar(\"r\", [], \"0\");\n    while (bigInt(bigInt(bigInt(ctx.getVar(\"n\",[])).add(__P__).sub(bigInt(\"1\")).mod(__P__)).lt(bigInt(ctx.getVar(\"a\",[]))) ? 1 : 0).neq(bigInt(0))) {\n    {\n        (ctx.setVar(\"r\", [], bigInt(ctx.getVar(\"r\",[])).add(bigInt(\"1\")).mod(__P__))).add(__P__).sub(bigInt(1)).mod(__P__);\n        ctx.setVar(\"n\", [], bigInt(ctx.getVar(\"n\",[])).mul(bigInt(\"2\")).mod(__P__));\n    }\n\n    }\n    return ctx.getVar(\"r\",[]);;\n}\n"
+  }
+ },
+ "nPrvInputs": 0,
+ "nPubInputs": 4,
+ "nInputs": 4,
+ "nOutputs": 3,
+ "nVars": 8,
+ "nConstants": 0,
+ "nSignals": 8
+}

@@ -28,3 +28,7 @@
                           (2 2 (:TYPE-PRESCRIPTION BOOLEANP))
                           (2 2 (:REWRITE BOOLAND-OF-NON-NIL-ARG2))
                           (2 2 (:REWRITE BOOLAND-OF-NON-NIL)))
+(IFF-IMPLIES-EQUAL-BOOLAND-1 (2 2 (:REWRITE BOOLAND-OF-NON-NIL-ARG2))
+                             (2 2 (:REWRITE BOOLAND-OF-NON-NIL)))
+(IFF-IMPLIES-EQUAL-BOOLAND-2 (2 2 (:REWRITE BOOLAND-OF-NON-NIL-ARG2))
+                             (2 2 (:REWRITE BOOLAND-OF-NON-NIL)))

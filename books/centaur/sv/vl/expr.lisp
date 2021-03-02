@@ -278,6 +278,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                        (case x.fn
                          (=== '==)
                          (==? 'safer-==?)
+                         (bit?! 'bit?)
                          (otherwise x.fn))
                        args-eval)))
               (if (4vec-xfree-p res)
@@ -306,6 +307,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                    '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
                                         svex-eval-when-4vec-xfree-of-minval-apply-===
                                         svex-eval-when-4vec-xfree-of-minval-apply-==?
+                                        svex-eval-when-4vec-xfree-of-minval-apply-bit?!
                                         eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
@@ -5093,15 +5095,13 @@ functions can assume all bits of it are good.</p>"
                                     LHS expression ~a1: ~@2"
                     :args (list type (vl-expr-fix x) (or err (vmsg "unsizeable"))))
             nil nil))
-       (lhssvex (sv::svex-concat size
-                                 (sv::svex-lhsrewrite svex size)
-                                 (sv::svex-z)))
-       ((unless (sv::lhssvex-p lhssvex))
+       (lhssvex (sv::svex-lhsrewrite svex size))
+       ((unless (sv::lhssvex-bounded-p size lhssvex))
         (mv (vfatal :type :vl-expr->svex-lhs-fail
                     :msg "Not a supported LHS expression: ~a0"
                     :args (list (vl-expr-fix x)))
             nil nil)))
-    (mv vttree (sv::svex->lhs lhssvex) type))
+    (mv vttree (sv::svex->lhs-bound size lhssvex) type))
   ///
   (defret vl-expr-to-svex-lhs-type-size-ok
     (implies type

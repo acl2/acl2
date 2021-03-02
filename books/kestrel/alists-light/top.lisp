@@ -19,6 +19,7 @@
 
 ;; Books about new functions:
 (include-book "acons-unique")
+(include-book "clear-key")
 (include-book "lookup-eq")
 (include-book "lookup-equal")
 (include-book "lookup")
@@ -35,3 +36,4 @@
 
 ;; Typed alists (TODO: Consider moving to a new dir):
 (include-book "symbol-alistp")
+(include-book "maybe-replace-var")

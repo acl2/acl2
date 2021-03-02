@@ -19,7 +19,7 @@
 (defconst *expt-2-28* (expt 2 28))
 
 ;; from page 18 of the FAT specification
-(defconst *ms-end-of-clusterchain* (- *expt-2-28* 1))
+(defconst *ms-end-of-cc* (- *expt-2-28* 1))
 
 ;; from page 14 of the FAT specification
 (defconst *ms-first-data-cluster* 2)
@@ -45,7 +45,7 @@
                                        128
                                        (- *ms-bad-cluster* 2)))
 
-(defconst *ms-dir-ent-length* 32)
+(defconst *ms-d-e-length* 32)
 
 ;; observed
 (defconst *current-dir-fat32-name* ".          ")
@@ -65,14 +65,14 @@
 (defconst *parent-dir-name* "..")
 
 ;; Page 36 of the FAT specification states that a directory shouldn't have more
-;; than 65536 entries. However, *ms-max-dir-ent-count* below is used for the
+;; than 65536 entries. However, *ms-max-d-e-count* below is used for the
 ;; definition of hifat-bounded-file-alist-p, and since that's applicable to our
 ;; internal representation of the filesystem, we need to leave room for two
 ;; entries (dot and dotdot) to be added when we store a directory in the stobj
 ;; representation. However, *ms-max-dir-size* is applicable to extracting
 ;; directory contents from the disk, and therefore it needs to be 2097152 as
 ;; stipulated.
-(defconst *ms-max-dir-ent-count* (- (ash 1 16) 2))
+(defconst *ms-max-d-e-count* (- (ash 1 16) 2))
 (defconst *ms-max-dir-size* (ash 1 21))
 
 ;; from include/uapi/asm-generic/errno-base.h in the linux kernel sources
@@ -144,6 +144,13 @@
   (declare (xargs :guard t))
   (if (fat32-masked-entry-p x)
       x 0))
+
+(defthm natp-of-fat32-masked-entry-fix
+  (natp (fat32-masked-entry-fix x))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable fat32-masked-entry-fix
+                              fat32-masked-entry-p)))
+  :rule-classes :type-prescription)
 
 (in-theory (enable fat32-entry-p fat32-entry-fix fat32-masked-entry-p fat32-masked-entry-fix))
 
@@ -393,8 +400,10 @@
                   :guard-hints (("Goal'" :in-theory (enable fat32-masked-entry-p)))))
   (>= fat-content #xFFFFFF8))
 
+;; The case-split in the hypothesis is because we can't make a linear rule out
+;; of the contrapositive.
 (defthm fat32-is-eof-correctness-1
-  (implies (< fat-content *ms-bad-cluster*)
+  (implies (case-split (< fat-content *ms-bad-cluster*))
            (not (fat32-is-eof fat-content)))
   :hints (("Goal" :in-theory (enable fat32-is-eof)) ))
 
@@ -448,16 +457,12 @@
 
 (defthm
   fat32-masked-entry-list-p-of-fat32-build-index-list
-  (implies
-   (and
-    (fat32-masked-entry-p masked-current-cluster)
-    (>= masked-current-cluster *ms-first-data-cluster*)
-    (< masked-current-cluster (len fa-table)))
-   (b* (((mv index-list &)
-         (fat32-build-index-list fa-table masked-current-cluster
-                                 length cluster-size)))
-     (fat32-masked-entry-list-p index-list)))
-  :hints (("Goal" :in-theory (enable fat32-build-index-list))))
+  (implies (fat32-masked-entry-p masked-current-cluster)
+           (b* (((mv index-list &)
+                 (fat32-build-index-list fa-table masked-current-cluster
+                                         length cluster-size)))
+             (fat32-masked-entry-list-p index-list)))
+  :hints (("goal" :in-theory (enable fat32-build-index-list))))
 
 (defthm
   fat32-build-index-list-of-update-nth
@@ -509,7 +514,75 @@
      (fat32-build-index-list fa-table masked-current-cluster
                              length cluster-size)))
   :hints
-  (("goal" :in-theory (enable fat32-build-index-list))))
+  (("goal" :in-theory (enable fat32-build-index-list)))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm
+  integer-listp-of-fat32-build-index-list
+  (implies
+   (integerp masked-current-cluster)
+   (integer-listp
+    (mv-nth 0
+            (fat32-build-index-list fa-table masked-current-cluster
+                                    length cluster-size))))
+  :hints (("goal" :in-theory (enable fat32-build-index-list))))
+
+(defthm
+  consp-of-fat32-build-index-list
+  (equal
+   (consp (mv-nth 0
+                  (fat32-build-index-list fa-table masked-current-cluster
+                                          length cluster-size)))
+   (not (or (zp length) (zp cluster-size))))
+  :hints (("goal" :in-theory (enable fat32-build-index-list))))
+
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (local (in-theory (enable nfix)))
+
+  (local
+   (set-default-hints
+    '((nonlinearp-default-hint stable-under-simplificationp
+                               hist pspv))))
+
+  (defthm
+    len-of-fat32-build-index-list-1
+    (implies
+     (not (zp cluster-size))
+     (<= (len (mv-nth 0
+                      (fat32-build-index-list fa-table masked-current-cluster
+                                              length cluster-size)))
+         (ceiling (nfix length) cluster-size)))
+    :hints
+    (("goal" :induct (fat32-build-index-list fa-table masked-current-cluster
+                                             length cluster-size)
+      :in-theory (enable fat32-build-index-list)))
+    :rule-classes
+    (:linear
+     (:linear
+      :corollary
+      (implies
+       (not (zp cluster-size))
+       (<= (*
+            cluster-size
+            (len (mv-nth 0
+                         (fat32-build-index-list fa-table masked-current-cluster
+                                                 length cluster-size))))
+           (* cluster-size
+              (ceiling (nfix length) cluster-size)))))
+     (:linear
+      :corollary
+      (implies
+       (not (zp cluster-size))
+       (< (*
+           cluster-size
+           (len (mv-nth 0
+                        (fat32-build-index-list fa-table masked-current-cluster
+                                                length cluster-size))))
+          (+ (nfix length) cluster-size)))))))
 
 (defun count-free-clusters-helper (fa-table n)
   (declare (xargs :guard (and (fat32-entry-list-p fa-table)
@@ -969,6 +1042,8 @@
   :hints (("goal" :in-theory (enable find-n-free-clusters
                                      find-n-free-clusters-helper))))
 
+(defcong nat-equiv equal (find-n-free-clusters fa-table n) 2)
+
 (defthmd
   fat32-masked-entry-list-p-alt
   (equal (fat32-masked-entry-list-p x)
@@ -1146,18 +1221,37 @@
     :in-theory (e/d (intersectp-equal fat32-build-index-list)
                     (intersectp-is-commutative)))))
 
+(defthmd
+  set-indices-in-fa-table-of-true-list-fix-1
+  (equal (set-indices-in-fa-table fa-table
+                                  index-list (true-list-fix value-list))
+         (set-indices-in-fa-table fa-table index-list value-list))
+  :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
+
+(defcong
+  list-equiv equal
+  (set-indices-in-fa-table fa-table index-list value-list)
+  3
+  :hints
+  (("goal"
+    :do-not-induct t
+    :in-theory (enable list-equiv)
+    :use ((:instance set-indices-in-fa-table-of-true-list-fix-1
+                     (value-list value-list-equiv))
+          set-indices-in-fa-table-of-true-list-fix-1))))
+
 (encapsulate
   ()
 
   (local
    (defun
-     induction-scheme
-     (file-index-list file-length cluster-size)
+       induction-scheme
+       (file-index-list file-length cluster-size)
      (if (or (zp file-length) (zp cluster-size))
          file-index-list
-         (induction-scheme (cdr file-index-list)
-                           (nfix (- file-length cluster-size))
-                           cluster-size))))
+       (induction-scheme (cdr file-index-list)
+                         (nfix (- file-length cluster-size))
+                         cluster-size))))
 
   (defthm
     fat32-build-index-list-of-set-indices-in-fa-table-coincident
@@ -1167,42 +1261,55 @@
           (< (* cluster-size
                 (+ -1 (len file-index-list)))
              file-length)
-          (lower-bounded-integer-listp
-           file-index-list *ms-first-data-cluster*)
+          (lower-bounded-integer-listp file-index-list *ms-first-data-cluster*)
           (bounded-nat-listp file-index-list (len fa-table))
           (consp file-index-list)
           (<= (len fa-table) *ms-bad-cluster*)
-          (not (zp cluster-size)))
+          (not (zp cluster-size))
+          (fat32-masked-entry-p fat-content)
+          (or
+           (fat32-is-eof fat-content)
+           (<= (len fa-table) fat-content)))
      (equal (fat32-build-index-list
-             (set-indices-in-fa-table
-              fa-table file-index-list
-              (append (cdr file-index-list)
-                      (list *ms-end-of-clusterchain*)))
+             (set-indices-in-fa-table fa-table file-index-list
+                                      (append (cdr file-index-list)
+                                              (list fat-content)))
              (car file-index-list)
              file-length cluster-size)
             (mv file-index-list 0)))
     :hints
-    (("goal" :in-theory (e/d (set-indices-in-fa-table fat32-build-index-list)
-                             (fat32-masked-entry-list-p-when-bounded-nat-listp))
+    (("goal"
+      :in-theory (e/d (set-indices-in-fa-table fat32-build-index-list)
+                      (fat32-masked-entry-list-p-when-bounded-nat-listp))
       :induct (induction-scheme file-index-list
                                 file-length cluster-size)
       :expand
       ((:free (fa-table value-list)
-              (set-indices-in-fa-table
-               fa-table file-index-list value-list))
+              (set-indices-in-fa-table fa-table file-index-list value-list))
        (fat32-build-index-list
-        (update-nth
-         (car file-index-list)
-         (fat32-update-lower-28
-          (nth (car file-index-list) fa-table)
-          (cadr file-index-list))
-         (set-indices-in-fa-table fa-table (cdr file-index-list)
-                                  (append (cddr file-index-list)
-                                          '(268435455))))
+        (update-nth (car file-index-list)
+                    (fat32-update-lower-28 (nth (car file-index-list) fa-table)
+                                           (cadr file-index-list))
+                    (set-indices-in-fa-table fa-table (cdr file-index-list)
+                                             (append (cddr file-index-list)
+                                                     '(268435455))))
+        (car file-index-list)
+        file-length cluster-size)
+       (fat32-build-index-list
+        (update-nth (car file-index-list)
+                    (fat32-update-lower-28 (nth (car file-index-list) fa-table)
+                                           fat-content)
+                    fa-table)
         (car file-index-list)
         file-length cluster-size)))
-     ("subgoal *1/2"
-      :use fat32-masked-entry-list-p-when-bounded-nat-listp))))
+     ("subgoal *1/2" :use fat32-masked-entry-list-p-when-bounded-nat-listp))))
+
+(defthm
+  set-indices-in-fa-table-when-atom
+  (implies (atom index-list)
+           (equal (set-indices-in-fa-table fa-table index-list value-list)
+                  fa-table))
+  :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
 
 (defthm
   member-of-fat32-build-index-list

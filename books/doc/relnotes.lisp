@@ -139,15 +139,39 @@
 
    (xdoc::p
     "This is a library about the C language.
-     It is being populated with
-     a formalization of some aspects of the C language
+     It contains a formalization of (some aspects of) the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
-   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "A first simple working version of the C code generator has been added,
-     with user documentation and a working test.")
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This is a library to support proofs in the style of Isabelle's
+     Isar (Intelligent Semi-Automated Reasoning) language.
+     It is just a small step in that direction for now.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,11 +187,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags Library"))
 
    (xdoc::p
     "This is a library that represents bags (a.k.a. multisets)
-     as non-strictly ordered lists.
+     as non-strictly-ordered lists.
      Thus, they capture (up to isomorphism) the mathematical notion of bag;
      in particular, bag equality is @(tsee equal).")
 
@@ -176,6 +200,34 @@
     (xdoc::seetopic "set::std/osets" "the library of ordered sets")
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "mimc::mimc" "MiMC Library"))
+
+   (xdoc::p
+    "This is a library that formally specifies and implements
+     the Minimal Multiplicative Complexity (MiMC) hash function
+     as used by "
+    (xdoc::seetopic "zksemaphore::semaphore" "Ethereum's Semaphore")
+     ". "
+     "This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "This is a library that introduces and formalizes
+     the notion of PFCS (Prime Field Constraint Systems),
+     which generalize R1CS and possibly other constraint systems
+     for zero-knowledge proofs.
+     This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -210,6 +262,14 @@
     "This library can be used to read in sections of ELF/Mach-O files into ACL2.
      An older version of these books used to live in the @(tsee x86isa::x86isa)
      library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This is a library about the Zcash blockchain currency,
+     which is based on zero-knowledge proofs.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,14 +543,44 @@
 
    (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
    (xdoc::p
-    "In the "
-    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
-    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
-    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
-    added.  They introduce some parameters of the BLS12-377 elliptic curve,
-    and introduce a Pratt certificate of primality for the scalar field size @($r$)
-    of that elliptic curve.")
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::montgomery" "Montgomery curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The file
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+     has been added.
+     It introduced some parameters of the BLS12-377 elliptic curve.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
+    " has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,6 +598,9 @@
 
    (xdoc::p
     "Some theorems about hex-prefix encoding have been added.")
+
+   (xdoc::p
+    "A sub-library for the Semaphore gadget has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,19 +623,12 @@
      whose general form section should be normally a small fraction.")
 
    (xdoc::p
-    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
-     has been simplified by removing its
-     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.
-     This constructor has also been extended with a @(':default-parent') option.
-     A function has been also added to construct a common kind of items.")
-
-   (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
      has been extended with an additional option.")
 
    (xdoc::p
-    "New XDOC constructors have been added.")
+    "New XDOC constructors have been added
+     and some XDOC constructors have been improve.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
@@ -551,6 +637,10 @@
    (xdoc::p
     "Utilities have been added to generate various kinds of event forms
      from attributes of the event forms.")
+
+   (xdoc::p
+    "Some general XDOC topics about event macros have been added,
+     which can be referenced by the user documentation of event macros.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -589,6 +679,9 @@
 
    (xdoc::p
     "A macro @(tsee fty::defsubtype) has been added.")
+
+   (xdoc::p
+    "A macro @(tsee fty::defunit) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -854,6 +947,21 @@
      and to return its two conjuncts if that is the case.")
 
    (xdoc::p
+    "A new utility @(tsee check-or-call) has been added,
+     to check if a term is a (translated) call of @(tsee or)
+     and to return its two disjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt$-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt$)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
     "A theorem about the built-in @('flatten-ands-in-lit') has been added,
      in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
@@ -965,6 +1073,18 @@
    (xdoc::p
     "The macro @(tsee std::define-sk) has been moved
      from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
+
+   (xdoc::p
+    "A new event macro @(tsee add-io-pairs) has been added, to speed
+     up a function using verified input-output pairs.  Related
+     utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
+     @(tsee show-io-pairs), and @(tsee get-io-pairs).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmin-int) has been added,
+     to declarative define the minimum of
+     a (possibly infinite) set of integers.
+     This is similar to @(tsee defmax-nat).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

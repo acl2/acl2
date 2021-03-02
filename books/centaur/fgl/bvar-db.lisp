@@ -862,11 +862,6 @@
   ;;                          (- (len x) (nfix n))))
   ;;          :hints(("Goal" :in-theory (enable nth)))))
 
-  (local (defthm nth-of-fgl-objectlist-fix
-           (equal (nth n (fgl-objectlist-fix x))
-                  (fgl-object-fix (nth n x)))
-           :hints(("Goal" :in-theory (enable nth)))))
-
   (local (defthm member-of-nth-fgl-object-fix
            (implies (< (nfix n) (len x))
                     (member (fgl-object-fix (nth n x))

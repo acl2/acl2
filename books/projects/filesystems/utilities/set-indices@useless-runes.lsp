@@ -23,16 +23,16 @@
                            (54 34 (:REWRITE DEFAULT-+-2))
                            (44 36 (:REWRITE DEFAULT-CAR))
                            (34 34 (:REWRITE DEFAULT-+-1))
+                           (32 10 (:REWRITE SUBSETP-MEMBER . 1))
                            (31 1 (:REWRITE LEN-UPDATE-NTH))
-                           (30 10 (:REWRITE SUBSETP-MEMBER . 1))
                            (30 3 (:DEFINITION UPDATE-NTH))
                            (28 14
                                (:TYPE-PRESCRIPTION TRUE-LISTP-UPDATE-NTH))
                            (23 23 (:TYPE-PRESCRIPTION ZP))
+                           (20 1 (:DEFINITION SUBSETP-EQUAL))
                            (19 19 (:LINEAR POSITION-WHEN-MEMBER))
                            (19 19
                                (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
-                           (19 1 (:DEFINITION SUBSETP-EQUAL))
                            (14 14 (:TYPE-PRESCRIPTION TRUE-LISTP))
                            (13 13
                                (:REWRITE BOUNDED-NAT-LISTP-CORRECTNESS-1))
@@ -42,6 +42,7 @@
                            (8 4 (:TYPE-PRESCRIPTION MAX))
                            (7 1 (:DEFINITION MAX))
                            (5 5 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                           (2 2 (:REWRITE SUBSETP-TRANS2))
                            (2 2 (:REWRITE SUBSETP-TRANS))
                            (1 1 (:TYPE-PRESCRIPTION NATP)))
 (SET-INDICES-CORRECTNESS-2
@@ -198,11 +199,11 @@
           (:REWRITE UPDATE-NTH-OF-UPDATE-NTH-1))
      (225 141
           (:TYPE-PRESCRIPTION TRUE-LISTP-UPDATE-NTH))
-     (207 13 (:DEFINITION SUBSETP-EQUAL))
-     (204 82 (:REWRITE SUBSETP-MEMBER . 1))
+     (218 82 (:REWRITE SUBSETP-MEMBER . 1))
+     (217 13 (:DEFINITION SUBSETP-EQUAL))
      (198 198
           (:TYPE-PRESCRIPTION BOUNDED-NAT-LISTP))
-     (163 58 (:REWRITE SUBSETP-MEMBER . 3))
+     (171 58 (:REWRITE SUBSETP-MEMBER . 3))
      (141 141 (:TYPE-PRESCRIPTION UPDATE-NTH))
      (131 131 (:TYPE-PRESCRIPTION ZP))
      (115 23 (:DEFINITION BOOLEAN-LISTP))
@@ -215,6 +216,7 @@
      (46 46 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (46 46 (:TYPE-PRESCRIPTION MAKE-LIST-AC))
      (30 7 (:DEFINITION POSITION-EQUAL-AC))
+     (22 22 (:REWRITE SUBSETP-TRANS2))
      (22 22 (:REWRITE SUBSETP-TRANS))
      (17 17 (:TYPE-PRESCRIPTION NATP))
      (2 2

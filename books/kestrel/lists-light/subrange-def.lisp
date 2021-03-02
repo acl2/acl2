@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See also subseq-list, which is similar but not quite the same.
+
 ;; Return a list of the elements of LST from START (inclusive) to END
 ;; (inclusive), where the numbering is 0-based.
 (defund subrange (start end lst)

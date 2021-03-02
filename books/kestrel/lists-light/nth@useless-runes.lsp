@@ -111,3 +111,15 @@
 (EQUAL-OF-CADR-AND-NTH-OF-1)
 (EQUAL-OF-NTH-2-AND-CADDR (6 6 (:REWRITE NTH-WHEN-ZP-CHEAP))
                           (6 3 (:REWRITE NTH-WHEN-<=-LEN-CHEAP)))
+(NOT-<-OF-CAR-AND-NTH-OF-0 (4 4
+                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                           (4 2 (:REWRITE NTH-WHEN-<=-LEN-CHEAP))
+                           (4 2 (:REWRITE DEFAULT-<-2))
+                           (4 2 (:REWRITE DEFAULT-<-1))
+                           (3 3 (:REWRITE NTH-WHEN-ZP-CHEAP)))
+(NOT-<-OF-NTH-OF-0-AND-CAR (4 4
+                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                           (4 2 (:REWRITE NTH-WHEN-<=-LEN-CHEAP))
+                           (4 2 (:REWRITE DEFAULT-<-2))
+                           (4 2 (:REWRITE DEFAULT-<-1))
+                           (3 3 (:REWRITE NTH-WHEN-ZP-CHEAP)))

@@ -1,14 +1,16 @@
-(LOGTAIL-OF-LOGIOR (1554 68 (:DEFINITION NATP))
-                   (953 55 (:LINEAR LOGIOR-BOUND-LINEAR-2))
-                   (953 55 (:LINEAR LOGIOR-BOUND-LINEAR))
+(LOGTAIL-OF-LOGIOR (1628 68 (:DEFINITION NATP))
+                   (1008 55 (:LINEAR LOGIOR-BOUND-LINEAR-2))
+                   (1008 55 (:LINEAR LOGIOR-BOUND-LINEAR))
                    (853 853
                         (:TYPE-PRESCRIPTION <-OF-LOGIOR-AND-0-TYPE))
                    (599 599
+                        (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+                   (599 599
                         (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+                   (350 1 (:REWRITE FLOOR-UNIQUE-EQUAL-VERSION))
                    (333 216 (:REWRITE DEFAULT-<-1))
-                   (326 1 (:REWRITE FLOOR-UNIQUE-EQUAL-VERSION))
                    (292 10 (:REWRITE <-OF-FLOOR-AND-0))
-                   (285 216 (:REWRITE DEFAULT-<-2))
+                   (287 216 (:REWRITE DEFAULT-<-2))
                    (215 69
                         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
                    (157 69

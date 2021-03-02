@@ -1,0 +1,5 @@
+; cert-flags: ? t :skip-proofs-okp t :useless-runes -8
+
+; Value 25 caused a failure.
+; So we use 8; actually, -8 so that the @useless-runes.lsp file need not be
+; present. (This comment is adapted from books/misc/symbol-btree.acl2 .)

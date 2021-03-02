@@ -18,16 +18,21 @@
 (include-book "all-signed-byte-p")
 
 (include-book "len-mult-of-8p")
+(include-book "len-mult-of-8p-rules")
 
 (include-book "bits-to-byte")
 (include-book "bits-to-byte-little")
 (include-book "bits-to-bytes")
+(include-book "bits-to-bytes2")
 (include-book "bits-to-bytes-little")
 (include-book "byte-to-bits")
 (include-book "byte-to-bits-little")
 (include-book "bytes-to-bits")
 (include-book "bytes-to-bits2")
 (include-book "bytes-to-bits-little")
+(include-book "bytes-to-bits-little2")
+(include-book "bits-and-bytes-inversions")
+(include-book "bits-and-bytes-inversions-little")
 
 (include-book "bvxor-list")
 (include-book "bvnot-list")
@@ -43,6 +48,7 @@
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
 (include-book "map-packbv")
+(include-book "packing")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
@@ -54,3 +60,5 @@
 (include-book "bvnth")
 
 (include-book "list-patterns")
+
+(include-book "bvplus-list")

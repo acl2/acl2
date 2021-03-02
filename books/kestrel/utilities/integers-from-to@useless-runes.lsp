@@ -41,26 +41,34 @@
      (55 55 (:REWRITE DEFAULT-+-2))
      (55 55 (:REWRITE DEFAULT-+-1))
      (36 12 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (INTEGERS-FROM-TO-NIL-WHEN-MIN>MAX (4 4 (:REWRITE DEFAULT-<-2))
                                    (4 4 (:REWRITE DEFAULT-<-1)))
-(INTEGERS-FROM-TO-IFF-MIN<=MAX (78 76 (:REWRITE DEFAULT-<-2))
-                               (76 76 (:REWRITE DEFAULT-<-1))
-                               (20 20 (:REWRITE DEFAULT-+-2))
-                               (20 20 (:REWRITE DEFAULT-+-1))
-                               (12 4 (:REWRITE FOLD-CONSTS-IN-+))
-                               (2 2
-                                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(MEMBER-OF-INTEGERS-FROM-TO (931 898 (:REWRITE DEFAULT-<-2))
-                            (911 898 (:REWRITE DEFAULT-<-1))
-                            (333 111 (:REWRITE FOLD-CONSTS-IN-+))
-                            (318 318 (:REWRITE DEFAULT-+-2))
-                            (318 318 (:REWRITE DEFAULT-+-1))
-                            (198 153 (:REWRITE DEFAULT-CAR))
-                            (192 150 (:REWRITE DEFAULT-CDR))
-                            (46 46
-                                (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(INTEGERS-FROM-TO-IFF-MIN<=MAX
+     (78 76 (:REWRITE DEFAULT-<-2))
+     (76 76 (:REWRITE DEFAULT-<-1))
+     (20 20 (:REWRITE DEFAULT-+-2))
+     (20 20 (:REWRITE DEFAULT-+-1))
+     (12 4 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(MEMBER-OF-INTEGERS-FROM-TO
+     (931 898 (:REWRITE DEFAULT-<-2))
+     (911 898 (:REWRITE DEFAULT-<-1))
+     (333 111 (:REWRITE FOLD-CONSTS-IN-+))
+     (318 318 (:REWRITE DEFAULT-+-2))
+     (318 318 (:REWRITE DEFAULT-+-1))
+     (198 153 (:REWRITE DEFAULT-CAR))
+     (192 150 (:REWRITE DEFAULT-CDR))
+     (156 156
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (46 46
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (VERIFY-GUARDS-LEMMA-1 (116 116 (:REWRITE DEFAULT-<-2))
                        (116 116 (:REWRITE DEFAULT-<-1))
                        (78 78 (:REWRITE DEFAULT-+-2))

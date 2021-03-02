@@ -4047,8 +4047,16 @@
 ; Uterm is an untranslated term with an output signature of * or (mv * *
 ; state).  We translate it and eval it under alist (after extending alist with
 ; state bound to the current state) and return the resulting error triple or
-; signal a translate or evaluation error.  We restore the world and certain
-; state globals (*protected-system-state-globals*) after the evaluation.
+; signal a translate or evaluation error.
+
+; We restore the world and certain state globals
+; (*protected-system-state-globals*) after the evaluation, by using
+; protect-system-state-globals below.  Be sure not to change that protection
+; without considering the consequences; in particular, make-event expansion
+; relies on this restoration (via protected-eval, which calls
+; protect-system-state-globals), as do proof-builder macro commands.  Without
+; that protection we expect that unsoundness or bad errors could arise during
+; book certification.
 
 ; If trans-flg is nil, we do not translate.  We *assume* uterm is a
 ; single-threaded translated term with output signature (mv * * state)!
@@ -4761,6 +4769,17 @@
           (,condition ,form)
           (t (value wrld))))))))
 
+(defun skip-proofs-due-to-system (state)
+
+; This utility returns true when we are skipping proofs because the system
+; insists on that, but not because of any user action that is taken to skip
+; proofs.  Normally we can just check state global 'skip-proofs-by-system.
+; However, without the first disjunct below, we fail to pick up a skip-proofs
+; during the Pcertify step of provisional certification.
+
+  (and (not (f-get-global 'inside-skip-proofs state))
+       (f-get-global 'skip-proofs-by-system state)))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4882,13 +4901,14 @@
 
 ; Comment on irrelevance of skip-proofs:
 
-; The following event types do not generate any proof obligations, so for these
-; it is irrelevant whether or not proofs are skipped.  Do not include defaxiom,
-; or any other event that can have a :corollary rule class, since that can
-; generate a proof obligation.  Also do not include encapsulate; even though it
-; takes responsibility for setting skip-proofs-seen based on its first pass,
-; nevertheless it does not account for a skip-proofs surrounding the
-; encapsulate.  Finally, do not include defattach; the use of (skip-proofs
+; The following event types do not generate any proof obligations that can be
+; skipped, so for these, there is no point in storing whether proofs have been
+; skipped (either in the event tuple or in skip-proofs-seen).  Do not include
+; defaxiom, or any other event that can have a :corollary rule class, since
+; that can generate a proof obligation.  Also do not include encapsulate; even
+; though it takes responsibility for setting skip-proofs-seen based on its
+; first pass, nevertheless it does not account for a skip-proofs surrounding
+; the encapsulate.  Finally, do not include defattach; the use of (skip-proofs
 ; (defattach f g)) can generate bogus data in world global
 ; 'proved-functional-instances-alist that can be used to prove nil later.
 
@@ -4908,22 +4928,7 @@
                                     reset-prehistory
                                     set-body
                                     table)))
-
-; We include the following test so that we can distinguish between the
-; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.  Without the disjunct below, we fail to
-; pick up a skip-proofs during the Pcertify step of provisional certification.
-; Perhaps someday there will be other times a user-supplied skip-proofs form
-; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
-; true; if that turns out to be too aggressive, we'll think about this then,
-; but for now, we are happy to be conservative, making sure that
-; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
-
-
-                  (or (f-get-global 'inside-skip-proofs state)
-                      (not (f-get-global 'skip-proofs-by-system
-                                         state)))))
-
+                  (not (skip-proofs-due-to-system state))))
             (wrld2 (cond
                     ((and skipped-proofs-p
                           (let ((old (global-val 'skip-proofs-seen wrld)))
@@ -8509,20 +8514,15 @@
 
 ; We ensure that these are sorted, although this may no longer be important.
 
-  (let ((lst '(mv-list return-last)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+  (let ((lst '(if mv-list return-last)))
+    (sort-symbol-listp lst)))
 
 (defconst *basic-ruler-extenders-plus-lambdas*
 
 ; We ensure that these are sorted, although this may no longer be important.
-; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
-; front is no longer sorted, then we will have to call sort-symbol-listp.  But
-; here we got lucky.
 
   (let ((lst (cons :lambdas *basic-ruler-extenders*)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+    (sort-symbol-listp lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -18054,8 +18054,11 @@
               (list (cons 'key key)
                     (cons 'val val)
                     (cons 'world wrld)
-                    (cons 'ens ens))
-              state nil nil
+                    (cons 'ens ens)
+		    (cons 'state (coerce-state-to-object state)))
+              state
+              (list (cons 'state (coerce-state-to-object state)))
+              nil
 
 ; We need aokp to be true; otherwise defwarrant can run into the following
 ; problem.  The function badge-table-guard calls badger, which can call
@@ -18131,7 +18134,7 @@
 
 (defun cltl-def-memoize-partial (fn total wrld)
 
-; Fn and total and function symbols, where we expect that with respect to the
+; Fn and total are function symbols, where we expect that with respect to the
 ; Essay on Memoization with Partial Functions (Memoize-partial), fn plays the
 ; role of the Common Lisp function fn1 to be used for computing the limiting
 ; value of the ACL2 function (with a "limit" or "clock" argument), fn0-limit.
@@ -18232,7 +18235,8 @@
                           ,(cdr (assoc-eq :forget val))
                           ,(cdr (assoc-eq :memo-table-init-size val))
                           ,(cdr (assoc-eq :aokp val))
-                          ,(cdr (assoc-eq :stats val)))))
+                          ,(cdr (assoc-eq :stats val))
+                          ,(cdr (assoc-eq :invoke val)))))
              (t `(unmemoize ,key))))
       #+hons
       (badge-table *special-cltl-cmd-attachment-mark*)
@@ -18273,7 +18277,9 @@
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
-              ((and old-pair (equal val (cdr old-pair)))
+              ((and (or old-pair
+                        (eq name 'memoize-table)) ; see :doc redundant-events
+                    (equal val (cdr old-pair)))
                (stop-redundant-event ctx state))
               (t (er-let*
                      ((pair (chk-table-guard name key val ctx wrld ens state))
@@ -18382,15 +18388,16 @@
                                  (or key val)
                                  (cond (key '(2)) (t '(3)))
                                  ctx state)
-             (er-let* ((tterm (translate term '(nil) nil nil ctx wrld state)))
+             (er-let* ((tterm (translate term '(nil) nil '(state) ctx wrld
+                                         state)))
 
-; known-stobjs = nil.  No variable is treated as a stobj in tterm.  But below
-; we check that the only vars mentioned are KEY, VAL, WORLD, and ENS.  These
-; could, in principle, be declared stobjs by the user.  But when we ev tterm in
-; the future, we will always bind them to non-stobjs.
+; Known-stobjs includes only STATE.  No variable other than STATE is treated
+; as a stobj in tterm.  Below we check that the only vars mentioned besides
+; STATE are KEY, VAL, WORLD, and ENS.  These could, in principle, be declared
+; stobjs by the user.  But when we ev tterm in the future, we will always bind
+; them to non-stobjs.
 
-                      (let ((old-guard
-                             (getpropc name 'table-guard nil wrld)))
+                      (let ((old-guard (getpropc name 'table-guard nil wrld)))
                         (cond
                          ((equal old-guard tterm)
                           (stop-redundant-event ctx state))
@@ -18416,7 +18423,7 @@
                                non-empty table ~x0.  See :DOC table."
                               name))
                          (t
-                          (let ((legal-vars '(key val world ens))
+                          (let ((legal-vars '(key val world ens state))
                                 (vars (all-vars tterm)))
                             (cond ((not (subsetp-eq vars legal-vars))
                                    (er soft ctx
@@ -18561,4 +18568,3 @@
    (er-progn
     (table-fn 'default-hints-table (list :override (kwote new)) state nil)
     (table-fn 'default-hints-table (list :override) state nil))))
-

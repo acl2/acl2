@@ -190,6 +190,23 @@
  (1
    1
    (:REWRITE AIGNET::CAR-OF-BIT-LIST-FIX-X-NORMALIZE-CONST-UNDER-BIT-EQUIV)))
+(AIGNET::BIT-LIST-FIX-OF-REPEAT
+ (20 2
+     (:REWRITE AIGNET::BIT-LIST-FIX-WHEN-BIT-LISTP))
+ (10 4 (:REWRITE BFIX-WHEN-BITP))
+ (8 2
+    (:REWRITE AIGNET::BIT-LISTP-WHEN-NOT-CONSP))
+ (6 6 (:TYPE-PRESCRIPTION BITP))
+ (4 4
+    (:TYPE-PRESCRIPTION AIGNET::BIT-LISTP))
+ (1 1
+    (:REWRITE-QUOTED-CONSTANT AIGNET::BIT-LIST-FIX-UNDER-BIT-LIST-EQUIV))
+ (1
+   1
+   (:REWRITE
+        AIGNET::CONS-OF-BIT-LIST-FIX-Y-NORMALIZE-CONST-UNDER-BIT-LIST-EQUIV))
+ (1 1
+    (:REWRITE AIGNET::CONS-OF-BFIX-X-NORMALIZE-CONST-UNDER-BIT-LIST-EQUIV)))
 (AIGNET::BITARR$AP-IS-BIT-LISTP
      (28 7
          (:REWRITE AIGNET::BIT-LISTP-OF-CDR-WHEN-BIT-LISTP))
@@ -577,9 +594,14 @@
                                   (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
                                (1 1 (:META CANCEL_TIMES-EQUAL-CORRECT))
                                (1 1 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(AIGNET::BITARR-CLEAR$INLINE (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
-                             (1 1
-                                (:REWRITE AIGNET::BIT-LISTP-WHEN-NOT-CONSP)))
+(AIGNET::BITARR-CLEAR$INLINE
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
+     (1 1
+        (:REWRITE AIGNET::BIT-LISTP-WHEN-NOT-CONSP)))
 (STOBJS::1D-ARR-TMP-EQUIV)
 (STOBJS::1D-ARR-TMP-EQUIV-REFL)
 (STOBJS::1D-ARR-TMP-EQUIV-SYMM)
@@ -696,6 +718,10 @@
      (6 6 (:REWRITE DEFAULT-<-1))
      (6 6 (:REWRITE DEFAULT-+-1))
      (6 6 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
      (4 1
         (:REWRITE SATLINK::LITP-OF-CAR-WHEN-LIT-LISTP))
@@ -719,6 +745,10 @@
      (10 10 (:REWRITE DEFAULT-+-1))
      (7 1
         (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 5 (:LINEAR LEQ-POSITION-EQUAL-LEN))
      (4 4 (:REWRITE DEFAULT-CAR))
      (4 1
@@ -742,6 +772,10 @@
      (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
      (4 1
         (:REWRITE SATLINK::LITP-OF-CAR-WHEN-LIT-LISTP))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2
         (:TYPE-PRESCRIPTION SATLINK::LIT-LISTP))
      (1 1
@@ -777,6 +811,10 @@
      (7 1
         (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
      (6 3 (:REWRITE DEFAULT-<-2))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 5 (:REWRITE DEFAULT-+-1))
      (4 1
         (:REWRITE SATLINK::LITP-OF-CAR-WHEN-LIT-LISTP))
@@ -816,6 +854,10 @@
         (:REWRITE SATLINK::LITP-OF-CAR-WHEN-LIT-LISTP))
      (2 2
         (:TYPE-PRESCRIPTION SATLINK::LIT-LISTP))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE RESIZE-LIST-WHEN-EMPTY))
      (1 1
         (:REWRITE SATLINK::LIT-LISTP-WHEN-NOT-CONSP))
@@ -1171,57 +1213,72 @@
 (AIGNET::CREATE-U32ARR{CORRESPONDENCE})
 (AIGNET::CREATE-U32ARR{PRESERVED})
 (AIGNET::U32-LENGTH{CORRESPONDENCE})
-(AIGNET::GET-U32{CORRESPONDENCE} (63 6 (:REWRITE NTH-WITH-LARGE-INDEX))
-                                 (30 6 (:DEFINITION LEN))
-                                 (12 6 (:REWRITE DEFAULT-+-2))
-                                 (11 7 (:REWRITE DEFAULT-<-2))
-                                 (10 3 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                 (9 1
-                                    (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
-                                 (7 7 (:REWRITE DEFAULT-CDR))
-                                 (7 7 (:REWRITE DEFAULT-<-1))
-                                 (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
-                                 (6 6 (:REWRITE DEFAULT-+-1))
-                                 (5 2 (:REWRITE NATP-WHEN-GTE-0))
-                                 (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                                 (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                 (2 2 (:REWRITE NATP-RW))
-                                 (1 1 (:REWRITE DEFAULT-CAR)))
+(AIGNET::GET-U32{CORRESPONDENCE}
+     (63 6 (:REWRITE NTH-WITH-LARGE-INDEX))
+     (30 6 (:DEFINITION LEN))
+     (12 6 (:REWRITE DEFAULT-+-2))
+     (11 7 (:REWRITE DEFAULT-<-2))
+     (10 3 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (9 1
+        (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
+     (7 7 (:REWRITE DEFAULT-CDR))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (6 6 (:REWRITE DEFAULT-+-1))
+     (5 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-RW))
+     (1 1 (:REWRITE DEFAULT-CAR)))
 (AIGNET::GET-U32{GUARD-THM})
-(AIGNET::SET-U32_{CORRESPONDENCE} (76 6 (:REWRITE NTH-WITH-LARGE-INDEX))
-                                  (35 6 (:DEFINITION LEN))
-                                  (20 15 (:REWRITE DEFAULT-<-2))
-                                  (17 10 (:REWRITE DEFAULT-+-2))
-                                  (16 16 (:REWRITE DEFAULT-CDR))
-                                  (15 15 (:REWRITE DEFAULT-<-1))
-                                  (15 15 (:META CANCEL_PLUS-LESSP-CORRECT))
-                                  (15 3 (:REWRITE ZP-WHEN-INTEGERP))
-                                  (12 3 (:REWRITE ZP-WHEN-GT-0))
-                                  (10 10 (:REWRITE DEFAULT-+-1))
-                                  (9 1
-                                     (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
-                                  (5 5 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                                  (4 4 (:REWRITE DEFAULT-CAR))
-                                  (4 1 (:REWRITE NATP-WHEN-GTE-0))
-                                  (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                  (1 1 (:REWRITE NATP-WHEN-INTEGERP))
-                                  (1 1 (:REWRITE NATP-RW))
-                                  (1 1 (:REWRITE CDR-CONS)))
-(AIGNET::SET-U32_{GUARD-THM} (48 3 (:REWRITE NTH-WITH-LARGE-INDEX))
-                             (25 5 (:DEFINITION LEN))
-                             (16 12 (:REWRITE DEFAULT-<-2))
-                             (12 12 (:REWRITE DEFAULT-<-1))
-                             (12 12 (:META CANCEL_PLUS-LESSP-CORRECT))
-                             (10 5 (:REWRITE DEFAULT-+-2))
-                             (9 1
-                                (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
-                             (6 6 (:REWRITE DEFAULT-CDR))
-                             (5 5 (:REWRITE DEFAULT-+-1))
-                             (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                             (4 1 (:REWRITE NATP-WHEN-GTE-0))
-                             (1 1 (:REWRITE NATP-WHEN-INTEGERP))
-                             (1 1 (:REWRITE NATP-RW))
-                             (1 1 (:REWRITE DEFAULT-CAR)))
+(AIGNET::SET-U32_{CORRESPONDENCE}
+     (76 6 (:REWRITE NTH-WITH-LARGE-INDEX))
+     (35 6 (:DEFINITION LEN))
+     (20 15 (:REWRITE DEFAULT-<-2))
+     (17 10 (:REWRITE DEFAULT-+-2))
+     (16 16 (:REWRITE DEFAULT-CDR))
+     (15 15 (:REWRITE DEFAULT-<-1))
+     (15 15 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (15 3 (:REWRITE ZP-WHEN-INTEGERP))
+     (12 3 (:REWRITE ZP-WHEN-GT-0))
+     (10 10 (:REWRITE DEFAULT-+-1))
+     (9 1
+        (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (5 5 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (4 1 (:REWRITE NATP-WHEN-GTE-0))
+     (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1 (:REWRITE NATP-RW))
+     (1 1 (:REWRITE CDR-CONS)))
+(AIGNET::SET-U32_{GUARD-THM}
+     (48 3 (:REWRITE NTH-WITH-LARGE-INDEX))
+     (25 5 (:DEFINITION LEN))
+     (16 12 (:REWRITE DEFAULT-<-2))
+     (12 12 (:REWRITE DEFAULT-<-1))
+     (12 12 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (10 5 (:REWRITE DEFAULT-+-2))
+     (9 1
+        (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (5 5 (:REWRITE DEFAULT-+-1))
+     (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (4 1 (:REWRITE NATP-WHEN-GTE-0))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1 (:REWRITE NATP-WHEN-INTEGERP))
+     (1 1 (:REWRITE NATP-RW))
+     (1 1 (:REWRITE DEFAULT-CAR)))
 (AIGNET::SET-U32_{PRESERVED} (15 1 (:DEFINITION UPDATE-NTH))
                              (10 2 (:DEFINITION LEN))
                              (9 1
@@ -1248,6 +1305,10 @@
         (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
      (7 7 (:REWRITE DEFAULT-CDR))
      (7 4 (:REWRITE DEFAULT-<-2))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 5 (:REWRITE DEFAULT-+-1))
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:META CANCEL_PLUS-LESSP-CORRECT))

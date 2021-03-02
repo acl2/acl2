@@ -304,7 +304,6 @@ acl2::4v-monotonicity).</p>"
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))))
-
   (defthm 4vec-wildeq-monotonic-when-second-const
     (implies (4vec-[= a b)
              (4vec-[= (4vec-wildeq a c)
@@ -314,8 +313,26 @@ acl2::4v-monotonicity).</p>"
                                       4vec-[=))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
-                '(:bdd (:vars nil))))))
+                '(:bdd (:vars nil)))))
 
+  (defthm 4vec-bit?!-monotonic-on-nontest-args
+    (implies (and (4vec-[= then1 then2)
+                  (4vec-[= else1 else2))
+             (4vec-[= (4vec-bit?! test then1 else1)
+                      (4vec-bit?! test then2 else2)))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-[=))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil)))))
+
+  (defthm 4vec-bit?-[=-bit?!
+    (4vec-[= (4vec-bit? test then else)
+             (4vec-bit?! test then else))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bit? 3vec-bit? 3vec-fix 4vec-[=))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil)))
+           )))
 
 (defsection 4veclist-[=
   :parents (4vec-[= 4veclist)
@@ -399,7 +416,9 @@ an approximation of its value in @('y')?"
     (implies (and (4veclist-[= x y)
                   (not (eq (fnsym-fix fn) '===))
                   (or (not (eq (fnsym-fix fn) '==?))
-                      (equal (4veclist-nth-safe 1 x) (4veclist-nth-safe 1 y))))
+                      (equal (4veclist-nth-safe 1 x) (4veclist-nth-safe 1 y)))
+                  (or (not (eq (fnsym-fix fn) 'bit?!))
+                      (equal (4veclist-nth-safe 0 x) (4veclist-nth-safe 0 y))))
              (4vec-[= (svex-apply fn x) (svex-apply fn y)))
     :hints(("Goal" :in-theory (e/d (svex-apply)
                                    (2vec-p 2vec->val))))))
@@ -423,16 +442,24 @@ any environment."
       :hints ('(:expand ((svex-eval x env)
                          (svex-xeval x)))
               (and stable-under-simplificationp
-                   '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
-                                     (4vec-==-[=-===
-                                      4vec-wildeq-safe-[=-wildeq))
-                     :use ((:instance 4vec-==-[=-===
-                            (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
-                            (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env))))
-                           (:instance 4vec-wildeq-safe-[=-wildeq
-                            (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
-                            (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
-                     :do-not-induct t)))
+                   (cond ((member-equal '(not (EQUAL (SVEX-CALL->FN$INLINE X) 'BIT?!)) clause)
+                          '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
+                                            (4vec-bit?-[=-bit?!))
+                            :use ((:instance 4vec-bit?-[=-bit?!
+                                   (test (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                                   (then (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))
+                                   (else (4veclist-nth-safe 2 (svexlist-eval (svex-call->args x) env)))))))
+                         (t
+                          '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
+                                            (4vec-==-[=-===
+                                             4vec-wildeq-safe-[=-wildeq))
+                            :use ((:instance 4vec-==-[=-===
+                                   (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                                   (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env))))
+                                  (:instance 4vec-wildeq-safe-[=-wildeq
+                                   (a (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                                   (b (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))))
+                            :do-not-induct t)))))
       :flag expr)
     (defthm svexlist-eval-gte-xeval
       (4veclist-[= (svexlist-xeval x)
@@ -530,6 +557,7 @@ any environment."
     (implies (and (syntaxp (not (equal env ''nil)))
                   (not (eq (fnsym-fix fn) '===))
                   (not (eq (fnsym-fix fn) '==?))
+                  (not (eq (fnsym-fix fn) 'bit?!))
                   (4vec-xfree-p (svex-apply fn (svexlist-xeval args))))
              (equal (svex-apply fn (svexlist-eval args env))
                     (svex-apply fn (svexlist-xeval args))))
@@ -559,19 +587,35 @@ any environment."
                            (n (svex-call '==? args))))
              :in-theory (disable svex-eval-when-4vec-xfree-of-minval
                                  equal-of-4vecs 4vec-xfree-p)
-             :expand ((svex-xeval (svex-call '==? args)))))))
+             :expand ((svex-xeval (svex-call '==? args))))))
+
+  (defthmd svex-eval-when-4vec-xfree-of-minval-apply-bit?!
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-p (svex-apply 'bit? (svexlist-xeval args))))
+             (equal (svex-apply 'bit?! (svexlist-eval args env))
+                    (svex-apply 'bit? (svexlist-xeval args))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                           (n (svex-call 'bit?! args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
+                                 equal-of-4vecs 4vec-xfree-p)
+             :expand ((svex-xeval (svex-call 'bit?! args)))))))
 
 
 
 (defines svex-monotonic-p
   (define svex-monotonic-p ((x svex-p))
     :measure (svex-count x)
+    :hints ((and stable-under-simplificationp '(:expand ((svex-count x)))))
     :returns (monotonicp)
     :verify-guards nil
     (svex-case x
       :var t
       :quote t
       :call (and (or (and (not (eq x.fn '===))
+                          (or (not (eq x.fn 'bit?!))
+                              (b* ((test (nth 0 x.args)))
+                                (or (not test)
+                                    (svex-case test :quote))))
                           (or (not (eq x.fn '==?))
                               (b* ((b (nth 1 x.args)))
                                 (or (not b)

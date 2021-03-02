@@ -199,16 +199,16 @@
   (equal (character-listp (explode-nonnegative-integer n base acc))
          (character-listp acc)))
 
-(local (defthm digit-listp-of-basic-eni-core
-         (str::digit-listp (basic-eni-core n 10))))
+(local (defthm dec-digit-char-listp-of-basic-eni-core
+         (str::dec-digit-char-listp (basic-eni-core n 10))))
 
-(local (defthm digit-listp-of-simpler-eni
-         (implies (str::digit-listp acc)
-                  (str::digit-listp (simpler-explode-nonnegative-integer n 10 acc)))))
+(local (defthm dec-digit-char-listp-of-simpler-eni
+         (implies (str::dec-digit-char-listp acc)
+                  (str::dec-digit-char-listp (simpler-explode-nonnegative-integer n 10 acc)))))
 
-(defthm digit-listp-of-explode-nonnegative-integer
-  (implies (str::digit-listp acc)
-           (str::digit-listp (explode-nonnegative-integer n 10 acc))))
+(defthm dec-digit-char-listp-of-explode-nonnegative-integer
+  (implies (str::dec-digit-char-listp acc)
+           (str::dec-digit-char-listp (explode-nonnegative-integer n 10 acc))))
 
 
 (encapsulate
@@ -241,23 +241,23 @@
 
 
 
-(defthm digit-val-of-digit-to-char
+(defthm dec-digit-char-value-of-digit-to-char
   (implies (and (force (natp n))
                 (force (<= 0 n))
                 (force (<= n 9)))
-           (equal (str::digit-val (digit-to-char n))
+           (equal (str::dec-digit-char-value (digit-to-char n))
                   n))
-  :hints(("Goal" :in-theory (enable str::digit-val
+  :hints(("Goal" :in-theory (enable str::dec-digit-char-value
                                     digit-to-char))))
 
 
-(defsection digit-to-char-of-digit-val
+(defsection digit-to-char-of-dec-digit-char-value
 
  (local (defun test (n)
           (declare (xargs :ruler-extenders :all))
           (and (let ((char (code-char n)))
-                 (or (not (str::digitp char))
-                     (equal (digit-to-char (str::digit-val char))
+                 (or (not (str::dec-digit-char-p char))
+                     (equal (digit-to-char (str::dec-digit-char-value char))
                             char)))
                (if (zp n)
                    t
@@ -269,31 +269,31 @@
                         (natp n)
                         (<= i n))
                    (let ((char (code-char i)))
-                     (implies (str::digitp char)
-                              (equal (digit-to-char (str::digit-val char))
+                     (implies (str::dec-digit-char-p char)
+                              (equal (digit-to-char (str::dec-digit-char-value char))
                                      char))))))
 
  (local (defthm l1
           (implies (and (natp i)
                         (<= i 255))
                    (let ((char (code-char i)))
-                     (implies (str::digitp char)
-                              (equal (digit-to-char (str::digit-val char))
+                     (implies (str::dec-digit-char-p char)
+                              (equal (digit-to-char (str::dec-digit-char-value char))
                                      char))))
           :hints(("Goal" :use ((:instance l0 (n 255)))))))
 
- (defthm digit-to-char-of-digit-val
-   (implies (str::digitp char)
-            (equal (digit-to-char (str::digit-val char))
+ (defthm digit-to-char-of-dec-digit-char-value
+   (implies (str::dec-digit-char-p char)
+            (equal (digit-to-char (str::dec-digit-char-value char))
                    char))
    :hints(("Goal" :use ((:instance l1 (i (char-code char))))))))
 
 
 (defund basic-unexplode-core (x)
   (declare (xargs :guard (and (character-listp x)
-                              (str::digit-listp x))))
+                              (str::dec-digit-char-listp x))))
   (if (consp x)
-      (+ (str::digit-val (car x))
+      (+ (str::dec-digit-char-value (car x))
          (* 10 (basic-unexplode-core (cdr x))))
     0))
 
@@ -306,7 +306,7 @@
 
 (defund unexplode-nonnegative-integer (x)
   (declare (xargs :guard (and (character-listp x)
-                              (str::digit-listp x))))
+                              (str::dec-digit-char-listp x))))
   (basic-unexplode-core (revappend x nil)))
 
 (encapsulate
@@ -319,4 +319,3 @@
                    n))
    :hints(("Goal" :in-theory (e/d (unexplode-nonnegative-integer)
                                   (basic-eni-core))))))
-

@@ -12058,6 +12058,22 @@
                  certify-book again."
                 full-book-name)))))
 
+(defun illegal-to-certify-check (before-p ctx state)
+
+; See the Essay on Illegal-states.
+
+  (cond ((f-get-global 'illegal-to-certify-message state)
+         (er soft ctx
+             "It is illegal to certify a book in this session, as explained ~
+              by the message on a possible invariance violation, printed ~
+              earlier ~@0.  To see the message again, evaluate ~
+              the following form:~|~x1"
+             (if before-p
+                 "in this session"
+               "during the certification attempt")
+             '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
+        (t (value nil))))
+
 (defun chk-acceptable-certify-book (book-name full-book-name dir
                                               suspect-book-action-alist
                                               cert-op k ctx state)
@@ -12157,14 +12173,8 @@
                  :DOC defttag."
                 (ttag wrld)
                 '(defttag nil)))
-           ((f-get-global 'illegal-to-certify-message state)
-            (er soft ctx
-                "It is illegal to certify a book in this session, as ~
-                 explained by the message on a possible invariance violation, ~
-                 printed earlier in this session.  To see the message again, ~
-                 evaluate the following form:~|~x0"
-                '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
            (t (value nil)))
+     (illegal-to-certify-check t ctx state)
      (chk-book-name book-name full-book-name ctx state)
      (cond ((or (eq cert-op :convert-pcert)
                 (symbol-name-equal k "T"))
@@ -13205,6 +13215,9 @@
           (if *inside-include-book-fn*
               *fchecksum-symbol-memo*
             (make-hash-table :test 'eq)))
+         #-acl2-loop-only
+         (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
+                                         'stolen))
          #-acl2-loop-only
          (*inside-include-book-fn* (if behalf-of-certify-flg
                                        'hcomp-build
@@ -15486,62 +15499,6 @@
          (expansion-alist-conflict (cdr acl2x-expansion-alist)
                                    elided-expansion-alist))))
 
-(defun chk-absstobj-invariants (extra-msg state)
-  (declare (xargs :stobjs state
-
-; If this were in :logic mode:
-;                 :guard-hints (("Goal" :in-theory (enable read-acl2-oracle)))
-
-                  ))
-  (er-let* ((msg
-             #+acl2-loop-only
-             (read-acl2-oracle state)
-             #-acl2-loop-only
-             (let ((temp (svref *inside-absstobj-update* 0)))
-               (cond
-                ((or (null temp)
-                     (eql temp 0)
-                     (eq temp :ignore))
-                 (value nil))
-                (t
-                 (let ((msg
-                        (msg "Possible invariance violation for an abstract ~
-                              stobj!  See :DOC set-absstobj-debug, and ~
-                              PROCEED AT YOUR OWN RISK.~@0"
-                             (cond
-                              ((natp temp) "")
-                              (t
-                               (msg "  Evaluation was aborted under a call of ~
-                                     abstract stobj export ~x0.~@1"
-                                    (cond ((symbolp temp) temp)
-                                          (t (cdr (last temp))))
-                                    (cond
-                                     ((symbolp temp) "")
-                                     (t
-                                      (msg "  Moreover, it appears that ~
-                                            evaluation was aborted within the ~
-                                            following stack of stobj updater ~
-                                            calls (innermost call appearing ~
-                                            first): ~x0."
-                                           (let ((y nil))
-                                             (loop
-                                              (if (atom temp)
-                                                  (return (nreverse
-                                                           (cons temp y)))
-                                                (push (pop temp) y)))))))))))))
-                   (pprogn
-                    (f-put-global 'illegal-to-certify-message msg state)
-                    (progn (setf (svref *inside-absstobj-update* 0)
-                                 (if (natp temp) 0 nil))
-                           (value msg)))))))))
-    (cond (msg (er soft 'chk-absstobj-invariants
-                   "~@0~@1"
-                   msg
-                   (if extra-msg
-                       (msg "  ~@0" extra-msg)
-                     "")))
-          (t (value nil)))))
-
 (defun symbol-package-name-set (syms acc)
   (declare (xargs :guard (and (symbol-listp syms)
                               (true-listp acc))))
@@ -16026,9 +15983,8 @@
   (mv-let (eof obj state)
     (read-file-iterate channel acc state)
     (mv eof (remove-eq nil obj) state))
-  #+cltl2
+  #+(and cltl2 acl2-loop-only)
   (mv-let (eof obj state)
-    #+acl2-loop-only
     (mv-let (erp val state)
       (read-acl2-oracle state)
       (declare (ignore erp))
@@ -16037,31 +15993,41 @@
                    (mv eof nil state)))
             (t
              (read-object channel state))))
-    #-acl2-loop-only
-    (let ((pos (file-position (get-input-stream-from-channel channel))))
-      (handler-case (read-object channel state)
-        (error (condition)
-               (declare (ignore condition))
-               (progn (setq error-start-pos pos)
-                      (mv nil nil state)))))
     (cond (eof (mv (reverse acc) state))
           (t
-           #-acl2-loop-only
-           (when error-start-pos
+           (read-file-iterate-safe channel
+                                   (if (eq obj nil)
+                                       acc
+                                     (cons obj acc))
+                                   state))))
+  #+(and cltl2 (not acl2-loop-only))
+  (mv
+   (loop
+    (let ((pos (file-position (get-input-stream-from-channel channel))))
+      (mv-let (eof obj state)
+        (handler-case (read-object channel state)
+          (error (condition)
+                 (declare (ignore condition))
+                 (progn (setq error-start-pos pos)
+                        (mv nil nil state))))
+        (cond
+         (eof (return (reverse acc)))
+         (t
+          (when error-start-pos
 
 ; When read breaks in the middle of an expression it seems to leave the
 ; file-pointer there rather than to proceed to the end of the original
 ; expression.  So we go back to where we were, and then read the entire object,
 ; throwing it away.
 
-             (file-position (get-input-stream-from-channel channel)
-                            error-start-pos)
-             (read-object-suppress channel state))
-           (read-file-iterate-safe channel
-                                   (if (eq obj nil)
-                                       acc
-                                     (cons obj acc))
-                                   state)))))
+            (file-position (get-input-stream-from-channel channel)
+                           error-start-pos)
+            (setq error-start-pos nil)
+            (read-object-suppress channel state))
+          (setq acc (if (eq obj nil)
+                        acc
+                      (cons obj acc))))))))
+   state))
 
 (defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
 
@@ -16664,10 +16630,11 @@
                                                   1 nil nil 'certify-book
                                                   state))
                                                 (ignore
-                                                 (chk-absstobj-invariants
-                                                  "Your certify-book command ~
-                                                   is therefore aborted."
-                                                  state))
+                                                 (pprogn
+                                                  (chk-absstobj-invariants
+                                                   state)
+                                                  (illegal-to-certify-check
+                                                   nil ctx state)))
                                                 (expansion-alist
                                                  (value
                                                   (cond
@@ -22247,7 +22214,9 @@
   (let ((*inside-trace$* t))
     (when (eq direction :in)
       (incf *trace-level*))
-    (let ((trace-level *trace-level*))
+    (let ((trace-level *trace-level*)
+          (*trace-output* (get-output-stream-from-channel
+                           (f-get-global 'trace-co *the-live-state*))))
       (when (not (eq msgp :fmt!))
         (cond
          ((eq direction :in)
@@ -25071,54 +25040,49 @@
 ; because some functions we call are defined relatively late (at least that was
 ; the case when cltl-def-from-name was defined here).
 
-(defun memoize-table-chk-commutative (str fn val ctx wrld)
+(defun memoize-table-chk-commutative-msg (str fn val wrld)
 
 ; Function memoize-table-chk does a full check that the given fn/val pair is a
 ; legal entry for memoize-table in the given world.  Here we check in
 ; particular that if the :commutativity value is supplied in val, then it names
 ; a lemma in wrld stating the commutativity of fn.  This function always
-; returns t or causes a hard error using the same string (str) as is used by
-; memoize-table-chk.
+; returns nil or else a message that reports an error using the same string
+; (str) as is used by memoize-table-chk.
 
   (declare (xargs :guard (and (symbolp fn)
                               (not (eq (getpropc fn 'formals t wrld)
                                        t))
                               (symbol-alistp val))))
   (let ((commutative (cdr (assoc-eq :commutative val))))
-    (cond ((null commutative) t)
+    (cond ((null commutative) nil)
           ((not (eql (len (getpropc fn 'formals t wrld))
                      2))
-           (er hard ctx
-               "~@0~x1 is not a binary function symbol, so it is illegal to ~
-                specify a non-nil value of :commutative (here, ~x2) for ~
-                memoization of this function."
-               str fn commutative))
+           (msg "~@0~x1 is not a binary function symbol, so it is illegal to ~
+                 specify a non-nil value of :commutative (here, ~x2) for ~
+                 memoization of this function."
+                str fn commutative))
           ((not (symbolp commutative))
-           (er hard ctx
-               "~@0Attempted to memoize ~x1 with a non-symbolp value of ~
-                :commutative, ~x2."
-               str fn commutative))
+           (msg "~@0Attempted to memoize ~x1 with a non-symbolp value of ~
+                 :commutative, ~x2."
+                str fn commutative))
           (t (let ((thm (getpropc commutative 'theorem nil wrld)))
                (cond ((null thm)
-                      (er hard ctx
-                          "~@0The theorem ~x1 specified for :commutative ~
-                           memoization of ~x2 does not exist."
-                          str commutative fn))
-                     (t
-                      (or
-                       (case-match thm
-                         (('equal (!fn x y) (!fn y x))
-                          (cond
-                           ((and (variablep x)
-                                 (variablep y)
-                                 (not (eq x y)))
-                            t)))
-                         (& nil))
-                       (er hard ctx
-                           "~@0The theorem ~x1 specified for :commutative ~
-                            memoization of ~x2 does not have the expected ~
-                            form.  See :DOC memoize."
-                           str commutative fn)))))))))
+                      (msg "~@0The theorem ~x1 specified for :commutative ~
+                            memoization of ~x2 does not exist."
+                           str commutative fn))
+                     ((case-match thm
+                        (('equal (!fn x y) (!fn y x))
+                         (cond ((and (variablep x)
+                                     (variablep y)
+                                     (not (eq x y)))
+                                t)
+                               (t nil)))
+                        (& nil))
+                      nil)
+                     (t (msg "~@0The theorem ~x1 specified for :commutative ~
+                              memoization of ~x2 does not have the expected ~
+                              form.  See :DOC memoize."
+                             str commutative fn))))))))
 
 (defun non-memoizable-stobjs (stobjs-in wrld)
   (cond ((endp stobjs-in) nil)
@@ -30882,6 +30846,14 @@
          (pairlis$ (lambda-object-formals ,fn)
                    ,args))))
 
+(defmacro our-quote-macro (x)
+
+; This odd little macro is just an alist for quote, which add-trip uses to
+; communicate information to install-for-add-trip (as described in comments in
+; those functions).
+
+  (list 'quote x))
+
 ; Essay on Memoization with Partial Functions (Memoize-partial)
 
 ; A common trick is to admit a recursively-defined function by adding a
@@ -31683,7 +31655,305 @@
        :guard
        (partial-functions-table-guard key val world))
 
-(defun memoize-table-chk (key val wrld)
+; Essay on the :INVOKE option of Memoize
+
+; See the code and :DOC memoize for details about this option.  Here we discuss
+; miscellaneous issues relevant to its design.
+
+; The wide use of MBE has established the value of computing a call of a
+; function symbol, f, by using a definition of f that differs from the logical
+; definition of f.  The :INVOKE option of memoize provides such a capability
+; that avoids the inconvenience of setting up the alternate definition at defun
+; time.
+
+; A typical invocation of memoize using :invoke is as follows.
+
+; (memoize 'old-fn :invoke 'new-fn)
+
+; The implementation searches the world for the proof obligations that justify
+; this operation: equality of old-fn and new-fn, and (when not sufficiently
+; trivial) implication of their guards.  We considered supporting a way for the
+; user to specify the names of those theorems in the memoize command.  On a
+; 2019-vintage MacBook Pro it took only 0.28 seconds to search the entire world
+; (fruitlessly) for the former after including system book doc/top-slow, which
+; produced a world of length 5,633,256.  Moreover, we skip the checks during
+; include-book and the second pass of encapsulate (see the call of
+; skip-proofs-due-to-system in memoize-table-chk-invoke-msg), which is
+; justified by the usual conservativity argument.  So we kept the interface
+; simple, sparing users from specifying those theorems.  Note that memoize is
+; not doing the proofs itself; if the table event were to invoke the prover, we
+; would probably need to remove TABLE from the list of event types excluded
+; under the comment, "Comment on irrelevance of skip-proofs", in install-event.
+; That comment also serves to justify our decision to check for the necessary
+; theorems in the world even when skipping proofs (unless the system is doing
+; the skipping, in particular during include-book or the second pass of
+; encapsulate).
+
+; We considered allowing a new body in place of the new-fn:
+
+; (memoize 'old-fn :invoke 'term).
+; 
+; However, that would require complicating the implementation by computing the
+; guard proof obligation for the term (which depends on state via the global
+; enabled structure, by the way, because simplification of ground terms is
+; baked into computing a guard), as well as ensuring that term is
+; guard-verified; a new function would probably be defined whose body is term
+; (but would we carry over declarations from the old function?).  Moreover,
+; such a version is less general since it doesn't support recursion that could
+; take place in the definition of new-fn.  Note that there needn't be any
+; execution overhead for the new-fn approach if new-fn is defined with
+; defun-inline.  User macros can take care of defining a variant that takes a
+; term if need be; see use-io-pairs for an example of generating a function
+; symbol that is very likely to be new.  So in summary, we only allow a
+; function symbol for the value of :invoke.
+
+; Here is the basic idea of how we redefine f in raw lisp in response to
+; (memoize 'f :invoke 'g); see cltl-def-memoize-invoke for details.
+
+; (defun f (x) <dcls> <f-body>)
+; (defun g (x) (... (f ...) ...))
+; ; Then redefine as follows.
+; (defvar *g* nil) ; a gensym actually
+; (defun f (x)
+;   <dcls>
+;   (if *g*
+;       (funcall <old_symbol-function_of_f> x)
+;     (let ((*g* t))
+;       (g x))))
+
+; It's tempting just to define (f x) to be (g x) if g doesn't call f.  But even
+; then, we can't preclude returning to a call of f from g, perhaps due to
+; attachments or other memoization with :invoke.  It seems safest for the
+; redefinition of f to ensure that we don't re-enter g from f within a
+; computation where g already passed control to f.
+
+; We considered the following potential optimization, but as explained below,
+; we rejected it.  The idea is to avoid testing *g* on every recursive call of
+; f after we enter f via g; below, just one such test puts us into the labels
+; form.  Of course, this alleged optimization has no purpose unless f calls
+; itself, and we could check that directly using ffnnamep (or maybe, if we want
+; to get fancy, a variant of ffnnamep-mod-mbe that uses :exec rather than
+; :logic).
+
+; (defun f (x)
+;   (if *g*
+;       (labels ((f (x)
+;                   (if (consp x)
+;                       (cons (list (car x)) (f (cdr x)))
+;                     x)))
+;               (f x))
+;     (let ((*g* t))
+;       (g x))))
+
+; But actually, this change would probably provide no efficiency gain in CCL or
+; SBCL, at least, since experiments show that recursive calls of f are actually
+; calls of the old symbol-function for f, which would never lead to further
+; testing of *g*.  (LispWorks, on the other hand, does seem to test *g*
+; repeatedly.  We are hopeful that this doesn't present much slowdown.)  At any
+; rate: as hinted at above, the use of labels wouldn't prevent calls of the
+; global f from being made by way of other functions that might, in turn, be
+; reached from f by way of attachments or other uses of :invoke.  To summarize:
+; We have abandoned the labels idea above because it's unnecessary for (at
+; least) CCL and SBCL and it's incomplete as a solution.
+
+; We considered possible hypotheses for the equality of the old and invoked
+; functions.  We briefly considered allowing the :condition argument as a
+; hypothesis, but that makes no sense when :condition is nil, which is the
+; default when :invoke is non-nil (and is probably the common case).  More
+; tempting is to allow the guard of the old function as a hypothesis, since we
+; expect that this guard will always hold during evaluation.  The problem is
+; that the guard might not hold when the old function is called under a
+; program-mode function call.  So for now, at least, we require an
+; unconditional equality to be proved.  We might be tempted to consider
+; allowing the guard hypothesis if that turns out to be important, but in that
+; case we need some mechanism, perhaps based on invariant-risk or **1*-as-raw*
+; (though we haven't thought this through), to keep function calls as *1*
+; calls.  But then memoization wouldn't take effect, which would defeat the
+; point of all this!  So we require the unconditional equality to hold.
+
+; Note that :recursive has default nil in the (sole) case that :invoke is
+; non-nil.  It is an error to specify :recursive t in that case, because
+; that doesn't make sense.  Or does it?  Recall:
+
+; (defun f (x)
+;   <dcls>
+;   (if *g*
+;       (funcall <old_symbol-function_of_f> x)
+;     (let ((*g* t))
+;       (g x))))
+
+; What if we want recursive calls of f to go through g?  (We don't, for the
+; application to the use-io-pairs tool; but maybe there's a reason for someone
+; to want this.)  There is serious danger of looping unless we are careful.  We
+; choose to postpone further consideration of such a :recursive t argument
+; unless and until there is a demonstrated need.
+
+; For (memoize 'f :invoke 'g), must f and/or g be in logic mode and even
+; guard-verified?  Well, they must in be logic mode, because otherwise the
+; necessary equality theorem won't exist.  We further require g to be
+; guard-verified; otherwise we can't trust that the guard of f is sufficient to
+; ensure a well-guarded call of g.  Should we also require f to be
+; guard-verified?  That doesn't seem necessary, since *1*f won't call f unless
+; f is guard-verified, and *1*f doesn't call g.  Of course, there could be a
+; program-mode wrapper for f.  But at that point we are subverting the guard
+; check on f anyhow, so it's not really worse to subvert the guard check on g.
+
+(defun memoize-invoke-equality-p (fn invoke term)
+  (and (ffn-symb-p term 'equal)
+       (let ((lhs (fargn term 1))
+             (rhs (fargn term 2)))
+         (and (if (ffn-symb-p lhs fn)
+                  (ffn-symb-p rhs invoke)
+                (if (ffn-symb-p lhs invoke)
+                    (ffn-symb-p rhs fn)
+                  nil))
+              (all-variablep (fargs lhs))
+              (equal (fargs lhs) (fargs rhs))
+              (no-duplicatesp-eq (fargs lhs))))))
+
+(defun memoize-invoke-equality-exists (fn invoke wrld-tail wrld)
+  (cond ((null wrld-tail) nil)
+        ((and (eq (cadr (car wrld-tail)) 'theorem)
+              (memoize-invoke-equality-p fn invoke
+                                         (cddr (car wrld-tail)))
+; We do a final check in case redefinition has obliterated the theorem.
+              (equal (getpropc (car (car wrld-tail)) 'theorem nil wrld)
+                     (cddr (car wrld-tail))))
+         t)
+        (t (memoize-invoke-equality-exists fn invoke (cdr wrld-tail) wrld))))
+
+(defun memoize-invoke-guard-implication-default-name (f g)
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                (symbol-name f) "-guard-implies-"
+                (symbol-name g) "-guard")
+   g))
+
+(defun memoize-invoke-guard-implication-term (f g wrld)
+
+; This function normally returns an implication: the guard of f implies the
+; guard of g (stated in terms of the formals of f).  However, if that
+; implication is trivial then this function may return nil.
+
+  (let ((guard-g (guard g nil wrld)))
+    (cond ((equal guard-g *t*) nil)
+          (t (let ((guard-f (guard f nil wrld))
+                   (guard-g (sublis-var (pairlis$ (formals g wrld)
+                                                  (formals f wrld))
+                                        guard-g)))
+               (cond ((equal guard-f guard-g) nil)
+                     ((if-tautologyp (fcons-term* 'if guard-f guard-g *t*))
+                      nil)
+                     (t (fcons-term* 'implies guard-f guard-g))))))))
+
+(defmacro verify-guard-implication (f g &key hints otf-flg)
+  `(make-event
+    (let ((term (or (memoize-invoke-guard-implication-term ',f ',g (w state))
+                    t))
+          (name (memoize-invoke-guard-implication-default-name ',f ',g)))
+      (list 'defthm name
+            term
+            ,@(and hints (list :hints (list 'quote hints)))
+            ,@(and otf-flg (list :otf-flg (list 'quote otf-flg)))
+            :rule-classes nil))))
+
+(defun memoize-invoke-guard-thm-exists-1 (term wrld-tail wrld)
+  (cond ((null wrld-tail) nil)
+        ((and (eq (cadr (car wrld-tail)) 'theorem)
+              (equal term (cddr (car wrld-tail)))
+; We do a final check in case redefinition has obliterated the theorem.
+              (equal (getpropc (car (car wrld-tail)) 'theorem nil wrld)
+                     term))
+         t)
+        (t (memoize-invoke-guard-thm-exists-1 term (cdr wrld-tail) wrld))))
+
+(defun memoize-invoke-guard-thm-exists (fn invoke wrld)
+  (let ((term (memoize-invoke-guard-implication-term fn invoke wrld)))
+    (if term
+        (memoize-invoke-guard-thm-exists-1 term wrld wrld)
+      t)))
+
+(defun memoize-table-chk-invoke-msg (key invoke str wrld state)
+
+; Invoke is the non-nil value of the :invoke keyword for a call of memoize on
+; the given function symbol, key.  We return nil if these values are
+; acceptable, and otherwise return a message to print.
+
+  (cond
+   ((not (and (symbolp invoke)
+              (function-symbolp invoke wrld)
+              (eq (symbol-class invoke wrld)
+                  :common-lisp-compliant)))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is not a guard-verified ~
+          function symbol."
+         str invoke))
+   ((untouchable-fn-p invoke wrld (f-get-global 'temp-touchable-fns state))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is an untouchable function ~
+          symbol."
+         str invoke))
+   ((and (assoc-eq invoke *ttag-fns*)
+         (not (ttag wrld)))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is a function symbol that ~
+          cannot be called unless a trust tag is in effect.  See :DOC ~
+          defttag.~@2"
+         str
+         invoke
+         (or (cdr (assoc-eq invoke *ttag-fns*))
+             "")))
+   ((not (logicp key wrld))
+    (msg "~@0When memoizing with memoize keyword :INVOKE, the memoized ~
+          function must be in :logic mode, which ~x1 is not."
+         str key))
+   ((not (and (equal (stobjs-in key wrld) (stobjs-in invoke wrld))
+              (not (member-eq key *stobjs-out-invalid*))
+              (not (member-eq invoke *stobjs-out-invalid*))
+              (equal (stobjs-out key wrld) (stobjs-out invoke wrld))))
+    (msg "~@0The function to be memoized, ~x1, has a different signature from ~
+          the function to be :INVOKEd, ~x2."
+         str key invoke))
+   ((skip-proofs-due-to-system state)
+
+; By conservativity it is sound to skip the theorem checks (for equality and
+; guard implication) when we are including a book or in the second pass of
+; encapsulate.
+
+    nil)
+   (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
+            (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
+        (cond
+         ((and eq-thm-p gd-thm-p) nil)
+         (t (let* ((thm-formula
+                    (and (not eq-thm-p)
+                         `(defthm ,(intern-in-package-of-symbol
+                                    (concatenate 'string
+                                                 (symbol-name key)
+                                                 "-is-"
+                                                 (symbol-name invoke))
+                                    invoke)
+                            ,(let ((formals (formals key wrld)))
+                               `(equal (,key ,@formals)
+                                       (,invoke ,@formals)))
+                            :rule-classes nil)))
+                   (guard-thm-formula
+                    (and (not gd-thm-p)
+                         `(verify-guard-implication ,key ,invoke)))
+                   (msg (cond (gd-thm-p
+                               (msg "~x0" thm-formula))
+                              (eq-thm-p
+                               (msg "~x0" guard-thm-formula))
+                              (t
+                               (msg "~x0~|~%~x1"
+                                    thm-formula
+                                    guard-thm-formula)))))
+              (msg "~@0The following event~#1~[~/s~] must be admitted ~
+                    (possibly with differing name or macro) before memoizing ~
+                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
+                    memoize.~|~%~@4"
+                   str
+                   (if (or eq-thm-p gd-thm-p) 0 1)
+                   key invoke msg))))))))
+
+(defun memoize-table-chk (key val wrld state)
 
 ; Although this function is generally only called with #+hons, nevertheless we
 ; define it independently of #+hons so that it has the same definition in the
@@ -31722,14 +31992,14 @@
          (condition (and val (cdr (assoc-eq :condition-fn val))))
          (inline (and val (cdr (assoc-eq :inline val))))
          (aokp (and val (cdr (assoc-eq :aokp val))))
-         (total (and val (cdr (assoc-eq :total val)))))
-    (let ((result
-           (cond
-            ((eq key-formals t)
-             (er hard ctx
-                 "~@0~x1 is not a function symbol."
+         (invoke (and val (cdr (assoc-eq :invoke val))))
+         (total (and val (cdr (assoc-eq :total val))))
+         (msg
+          (cond
+           ((eq key-formals t)
+            (msg "~@0~x1 is not a function symbol."
                  str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply
 ; with condition, allowing :inline t?  Perhaps we could, but that would require
@@ -31738,72 +32008,72 @@
 ; syntactic restrictions.  We can think about this if someone has reason to
 ; memoize with :condition nil but not :inline nil.
 
-                  (member-eq 'state (stobjs-in key wrld)))
-             (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                 (member-eq 'state (stobjs-in key wrld)))
+            (msg "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
                   for profiling)."
                  str key))
-            ((not (booleanp aokp))
-             (er hard ctx
-                 "~@0:aokp has a non-Boolean value, ~x1."
+           ((not (booleanp aokp))
+            (msg "~@0:aokp has a non-Boolean value, ~x1."
                  str aokp))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.
 
-                  (non-memoizable-stobjs (stobjs-in key wrld) wrld))
-             (mv-let
+                 (non-memoizable-stobjs (stobjs-in key wrld) wrld))
+            (mv-let
               (abs conc)
               (filter-absstobjs (non-memoizable-stobjs (stobjs-in key wrld)
                                                        wrld)
                                 wrld nil nil)
               (cond
                ((null abs)
-                (er hard ctx
-                    "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
-                    str key conc))
+                (msg "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
+                      introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
+                     str key conc))
                ((null conc)
-                (er hard ctx
-                    "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
-                     of~] whose corresponding concrete stobj is ~
-                     non-memoizable.  See :DOC defabsstobj."
-                    str key abs))
+                (msg "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
+                      of~] whose corresponding concrete stobj is ~
+                      non-memoizable.  See :DOC defabsstobj."
+                     str key abs))
                (t
-                (er hard ctx
-                    "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
-                     abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
-                     corresponding concrete stobj is non-memoizable.  See ~
-                     :DOC defstobj."
-                    str key conc abs)))))
-            ((member-eq key *stobjs-out-invalid*)
-             (er hard ctx
-                 "~@0~x1 is a primitive without a fixed output signature."
+                (msg "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
+                      introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
+                      abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
+                      corresponding concrete stobj is non-memoizable.  See ~
+                      :DOC defstobj."
+                     str key conc abs)))))
+           ((member-eq key *stobjs-out-invalid*)
+            (msg "~@0~x1 is a primitive without a fixed output signature."
                  str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.
 
-                  (not (all-nils (stobjs-out key wrld))))
-             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
-               (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
+                 (not (all-nils (stobjs-out key wrld))))
+            (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
+              (msg "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
                    str key stobj)))
-            ((member-eq key *hons-primitive-fns*)
-             (er hard ctx
-                 "~@0~x1 is a HONS primitive."
+           ((member-eq key *hons-primitive-fns*)
+            (msg "~@0~x1 is a HONS primitive."
                  str key))
-            ((not (cltl-def-from-name key wrld))
-             (er hard ctx
-                 "~@0~x1 is not a defined ACL2 function."
+           ((not (cltl-def-from-name key wrld))
+            (msg "~@0~x1 is not a defined ACL2 function."
                  str key))
-            ((getpropc key 'constrainedp nil wrld)
-             (er hard ctx
-                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
+           ((getpropc key 'constrainedp nil wrld)
+
+; Should we consider removing this restriction if :INVOKE has a non-nil value?
+; A potential use would be to prove some io-pairs for a given constrained
+; function and then provide for execution of that constrained function; see
+; community book books/kestrel/utilities/use-io-pairs.lisp.  A fundamental
+; issue however is that constrained functions do not have
+; executable-counterpart runes, so they presumably wouldn't be executed
+; directly during proofs.  They could be executed under a call of a defined
+; function, however.
+
+            (msg "~@0~x1 is constrained.  You may instead wish to memoize a ~
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
-            ((and inline
+           ((and inline
 
 ; The test below isn't right if a built-in function with raw Lisp code has been
 ; promoted to logic mode after assigning state global
@@ -31814,32 +32084,38 @@
 ; Note that here we are disallowing inline memoization of apply$-lambdas.
 ; That's fine; we essentially do our own memoization via the cl-cache.
 
-                  (if (eq key-class :program)
-                      (member-eq key *initial-program-fns-with-raw-code*)
-                    (member-eq key *initial-logic-fns-with-raw-code*)))
-             (er hard ctx
-                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
+                 (if (eq key-class :program)
+                     (member-eq key *initial-program-fns-with-raw-code*)
+                   (member-eq key *initial-logic-fns-with-raw-code*)))
+            (msg "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
                   code, hence is illegal to memoize unless :RECURSIVE is nil."
                  str key))
-            ((let ((pair (assoc-eq :memo-table-init-size val)))
-               (and pair (not (posp (cdr pair)))))
-             (er hard ctx
-                 "~@0The :memo-table-init-size must be a positive integer, ~
+           ((let ((pair (assoc-eq :memo-table-init-size val)))
+              (and pair (not (posp (cdr pair)))))
+            (msg "~@0The :memo-table-init-size must be a positive integer, ~
                   unlike ~x1."
                  str (cdr (assoc-eq :memo-table-init-size val))))
-            ((not (memoize-table-chk-commutative str key val ctx wrld))
-             nil) ; an error was presumably already caused
-            ((not (symbolp total))
-             (er hard ctx
-                 "~@0The value of the :total keyword for memoize must be a ~
+           ((memoize-table-chk-commutative-msg str key val wrld))
+           ((and invoke total)
+            (msg "~@0It is illegal to specify non-nil values for both the ~
+                  :INVOKE and :TOTAL memoize keywords."
+                 str))
+           ((and invoke inline)
+            (msg "~@0It is illegal to specify a non-NIL value for the :INVOKE ~
+                  keyword of memoize when the :RECURSIVE keyword (i.e., the ~
+                  :INLINE keyword for the memoize table) is T."
+                 str))
+           ((and invoke
+                 (memoize-table-chk-invoke-msg key invoke str wrld state)))
+           ((not (symbolp total))
+            (msg "~@0The value of the :total keyword for memoize must be a ~
                   symbol, but ~x1 is not.  Presumably you are trying to use ~
                   the :total option of memoize directly, which is not ~
                   recommended.  See :DOC memoize-partial."
                  str total))
-            ((and total
-                  (not (cltl-def-memoize-partial key total wrld)))
-             (er hard ctx
-                 "~@0Unable to find executable Common Lisp definition for ~x1 ~
+           ((and total
+                 (not (cltl-def-memoize-partial key total wrld)))
+            (msg "~@0Unable to find executable Common Lisp definition for ~x1 ~
                   in the table, ~x2.  Presumably you are trying to use the ~
                   :total option of memoize directly, which is not ~
                   recommended.  See :DOC memoize-partial."
@@ -31849,120 +32125,117 @@
 ; that is already memoized or unmemoized, respectively.  The function
 ; maybe-push-undo-stack relies on this check.
 
-            ((and val (cdr (assoc-eq key memoize-table)))
-             (er hard ctx
-                 "~@0Function ~x1 is already memoized."
+           ((and val (cdr (assoc-eq key memoize-table)))
+            (msg "~@0Function ~x1 is already memoized."
                  str key))
-            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
-             (er hard ctx
-                 "~@0Cannot unmemoize function ~x1 because it is not ~
+           ((and (null val) (null (cdr (assoc-eq key memoize-table))))
+            (msg "~@0Cannot unmemoize function ~x1 because it is not ~
                   currently memoized."
                  str key))
-            ((and (eq key-class :ideal)
-                  val ; memoize, not unmemoize
-                  (let* ((pair (assoc-eq :ideal-okp val))
-                         (okp (if pair
-                                  (cdr pair)
-                                (cdr (assoc-eq :memoize-ideal-okp
-                                               (table-alist 'acl2-defaults-table
-                                                            wrld))))))
-                    (cond ((eq okp t)
-                           nil)
-                          ((not okp)
-                           (er hard ctx
-                               "~@0The function symbol ~x1 is in :logic mode ~
+           ((and (eq key-class :ideal)
+                 val ; memoize, not unmemoize
+                 (let* ((pair (assoc-eq :ideal-okp val))
+                        (okp (if pair
+                                 (cdr pair)
+                               (cdr (assoc-eq :memoize-ideal-okp
+                                              (table-alist 'acl2-defaults-table
+                                                           wrld))))))
+                   (cond ((eq okp t)
+                          nil)
+                         ((not okp)
+                          (msg "~@0The function symbol ~x1 is in :logic mode ~
                                 but has not had its guards verified.  Either ~
                                 run ~x2, or specify :IDEAL-OKP ~x3 in your ~
                                 ~x4 call, or else evaluate ~x5 or ~x6."
                                str key 'verify-guards t 'memoize
-                               '(table acl2-defaults-table :memoize-ideal-okp t)
-                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
-                          (t ; okp is :warn
-                           (prog2$ (warning$-cw
-                                    'memoize-table-chk
-                                    "The function ~x0 to be memoized is in ~
-                                     :logic mode but has not had its guards ~
-                                     verified.  Memoization might therefore ~
-                                     not take place; see :DOC memoize."
-                                    key)
-                                   nil))))))
+                               '(table acl2-defaults-table :memoize-ideal-okp
+                                       t)
+                               '(table acl2-defaults-table :memoize-ideal-okp
+                                       :warn)))
+                         (t ; okp is :warn
+                          (prog2$ (warning$-cw
+                                   'memoize-table-chk
+                                   "The function ~x0 to be memoized is in ~
+                                    :logic mode but has not had its guards ~
+                                    verified.  Memoization might therefore ~
+                                    not take place; see :DOC memoize."
+                                   key)
+                                  nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 
-            (t
-             (let ((val-formals (and condition
-                                     (if (symbolp condition)
-                                         (getpropc condition 'formals t wrld)
-                                       t)))
-                   (val-guard (and condition
-                                   (if (symbolp condition)
-                                       (getpropc condition 'guard *t* wrld)
-                                     t))))
+           (t
+            (let ((val-formals (and condition
+                                    (if (symbolp condition)
+                                        (getpropc condition 'formals t wrld)
+                                      t)))
+                  (val-guard (and condition
+                                  (if (symbolp condition)
+                                      (getpropc condition 'guard *t* wrld)
+                                    t))))
 
-               (cond
-                ((or (eq val nil)
-                     (member-eq condition '(t nil)))
-                 t)
-                ((eq val-formals t)
-                 (er hard ctx
-                     "~@0The proposed memoization condition function, ~x1, is ~
+              (cond
+               ((or (eq val nil)
+                    (member-eq condition '(t nil)))
+                nil)
+               ((eq val-formals t)
+                (msg "~@0The proposed memoization condition function, ~x1, is ~
                       neither T, NIL, nor a function symbol known to ACL2."
                      str condition))
-                ((not (and (symbolp condition)
-                           (or (eq key-class :program)
-                               (eq (symbol-class condition wrld)
-                                   :common-lisp-compliant))))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (and (symbolp condition)
+                          (or (eq key-class :program)
+                              (eq (symbol-class condition wrld)
+                                  :common-lisp-compliant))))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for function ~x2, because unlike ~x2, ~x1 is ~
                       not common-lisp-compliant (a logic-mode function that ~
                       has had its guards verified)."
                      str condition key))
-                ((not (equal key-formals val-formals))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (equal key-formals val-formals))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for ~x2, because the two functions have ~
                       different formal parameter lists."
                      str condition key))
-                ((not (equal (getpropc key 'guard *t* wrld)
-                             val-guard))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (equal (getpropc key 'guard *t* wrld)
+                            val-guard))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for ~x2, because the two functions have ~
                       different guards."
                      str condition key))
-                (t t)))))))
-      (progn$
-       (or (global-val 'hons-enabled wrld)
-           (warning$-cw (if val 'memoize 'unmemoize)
-                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
-                         ignored because this ACL2 executable is not ~
-                         hons-enabled."
-                        (if val 1 0)
-                        key))
-       (and val
-            (let ((stobjs-in (stobjs-in key wrld)))
-              (cond
-               ((and condition
-                     (find-first-non-nil stobjs-in))
-                (let ((input-stobjs (collect-non-x nil stobjs-in)))
-                  (observation-cw
-                   ctx
-                   "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
-                    memoization table for ~x0 will be cleared whenever ~
-                    ~#2~[this stobj is~/either of these stobjs is~/any of ~
-                    these stobjs is~] updated.  Any update of a stobj may ~
-                    therefore be significantly slower, perhaps by a factor of ~
-                    5 or 10, when it is an input of a memoized function."
-                   key
-                   input-stobjs
-                   (zero-one-or-more (cdr input-stobjs)))))
-               (t nil))))
-       result))))
+               (t nil)))))))
+    (progn$
+     (or (global-val 'hons-enabled wrld)
+         (warning$-cw (if val 'memoize 'unmemoize)
+                      "The ~#0~[un~/~]memoization request for ~x1 is being ~
+                       ignored because this ACL2 executable is not ~
+                       hons-enabled."
+                      (if val 1 0)
+                      key))
+     (and val
+          (let ((stobjs-in (stobjs-in key wrld)))
+            (cond
+             ((and condition
+                   (find-first-non-nil stobjs-in))
+              (let ((input-stobjs (collect-non-x nil stobjs-in)))
+                (observation-cw
+                 ctx
+                 "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                  memoization table for ~x0 will be cleared whenever ~
+                  ~#2~[this stobj is~/either of these stobjs is~/any of these ~
+                  stobjs is~] updated.  Any update of a stobj may therefore ~
+                  be significantly slower, perhaps by a factor of 5 or 10, ~
+                  when it is an input of a memoized function."
+                 key
+                 input-stobjs
+                 (zero-one-or-more (cdr input-stobjs)))))
+             (t nil))))
+     (if msg
+         (er hard ctx "~@0" msg)
+       t))))
 
 (table memoize-table nil nil
        :guard
-       (memoize-table-chk key val world))
+       (memoize-table-chk key val world state))
 
 (defun memoize-partial-calls (tuples)
   (declare (xargs :guard (and (symbol-alistp tuples)

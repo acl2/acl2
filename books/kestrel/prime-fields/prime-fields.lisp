@@ -270,17 +270,13 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg1
-  (implies (and (integerp x)
-                (posp p))
-           (equal (add (mod x p) y p)
-                  (add x y p)))
+  (equal (add (mod x p) y p)
+         (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg2
-  (implies (and (integerp y)
-                (posp p))
-           (equal (add x (mod y p) p)
-                  (add x y p)))
+  (equal (add x (mod y p) p)
+         (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
 ;; basic cancellation rule sufficient to prove the bind-free rules in other files
@@ -332,6 +328,19 @@
                 (fep k1 p)
                 (integerp p))
            (equal (equal k1 (neg x p))
+                  (equal x (neg k1 p))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable neg))))
+
+;; only needed for axe
+(defthmd equal-of-neg-solve-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              ;; prevent loops when both are constants:
+                              (not (quotep x))))
+                (fep x p)
+                (fep k1 p)
+                (integerp p))
+           (equal (equal (neg x p) k1)
                   (equal x (neg k1 p))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable neg))))
@@ -494,17 +503,27 @@
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-0-arg1
-  (implies (and (integerp x) ;(fep x p)
-                (integerp p))
-           (equal (mul 0 x p)
-                  0))
+  (equal (mul 0 y p)
+         0)
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-0-arg2
-  (implies (and (integerp x) ;(fep x p)
-                (integerp p))
-           (equal (mul x 0 p)
+  (equal (mul x 0 p)
+         0)
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-not-integerp-arg1-cheap
+  (implies (not (integerp x))
+           (equal (mul x y p)
                   0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-not-integerp-arg2-cheap
+  (implies (not (integerp y))
+           (equal (mul x y p)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defun strip-inv (x)

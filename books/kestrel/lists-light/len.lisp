@@ -113,3 +113,11 @@
   (implies (true-listp x)
            (equal (equal 1 (len x))
                   (equal x (list (car x))))))
+
+;; not needed for more than 3 cdrs if we turn those into nthcdr
+(defthm len-of-cddr-when-equal-of-len
+  (implies (and (equal (len x) k) ; k is a free var
+                (syntaxp (quotep k))
+                (<= 2 k))
+           (equal (len (cddr x))
+                  (+ -2 k))))

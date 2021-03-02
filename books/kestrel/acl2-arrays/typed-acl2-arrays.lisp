@@ -34,6 +34,7 @@
      ;; correct.
      (defund ,checker-fn (array-name array index ,@extra-vars)
        (declare (xargs :measure (nfix (+ 1 index))
+                       :hints (("Goal" :in-theory (enable natp)))
                        :guard (and (array1p array-name array)
                                    (integerp index)
                                    (< index (alen1 array-name array))
@@ -129,6 +130,17 @@
                 (,checker-fn array-name (cons (cons :header header-args) array) index ,@extra-vars))
        :hints (("Goal" :do-not '(generalize eliminate-destructors)
                 :in-theory (e/d (,checker-fn)
+                                (aref1-of-cons-of-cons-of-header)))))
+
+     (defthm ,(pack$ checker-fn '-of-cons-of-cons-of-header-irrel)
+       (implies (and (natp index)
+                     ;; default value must not change:
+                     (equal (default array-name array)
+                            (cadr (assoc-keyword :default header-args))))
+                (equal (,checker-fn array-name (cons (cons :header header-args) array) index ,@extra-vars)
+                       (,checker-fn array-name array index ,@extra-vars)))
+       :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                :in-theory (e/d (,checker-fn)
                                 (aref1-of-cons-of-cons-of-header)))))))
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
@@ -138,7 +150,7 @@
   (def-array-checker-fn fn pred extra-vars extra-guards))
 
 ;;;
-;;; def-typed-acl2-array (this version checks only an initial segment of the values)
+;;; def-typed-acl2-array (this version takes an argument that specifies how many values to check, starting at index 0)
 ;;;
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
@@ -192,6 +204,12 @@
        (defthm ,(pack$ 'array1p-when- fn)
          (implies (,fn array-name array num-valid-nodes ,@extra-vars)
                   (array1p array-name array))
+         :hints (("Goal" :in-theory (enable ,fn))))
+
+       (defthm ,(pack$ fn '-forward-to-array1p)
+         (implies (,fn array-name array num-valid-nodes ,@extra-vars)
+                  (array1p array-name array))
+         :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
        (defthm ,(pack$ fn '-forward-to-len-bound fn)
@@ -291,12 +309,11 @@
 ;;; def-typed-acl2-array2 (this version checks every value up to index length-1)
 ;;;
 
-;; TODO: Use this variant more?
-
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
 (defun def-typed-acl2-array2-fn (fn pred default default-satisfies-predp extra-vars extra-guards)
   (declare (xargs :guard (and (symbolp fn)
-                              (booleanp default-satisfies-predp))))
+                              (booleanp default-satisfies-predp)
+                              (symbol-listp extra-vars))))
   (let ((aux-fn (pack$ fn '-aux)))
     `(encapsulate ()
 
@@ -335,13 +352,14 @@
                                 (natp index)
                                 (equal ,default (default array-name array)))
                            (,aux-fn array-name array index ,@extra-vars))
-                  :hints (("subgoal *1/5" :cases ((<= index (+ -1 (alen1 array-name array))))
-                           :use (:instance ,(pack$ 'type-of-aref1-when- aux-fn)
-                                           (top-index (+ -1 (ALEN1 ARRAY-NAME ARRAY))))
-                           :in-theory (e/d (aref1-when-too-large)
-                                           (,(pack$ 'type-of-aref1-when- aux-fn))))
-                          ("Goal"
-                           :in-theory (enable ,aux-fn))))
+                  :hints (("Goal" :induct (,aux-fn array-name array index ,@extra-vars)
+                           :in-theory (enable ,aux-fn))
+                          (and stable-under-simplificationp
+                               '(:cases ((<= index (+ -1 (alen1 array-name array))))
+                                        :use (:instance ,(pack$ 'type-of-aref1-when- aux-fn)
+                                                        (top-index (+ -1 (ALEN1 ARRAY-NAME ARRAY))))
+                                        :in-theory (e/d (aref1-when-too-large)
+                                                        (,(pack$ 'type-of-aref1-when- aux-fn)))))))
 
                 (defthm ,(pack$ aux-fn '-of-expand-array-helper)
                   (implies (and (<= (alen1 array-name array) index2) ;or we wouldn't be calling expand-array
@@ -410,6 +428,12 @@
        (defthm ,(pack$ fn '-forward-to-<=-of-alen1)
          (implies (,fn array-name array ,@extra-vars)
                   (<= 0 (alen1 array-name array)))
+         :rule-classes :forward-chaining
+         :hints (("Goal" :in-theory (enable ,fn))))
+
+       (defthm ,(pack$ fn '-forward-to-array1p)
+         (implies (,fn array-name array ,@extra-vars)
+                  (array1p array-name array))
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 

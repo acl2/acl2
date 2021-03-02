@@ -1825,19 +1825,26 @@ functions) and that it is being given the right number of arguments.</p>
 (defines svex-compose-rw
   (define svex-compose-rw ((x svex-p) (a svex-alist-p))
     :returns (xx svex-p)
-    :measure (svex-count x)
+    :measure (+ 1 (* 2 (svex-count x)))
     :verify-guards nil
     (svex-case x
       :quote (svex-fix x)
-      :var (b* ((look (hons-assoc-equal x.name a)))
+      :var (b* ((look (hons-get x.name a)))
              (if look
                  (svex-fix (cdr look))
                (svex-fix x)))
-      :call (b* ((args (svexlist-compose-rw x.args a)))
-              (svex-rewrite-fncall 1000 -1 x.fn args t t))))
+      :call (svex-compose-rw-memo x a)))
+  (define svex-compose-rw-memo ((x svex-p) (a svex-alist-p))
+    :guard (svex-case x :call)
+    :returns (xx svex-p)
+    :measure (* 2 (svex-count x))
+    (b* (((unless (mbt (svex-case x :call))) (svex-x))
+         ((svex-call x))
+         (args (svexlist-compose-rw x.args a)))
+      (svex-rewrite-fncall 1000 -1 x.fn args t t)))
   (define svexlist-compose-rw ((x svexlist-p) (a svex-alist-p))
     :returns (xx svexlist-p)
-    :measure (svexlist-count x)
+    :measure (* 2 (svexlist-count x))
     (if (atom x)
         nil
       (cons (svex-compose-rw (car x) a)
@@ -1871,8 +1878,139 @@ functions) and that it is being given the right number of arguments.</p>
               (and stable-under-simplificationp
                    `(:expand ((:Free (env) (svex-eval x env))))))
       :fn svex-compose-rw)
+    (defret svex-compose-rw-memo-correct
+      (implies (svex-case x :call)
+               (equal (svex-eval xx env)
+                      (svex-eval (svex-compose x a) env)))
+      :hints ('(:expand (<call>))
+              (and stable-under-simplificationp
+                   `(:expand ((:Free (env) (svex-eval x env))))))
+      :fn svex-compose-rw-memo)
     (defret svexlist-compose-rw-correct
       (equal (svexlist-eval xx env)
              (svexlist-eval (svexlist-compose x a) env))
       :hints ('(:expand (<call>)))
-      :fn svexlist-compose-rw)))
+      :fn svexlist-compose-rw))
+
+  (deffixequiv-mutual svex-compose-rw)
+
+  (memoize 'svex-compose-rw-memo))
+
+(define svex-alist-compose-rw ((x svex-alist-p) (a svex-alist-p))
+  :returns (xx svex-alist-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (cons (cons (caar x) (svex-compose-rw (cdar x) a))
+              (svex-alist-compose-rw (cdr x) a))
+      (svex-alist-compose-rw (cdr x) a)))
+  ///
+  (defret svex-alist-compose-rw-correct
+    (equal (svex-alist-eval xx env)
+           (svex-alist-eval (svex-alist-compose x a) env))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-compose))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx)
+           (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+
+(defines svex-subst-rw
+  (define svex-subst-rw ((x svex-p) (a svex-alist-p))
+    :returns (xx svex-p)
+    :measure (+ 1 (* 2 (svex-count x)))
+    :verify-guards nil
+    (svex-case x
+      :quote (svex-fix x)
+      :var (b* ((look (hons-get x.name a)))
+             (if look
+                 (svex-fix (cdr look))
+               (svex-x)))
+      :call (svex-subst-rw-memo x a)))
+  (define svex-subst-rw-memo ((x svex-p) (a svex-alist-p))
+    :guard (svex-case x :call)
+    :returns (xx svex-p)
+    :measure (* 2 (svex-count x))
+    (b* (((unless (mbt (svex-case x :call))) (svex-x))
+         ((svex-call x))
+         (args (svexlist-subst-rw x.args a)))
+      (svex-rewrite-fncall 1000 -1 x.fn args t t)))
+  (define svexlist-subst-rw ((x svexlist-p) (a svex-alist-p))
+    :returns (xx svexlist-p)
+    :measure (* 2 (svexlist-count x))
+    (if (atom x)
+        nil
+      (cons (svex-subst-rw (car x) a)
+            (svexlist-subst-rw (cdr x) a))))
+  ///
+  (verify-guards svex-subst-rw)
+  (local (defthm svex-env-lookup-of-append-1
+           (implies (and (hons-assoc-equal x a)
+                         (svar-p x))
+                    (equal (sv::svex-env-lookup x (append a b))
+                           (sv::svex-env-lookup x a)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+  (local (defthm svex-env-lookup-of-append-2
+           (implies (and (not (hons-assoc-equal x a))
+                         (svar-p x))
+                    (equal (sv::svex-env-lookup x (append a b))
+                           (sv::svex-env-lookup x b)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+  (local (defthm hons-assoc-equal-of-svex-alist-eval
+           (implies (svar-p x)
+                    (iff (hons-assoc-equal x (svex-alist-eval a env))
+                         (hons-assoc-equal x a)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+  (local (in-theory (enable sv::svex-lookup)))
+
+  (std::defret-mutual svex-subst-rw-correct
+    (defret svex-subst-rw-correct
+      (equal (svex-eval xx env)
+             (svex-eval (svex-subst x a) env))
+      :hints ('(:expand (<call>))
+              (and stable-under-simplificationp
+                   `(:expand ((:Free (env) (svex-eval x env))))))
+      :fn svex-subst-rw)
+    (defret svex-subst-rw-memo-correct
+      (implies (svex-case x :call)
+               (equal (svex-eval xx env)
+                      (svex-eval (svex-subst x a) env)))
+      :hints ('(:expand (<call>))
+              (and stable-under-simplificationp
+                   `(:expand ((:Free (env) (svex-eval x env))))))
+      :fn svex-subst-rw-memo)
+    (defret svexlist-subst-rw-correct
+      (equal (svexlist-eval xx env)
+             (svexlist-eval (svexlist-subst x a) env))
+      :hints ('(:expand (<call>)))
+      :fn svexlist-subst-rw))
+
+  (deffixequiv-mutual svex-subst-rw)
+
+  (memoize 'svex-subst-rw-memo))
+
+(define svex-alist-subst-rw ((x svex-alist-p) (a svex-alist-p))
+  :returns (xx svex-alist-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (cons (cons (caar x) (svex-subst-rw (cdar x) a))
+              (svex-alist-subst-rw (cdr x) a))
+      (svex-alist-subst-rw (cdr x) a)))
+  ///
+  (defret svex-alist-subst-rw-correct
+    (equal (svex-alist-eval xx env)
+           (svex-alist-eval (svex-alist-subst x a) env))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-subst))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys xx)
+           (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
+  (local (in-theory (enable svex-alist-fix))))

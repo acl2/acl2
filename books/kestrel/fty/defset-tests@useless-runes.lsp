@@ -23,53 +23,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -182,7 +184,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -316,53 +319,55 @@
                     (6 3
                        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                     (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SETP-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                  (250 5 (:DEFINITION NAT-LISTP))
-                  (249 27
-                       (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                  (205 16 (:DEFINITION INTEGER-LISTP))
-                  (93 23
-                      (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                  (57 15 (:REWRITE <<-TRICHOTOMY))
-                  (51 9 (:REWRITE <<-ASYMMETRIC))
-                  (46 7
-                      (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                  (40 40 (:REWRITE DEFAULT-CDR))
-                  (35 35 (:REWRITE DEFAULT-CAR))
-                  (34 34
-                      (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                  (15 15 (:REWRITE <<-TRANSITIVE))
-                  (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                  (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                  (9 9 (:REWRITE DEFAULT-<-2))
-                  (9 9 (:REWRITE DEFAULT-<-1))
-                  (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                  (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SETP
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SETP-OF-TAIL-WHEN-NAT-SETP
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SETP-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -475,7 +480,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SETP-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SETP-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SETP-OF-TAIL-WHEN-NAT-SETP))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -609,53 +615,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -768,7 +776,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -902,53 +911,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -1061,7 +1072,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -1195,53 +1207,55 @@
                     (6 3
                        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                     (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SETP-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                  (250 5 (:DEFINITION NAT-LISTP))
-                  (249 27
-                       (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                  (205 16 (:DEFINITION INTEGER-LISTP))
-                  (93 23
-                      (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                  (57 15 (:REWRITE <<-TRICHOTOMY))
-                  (51 9 (:REWRITE <<-ASYMMETRIC))
-                  (46 7
-                      (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                  (40 40 (:REWRITE DEFAULT-CDR))
-                  (35 35 (:REWRITE DEFAULT-CAR))
-                  (34 34
-                      (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                  (15 15 (:REWRITE <<-TRANSITIVE))
-                  (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                  (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                  (9 9 (:REWRITE DEFAULT-<-2))
-                  (9 9 (:REWRITE DEFAULT-<-1))
-                  (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                  (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SETP
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SETP-OF-TAIL-WHEN-NAT-SETP
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SETP-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -1354,7 +1368,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SETP-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SETP-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SETP-OF-TAIL-WHEN-NAT-SETP))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -1488,53 +1503,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -1647,7 +1664,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -1781,53 +1799,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -1940,7 +1960,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -2074,53 +2095,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -2233,7 +2256,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -2367,53 +2391,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -2526,7 +2552,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -2660,53 +2687,55 @@
                      (6 3
                         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(NATP-OF-HEAD (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-              (60 8
-                  (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-              (58 2 (:DEFINITION NAT-LISTP))
-              (44 4 (:DEFINITION INTEGER-LISTP))
-              (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
-              (25 1 (:REWRITE FAST-<<-IS-<<))
-              (19 5 (:REWRITE <<-TRICHOTOMY))
-              (17 3 (:REWRITE <<-ASYMMETRIC))
-              (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
-              (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
-              (12 12 (:TYPE-PRESCRIPTION <<))
-              (12 12 (:REWRITE DEFAULT-CAR))
-              (10 10 (:REWRITE DEFAULT-CDR))
-              (8 8
-                 (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-              (8 4
-                 (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-              (5 5 (:REWRITE <<-TRANSITIVE))
-              (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-              (4 4 (:REWRITE DEFAULT-<-2))
-              (4 4 (:REWRITE DEFAULT-<-1))
-              (4 2
-                 (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-              (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
-(NAT-SET-P-OF-TAIL (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
-                   (250 5 (:DEFINITION NAT-LISTP))
-                   (249 27
-                        (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
-                   (205 16 (:DEFINITION INTEGER-LISTP))
-                   (93 23
-                       (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (46 7
-                       (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
-                   (40 40 (:REWRITE DEFAULT-CDR))
-                   (35 35 (:REWRITE DEFAULT-CAR))
-                   (34 34
-                       (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
-                   (9 9 (:REWRITE DEFAULT-<-2))
-                   (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(NATP-OF-HEAD-WHEN-NAT-SET-P
+     (66 4 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (60 8
+         (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (58 2 (:DEFINITION NAT-LISTP))
+     (44 4 (:DEFINITION INTEGER-LISTP))
+     (28 28 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (16 16 (:TYPE-PRESCRIPTION SET::SFIX))
+     (14 14 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (10 10 (:REWRITE DEFAULT-CDR))
+     (8 8
+        (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (8 4
+        (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY)))
+(NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P
+     (265 8 (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
+     (250 5 (:DEFINITION NAT-LISTP))
+     (249 27
+          (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
+     (205 16 (:DEFINITION INTEGER-LISTP))
+     (93 23
+         (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (46 7
+         (:REWRITE NAT-LISTP-OF-CDR-WHEN-NAT-LISTP))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (35 35 (:REWRITE DEFAULT-CAR))
+     (34 34
+         (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11 (:REWRITE NAT-LISTP-WHEN-NOT-CONSP))
+     (9 9 (:REWRITE DEFAULT-<-2))
+     (9 9 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (NAT-SET-P-OF-INSERT
      (37248 999
             (:REWRITE NATP-OF-CAR-WHEN-NAT-LISTP))
@@ -2819,7 +2848,8 @@
      (2217 2217
            (:REWRITE NATP-WHEN-IN-NAT-SET-P-BINDS-FREE-X))
      (2058 22 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (1720 22 (:REWRITE NAT-SET-P-OF-TAIL))
+     (1720 22
+           (:REWRITE NAT-SET-P-OF-TAIL-WHEN-NAT-SET-P))
      (874 874 (:REWRITE SET::IN-SET))
      (306 8
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -2946,40 +2976,42 @@
                      (12 12 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
                      (6 6 (:REWRITE SET::IN-SET))
                      (3 3 (:REWRITE <<-IRREFLEXIVE)))
-(SYMBOLP-OF-HEAD (30 4
-                     (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
-                 (25 1 (:REWRITE FAST-<<-IS-<<))
-                 (22 2 (:DEFINITION SYMBOL-LISTP))
-                 (19 5 (:REWRITE <<-TRICHOTOMY))
-                 (17 3 (:REWRITE <<-ASYMMETRIC))
-                 (14 14 (:TYPE-PRESCRIPTION SYMBOL-LISTP))
-                 (13 13 (:TYPE-PRESCRIPTION SET::SFIX))
-                 (12 12 (:TYPE-PRESCRIPTION <<))
-                 (7 7 (:REWRITE DEFAULT-CAR))
-                 (6 6 (:REWRITE DEFAULT-CDR))
-                 (5 5 (:REWRITE <<-TRANSITIVE))
-                 (4 4
-                    (:REWRITE SYMBOL-LISTP-WHEN-NOT-CONSP))
-                 (4 2
-                    (:REWRITE SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP))
-                 (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                 (2 1 (:DEFINITION SET::EMPTY))
-                 (1 1 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
-(SYM-SET-P-OF-TAIL (80 9
-                       (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
-                   (65 5 (:DEFINITION SYMBOL-LISTP))
-                   (57 15 (:REWRITE <<-TRICHOTOMY))
-                   (51 9 (:REWRITE <<-ASYMMETRIC))
-                   (28 7
-                       (:REWRITE SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP))
-                   (20 20 (:REWRITE DEFAULT-CDR))
-                   (15 15 (:REWRITE DEFAULT-CAR))
-                   (15 15 (:REWRITE <<-TRANSITIVE))
-                   (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
-                   (11 11
-                       (:REWRITE SYMBOL-LISTP-WHEN-NOT-CONSP))
-                   (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
-                   (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(SYMBOLP-OF-HEAD-WHEN-SYM-SET-P
+     (30 4
+         (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
+     (25 1 (:REWRITE FAST-<<-IS-<<))
+     (22 2 (:DEFINITION SYMBOL-LISTP))
+     (19 5 (:REWRITE <<-TRICHOTOMY))
+     (17 3 (:REWRITE <<-ASYMMETRIC))
+     (14 14 (:TYPE-PRESCRIPTION SYMBOL-LISTP))
+     (13 13 (:TYPE-PRESCRIPTION SET::SFIX))
+     (12 12 (:TYPE-PRESCRIPTION <<))
+     (7 7 (:REWRITE DEFAULT-CAR))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (5 5 (:REWRITE <<-TRANSITIVE))
+     (4 4
+        (:REWRITE SYMBOL-LISTP-WHEN-NOT-CONSP))
+     (4 2
+        (:REWRITE SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP))
+     (4 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 1 (:DEFINITION SET::EMPTY))
+     (1 1 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
+(SYM-SET-P-OF-TAIL-WHEN-SYM-SET-P
+     (80 9
+         (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
+     (65 5 (:DEFINITION SYMBOL-LISTP))
+     (57 15 (:REWRITE <<-TRICHOTOMY))
+     (51 9 (:REWRITE <<-ASYMMETRIC))
+     (28 7
+         (:REWRITE SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP))
+     (20 20 (:REWRITE DEFAULT-CDR))
+     (15 15 (:REWRITE DEFAULT-CAR))
+     (15 15 (:REWRITE <<-TRANSITIVE))
+     (14 14 (:TYPE-PRESCRIPTION SET::SFIX))
+     (11 11
+         (:REWRITE SYMBOL-LISTP-WHEN-NOT-CONSP))
+     (3 1 (:REWRITE SET::SFIX-WHEN-EMPTY))
+     (2 2 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE)))
 (SYM-SET-P-OF-INSERT (10154 892
                             (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
                      (8122 651 (:DEFINITION SYMBOL-LISTP))
@@ -3022,7 +3054,8 @@
         (:REWRITE SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP))
      (7 7 (:REWRITE SET::IN-TAIL-OR-HEAD))
      (7 7 (:REWRITE SET::HEAD-WHEN-EMPTY))
-     (3 3 (:REWRITE SYM-SET-P-OF-TAIL)))
+     (3 3
+        (:REWRITE SYM-SET-P-OF-TAIL-WHEN-SYM-SET-P)))
 (SYM-SET-P-OF-UNION (23846 2040
                            (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP))
                     (20380 20 (:REWRITE SET::INSERT-IDENTITY))
@@ -3045,7 +3078,8 @@
                     (2040 2040
                           (:REWRITE SYMBOLP-WHEN-IN-SYM-SET-P-BINDS-FREE-X))
                     (1807 39 (:REWRITE SET::UNION-EMPTY-Y))
-                    (1000 22 (:REWRITE SYM-SET-P-OF-TAIL))
+                    (1000 22
+                          (:REWRITE SYM-SET-P-OF-TAIL-WHEN-SYM-SET-P))
                     (906 20 (:REWRITE SET::HEAD-WHEN-EMPTY))
                     (790 790 (:REWRITE SET::IN-SET))
                     (200 200 (:TYPE-PRESCRIPTION SET::IN-TYPE))

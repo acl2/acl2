@@ -1483,7 +1483,10 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #+lispworks
+; We include allegro below to avoid "unreachable" warnings from the compiler,
+; as would otherwise appear when compiling function FROM-TO-BY-AC during the
+; build.
+  #+(or lispworks allegro)
   `(with-redefinition-suppressed
     (handler-bind
      ((style-warning (lambda (c)
@@ -1491,7 +1494,7 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
      ,@forms))
 
-  #-(or sbcl cmu lispworks)
+  #-(or sbcl cmu lispworks allegro)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
@@ -1507,12 +1510,8 @@ ACL2 from scratch.")
 ; of style-warnings (as commented there), that form doesn't seem to work for
 ; CCL, Allegro CL, or CLISP.  So we bind some globals instead.
 
-  #+allegro
-  `(handler-bind
-    ((style-warning (lambda (c)
-                      (declare (ignore c))
-                      (invoke-restart 'muffle-warning))))
-    ,@forms)
+; Through Version_8.3 we dealt with style-warning here when #+allegro, but that
+; is now done in with-warnings-suppressed.
 
   #+clisp
   `(let ((*compile-verbose* nil))
@@ -1522,7 +1521,7 @@ ACL2 from scratch.")
   `(let ((ccl::*suppress-compiler-warnings* t))
      ,@forms)
 
-  #-(or allegro clisp ccl)
+  #-(or clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)

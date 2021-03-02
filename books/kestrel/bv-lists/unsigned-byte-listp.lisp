@@ -16,6 +16,7 @@
 ;; functions.
 
 (include-book "all-unsigned-byte-p")
+(local (include-book "../utilities/equal-of-booleans"))
 
 ;unlike all-unsigned-byte-p, this one implies true-listp.
 ;also in std/typed-lists/unsigned-byte-listp.lisp
@@ -34,9 +35,58 @@
               (true-listp x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
 
-(defthmd unsigned-byte-listp-forward
+(defthmd unsigned-byte-listp-forward-to-all-unsigned-byte-p
   (implies (unsigned-byte-listp n x)
-           (and (all-unsigned-byte-p n x)
-                (true-listp x)))
+           (all-unsigned-byte-p n x))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-forward-to-true-listp
+  (implies (unsigned-byte-listp n x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm natp-of-car-when-unsigned-byte-listp-forward
+  (implies (and (unsigned-byte-listp size x)
+                (consp x))
+           (natp (car x)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-cdr
+  (implies (unsigned-byte-listp width x)
+           (unsigned-byte-listp width (cdr x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-cons
+  (equal (unsigned-byte-listp n (cons a x))
+         (and (unsigned-byte-p n a)
+              (unsigned-byte-listp n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-append
+  (equal (unsigned-byte-listp width (append x y))
+         (and (unsigned-byte-listp width (true-list-fix x))
+              (unsigned-byte-listp width y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp append))))
+
+;; The version of this in std is a :forward-chaining rule for some reason
+(defthm unsigned-byte-p-of-car-when-unsigned-byte-listp-2
+  (implies (unsigned-byte-listp width x)
+           (equal (unsigned-byte-p width (car x))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+;; Tweaked param names to match std
+(defthm unsigned-byte-listp-of-nthcdr
+  (implies (unsigned-byte-listp width x)
+           (unsigned-byte-listp width (nthcdr n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
+
+(defthm integerp-of-nth-when-unsigned-byte-listp
+  (implies (unsigned-byte-listp size x)
+           (equal (integerp (nth n x))
+                  (< (nfix n) (len x))))
+  :hints (("Goal" :in-theory (e/d ( nth)
+                                  ()))))
