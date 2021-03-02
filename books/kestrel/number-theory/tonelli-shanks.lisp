@@ -23,9 +23,12 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
+(include-book "kestrel/number-theory/quadratic-residue" :dir :system)
+(local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
+
 
 (in-theory (disable acl2::mod-expt-fast))
 
@@ -184,26 +187,23 @@
 ;; so we should clarify that and prove
 ;; that can't happen)
 
-;; Future work: prove correctness; improve guards
-
+;; Future work: prove correctness
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
+  :guard (and (> p 2) (< z p) (rtl::primep p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root."
-  :long "Finds the square root of n modulo p.  p must be prime.
+  :long "Finds the square root of n modulo p.  p must be an odd prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp)
-  ;; It would be good to have a guards that p>2 and primep(p)
-  ;; and z<p and nonresidue(z) and ex(r) (r * r = z mod p)
-  (if (or (not (natp n)) (not (natp p)) (not (natp z))
-          (= n 0) (< p 3))
-      0
+  :parents (acl2::number-theory)
     (mv-let (Q S)
         (Q*2^S (- p 1))
       (let ((M S) ; could replace S by M, but this matches
             (c (acl2::mod-expt-fast z Q p))
             (tt (acl2::mod-expt-fast n Q p))
             (R (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)))
-        (T-S-aux M c tt R p))))
+        (T-S-aux M c tt R p)))
   :guard-hints (("Goal"
                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
-                                  acl2::not-evenp-when-oddp)
+                                  acl2::not-evenp-when-oddp
+				  rtl::oddp-odd-prime)
                                  (oddp)))))
