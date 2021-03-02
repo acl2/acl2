@@ -516,13 +516,15 @@
   (xdoc::topstring
    (xdoc::p
     "This consists of
-     the C output type of the function
-     and the name of the locally generated theorem that asserts
-     that the function does not return an error.")
-   (xdoc::p
-    "We may extend this with more information in the future."))
+     the C output type of the function,
+     the name of the locally generated theorem that asserts
+     that the function does not return an error,
+     and a limit that suffices for @(tsee exec-fun)
+     to execute the function completely on any arguments.
+     The latter is calculated when C code is generated for the function."))
   ((type typep)
-   (not-error-thm symbolp))
+   (not-error-thm symbolp)
+   (limit natp))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,29 +701,29 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
                (args pseudo-term-listp :hyp (pseudo-termp term))
-               (type typep))
+               (type typep)
+               (limit natp :rule-classes :type-prescription))
   :short "Check if a term represents a call to a callable target function."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the check is successful, we return
      the called function along with the arguments.
-     We also return the result type of the function."))
+     We also return the result type of the function
+     and the limit sufficient to execute the function."))
   (case-match term
     ((fn . args) (b* (((unless (symbolp fn))
-                       (mv nil nil nil (irr-type)))
+                       (mv nil nil nil (irr-type) 0))
                       ((when (eq fn 'quote))
-                       (mv nil nil nil (irr-type)))
+                       (mv nil nil nil (irr-type) 0))
                       (fn+info (assoc-eq fn prec-fns))
                       ((unless (consp fn+info))
-                       (mv nil nil nil (irr-type)))
-                      (type (mbe :logic (b* ((info (cdr fn+info)))
-                                          (if (atc-fn-infop info)
-                                              (atc-fn-info->type info)
-                                            (irr-type)))
-                                 :exec (atc-fn-info->type (cdr fn+info)))))
-                   (mv t fn args type)))
-    (& (mv nil nil nil (irr-type))))
+                       (mv nil nil nil (irr-type) 0))
+                      (info (cdr fn+info))
+                      (type (type-fix (atc-fn-info->type info)))
+                      (limit (lnfix (atc-fn-info->limit info))))
+                   (mv t fn args type limit)))
+    (& (mv nil nil nil (irr-type) 0)))
   ///
 
   (defret acl2-count-of-atc-check-callable-fn-args
@@ -1115,6 +1117,7 @@
   :returns (mv erp
                (val (tuple (expr exprp)
                            (type typep)
+                           (limit natp)
                            val))
                state)
   :short "Generate a C expression from an ACL2 term
@@ -1128,34 +1131,52 @@
    (xdoc::p
     "We also return the C type of the expression.")
    (xdoc::p
+    "We also return a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely.")
+   (xdoc::p
     "If the term is a call of a function that precedes @('fn')
      in the list of target functions @('fn1'), ..., @('fnp'),
      we translate it to a C function call on the translated arguments.
      The type of the expression is the result type of the function,
-     which is looked up in the function alist passed as input.")
+     which is looked up in the function alist passed as input.
+     A sufficient limit for @(tsee exec-fun) to execute the called function
+     is retrieved from the called function's information;
+     we add 1 to it, to take into account the decrementing of the limit
+     done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
-     as an allowed pure non-boolean terms."))
-  (b* (((mv okp called-fn args type) (atc-check-callable-fn term prec-fns))
+     as an allowed pure non-boolean terms.
+     The type is the one returned by that translation.
+     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
+     to not stop right away due to the limit being 0."))
+  (b* (((mv okp called-fn args type limit)
+        (atc-check-callable-fn term prec-fns))
        ((when okp)
         (b* (((mv erp arg-exprs state) (atc-gen-expr-pure-nonbool-list args
                                                                        vars
                                                                        fn
                                                                        ctx
                                                                        state))
-             ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
+             ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
           (acl2::value (list
                         (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
                                         :args arg-exprs)
-                        type)))))
-    (atc-gen-expr-pure-nonbool term vars fn ctx state))
+                        type
+                        limit)))))
+    (b* (((mv erp (list expr type) state)
+          (atc-gen-expr-pure-nonbool term vars fn ctx state))
+         ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
+      (acl2::value (list expr type 1))))
   ///
   (more-returns
    (val (and (consp val)
              (true-listp val))
         :name typeset-of-atc-gen-expr-nonbool
-        :rule-classes :type-prescription)))
+        :rule-classes :type-prescription))
+  (defret natp-of-atc-gen-expr-nonbool.limit
+    (natp (caddr val))
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1203,6 +1224,7 @@
   :returns (mv erp
                (val (tuple (items block-item-listp)
                            (type typep)
+                           (limit natp)
                            val))
                state)
   :short "Generate a C statement from an ACL2 term."
@@ -1223,17 +1245,35 @@
      in fact, we are turning ACL2 terms (which return values)
      into block item lists that return values corresponding to the terms.")
    (xdoc::p
+    "We also return a limit that suffices for @(tsee exec-block-item-list)
+     to execute the returned block items completely.")
+   (xdoc::p
     "If the term is a conditional, there are two cases.
      If the test is @(tsee mbt) or @(tsee mbt$),
      we discard test and `else' branch
-     and recursively translate the `then' branch.
+     and recursively translate the `then' branch;
+     the limit is the same as the `then' branch.
      Otherwise, we generate an @('if') statement
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
      we ensure that the two branches have the same type.
      When we process the branches,
-     we extend the symbol table with a new empty scope for each branch.")
+     we extend the symbol table with a new empty scope for each branch.
+     The calculation of the limit result is a bit more complicated in this case:
+     we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item),
+     another 1 to go from that to @(tsee exec-stmt),
+     and another one to go to the @(':ifelse') case there;
+     the test is pure and so it needs no addition to the limit;
+     since either branch may be taken,
+     we return the maximum of the limits for the two branches.
+     More precisely, the limit recursively returned for each branch
+     pertains to the block item list in the branch,
+     but those are put into a compound statement;
+     thus, we need to increase the recursively calculated limit
+     by 1 to go from @(tsee exec-stmt) to the @(':compound') case,
+     which then calls @(tsee exec-block-item-list).")
    (xdoc::p
     "If the term is a @(tsee let),
      we first check whether a variable with the same symbol name
@@ -1256,10 +1296,32 @@
      it means that a variable with the same symbol is in an outer scope:
      we stop with an error.")
    (xdoc::p
+    "In the @(tsee let) case whose translation is explained above,
+     the limit is calculated as follows.
+     First, we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item).
+     Then we take the maximum of the limit for the first block item
+     and the limit for the remaining block items.
+     The first block item is either a declaration or an assignment.
+     If it is a declaration, we need 1 to go from @(tsee exec-block-item)
+     to the @(':decl') case and to @(tsee exec-expr-call-or-pure).
+     If it is an assignment, we need 1 to go from @(tsee exec-block-item)
+     to the @(':stmt') case and to @(tsee exec-stmt),
+     another 1 to go from there to the @(':expr') case
+     and to @(tsee exec-expr-asg),
+     and another 1 to go from there to @(tsee exec-expr-call-or-pure),
+     for which we recursively get the limit.")
+   (xdoc::p
     "If the term is neither an @(tsee if) nor a @(tsee let),
      we treat it as a non-boolean term.
      We translate it to an expression
-     and we generate a @('return') statement with that expression."))
+     and we generate a @('return') statement with that expression.
+     For the limit, we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item),
+     another 1 to go from there to the @(':stmt') case and @(tsee exec-stmt),
+     another 1 to go from there to the @(':return') case
+     and @(tsee exec-expr-call-or-pure),
+     for which we use the recursively calculated limit."))
   (b* (((mv okp test then else) (acl2::check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (acl2::check-mbt-call test))
@@ -1271,27 +1333,22 @@
                                                           fn
                                                           ctx
                                                           state))
-             ((when erp) (mv erp (list nil (irr-type)) state))
-             ((er (list then-items then-type)) (atc-gen-stmt then
-                                                             (cons nil vars)
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state))
-             ((er (list else-items else-type)) (atc-gen-stmt else
-                                                             (cons nil vars)
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state))
+             ((when erp) (mv erp (list nil (irr-type) 0) state))
+             ((er (list then-items then-type then-limit))
+              (atc-gen-stmt then (cons nil vars) fn prec-fns ctx state))
+             ((er (list else-items else-type else-limit))
+              (atc-gen-stmt else (cons nil vars) fn prec-fns ctx state))
              ((unless (equal then-type else-type))
-              (er-soft+ ctx t (list nil (irr-type))
+              (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
                          two branches ~x1 and ~x2 of a conditional term ~
                          have different types ~x3 and ~x4;
                          use conversion operations, if needed, ~
                          to make the branches of the same type."
-                        fn then else then-type else-type)))
+                        fn then else then-type else-type))
+             (type then-type)
+             (limit (+ 1 (max (+ 1 then-limit)
+                              (+ 1 else-limit)))))
           (acl2::value
            (list
             (list
@@ -1299,69 +1356,76 @@
               (make-stmt-ifelse :test test-expr
                                 :then (make-stmt-compound :items then-items)
                                 :else (make-stmt-compound :items else-items))))
-            then-type))))
+            type
+            limit))))
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
              ((unless (atc-ident-stringp var-name))
-              (er-soft+ ctx t (list nil (irr-type))
+              (er-soft+ ctx t (list nil (irr-type) 0)
                         "The symbol name ~s0 of ~
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
              ((when (atc-var-newp var-name vars))
-              (b* (((mv erp (list init-expr init-type) state)
+              (b* (((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
-                   ((when erp) (mv erp (list nil (irr-type)) state))
+                   ((when erp) (mv erp (list nil (irr-type) 0) state))
                    (decl (make-decl :type (atc-gen-tyspecseq init-type)
                                     :name (make-ident :name (symbol-name var))
                                     :init init-expr))
                    (item (block-item-decl decl))
                    (vars (atc-add-var var init-type vars))
-                   ((er (list body-items body-type))
-                    (atc-gen-stmt body vars fn prec-fns ctx state)))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                   (type body-type)
+                   (limit (+ 1 (max (+ 1 init-limit)
+                                    body-limit))))
                 (acl2::value (list (cons item body-items)
-                                   body-type))))
+                                   type
+                                   limit))))
              (prev-type (atc-get-var-innermost var vars))
              ((when (typep prev-type))
-              (b* (((mv erp (list expr type) state)
+              (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
                     (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
-                   ((when erp) (mv erp (list nil (irr-type)) state))
-                   ((unless (equal prev-type type))
-                    (er-soft+ ctx t (list nil (irr-type))
+                   ((when erp) (mv erp (list nil (irr-type) 0) state))
+                   ((unless (equal prev-type rhs-type))
+                    (er-soft+ ctx t (list nil (irr-type) 0)
                               "The type ~x0 of the term ~x1 ~
                                assigned to the LET variable ~x2 ~
                                of the function ~x3 ~
                                differs from the type ~x4 ~
                                of a variable with the same symbol ~
                                in the same innermost scope."
-                              type val var fn prev-type))
+                              rhs-type val var fn prev-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name var-name))
-                         :arg2 expr))
+                         :arg2 rhs-expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (list body-items body-type))
-                    (atc-gen-stmt body vars fn prec-fns ctx state)))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                   (type body-type)
+                   (limit (+ 1 (max (+ 1 1 1 rhs-limit)
+                                    body-limit))))
                 (acl2::value (list (cons item body-items)
-                                   body-type)))))
-          (er-soft+ ctx t (list nil (irr-type))
+                                   type
+                                   limit)))))
+          (er-soft+ ctx t (list nil (irr-type) 0)
                     "When generating C code for the function ~x0, ~
                      the LET variable ~x1 has the same symbol name as ~
                      another variable (formal parameter or LET variable) ~
                      that is in an outer scope; ~
                      this is disallowed, even if the package names differ."
                     fn var)))
-       ((mv erp (list expr type) state) (atc-gen-expr-nonbool term
-                                                              vars
-                                                              fn
-                                                              prec-fns
-                                                              ctx
-                                                              state))
-       ((when erp) (mv erp (list nil (irr-type)) state)))
+       ((mv erp (list expr type limit) state)
+        (atc-gen-expr-nonbool term vars fn prec-fns ctx state))
+       ((when erp) (mv erp (list nil (irr-type) 0) state))
+       (limit (+ 1 1 1 limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
-                       type)))
+                       type
+                       limit)))
 
   :verify-guards nil ; done below
 
@@ -1372,6 +1436,9 @@
              (true-listp val))
         :name cons-true-listp-of-atc-gen-stmt-val
         :rule-classes :type-prescription))
+  (defret natp-of-atc-gen-stmt.limit
+    (natp (caddr val))
+    :rule-classes :type-prescription)
 
   (verify-guards atc-gen-stmt))
 
@@ -1853,9 +1920,15 @@
     "We also return local and exported events for the theorems about
      the correctness of the C function definition.")
    (xdoc::p
+    "We extend the alist @('prec-fns') with information about the function.")
+   (xdoc::p
     "We use the type of the value returned by the statement for the body
-     as the result type of the C function.
-     We also extend the alist @('prec-fns') with the function."))
+     as the result type of the C function.")
+   (xdoc::p
+    "For the limit, we need 1 to go from @(tsee exec-fun) to @(tsee exec-stmt),
+     another 1 from there to @(tsee exec-block-item-list)
+     in the @(':compound') case,
+     and then we use the recursively calculated limit for the block."))
   (b* ((name (symbol-name fn))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t nil
@@ -1873,12 +1946,12 @@
                                                          ctx
                                                          state))
        (body (acl2::ubody+ fn wrld))
-       ((er (list items type)) (atc-gen-stmt body
-                                             vars
-                                             fn
-                                             prec-fns
-                                             ctx
-                                             state))
+       ((er (list items type limit)) (atc-gen-stmt body
+                                                   vars
+                                                   fn
+                                                   prec-fns
+                                                   ctx
+                                                   state))
        (ext (ext-decl-fundef
              (make-fundef :result (atc-gen-tyspecseq type)
                           :name (make-ident :name name)
@@ -1887,7 +1960,10 @@
        ((er (list local-events exported-events fn-not-error-thm names-to-avoid))
         (atc-gen-fn-thms fn prec-fns prog-const proofs print-info/all fenv-const
                          names-to-avoid ctx state))
-       (info (make-atc-fn-info :type type :not-error-thm fn-not-error-thm)))
+       (limit (+ 1 1 limit))
+       (info (make-atc-fn-info :type type
+                               :not-error-thm fn-not-error-thm
+                               :limit limit)))
     (acl2::value (list ext
                        local-events
                        exported-events
