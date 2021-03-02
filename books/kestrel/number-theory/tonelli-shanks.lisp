@@ -187,14 +187,14 @@
 ;; so we should clarify that and prove
 ;; that can't happen)
 
-;; Future work: prove correctness; improve guards
-;; "p must be an odd prime"
+;; Future work: prove correctness
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root."
-  :long "Finds the square root of n modulo p.  p must be prime.
+  :long "Finds the square root of n modulo p.  p must be an odd prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp)
+  :parents (acl2::number-theory)
     (mv-let (Q S)
         (Q*2^S (- p 1))
       (let ((M S) ; could replace S by M, but this matches
@@ -207,5 +207,3 @@
                                   acl2::not-evenp-when-oddp
 				  rtl::oddp-odd-prime)
                                  (oddp)))))
-
-;;;; soundness -- 

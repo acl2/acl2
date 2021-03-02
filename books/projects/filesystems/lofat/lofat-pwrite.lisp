@@ -8,12 +8,6 @@
 (local (in-theory (disable nth make-list-ac-removal last
                            make-list-ac)))
 
-;; Move later.
-(defthmd
-  lofat-mkdir-refinement-lemma-12
-  (true-equiv (true-fix x) x)
-  :rule-classes :rewrite-quoted-constant)
-
 (defund lofat-pwrite (fd buf offset fat32$c fd-table file-table)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
@@ -369,8 +363,7 @@
   :hints
   (("goal" :do-not-induct t
     :in-theory
-    (e/d (lofat-pwrite lofat-mkdir-refinement-lemma-12
-                       len-of-insert-text)
+    (e/d (lofat-pwrite len-of-insert-text)
          ((:rewrite d-e-cc-of-update-dir-contents-coincident)
           (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident)
           lofat-place-file
@@ -545,8 +538,7 @@
   :hints
   (("goal" :do-not-induct t
     :in-theory
-    (e/d (lofat-pwrite
-          lofat-mkdir-refinement-lemma-12)
+    (e/d (lofat-pwrite)
          ((:rewrite d-e-cc-of-update-dir-contents-coincident)
           (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident)
           lofat-place-file

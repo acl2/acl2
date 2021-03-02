@@ -156,15 +156,15 @@
 (|a < b & b <= c  =>  a < c|)
 (|a <= b & b < c  =>  a < c|)
 (|b <= a & a <= b  =>  a = b|)
-(OCMP-AUX-EQUAL (4504 531 (:REWRITE |a < b  =>  ~(a = b)|))
-                (3386 3386 (:REWRITE DEFAULT-CAR))
-                (1406 799 (:REWRITE DEFAULT-<-2))
-                (1115 898
+(OCMP-AUX-EQUAL (4194 486 (:REWRITE |a < b  =>  ~(a = b)|))
+                (3061 3061 (:REWRITE DEFAULT-CAR))
+                (1288 728 (:REWRITE DEFAULT-<-2))
+                (1028 811
                       (:REWRITE |a < b & b < c  =>  a < c|))
-                (1085 363 (:REWRITE O<=-O-FINP-DEF))
-                (1071 714 (:REWRITE DEFAULT-<-1))
-                (1069 363 (:REWRITE O-INFP-O-FINP-O<=))
-                (695 695
+                (972 644 (:REWRITE DEFAULT-<-1))
+                (959 321 (:REWRITE O<=-O-FINP-DEF))
+                (943 321 (:REWRITE O-INFP-O-FINP-O<=))
+                (624 624
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                 (7 7 (:REWRITE |~(a < a)|)))
 (OCMP-AUX-LT (1782 1782 (:REWRITE DEFAULT-CDR))

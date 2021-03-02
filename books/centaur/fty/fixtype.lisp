@@ -83,7 +83,8 @@
                      (concatenate 'string
                                   (symbol-name fix) "-UNDER-" (symbol-name equiv))
                      equiv)
-             (,equiv (,fix x) x))
+             (,equiv (,fix x) x)
+             :rule-classes (:rewrite :rewrite-quoted-constant))
            ,@(and forward
                   `((defthm ,(intern-in-package-of-symbol
                               (concatenate 'string "EQUAL-OF-" (symbol-name fix) "-1-FORWARD-TO-" (symbol-name equiv))

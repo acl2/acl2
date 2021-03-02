@@ -90,18 +90,20 @@
                     (27 1
                         (:REWRITE ADE::ASSOC-EQ-VALUES-ARGS-PAIRLIS$-ARGS))
                     (20 20 (:TYPE-PRESCRIPTION ADE::BVP))
+                    (20 1 (:REWRITE LEN-WHEN-PREFIXP))
                     (18 18 (:LINEAR LEN-WHEN-PREFIXP))
                     (17 3 (:REWRITE ADE::ASSOC-EQ-VALUES-ATOM))
                     (14 1 (:DEFINITION ADE::LATCH-N-BODY))
                     (12 3
                         (:REWRITE ADE::NOT-EQUAL-WITH-SI-OF-DIFF-SYMBOL
                                   . 2))
+                    (11 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
                     (9 9
                        (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-                    (9 1 (:REWRITE LEN-WHEN-PREFIXP))
                     (8 4 (:REWRITE ADE::FV-IF-WHEN-BVP))
                     (8 1 (:REWRITE ZP-OPEN))
                     (6 2 (:REWRITE ADE::LEN-SIS))
+                    (5 5 (:TYPE-PRESCRIPTION PREFIXP))
                     (5 5 (:TYPE-PRESCRIPTION PAIRLIS$))
                     (5 2 (:REWRITE APPEND-WHEN-NOT-CONSP))
                     (4 4 (:TYPE-PRESCRIPTION BOOLEANP))
@@ -113,23 +115,22 @@
                     (3 3
                        (:TYPE-PRESCRIPTION ADE::LATCH-N-BODY))
                     (3 2 (:REWRITE DEFAULT-<-1))
-                    (2 2 (:TYPE-PRESCRIPTION PREFIXP))
                     (2 2 (:REWRITE TAKE-WHEN-ATOM))
+                    (2 2
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                    (2 2
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                    (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                    (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                    (2 2
+                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                    (2 2
+                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                     (2 2
                        (:REWRITE ADE::NTHCDR-OF-POS-CONST-IDX))
                     (2 1 (:REWRITE ADE::ASSOC-EQ-VALUE-CONS-2))
                     (1 1
                        (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
-                    (1 1
-                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                    (1 1
-                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                    (1 1
-                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                    (1 1
-                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                     (1 1 (:REWRITE ADE::NO-DUPLICATESP-SIS))
                     (1 1 (:DEFINITION ADE::OCC-OUTS$INLINE))
                     (1 1 (:DEFINITION ADE::OCC-NAME$INLINE))
@@ -212,6 +213,7 @@
                         (:REWRITE ADE::ASSOC-EQ-VALUES-ARGS-PAIRLIS$-ARGS))
                     (22 22 (:LINEAR LEN-WHEN-PREFIXP))
                     (20 20 (:TYPE-PRESCRIPTION ADE::BVP))
+                    (20 1 (:REWRITE LEN-WHEN-PREFIXP))
                     (18 4 (:REWRITE ADE::ASSOC-EQ-VALUES-ATOM))
                     (15 1
                         (:REWRITE ADE::UPDATE-ALIST-OF-NOT-A-KEY))
@@ -221,11 +223,12 @@
                                   . 2))
                     (11 11
                         (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-                    (9 1 (:REWRITE LEN-WHEN-PREFIXP))
+                    (11 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
                     (8 8 (:TYPE-PRESCRIPTION ADE::FV-IF))
                     (8 4 (:REWRITE ADE::FV-IF-WHEN-BVP))
                     (8 1 (:REWRITE ZP-OPEN))
                     (6 2 (:REWRITE ADE::LEN-SIS))
+                    (5 5 (:TYPE-PRESCRIPTION PREFIXP))
                     (5 5
                        (:TYPE-PRESCRIPTION ADE::LATCH-N-BODY))
                     (5 5 (:REWRITE DEFAULT-SYMBOL-NAME))
@@ -236,8 +239,17 @@
                     (4 2 (:REWRITE DEFAULT-<-2))
                     (4 1 (:DEFINITION BINARY-APPEND))
                     (3 2 (:REWRITE DEFAULT-<-1))
-                    (2 2 (:TYPE-PRESCRIPTION PREFIXP))
                     (2 2 (:REWRITE TAKE-WHEN-ATOM))
+                    (2 2
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                    (2 2
+                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                    (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                    (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                    (2 2
+                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                    (2 2
+                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                     (2 2
                        (:REWRITE ADE::NTHCDR-OF-POS-CONST-IDX))
                     (2 2 (:DEFINITION ADE::OCC-NAME$INLINE))
@@ -246,16 +258,6 @@
                     (2 1 (:REWRITE ADE::ASSOC-EQ-VALUE-CONS-2))
                     (1 1
                        (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
-                    (1 1
-                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                    (1 1
-                       (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                    (1 1
-                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                    (1 1
-                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                     (1 1 (:REWRITE ADE::NO-DUPLICATESP-SIS))
                     (1 1
                        (:REWRITE ADE::ALL-UNBOUND-IN-BODY-ATOM-NAMES))
@@ -477,6 +479,7 @@
                  (21 1
                      (:REWRITE ADE::UPDATE-ALIST-OF-NOT-A-KEY))
                  (20 20 (:TYPE-PRESCRIPTION ADE::BVP))
+                 (20 1 (:REWRITE LEN-WHEN-PREFIXP))
                  (18 4 (:REWRITE ADE::ASSOC-EQ-VALUES-ATOM))
                  (14 1 (:DEFINITION ADE::FF-N-BODY))
                  (12 3
@@ -484,11 +487,12 @@
                                . 2))
                  (11 11
                      (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-                 (9 1 (:REWRITE LEN-WHEN-PREFIXP))
+                 (11 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
                  (8 8 (:TYPE-PRESCRIPTION ADE::FV-IF))
                  (8 4 (:REWRITE ADE::FV-IF-WHEN-BVP))
                  (8 1 (:REWRITE ZP-OPEN))
                  (6 2 (:REWRITE ADE::LEN-SIS))
+                 (5 5 (:TYPE-PRESCRIPTION PREFIXP))
                  (5 5 (:TYPE-PRESCRIPTION ADE::FF-N-BODY))
                  (5 5 (:REWRITE DEFAULT-SYMBOL-NAME))
                  (5 2 (:REWRITE APPEND-WHEN-NOT-CONSP))
@@ -498,8 +502,17 @@
                  (4 2 (:REWRITE DEFAULT-<-2))
                  (4 1 (:DEFINITION BINARY-APPEND))
                  (3 2 (:REWRITE DEFAULT-<-1))
-                 (2 2 (:TYPE-PRESCRIPTION PREFIXP))
                  (2 2 (:REWRITE TAKE-WHEN-ATOM))
+                 (2 2
+                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                 (2 2
+                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                 (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                 (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                 (2 2
+                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                 (2 2
+                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                  (2 2
                     (:REWRITE ADE::NTHCDR-OF-POS-CONST-IDX))
                  (2 2 (:DEFINITION ADE::OCC-NAME$INLINE))
@@ -508,16 +521,6 @@
                  (2 1 (:REWRITE ADE::ASSOC-EQ-VALUE-CONS-2))
                  (1 1
                     (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
-                 (1 1
-                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                 (1 1
-                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                 (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                 (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                 (1 1
-                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                 (1 1
-                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                  (1 1 (:REWRITE ADE::NO-DUPLICATESP-SIS))
                  (1 1
                     (:REWRITE ADE::ALL-UNBOUND-IN-BODY-ATOM-NAMES))

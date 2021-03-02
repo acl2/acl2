@@ -12,6 +12,8 @@
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (6 3 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
      (5 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (AIGNET::SNODE->TYPE-NATP)
 (AIGNET::NAT-EQUIV-IMPLIES-EQUAL-SNODE->TYPE-1
@@ -42,6 +44,8 @@
      (6 3 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
      (4 4 (:TYPE-PRESCRIPTION ZP))
      (4 4 (:REWRITE ZP-OPEN))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (1 1
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -56,48 +60,57 @@
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (3 2
         (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE NFIX-WHEN-NOT-NATP)))
-(AIGNET::SNODE->TYPE-BOUND (183 10 (:REWRITE LOGHEAD-IDENTITY))
-                           (157 8 (:DEFINITION UNSIGNED-BYTE-P))
-                           (149 8 (:DEFINITION INTEGER-RANGE-P))
-                           (112 56
-                                (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-                           (98 14 (:REWRITE BITOPS::LOGCAR-OF-BIT))
-                           (77 5 (:REWRITE BFIX-WHEN-NOT-1))
-                           (62 10 (:REWRITE BITOPS::LOGCDR-OF-BIT))
-                           (52 4 (:REWRITE BITOPS::LOGCDR-<-CONST))
-                           (44 4 (:LINEAR BITOPS::LOGCAR-BOUND))
-                           (40 40 (:TYPE-PRESCRIPTION BITP))
-                           (19 10 (:REWRITE DEFAULT-<-1))
-                           (18 6
-                               (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
-                           (16 16
-                               (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                           (12 6
-                               (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-2))
-                           (12 6 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                           (10 10 (:REWRITE DEFAULT-<-2))
-                           (10 10 (:META CANCEL_PLUS-LESSP-CORRECT))
-                           (10 5 (:REWRITE BFIX-WHEN-NOT-BITP))
-                           (10 5 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
-                           (10 5 (:REWRITE BFIX-WHEN-BIT->BOOL))
-                           (9 5
-                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
-                           (9 1 (:REWRITE NFIX-WHEN-NATP))
-                           (8 8 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                           (8 8
-                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                           (8 8 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
-                           (8 8 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-                           (6 6 (:TYPE-PRESCRIPTION POSP))
-                           (6 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                           (5 2 (:REWRITE NATP-WHEN-GTE-0))
-                           (4 4 (:TYPE-PRESCRIPTION NATP))
-                           (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                           (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                           (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                           (2 2 (:REWRITE NATP-RW))
-                           (2 1 (:LINEAR BITOPS::LOGAND-<-0-LINEAR)))
+(AIGNET::SNODE->TYPE-BOUND
+     (195 10 (:REWRITE LOGHEAD-IDENTITY))
+     (169 8 (:DEFINITION UNSIGNED-BYTE-P))
+     (161 8 (:DEFINITION INTEGER-RANGE-P))
+     (112 56
+          (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
+     (98 14 (:REWRITE BITOPS::LOGCAR-OF-BIT))
+     (77 5 (:REWRITE BFIX-WHEN-NOT-1))
+     (64 4 (:REWRITE BITOPS::LOGCDR-<-CONST))
+     (62 10 (:REWRITE BITOPS::LOGCDR-OF-BIT))
+     (44 4 (:LINEAR BITOPS::LOGCAR-BOUND))
+     (40 40 (:TYPE-PRESCRIPTION BITP))
+     (19 10 (:REWRITE DEFAULT-<-1))
+     (18 6
+         (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
+     (16 16
+         (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (12 6
+         (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-2))
+     (12 6 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (10 10
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (10 10 (:REWRITE DEFAULT-<-2))
+     (10 10 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (10 5 (:REWRITE BFIX-WHEN-NOT-BITP))
+     (10 5 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
+     (10 5 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (9 5
+        (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (9 1 (:REWRITE NFIX-WHEN-NATP))
+     (8 8 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+     (8 8
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (8 8 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+     (8 8 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
+     (6 6 (:TYPE-PRESCRIPTION POSP))
+     (6 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (5 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
+     (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
+     (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-RW))
+     (2 1 (:LINEAR BITOPS::LOGAND-<-0-LINEAR)))
 (AIGNET::SNODE->PHASE$INLINE
      (111 4 (:REWRITE LOGHEAD-IDENTITY))
      (48 3 (:REWRITE UNSIGNED-BYTE-P-OF-ASH))
@@ -113,6 +126,8 @@
         (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
      (9 3
         (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+     (7 7
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (6 6 (:TYPE-PRESCRIPTION BITP))
      (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (3 3 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
@@ -123,6 +138,8 @@
      (7 7 (:REWRITE DEFAULT-<-2))
      (7 7 (:REWRITE DEFAULT-<-1))
      (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (4 2
@@ -165,6 +182,8 @@
      (6 6 (:REWRITE NATP-RW))
      (6 3 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
      (4 4 (:TYPE-PRESCRIPTION ZP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4 (:REWRITE ZP-OPEN))
      (4 2
         (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
@@ -174,29 +193,32 @@
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
      (1 1 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (1 1 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(AIGNET::BITP-SNODE->PHASE (16 1 (:REWRITE LOGTAIL-IDENTITY))
-                           (13 1 (:DEFINITION UNSIGNED-BYTE-P))
-                           (12 1 (:DEFINITION INTEGER-RANGE-P))
-                           (9 1 (:REWRITE NFIX-WHEN-NATP))
-                           (6 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                           (6 1
-                              (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
-                           (5 2 (:REWRITE NATP-WHEN-GTE-0))
-                           (4 4 (:TYPE-PRESCRIPTION NATP))
-                           (3 2 (:REWRITE DEFAULT-<-1))
-                           (3 1
-                              (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
-                           (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                           (2 2 (:REWRITE NATP-RW))
-                           (2 2 (:REWRITE DEFAULT-<-2))
-                           (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
-                           (2 1
-                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
-                           (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                           (1 1
-                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                           (1 1
-                              (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
+(AIGNET::BITP-SNODE->PHASE
+     (16 1 (:REWRITE LOGTAIL-IDENTITY))
+     (13 1 (:DEFINITION UNSIGNED-BYTE-P))
+     (12 1 (:DEFINITION INTEGER-RANGE-P))
+     (9 1 (:REWRITE NFIX-WHEN-NATP))
+     (6 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (6 1
+        (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+     (5 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (3 2 (:REWRITE DEFAULT-<-1))
+     (3 1
+        (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-RW))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (2 1
+        (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+     (1 1
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (1 1
+        (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
 (AIGNET::SNODE->REGP$INLINE
      (72 8 (:REWRITE LOGHEAD-IDENTITY))
      (52 6 (:DEFINITION UNSIGNED-BYTE-P))
@@ -208,6 +230,8 @@
      (8 8 (:META CANCEL_PLUS-LESSP-CORRECT))
      (6 6
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (3 3 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
      (2 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
@@ -221,6 +245,8 @@
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (3 2
         (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (1 1 (:REWRITE NFIX-WHEN-NOT-NATP)))
 (AIGNET::NAT-EQUIV-IMPLIES-EQUAL-SNODE->REGP-1
      (196 14 (:REWRITE LOGHEAD-IDENTITY))
@@ -250,6 +276,8 @@
      (6 3 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
      (4 4 (:TYPE-PRESCRIPTION ZP))
      (4 4 (:REWRITE ZP-OPEN))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (1 1
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
@@ -271,26 +299,34 @@
                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
                           (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
                           (1 1
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                          (1 1
                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                           (1 1
                              (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
-(AIGNET::SNODE->FANIN$INLINE (25 4 (:REWRITE LOGTAIL-IDENTITY))
-                             (15 3 (:DEFINITION UNSIGNED-BYTE-P))
-                             (12 3 (:DEFINITION INTEGER-RANGE-P))
-                             (5 5 (:REWRITE DEFAULT-<-2))
-                             (5 5 (:REWRITE DEFAULT-<-1))
-                             (5 5 (:META CANCEL_PLUS-LESSP-CORRECT))
-                             (3 3
-                                (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                             (2 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
-(AIGNET::SNODE->FANIN^$INLINE (10 3 (:REWRITE LOGTAIL-IDENTITY))
-                              (7 7 (:REWRITE DEFAULT-<-2))
-                              (7 7 (:REWRITE DEFAULT-<-1))
-                              (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
-                              (4 4
-                                 (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                              (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
+(AIGNET::SNODE->FANIN$INLINE
+     (25 4 (:REWRITE LOGTAIL-IDENTITY))
+     (15 3 (:DEFINITION UNSIGNED-BYTE-P))
+     (12 3 (:DEFINITION INTEGER-RANGE-P))
+     (5 5 (:REWRITE DEFAULT-<-2))
+     (5 5 (:REWRITE DEFAULT-<-1))
+     (5 5 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (3 3
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (2 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
+(AIGNET::SNODE->FANIN^$INLINE
+     (10 3 (:REWRITE LOGTAIL-IDENTITY))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (4 4
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
 (AIGNET::NAT-EQUIV-IMPLIES-EQUAL-SNODE->FANIN-1
      (37 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (28 4 (:REWRITE NFIX-WHEN-NATP))
@@ -310,6 +346,8 @@
      (5 5 (:REWRITE DEFAULT-<-2))
      (4 4 (:TYPE-PRESCRIPTION ZP))
      (4 4 (:REWRITE ZP-OPEN))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
      (1 1
@@ -319,23 +357,29 @@
      (1 1 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (1 1 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (1 1 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(AIGNET::SNODE->IONUM$INLINE (25 4 (:REWRITE LOGTAIL-IDENTITY))
-                             (15 3 (:DEFINITION UNSIGNED-BYTE-P))
-                             (12 3 (:DEFINITION INTEGER-RANGE-P))
-                             (5 5 (:REWRITE DEFAULT-<-2))
-                             (5 5 (:REWRITE DEFAULT-<-1))
-                             (5 5 (:META CANCEL_PLUS-LESSP-CORRECT))
-                             (3 3
-                                (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                             (2 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
-(AIGNET::SNODE->IONUM^$INLINE (10 3 (:REWRITE LOGTAIL-IDENTITY))
-                              (7 7 (:REWRITE DEFAULT-<-2))
-                              (7 7 (:REWRITE DEFAULT-<-1))
-                              (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
-                              (4 4
-                                 (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                              (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
+(AIGNET::SNODE->IONUM$INLINE
+     (25 4 (:REWRITE LOGTAIL-IDENTITY))
+     (15 3 (:DEFINITION UNSIGNED-BYTE-P))
+     (12 3 (:DEFINITION INTEGER-RANGE-P))
+     (5 5 (:REWRITE DEFAULT-<-2))
+     (5 5 (:REWRITE DEFAULT-<-1))
+     (5 5 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (3 3
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (2 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
+(AIGNET::SNODE->IONUM^$INLINE
+     (10 3 (:REWRITE LOGTAIL-IDENTITY))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (7 7 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (4 4
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (3 3
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
 (AIGNET::NAT-EQUIV-IMPLIES-EQUAL-SNODE->IONUM-1
      (37 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (28 4 (:REWRITE NFIX-WHEN-NATP))
@@ -355,6 +399,8 @@
      (5 5 (:REWRITE DEFAULT-<-2))
      (4 4 (:TYPE-PRESCRIPTION ZP))
      (4 4 (:REWRITE ZP-OPEN))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
      (1 1 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
      (1 1
@@ -369,6 +415,8 @@
                          (72 72 (:REWRITE DEFAULT-<-1))
                          (72 72 (:META CANCEL_PLUS-LESSP-CORRECT))
                          (64 64 (:TYPE-PRESCRIPTION ZIP))
+                         (60 60
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (44 32 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
                          (32 32 (:REWRITE ZIP-OPEN))
                          (18 9 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
@@ -379,26 +427,29 @@
                             (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
                          (2 2
                             (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-2)))
-(AIGNET::MK-SNODE^$INLINE (26 17 (:REWRITE ASH-0))
-                          (19 17 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                          (18 18
-                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                          (18 18 (:REWRITE DEFAULT-<-2))
-                          (18 18 (:REWRITE DEFAULT-<-1))
-                          (18 18 (:META CANCEL_PLUS-LESSP-CORRECT))
-                          (6 6 (:TYPE-PRESCRIPTION ZIP))
-                          (6 2 (:REWRITE BFIX-WHEN-NOT-1))
-                          (4 4 (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                          (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                          (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                          (4 2 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
-                          (4 2 (:REWRITE BFIX-WHEN-BIT->BOOL))
-                          (3 3 (:REWRITE ZIP-OPEN))
-                          (3 3 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
-                          (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                          (2 2 (:REWRITE BFIX-WHEN-NOT-BITP))
-                          (2 1
-                             (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)))
+(AIGNET::MK-SNODE^$INLINE
+     (26 17 (:REWRITE ASH-0))
+     (19 17 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (18 18
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (18 18
+         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (18 18 (:REWRITE DEFAULT-<-2))
+     (18 18 (:REWRITE DEFAULT-<-1))
+     (18 18 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (6 6 (:TYPE-PRESCRIPTION ZIP))
+     (6 2 (:REWRITE BFIX-WHEN-NOT-1))
+     (4 4 (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
+     (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
+     (4 2 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
+     (4 2 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (3 3 (:REWRITE ZIP-OPEN))
+     (3 3 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
+     (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (2 2 (:REWRITE BFIX-WHEN-NOT-BITP))
+     (2 1
+        (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK)))
 (AIGNET::MK-SNODE$INLINE-MVTYPES-0
      (22 1 (:REWRITE ASH-0))
      (18 1 (:REWRITE ZIP-OPEN))
@@ -413,6 +464,8 @@
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:META CANCEL_PLUS-LESSP-CORRECT))
      (4 1 (:REWRITE ZP-WHEN-GT-0))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE NATP-WHEN-INTEGERP))
      (2 2 (:REWRITE NATP-RW))
      (2 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
@@ -456,6 +509,8 @@
      (3 1 (:DEFINITION BIT->BOOL$INLINE))
      (2 2 (:TYPE-PRESCRIPTION ZIP))
      (2 2 (:TYPE-PRESCRIPTION IFIX))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (2 2 (:REWRITE NATP-WHEN-INTEGERP))
      (2 2 (:REWRITE NATP-RW))
      (2 2 (:REWRITE DEFAULT-<-2))
@@ -489,6 +544,8 @@
      (7 1 (:REWRITE IFIX-NEGATIVE-TO-NEGP))
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (6 3 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 2 (:REWRITE NATP-WHEN-GTE-0))
      (4 4 (:TYPE-PRESCRIPTION NATP))
      (4 1 (:REWRITE ZP-WHEN-GT-0))
@@ -536,6 +593,8 @@
      (7 1 (:REWRITE BFIX-EQUAL-0))
      (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
      (6 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 2 (:REWRITE NATP-WHEN-GTE-0))
      (4 4 (:TYPE-PRESCRIPTION NATP))
      (4 2 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
@@ -586,6 +645,8 @@
      (8 8 (:META CANCEL_PLUS-EQUAL-CORRECT))
      (8 1 (:REWRITE NFIX-EQUAL-TO-ZERO))
      (7 1 (:REWRITE BFIX-EQUAL-0))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (5 2 (:REWRITE NATP-WHEN-GTE-0))
      (4 4 (:TYPE-PRESCRIPTION NATP))
      (4 2 (:LINEAR BITOPS::LOGAND-<-0-LINEAR))
@@ -612,6 +673,8 @@
      (11 1 (:REWRITE LOGHEAD-IDENTITY))
      (10 5 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (10 4 (:REWRITE NATP-WHEN-GTE-0))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (9 3 (:REWRITE BFIX-WHEN-NOT-BITP))
      (9 3 (:REWRITE BFIX-WHEN-NOT-1))
      (9 3 (:REWRITE BFIX-WHEN-BITP))
@@ -644,44 +707,47 @@
         (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
      (1 1
         (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)))
-(AIGNET::SNODE->IONUM-OF-MK-SNODE (59 2 (:REWRITE ASH-0))
-                                  (51 2 (:REWRITE ZIP-OPEN))
-                                  (18 18 (:TYPE-PRESCRIPTION BITP))
-                                  (18 1 (:LINEAR BITOPS::BFIX-BOUND))
-                                  (15 3 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                  (9 3 (:REWRITE BFIX-WHEN-NOT-BITP))
-                                  (9 3 (:REWRITE BFIX-WHEN-NOT-1))
-                                  (9 3 (:REWRITE BFIX-WHEN-BITP))
-                                  (9 3 (:REWRITE BFIX-BITP))
-                                  (8 1 (:REWRITE NFIX-EQUAL-TO-ZERO))
-                                  (7 7 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                                  (7 7 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                                  (7 1 (:REWRITE BFIX-EQUAL-0))
-                                  (6 6 (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                                  (6 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                                  (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
-                                  (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
-                                  (5 2 (:REWRITE NATP-WHEN-GTE-0))
-                                  (4 4 (:TYPE-PRESCRIPTION NATP))
-                                  (4 1 (:REWRITE ZP-WHEN-GT-0))
-                                  (3 1 (:DEFINITION NOT))
-                                  (3 1 (:DEFINITION BIT->BOOL$INLINE))
-                                  (2 2 (:TYPE-PRESCRIPTION ZIP))
-                                  (2 2
-                                     (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                                  (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                  (2 2 (:REWRITE NATP-RW))
-                                  (2 2 (:REWRITE DEFAULT-<-2))
-                                  (2 2 (:REWRITE DEFAULT-<-1))
-                                  (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
-                                  (1 1 (:TYPE-PRESCRIPTION ZP))
-                                  (1 1 (:REWRITE ZP-WHEN-INTEGERP))
-                                  (1 1 (:REWRITE ZP-OPEN))
-                                  (1 1
-                                     (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
-                                  (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
-                                  (1 1
-                                     (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)))
+(AIGNET::SNODE->IONUM-OF-MK-SNODE
+     (59 2 (:REWRITE ASH-0))
+     (51 2 (:REWRITE ZIP-OPEN))
+     (18 18 (:TYPE-PRESCRIPTION BITP))
+     (18 1 (:LINEAR BITOPS::BFIX-BOUND))
+     (15 3 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (9 3 (:REWRITE BFIX-WHEN-NOT-BITP))
+     (9 3 (:REWRITE BFIX-WHEN-NOT-1))
+     (9 3 (:REWRITE BFIX-WHEN-BITP))
+     (9 3 (:REWRITE BFIX-BITP))
+     (8 1 (:REWRITE NFIX-EQUAL-TO-ZERO))
+     (7 7 (:META CANCEL_TIMES-EQUAL-CORRECT))
+     (7 7 (:META CANCEL_PLUS-EQUAL-CORRECT))
+     (7 1 (:REWRITE BFIX-EQUAL-0))
+     (6 6 (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (6 3 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
+     (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (5 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 1 (:REWRITE ZP-WHEN-GT-0))
+     (3 1 (:DEFINITION NOT))
+     (3 1 (:DEFINITION BIT->BOOL$INLINE))
+     (2 2 (:TYPE-PRESCRIPTION ZIP))
+     (2 2
+        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-RW))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (1 1 (:TYPE-PRESCRIPTION ZP))
+     (1 1 (:REWRITE ZP-WHEN-INTEGERP))
+     (1 1 (:REWRITE ZP-OPEN))
+     (1 1
+        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+     (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
+     (1 1
+        (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS)))
 (AIGNET::NORMALIZE-MK-SNODE-0
      (23 2 (:REWRITE ASH-0))
      (18 1 (:REWRITE ZIP-OPEN))
@@ -694,6 +760,8 @@
      (7 1 (:DEFINITION INTEGER-RANGE-P))
      (5 2 (:REWRITE NATP-WHEN-GTE-0))
      (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (4 4 (:REWRITE DEFAULT-<-2))
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:META CANCEL_PLUS-LESSP-CORRECT))
@@ -716,46 +784,49 @@
      (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (1 1 (:META CANCEL_TIMES-EQUAL-CORRECT))
      (1 1 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(AIGNET::NORMALIZE-MK-SNODE-1 (61 4 (:REWRITE ASH-0))
-                              (51 2 (:REWRITE ZIP-OPEN))
-                              (18 18 (:TYPE-PRESCRIPTION BITP))
-                              (18 1 (:LINEAR BITOPS::BFIX-BOUND))
-                              (11 5 (:REWRITE BFIX-WHEN-NOT-BITP))
-                              (11 5 (:REWRITE BFIX-WHEN-NOT-1))
-                              (11 5 (:REWRITE BFIX-WHEN-BITP))
-                              (11 5 (:REWRITE BFIX-BITP))
-                              (10 10
-                                  (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                              (10 5 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
-                              (10 5 (:REWRITE BFIX-WHEN-BIT->BOOL))
-                              (10 2 (:REWRITE NFIX-WHEN-NATP))
-                              (8 8 (:TYPE-PRESCRIPTION BFIX$INLINE))
-                              (8 1 (:REWRITE NFIX-EQUAL-TO-ZERO))
-                              (7 7 (:TYPE-PRESCRIPTION NFIX))
-                              (7 7 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                              (7 7 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                              (7 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                              (7 1 (:REWRITE BFIX-EQUAL-0))
-                              (6 4 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                              (5 2 (:REWRITE NATP-WHEN-GTE-0))
-                              (4 4 (:TYPE-PRESCRIPTION NATP))
-                              (4 1 (:REWRITE ZP-WHEN-GT-0))
-                              (3 1 (:DEFINITION NOT))
-                              (3 1 (:DEFINITION BIT->BOOL$INLINE))
-                              (2 2 (:TYPE-PRESCRIPTION ZIP))
-                              (2 2 (:TYPE-PRESCRIPTION IFIX))
-                              (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                              (2 2 (:REWRITE NATP-RW))
-                              (2 2 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
-                              (2 2 (:REWRITE DEFAULT-<-2))
-                              (2 2 (:REWRITE DEFAULT-<-1))
-                              (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
-                              (1 1 (:TYPE-PRESCRIPTION ZP))
-                              (1 1 (:REWRITE ZP-WHEN-INTEGERP))
-                              (1 1 (:REWRITE ZP-OPEN))
-                              (1 1
-                                 (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
-                              (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO)))
+(AIGNET::NORMALIZE-MK-SNODE-1
+     (61 4 (:REWRITE ASH-0))
+     (51 2 (:REWRITE ZIP-OPEN))
+     (18 18 (:TYPE-PRESCRIPTION BITP))
+     (18 1 (:LINEAR BITOPS::BFIX-BOUND))
+     (11 5 (:REWRITE BFIX-WHEN-NOT-BITP))
+     (11 5 (:REWRITE BFIX-WHEN-NOT-1))
+     (11 5 (:REWRITE BFIX-WHEN-BITP))
+     (11 5 (:REWRITE BFIX-BITP))
+     (10 10
+         (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (10 5 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
+     (10 5 (:REWRITE BFIX-WHEN-BIT->BOOL))
+     (10 2 (:REWRITE NFIX-WHEN-NATP))
+     (8 8 (:TYPE-PRESCRIPTION BFIX$INLINE))
+     (8 1 (:REWRITE NFIX-EQUAL-TO-ZERO))
+     (7 7 (:TYPE-PRESCRIPTION NFIX))
+     (7 7 (:META CANCEL_TIMES-EQUAL-CORRECT))
+     (7 7 (:META CANCEL_PLUS-EQUAL-CORRECT))
+     (7 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+     (7 1 (:REWRITE BFIX-EQUAL-0))
+     (6 4 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (5 2 (:REWRITE NATP-WHEN-GTE-0))
+     (4 4 (:TYPE-PRESCRIPTION NATP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (4 1 (:REWRITE ZP-WHEN-GT-0))
+     (3 1 (:DEFINITION NOT))
+     (3 1 (:DEFINITION BIT->BOOL$INLINE))
+     (2 2 (:TYPE-PRESCRIPTION ZIP))
+     (2 2 (:TYPE-PRESCRIPTION IFIX))
+     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+     (2 2 (:REWRITE NATP-RW))
+     (2 2 (:REWRITE BITOPS::LOGIOR-FOLD-CONSTS))
+     (2 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (2 2 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (1 1 (:TYPE-PRESCRIPTION ZP))
+     (1 1 (:REWRITE ZP-WHEN-INTEGERP))
+     (1 1 (:REWRITE ZP-OPEN))
+     (1 1
+        (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+     (1 1 (:REWRITE NFIX-EQUAL-TO-NONZERO)))
 (AIGNET::UNSIGNED-BYTE-P-OF-MK-SNODE-0
      (45 3 (:REWRITE ASH-0))
      (35 3 (:REWRITE ZIP-OPEN))
@@ -779,6 +850,8 @@
      (6 3 (:REWRITE BFIX-WHEN-NOT-BIT->BOOL))
      (6 3 (:REWRITE BFIX-WHEN-BIT->BOOL))
      (5 5 (:TYPE-PRESCRIPTION ZIP))
+     (4 4
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (3 3 (:TYPE-PRESCRIPTION IFIX))
      (3 1 (:DEFINITION BIT->BOOL$INLINE))
      (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))

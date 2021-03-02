@@ -152,3 +152,27 @@
                          (10 10 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
                          (9 9
                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(*-BOTH-SIDES)
+(*-OF-/-SAME-ARG2 (86 11 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                  (22 22 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                  (22 22
+                      (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                  (22 22 (:LINEAR <-OF-*-AND-*))
+                  (15 15
+                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                  (15 12 (:REWRITE DEFAULT-*-1))
+                  (14 12 (:REWRITE DEFAULT-*-2))
+                  (14 11 (:REWRITE DEFAULT-<-2))
+                  (11 11 (:REWRITE DEFAULT-<-1))
+                  (11 11 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                  (11 11 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                  (11 11 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                  (11 11 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                  (11 5 (:REWRITE DEFAULT-UNARY-/))
+                  (4 4 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+                  (2 2 (:REWRITE EQUAL-OF-*-AND-CONSTANT)))
+(EQUAL-OF-*-AND-*-CANCEL (29 29
+                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                         (5 2 (:REWRITE DEFAULT-UNARY-/))
+                         (2 2 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+                         (1 1 (:REWRITE EQUAL-OF-*-AND-CONSTANT)))

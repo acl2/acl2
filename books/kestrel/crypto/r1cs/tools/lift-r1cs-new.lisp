@@ -44,24 +44,34 @@
   (declare (xargs :guard (symbol-listp vars)))
   (fep-assumptions-for-vars-aux vars prime nil))
 
-;; Bind vars to themselves, except any var that is a keyword gets bound to its counterpart in the ACL2 package.
-;; TODO: generalize to take a package argument?
-(defun r1cs-var-to-acl2-var-alist (vars acc)
+;; Makes an alist that binds vars to versions of themselves in the indicated
+;; PACKAGE.  Except if PACKAGE is :auto, non-keywords get bound to themselves
+;; and keywords bound to their counterparts int the ACL2 package (since
+;; keywords are not legal var names).
+(defun r1cs-var-to-lifted-var-alist (vars package acc)
   (declare (xargs :guard (and (symbol-listp vars)
+                              (or (eq :auto package)
+                                  (and (stringp package)
+                                       (not (equal "" package))))
                               (alistp acc))))
   (if (endp vars)
       (acl2::reverse-list acc)
     (let* ((var (first vars))
-           (new-var (if (equal "KEYWORD" (symbol-package-name var))
-                        (intern (symbol-name var) "ACL2")
-                      var)))
-      (r1cs-var-to-acl2-var-alist (rest vars) (acons var new-var acc)))))
+           (new-var (if (eq :auto package)
+                        (if (equal "KEYWORD" (symbol-package-name var))
+                            (intern (symbol-name var) "ACL2")
+                          ;; package is already ok
+                          var)
+                      ;; Switch the package of the var to PACKAGE:
+                      (intern$ (symbol-name var) package))))
+      (r1cs-var-to-lifted-var-alist (rest vars) package (acons var new-var acc)))))
 
 ;; Returns (mv erp event state).
 (defun lift-r1cs-new-fn (name-of-defconst
-                         vars ; may be in the keyword package, in which case we switch to the acl2 package...
+                         vars ; may be keywords, in which case we switch to PACKAGE (if not :auto) or to the acl2 package
                          constraints
                          prime
+                         package
                          extra-rules remove-rules rules
                          monitor memoizep
                          count-hitsp
@@ -72,6 +82,9 @@
                               (r1cs-constraint-listp constraints)
                               ;;(r1csp r1cs)
                               (natp prime) ;;(rtl::primep prime) ;todo, slow!
+                              (or (eq :auto package)
+                                  (and (stringp package)
+                                       (not (equal "" package))))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp rules)
@@ -84,15 +97,15 @@
        ;; (constraints (r1cs->constraints r1cs))
        ;; Maps the vars in the R1CS (which are just symbols in that piece of
        ;; data) to ACL2 variables for the proof:
-       (r1cs-var-to-acl2-var-alist (r1cs-var-to-acl2-var-alist vars nil))
-       (acl2-vars (strip-cdrs r1cs-var-to-acl2-var-alist))
-       ((acl2::when (not (no-duplicatesp acl2-vars))) ;todo: optimize by sorting
-        (er hard? 'lift-r1cs-new-fn "Duplicate var(s) detected in ~X01." acl2-vars nil)
+       (r1cs-var-to-lifted-var-alist (r1cs-var-to-lifted-var-alist vars package nil))
+       (lifted-vars (strip-cdrs r1cs-var-to-lifted-var-alist))
+       ((acl2::when (not (no-duplicatesp lifted-vars))) ;todo: optimize by sorting
+        (er hard? 'lift-r1cs-new-fn "Duplicate var(s) detected in ~X01." lifted-vars nil)
         (mv t ;erp
             nil
             state))
        (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
-                                                        ,(make-efficient-symbolic-valuation-for-alist r1cs-var-to-acl2-var-alist)
+                                                        ,(make-efficient-symbolic-valuation-for-alist r1cs-var-to-lifted-var-alist)
                                                         ',prime)))
   (acl2::def-simplified-fn name-of-defconst
                            term-to-simplify
@@ -106,7 +119,7 @@
                            ;; nil ;rule-alists
                            ;; drop? but we need to know that all lookups of vars give integers:
                            ;; TODO: Use the more compact machinery for this?:
-                           (fep-assumptions-for-vars acl2-vars prime)
+                           (fep-assumptions-for-vars lifted-vars prime)
                            ;; TODO: Add more functions to this?
                            ;; TODO: Make this once and store it?
                            (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
@@ -138,6 +151,7 @@
                                 constraints ;; the constraints of the R1CS to lift
                                 prime       ;; the prime of the R1CS to lift
                                 &key
+                                (package ':auto) ; package to use for vars
                                 (extra-rules 'nil)
                                 (remove-rules 'nil)
                                 (rules 'nil)
@@ -149,6 +163,7 @@
                                              ,vars
                                              ,constraints
                                              ,prime
+                                             ,package
                                              ,extra-rules
                                              ,remove-rules
                                              ,rules

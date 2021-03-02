@@ -33,11 +33,15 @@
                 (7 7 (:REWRITE ZP-OPEN))
                 (5 5 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
                 (5 5
+                   (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+                (5 5
                    (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                 (5 2
                    (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
                 (4 4 (:REWRITE DEFAULT-+-2))
-                (4 4 (:REWRITE DEFAULT-+-1)))
+                (4 4 (:REWRITE DEFAULT-+-1))
+                (2 2
+                   (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (PARITY-OF-NFIX-N (24 4 (:DEFINITION UNSIGNED-BYTE-P))
                   (20 4 (:REWRITE LOGHEAD-IDENTITY))
                   (20 4 (:DEFINITION INTEGER-RANGE-P))
@@ -50,6 +54,8 @@
                   (9 3 (:REWRITE ZP-WHEN-GT-0))
                   (8 1
                      (:REWRITE BITOPS::LOGHEAD-1-OF-LOGTAIL))
+                  (7 7
+                     (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (7 1 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
                   (6 3 (:REWRITE ZP-WHEN-INTEGERP))
                   (4 4 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
@@ -85,6 +91,8 @@
                   (67 8
                       (:REWRITE BITOPS::LOGHEAD-1-OF-LOGTAIL))
                   (59 8 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
+                  (46 46
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (42 14 (:REWRITE ZP-WHEN-GT-0))
                   (39 13 (:REWRITE NEGP-WHEN-LESS-THAN-0))
                   (38 14 (:REWRITE ZP-WHEN-INTEGERP))
@@ -102,6 +110,8 @@
                       (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
                   (13 13 (:TYPE-PRESCRIPTION NEGP))
                   (13 13 (:REWRITE NEGP-WHEN-INTEGERP))
+                  (9 9
+                     (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
                   (6 6 (:REWRITE ZP-OPEN))
                   (4 2
                      (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP))
@@ -109,14 +119,14 @@
 (PARITY-OF-IFIX-X-NORMALIZE-CONST)
 (PARITY-INT-EQUIV-CONGRUENCE-ON-X)
 (BITOPS::PARITY-DECOMP
-     (1403 42 (:DEFINITION UNSIGNED-BYTE-P))
-     (1357 38 (:DEFINITION INTEGER-RANGE-P))
-     (802 16 (:REWRITE LOGHEAD-IDENTITY))
-     (729 18 (:REWRITE LOGTAIL-IDENTITY))
+     (1520 42 (:DEFINITION UNSIGNED-BYTE-P))
+     (1474 38 (:DEFINITION INTEGER-RANGE-P))
+     (865 16 (:REWRITE LOGHEAD-IDENTITY))
+     (783 18 (:REWRITE LOGTAIL-IDENTITY))
      (676 302
           (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-     (440 50 (:REWRITE BITOPS::LOGCDR-<-CONST))
-     (324 10 (:REWRITE UNSIGNED-BYTE-P-PLUS))
+     (557 50 (:REWRITE BITOPS::LOGCDR-<-CONST))
+     (342 10 (:REWRITE UNSIGNED-BYTE-P-PLUS))
      (314 314 (:TYPE-PRESCRIPTION NATP))
      (209 15 (:REWRITE BFIX-WHEN-NOT-1))
      (207 120 (:REWRITE DEFAULT-<-1))
@@ -125,8 +135,10 @@
      (150 120 (:REWRITE DEFAULT-<-2))
      (138 23 (:REWRITE IFIX-NEGATIVE-TO-NEGP))
      (129 15 (:LINEAR BITOPS::LOGCAR-BOUND))
-     (110 2 (:REWRITE BITOPS::LOGTAIL-OF-LOGTAIL))
+     (116 2 (:REWRITE BITOPS::LOGTAIL-OF-LOGTAIL))
      (105 27 (:REWRITE BITOPS::LOGCDR-OF-BIT))
+     (92 92
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (82 82 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
      (80 80 (:TYPE-PRESCRIPTION BITP))
      (76 31
@@ -146,6 +158,10 @@
      (42 42
          (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (40 14 (:REWRITE ZP-WHEN-INTEGERP))
+     (39 39
+         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (39 39
+         (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
      (38 35 (:REWRITE DEFAULT-+-1))
      (35 35
          (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
@@ -183,46 +199,53 @@
      (2 1 (:DEFINITION =))
      (1 1 (:REWRITE BITOPS::LOGXOR-FOLD-CONSTS))
      (1 1 (:REWRITE BITOPS::LOGNOT-OF-LOGCONS)))
-(BITOPS::PARITY-OF-LOGXOR (371 16
-                               (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-2))
-                          (240 40 (:DEFINITION UNSIGNED-BYTE-P))
-                          (238 30 (:REWRITE LOGTAIL-IDENTITY))
-                          (206 149 (:REWRITE DEFAULT-<-1))
-                          (200 40 (:DEFINITION INTEGER-RANGE-P))
-                          (192 16
-                               (:LINEAR BITOPS::LOGXOR->=-0-LINEAR-1))
-                          (192 16
-                               (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-1))
-                          (178 80 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                          (149 149 (:REWRITE DEFAULT-<-2))
-                          (130 18 (:REWRITE LOGHEAD-IDENTITY))
-                          (100 10
-                               (:REWRITE BITOPS::LOGTAIL-OF-LOGTAIL))
-                          (80 10
-                              (:REWRITE BITOPS::LOGHEAD-1-OF-LOGTAIL))
-                          (77 32
-                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
-                          (70 10 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
-                          (45 15 (:REWRITE ZP-WHEN-GT-0))
-                          (40 40
-                              (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                          (33 15 (:REWRITE ZP-WHEN-INTEGERP))
-                          (30 10
-                              (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
-                          (30 10
-                              (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
-                          (20 20 (:TYPE-PRESCRIPTION BITP))
-                          (19 19 (:REWRITE DEFAULT-+-2))
-                          (19 19 (:REWRITE DEFAULT-+-1))
-                          (18 18
-                              (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-                          (18 18
-                              (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
-                          (18 6 (:REWRITE FOLD-CONSTS-IN-+))
-                          (16 16
-                              (:REWRITE BITOPS::LOGXOR-FOLD-CONSTS))
-                          (9 9 (:REWRITE ZP-OPEN)))
+(BITOPS::PARITY-OF-LOGXOR
+     (371 16
+          (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-2))
+     (240 40 (:DEFINITION UNSIGNED-BYTE-P))
+     (238 30 (:REWRITE LOGTAIL-IDENTITY))
+     (206 149 (:REWRITE DEFAULT-<-1))
+     (200 40 (:DEFINITION INTEGER-RANGE-P))
+     (192 16
+          (:LINEAR BITOPS::LOGXOR->=-0-LINEAR-1))
+     (192 16
+          (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-1))
+     (178 80 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (149 149 (:REWRITE DEFAULT-<-2))
+     (130 18 (:REWRITE LOGHEAD-IDENTITY))
+     (100 10
+          (:REWRITE BITOPS::LOGTAIL-OF-LOGTAIL))
+     (80 10
+         (:REWRITE BITOPS::LOGHEAD-1-OF-LOGTAIL))
+     (77 32
+         (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (70 10 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
+     (53 53
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (45 15 (:REWRITE ZP-WHEN-GT-0))
+     (40 40
+         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+     (33 15 (:REWRITE ZP-WHEN-INTEGERP))
+     (30 10
+         (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
+     (30 10
+         (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+     (20 20 (:TYPE-PRESCRIPTION BITP))
+     (19 19 (:REWRITE DEFAULT-+-2))
+     (19 19 (:REWRITE DEFAULT-+-1))
+     (18 18
+         (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
+     (18 18
+         (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
+     (18 6 (:REWRITE FOLD-CONSTS-IN-+))
+     (16 16
+         (:REWRITE BITOPS::LOGXOR-FOLD-CONSTS))
+     (9 9 (:REWRITE ZP-OPEN))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (BITOPS::PARITY-OF-0 (12 4 (:REWRITE ZP-WHEN-GT-0))
+                     (10 10
+                         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                      (10 2 (:REWRITE SIMPLIFY-LOGXOR))
                      (4 4 (:REWRITE ZP-WHEN-INTEGERP))
                      (4 4 (:REWRITE ZP-OPEN))
@@ -237,14 +260,14 @@
                      (3 3 (:REWRITE DEFAULT-+-2))
                      (3 3 (:REWRITE DEFAULT-+-1)))
 (BITOPS::PARITY-OF-LOGHEAD-SPLIT
-     (3560 103 (:DEFINITION UNSIGNED-BYTE-P))
-     (3447 90 (:DEFINITION INTEGER-RANGE-P))
-     (2651 45 (:REWRITE LOGHEAD-IDENTITY))
+     (3902 103 (:DEFINITION UNSIGNED-BYTE-P))
+     (3789 90 (:DEFINITION INTEGER-RANGE-P))
+     (2861 45 (:REWRITE LOGHEAD-IDENTITY))
      (1652 760
            (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-     (1262 140 (:REWRITE BITOPS::LOGCDR-<-CONST))
-     (1248 32 (:REWRITE LOGTAIL-IDENTITY))
-     (886 26 (:REWRITE UNSIGNED-BYTE-P-PLUS))
+     (1604 140 (:REWRITE BITOPS::LOGCDR-<-CONST))
+     (1380 32 (:REWRITE LOGTAIL-IDENTITY))
+     (940 26 (:REWRITE UNSIGNED-BYTE-P-PLUS))
      (776 776 (:TYPE-PRESCRIPTION NATP))
      (599 36 (:REWRITE BFIX-WHEN-NOT-1))
      (598 90 (:REWRITE BITOPS::LOGCAR-OF-BIT))
@@ -257,12 +280,18 @@
      (282 58 (:REWRITE ZP-WHEN-GT-0))
      (264 264 (:TYPE-PRESCRIPTION BITP))
      (238 238 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
+     (225 225
+          (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (195 65 (:REWRITE NEGP-WHEN-LESS-THAN-0))
      (162 66
           (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
      (136 8
           (:LINEAR BITOPS::LOGXOR->=-0-LINEAR-1))
      (136 8 (:LINEAR BITOPS::LOGXOR-<-0-LINEAR-1))
+     (114 114
+          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (114 114
+          (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
      (110 10 (:REWRITE BITOPS::LOGCAR-OF-LOGHEAD))
      (108 2 (:REWRITE BITOPS::LOGCONS-<-CONSTANT))
      (107 107
@@ -326,6 +355,8 @@
      (15 15 (:REWRITE DEFAULT-+-1))
      (14 14 (:TYPE-PRESCRIPTION BITMASKP$INLINE))
      (14 14
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (14 14
          (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
      (9 9 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (9 9 (:REWRITE IFIX-WHEN-INTEGERP))
@@ -350,6 +381,8 @@
          (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION))
      (12 12
          (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
      (7 7
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
@@ -360,6 +393,8 @@
         (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
      (3 2
         (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
+     (2 2
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (2 2
         (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
      (2 2
@@ -383,13 +418,17 @@
                              (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
                          (95 93
                              (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+                         (93 93
+                             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (90 89 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
                          (32 32
                              (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
                          (32 32
                              (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
                          (9 3 (:REWRITE LOGHEAD-IDENTITY))
-                         (2 2 (:TYPE-PRESCRIPTION BITP)))
+                         (2 2 (:TYPE-PRESCRIPTION BITP))
+                         (1 1
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (FAST-PARITY)
 (BITP-OF-FAST-PARITY)
 (FAST-PARITY (110 13 (:DEFINITION UNSIGNED-BYTE-P))
@@ -416,10 +455,14 @@
                  (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
              (16 16
                  (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
+             (15 15
+                 (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
              (14 14 (:REWRITE DEFAULT-+-2))
              (14 14 (:REWRITE DEFAULT-+-1))
              (14 4 (:REWRITE NATP-WHEN-INTEGERP))
              (13 13
                  (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+             (8 8
+                (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
              (2 1
                 (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP)))

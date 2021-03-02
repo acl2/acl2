@@ -419,186 +419,187 @@
     (:TYPE-PRESCRIPTION VL::VL-EMPTY-LEXSCOPE$INLINE)))
 (VL::PARSE-VL-SERVER-OPTS-LONG-MAKES-PROGRESS
      (660 6 (:DEFINITION MEMBER-EQUAL))
-     (612 12 (:REWRITE MEMBER-WHEN-ATOM))
-     (361 1
+     (618 1
           (:REWRITE LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (255 1 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-     (220 4 (:DEFINITION LEN))
-     (144 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (78 26
+     (612 12 (:REWRITE MEMBER-WHEN-ATOM))
+     (512 1 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+     (330 6 (:DEFINITION LEN))
+     (287 3 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (258 3 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (103 3
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (103 3
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (90 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-LEXSCOPE-P
                    . 1))
-     (78 26
+     (90 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPES-P
                    . 1))
-     (52 52
+     (60 60
          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
-     (52 2
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (52 2
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (51 1 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
      (51 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-     (26 26
+     (30 30
          (:REWRITE VL::VL-LEXSCOPE-P-OF-VL-EMPTY-LEXSCOPE))
-     (26 26
+     (30 30
          (:REWRITE VL::VL-ELABSCOPES-P-OF-VL-ELABSCOPES-INIT))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-SCANNEDALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-SCANNEDALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-LOADEDALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-LOADEDALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEITEM-ALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEITEM-ALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEDEF-ALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEDEF-ALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-REPORTCARD-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-REPORTCARD-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-NAMEDARG-ALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-NAMEDARG-ALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-LEXSCOPE-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IMPORTRESULT-ALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IMPORTRESULT-ALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IFDEF-USE-MAP-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IFDEF-USE-MAP-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-GENCASELIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-GENCASELIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-FILEMAP-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-FILEMAP-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABTRAVERSAL-STACK-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABTRAVERSAL-STACK-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPES-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPE-ALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPE-ALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DESCALIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DESCALIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEPGRAPH-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEPGRAPH-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEF-USE-MAP-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEF-USE-MAP-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DATATYPE-MAP-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DATATYPE-MAP-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-CASELIST-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-CASELIST-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDELIM-INSTTABLE-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDELIM-INSTTABLE-P
                    . 1))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDDELTA-P
                    . 2))
-     (26 26
+     (30 30
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDDELTA-P
                    . 1))
-     (13 1 (:REWRITE LEN-WHEN-PREFIXP))
+     (14 14
+         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (14 14
+         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (14 14 (:LINEAR LEN-WHEN-PREFIXP))
+     (14 1 (:REWRITE LEN-WHEN-PREFIXP))
      (12 12 (:REWRITE SUBSETP-MEMBER . 4))
      (12 12 (:REWRITE SUBSETP-MEMBER . 3))
      (12 12 (:REWRITE SUBSETP-MEMBER . 2))
      (12 12 (:REWRITE SUBSETP-MEMBER . 1))
      (12 12 (:REWRITE INTERSECTP-MEMBER . 3))
      (12 12 (:REWRITE INTERSECTP-MEMBER . 2))
-     (10 10 (:REWRITE DEFAULT-CDR))
-     (8 8
-        (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (8 8
-        (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-     (8 8 (:LINEAR LEN-WHEN-PREFIXP))
-     (8 4 (:REWRITE DEFAULT-+-2))
-     (6 6 (:REWRITE DEFAULT-CAR))
-     (4 4 (:TYPE-PRESCRIPTION PREFIXP))
-     (4 4
-        (:REWRITE VL::PREFIXP-WHEN-MEMBER-EQUAL-OF-PREFIX-OF-EACHP))
-     (4 4 (:REWRITE DEFAULT-+-1))
-     (4 4
+     (12 12 (:REWRITE DEFAULT-CDR))
+     (12 6 (:REWRITE DEFAULT-+-2))
+     (7 7 (:TYPE-PRESCRIPTION PREFIXP))
+     (7 7
         (:LINEAR STR::COUNT-LEADING-CHARSET-LEN))
-     (2 2 (:TYPE-PRESCRIPTION SUBLISTP))
-     (2 2
+     (6 6
+        (:REWRITE VL::PREFIXP-WHEN-MEMBER-EQUAL-OF-PREFIX-OF-EACHP))
+     (6 6 (:REWRITE DEFAULT-CAR))
+     (6 6 (:REWRITE DEFAULT-+-1))
+     (3 3
         (:REWRITE VL::TRANSITIVITY-OF-PREFIXP))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (2 2
+     (3 3 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (3 3 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (3 3
         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (2 2
+     (3 3
         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (2 2 (:TYPE-PRESCRIPTION SUBLISTP))
      (2 1 (:REWRITE DEFAULT-<-2))
      (2 1 (:REWRITE DEFAULT-<-1))
      (1 1 (:REWRITE SUBLISTP-COMPLETE)))
@@ -2200,175 +2201,177 @@
  (23 23
      (:TYPE-PRESCRIPTION VL::VL-EMPTY-LEXSCOPE$INLINE)))
 (VL::PARSE-VL-SERVER-OPTS-BUNDLE-MAKES-PROGRESS
-     (1320 24 (:DEFINITION LEN))
-     (506 8 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (208 8
+     (1760 32 (:DEFINITION LEN))
+     (1008 12
+           (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (962 12 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (412 12
           (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (208 8
+     (412 12
           (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (204 4 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
      (204 4 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-     (135 45
+     (183 61
           (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-LEXSCOPE-P
                     . 1))
-     (135 45
+     (183 61
           (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPES-P
                     . 1))
-     (90 90 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (90 90
-         (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
-     (52 4 (:REWRITE LEN-WHEN-PREFIXP))
-     (48 24 (:REWRITE DEFAULT-+-2))
-     (45 45
+     (122 122 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (122 122
+          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
+     (64 32 (:REWRITE DEFAULT-+-2))
+     (61 61
          (:REWRITE VL::VL-LEXSCOPE-P-OF-VL-EMPTY-LEXSCOPE))
-     (45 45
+     (61 61
          (:REWRITE VL::VL-ELABSCOPES-P-OF-VL-ELABSCOPES-INIT))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-SCANNEDALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-SCANNEDALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-LOADEDALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VLS-LOADEDALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEITEM-ALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEITEM-ALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEDEF-ALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-SCOPEDEF-ALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-REPORTCARD-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-REPORTCARD-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-NAMEDARG-ALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-NAMEDARG-ALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-LEXSCOPE-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IMPORTRESULT-ALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IMPORTRESULT-ALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IFDEF-USE-MAP-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-IFDEF-USE-MAP-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-GENCASELIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-GENCASELIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-FILEMAP-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-FILEMAP-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABTRAVERSAL-STACK-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABTRAVERSAL-STACK-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPES-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPE-ALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-ELABSCOPE-ALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DESCALIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DESCALIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEPGRAPH-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEPGRAPH-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEF-USE-MAP-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DEF-USE-MAP-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DATATYPE-MAP-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-DATATYPE-MAP-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-COMMENTMAP-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-CASELIST-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-CASELIST-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDELIM-INSTTABLE-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDELIM-INSTTABLE-P
                    . 1))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDDELTA-P
                    . 2))
-     (45 45
+     (61 61
          (:REWRITE VL::CONSP-WHEN-MEMBER-EQUAL-OF-VL-BINDDELTA-P
                    . 1))
-     (26 26 (:REWRITE DEFAULT-CDR))
-     (24 24 (:REWRITE DEFAULT-+-1))
-     (20 20
-         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-     (20 20
-         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-     (20 20 (:LINEAR LEN-WHEN-PREFIXP))
-     (18 18
+     (56 4 (:REWRITE LEN-WHEN-PREFIXP))
+     (34 34 (:REWRITE DEFAULT-CDR))
+     (32 32 (:REWRITE DEFAULT-+-1))
+     (26 26
          (:REWRITE VL::PREFIXP-WHEN-MEMBER-EQUAL-OF-PREFIX-OF-EACHP))
-     (10 10 (:REWRITE DEFAULT-CAR))
-     (10 10
+     (24 24
+         (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+     (24 24
+         (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+     (24 24 (:LINEAR LEN-WHEN-PREFIXP))
+     (13 13
+         (:REWRITE VL::TRANSITIVITY-OF-PREFIXP))
+     (12 12 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (12 12 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (12 12
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (12 12
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (12 12
          (:LINEAR STR::COUNT-LEADING-CHARSET-LEN))
-     (9 9
-        (:REWRITE VL::TRANSITIVITY-OF-PREFIXP))
-     (8 8 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (8 8 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (8 8
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (8 8
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+     (10 10 (:REWRITE DEFAULT-CAR))
      (8 4 (:REWRITE DEFAULT-<-2))
      (8 4 (:REWRITE DEFAULT-<-1))
      (5 5 (:REWRITE SUBLISTP-COMPLETE)))
@@ -2622,6 +2625,9 @@
      (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
  (54 6 (:REWRITE CONSP-OF-CAR-WHEN-ALISTP))
  (39
+    39
+    (:REWRITE-QUOTED-CONSTANT VL::MAYBE-STRING-FIX-UNDER-MAYBE-STRING-EQUIV))
+ (39
   39
   (:REWRITE
    VL::CAR-OF-VL-MAYBE-STRING-LIST-FIX-X-NORMALIZE-CONST-UNDER-MAYBE-STRING-EQUIV))
@@ -2854,6 +2860,9 @@
       (:TYPE-PRESCRIPTION VL::BOOLEANP-OF-VLS-DATA-P))
  (118 118
       (:TYPE-PRESCRIPTION VL::BOOLEANP-OF-VL-PSCONFIG-P))
+ (115
+    115
+    (:REWRITE-QUOTED-CONSTANT VL::MAYBE-STRING-FIX-UNDER-MAYBE-STRING-EQUIV))
  (115
   115
   (:REWRITE
@@ -3099,6 +3108,9 @@
  (208 8 (:REWRITE CONSP-OF-REV))
  (153 3 (:REWRITE REV-WHEN-NOT-CONSP))
  (138 2 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+ (121
+    121
+    (:REWRITE-QUOTED-CONSTANT VL::MAYBE-STRING-FIX-UNDER-MAYBE-STRING-EQUIV))
  (121
   121
   (:REWRITE

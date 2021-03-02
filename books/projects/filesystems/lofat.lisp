@@ -3139,14 +3139,14 @@
                       (root-d-e (pseudo-root-d-e fat32$c))
                       (entry-limit (max-entry-count fat32$c)))
       :expand (:free (fat32$c file root-d-e)
-                     (lofat-place-file fat32$c root-d-e nil file)))
+                     (lofat-place-file fat32$c root-d-e nil file))
+      :restrict ((not-intersectp-list-when-subsetp-1
+                  ((y (mv-nth 0
+                              (d-e-cc fat32$c
+                                      (pseudo-root-d-e fat32$c))))))))
      (if (not stable-under-simplificationp)
          nil
-       '(:in-theory (enable lofat-place-file hifat-place-file)
-                    :restrict ((not-intersectp-list-when-subsetp-1
-                                ((y (mv-nth 0
-                                            (d-e-cc fat32$c
-                                                    (pseudo-root-d-e fat32$c))))))))))
+       '(:in-theory (enable lofat-place-file hifat-place-file))))
     :otf-flg t))
 
 (defthm
