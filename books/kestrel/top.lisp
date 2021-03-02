@@ -38,6 +38,8 @@
 (include-book "soft/top")
 (include-book "solidity/top")
 (include-book "std/top")
+(include-book "strings-light/top")
+(include-book "strings-light/top-doc")
 (include-book "typed-lists-light/doc")
 (include-book "utilities/top")
 (include-book "zcash/top")

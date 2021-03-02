@@ -21,7 +21,7 @@
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/doc" :dir :system)
-(include-book "kestrel/utilities/downcase" :dir :system)
+(include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "std/util/add-io-pairs" :dir :system)
 
 (defund defprime-fn (name
