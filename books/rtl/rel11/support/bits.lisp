@@ -781,6 +781,14 @@
   :use (:instance digits-bounds (b 2))
   :rule-classes())
 
+(defthmd bits-upper-bound
+  (implies (and (integerp i)
+                (integerp j))
+           (< (bits x i j)
+              (expt 2 (1+ (- i j)))))
+  :hints (("Goal" :use bits-bounds))
+  :rule-classes :linear)
+
 (defrule mod-bits-equal
   (implies (= (mod x (expt 2 (1+ i)))
 	      (mod y (expt 2 (1+ i))))
@@ -926,6 +934,17 @@
                         (fl (/ x (expt 2 i)))))))
   :use (:instance digits-fl-diff (b 2))
   :rule-classes ())
+
+(defthmd bits-fl-diff-alt
+  (implies (and (integerp x)
+                (integerp i)
+                (integerp j)
+                (>= i (1- j)))
+           (equal (bits x i j)
+                  (- (fl (/ x (expt 2 j)))
+                     (* (expt 2 (- (1+ i) j))
+                        (fl (/ x (expt 2 (1+ i))))))))
+  :hints (("Goal" :use (:instance bits-fl-diff (i (1+ i))))))
 
 (defrule bits-mod-fl
   (implies (and (integerp i)
