@@ -42,6 +42,7 @@
             pfield::mul
             pfield::neg
             pfield::inv
+            pfield::div
             pfield::fep
             rtl::primep
             acl2::getbit
