@@ -452,3 +452,10 @@
            (equal (equal (logtail low x) (slice high low x))
                   t))
   :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm slice-of-+-of--1-and-expt-same
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low (+ -1 (expt 2 low)))
+                  0))
+  :hints (("Goal" :in-theory (e/d (slice) (acl2::bvchop-of-logtail-becomes-slice)))))

@@ -40,15 +40,6 @@
                   (add (+ -1 (expt 2 n)) (add x (neg (bvchop n y) p) p) p)))
   :hints (("Goal" :in-theory (enable bvnot lognot acl2::bvchop-of-sum-cases neg add))))
 
-(defthm pfield::add-associative-when-constant
-  (implies (syntaxp (quotep pfield::x))
-           (equal (add (add pfield::x pfield::y pfield::p)
-                       pfield::z pfield::p)
-                  (add pfield::x
-                       (add pfield::y pfield::z pfield::p)
-                       pfield::p)))
-  :hints (("Goal" :in-theory (enable add))))
-
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper
   (implies (and (unsigned-byte-p lowsize lowval)
                 (<= lowsize 31)
@@ -119,11 +110,6 @@
                 (posp p))
            (fep (bvchop size x)
                 p)))
-
-(defthm acl2::getbit-of-0-when-bitp
-  (implies (bitp x)
-           (equal (getbit 0 x)
-                  x)))
 
 (defthm unsigned-byte-p-of-add
   (implies (and (unsigned-byte-p (+ -1 n) x)
@@ -221,14 +207,6 @@
                   (bvplus 32 (bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
-;move
-(defthm equal-of-0-and-add-of-neg
-  (implies (and (fep x p)
-                (fep y p)
-                (posp p))
-           (equal (equal 0 (add (neg x p) y p))
-                  (equal x y))))
-
 (defthm bvcat-of-slice-tighten
   (implies (and (<= highsize (- high low))
                 (<= low high)
@@ -239,27 +217,18 @@
                   (bvcat highsize (slice (+ -1 low highsize) low x) lowsize lowval))))
 
 (defthm bvcat-of-bitnot-low
-  (implies (and (natp highsize)
-                )
+  (implies (natp highsize)
            (equal (bvcat highsize highval 1 (bitnot lowbit))
                   (bvxor (+ highsize 1)
-                               1
-                               (bvcat highsize highval 1 lowbit)))))
+                         1
+                         (bvcat highsize highval 1 lowbit)))))
 
 (defthm bvcat-of-bitnot-high
-  (implies (and (natp lowsize)
-                )
+  (implies (natp lowsize)
            (equal (bvcat 1 (bitnot highval) lowsize lowval)
                   (bvxor (+ 1 lowsize)
                                (bvcat 1 1 lowsize 0) ;todo: simplify?
                                (bvcat 1 highval lowsize lowval)))))
-
-(defthm slice-of-+-of--1-and-expt-same
-  (implies (and (natp low)
-                (natp high))
-           (equal (SLICE high low (+ -1 (EXPT 2 low)))
-                  0))
-  :hints (("Goal" :in-theory (e/d (slice) (acl2::bvchop-of-logtail-becomes-slice)))))
 
 (defthm bvcat-of-bvnot-low
   (implies (and (natp highsize)
@@ -897,48 +866,28 @@
 
 ;; CAUTION: This will be unhelpful if the xors are not commuted right. Consider using a syntaxp hyp?
 (defthm bvcat-of-bitxor-and-bitxor
-  (equal (bvcat 1
-                      (bitxor a1 b1)
-                      1
-                      (bitxor a2 b2))
-         (bvxor 2
-                      (bvcat 1 a1 1 a2)
-                      (bvcat 1 b1 1 b2))))
+  (equal (bvcat 1 (bitxor a1 b1) 1 (bitxor a2 b2))
+         (bvxor 2 (bvcat 1 a1 1 a2) (bvcat 1 b1 1 b2))))
 
 ;; CAUTION: This will be unhelpful if the xors are not commuted right. Consider using a syntaxp hyp?
 (defthm bvcat-of-bitxor-and-bvxor
   (implies (natp size)
-           (equal (bvcat 1
-                               (bitxor a1 b1)
-                               size
-                               (bvxor size a2 b2))
-                  (bvxor (+ 1 size)
-                               (bvcat 1 a1 size a2)
-                               (bvcat 1 b1 size b2)))))
+           (equal (bvcat 1 (bitxor a1 b1) size (bvxor size a2 b2))
+                  (bvxor (+ 1 size) (bvcat 1 a1 size a2) (bvcat 1 b1 size b2)))))
 
 ;; CAUTION: This will be unhelpful if the xors are not commuted right. Consider using a syntaxp hyp?
 (defthm bvcat-of-bvxor-and-bitxor
   (implies (natp size)
-           (equal (bvcat size
-                               (bvxor size a1 b1)
-                               1
-                               (bitxor a2 b2))
-                  (bvxor (+ 1 size)
-                               (bvcat size a1 1 a2)
-                               (bvcat size b1 1 b2)))))
+           (equal (bvcat size (bvxor size a1 b1) 1 (bitxor a2 b2))
+                  (bvxor (+ 1 size) (bvcat size a1 1 a2) (bvcat size b1 1 b2)))))
 
 ;; CAUTION: This will be unhelpful if the xors are not commuted right. Consider using a syntaxp hyp?
 (defthm bvcat-of-bvxor-and-bvxor
   (implies (and (natp size1)
                 (< 0 size1) ;why?
                 (natp size2))
-           (equal (bvcat size1
-                               (bvxor size1 a1 b1)
-                               size2
-                               (bvxor size2 a2 b2))
-                  (bvxor (+ size1 size2)
-                               (bvcat size1 a1 size2 a2)
-                               (bvcat size1 b1 size2 b2)))))
+           (equal (bvcat size1 (bvxor size1 a1 b1) size2 (bvxor size2 a2 b2))
+                  (bvxor (+ size1 size2) (bvcat size1 a1 size2 a2) (bvcat size1 b1 size2 b2)))))
 
 ;todo: gen the 32
 (defthmd bvcat-becomes-rightrotate
@@ -946,13 +895,11 @@
                 (equal highsize (+ 1 mid))
                 (equal lowsize (- 31 mid))
                 (< mid 31)
-                (natp mid)
-                )
+                (natp mid))
            (equal (bvcat highsize
-                               (slice mid 0 x)
-                               lowsize
-                               (slice 31 mid+1 x)
-                               )
+                         (slice mid 0 x)
+                         lowsize
+                         (slice 31 mid+1 x))
                   (acl2::rightrotate 32 (+ 1 mid) x)))
   :hints (("Goal" :in-theory (enable ACL2::RIGHTROTATE))))
 
@@ -961,13 +908,11 @@
   (implies (and (equal highsize size)
                 (equal lowsize (- 32 size))
                 (< size 31)
-                (natp size)
-                )
+                (natp size))
            (equal (bvcat highsize
-                               (bvchop size x)
-                               lowsize
-                               (slice 31 size x)
-                               )
+                         (bvchop size x)
+                         lowsize
+                         (slice 31 size x))
                   (acl2::rightrotate 32 size x)))
   :hints (("Goal" :in-theory (e/d (ACL2::RIGHTROTATE) (ACL2::RIGHTROTATE-BECOMES-LEFTROTATE)))))
 

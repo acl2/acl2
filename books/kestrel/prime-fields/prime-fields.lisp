@@ -377,6 +377,11 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable neg))))
 
+(defthm neg-of-mod
+  (equal (neg (mod x p) p)
+         (neg x p))
+  :hints (("Goal" :in-theory (enable neg))))
+
 ;;;
 ;;; sub
 ;;;

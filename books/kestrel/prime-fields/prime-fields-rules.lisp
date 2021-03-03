@@ -69,6 +69,13 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
+;;less aggressive than the general rule
+(defthm add-associative-when-constant
+  (implies (syntaxp (quotep x))
+           (equal (add (add x y p) z p)
+                  (add x (add y z p) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
 ;; (defthm pow-of-+-of-1
 ;;   (implies (and (fep a)
 ;;                 (natp b))
@@ -293,7 +300,7 @@
          (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm neg-of-*
+(defthmd neg-of-*
   (implies (and (integerp x1)
                 (integerp x2)
                 (posp p))
@@ -886,3 +893,16 @@
            (equal (inv (mul x y p) p)
                   (mul (inv x p) (inv y p) p)))
   :hints (("Goal" :in-theory (enable inv POW-OF-MUL-ARG1))))
+
+(defthm equal-of-0-and-add-of-neg
+  (implies (and (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
+                  (equal x y))))
+
+;; Not sure which form is better
+(defthmd add-of-neg-and-neg
+  (implies (posp p)
+           (equal (add (neg x p) (neg y p) p)
+                  (neg (add x y p) p))))

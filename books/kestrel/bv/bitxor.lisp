@@ -207,3 +207,10 @@
   (equal (bitxor x (ifix y))
          (bitxor x y))
   :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))
+
+(defthm bitxor-of-*-of-2 ;todo: gen the 2
+  (implies (integerp bit2)
+           (equal (acl2::bitxor bit1 (* 2 bit2))
+                  (acl2::bitxor bit1 0)))
+  :hints (("Goal" :in-theory (e/d (acl2::bitxor acl2::bvxor getbit)
+                                  (acl2::bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
