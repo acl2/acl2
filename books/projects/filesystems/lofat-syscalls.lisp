@@ -1509,7 +1509,10 @@
        ((mv root-d-e-list &) (root-d-e-list fat32$c))
        ((mv file error-code)
         (lofat-find-file fat32$c root-d-e-list path))
-       ((unless (zp error-code)) (mv dir-stream-table -1 error-code))
+       ;; There was a bug here - previously we returned the error code as is,
+       ;; but the man page opendir(3) says ENOENT is the right error code
+       ;; regardless of the reason for the directory not being found.
+       ((unless (zp error-code)) (mv dir-stream-table -1 *enoent*))
        ((unless (lofat-directory-file-p file)) (mv dir-stream-table -1 *ENOTDIR*))
        (dir-stream-table-index
         (find-new-index (strip-cars dir-stream-table))))
@@ -1546,3 +1549,118 @@
     :corollary
     (integerp (mv-nth 2
                       (lofat-opendir fat32$c dir-stream-table path))))))
+
+(defthm
+  lofat-opendir-correctness-lemma-1
+  (implies
+   (and (useful-d-e-list-p d-e-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+               0))
+   (equal
+    (lofat-directory-file-p (mv-nth 0
+                                    (lofat-find-file fat32$c d-e-list path)))
+    (m1-directory-file-p
+     (mv-nth
+      0
+      (hifat-find-file
+       (mv-nth 0
+               (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+       path)))))
+  :hints (("goal" :induct (lofat-find-file fat32$c d-e-list path)
+           :in-theory (enable lofat-find-file hifat-find-file))))
+
+(defthmd
+  lofat-opendir-correctness-2
+  (implies (equal (mv-nth 1 (lofat-to-hifat fat32$c))
+                  0)
+           (and
+            (equal (mv-nth 1
+                           (lofat-opendir fat32$c dir-stream-table path))
+                   (mv-nth 0
+                           (hifat-opendir (mv-nth 0 (lofat-to-hifat fat32$c))
+                                          path dir-stream-table)))
+            (equal (mv-nth 2
+                           (lofat-opendir fat32$c dir-stream-table path))
+                   (mv-nth 2
+                           (hifat-opendir (mv-nth 0 (lofat-to-hifat fat32$c))
+                                          path dir-stream-table)))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (lofat-opendir hifat-opendir lofat-to-hifat)
+                           (lofat-pread-refinement-lemma-2)))))
+
+(defthm
+  lofat-opendir-correctness-lemma-2
+  (implies
+   (and (useful-d-e-list-p d-e-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+               0))
+   (equal
+    (strip-cars (mv-nth 0
+                        (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))
+    (names-from-d-e-list d-e-list)))
+  :hints (("goal" :in-theory (enable lofat-to-hifat-helper
+                                     names-from-d-e-list))))
+
+(defthm
+  lofat-opendir-correctness-lemma-3
+  (implies
+   (and
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper fat32$c
+                                          (mv-nth 0 (root-d-e-list fat32$c))
+                                          (max-entry-count fat32$c)))
+           0)
+    (lofat-fs-p fat32$c)
+    (m1-directory-file-p
+     (mv-nth
+      0
+      (hifat-find-file
+       (mv-nth 0
+               (lofat-to-hifat-helper fat32$c
+                                      (mv-nth 0 (root-d-e-list fat32$c))
+                                      (max-entry-count fat32$c)))
+       path))))
+   (equal
+    (<<-sort
+     (strip-cars
+      (m1-file->contents
+       (mv-nth
+        0
+        (hifat-find-file
+         (mv-nth 0
+                 (lofat-to-hifat-helper fat32$c
+                                        (mv-nth 0 (root-d-e-list fat32$c))
+                                        (max-entry-count fat32$c)))
+         path)))))
+    (<<-sort
+     (names-from-d-e-list
+      (lofat-file->contents
+       (mv-nth 0
+               (lofat-find-file fat32$c
+                                (mv-nth 0 (root-d-e-list fat32$c))
+                                path)))))))
+  :hints
+  (("goal" :do-not-induct t
+    :in-theory (disable (:rewrite lofat-find-file-correctness-2)
+                        lofat-pread-refinement-lemma-2)
+    :use (:instance (:rewrite lofat-find-file-correctness-2)
+                    (entry-limit (max-entry-count fat32$c))
+                    (path path)
+                    (d-e-list (mv-nth 0 (root-d-e-list fat32$c)))
+                    (fat32$c fat32$c)))))
+
+(defthmd
+  lofat-opendir-correctness-3
+  (implies (and (equal (mv-nth 1 (lofat-to-hifat fat32$c))
+                       0)
+                (lofat-fs-p fat32$c))
+           (equal (mv-nth 0
+                          (lofat-opendir fat32$c dir-stream-table path))
+                  (mv-nth 1
+                          (hifat-opendir (mv-nth 0 (lofat-to-hifat fat32$c))
+                                         path dir-stream-table))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (lofat-opendir hifat-opendir lofat-to-hifat)
+                           (lofat-pread-refinement-lemma-2)))))

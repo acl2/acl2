@@ -150,6 +150,15 @@
   (struct-stat-p (mv-nth 0 (hifat-lstat fs path)))
   :hints (("goal" :in-theory (enable hifat-lstat))))
 
+(defthm
+  hifat-lstat-correctness-3
+  (and (integerp (mv-nth 1 (hifat-lstat fs path)))
+       (natp (mv-nth 2 (hifat-lstat fs path))))
+  :hints (("Goal" :in-theory (enable hifat-lstat)))
+  :rule-classes
+  ((:type-prescription :corollary (integerp (mv-nth 1 (hifat-lstat fs path))))
+   (:type-prescription :corollary (natp (mv-nth 2 (hifat-lstat fs path))))))
+
 ;; By default, we aren't going to check whether the file exists.
 (defund hifat-open (path fd-table file-table)
   (declare (xargs :guard (and (fat32-filename-list-p path)
@@ -292,6 +301,12 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable hifat-pread))))
 
+(defcong hifat-equiv equal
+  (hifat-pread fd count offset fs fd-table file-table)
+  4
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-pread))))
+
 (defun
     hifat-pwrite
     (fd buf offset fs fd-table file-table)
@@ -351,6 +366,61 @@
           :in-theory (enable hifat-no-dups-p)))
  :rule-classes :congruence)
 
+(defthm
+  hifat-pwrite-correctness-2
+  (implies
+   (hifat-equiv fs1 fs2)
+   (equal
+    (mv-nth
+     1
+     (hifat-pwrite fd buf offset fs1 fd-table file-table))
+    (mv-nth 1
+            (hifat-pwrite fd
+                          buf offset fs2 fd-table file-table))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-no-dups-p)))
+  :rule-classes :congruence)
+
+(defthm
+  hifat-pwrite-correctness-3
+  (and
+   (integerp
+    (mv-nth
+     1
+     (hifat-pwrite fd buf offset fs1 fd-table file-table)))
+   (natp
+    (mv-nth
+     2
+     (hifat-pwrite fd buf offset fs1 fd-table file-table))))
+  :rule-classes
+  ((:type-prescription
+    :corollary
+    (integerp
+     (mv-nth
+      1
+      (hifat-pwrite fd buf offset fs1 fd-table file-table))))
+   (:type-prescription
+    :corollary
+    (natp
+     (mv-nth
+      2
+      (hifat-pwrite fd buf offset fs1 fd-table file-table))))))
+
+(defthm
+  hifat-pwrite-correctness-4
+  (implies
+   (hifat-equiv fs1 fs2)
+   (equal
+    (mv-nth
+     2
+     (hifat-pwrite fd buf offset fs1 fd-table file-table))
+    (mv-nth 2
+            (hifat-pwrite fd
+                          buf offset fs2 fd-table file-table))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-no-dups-p)))
+  :rule-classes :congruence)
+
 (defun
     hifat-mkdir (fs path)
   (declare
@@ -393,6 +463,43 @@
                         (mv-nth 0 (hifat-mkdir fs2 path))))
   :rule-classes
   :congruence)
+
+(defthm
+  hifat-mkdir-correctness-2
+  (implies
+   (hifat-equiv fs1 fs2)
+   (equal
+    (mv-nth
+     1
+     (hifat-mkdir fs1 path))
+    (mv-nth 1
+            (hifat-mkdir fs2 path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-no-dups-p)))
+  :rule-classes :congruence)
+
+(defthm
+  hifat-mkdir-correctness-3
+  (and (integerp (mv-nth 1 (hifat-mkdir fs path)))
+       (natp (mv-nth 2 (hifat-mkdir fs path))))
+  :rule-classes
+  ((:type-prescription :corollary (integerp (mv-nth 1 (hifat-mkdir fs path))))
+   (:type-prescription
+    :corollary (natp (mv-nth 2 (hifat-mkdir fs path))))))
+
+(defthm
+  hifat-mkdir-correctness-4
+  (implies
+   (hifat-equiv fs1 fs2)
+   (equal
+    (mv-nth
+     2
+     (hifat-mkdir fs1 path))
+    (mv-nth 2
+            (hifat-mkdir fs2 path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-no-dups-p)))
+  :rule-classes :congruence)
 
 (defun
     hifat-mknod (fs path)
@@ -839,6 +946,8 @@
   (implies (fat32-filename-list-p x)
            (string-listp x)))
 
+;; There were a couple of bugs here because we were returning 0 in error cases
+;; when -1, as a stand-in for NULL, would have been appropriate.
 (defund hifat-opendir (fs path dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
                               (m1-file-alist-p fs)
@@ -860,9 +969,10 @@
        ((mv file error-code)
         (hifat-find-file fs path))
        ((unless (equal error-code 0))
-        (mv 0 dir-stream-table *enoent*))
+        (mv -1 dir-stream-table *enoent*))
        ((unless (m1-directory-file-p file))
-        (mv 0 dir-stream-table *enotdir*))
+        ;; The -1 is because that's our stand-in for NULL.
+        (mv -1 dir-stream-table *enotdir*))
        (dir-stream-table-index
         (find-new-index (strip-cars dir-stream-table))))
     (mv
@@ -881,9 +991,9 @@
    (mv-nth 1 (hifat-opendir fs path dir-stream-table)))
   :hints (("Goal" :in-theory (enable hifat-opendir))))
 
-(defthm natp-of-hifat-opendir
-  (natp (mv-nth 0
-                (hifat-opendir fs path dir-stream-table)))
+(defthm hifat-opendir-correctness-2
+  (integerp (mv-nth 0
+                    (hifat-opendir fs path dir-stream-table)))
   :hints (("goal" :in-theory (enable hifat-opendir)))
   :rule-classes :type-prescription)
 
@@ -891,6 +1001,98 @@
   dir-stream-table-equiv equal (hifat-opendir fs path dir-stream-table) 3
   :hints (("goal" :do-not-induct t
            :in-theory (enable hifat-opendir))))
+
+(defthm hifat-opendir-correctness-lemma-1
+  (implies (and (set-equiv x y)
+                (no-duplicatesp-equal x)
+                (no-duplicatesp-equal y)
+                (true-listp x)
+                (true-listp y))
+           (equal (equal (<<-sort x) (<<-sort y))
+                  t))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable common-<<-sort-for-perms)
+           :use common-<<-sort-for-perms)))
+
+(defthm
+  hifat-opendir-correctness-lemma-2
+  (implies (and (hifat-equiv fs1 fs2)
+                (fat32-filename-list-p (strip-cars fs1))
+                (fat32-filename-list-p (strip-cars fs2)))
+           (equal (set-equiv (strip-cars fs1)
+                             (strip-cars fs2))
+                  t))
+  :hints
+  (("goal" :in-theory (disable hifat-equiv-implies-set-equiv-strip-cars-1)
+    :use hifat-equiv-implies-set-equiv-strip-cars-1)))
+
+(defthm
+  hifat-opendir-correctness-1
+  (integerp (mv-nth 2
+                    (hifat-opendir fs path dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-opendir)))
+  :rule-classes :type-prescription)
+
+(encapsulate
+  ()
+
+  (local
+   (defthm
+     lemma
+     (implies
+      (hifat-equiv fs1 fs2)
+      (equal
+       (hifat-opendir fs1 path dir-stream-table)
+       (hifat-opendir fs2 path dir-stream-table)))
+     :hints (("goal" :in-theory (enable hifat-opendir)
+              :expand
+              ((:with
+                fat32-filename-list-fix-when-fat32-filename-list-p
+                (fat32-filename-list-fix
+                 (<<-sort
+                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
+                                                                            path)))))))
+               (:with
+                (:rewrite fat32-filename-list-p-of-<<-sort-when-fat32-filename-list-p)
+                (fat32-filename-list-p
+                 (<<-sort
+                  (strip-cars
+                   (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))))
+               (:with
+                (:rewrite fat32-filename-list-p-of-strip-cars-when-m1-file-alist-p)
+                (fat32-filename-list-p
+                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
+                                                                           path))))))
+               (:with
+                (:rewrite m1-file-alist-p-of-m1-file->contents)
+                (m1-file-alist-p
+                 (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))
+               (:with
+                (:rewrite hifat-opendir-correctness-lemma-1)
+                (equal
+                 (<<-sort
+                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))
+                 (<<-sort
+                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs1
+                                                                            path)))))))
+               (:with
+                (:rewrite no-duplicatesp-of-strip-cars-when-hifat-no-dups-p)
+                (no-duplicatesp-equal
+                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
+                                                                           path))))))
+               (:with
+                hifat-opendir-correctness-lemma-2
+                (set-equiv
+                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs1 path))))
+                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
+                                                                           path)))))))))
+     :rule-classes :congruence))
+
+  ;; Move later.
+  (defcong
+    hifat-equiv equal
+    (hifat-opendir fs path dir-stream-table)
+    1))
 
 (assert-event
  (b*
