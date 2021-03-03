@@ -128,7 +128,14 @@
 		  (integerp j))
 	     (and (natp (bits x i j))
 		  (< (bits x i j) (expt 2 (1+ (- i j))))))
-  :rule-classes())
+    :rule-classes())
+
+(defthmd bits-upper-bound
+  (implies (and (integerp i)
+                (integerp j))
+           (< (bits x i j)
+              (expt 2 (1+ (- i j)))))
+  :rule-classes :linear)
 
 (defthm mod-bits-equal
   (implies (= (mod x (expt 2 (1+ i)))
@@ -250,6 +257,16 @@
                      (* (expt 2 (- i j))
                         (fl (/ x (expt 2 i)))))))
   :rule-classes ())
+
+(defthmd bits-fl-diff-alt
+  (implies (and (integerp x)
+                (integerp i)
+                (integerp j)
+                (>= i (1- j)))
+           (equal (bits x i j)
+                  (- (fl (/ x (expt 2 j)))
+                     (* (expt 2 (- (1+ i) j))
+                        (fl (/ x (expt 2 (1+ i)))))))))
 
 (defthm bits-mod-fl
   (implies (and (integerp i)
