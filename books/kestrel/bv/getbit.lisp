@@ -155,6 +155,12 @@
   :hints (("Goal" :use (:instance getbit-identity)
            :in-theory (disable getbit-identity))))
 
+;; In case we are using bitp instead of unsigned-byte-p as the normal form.
+(defthm getbit-of-0-when-bitp
+  (implies (bitp x)
+           (equal (getbit 0 x)
+                  x)))
+
 (defthm high-getbit-of-getbit-is-0
   (implies (and (<= 1 m)
                 (integerp m))
