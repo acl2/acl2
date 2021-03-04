@@ -1287,19 +1287,6 @@
      (d-e-directory-p d-e-set-first-cluster-file-size)
      (logbitp)))))
 
-(def-listp-rule list-equiv-refines-element-list-equiv
-  (implies (and (list-equiv x y)
-                (not (element-list-final-cdr-p t)))
-           (element-list-equiv x y))
-  :hints (("Goal" :induct (fast-list-equiv x y)
-           :in-theory (enable fast-list-equiv)))
-  :name list-equiv-refines-element-list-equiv
-  :requirement (not true-listp)
-  :body
-  (implies (list-equiv x y)
-           (element-list-equiv x y))
-  :inst-rule-classes :refinement)
-
 (def-listfix-rule
   prefixp-of-element-list-fix
   (implies (prefixp x y)
@@ -1329,12 +1316,6 @@
   :hints
   (("goal" :in-theory (e/d (fat32-filename-list-fix)
                            (take-of-too-many take-when-atom take-of-cons)))))
-
-(defrefinement
-  list-equiv fat32-filename-list-equiv
-  :hints
-  (("goal" :in-theory (enable fat32-filename-list-fix fat32-filename-list-equiv prefixp)
-    :induct (prefixp x y))))
 
 (defcong
   fat32-filename-list-equiv

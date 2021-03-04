@@ -514,7 +514,7 @@ literal:</p>
   (defcong bits-equiv equal (aignet-regvals->vals regvals vals aignet) 1
     :hints(("Goal" :in-theory (enable aignet-regvals->vals))))
 
-  
+
 
   (defthm aignet-regvals->vals-iter-of-take
     (implies (and (<= (stype-count :reg aignet) (nfix k))
@@ -1230,14 +1230,6 @@ literal:</p>
                  (n (acl2::bits-equiv-witness x y))
                  (x y))))))
 
-(defrefinement list-equiv bit-list-equiv
-  :hints(("Goal" :in-theory (e/d (list-equiv)
-                                 (bit-list-fix-of-true-list-fix))
-          :use ((:instance bit-list-fix-of-true-list-fix (x x))
-                (:instance bit-list-fix-of-true-list-fix (x y))))))
-
-
-
 (local (defthmd equal-of-len
          (implies (syntaxp (quotep n))
                   (equal (equal (len x) n)
@@ -1262,7 +1254,7 @@ literal:</p>
                                      equal-of-len)
                   :expand ((bit-list-fix x)
                            (bit-list-fix y))))))
-                       
+
 
 
 
