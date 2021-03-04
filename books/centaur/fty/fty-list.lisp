@@ -384,7 +384,18 @@
                                       acl2::list-equiv acl2::true-list-fix)
                    :expand ((acl2::true-list-fix x) (acl2::true-list-fix y)
                             (,x.fix x) (,x.fix y))))
-                 :rule-classes :refinement))))))
+                 :rule-classes :refinement)))
+
+      ;; I'm not sure if the true-listp stipulation is necessary. The other one is.
+      ,@(and x.true-listp (not x.non-emptyp)
+             `((deffixcong ,x.equiv ,x.equiv (append x y) x
+                 :pkg ,x.equiv
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
+                          :induct (append x y))))
+               (deffixcong ,x.equiv ,x.equiv (append x y) y
+                 :pkg ,x.equiv
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
+                          :induct (append x y)))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))

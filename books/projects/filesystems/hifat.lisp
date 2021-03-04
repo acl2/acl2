@@ -1323,13 +1323,6 @@
   (nthcdr n l)
   2)
 
-(defcong fat32-filename-list-equiv fat32-filename-list-equiv
-  (append x y) 1
-  :hints (("Goal" :in-theory (enable fat32-filename-list-equiv))))
-
-(defcong fat32-filename-list-equiv fat32-filename-list-equiv
-  (append x y) 2)
-
 (defthm
   prefixp-of-fat32-filename-list-fix
   (implies (prefixp x y)
