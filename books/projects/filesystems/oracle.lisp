@@ -8,68 +8,70 @@
 (local (in-theory (disable nth make-list-ac-removal last
                            make-list-ac)))
 
-(fty::defprod lofat-st
-              ((fd natp)
-               (buf stringp)
-               (offset natp)
-               (count natp)
-               (retval integerp)
-               (errno natp)
-               (path fat32-filename-list-p)
-               (stat struct-stat-p)
-               (statfs struct-statfs-p)
-               (dirp integerp) ;; This is interesting. We try to mimic the
-               ;; NULL-returning behaviour of the actual opendir by making it
-               ;; return -1 at precisely those times. That means this cannot be
-               ;; assumed to be a natural number.
-               (fd-table fd-table-p)
-               (file-table file-table-p)
-               (dir-stream-table dir-stream-table-p)))
+(fty::defprod fat-st
+              ((fd natp :default 0)
+               (buf stringp :default "")
+               (offset natp :default 0)
+               (count natp :default 0)
+               (retval integerp :default 0)
+               (errno natp :default 0)
+               (path fat32-filename-list-p :default nil)
+               (stat struct-stat-p :default (make-struct-stat))
+               (statfs struct-statfs-p :default (make-struct-statfs))
+               (dirp integerp :default 0)
+               ;; This is interesting. We try to mimic the NULL-returning
+               ;; behaviour of the actual opendir by making it return -1 at
+               ;; precisely those times. That means this cannot be assumed to
+               ;; be a natural number.
+               (fd-table fd-table-p :default nil)
+               (file-table file-table-p :default nil)
+               (dir-stream-table dir-stream-table-p :default nil)
+               (oracle nat-list :default nil)))
 
 ;; We aren't going to put statfs in this. It'll just make things pointlessly
 ;; complicated.
 (defund lofat-oracle-single-step (fat32$c syscall-sym st)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
-                              (lofat-st-p st))
-                  :guard-debug t))
+                              (fat-st-p st))
+                  :verify-guards nil))
   (b*
-      ((st (mbe :logic (lofat-st-fix st) :exec st))
+      ((st (mbe :logic (fat-st-fix st) :exec st))
        ((when (eq syscall-sym :pwrite))
         (b*
             (((mv fat32$c retval errno)
               (lofat-pwrite
-               (lofat-st->fd st)
-               (lofat-st->buf st)
-               (lofat-st->offset st)
+               (fat-st->fd st)
+               (fat-st->buf st)
+               (fat-st->offset st)
                fat32$c
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :retval retval :errno errno))))
        ((when (eq syscall-sym :pread))
         (b*
             (((mv buf retval errno)
               (lofat-pread
-               (lofat-st->fd st)
-               (lofat-st->count st)
-               (lofat-st->offset st)
+               (fat-st->fd st)
+               (fat-st->count st)
+               (fat-st->offset st)
                fat32$c
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :buf buf :retval retval :errno errno))))
        ((when (eq syscall-sym :open))
         (b*
             (((mv fd-table file-table fd retval)
               (lofat-open
-               (lofat-st->path st)
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->path st)
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :fd fd :retval retval :errno 0 :file-table file-table
                :fd-table fd-table))))
        ((when (eq syscall-sym :lstat))
@@ -77,95 +79,108 @@
             (((mv stat retval errno)
               (lofat-lstat
                fat32$c
-               (lofat-st->path st))))
+               (fat-st->path st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :stat stat :retval retval :errno errno))))
        ;; ((when (eq syscall-sym :unlink))
        ;;  (b*
        ;;      (((mv fat32$c retval errno)
        ;;        (lofat-unlink
        ;;         fat32$c
-       ;;         (lofat-st->path st))))
+       ;;         (fat-st->path st))))
        ;;    (mv fat32$c
-       ;;        (change-lofat-st
+       ;;        (change-fat-st
        ;;         st :retval retval :errno errno))))
        ;; ((when (eq syscall-sym :truncate))
        ;;  (b*
        ;;      (((mv fat32$c retval errno)
        ;;        (lofat-unlink
        ;;         fat32$c
-       ;;         (lofat-st->path st))))
+       ;;         (fat-st->path st))))
        ;;    (mv fat32$c
-       ;;        (change-lofat-st
+       ;;        (change-fat-st
        ;;         st :retval retval :errno errno))))
        ((when (eq syscall-sym :mkdir))
         (b*
             (((mv fat32$c retval errno)
               (lofat-mkdir
                fat32$c
-               (lofat-st->path st))))
+               (fat-st->path st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :retval retval :errno errno))))
        ((when (eq syscall-sym :opendir))
         (b*
             (((mv dir-stream-table dirp retval)
               (lofat-opendir
                fat32$c
-               (lofat-st->dir-stream-table st)
-               (lofat-st->path st))))
+               (fat-st->dir-stream-table st)
+               (fat-st->path st))))
           (mv fat32$c
-              (change-lofat-st
+              (change-fat-st
                st :dir-stream-table dir-stream-table :dirp dirp
-               :retval retval :errno 0)))))
+               :retval retval :errno 0))))
+       ((when (eq syscall-sym :close))
+        (b*
+            (((mv fd-table file-table errno)
+              (lofat-close
+               (fat-st->fd st)
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
+          (mv fat32$c
+              (change-fat-st
+               st :fd-table fd-table :file-table file-table :errno errno))))
+       ((when (and (consp syscall-sym) (eq (car syscall-sym) :set-path)))
+        (mv fat32$c
+            (change-fat-st st :path (cdr syscall-sym)))))
     (mv fat32$c st)))
 
 ;; We aren't going to put statfs in this. It'll just make things pointlessly
 ;; complicated.
 (defund absfat-oracle-single-step (frame syscall-sym st)
   (declare (xargs :guard (and (frame-p frame)
-                              (lofat-st-p st)
+                              (fat-st-p st)
                               (consp (assoc-equal 0 frame))
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t))
+                  :verify-guards nil))
   (b*
-      ((st (mbe :logic (lofat-st-fix st) :exec st))
+      ((st (mbe :logic (fat-st-fix st) :exec st))
        ((when (eq syscall-sym :pwrite))
         (b*
             (((mv frame retval errno)
               (abs-pwrite
-               (lofat-st->fd st)
-               (lofat-st->buf st)
-               (lofat-st->offset st)
+               (fat-st->fd st)
+               (fat-st->buf st)
+               (fat-st->offset st)
                frame
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :retval retval :errno errno))))
        ((when (eq syscall-sym :pread))
         (b*
             (((mv buf retval errno)
               (abs-pread
-               (lofat-st->fd st)
-               (lofat-st->count st)
-               (lofat-st->offset st)
+               (fat-st->fd st)
+               (fat-st->count st)
+               (fat-st->offset st)
                frame
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :buf buf :retval retval :errno errno))))
        ((when (eq syscall-sym :open))
         (b*
             (((mv fd-table file-table fd retval)
               (abs-open
-               (lofat-st->path st)
-               (lofat-st->fd-table st)
-               (lofat-st->file-table st))))
+               (fat-st->path st)
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :fd fd :retval retval :errno 0 :file-table file-table
                :fd-table fd-table))))
        ((when (eq syscall-sym :lstat))
@@ -173,36 +188,36 @@
             (((mv stat retval errno)
               (abs-lstat
                frame
-               (lofat-st->path st))))
+               (fat-st->path st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :stat stat :retval retval :errno errno))))
        ;; ((when (eq syscall-sym :unlink))
        ;;  (b*
        ;;      (((mv fat32$c retval errno)
        ;;        (lofat-unlink
        ;;         fat32$c
-       ;;         (lofat-st->path st))))
+       ;;         (fat-st->path st))))
        ;;    (mv fat32$c
-       ;;        (change-lofat-st
+       ;;        (change-fat-st
        ;;         st :retval retval :errno errno))))
        ;; ((when (eq syscall-sym :truncate))
        ;;  (b*
        ;;      (((mv fat32$c retval errno)
        ;;        (lofat-unlink
        ;;         fat32$c
-       ;;         (lofat-st->path st))))
+       ;;         (fat-st->path st))))
        ;;    (mv fat32$c
-       ;;        (change-lofat-st
+       ;;        (change-fat-st
        ;;         st :retval retval :errno errno))))
        ((when (eq syscall-sym :mkdir))
         (b*
             (((mv frame retval errno)
               (abs-mkdir
                frame
-               (lofat-st->path st))))
+               (fat-st->path st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :retval retval :errno errno))))
        ;; This is an interesting case! Basically, this command does not modify
        ;; the state of the filesystem but does change the frame.
@@ -211,12 +226,25 @@
             (((mv dirp dir-stream-table retval frame)
               (abs-opendir
                frame
-               (lofat-st->path st)
-               (lofat-st->dir-stream-table st))))
+               (fat-st->path st)
+               (fat-st->dir-stream-table st))))
           (mv frame
-              (change-lofat-st
+              (change-fat-st
                st :dir-stream-table dir-stream-table :dirp dirp
-               :retval retval :errno 0)))))
+               :retval retval :errno 0))))
+       ((when (eq syscall-sym :close))
+        (b*
+            (((mv fd-table file-table errno)
+              (lofat-close
+               (fat-st->fd st)
+               (fat-st->fd-table st)
+               (fat-st->file-table st))))
+          (mv frame
+              (change-fat-st
+               st :fd-table fd-table :file-table file-table :errno errno))))
+       ((when (and (consp syscall-sym) (eq (car syscall-sym) :set-path)))
+        (mv frame
+            (change-fat-st st :path (cdr syscall-sym)))))
     (mv frame st)))
 
 ;; Counterexample, but for regular files which we aren't really thinking about
@@ -390,14 +418,14 @@
   (implies
    (frame-reps-fs frame
                   (mv-nth 0 (lofat-to-hifat fat32$c)))
-   (frame-reps-fs (mv-nth 0 (abs-mkdir frame (lofat-st->path st)))
+   (frame-reps-fs (mv-nth 0 (abs-mkdir frame (fat-st->path st)))
                   (mv-nth 0
                           (hifat-mkdir (mv-nth 0 (lofat-to-hifat fat32$c))
-                                       (lofat-st->path st)))))
+                                       (fat-st->path st)))))
   :hints (("goal" :do-not-induct t
            :in-theory (disable abs-mkdir-correctness-2 hifat-mkdir)
            :use (:instance abs-mkdir-correctness-2
-                           (path (lofat-st->path st))))))
+                           (path (fat-st->path st))))))
 
 (defthm
   absfat-oracle-single-step-refinement-lemma-2
@@ -405,27 +433,27 @@
    (frame-reps-fs frame
                   (mv-nth 0 (lofat-to-hifat fat32$c)))
    (frame-reps-fs (mv-nth 0
-                          (abs-pwrite (lofat-st->fd st)
-                                      (lofat-st->buf st)
-                                      (lofat-st->offset st)
+                          (abs-pwrite (fat-st->fd st)
+                                      (fat-st->buf st)
+                                      (fat-st->offset st)
                                       frame
-                                      (lofat-st->fd-table st)
-                                      (lofat-st->file-table st)))
+                                      (fat-st->fd-table st)
+                                      (fat-st->file-table st)))
                   (mv-nth 0
-                          (hifat-pwrite (lofat-st->fd st)
-                                        (lofat-st->buf st)
-                                        (lofat-st->offset st)
+                          (hifat-pwrite (fat-st->fd st)
+                                        (fat-st->buf st)
+                                        (fat-st->offset st)
                                         (mv-nth 0 (lofat-to-hifat fat32$c))
-                                        (lofat-st->fd-table st)
-                                        (lofat-st->file-table st)))))
+                                        (fat-st->fd-table st)
+                                        (fat-st->file-table st)))))
   :hints (("goal" :do-not-induct t
            :in-theory (disable abs-pwrite-correctness-1 hifat-pwrite)
            :use (:instance abs-pwrite-correctness-1
-                           (fd (lofat-st->fd st))
-                           (buf (lofat-st->buf st))
-                           (offset (lofat-st->offset st))
-                           (fd-table (lofat-st->fd-table st))
-                           (file-table (lofat-st->file-table st))))))
+                           (fd (fat-st->fd st))
+                           (buf (fat-st->buf st))
+                           (offset (fat-st->offset st))
+                           (fd-table (fat-st->fd-table st))
+                           (file-table (fat-st->file-table st))))))
 
 ;; I have this single-step property relating two representations of
 ;; my FAT32 filesystem, AbsFAT and LoFAT. The very next thing I want to do are
@@ -492,7 +520,7 @@
        (max-entry-count fat32$c))
     ;; Hypothesis 4
     (not
-     (equal (lofat-st->errno
+     (equal (fat-st->errno
              (mv-nth 1
                      (lofat-oracle-single-step fat32$c syscall-sym st)))
             *enospc*))
@@ -541,7 +569,7 @@
     (< (hifat-entry-count (mv-nth 0 (lofat-to-hifat fat32$c)))
        (max-entry-count fat32$c))
     (not
-     (equal (lofat-st->errno
+     (equal (fat-st->errno
              (mv-nth 1
                      (lofat-oracle-single-step fat32$c syscall-sym st)))
             *enospc*))
@@ -564,7 +592,7 @@
 (defund lofat-oracle-multi-step (fat32$c syscall-sym-list st)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
-                              (lofat-st-p st))
+                              (fat-st-p st))
                   :verify-guards nil))
   (b*
       (((when (atom syscall-sym-list)) (mv fat32$c st))
@@ -592,7 +620,7 @@
 
 (defund absfat-oracle-multi-step (frame syscall-sym-list st)
   (declare (xargs :guard (and (frame-p frame)
-                              (lofat-st-p st)
+                              (fat-st-p st)
                               (consp (assoc-equal 0 frame))
                               (no-duplicatesp-equal (strip-cars frame)))
                   :guard-debug t
@@ -624,7 +652,7 @@
 (defund good-lofat-oracle-steps-p-helper (fat32$c syscall-sym-list st)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
-                              (lofat-st-p st))
+                              (fat-st-p st))
                   :verify-guards nil
                   :measure (len syscall-sym-list)))
   (b*
@@ -638,7 +666,7 @@
         (lofat-oracle-single-step fat32$c (car syscall-sym-list)
                                   st))
        ((when
-            (equal (lofat-st->errno
+            (equal (fat-st->errno
                     st)
                    *enospc*))
         (mv nil fat32$c)))
@@ -723,7 +751,7 @@
            (max-entry-count fat32$c))
         (not
          (equal
-          (lofat-st->errno
+          (fat-st->errno
            (mv-nth 1
                    (lofat-oracle-single-step fat32$c (car syscall-sym-list)
                                              st)))
@@ -833,11 +861,7 @@
         0
         (lofat-to-hifat
          (mv-nth 0
-                 (lofat-oracle-multi-step fat32$c syscall-sym-list st)))))
-      (equal (mv-nth 1
-                     (absfat-oracle-multi-step frame syscall-sym-list st))
-             (mv-nth 1
-                     (lofat-oracle-multi-step fat32$c syscall-sym-list st)))))
+                 (lofat-oracle-multi-step fat32$c syscall-sym-list st)))))))
     :hints (("goal" :use (:instance lemma
                                     (n (len syscall-sym-list))))))
 
@@ -858,3 +882,159 @@
                     (lofat-oracle-multi-step fat32$c syscall-sym-list st))))
     :hints (("goal" :use (:instance lemma
                                     (n (len syscall-sym-list)))))))
+
+(defconst *example-prog-1*
+  (list (cons :set-path (path-to-fat32-path (coerce "/tmp/ticket1.txt" 'list)))
+        :open
+        :pwrite
+        :close
+        (cons :set-path (path-to-fat32-path (coerce "/tmp/ticket2.txt" 'list)))
+        :open
+        :pwrite
+        :close))
+
+#|
+(absfat-oracle-multi-step
+ (frame-with-root (list (cons "TMP        " (make-m1-file :contents nil))) nil)
+ *example-prog-1*
+(make-fat-st))
+|#
+
+(defund nonempty-queues (queues)
+  (if (atom queues)
+      nil
+    (append
+     (nonempty-queues (butlast queues 1))
+     (if (consp (nth (- (len queues) 1) queues))
+         (list (- (len queues) 1))
+       nil))))
+
+(defthm
+  consp-of-nonempty-queues-1
+  (implies (consp (flatten queues))
+           (consp (nonempty-queues queues)))
+  :hints
+  (("goal" :in-theory (e/d (nonempty-queues flatten)
+                           ((:rewrite flattenp-of-append)))
+    :induct (nonempty-queues queues))
+   ("subgoal *1/2" :use (:instance (:rewrite flattenp-of-append)
+                                   (y (list (nth (+ -1 (len queues)) queues)))
+                                   (x (take (+ -1 (len queues)) queues)))
+    :expand (len queues)))
+  :rule-classes :type-prescription)
+
+;; Move later.
+(encapsulate
+  ()
+
+  (local
+   (defthm lemma
+     (equal (len (flatten (update-nth key val nil)))
+            (len val))
+     :hints (("goal" :in-theory (enable update-nth nth flatten)))))
+
+  (defthm len-of-flatten-of-update-nth
+    (equal (len (flatten (update-nth key val l)))
+           (- (+ (len (flatten l)) (len val))
+              (len (nth key l))))
+    :hints (("goal" :in-theory (enable update-nth nth flatten)))))
+
+(assert-event
+ (equal (nonempty-queues (list nil (list 3) (list 4 5) nil))
+        (list 1 2)))
+
+(defthm
+  member-of-nonempty-queues
+  (iff (member-equal (nfix x)
+                     (nonempty-queues queues))
+       (consp (nth x queues)))
+  :hints (("goal" :in-theory (enable nonempty-queues nth)
+           :induct (nonempty-queues queues)
+           :expand ((:free (n) (nth n queues))
+                    (len queues)
+                    (:with nth-when->=-n-len-l
+                           (nth (+ -1 x) (cdr queues))))))
+  :rule-classes
+  ((:rewrite :corollary (implies (member-equal (nfix x)
+                                               (nonempty-queues queues))
+                                 (consp (nth x queues))))
+   (:type-prescription
+    :corollary (implies (member-equal (nfix x)
+                                      (nonempty-queues queues))
+                        (consp (nth x queues))))
+   (:rewrite :corollary (implies (not (member-equal (nfix x)
+                                                    (nonempty-queues queues)))
+                                 (not (consp (nth x queues)))))
+   (:type-prescription
+    :corollary (implies (not (member-equal (nfix x)
+                                           (nonempty-queues queues)))
+                        (not (consp (nth x queues)))))))
+
+(defthm nat-listp-of-nonempty-queues
+  (nat-listp (nonempty-queues queues))
+  :hints (("goal" :in-theory (enable nonempty-queues))))
+
+(defund
+  schedule-queues (queues oracle)
+  (declare
+   (xargs
+    :verify-guards nil
+    :measure (len (flatten queues))
+    :hints
+    (("goal"
+      :expand
+      ((:with
+        (:rewrite member-of-nonempty-queues . 1)
+        (:free (n)
+               (consp (nth (nth n (nonempty-queues queues))
+                           queues))))
+       (:with
+        integerp-of-nth-when-integer-listp
+        (:free
+         (n)
+         (integerp (nth n (nonempty-queues queues))))))))))
+  (b*
+      (((when (atom (flatten queues)))
+        (mv nil oracle))
+       (nonempty-queues (nonempty-queues queues))
+       (next-queue (nth (min (nfix (car oracle))
+                             (- (len nonempty-queues) 1))
+                        nonempty-queues))
+       (oracle (cdr oracle))
+       (next (car (nth next-queue queues)))
+       (queues (update-nth next-queue (cdr (nth next-queue queues))
+                           queues))
+       ((mv tail-queues tail-oracle)
+        (schedule-queues queues oracle)))
+    (mv (cons next tail-queues)
+        tail-oracle)))
+
+;; This shows that sensible things happen even if the oracle is shorter in
+;; length than expected. However, it also shows a potential ill-effect of
+;; heedless scheduling, as the paths get scrambled because of unwanted
+;; interleaving. We need to have transactions somehow...
+(assert-event
+ (mv-let
+   (queue oracle)
+   (schedule-queues
+    (list
+     (list
+      (cons
+       :set-path
+       (path-to-fat32-path (coerce "/tmp/ticket1.txt" 'list)))
+      :open
+      :pwrite :close)
+     (list
+      (cons
+       :set-path
+       (path-to-fat32-path (coerce "/tmp/ticket2.txt" 'list)))
+      :open
+      :pwrite :close))
+    (list 0 1 1 1 0 0))
+   (and (equal queue
+               '((:SET-PATH "TMP        " "TICKET1 TXT")
+                 (:SET-PATH "TMP        " "TICKET2 TXT")
+                 :open :pwrite
+                 :open :pwrite
+                 :close :close))
+        (equal oracle nil))))

@@ -39,7 +39,8 @@
                       d-e-list-p-of-cdr-when-d-e-list-p)
                      (:rewrite rational-listp-when-not-consp)
                      (:rewrite no-duplicatesp-of-member)
-                     (:rewrite true-listp-when-string-list))))
+                     (:rewrite true-listp-when-string-list)
+                     not-intersectp-list-when-subsetp-2)))
 
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp)))
@@ -4038,6 +4039,11 @@
   (("goal" :in-theory (enable place-contents
                               (:rewrite make-clusters-correctness-1 . 1)))))
 
+;; Look, I'm not overly fond of theory expressions in the middle of the book,
+;; but the cost in terms of useless rune applications is too high.
+(local (in-theory (disable
+                   place-contents-expansion-2)))
+
 (defthm
   make-d-e-list-of-append-1
   (implies (d-e-p (chars=>nats x))
@@ -4653,7 +4659,8 @@
                    (count-free-clusters (effective-fat fat32$c))
                    n))))))
 
-(defthm
+;; It's weird that we're having to disable this...
+(defthmd
   lofat-to-hifat-helper-of-hifat-to-lofat-helper-disjoint
   (implies
    (and (lofat-fs-p fat32$c)
@@ -7616,7 +7623,8 @@
             remove1-d-e not-intersectp-list
             (:linear hifat-to-lofat-inversion-lemma-16)
             hifat-bounded-file-alist-p-of-cdr
-            non-free-index-listp)
+            non-free-index-listp
+            lofat-to-hifat-helper-of-hifat-to-lofat-helper-disjoint)
            ((:rewrite nth-of-nats=>chars)
             (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
@@ -8198,7 +8206,8 @@
   (("goal"
     :in-theory (e/d (hifat-cluster-count length-of-empty-list
                                          painful-debugging-lemma-12
-                                         len-of-make-clusters)
+                                         len-of-make-clusters
+                                         place-contents-expansion-2)
                     ((:rewrite fati-of-hifat-to-lofat-helper-disjoint)
                      (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-1))))))
 
@@ -8391,7 +8400,8 @@
   (("goal"
     :in-theory (e/d (hifat-cluster-count length-of-empty-list
                                          painful-debugging-lemma-12
-                                         len-of-make-clusters)
+                                         len-of-make-clusters
+                                         place-contents-expansion-2)
                     ((:rewrite fati-of-hifat-to-lofat-helper-disjoint)
                      (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-1))))))
 
@@ -8460,7 +8470,6 @@
     0))
   :hints
   (("goal"
-    :in-theory (disable (:rewrite place-contents-expansion-2))
     :use
     ((:instance
       (:rewrite place-contents-expansion-2)
@@ -8530,7 +8539,8 @@
     (e/d
      (hifat-cluster-count
       length-of-empty-list
-      painful-debugging-lemma-12)
+      painful-debugging-lemma-12
+      place-contents-expansion-2)
      ((:rewrite fati-of-hifat-to-lofat-helper-disjoint)
       (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-1))))))
 
@@ -9367,7 +9377,8 @@
      (lofat-to-hifat hifat-to-lofat
                      lofat-to-hifat-inversion-lemma-4
                      lofat-to-hifat-helper-correctness-5-lemma-5
-                     d-e-cc pseudo-root-d-e)
+                     d-e-cc pseudo-root-d-e
+                     place-contents-expansion-2)
      (lofat-to-hifat-inversion-lemma-3 generate-index-list
                                        non-free-index-listp-correctness-6))
     :use

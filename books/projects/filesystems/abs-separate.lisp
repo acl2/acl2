@@ -404,39 +404,7 @@
                   (abs-addrs fs)))
   :hints (("goal" :in-theory
            (e/d (abs-addrs abs-file-alist-p subsetp-equal)
-                ((:compound-recognizer natp-compound-recognizer)
-                 (:compound-recognizer true-listp-when-m1-file-alist-p)
-                 (:elim car-cdr-elim)
-                 (:executable-counterpart abs-file-alist-p)
-                 (:executable-counterpart car)
-                 (:executable-counterpart cons)
-                 (:executable-counterpart fat32-filename-p)
-                 (:executable-counterpart not)
-                 (:executable-counterpart symbolp)
-                 (:forward-chaining alistp-forward-to-true-listp)
-                 (:induction abs-file-alist-p)
-                 (:induction true-listp)
-                 (:rewrite abs-addrs-when-m1-file-alist-p)
-                 (:rewrite abs-addrs-when-m1-file-alist-p-lemma-2)
-                 (:rewrite abs-directory-file-p-when-m1-file-p)
-                 (:rewrite abs-file->contents-when-m1-file-p)
-                 (:rewrite append-when-not-consp)
-                 (:rewrite car-cons)
-                 (:rewrite cdr-cons)
-                 (:rewrite list-equiv-when-true-listp)
-                 (:rewrite m1-file-alist-p-of-m1-file->contents)
-                 (:rewrite m1-file-fix-when-m1-file-p)
-                 (:rewrite prefixp-when-equal-lengths)
-                 (:rewrite fty::strip-cars-under-iff)
-                 (:rewrite subsetp-of-cdr)
-                 (:rewrite subsetp-trans)
-                 (:rewrite subsetp-trans2)
-                 (:rewrite subsetp-when-atom-right)
-                 (:type-prescription abs-addrs)
-                 (:type-prescription abs-directory-file-p-when-m1-file-p-lemma-1)
-                 (:type-prescription abs-file-contents-fix)
-                 (:type-prescription fat32-filename-p)
-                 (:type-prescription m1-directory-file-p)))
+                ((:rewrite abs-file->contents-when-m1-file-p)))
            :induct (mv (abs-addrs fs)
                        (assoc-equal name fs))
            :expand ((abs-file-alist-p fs)
@@ -5545,46 +5513,6 @@
            (dist-names (ctx-app root abs-file-alist x x-path)
                        nil frame))
   :hints (("goal" :in-theory (enable dist-names prefixp))))
-
-(defthm
-  abs-separate-correctness-1-lemma-16
-  (implies
-   (and
-    (< 0 (1st-complete frame))
-    (frame-p frame)
-    (abs-separate (frame-with-root root frame))
-    (no-duplicatesp-equal (strip-cars frame))
-    (abs-fs-p
-     (ctx-app root
-              (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              (1st-complete frame)
-              (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                 frame))))))
-   (abs-separate
-    (frame-with-root
-     (ctx-app root
-              (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              (1st-complete frame)
-              (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                 frame))))
-     (remove-assoc-equal (1st-complete frame)
-                         frame))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (frame-with-root abs-separate)
-                    (abs-addrs-of-ctx-app))
-    :use
-    (:instance
-     (:rewrite abs-addrs-of-ctx-app)
-     (x-path (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                                frame))))
-     (x (1st-complete frame))
-     (abs-file-alist2 (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                        frame))))
-     (abs-file-alist1 root)))))
 
 ;; Inductive, hence kept.
 (defthm
