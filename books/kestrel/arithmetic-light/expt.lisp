@@ -48,6 +48,13 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable zip expt))))
 
+(defthm <=-of-0-and-expt
+  (implies (and (<= 0 r)
+                (rationalp r))
+           (<= 0 (expt r i)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable zip expt))))
+
 (defthm equal-of-0-and-expt
   (equal (equal 0 (expt r i))
          (and (equal 0 (fix r))
