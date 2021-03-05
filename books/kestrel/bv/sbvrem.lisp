@@ -82,13 +82,7 @@
          (natp size))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced natp sbvrem))))
 
-;todo: move?
-(defund sbvmoddown (n x y)
-  (declare (type integer x y)
-           (type (integer 1 *) n)
-           (xargs :guard (not (EQUAL (LOGEXT N Y) 0))) ;rephrase in terms of bvchop?
-           )
-  (bvchop n (mod (logext n x) (logext n y))))
+
 
 (defthm sbvrem-of-0-arg1
   (equal (sbvrem 0 x y)

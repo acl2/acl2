@@ -445,3 +445,11 @@
                      (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (e/d (logext logapp bvchop)
                                   (logapp-equal-rewrite)))))
+
+(defthm logext-negative
+  (implies (and (integerp x)
+                (< 0 n)
+                (natp n))
+           (equal (< (logext n x) 0)
+                  (equal 1 (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (enable logext))))

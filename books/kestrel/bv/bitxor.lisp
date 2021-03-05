@@ -214,3 +214,25 @@
                   (acl2::bitxor bit1 0)))
   :hints (("Goal" :in-theory (e/d (acl2::bitxor acl2::bvxor getbit)
                                   (acl2::bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
+
+(defthm equal-of-0-and-bitxor
+  (equal (equal 0 (bitxor x y))
+         (equal (getbit 0 x)
+                (getbit 0 y)))
+  :hints (("Goal"
+           :cases ((equal 0 (getbit 0 x))
+                   (equal 1 (getbit 0 x)))
+           :in-theory (enable))))
+
+(defthm equal-of-bitxor-same
+  (equal (equal x (bitxor x y))
+         (and (unsigned-byte-p 1 x)
+              (equal 0 (getbit 0 y))))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x))))))
+
+(defthm equal-of-bitxor-same-alt
+  (equal (equal x (bitxor y x))
+         (and (unsigned-byte-p 1 x)
+              (equal 0 (getbit 0 y))))
+  :hints (("Goal" :use (:instance equal-of-bitxor-same)
+           :in-theory (e/d (bitxor-commutative) (equal-of-bitxor-same)))))

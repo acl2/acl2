@@ -1278,3 +1278,93 @@
                            (n n))
            :in-theory (disable bvcat-of-bvchop-low bvcat-equal-rewrite-alt bvcat-equal-rewrite
                                bvcat-of-0))))
+
+(defthmd bvcat-special-opener
+  (implies (and (not (equal 0 (getbit 0 x)))
+                (natp n))
+           (equal (bvcat 1 x n y)
+                  (+ (expt 2 n) (bvchop n y))))
+  :hints (("Goal" :in-theory (e/d (getbit bvcat logapp bvchop)
+                                  (bvchop-1-becomes-getbit slice-becomes-getbit bvcat-recombine)))))
+
+(defthm bvcat-when-equal-of-getbit-0-low
+  (implies (and (equal (getbit 0 lowval) free)
+                (syntaxp (and (quotep free)
+                              (not (quotep lowval)))))
+           (equal (bvcat highsize highval 1 lowval)
+                  (bvcat highsize highval 1 free))))
+
+(defthm bvcat-when-equal-of-getbit-0-high
+  (implies (and (equal (getbit 0 highval) free)
+                (syntaxp (and (quotep free)
+                              (not (quotep highval)))))
+           (equal (bvcat 1 highval lowsize lowval)
+                  (bvcat 1 free lowsize lowval))))
+
+(defthmd split-with-bvcat
+  (implies (and (natp hs)
+                (posp hs)
+                (posp ls)
+                (natp ls))
+           (equal (bvcat hs (slice (+ -1 hs ls) ls x) ls x)
+                  (slice (+ -1 hs ls) 0 x))))
+
+;move?
+(defthmd bvchop-when-top-bit-1
+  (implies (and (equal 1 (getbit (+ -1 size) x))
+                (integerp size)
+                (< 0 size)
+                )
+           (equal (bvchop size x)
+                  (+ (expt 2 (+ -1 size))
+                     (bvchop (+ -1 size) x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
+  :hints (("Goal"
+           :in-theory (e/d (bvcat logapp posp bvchop getbit)
+                           (BVCAT-RECOMBINE
+                            SLICE-BECOMES-GETBIT
+                            BVCHOP-1-BECOMES-GETBIT
+                            ))
+           :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
+
+;move?
+(defthmd bvchop-when-top-bit-1-cheap
+  (implies (and (equal 1 (getbit (+ -1 size) x))
+                (integerp size)
+                (< 0 size)
+                )
+           (equal (bvchop size x)
+                  (+ (expt 2 (+ -1 size))
+                     (bvchop (+ -1 size) x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
+  :hints (("Goal" :by bvchop-when-top-bit-1)))
+
+;if we use polarity, the hyp will be equal 0...
+;move?
+(defthmd bvchop-when-top-bit-not-1
+  (implies (and (not (equal 1 (getbit (+ -1 size) x)))
+                (posp size))
+           (equal (bvchop size x)
+                  (bvchop (+ -1 size) x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
+  :hints (("Goal"
+           :in-theory (e/d (bvcat logapp posp) (BVCAT-RECOMBINE))
+           :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
+
+;move?
+(defthm bvchop-when-top-bit-not-1-fake-free
+  (implies (and (equal free (getbit freen x))
+                (equal (+ -1 size) freen)
+                (equal 0 free)
+                (posp size))
+           (equal (bvchop size x)
+                  (bvchop (+ -1 size) x)))
+  :hints (("Goal" :use (:instance bvchop-when-top-bit-not-1))))
+
+(defthmd bvchop-reduce-when-top-bit-known
+  (implies (and (equal (getbit k x) free)
+                (syntaxp (quotep free))
+                (equal k (+ -1 size))
+                (posp size))
+           (equal (bvchop size x)
+                  (bvcat 1 free (+ -1 size) x))))
