@@ -19,7 +19,6 @@
 (include-book "../sparse/rule-lists")
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
-(include-book "filter-and-combine-symbol-alists")
 (include-book "lift-r1cs-common")
 (include-book "kestrel/axe/def-simplified" :dir :system)
 (include-book "kestrel/axe/interpreted-function-alists" :dir :system) ; for make-interpreted-function-alist
@@ -27,6 +26,7 @@
 (include-book "kestrel/prime-fields/rules2" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 
+;; Check that all the rules we'll use for lifting have been brought in above:
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
 (defun fep-assumptions-for-vars-aux (vars prime acc)
