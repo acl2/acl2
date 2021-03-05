@@ -210,6 +210,7 @@ expect or preserve @(see fast-alists)."
     (?*        4vec-?*             (test then else)    "if-then-else (for statements)")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")
     (bit?!     4vec-bit?!          (test then else)    "bitwise if-then-else, only chooses then[i] when test[i]===1")
+    (?!        4vec-?!             (test then else)    "procedural if-then-else, only chooses then when test has a definite 1 bit")
     (partsel   4vec-part-select    (lsb width in)      "part select")
     (partinst  4vec-part-install   (lsb width in val)  "part install")))
 
@@ -402,6 +403,15 @@ svex-eval).</p>"
                        (case x.fn
                          (? (4vec-? test then else))
                          (?* (4vec-?* test then else)))))
+                    (?!
+                     (b* (((unless (eql (len x.args) 3))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((4vec test))
+                          (testvec (logand test.upper test.lower))
+                          ((when (eql testvec 0))
+                           (svex-eval (third x.args) env)))
+                       (svex-eval (second x.args) env)))
                     (bit?
                      (b* (((unless (eql (len x.args) 3))
                            (svex-apply x.fn (svexlist-eval x.args env)))
@@ -520,7 +530,7 @@ svex-eval).</p>"
 
   (verify-guards svex-eval
     :hints((and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth)
+                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth 4vec-?!)
                                   (svex-eval))
                   :expand ((svexlist-eval (svex-call->args x) env)
                            (svexlist-eval (cdr (svex-call->args x)) env)

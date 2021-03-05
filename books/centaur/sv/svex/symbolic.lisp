@@ -303,6 +303,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
     (?*        a3vec-?*             ((3v test) (3vp then) (3vp else)) "if-then-else")
     (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")
+    (?!        a4vec-?!             (test      them else)             "procedural if-then-else")
     (bit?!     a4vec-bit?!          ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
 
 #||
