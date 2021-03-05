@@ -4347,11 +4347,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
          (e/d
           (elab-mod$a-add-inst elab-mod$a-ninsts len)
           ((:congruence
-            cons-elab-modinst$c-equiv-congruence-on-x-under-elab-modinst-list-equiv)
-           (:rewrite elab-modinst-fix-under-elab-modinst$c-equiv)
-           (:congruence
-            append-elab-modinst-list-equiv-congruence-on-y-under-elab-modinst-list-equiv)
-           (:rewrite cons-of-elab-modinst-fix-x-under-elab-modinst-list-equiv)))))
+            elab-modinst-list-equiv-implies-elab-modinst-list-equiv-append-2)))))
        :rule-classes :linear))
 
     (local (defthm moddb-modinst-order-ok-of-add-inst-for-existing

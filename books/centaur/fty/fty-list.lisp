@@ -263,12 +263,21 @@
        (foo-fix-of-cons   (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS") x.fix))
        (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
        (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix))
-       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix)
-                                                            "-OF-REPEAT") x.fix))
-       (nth-of-foo-fix    (intern-in-package-of-symbol (cat "NTH-OF-"
-                                                            (symbol-name x.fix)) x.fix))
+       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-REPEAT")
+                                                       x.fix))
+       (nth-of-foo-fix    (intern-in-package-of-symbol (cat "NTH-OF-" (symbol-name x.fix))
+                                                       x.fix))
        (list-equiv-refines-foo-equiv
-        (intern-in-package-of-symbol (cat "LIST-EQUIV-REFINES-" (symbol-name x.equiv)) x.equiv)))
+        (intern-in-package-of-symbol (cat "LIST-EQUIV-REFINES-" (symbol-name x.equiv))
+                                                                 x.equiv))
+       (foo-equiv-implies-foo-equiv-append-1
+        (intern-in-package-of-symbol
+         (cat (symbol-name x.equiv) "-IMPLIES-" (symbol-name x.equiv) "-APPEND-1")
+         x.equiv))
+       (foo-equiv-implies-foo-equiv-append-2
+        (intern-in-package-of-symbol
+         (cat (symbol-name x.equiv) "-IMPLIES-" (symbol-name x.equiv) "-APPEND-2")
+         x.equiv)))
 
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
         :pkg ,x.equiv
@@ -386,14 +395,19 @@
                             (,x.fix x) (,x.fix y))))
                  :rule-classes :refinement)))
 
-      ;; I'm not sure if the true-listp stipulation is necessary. The other one is.
-      ,@(and x.true-listp (not x.non-emptyp)
-             `((deffixcong ,x.equiv ,x.equiv (append x y) x
-                 :pkg ,x.equiv
+      ,@(and (not x.non-emptyp)
+             `((defthm ,foo-equiv-implies-foo-equiv-append-1
+                 (implies (,x.equiv x x-equiv)
+                          (,x.equiv (append x y)
+                                    (append x-equiv y)))
+                 :rule-classes (:congruence)
                  :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
                           :induct (append x y))))
-               (deffixcong ,x.equiv ,x.equiv (append x y) y
-                 :pkg ,x.equiv
+               (defthm ,foo-equiv-implies-foo-equiv-append-2
+                 (implies (,x.equiv y y-equiv)
+                          (,x.equiv (append x y)
+                                    (append x y-equiv)))
+                 :rule-classes (:congruence)
                  :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
                           :induct (append x y)))))))))
 

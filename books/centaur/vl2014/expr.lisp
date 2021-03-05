@@ -1810,8 +1810,6 @@ fairly easily solve the HIDEXPR problem.</p>"
     :hints(("Goal" :in-theory (enable acl2::take))))
 
   (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
-  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 1)
-  (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 2)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
     :hints(("Goal" :in-theory (enable acl2::take))))
