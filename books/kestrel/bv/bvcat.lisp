@@ -334,6 +334,13 @@
                                               unsigned-byte-p-of-bvcat-gen2
                                               ;logapp-recollect-from-shift
                                               )))))
+(defthm bvcat-upper-bound-linear
+  (implies (and (natp lowsize)
+                (natp highsize))
+           (< (bvcat highsize highval lowsize lowval) (expt 2 (+ highsize lowsize))))
+  :rule-classes (:linear :rewrite)
+  :hints (("Goal" :use (:instance bvcat-numeric-bound2
+                                  (k (expt 2 (+ highsize lowsize)))))))
 
 ;was disabled (why?)
 (defthm bvcat-of-0

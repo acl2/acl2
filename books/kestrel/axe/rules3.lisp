@@ -15426,10 +15426,6 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p
                                      expt-of-+))))
 
-
-
-
-
 (defthm bvlt-of-bitxor-of-1-same
   (equal (bvlt 1 (bitxor 1 x) x)
          (equal 1 (getbit 0 x)))
@@ -15441,12 +15437,6 @@
          (equal 0 (getbit 0 x)))
   :hints (("Goal" :in-theory (enable ;bitxor
                               ))))
-
-(defthm bvcat-upper-bound-linear
-  (implies (and (natp lowsize)
-                (natp highsize))
-           (< (bvcat highsize highval lowsize lowval) (expt 2 (+ highsize lowsize))))
-  :rule-classes (:linear :rewrite))
 
 (defthm <-of-shift-of-slice-and-same
   (implies (and ;(natp k)
