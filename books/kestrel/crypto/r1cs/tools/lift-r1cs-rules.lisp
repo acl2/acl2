@@ -6,6 +6,7 @@
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe (todo: separate out the axe rules)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
+(include-book "kestrel/prime-fields/bv-rules" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
@@ -475,10 +476,6 @@
 
 (defthm bitp-of-bitxor
   (bitp (acl2::bitxor x y)))
-
-(defthm fep-of-bitxor
-  (implies (<= 2 p)
-           (fep (acl2::bitxor x y) p)))
 
 (local (in-theory (disable pfield::fep-holds
                            pfield::mod-when-fep)))
