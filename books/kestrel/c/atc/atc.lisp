@@ -519,11 +519,15 @@
      the C output type of the function,
      the name of the locally generated theorem that asserts
      that the function does not return an error,
+     the name of the locally generated theorem that asserts
+     that the execution of the function (via @(tsee exec-fun))
+     with a variable limit is functionally correct,
      and a limit that suffices for @(tsee exec-fun)
      to execute the function completely on any arguments.
      The latter is calculated when C code is generated for the function."))
   ((type typep)
    (not-error-thm symbolp)
+   (exec-var-limit-correct-thm symbolp)
    (limit natp))
   :pred atc-fn-infop)
 
@@ -567,6 +571,27 @@
   (cond ((endp prec-fns) nil)
         (t (cons (atc-fn-info->not-error-thm (cdr (car prec-fns)))
                  (atc-symbol-fninfo-alist-to-not-error-thms (cdr prec-fns))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms
+  ((prec-fns atc-symbol-fninfo-alistp))
+  :returns (thms symbol-listp :hyp :guard)
+  :short "Project all the execution correctness theorems
+          out of a function information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof of each of these theorems for a function @('fn')
+     makes use of the same theorems for
+     the preceding functions in @('prec-fns').
+     This function serves to collect those theorem names from the alist.")
+   (xdoc::p
+    "The alist has no duplicate keys.
+     So this function is correct."))
+  (cond ((endp prec-fns) nil)
+        (t (cons (atc-fn-info->exec-var-limit-correct-thm (cdr (car prec-fns)))
+                 (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms (cdr prec-fns))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
