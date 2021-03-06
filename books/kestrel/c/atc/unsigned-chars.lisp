@@ -17,7 +17,7 @@
 
 (defxdoc+ atc-unsigned-chars
   :parents (atc-integers)
-  :short "A model of C @('unsigned char')s."
+  :short "A model of C @('unsigned char')s for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -44,3 +44,12 @@
   :tag :uchar
   :layout :list
   :pred ucharp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist uchar-list
+  :short "Fixtype of lists of C @('unsigned char') values."
+  :elt-type uchar
+  :true-listp t
+  :elementp-of-nil nil
+  :pred uchar-listp)
