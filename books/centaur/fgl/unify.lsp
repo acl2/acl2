@@ -102,7 +102,7 @@
                     (cons k (fgl-object-eval (cdr look) env)))))
       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
-    
+
 
     (local (defthm alistp-when-fgl-object-bindings-p-rw
              (implies (fgl-object-bindings-p x)
@@ -113,7 +113,7 @@
              (implies (symbol-alistp x)
                       (alistp x))
              :hints(("Goal" :in-theory (enable symbol-alistp)))))
-    
+
     (defthm alist-keys-of-fgl-object-bindings-eval
       (equal (alist-keys (fgl-object-bindings-eval x env))
              (alist-keys (fgl-object-bindings-fix x)))))
@@ -144,7 +144,7 @@
        :quote (if (hons-equal pat.val x)
                   (mv t alist)
                 (mv nil nil))
-       :fncall 
+       :fncall
        (b* ((fn pat.fn)
             ((when (eq fn 'concrete))
              (b* (((unless (int= (len pat.args) 1)) (mv nil nil)))
@@ -198,10 +198,6 @@
                               fgl-object-bindings-bfrlist
                               member-equal
                               acl2::consp-of-car-when-alistp)))
-
-   (ifndef "DEFS_ONLY"
-     (local (in-theory (disable acl2::consp-of-node-list-fix-x-normalize-const))) 
-     :endif)
 
    (verify-guards fgl-unify-concrete)
 ))
@@ -361,10 +357,7 @@
       (local (defthm and*-rem-second-boolean
                (implies (booleanp a)
                         (equal (and* a t) a))
-               :hints(("Goal" :in-theory (enable and*)))))
-      (ifndef "DEFS_ONLY"
-        (local (in-theory (disable acl2::consp-of-node-list-fix-x-normalize-const)))
-        :endif))
+               :hints(("Goal" :in-theory (enable and*))))))
      (define fgl-unify-term/gobj ((pat pseudo-termp)
                                   (x fgl-object-p)
                                    (alist fgl-object-bindings-p)
@@ -526,7 +519,7 @@
                         ((unless ok) (mv nil nil)))
                      (fgl-unify-term/gobj val-pat val-obj alist))
            :otherwise (mv nil nil))))
-     
+
 
      (define fgl-unify-term/gobj-fn/args ((pat-fn pseudo-fnsym-p)
                                           (pat-args pseudo-term-listp)
@@ -614,7 +607,7 @@
        :guard (and (bfr-listp (fgl-object-bfrlist x-test))
                    (bfr-listp (fgl-object-bfrlist x-then))
                    (bfr-listp (fgl-object-bfrlist x-else)))
-              
+
        (b* (((mv ok alist) (fgl-unify-term/gobj pat-test x-test alist))
             ((unless ok) (mv nil nil))
             ((mv ok alist) (fgl-unify-term/gobj pat-then x-then alist))
@@ -677,14 +670,14 @@
               (implies (not (member b x))
                        (not (member b (scdr x))))
               :hints(("Goal" :in-theory (enable scdr)))))
-     
+
 
      (fty::deffixequiv-mutual fgl-unify-term/gobj)
 
      (local (in-theory (enable bfr-listp-when-not-member-witness)))
 
      (std::def-retgen-fnset fgl-unify-fnset (fgl-unify-concrete fgl-unify-term/gobj))
-     
+
      (std::defretgen bfr-listp-of-<fn>
        :formal-hyps
        (((fgl-object-bindings-p alist)    (bfr-listp (fgl-object-bindings-bfrlist alist)))
@@ -701,10 +694,10 @@
                           :in-theory (enable (:i <fn>))
                           :expand ((:free (x) <call>)))))))
        :functions fgl-unify-fnset)
-          
+
 
      (ifndef "DEFS_ONLY"
-       
+
 
        (std::defretgen <fn>-alist-lookup-when-present
          :rules
@@ -743,7 +736,7 @@
                                 (union-eq (termlist-vars (cdr x))
                                           (term-vars (car x)))))
                 :hints (("goal" :expand ((termlist-vars x))))))
-       
+
        ;; (local
        ;;  (defthmd equal-of-len
        ;;    (implies (syntaxp (quotep n))
@@ -755,8 +748,8 @@
        ;;    :hints(("Goal" :in-theory (enable len)))))
        (local (in-theory (enable equal-of-len)))
 
-       
-       
+
+
        (std::defretgen all-keys-bound-of-<fn>
          :rules
          ((t (:add-hyp flag)
@@ -885,7 +878,7 @@
                          :expand ((fgl-object-alist-eval x env)
                                   (fgl-object-alist-fix x))
                          :induct (len x)))))
-       
+
        (local (in-theory (disable kwote-lst)))
 
        (local (defthmd fgl-object-alist-eval-in-terms-of-fix
@@ -902,7 +895,7 @@
                          :induct (len x)))
                 :rule-classes :definition))
 
-       
+
        (std::defretgen <fn>-correct
          :rules
          ((t (:add-hyp (and flag
@@ -968,7 +961,7 @@
                      :expand ((:free (x) <call>)
                               (:free (a b)
                                (fgl-object-bindings-eval (cons a b) env)))))))
-                                  
+
           ((:fnname fgl-unify-term/gobj)
            (:add-keyword
             :hints ('(:expand (<call>

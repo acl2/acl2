@@ -58,8 +58,6 @@
 
 
 ;; NOTE: All these rules should be superfluous, but they might significantly speed up proofs.
-(local (in-theory (disable INTERP-ST-GET-OF-INTERP-ST-FIELD-FIX-KEY-NORMALIZE-CONST)))
-
 (local (defthm interp-st-bfrs-ok-of-update-reclimit
          (implies (interp-st-bfrs-ok interp-st)
                   (interp-st-bfrs-ok (update-interp-st->reclimit reclimit interp-st)))))
@@ -2481,16 +2479,6 @@
     (defret return-values-correct-of-<fn>
       (equal (list . <values>)
              <call>))))
-
-
-(local (in-theory (disable fgl-objectlist-find-ite-of-fgl-objectlist-fix-x-normalize-const
-                           stack$a-push-scratch-of-scratchobj-fix-obj-normalize-const
-                           stack$a-push-scratch-of-major-stack-fix-x-normalize-const
-                           scratchobj-fgl-objlist-of-fgl-objectlist-fix-val-normalize-const
-                           g-ite->test$inline-of-fgl-object-fix-x-normalize-const
-                           fgl-objectlist-split-of-fgl-objectlist-fix-x-normalize-const
-                           fgl-objectlist-split-of-fgl-object-fix-test-normalize-const)))
-
 
 (defines fgl-minor-frame-subterm-count
   :ruler-extenders :all

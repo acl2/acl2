@@ -4936,8 +4936,6 @@
       (:rewrite subsetp-when-atom-left)
       (:rewrite append-atom-under-list-equiv)
       (:rewrite lofat-place-file-correctness-lemma-5)
-      (:rewrite m1-file-of-m1-file-contents-fix-contents-normalize-const)
-      (:rewrite m1-file-of-d-e-fix-d-e-normalize-const)
       (:rewrite rationalp-implies-acl2-numberp)
       (:rewrite consp-of-remove-assoc-1)
       (:rewrite member-intersectp-of-set-difference$-1
@@ -4965,7 +4963,6 @@
       (:rewrite m1-regular-file-p-correctness-1)
       (:type-prescription m1-file-fix$inline)
       (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
-      (:rewrite m1-file->contents$inline-of-m1-file-fix-x-normalize-const)
       (:type-prescription fat32-filename-fix)
       (:rewrite m1-file-p-of-m1-file-fix)
       (:rewrite natp-of-place-contents)
