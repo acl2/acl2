@@ -2020,3 +2020,10 @@
          (cond ((consp y) (last y))
                ((consp x) (cons (car (last x)) y))
                (t y))))
+
+;; This only addresses the linear part, because the integerp part is covered by
+;; integerp-of-nth-when-integer-listp.
+(defthm natp-of-nth-when-nat-listp
+  (implies (nat-listp l) (<= 0 (nth n l)))
+  :hints (("goal" :in-theory (enable nth nat-listp)))
+  :rule-classes :linear)

@@ -1033,66 +1033,69 @@
   :hints (("goal" :in-theory (enable hifat-opendir)))
   :rule-classes :type-prescription)
 
-(encapsulate
-  ()
-
-  (local
-   (defthm
-     lemma
-     (implies
-      (hifat-equiv fs1 fs2)
+;; It really does seem like these expand hints are all needed.
+(defcong
+  hifat-equiv equal
+  (hifat-opendir fs path dir-stream-table)
+  1
+  :hints
+  (("goal"
+    :in-theory (enable hifat-opendir)
+    :expand
+    ((:with
+      fat32-filename-list-fix-when-fat32-filename-list-p
+      (fat32-filename-list-fix
+       (<<-sort
+        (strip-cars
+         (m1-file->contents
+          (mv-nth 0 (hifat-find-file fs-equiv path)))))))
+     (:with
+      (:rewrite
+       fat32-filename-list-p-of-<<-sort-when-fat32-filename-list-p)
+      (fat32-filename-list-p
+       (<<-sort
+        (strip-cars
+         (m1-file->contents
+          (mv-nth 0 (hifat-find-file fs-equiv path)))))))
+     (:with
+      (:rewrite
+       fat32-filename-list-p-of-strip-cars-when-m1-file-alist-p)
+      (fat32-filename-list-p
+       (strip-cars
+        (m1-file->contents
+         (mv-nth 0 (hifat-find-file fs-equiv path))))))
+     (:with
+      (:rewrite m1-file-alist-p-of-m1-file->contents)
+      (m1-file-alist-p
+       (m1-file->contents
+        (mv-nth 0 (hifat-find-file fs-equiv path)))))
+     (:with
+      (:rewrite hifat-opendir-correctness-lemma-1)
       (equal
-       (hifat-opendir fs1 path dir-stream-table)
-       (hifat-opendir fs2 path dir-stream-table)))
-     :hints (("goal" :in-theory (enable hifat-opendir)
-              :expand
-              ((:with
-                fat32-filename-list-fix-when-fat32-filename-list-p
-                (fat32-filename-list-fix
-                 (<<-sort
-                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
-                                                                            path)))))))
-               (:with
-                (:rewrite fat32-filename-list-p-of-<<-sort-when-fat32-filename-list-p)
-                (fat32-filename-list-p
-                 (<<-sort
-                  (strip-cars
-                   (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))))
-               (:with
-                (:rewrite fat32-filename-list-p-of-strip-cars-when-m1-file-alist-p)
-                (fat32-filename-list-p
-                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
-                                                                           path))))))
-               (:with
-                (:rewrite m1-file-alist-p-of-m1-file->contents)
-                (m1-file-alist-p
-                 (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))
-               (:with
-                (:rewrite hifat-opendir-correctness-lemma-1)
-                (equal
-                 (<<-sort
-                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2 path)))))
-                 (<<-sort
-                  (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs1
-                                                                            path)))))))
-               (:with
-                (:rewrite no-duplicatesp-of-strip-cars-when-hifat-no-dups-p)
-                (no-duplicatesp-equal
-                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
-                                                                           path))))))
-               (:with
-                hifat-opendir-correctness-lemma-2
-                (set-equiv
-                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs1 path))))
-                 (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs2
-                                                                           path)))))))))
-     :rule-classes :congruence))
-
-  ;; Move later.
-  (defcong
-    hifat-equiv equal
-    (hifat-opendir fs path dir-stream-table)
-    1))
+       (<<-sort
+        (strip-cars
+         (m1-file->contents
+          (mv-nth 0 (hifat-find-file fs-equiv path)))))
+       (<<-sort
+        (strip-cars
+         (m1-file->contents
+          (mv-nth 0 (hifat-find-file fs path)))))))
+     (:with
+      (:rewrite
+       no-duplicatesp-of-strip-cars-when-hifat-no-dups-p)
+      (no-duplicatesp-equal
+       (strip-cars
+        (m1-file->contents
+         (mv-nth 0 (hifat-find-file fs-equiv path))))))
+     (:with
+      hifat-opendir-correctness-lemma-2
+      (set-equiv
+       (strip-cars (m1-file->contents
+                    (mv-nth 0 (hifat-find-file fs path))))
+       (strip-cars
+        (m1-file->contents
+         (mv-nth 0
+                 (hifat-find-file fs-equiv path))))))))))
 
 (assert-event
  (b*

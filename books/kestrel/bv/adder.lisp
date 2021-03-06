@@ -11,9 +11,15 @@
 
 (in-package "ACL2")
 
-(include-book "rules")
-;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(include-book "bitxor")
+(include-book "bitor")
+(include-book "bitand")
+(include-book "bvcat2")
+(include-book "unsigned-byte-p")
+(include-book "bvplus")
+(include-book "rules") ; for GETBIT-OF-PLUS
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -21,8 +27,16 @@
 ;; (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "arith")) ;for PLUS-OF-EXPT-AND-MINUS-OF-EXPT-ONE-LESS
 
+(local (in-theory (disable BVCAT-RECOMBINE))) ;todo
+
 (local (in-theory (disable DEFAULT-+-2 DEFAULT-*-2
                            expt-hack)))
+
+;;move and gen
+(defthm equal-of-expt-same
+  (equal (equal (expt 2 n) 2)
+         (equal 1 n))
+  :hints (("Goal" :in-theory (enable expt zip expt-of-+))))
 
 (defun full-adder-sum (bit1 bit2 carryin)
   (bitxor bit1 (bitxor bit2 carryin)))

@@ -80,6 +80,7 @@
 (include-book "sbvdivdown-rules")
 (include-book "sbvrem")
 (include-book "sbvrem-rules")
+(include-book "sbvmoddown")
 
 ;; Sign extension and masks
 (include-book "repeatbit")
