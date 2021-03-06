@@ -1792,7 +1792,7 @@
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (equalities
-        `(b* (((mv result compst1) (exec-fun (ident ,(symbol-name fn))
+        `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
                                              (list ,@formals)
                                              compst
                                              ,fenv-const
