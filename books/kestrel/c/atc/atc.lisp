@@ -1875,9 +1875,9 @@
        (hints `(("Goal"
                  :in-theory '((:executable-counterpart ident)
                               (:executable-counterpart natp)
-                              (:executable-counterpart tau-system))
-                 :use (,fn-exec-const-limit-correct-thm
-                       ,fn-returns-value-thm
+                              (:executable-counterpart tau-system)
+                              ,fn-exec-const-limit-correct-thm)
+                 :use (,fn-returns-value-thm
                        (:instance errorp-of-error (info :limit))
                        (:instance exec-fun-limit
                         (limit ,limit)
