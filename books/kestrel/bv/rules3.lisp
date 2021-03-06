@@ -2478,7 +2478,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                             )))))
 
-(defthm bvcat-of-+-low
+(defthmd bvcat-of-+-low
   (implies (and (integerp x)
                 (integerp y)
                 (natp highsize)
