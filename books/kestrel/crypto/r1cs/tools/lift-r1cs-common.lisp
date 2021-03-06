@@ -5,6 +5,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
+(include-book "filter-and-combine-symbol-alists")
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -38,7 +39,6 @@
            (equal (consp (nth n alist))
                   (< n (len alist))))
   :hints (("Goal" :in-theory (enable nth))))
-
 
 ;; todo: arrange to have defmergesort use symbol-alistp instead of generating ACL2::ALL-CONSP-AND-SYMBOLP-CAR
 (defthm all-consp-and-symbolp-car-when-symbol-alistp

@@ -10,6 +10,8 @@
 
 (in-package "R1CS")
 
+;; NOTE: This tool is deprecated.  Use lift-r1cs-new instead.
+
 ;; This is for R1CSes in sparse form
 
 (include-book "lift-r1cs-rules")
@@ -17,7 +19,6 @@
 (include-book "../sparse/rule-lists")
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
-(include-book "filter-and-combine-symbol-alists")
 (include-book "lift-r1cs-common")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system) ; brings in skip-proofs
