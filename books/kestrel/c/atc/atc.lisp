@@ -518,6 +518,8 @@
     "This consists of
      the C output type of the function,
      the name of the locally generated theorem that asserts
+     that the function returns a C value,
+     the name of the locally generated theorem that asserts
      that the function does not return an error,
      the name of the locally generated theorem that asserts
      that the execution of the function (via @(tsee exec-fun))
@@ -526,6 +528,7 @@
      to execute the function completely on any arguments.
      The latter is calculated when C code is generated for the function."))
   ((type typep)
+   (returns-value-thm symbolp)
    (not-error-thm symbolp)
    (exec-var-limit-correct-thm symbolp)
    (limit natp))
@@ -550,6 +553,28 @@
     (implies (and (atc-symbol-fninfo-alistp x)
                   (assoc-equal k x))
              (atc-fn-infop (cdr (assoc-equal k x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-returns-value-thms
+  ((prec-fns atc-symbol-fninfo-alistp))
+  :returns (thms symbol-listp :hyp :guard)
+  :short "Project all the returns-value theorems
+          out of a function information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof of each of these theorems for a function @('fn')
+     makes use of the same theorems for
+     the preceding functions in @('prec-fns').
+     This function serves to collect those theorem names from the alist.")
+   (xdoc::p
+    "The alist has no duplicate keys.
+     So this function is correct."))
+  (cond ((endp prec-fns) nil)
+        (t (cons (atc-fn-info->returns-value-thm (cdr (car prec-fns)))
+                 (atc-symbol-fninfo-alist-to-returns-value-thms
+                  (cdr prec-fns))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,7 +616,8 @@
      So this function is correct."))
   (cond ((endp prec-fns) nil)
         (t (cons (atc-fn-info->exec-var-limit-correct-thm (cdr (car prec-fns)))
-                 (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms (cdr prec-fns))))))
+                 (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms
+                  (cdr prec-fns))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1604,6 +1630,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-returns-value-thm ((fn symbolp)
+                                      (prec-fns atc-symbol-fninfo-alistp)
+                                      (names-to-avoid symbol-listp)
+                                      (wrld plist-worldp))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the theorem saying that
+          @('fn') returns a C value under the guard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a local theorem for now.
+     It will be used in upcoming proof generation extensions.")
+   (xdoc::p
+    "The restrictions on the form of the functions that ATC translated to C
+     ensures that, under the guard, these functions always return C values.
+     This is fairly easy to see,
+     thinking of the different allowed forms of these functions' bodies:")
+   (xdoc::ul
+    (xdoc::li
+     "A formal parameter is constrained to be a value by the guard.")
+    (xdoc::li
+     "Calls of @(tsee sint-const), @(tsee sint-add), etc.
+      are known to return values.")
+    (xdoc::li
+     "A @(tsee let) variable is equal to a term that,
+      recursively, always returns a value.")
+    (xdoc::li
+     "A call of a preceding function returns a value,
+      as proved by the same theorems for the preceding functions.")
+    (xdoc::li
+     "An @(tsee if) reduces to the branches."))
+   (xdoc::p
+    "This suggests a coarse but adequate proof strategy:
+     We use the theory consisting of
+     the definition of @('fn'),
+     the return type theorems of @(tsee sint-const) and related functions,
+     and the theorems about the preceding functions;
+     we also add a @(':use') hint fot the guard theorem of @('fn')."))
+  (b* ((name (add-suffix fn "-RETURNS-VALUE"))
+       ((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (formals (acl2::formals+ fn wrld))
+       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (formula `(implies ,guard (valuep (,fn ,@formals))))
+       (theory `(,fn
+                 ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
+                 sintp-of-sint-const
+                 sintp-of-sint01
+                 sintp-of-sint-plus
+                 sintp-of-sint-minus
+                 sintp-of-sint-bitnot
+                 sintp-of-sint-lognot
+                 sintp-of-sint-add
+                 sintp-of-sint-sub
+                 sintp-of-sint-mul
+                 sintp-of-sint-div
+                 sintp-of-sint-rem
+                 sintp-of-sint-shl-sint
+                 sintp-of-sint-shr-sint
+                 sintp-of-sint-lt
+                 sintp-of-sint-gt
+                 sintp-of-sint-le
+                 sintp-of-sint-ge
+                 sintp-of-sint-eq
+                 sintp-of-sint-ne
+                 sintp-of-sint-bitand
+                 sintp-of-sint-bitxor
+                 sintp-of-sint-bitior
+                 sintp-of-sint-logand
+                 sintp-of-sint-logor
+                 valuep-when-sintp))
+       (hints `(("Goal"
+                 :in-theory ',theory
+                 :use (:guard-theorem ,fn))))
+       ((mv event &) (acl2::evmac-generate-defthm name
+                                                  :formula formula
+                                                  :hints hints
+                                                  :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-not-error-thm ((fn symbolp)
                                   (prec-fns atc-symbol-fninfo-alistp)
                                   (names-to-avoid symbol-listp)
@@ -1739,9 +1850,28 @@
      The proof is carried out in the theory that consists of
      exactly the general rules listed there,
      plus the definition of @('fn') (clearly),
-     plus the definitions of all the functions that precede @('fn').
-     This is so that we can unfold any call of those preceding functions.
-     Furthermore, we generate a @(':use') hint
+     plus the theorems that the functions callable by @('fn') return values,
+     plust the type prescriptions of the functions callable by @('fn'),
+     plus the correctness theorems of the functions callable by @('fn').
+     The latter are the correctness theorems
+     with @(tsee exec-fun) and a variable limit:
+     during symbolic execution, the initial constant limit for @('fn')
+     is progressively decremented,
+     so by the time we get to functions called by @('fn')
+     it will have different values from the initial one;
+     thus, we need to match that to the variable @('limit')
+     in the correctness theorems for the callees,
+     which are used as rewrite rules to turn calls of @(tsee exec-fun)
+     into calls of the corresponding ACL2 functions.
+     These will thus match the calls in the definition of @('fn'),
+     and the called functions can stay disabled in the proof.
+     The theorems about the callable functions returning values
+     are needed to exclude, in the proof, the case that
+     these functions return errors.
+     The type prescriptions of the callable functions
+     are needed to discharge some proof subgoal that arise.")
+   (xdoc::p
+    "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'):
      this is critical to ensure that the symbolic execution of the C operators
      does not split on the error cases:
@@ -1754,6 +1884,11 @@
     "We also generate a hint to expand all lambdas (i.e. beta reduction).
      We found at least one instance in which ACL2's heuristics
      were preventing a lambda expansion that was preventing a proof.")
+   (xdoc::p
+    "Because @(tsee exec-fun) is disabled as explained above,
+     but we still need to open its top-level call for @('fn'),
+     we generate a hint to expand calls of @(tsee exec-fun) on @('fn')
+     (more precisely, on the name of the C function generated from @('fn')).")
    (xdoc::p
     "This theorem is local for now.
      But we may want to export it at some point.")
@@ -1776,11 +1911,24 @@
                                              ,limit)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@formals)))))
+       (returns-value-thms
+        (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
+       (exec-var-limit-correct-thms
+        (atc-symbol-fninfo-alist-to-exec-var-limit-correct-thms prec-fns))
+       (type-prescriptions
+        (loop$ for callable in (strip-cars prec-fns)
+               collect `(:t ,callable)))
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
-                                    ',(cons fn (strip-cars prec-fns)))
+                                    '(,fn)
+                                    ',type-prescriptions
+                                    ',returns-value-thms
+                                    ',exec-var-limit-correct-thms)
                  :use (:guard-theorem ,fn)
-                 :expand :lambdas)))
+                 :expand (:lambdas
+                          (:free (args compst fenv limit)
+                           (exec-fun '(:ident (name . ,(symbol-name fn)))
+                                     args compst fenv limit))))))
        ((mv local-event &)
         (acl2::evmac-generate-defthm
          name
@@ -1962,7 +2110,9 @@
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
+                                 (fn-returns-value-thm symbolp)
                                  (fn-not-error-thm symbolp)
+                                 (fn-exec-var-limit-correct-thm symbolp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
@@ -1970,6 +2120,8 @@
   :short "Generate the theorems associated to the specified ACL2 function."
   (b* (((when (not proofs)) (acl2::value (list nil nil names-to-avoid)))
        (wrld (w state))
+       ((mv fn-returns-value-event fn-returns-value-thm names-to-avoid)
+        (atc-gen-fn-returns-value-thm fn prec-fns names-to-avoid wrld))
        ((mv fn-not-error-event fn-not-error-thm names-to-avoid)
         (atc-gen-fn-not-error-thm fn prec-fns names-to-avoid wrld))
        ((mv fn-exec-const-limit-correct-event
@@ -1997,6 +2149,7 @@
                          ',fn-run-correct-thm))))
        (progress-end? (and print-info/all `((cw-event " done.~%"))))
        (local-events (append progress-start?
+                             (list fn-returns-value-event)
                              (list fn-not-error-event)
                              (list fn-exec-const-limit-correct-event)
                              (list fn-exec-var-limit-correct-event)
@@ -2005,7 +2158,9 @@
        (exported-events (list fn-run-correct-exported-event)))
     (acl2::value (list local-events
                        exported-events
+                       fn-returns-value-thm
                        fn-not-error-thm
+                       fn-exec-var-limit-correct-thm
                        names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2074,12 +2229,20 @@
                           :params params
                           :body (stmt-compound items))))
        (limit (+ 1 1 limit))
-       ((er (list local-events exported-events fn-not-error-thm names-to-avoid))
+       ((er (list local-events
+                  exported-events
+                  fn-returns-value-thm
+                  fn-not-error-thm
+                  fn-exec-var-limit-correct-thm
+                  names-to-avoid))
         (atc-gen-fn-thms fn prec-fns prog-const proofs print-info/all fenv-const
                          limit names-to-avoid ctx state))
-       (info (make-atc-fn-info :type type
-                               :not-error-thm fn-not-error-thm
-                               :limit limit)))
+       (info (make-atc-fn-info
+              :type type
+              :returns-value-thm fn-returns-value-thm
+              :not-error-thm fn-not-error-thm
+              :exec-var-limit-correct-thm fn-exec-var-limit-correct-thm
+              :limit limit)))
     (acl2::value (list ext
                        local-events
                        exported-events
