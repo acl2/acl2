@@ -151,7 +151,7 @@
    "ATC translates a subset of ACL2 to C.
     The ACL2 subset is designed to be close to C,
     i.e. to be essentially ``C written in ACL2'',
-    so that it is easy to translate to C.
+    so that it is relatively easy to translate to C.
     There is a direct translation to the C constructs
     from their representation in ACL2.")
 
