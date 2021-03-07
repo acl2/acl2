@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "integers")
 (include-book "function-environments")
+(include-book "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -902,6 +903,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-cast ((tyname tynamep) (arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support conversions
+     between @('int')s and @('unsigned char')s."))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       (type (type-name-to-type tyname)))
+    (cond ((and (type-case type :uchar) (sintp arg))
+           (uchar-from-sint arg))
+          ((and (type-case type :sint) (ucharp arg))
+           (sint-from-uchar arg))
+          (t (error (list :cast-not-supported :from arg :to :uchar)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -944,7 +965,7 @@
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst)))
               (exec-unary e.op arg))
-     :cast (error (list :unsupported-expr e))
+     :cast (exec-cast e.type (exec-expr-pure e.arg compst))
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :non-pure-expr e)))
                   (arg1 (exec-expr-pure e.arg1 compst))
