@@ -432,9 +432,20 @@
     "More precisely, we check whether an expression is pure and well-formed.
      If all the checks are satisfied, we return the type of the expression.")
    (xdoc::p
-    "For now we only support the @('int') type,
-     so everything has to be @('int').
-     In particular, the operands of the unary, binary, and ternary operators."))
+    "An identifier must be in the variable table.
+     It type is looked up there.")
+   (xdoc::p
+    "A cast is allowed between any of the C types
+     that we currently model in the abstract syntax,
+     which are all scalar.
+     The result has the type indicated in the cast.
+     See [C:6.5.4].")
+   (xdoc::p
+    "Since all the C types that we currently model are scalar,
+     we allow any type as the test of a conditional expression.
+     We require the two branches to have the same type for now,
+     which is more restrictive than [C:6.5.15/3],
+     but adequate to our current purposes."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -451,7 +462,7 @@
                  ((when (errorp arg-type))
                   (error (list :unary-error arg-type))))
               (check-unary e.op e.arg arg-type))
-     :cast (error (list :unsupported-cast e.type e.arg))
+     :cast (type-name-to-type e.type)
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
                   (arg1-type (check-expr-pure e.arg1 vartab))
@@ -470,13 +481,11 @@
                 (else-type (check-expr-pure e.else vartab))
                 ((when (errorp else-type))
                  (error (list :cond-else-error else-type)))
-                ((unless (and (equal test-type (type-sint))
-                              (equal then-type (type-sint))
-                              (equal else-type (type-sint))))
+                ((unless (equal then-type else-type))
                  (error (list :cond-mistype e.test e.then e.else
-                              :required (type-sint) (type-sint) (type-sint)
-                              :supplied test-type then-type else-type))))
-             (type-sint))))
+                              :required :same-then-else-types
+                              :supplied then-type else-type))))
+             then-type)))
   :measure (expr-count e)
   :verify-guards :after-returns
   :hooks (:fix))
