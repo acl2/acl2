@@ -10,6 +10,8 @@
 
 (in-package "R1CS")
 
+;; These rules call axe-syntaxp
+
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "../fe-listp")
@@ -17,6 +19,7 @@
 (include-book "axe-syntax-functions-r1cs")
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system)) ;for member-equal-of-cons
 
 ;; Restrict the search for VAR to the branch (namely, X) where we know it is.
 (defthm acl2::memberp-of-append-with-key-first-half-axe
@@ -49,14 +52,11 @@
 
 ;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10))
 
-(local (include-book "kestrel/lists-light/member-equal" :dir :system)) ;for member-equal-of-cons
-
 ;for acl2, not Axe
 (defthm pfield::fep-when-fe-listp-and-member-equal
   (implies (and (syntaxp (acl2::variablep x)) ;for now, we only generate the fe-listp assumptions for vars
                 (fe-listp free p)
                 (acl2::member-equal x free))
-
            (fep x p)))
 
 (acl2::add-known-boolean r1cs::fe-listp)

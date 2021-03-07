@@ -715,14 +715,6 @@
                   (bvcat highsize highval lowsize (bvif lowsize test a b))))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
-(defthmd bvcat-special-opener
-  (implies (and (not (equal 0 (getbit 0 x)))
-                (natp n))
-           (equal (bvcat 1 x n y)
-                  (+ (expt 2 n) (bvchop n y))))
-  :hints (("Goal" :in-theory (e/d (getbit bvcat logapp bvchop)
-                                  (bvchop-1-becomes-getbit slice-becomes-getbit bvcat-recombine)))))
-
 (local
  (defun induct-floor-and-sub1 (x n)
    (if (zp n)
@@ -1114,21 +1106,6 @@
                   (BVIF SIZE TEST (bvxor SIZE x y) z)))
   :HINTS
   (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
-
-(defthm bvcat-when-equal-of-getbit-0-low
-  (implies (and (equal (getbit 0 lowval) free)
-                (syntaxp (and (quotep free)
-                              (not (quotep lowval)))))
-           (equal (bvcat highsize highval 1 lowval)
-                  (bvcat highsize highval 1 free))))
-
-(defthm bvcat-when-equal-of-getbit-0-high
-  (implies (and (equal (getbit 0 highval) free)
-                (syntaxp (and (quotep free)
-                              (not (quotep highval)))))
-           (equal (bvcat 1 highval lowsize lowval)
-                  (bvcat 1 free lowsize lowval))))
-
 
 (in-theory (disable bvminus)) ;bozo?
 
@@ -2501,7 +2478,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                             )))))
 
-(defthm bvcat-of-+-low
+(defthmd bvcat-of-+-low
   (implies (and (integerp x)
                 (integerp y)
                 (natp highsize)

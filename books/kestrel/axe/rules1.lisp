@@ -18,7 +18,9 @@
 
 (include-book "list-rules")
 (include-book "kestrel/bv-lists/list-patterns" :dir :system) ;for negated-elems-listp
-(include-book "kestrel/bv/rules3" :dir :system) ; for bvcat-special-opener
+(include-book "kestrel/bv/unsigned-byte-p" :dir :system)
+(include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "kestrel/bv/rules" :dir :system)
 (include-book "kestrel/bv-lists/bvnth" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
@@ -28,13 +30,12 @@
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these..  could make a macro to copy a theorem and wrap work-hard around a hyp..
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
-(local (include-book "arithmetic/equalities" :dir :system))
-(local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
+(local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;todo
 (local (include-book "ihs/math-lemmas" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
-;(local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
@@ -45,7 +46,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
+
 
 ;expensive?
 ;fixme which do we prefer?  depends on priorities..
@@ -630,21 +631,19 @@
 
 ;does trim apply to repeatbit?
 
+;; (defthmd car-of-both-sides
+;;   (implies (and (equal x y)
+;;                 (equal (car x) w)
+;;                 (equal (car y) z))
+;;            (equal (equal w z)
+;;                   t)))
 
-
-(defthmd car-of-both-sides
-  (implies (and (equal x y)
-                (equal (car x) w)
-                (equal (car y) z))
-           (equal (equal w z)
-                  t)))
-
-(defthmd car-of-both-sides-alt
-  (implies (and (equal y x)
-                (equal (car x) w)
-                (equal (car y) z))
-           (equal (equal w z)
-                  t)))
+;; (defthmd car-of-both-sides-alt
+;;   (implies (and (equal y x)
+;;                 (equal (car x) w)
+;;                 (equal (car y) z))
+;;            (equal (equal w z)
+;;                   t)))
 
 ;newly disabled
 (defthmd gross-hack
@@ -830,7 +829,7 @@
                   (bv-array-read 1 (/ len 2) (bvchop (+ -2 (integer-length len)) y) (firstn (/ len 2) vals))))
   :hints (("Goal"
            :in-theory (e/d (expt-of-+ ;expt-move-hack
-                            bvplus-opener
+                            ;bvplus-opener
                             subrange
                             )
                            ( ;EQUAL-*-/-1
@@ -862,8 +861,10 @@
          (bitnot (getbit 0 (ifix index))))
 ;  :otf-flg t
   :hints (("Goal"
+           :expand (NTH (GETBIT 0 INDEX) '(1 0))
            :in-theory (e/d (bitnot bv-array-read ;LIST::NTH-OF-CONS
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+                                   )
                            ()))))
 
 (defthm array-reduction-when-all-same
@@ -1037,7 +1038,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 BV-ARRAY-WRITE)
 ;;                                   (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER)))))
 
-(local (in-theory (disable BVPLUS-RECOLLAPSE)))
+;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
 
 (DEFTHM ALL-UNSIGNED-BYTE-P-OF-BVCHOP-LIST-GEN2
@@ -1295,7 +1296,8 @@
 ;see <-LEMMA-FOR-KNOWN-OPERATORS-NON-DAG
 ;bozo gen
 (defthm bv-array-read-numeric-bound
-  (< (bv-array-read 8 len index data) 256))
+  (< (bv-array-read 8 len index data) 256)
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;bozo clean this up - drop the bvchops or the usb hyp
 ;bozo gen
@@ -1310,7 +1312,7 @@
            (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
-                                  (BVPLUS-RECOLLAPSE
+                                  (;BVPLUS-RECOLLAPSE
                                    unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
@@ -1620,7 +1622,8 @@
                   (bvif size1 test (bv-array-read size1 len index data) z)))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1)))))
+                                   ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
+                                   )))))
 
 (defthm bvif-of-bv-array-read-tighten-arg2
   (implies (and (< size1 size2)
@@ -1630,7 +1633,8 @@
                   (bvif size1 test z (bv-array-read size1 len index data))))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1)))))
+                                   ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
+                                   )))))
 
 (defthm bvchop-list-of-bvchop-list-tighten
  (implies (and (<= size1 size2)
@@ -1864,7 +1868,8 @@
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVPLUS-RECOLLAPSE)))))
+                                   ;;BVPLUS-RECOLLAPSE
+                                   )))))
 
 
 ;move
@@ -1976,9 +1981,7 @@
                             bv-array-read-opener update-nth2)
                            (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                             ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED
-                            ARRAY-REDUCTION-WHEN-ALL-SAME
-                            ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2
-                            )))))
+                            ARRAY-REDUCTION-WHEN-ALL-SAME)))))
 
 
 (in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ARRAY-REDUCTION-WHEN-ALL-SAME))
@@ -2051,7 +2054,7 @@
                   (bv-array-read width2 len index lst)))
   :hints (("Goal" :in-theory (e/d (;list::nth-with-large-index
                                    bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2 ;JVM::INT-LEMMA0
+                                  (;JVM::INT-LEMMA0
                                    NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -2071,7 +2074,7 @@
            (equal (bv-array-write width1 len index val (bvchop-list width2 lst))
                   (bv-array-write width2 len index val lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER update-nth2)
-                                  (ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2 ;JVM::INT-LEMMA0
+                                  (;JVM::INT-LEMMA0
                                    )))))
 
 
@@ -2249,7 +2252,7 @@
                             bvcat logapp
 ;bvcat
                             )
-                           (bif-rewrite
+                           (;bif-rewrite
                             NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
                             TIMES-4-BECOMES-LOGAPP
@@ -2887,7 +2890,7 @@
 
 ;(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE)) ;drop?
 
-(local (in-theory (disable +-becomes-bvplus-hack))) ;drop?
+;(local (in-theory (disable +-becomes-bvplus-hack))) ;drop?
 
 ;gen!
 (defthm nth2-of-bv-array-write
@@ -3831,7 +3834,8 @@
     :IN-THEORY
     (E/D (BV-ARRAY-READ-OPENER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
          (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-          BVPLUS-RECOLLAPSE)))))
+          ;;BVPLUS-RECOLLAPSE
+          )))))
 
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
   (implies (and (syntaxp (quotep index1))

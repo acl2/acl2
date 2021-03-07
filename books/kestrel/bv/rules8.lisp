@@ -43,9 +43,9 @@
 (defthm floor-of-sum-of-minus-expt-and-bvchop
   (implies (rationalp y)
            (equal (FLOOR (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)) y)
-                  (if (integerp (* (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) (/ y)))
+                  (if (integerp (* (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)) (/ y)))
                       (- (floor (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) y))
-                    (- (- (floor (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) y)) 1))))
+                    (+ -1 (- (floor (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X))) y))))))
   :hints (("Goal" :use (:instance floor-minus-arg1 (x (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)))))
            :in-theory (disable floor-minus-arg1))))
 

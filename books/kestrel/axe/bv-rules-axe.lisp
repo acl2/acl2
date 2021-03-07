@@ -1971,3 +1971,7 @@
            (equal (myif x x y)
                   (myif x t y)))
   :hints (("Goal" :in-theory (enable myif))))
+
+;only needed for axe
+(defthm not-<-of-bvcat-and-0
+  (not (< (bvcat highsize highval lowsize lowval) 0)))

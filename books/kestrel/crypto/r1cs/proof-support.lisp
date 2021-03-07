@@ -68,19 +68,6 @@
            (equal (if x t nil)
                   x)))
 
-;for axe
-(defthm acl2::not-<-of-bvcat-and-0
-  (not (< (bvcat highsize highval lowsize lowval) 0)))
-
-;mixes prime fields and bvs
-(defthm acl2::fep-of-bvcat
-  (implies (and (< (expt 2 (+ highsize lowsize)) p)
-                (natp highsize)
-                (natp lowsize)
-                (posp p))
-           (fep (bvcat highsize highval lowsize lowval)
-                p)))
-
 ; Split off the sign bit (often not used?) and turn add into bvplus
 (defthmd acl2::adding-8-idiom
   (implies (and (bitp x)
@@ -685,20 +672,6 @@
                   (mod (bvcat highsize highval 1 lowval) p)))
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
-
-(defthm add-commute-constant-basic
-  (implies (syntaxp (and (quotep k)
-                         ;; avoid loops:
-                         (not (quotep x))))
-           (equal (add x k p)
-                  (add k x p))))
-
-(defthm add-commute-constant
-  (implies (syntaxp (and (quotep k)
-                         ;; avoid loops:
-                         (not (quotep x))))
-           (equal (add x (add k y p) p)
-                  (add k (add x y p) p))))
 
 (defthm not-of-if-of-nil-arg3-when-booleans
   (implies (and (booleanp x)

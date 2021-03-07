@@ -98,7 +98,8 @@
      we expect that the simplification will take place there.")
    (xdoc::p
     "We generate opener rules for
-     all the (singly and mutually) recursive @('exec-...') functions,
+     all the (singly and mutually) recursive @('exec-...') functions
+     except @(tsee exec-fun) (more on this below),
      as well as for some other recursive functions.
      The opener rules have hypotheses saying that
      certain arguments are (quoted) constants,
@@ -111,6 +112,13 @@
      during the symbolic execution,
      the list of scopes in a frame has the form of a nest of @(tsee cons)es,
      with some constant and some non-constant parts.")
+   (xdoc::p
+    "We avoid opener rules for @(tsee exec-fun) because
+     we use the correctness theorems of callees
+     in the correctness proofs of callers.
+     Those correctness theorems are expressed in terms of @(tsee exec-fun),
+     so we do not want to expand @(tsee exec-fun).
+     See the proof generation code for more details.")
    (xdoc::p
     "We collect all the openers rules in a ruleset,
      to make it easier to collect them incrementally as they are introduced."))
@@ -140,12 +148,6 @@
       :hyps ((syntaxp (quotep e)))
       :disable t)
     (add-to-ruleset atc-openers (defopeners-names exec-expr-asg)))
-
-  (progn
-    (defopeners exec-fun
-      :hyps ((syntaxp (quotep fun)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-fun)))
 
   (progn
     (defopeners exec-stmt

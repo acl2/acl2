@@ -239,3 +239,13 @@
                   (natp size)))
   :hints (("Goal" :cases ((<= n size))
            :in-theory (enable bvand))))
+
+(defthm bvand-of-expt-same
+  (equal (bvand size x (expt 2 size))
+         0)
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bvand-of-expt-same2
+  (equal (bvand size (expt 2 size) x)
+         0)
+  :hints (("Goal" :in-theory (enable bvand))))

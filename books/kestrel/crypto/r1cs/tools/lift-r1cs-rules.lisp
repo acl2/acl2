@@ -6,9 +6,11 @@
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe (todo: separate out the axe rules)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
+(include-book "kestrel/prime-fields/bv-rules" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/types" :dir :system) ; for acl2::rationalp-when-integerp
 (local (include-book "kestrel/bv/rules" :dir :system)) ;for acl2::slice-of-sum-cases, make local?
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -61,10 +63,27 @@
                        p)))
   :hints (("Goal" :in-theory (enable mul acl2::mod-sum-cases))))
 
+;gen the -1
 (defthm add-of-+-of--1
   (implies (integerp x)
            (equal (add x (+ -1 p) p)
                   (add x -1 p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-+-of-p-arg2
+  (equal (add x (+ y p) p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of---of-p-arg2
+  (implies (posp p)
+           (equal (add x (- p) p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of---same-arg2
+  (equal (add k (- k) p)
+         0)
   :hints (("Goal" :in-theory (enable add))))
 
 ;; 0 = x*(x-1) iff (x is 0 or 1)
@@ -121,22 +140,6 @@
                   (bitp (add k1 x p))))
   :hints (("Goal" :use (:instance bitp-idiom-with-constant-1)
            :in-theory (disable bitp-idiom-with-constant-1))))
-
-(defthm add-of-+-of-p-arg2
-  (equal (add x (+ y p) p)
-         (add x y p))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of---of-p-arg2
-  (implies (posp p)
-           (equal (add x (- p) p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of---same-arg2
-  (equal (add k (- k) p)
-         0)
-  :hints (("Goal" :in-theory (enable add))))
 
 (defthm equal-of-add-of---and-0
  (implies (and (posp p)
@@ -475,10 +478,6 @@
 
 (defthm bitp-of-bitxor
   (bitp (acl2::bitxor x y)))
-
-(defthm fep-of-bitxor
-  (implies (<= 2 p)
-           (fep (acl2::bitxor x y) p)))
 
 (local (in-theory (disable pfield::fep-holds
                            pfield::mod-when-fep)))

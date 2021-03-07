@@ -203,7 +203,6 @@
                           (:congruence hifat-pwrite-correctness-lemma-1)
                           (:congruence m1-file-d-e-equiv-congruence-on-d-e)
                           (:rewrite m1-file->d-e-under-true-equiv)
-                          (:rewrite m1-file-of-d-e-fix-d-e-normalize-const)
                           (:rewrite-quoted-constant true-fix-under-true-equiv))
       :use
       (:instance lofat-mkdir-refinement-lemma-1

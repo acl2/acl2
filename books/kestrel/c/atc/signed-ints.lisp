@@ -17,7 +17,7 @@
 
 (defxdoc+ atc-signed-ints
   :parents (atc-integers)
-  :short "A model of C (@('signed')) @('int')s."
+  :short "A model of C (@('signed')) @('int')s for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
