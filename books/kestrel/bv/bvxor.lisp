@@ -357,3 +357,11 @@
                                   (z (bvchop size y))
                                   (x (bvchop size y)))
            :in-theory (e/d (bvxor-commutative) (bvxor-cancel)))))
+
+(defthm bvxor-of-constant-trim-arg1
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (integerp size))
+           (equal (bvxor size k x)
+                  (bvxor size (bvchop size k) x))))

@@ -162,9 +162,8 @@
   :hints (("Goal" :in-theory (e/d (bvplus)
                                   (ACL2::GETBIT-TRIM)))))
 
-
-
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
 (defthm getbit-of-add-becomes-getbit-of-bvplus-32
   (implies (and (natp n)
                 (< n 32)
@@ -505,25 +504,23 @@
                                   (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
 
 ;only needed for axe
-(DEFTHMd ACL2::BVCAT-EQUAL-REWRITE-CONSTANT-alt
-  (IMPLIES
-   (AND (SYNTAXP (QUOTEP ACL2::X))
-        (SYNTAXP (QUOTEP ACL2::HIGHSIZE))
-        (SYNTAXP (QUOTEP ACL2::LOWSIZE))
-        (NATP ACL2::LOWSIZE)
-        (NATP ACL2::HIGHSIZE))
-   (EQUAL
-    (EQUAL (BVCAT ACL2::HIGHSIZE ACL2::HIGHVAL
-                        ACL2::LOWSIZE ACL2::LOWVAL)
-           ACL2::X)
-    (AND
-     (UNSIGNED-BYTE-P (+ ACL2::LOWSIZE ACL2::HIGHSIZE)
-                      ACL2::X)
-     (EQUAL (BVCHOP ACL2::LOWSIZE ACL2::X)
-            (BVCHOP ACL2::LOWSIZE ACL2::LOWVAL))
-     (EQUAL (SLICE (+ -1 ACL2::LOWSIZE ACL2::HIGHSIZE)
-                         ACL2::LOWSIZE ACL2::X)
-            (BVCHOP ACL2::HIGHSIZE ACL2::HIGHVAL))))))
+(defthmd acl2::bvcat-equal-rewrite-constant-alt
+  (implies (and (syntaxp (quotep acl2::x))
+                (syntaxp (quotep acl2::highsize))
+                (syntaxp (quotep acl2::lowsize))
+                (natp acl2::lowsize)
+                (natp acl2::highsize))
+           (equal (equal (bvcat acl2::highsize acl2::highval
+                                acl2::lowsize acl2::lowval)
+                         acl2::x)
+                  (and
+                   (unsigned-byte-p (+ acl2::lowsize acl2::highsize)
+                                    acl2::x)
+                   (equal (bvchop acl2::lowsize acl2::x)
+                          (bvchop acl2::lowsize acl2::lowval))
+                   (equal (slice (+ -1 acl2::lowsize acl2::highsize)
+                                 acl2::lowsize acl2::x)
+                          (bvchop acl2::highsize acl2::highval))))))
 
 ;or just turn equals around?
 ;only needed for axe
@@ -533,14 +530,6 @@
                   (and (consp k)
                        (equal x (car k))
                        (equal y (cdr k))))))
-
-(defthm bvxor-of-constant-trim-arg1
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (not (unsigned-byte-p size k))
-                (integerp size))
-           (equal (bvxor size k x)
-                  (bvxor size (bvchop size k) x))))
 
 (defthm equal-of-constant-and-add-of-neg-arg1
   (implies (and (syntaxp (quotep k))
@@ -559,11 +548,6 @@
                 (posp p))
            (equal (equal k (add y (neg x p) p))
                   (equal x (add (- k) y p)))))
-
-(defthm equal-of-bitnot-and-bitnot
-  (equal (equal (bitnot x) (bitnot y))
-         (equal (getbit 0 x) (getbit 0 y)))
-  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
   (implies (and (equal high1minus1 (+ -1 mid1))

@@ -906,3 +906,19 @@
   (implies (posp p)
            (equal (add (neg x p) (neg y p) p)
                   (neg (add x y p) p))))
+
+;; In case we only want to move constants to the front
+(defthm add-commutative-when-constant
+  (implies (syntaxp (and (quotep k)
+                         ;; avoid loops:
+                         (not (quotep x))))
+           (equal (add x k p)
+                  (add k x p))))
+
+;; In case we only want to move constants to the front
+(defthm add-commutative-2-when-constant
+  (implies (syntaxp (and (quotep k)
+                         ;; avoid loops:
+                         (not (quotep x))))
+           (equal (add x (add k y p) p)
+                  (add k (add x y p) p))))

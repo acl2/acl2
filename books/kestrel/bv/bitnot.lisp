@@ -69,3 +69,8 @@
 
 (defthm bitp-of-bitnot
   (bitp (bitnot x)))
+
+(defthm equal-of-bitnot-and-bitnot
+  (equal (equal (bitnot x) (bitnot y))
+         (equal (getbit 0 x) (getbit 0 y)))
+  :hints (("Goal" :in-theory (enable bitnot))))
