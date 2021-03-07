@@ -230,7 +230,9 @@
 ;(defforall-simple untranslated-TERM-supported-bstar-binderp)
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
-
+;;;
+;;; untranslated-variablep
+;;;
 
 ;; An untranslated variable is a symbol, with several additional restrictions.
 ;; For example, t and nil are constants, as are keywords (all of these things
@@ -255,6 +257,10 @@
                   (legal-variable-name-in-acl2-packagep str)))
   :hints (("Goal" :in-theory (enable untranslated-variablep))))
 
+;;;
+;;; untranslated-constantp
+;;;
+
 ;; Recognize an untranslated term that is a constant
 (defund untranslated-constantp (x)
   (declare (xargs :guard t))
@@ -267,6 +273,7 @@
                ;; TODO: Consider disallowing *
                (legal-constantp1 x)))
       (myquotep x)))
+
 ;; (defthm car-when-untranslated-constantp
 ;;   (implies (untranslated-constantp x)
 ;;            (equal (car x)
