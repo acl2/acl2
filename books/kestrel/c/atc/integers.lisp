@@ -13,6 +13,7 @@
 
 (include-book "unsigned-chars")
 (include-book "signed-ints")
+(include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
