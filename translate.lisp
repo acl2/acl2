@@ -7409,7 +7409,7 @@
 ;    (binary-+ '1 x))
 
 ; '(lambda (x)
-;    (declare (type integer x)           ; TYPE, IGNORE, IGNOREABLE allowed
+;    (declare (type integer x)           ; TYPE, IGNORE, IGNORABLE allowed
 ;             (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
 ;                    :split-types t))                       ; translated and
 ;   (binary-+ '1 x))                                        ; include types
