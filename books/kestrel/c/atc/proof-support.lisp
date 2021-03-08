@@ -233,6 +233,8 @@
     (:e expr-binary->op)
     (:e expr-call->args)
     (:e expr-call->fun)
+    (:e expr-cast->type)
+    (:e expr-cast->arg)
     (:e expr-cond->else)
     (:e expr-cond->test)
     (:e expr-cond->then)
@@ -276,6 +278,8 @@
     (:e stmt-ifelse->then)
     (:e stmt-kind)
     (:e stmt-return->value)
+    (:e type-kind)
+    (:e type-name-to-type)
     (:e unop-fix)
     (:e unop-kind)
     (:e valuep)
@@ -345,6 +349,7 @@
     exec-iconst
     exec-ident
     exec-unary
+    exec-cast
     mv-nth
     pop-frame
     push-frame
@@ -499,6 +504,12 @@
                     :sint))
     :enable value-kind)
 
+  (defruled value-kind-when-ucharp
+    (implies (ucharp x)
+             (equal (value-kind x)
+                    :uchar))
+    :enable value-kind)
+
   (defruled len-of-cons
     (equal (len (cons x y))
            (1+ (len y)))
@@ -631,6 +642,7 @@
     sint-lognot-of-0
     sint-lognot-of-1
     value-kind-when-sintp
+    value-kind-when-ucharp
     value-option-result-kind-when-value-optionp
     value-option-result-kind-of-if
     value-option-result-ok->get-when-value-optionp
@@ -692,8 +704,11 @@
     sintp-of-sint-bitand
     sintp-of-sint-bitxor
     sintp-of-sint-bitior
+    sintp-of-sint-from-uchar
+    ucharp-of-uchar-from-sint
     top-frame-of-push-frame
     valuep-when-sintp
+    valuep-when-ucharp
     value-fix-when-valuep
     value-listp-of-cons
     value-list-fix-of-cons
@@ -738,7 +753,9 @@
     (:t sint-ne)
     (:t sint-bitand)
     (:t sint-bitxor)
-    (:t sint-bitior)))
+    (:t sint-bitior)
+    (:t sint-from-uchar)
+    (:t uchar-from-sint)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -756,7 +773,8 @@
      The fact that the type is @(tsee consp) is actually not important;
      what is important is that it does not include @('nil'),
      i.e. it is logically true."))
-  '(consp-when-sintp))
+  '(consp-when-sintp
+    consp-when-ucharp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
