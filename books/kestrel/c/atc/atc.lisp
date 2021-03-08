@@ -94,9 +94,6 @@
 
   (xdoc::evmac-topic-implementation-item-input "print")
 
-  "@('print-info/all') is a boolean flag indicating whether
-   @('print') is @(':info') or @(':all'), or not."
-
   xdoc::*evmac-topic-implementation-item-call*
 
   "@('prog-const') is the symbol specified by @('const-name')."
@@ -262,7 +259,6 @@
                                  (output-file stringp)
                                  (proofs booleanp)
                                  (print evmac-input-print-p)
-                                 (print-info/all booleanp)
                                  val)').")
                state)
   :mode :program
@@ -299,15 +295,12 @@
                                         output-file?
                                         ctx
                                         state))
-       ((er &) (acl2::evmac-process-input-print print ctx state))
-       (print-info/all (or (eq print :info)
-                           (eq print :all))))
+       ((er &) (acl2::evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
                        prog-const
                        output-file
                        proofs
-                       print
-                       print-info/all))))
+                       print))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2045,7 +2038,7 @@
                          (prec-fns atc-symbol-fninfo-alistp)
                          (prog-const symbolp)
                          (proofs booleanp)
-                         (print-info/all booleanp)
+                         (print evmac-input-print-p)
                          (fenv-const symbolp)
                          (limit natp)
                          (names-to-avoid symbol-listp)
@@ -2085,10 +2078,11 @@
                                     fn-exec-var-limit-correct-thm
                                     names-to-avoid ctx state))
        (progress-start?
-        (and print-info/all
+        (and (acl2::evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
                          ',fn-run-correct-thm))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (progress-end? (and (acl2::evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
        (local-events (append progress-start?
                              (list fn-returns-value-event)
                              (list fn-exec-const-limit-correct-event)
@@ -2108,7 +2102,7 @@
                           (prec-fns atc-symbol-fninfo-alistp)
                           (prog-const symbolp)
                           (proofs booleanp)
-                          (print-info/all booleanp)
+                          (print evmac-input-print-p)
                           (fenv-const symbolp)
                           (names-to-avoid symbol-listp)
                           ctx
@@ -2173,7 +2167,7 @@
                   fn-returns-value-thm
                   fn-exec-var-limit-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-thms fn prec-fns prog-const proofs print-info/all fenv-const
+        (atc-gen-fn-thms fn prec-fns prog-const proofs print fenv-const
                          limit names-to-avoid ctx state))
        (info (make-atc-fn-info
               :type type
@@ -2192,7 +2186,7 @@
                                (prec-fns atc-symbol-fninfo-alistp)
                                (prog-const symbolp)
                                (proofs booleanp)
-                               (print-info/all booleanp)
+                               (print evmac-input-print-p)
                                (fenv-const symbolp)
                                (names-to-avoid symbol-listp)
                                ctx
@@ -2222,10 +2216,10 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-decl fn prec-fns prog-const proofs print-info/all fenv-const
+        (atc-gen-ext-decl fn prec-fns prog-const proofs print fenv-const
                           names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-decl-list rest-fns prec-fns prog-const proofs print-info/all
+        (atc-gen-ext-decl-list rest-fns prec-fns prog-const proofs print
                                fenv-const names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
@@ -2236,15 +2230,16 @@
 
 (define atc-gen-prog-const ((prog-const symbolp)
                             (tunit transunitp)
-                            (print-info/all booleanp))
+                            (print evmac-input-print-p))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
   (b* ((progress-start?
-        (and print-info/all
+        (and (acl2::evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant ~x0..." ',prog-const))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (progress-end? (and (acl2::evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
        (defconst-event `(defconst ,prog-const ',tunit))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
@@ -2283,7 +2278,7 @@
 
 (define atc-gen-prog-wf-thm ((prog-const symbolp)
                              (proofs booleanp)
-                             (print-info/all booleanp)
+                             (print evmac-input-print-p)
                              (names-to-avoid symbol-listp)
                              ctx
                              state)
@@ -2328,9 +2323,10 @@
          :hints '(("Goal" :in-theory '((:e check-transunit))))
          :enable nil))
        (progress-start?
-        (and print-info/all
+        (and (acl2::evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (progress-end? (and (acl2::evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
@@ -2343,7 +2339,7 @@
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
                            (prog-const symbolp)
                            (proofs booleanp)
-                           (print-info/all booleanp)
+                           (print evmac-input-print-p)
                            (names-to-avoid symbol-listp)
                            ctx
                            state)
@@ -2366,15 +2362,14 @@
   (b* (((mv fenv-const-event fenv-const names-to-avoid)
         (atc-gen-fenv-const prog-const names-to-avoid (w state)))
        ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
-        (atc-gen-prog-wf-thm prog-const proofs print-info/all
-                             names-to-avoid ctx state))
+        (atc-gen-prog-wf-thm prog-const proofs print names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-decl-list fn1...fnp nil prog-const proofs print-info/all
+        (atc-gen-ext-decl-list fn1...fnp nil prog-const proofs print
                                fenv-const names-to-avoid ctx state))
        (tunit (make-transunit :decls exts))
        ((mv local-const-event exported-const-event)
-        (atc-gen-prog-const prog-const tunit print-info/all))
+        (atc-gen-prog-const prog-const tunit print))
        (local-events (append (list local-const-event)
                              (list fenv-const-event)
                              wf-thm-local-events
@@ -2401,7 +2396,7 @@
 
 (define atc-gen-file-event ((tunit transunitp)
                             (output-file stringp)
-                            (print-info/all booleanp)
+                            (print evmac-input-print-p)
                             state)
   :returns (mv erp
                (event "A @(tsee pseudo-event-formp).")
@@ -2440,9 +2435,10 @@
      But we cannot use just @(tsee value-triple)
      because our computation returns an error triple."))
   (b* ((progress-start?
-        (and print-info/all
+        (and (acl2::evmac-input-print->= print :info)
              `((cw-event "~%Generating the file ~s0..." ',output-file))))
-       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (progress-end? (and (acl2::evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
           (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
@@ -2477,7 +2473,6 @@
                             (output-file stringp)
                             (print evmac-input-print-p)
                             (proofs booleanp)
-                            (print-info/all booleanp)
                             (call pseudo-event-formp)
                             ctx
                             state)
@@ -2496,12 +2491,9 @@
      Thus, we locally install the simpler ancestor check."))
   (b* ((names-to-avoid (list prog-const))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp prog-const proofs print-info/all
+        (atc-gen-transunit fn1...fnp prog-const proofs print
                            names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-file-event tunit
-                                                output-file
-                                                print-info/all
-                                                state))
+       ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (member-eq print '(:result :info :all))
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
@@ -2531,14 +2523,13 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
-       ((er (list fn1...fnp prog-const output-file proofs print print-info/all))
+       ((er (list fn1...fnp prog-const output-file proofs print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         prog-const
                         output-file
                         print
                         proofs
-                        print-info/all
                         call
                         ctx
                         state)))
