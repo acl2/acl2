@@ -1779,9 +1779,7 @@
 
   (local (in-theory (disable acl2::repeat-when-zp nth
                              default-+-2 default-+-1
-                             aignet::fanin-count-of-atom
-                             aignet::fanin-count-of-aignet-norm-x-normalize-const
-                             aignet::fanin-count-of-node-list-fix-x-normalize-const)))
+                             aignet::fanin-count-of-atom)))
 
   (defret bfr-litarr-correct-p-litarr2-of-<fn>
     (implies (and (lbfr-mode-is :aignet)

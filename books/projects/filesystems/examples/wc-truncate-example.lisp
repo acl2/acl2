@@ -78,133 +78,133 @@
        (lofat-to-hifat (mv-nth 0
                                (hifat-to-lofat fat32$c fs)))))))))
 
-(defthm
-  truncate-list-correctness-1-lemma-4
-  (implies
-   (and
-    (consp path-list)
-    (not
-     (equal
-      (mv-nth
-       1
-       (hifat-find-file
-        (mv-nth 0 (lofat-to-hifat fat32$c))
-        (path-to-fat32-path (explode (car path-list)))))
-      0))
-    (equal
-     (mv-nth
-      1
-      (hifat-place-file
-       (mv-nth 0 (lofat-to-hifat fat32$c))
-       (path-to-fat32-path (explode (car path-list)))
-       (m1-file
-        '(0 0 0 0 0 0 0 0 0 0 0 0
-            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-        (implode
-         (repeat
-          (len
-           (explode
-            (m1-file->contents
-             (mv-nth 0
-                     (hifat-find-file
-                      (mv-nth 0 (lofat-to-hifat fat32$c))
-                      (path-to-fat32-path (explode path)))))))
-          nil)))))
-     0)
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth
-      1
-      (hifat-find-file (mv-nth 0 (lofat-to-hifat fat32$c))
-                       (path-to-fat32-path (explode path))))
-     0)
-    (m1-regular-file-p
-     (mv-nth 0
-             (hifat-find-file
-              (mv-nth 0 (lofat-to-hifat fat32$c))
-              (path-to-fat32-path (explode path)))))
-    (mv-nth
-     1
-     (truncate-list-extra-hypothesis
-      fat32$c path-list
-      (len
-       (explode
-        (m1-file->contents
-         (mv-nth 0
-                 (hifat-find-file
-                  (mv-nth 0 (lofat-to-hifat fat32$c))
-                  (path-to-fat32-path (explode path))))))))))
-   (equal
-    (len
-     (explode
-      (m1-file->contents
-       (mv-nth
-        0
-        (hifat-find-file
-         (mv-nth
-          0
-          (lofat-to-hifat
-           (mv-nth
-            0
-            (hifat-to-lofat
-             fat32$c
-             (mv-nth
-              0
-              (hifat-place-file
-               (mv-nth 0 (lofat-to-hifat fat32$c))
-               (path-to-fat32-path (explode (car path-list)))
-               (m1-file
-                '(0 0 0 0 0 0 0 0 0 0 0 0
-                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                (implode
-                 (repeat
-                  (len
-                   (explode
-                    (m1-file->contents
-                     (mv-nth
-                      0
-                      (hifat-find-file
-                       (mv-nth 0 (lofat-to-hifat fat32$c))
-                       (path-to-fat32-path (explode path)))))))
-                  nil)))))))))
-         (path-to-fat32-path (explode path)))))))
-    (len
-     (explode
-      (m1-file->contents
-       (mv-nth 0
-               (hifat-find-file
-                (mv-nth 0 (lofat-to-hifat fat32$c))
-                (path-to-fat32-path (explode path)))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d
-                (hifat-no-dups-p)
-                (truncate-list-correctness-1-lemma-2))
-    :use
-    (:instance
-     truncate-list-correctness-1-lemma-2
-     (path (path-to-fat32-path (explode path)))
-     (fs
-      (mv-nth
-       0
-       (hifat-place-file
-        (mv-nth 0 (lofat-to-hifat fat32$c))
-        (path-to-fat32-path (explode (car path-list)))
-        (m1-file
-         '(0 0 0 0 0 0 0 0 0 0 0 0
-             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-         (implode
-          (repeat
-           (len
-            (explode
-             (m1-file->contents
-              (mv-nth
-               0
-               (hifat-find-file
-                (mv-nth 0 (lofat-to-hifat fat32$c))
-                (path-to-fat32-path (explode path)))))))
-           nil))))))))))
+;; (defthm
+;;   truncate-list-correctness-1-lemma-4
+;;   (implies
+;;    (and
+;;     (consp path-list)
+;;     (not
+;;      (equal
+;;       (mv-nth
+;;        1
+;;        (hifat-find-file
+;;         (mv-nth 0 (lofat-to-hifat fat32$c))
+;;         (path-to-fat32-path (explode (car path-list)))))
+;;       0))
+;;     (equal
+;;      (mv-nth
+;;       1
+;;       (hifat-place-file
+;;        (mv-nth 0 (lofat-to-hifat fat32$c))
+;;        (path-to-fat32-path (explode (car path-list)))
+;;        (m1-file
+;;         '(0 0 0 0 0 0 0 0 0 0 0 0
+;;             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+;;         (implode
+;;          (repeat
+;;           (len
+;;            (explode
+;;             (m1-file->contents
+;;              (mv-nth 0
+;;                      (hifat-find-file
+;;                       (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                       (path-to-fat32-path (explode path)))))))
+;;           nil)))))
+;;      0)
+;;     (lofat-fs-p fat32$c)
+;;     (equal
+;;      (mv-nth
+;;       1
+;;       (hifat-find-file (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                        (path-to-fat32-path (explode path))))
+;;      0)
+;;     (m1-regular-file-p
+;;      (mv-nth 0
+;;              (hifat-find-file
+;;               (mv-nth 0 (lofat-to-hifat fat32$c))
+;;               (path-to-fat32-path (explode path)))))
+;;     (mv-nth
+;;      1
+;;      (truncate-list-extra-hypothesis
+;;       fat32$c path-list
+;;       (len
+;;        (explode
+;;         (m1-file->contents
+;;          (mv-nth 0
+;;                  (hifat-find-file
+;;                   (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                   (path-to-fat32-path (explode path))))))))))
+;;    (equal
+;;     (len
+;;      (explode
+;;       (m1-file->contents
+;;        (mv-nth
+;;         0
+;;         (hifat-find-file
+;;          (mv-nth
+;;           0
+;;           (lofat-to-hifat
+;;            (mv-nth
+;;             0
+;;             (hifat-to-lofat
+;;              fat32$c
+;;              (mv-nth
+;;               0
+;;               (hifat-place-file
+;;                (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                (path-to-fat32-path (explode (car path-list)))
+;;                (m1-file
+;;                 '(0 0 0 0 0 0 0 0 0 0 0 0
+;;                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+;;                 (implode
+;;                  (repeat
+;;                   (len
+;;                    (explode
+;;                     (m1-file->contents
+;;                      (mv-nth
+;;                       0
+;;                       (hifat-find-file
+;;                        (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                        (path-to-fat32-path (explode path)))))))
+;;                   nil)))))))))
+;;          (path-to-fat32-path (explode path)))))))
+;;     (len
+;;      (explode
+;;       (m1-file->contents
+;;        (mv-nth 0
+;;                (hifat-find-file
+;;                 (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                 (path-to-fat32-path (explode path)))))))))
+;;   :hints
+;;   (("goal"
+;;     :do-not-induct t
+;;     :in-theory (e/d
+;;                 (hifat-no-dups-p)
+;;                 (truncate-list-correctness-1-lemma-2))
+;;     :use
+;;     (:instance
+;;      truncate-list-correctness-1-lemma-2
+;;      (path (path-to-fat32-path (explode path)))
+;;      (fs
+;;       (mv-nth
+;;        0
+;;        (hifat-place-file
+;;         (mv-nth 0 (lofat-to-hifat fat32$c))
+;;         (path-to-fat32-path (explode (car path-list)))
+;;         (m1-file
+;;          '(0 0 0 0 0 0 0 0 0 0 0 0
+;;              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+;;          (implode
+;;           (repeat
+;;            (len
+;;             (explode
+;;              (m1-file->contents
+;;               (mv-nth
+;;                0
+;;                (hifat-find-file
+;;                 (mv-nth 0 (lofat-to-hifat fat32$c))
+;;                 (path-to-fat32-path (explode path)))))))
+;;            nil))))))))))
 
 ;; (defthm
 ;;   truncate-list-correctness-1-lemma-6

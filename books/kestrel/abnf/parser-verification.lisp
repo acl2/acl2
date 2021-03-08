@@ -9462,7 +9462,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-alternation-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-alternation-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-concatenation-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9484,7 +9485,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-concatenation-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-concatenation-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-repetition-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9505,7 +9507,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-repetition-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-repetition-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-element-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9526,7 +9529,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-element-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-element-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-group-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9541,7 +9545,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-group-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-group-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-option-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9556,7 +9561,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-option-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-option-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-alt-rest-when-tree-list-match
   :parents (grammar-parser-completeness)
@@ -9583,7 +9589,8 @@
                    (input (nat-list-fix
                            (append (tree-list->string trees) rest-input))))
         (:instance parse-alt-rest-of-nat-list-fix-input
-                   (input (append (tree-list->string trees) rest-input)))))
+                   (input (append (tree-list->string trees) rest-input))))
+  :disable ((:congruence parse-alt-rest-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-alt-rest-comp-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9609,7 +9616,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-alt-rest-comp-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-alt-rest-comp-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-conc-rest-when-tree-list-match
   :parents (grammar-parser-completeness)
@@ -9633,7 +9641,8 @@
                    (input (nat-list-fix
                            (append (tree-list->string trees) rest-input))))
         (:instance parse-conc-rest-of-nat-list-fix-input
-                   (input (append (tree-list->string trees) rest-input)))))
+                   (input (append (tree-list->string trees) rest-input))))
+  :disable ((:congruence parse-conc-rest-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-conc-rest-comp-when-tree-match
   :parents (grammar-parser-completeness)
@@ -9656,7 +9665,8 @@
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
         (:instance parse-conc-rest-comp-of-nat-list-fix-input
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input))))
+  :disable ((:congruence parse-conc-rest-comp-nat-list-equiv-congruence-on-input)))
 
 (defrule parse-elements-when-tree-match
   :parents (grammar-parser-completeness)
