@@ -25,6 +25,12 @@
   (c::sint-bitxor (c::sint-from-uchar |x|)
                   (c::sint-from-uchar |y|)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |g| (|i|)
+  (declare (xargs :guard (c::sintp |i|)))
+  (c::uchar-from-sint (c::sint-bitnot |i|)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "conversions.c")
+(c::atc |f| |g| :output-file "conversions.c")
