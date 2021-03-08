@@ -1739,6 +1739,9 @@
                  sintp-of-sint-bitior
                  sintp-of-sint-logand
                  sintp-of-sint-logor
+                 sintp-of-sint-from-uchar
+                 ucharp-of-uchar-from-sint
+                 valuep-when-ucharp
                  valuep-when-sintp))
        (hints `(("Goal"
                  :in-theory ',theory
