@@ -91,3 +91,14 @@
 
 (defprime-alias my97-prime-alias2 my97-prime) ;second alias of same prime
 (defprime-alias my97-prime-alias2 my97-prime-alias) ;alias of alias
+
+;; A test with :doc
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :short "short doc"
+  ;; Makes sure we can calculate this:
+  :long (concatenate 'string "foo" "bar"))
