@@ -2494,7 +2494,7 @@
         (atc-gen-transunit fn1...fnp prog-const proofs print
                            names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
-       (print-events (and (member-eq print '(:result :info :all))
+       (print-events (and (acl2::evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
          `(encapsulate ()
