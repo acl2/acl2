@@ -36,8 +36,11 @@
                e/d*
                enable*
                er-soft+
+               evmac-generate-defthm
+               evmac-input-print->=
                evmac-input-print-p
                evmac-prepare-proofs
+               evmac-process-input-print
                flatten-ands-in-lit
                get-ruleset
                implode

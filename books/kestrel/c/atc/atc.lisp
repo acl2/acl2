@@ -295,7 +295,7 @@
                                         output-file?
                                         ctx
                                         state))
-       ((er &) (acl2::evmac-process-input-print print ctx state)))
+       ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
                        prog-const
                        output-file
@@ -1739,10 +1739,10 @@
        (hints `(("Goal"
                  :in-theory ',theory
                  :use (:guard-theorem ,fn))))
-       ((mv event &) (acl2::evmac-generate-defthm name
-                                                  :formula formula
-                                                  :hints hints
-                                                  :enable nil)))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
     (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1874,7 +1874,7 @@
                            (exec-fun '(:ident (name . ,(symbol-name fn)))
                                      args compst fenv limit))))))
        ((mv local-event &)
-        (acl2::evmac-generate-defthm
+        (evmac-generate-defthm
          name
          :formula `(implies (and ,guard
                                  (compustatep compst))
@@ -1942,7 +1942,7 @@
                         (args (list ,@formals))
                         (fenv ,fenv-const))))))
        ((mv local-event &)
-        (acl2::evmac-generate-defthm
+        (evmac-generate-defthm
          name
          :formula `(implies (and ,guard
                                  (compustatep compst)
@@ -2023,7 +2023,7 @@
                               (:e fun-env-result-kind)
                               (:e fun-env-result-ok->get)))))
        ((mv local-event exported-event)
-        (acl2::evmac-generate-defthm
+        (evmac-generate-defthm
          name
          :formula `(implies ,guard (equal ,lhs ,rhs))
          :hints hints
@@ -2078,10 +2078,10 @@
                                     fn-exec-var-limit-correct-thm
                                     names-to-avoid ctx state))
        (progress-start?
-        (and (acl2::evmac-input-print->= print :info)
+        (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
                          ',fn-run-correct-thm))))
-       (progress-end? (and (acl2::evmac-input-print->= print :info)
+       (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-events (append progress-start?
                              (list fn-returns-value-event)
@@ -2236,9 +2236,9 @@
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
   (b* ((progress-start?
-        (and (acl2::evmac-input-print->= print :info)
+        (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant ~x0..." ',prog-const))))
-       (progress-end? (and (acl2::evmac-input-print->= print :info)
+       (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (defconst-event `(defconst ,prog-const ',tunit))
        (local-event `(progn ,@progress-start?
@@ -2317,15 +2317,15 @@
                 nil))
        (names-to-avoid (cons name names-to-avoid))
        ((mv local-event exported-event)
-        (acl2::evmac-generate-defthm
+        (evmac-generate-defthm
          name
          :formula `(check-transunit ,prog-const)
          :hints '(("Goal" :in-theory '((:e check-transunit))))
          :enable nil))
        (progress-start?
-        (and (acl2::evmac-input-print->= print :info)
+        (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and (acl2::evmac-input-print->= print :info)
+       (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
@@ -2435,9 +2435,9 @@
      But we cannot use just @(tsee value-triple)
      because our computation returns an error triple."))
   (b* ((progress-start?
-        (and (acl2::evmac-input-print->= print :info)
+        (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the file ~s0..." ',output-file))))
-       (progress-end? (and (acl2::evmac-input-print->= print :info)
+       (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
@@ -2494,7 +2494,7 @@
         (atc-gen-transunit fn1...fnp prog-const proofs print
                            names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
-       (print-events (and (acl2::evmac-input-print->= print :result)
+       (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
          `(encapsulate ()
