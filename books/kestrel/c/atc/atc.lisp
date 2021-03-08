@@ -1550,7 +1550,7 @@
      among the conjuncts of the function's guard,
      where @('<type>') is a predicate corresponding to a C type
      and @('<formal>') is the formal argument in question.
-     For now we only accept @(tsee sintp) as @('<type>'),
+     For now we only accept @(tsee sintp) and @(tsee ucharp) as @('<type>'),
      but this will be extended to more C types in the future."))
   (b* (((when (endp guard-conjuncts))
         (er-soft+ ctx t (irr-type)
@@ -1566,7 +1566,8 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
-               ('sintp (type-sint))
+               (sintp (type-sint))
+               (ucharp (type-uchar))
                (t nil)))
        ((when (not type))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
