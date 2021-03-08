@@ -415,6 +415,15 @@
   ///
   (fty::deffixequiv tyname-list))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-tyname ()
+  :returns (tyname tynamep)
+  :short "An irrelevant type name, usable as a dummy value."
+  (with-guard-checking :none (ec-call (tyname-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-tyname))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expr-fixtypes

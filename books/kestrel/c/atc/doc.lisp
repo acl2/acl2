@@ -323,6 +323,24 @@
        see below for how to represent non-strict uses of them,
        but the strict version is slightly simpler when usable.")
      (xdoc::li
+      "A call of one of the following functions
+       on allowed pure non-boolean terms:"
+      (xdoc::ul
+       (xdoc::li "@(tsee sint-from-uchar)")
+       (xdoc::li "@(tsee uchar-from-sint)"))
+      "This represents
+       a cast to the type indicated by the first part of the function name.
+       The guard verification requirement ensures that
+       the conversion is always applied to
+       a value of the type indicated by the last part of the function name
+       and yields a well-defined result.
+       Even though the conversion from @('unsigned char') to @('int')
+       happens automatically under certain common circumstances
+       (e.g. when an @('unsigned char') is used
+       as an operand of an @('int') arithmetic operation),
+       currently ATC always generates explicit casts;
+       this will be improved in future extensions to ATC.")
+     (xdoc::li
       "A call of @(tsee sint01) on an allowed boolean term.
        This converts an allowed boolean term
        to an allowed pure non-boolean term.")

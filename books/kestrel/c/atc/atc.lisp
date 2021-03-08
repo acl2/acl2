@@ -723,6 +723,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-conv ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (tyname tynamep)
+               (arg pseudo-termp :hyp :guard))
+  :short "Check if a term represents a conversion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represents C integer conversions,
+     we return the C type name for the destination type
+     and the argument term.
+     This way, the caller can translate the argument term to a C expression
+     and apply a cast with a type name to the expression.")
+   (xdoc::p
+    "For now we always generate explicit casts for conversions.
+     Future versions of ATC will avoid generating casts
+     when the conversions happen automatically
+     due to where the argument expression occurs.")
+   (xdoc::p
+    "The C type of the conversion can be determined from the returned type name,
+     so there is no need to also return a C type here.")
+   (xdoc::p
+    "If the term does not have the form explained above,
+     we return an indication of failure."))
+  (case-match term
+    ((fn arg)
+     (case fn
+       (sint-from-uchar (mv t (tyname (tyspecseq-sint)) arg))
+       (uchar-from-sint (mv t (tyname (tyspecseq-uchar)) arg))
+       (t (mv nil (irr-tyname) nil))))
+    (& (mv nil (irr-tyname) nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-conv-arg
+    (implies yes/no
+             (< (acl2-count arg)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-callable-fn ((term pseudo-termp)
                                (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
@@ -889,6 +931,13 @@
        to the recursively generated expressions.
        The type is the result type of the operator.")
      (xdoc::p
+      "If the term fits the pattern of a conversion,
+       we translate it to a cast of
+       the recursively generated subexpression.
+       The type is the one of the cast.
+       (Future versions of ATC will avoid the cast
+       when the conversion happens automatically in C.)")
+     (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive ACL2 function
        that translates the argument (which must be an allowed boolean term)
@@ -951,7 +1000,17 @@
             (acl2::value (list (make-expr-binary :op op
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
-                               type)))))
+                               type))))
+         ((mv okp tyname arg) (atc-check-conv term))
+         ((when okp)
+          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
+                                                                  vars
+                                                                  fn
+                                                                  ctx
+                                                                  state)))
+            (acl2::value (list (make-expr-cast :type tyname
+                                               :arg arg-expr)
+                               (type-name-to-type tyname))))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
