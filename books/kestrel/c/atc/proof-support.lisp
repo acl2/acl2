@@ -229,6 +229,7 @@
     (:e declon->init)
     (:e declon->declor)
     (:e declor->ident)
+    (:e declor->pointerp)
     (:e expr-binary->arg1)
     (:e expr-binary->arg2)
     (:e expr-binary->op)

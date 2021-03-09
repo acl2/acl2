@@ -1019,7 +1019,9 @@
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
      We return an error if they do not match in number,
-     or if there are repeated parameters."))
+     or if there are repeated parameters.")
+   (xdoc::p
+    "For now we return an error if we encounter a pointer declarator."))
   (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
@@ -1034,7 +1036,10 @@
      :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
-              (name (declor->ident (param-declon->declor formal))))
+              (declor (param-declon->declor formal))
+              ((when (declor->pointerp declor))
+               (error (list :unsupported-pointer-declarator declor)))
+              (name (declor->ident declor)))
            (if (omap::in name scope)
                (error (list :init-scope :duplicate-param name))
              (omap::update name actual scope)))))
@@ -1264,7 +1269,8 @@
      (xdoc::p
       "If the block item is a declaration,
        we first execute the expression,
-       then we add the variable to the top scope of the top frame.")
+       then we add the variable to the top scope of the top frame.
+       For now we reject pointer declarators.")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
@@ -1276,7 +1282,11 @@
                      (exec-expr-call-or-pure declon.init compst fenv (1- limit))))
                  (value-result-case
                   init
-                  :ok (b* ((var (declor->ident declon.declor))
+                  :ok (b* (((when (declor->pointerp declon.declor))
+                            (mv (error (list :unsupported-pointer-declarator
+                                         declon.declor))
+                                compst))
+                           (var (declor->ident declon.declor))
                            (new-compst (create-var var init.get compst)))
                         (compustate-result-case
                          new-compst

@@ -226,7 +226,11 @@
                                                      (1- limit) (1- limit1))))
                   (value-result-case
                    init
-                   :ok (b* ((var (declor->ident declon.declor))
+                   :ok (b* (((when (declor->pointerp declon.declor))
+                             (mv (error (list :unsupported-pointer-declarator
+                                          declon.declor))
+                                 compst))
+                            (var (declor->ident declon.declor))
                             (new-compst (create-var var init.get compst)))
                          (compustate-result-case
                           new-compst

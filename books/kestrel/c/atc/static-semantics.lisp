@@ -697,7 +697,9 @@
      If @('nil') is among the return types of the first block item,
      we check the rest of the block,
      and we combine (i.e. take the union of) all the return types,
-     after removing @('nil') from the types of the first block item."))
+     after removing @('nil') from the types of the first block item.")
+   (xdoc::p
+    "For now we reject pointer declarators."))
 
   (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (stype stmt-type-resultp)
@@ -764,6 +766,8 @@
     (block-item-case
      item
      :declon (b* (((declon declon) item.get)
+                  ((when (declor->pointerp declon.declor))
+                   (error (list :unsupported-pointer-declarator declon.declor)))
                   (var (declor->ident declon.declor))
                   (wf (check-ident var))
                   ((when (errorp wf)) (error (list :declon-error-var wf)))
@@ -825,6 +829,8 @@
      If all checks succeed, we return the variable table
      updated with the parameter."))
   (b* (((param-declon param) param)
+       ((when (declor->pointerp param.declor))
+        (error (list :unsupported-pointer-declarator param.declor)))
        (var (declor->ident param.declor))
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))

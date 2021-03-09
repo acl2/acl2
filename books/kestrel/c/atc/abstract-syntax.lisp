@@ -530,10 +530,14 @@
    (xdoc::p
     "For now we only capture declarators
      that consist of single direct declarators
-     that consist of identifiers.
-     That is, a declarator is an identifier for now.
+     that consist of identifiers
+     optionally preceded by a single pointer indication without type qualifiers.
+     That is, for now a declarator is
+     either an identifier or a @('*') followed by an identifier.
+     We model the presence or absence of the @('*') via boolean flag.
      This will be generalized eventually."))
-  ((ident ident))
+  ((pointerp bool)
+   (ident ident))
   :tag :declor
   :pred declorp)
 
