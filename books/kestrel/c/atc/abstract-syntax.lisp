@@ -33,16 +33,6 @@
      It only needs to represent the C programs that ATC generates,
      not necessarily all the possible C programs.")
    (xdoc::p
-    "We start with an abstract syntax for a subset of C.
-     This initial subset can represent C programs consisting of
-     a single translation unit
-     with multiple functions
-     that manipulate integer values
-     (excluding pointers to integers, which are pointer values).
-     This suffices to support the generation of interesting C programs,
-     but we plan to extend the abstract syntax
-     to represent a much wider range of C programs.")
-   (xdoc::p
     "At the same time, we plan to formalize
      a more comprehensive abstract syntax of C
      as part of our "
@@ -264,7 +254,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We capture all of them, since they all take and return integers
+    "We capture all of them; they all take and return integers
      (along with values of other types).
      The C grammar does not have a nonterminal for binary operators
      (it has one for unary operators [C:6.5.3]),
@@ -340,10 +330,7 @@
     "For now we only capture type specifier sequences for
      the plain @('char') type and
      the standard signed and unsigned integer types.
-     We only capture one sequence for each, implicitly.")
-   (xdoc::p
-    "These type specifier sequences should suffice to represent
-     C programs that manipulate integers."))
+     We only capture one sequence for each, implicitly."))
   (:char ())
   (:schar ())
   (:sshort ())
@@ -391,8 +378,7 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only capture type names consisting of
-     the type specifier sequences captured by @(tsee tyspecseq).
-     This should suffice to represent C programs that manipulate integers."))
+     the type specifier sequences captured by @(tsee tyspecseq)."))
   ((specs tyspecseq))
   :tag :tyname
   :pred tynamep)
