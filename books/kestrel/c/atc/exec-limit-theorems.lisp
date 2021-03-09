@@ -226,8 +226,8 @@
                                                      (1- limit) (1- limit1))))
                   (value-result-case
                    init
-                   :ok (b* ((new-compst
-                             (create-var declon.name init.get compst)))
+                   :ok (b* ((var (declor->ident declon.declor))
+                            (new-compst (create-var var init.get compst)))
                          (compustate-result-case
                           new-compst
                           :ok (mv (value-option-result-ok nil) new-compst.get)

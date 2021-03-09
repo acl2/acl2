@@ -742,6 +742,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-declor ((declor declorp))
+  :returns (part msgp)
+  :short "Pretty-print a declarator."
+  (pprint-ident (declor->ident declor))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-line-blank ()
   :returns (line msgp)
   :short "Pretty-print a blank line of code."
@@ -766,7 +774,7 @@
   (b* (((declon declon) declon))
     (pprint-line (msg "~@0 ~@1 = ~@2;"
                       (pprint-tyspecseq declon.type)
-                      (pprint-ident declon.name)
+                      (pprint-declor declon.declor)
                       (pprint-expr declon.init (expr-grade-top)))
                  (lnfix level)))
   :hooks (:fix))
@@ -899,7 +907,7 @@
   (b* (((param-declon param) param))
     (msg "~@0 ~@1"
          (pprint-tyspecseq param.type)
-         (pprint-ident param.name)))
+         (pprint-declor param.declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

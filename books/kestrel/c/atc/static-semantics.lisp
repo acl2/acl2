@@ -764,17 +764,19 @@
     (block-item-case
      item
      :declon (b* (((declon declon) item.get)
-                  (wf (check-ident declon.name))
+                  (var (declor->ident declon.declor))
+                  (wf (check-ident var))
                   ((when (errorp wf)) (error (list :declon-error-var wf)))
                   (type (type-name-to-type (tyname declon.type)))
                   (init-type (check-expr-call-or-pure declon.init funtab vartab))
                   ((when (errorp init-type))
                    (error (list :declon-error-init init-type)))
                   ((unless (equal init-type type))
-                   (error (list :declon-mistype declon.type declon.name declon.init
-                                :required type
-                                :supplied init-type)))
-                  (vartab (var-table-add-var declon.name type vartab))
+                   (error (list
+                           :declon-mistype declon.type declon.declor declon.init
+                           :required type
+                           :supplied init-type)))
+                  (vartab (var-table-add-var var type vartab))
                   ((when (errorp vartab)) (error (list :declon-error vartab))))
                (make-stmt-type :return-types (set::insert nil nil)
                                :variables vartab))
@@ -823,9 +825,10 @@
      If all checks succeed, we return the variable table
      updated with the parameter."))
   (b* (((param-declon param) param)
-       (wf (check-ident param.name))
+       (var (declor->ident param.declor))
+       (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
-    (var-table-add-var param.name
+    (var-table-add-var var
                        (type-name-to-type (tyname param.type))
                        vartab))
   :hooks (:fix))

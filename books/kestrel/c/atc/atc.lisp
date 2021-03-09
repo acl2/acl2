@@ -1456,7 +1456,11 @@
                     (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
-                                        :name (make-ident :name (symbol-name var))
+                                        :declor (make-declor
+                                                 :ident
+                                                  (make-ident
+                                                   :name
+                                                    (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
                    (vars (atc-add-var var init-type vars))
@@ -1595,8 +1599,9 @@
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state)))
-    (acl2::value (list (make-param-declon :name (make-ident :name name)
-                                          :type (atc-gen-tyspecseq type))
+    (acl2::value (list (make-param-declon
+                        :declor (make-declor :ident (make-ident :name name))
+                        :type (atc-gen-tyspecseq type))
                        type)))
   ///
   (more-returns

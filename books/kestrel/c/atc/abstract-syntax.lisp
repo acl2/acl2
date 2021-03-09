@@ -523,6 +523,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod declor
+  :short "Fixtype of declarators [C:6.7.6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only capture declarators
+     that consist of single direct declarators
+     that consist of identifiers.
+     That is, a declarator is an identifier for now.
+     This will be generalized eventually."))
+  ((ident ident))
+  :tag :declor
+  :pred declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod declon
   :short "Fixtype of declarations [C:6.7]."
   :long
@@ -536,15 +552,14 @@
      no type qualifiers,
      no function specifiers,
      no alignment specifiers,
-     and a single declarator consisting of an identifier,
-     with an initializer expression.
-     This suffices to declare and initialize integer variables.")
+     and a single declarator (see @(tsee declor))
+     with an initializer expression.")
    (xdoc::p
     "We will support richer forms of declarations when needed.")
    (xdoc::p
     "We do not support static assertions for now."))
   ((type tyspecseq)
-   (name ident)
+   (declor declor)
    (init expr))
   :tag :declon
   :pred declonp)
@@ -660,9 +675,9 @@
     "For now we capture a very limited form of parameter declarations,
      namely the ones consisting of
      a type specifier sequence (see @(tsee tyspecseq))
-     and an identifier."))
+     and a declarator (see @(tsee declor))."))
   ((type tyspecseq)
-   (name ident))
+   (declor declor))
   :tag :param-declon
   :pred param-declonp)
 

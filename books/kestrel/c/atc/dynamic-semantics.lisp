@@ -1034,7 +1034,7 @@
      :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
-              (name (param-declon->name formal)))
+              (name (declor->ident (param-declon->declor formal))))
            (if (omap::in name scope)
                (error (list :init-scope :duplicate-param name))
              (omap::update name actual scope)))))
@@ -1276,7 +1276,8 @@
                      (exec-expr-call-or-pure declon.init compst fenv (1- limit))))
                  (value-result-case
                   init
-                  :ok (b* ((new-compst (create-var declon.name init.get compst)))
+                  :ok (b* ((var (declor->ident declon.declor))
+                           (new-compst (create-var var init.get compst)))
                         (compustate-result-case
                          new-compst
                          :ok (mv (value-option-result-ok nil) new-compst.get)
