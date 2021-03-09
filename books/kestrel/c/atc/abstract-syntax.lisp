@@ -654,6 +654,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "C parameter declarations are a restricted form of
+     (general) declarations in C.")
+   (xdoc::p
     "For now we capture a very limited form of parameter declarations,
      namely the ones consisting of
      a type specifier sequence (see @(tsee tyspecseq))
