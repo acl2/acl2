@@ -2324,7 +2324,7 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          name
-         :formula `(check-transunit ,prog-const)
+         :formula `(equal (check-transunit ,prog-const) :wellformed)
          :hints '(("Goal" :in-theory '((:e check-transunit))))
          :enable nil))
        (progress-start?
