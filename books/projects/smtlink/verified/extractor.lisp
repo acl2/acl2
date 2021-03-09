@@ -13,86 +13,159 @@
 (include-book "hint-interface")
 (include-book "type-hyp")
 (include-book "basics")
+(include-book "evaluator")
 
-(defsection SMT-extract
-  :parents (verified)
-  :short "SMT-extract extracts type hypotheses from the clause. The SMT solver requires knowing type declarations."
+;; (defsection SMT-extract
+;;   :parents (verified)
 
-  (defthm pseudo-term-listp-of-append-of-pseudo-term-listp
-    (implies (and (pseudo-term-listp x) (pseudo-term-listp y))
-             (pseudo-term-listp (append x y))))
+(define var-equal-p ((term pseudo-termp))
+  :returns (ok booleanp)
+  (b* ((term (pseudo-term-fix term)))
+    (case-match term
+      (('equal lhs &) (symbolp lhs))
+      (& nil))))
 
-  (local (in-theory (enable pseudo-termp pseudo-term-listp
-                            pseudo-term-fix
-                            pseudo-term-list-fix)))
+(define to-extract ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
+  :returns (ok booleanp)
+  (b* ((term (pseudo-term-fix term))
+       (fixinfo (smt-fixtype-info-fix fixinfo)))
+    (or (type-decl-p term fixinfo)
+        (var-equal-p term))))
 
-  (defines extract
-    :parents (SMT-extract)
-    :short "Functions for extracting type declarations from clause."
+(defthm pseudo-term-listp-of-append-of-pseudo-term-listp
+  (implies (and (pseudo-term-listp x) (pseudo-term-listp y))
+           (pseudo-term-listp (append x y))))
 
-    (define extract-disjunct ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
-      :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
-      :verify-guards nil
-      ;; looking for (typep var) where var *not* satisfying typep make term trivially true
-      (b* ((term (pseudo-term-fix term)))
-        (cond ((not (consp term)) (mv nil term))
-              ((and (equal (car term) 'if) (equal (caddr term) ''t))
-               (b* (((mv decl1 term1) (extract-disjunct (cadr term) fixinfo))
-                    ((mv decl2 term2) (extract-disjunct (cadddr term) fixinfo)))
-                 (mv (append decl1 decl2)
-                     (cond ((or (equal term1 ''t) (equal term2 ''t)) ''t)
-                           ((equal term1 ''nil) term2)
-                           ((equal term2 ''nil) term1)
-                           (t `(if ,term1 't ,term2))))))
-              ((equal (car term) 'not)
-               (b* (((mv decl0 term0) (extract-conjunct (cadr term) fixinfo)))
-                 (mv decl0
-                     (cond ((equal term0 ''nil) ''t)
-                           ((equal term0 ''t)   ''nil)
-                           (t `(not ,term0))))))
-              ((equal (car term) 'implies)
-               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fixinfo))
-                    ((mv decl2 term2) (extract-disjunct (caddr term) fixinfo)))
-                 (mv (append decl1 decl2)
-                     (cond ((or (equal term1 ''nil) (equal term2 ''t)) ''t)
-                           ((equal term1 ''t) term2)
-                           ((equal term2 ''nil) `(not ,term1))
-                           (t `(implies ,term1 ,term2))))))
-              (t (mv nil term)))))
+(local (in-theory (e/d (;; pseudo-termp
+                        ;;  pseudo-term-listp
+                        pseudo-term-fix
+                        ;; pseudo-term-list-fix
+                        )
+                   (consp-of-pseudo-lambdap
+                    symbol-listp
+                    pseudo-lambdap-of-fn-call-of-pseudo-termp
+                    lambda-of-pseudo-lambdap
+                    ACL2::TRUE-LISTP-OF-CAR-WHEN-TRUE-LIST-LISTP
+                    TRUE-LIST-LISTP
+                    PSEUDO-TERM-LISTP-OF-CDR-OF-PSEUDO-TERMP
+                    PSEUDO-TERM-LISTP-OF-CDR-PSEUDO-TERMP-IF))))
 
-(define extract-conjunct ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
-      :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
-      :verify-guards nil
-      ;; looking for (typep var) where var *not* satisfying typep make term trivially false
-      (b* ((term (pseudo-term-fix term)))
-        (cond ((not (consp term)) (mv nil term))
-              ((and (equal (car term) 'if) (equal (cadddr term) ''nil))
-               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fixinfo))
-                    ((mv decl2 term2) (extract-conjunct (caddr term) fixinfo)))
-                 (mv (append decl1 decl2)
-                     (cond ((or (equal term1 ''nil) (equal term2 ''nil)) ''nil)
-                           ((equal term1 ''t) term2)
-                           ((equal term2 ''t) term1)
-                           (t `(if ,term1 ,term2 'nil))))))
-              ((equal (car term) 'not)
-               (b* (((mv decl0 term0) (extract-disjunct (cadr term) fixinfo)))
-                 (mv decl0
-                     (cond ((equal term0 ''nil) ''t)
-                           ((equal term0 ''t)   ''nil)
-                           (t `(not ,term0))))))
-              ((or (type-decl-p term fixinfo) (is-type-hyp term))
-               (mv (list term) ''t))
-              (t (mv nil term)))))
-    )
+(defines extract
+  :parents (SMT-extract)
+  :short "Functions for extracting type declarations from clause."
+  :flag-local nil
 
-  (verify-guards extract-conjunct)
-  (verify-guards extract-disjunct)
+  (define extract-disjunct ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
+    :returns (mv (extracted pseudo-term-listp)
+                 (new-term pseudo-termp))
+    :verify-guards nil
+    (b* ((term (pseudo-term-fix term)))
+      (cond ((not (consp term)) (mv nil term))
+            ((and (equal (car term) 'if) (equal (caddr term) ''t))
+             (b* (((mv decl1 term1) (extract-disjunct (cadr term) fixinfo))
+                  ((mv decl2 term2) (extract-disjunct (cadddr term) fixinfo)))
+               (mv (append decl1 decl2)
+                   (cond ((or (equal term1 ''t) (equal term2 ''t)) ''t)
+                         ((equal term1 ''nil) term2)
+                         ((equal term2 ''nil) term1)
+                         (t `(if ,term1 't ,term2))))))
+            ((equal (car term) 'not)
+             (b* (((mv decl0 term0) (extract-conjunct (cadr term) fixinfo)))
+               (mv decl0
+                   (cond ((equal term0 ''nil) ''t)
+                         ((equal term0 ''t)   ''nil)
+                         (t `(not ,term0))))))
+            ((or (equal (car term) 'implies)
+                 (and (equal (car term) 'if) (equal (cadddr term) ''t)))
+             (b* (((mv decl1 term1) (extract-conjunct (cadr term) fixinfo))
+                  ((mv decl2 term2) (extract-disjunct (caddr term) fixinfo)))
+               (mv (append decl1 decl2)
+                   (cond ((or (equal term1 ''nil) (equal term2 ''t)) ''t)
+                         ((equal term1 ''t) term2)
+                         ((equal term2 ''nil) `(not ,term1))
+                         (t `(if ,term1 ,term2 't))))))
+            (t (mv nil term)))))
 
-  (define smt-extract ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
-    :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
-    (b* (((mv decl-list theorem) (extract-disjunct term fixinfo))
-         ;; (- (cw "decl-list: ~q0theorem:~q1" decl-list theorem))
-         )
-      (mv decl-list theorem)))
-)
+  (define extract-conjunct ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
+    :returns (mv (extracted pseudo-term-listp)
+                 (new-term pseudo-termp))
+    :verify-guards nil
+    (b* ((term (pseudo-term-fix term)))
+      (cond ((not (consp term)) (mv nil term))
+            ((and (equal (car term) 'if) (equal (cadddr term) ''nil))
+             (b* (((mv decl1 term1) (extract-conjunct (cadr term) fixinfo))
+                  ((mv decl2 term2) (extract-conjunct (caddr term) fixinfo)))
+               (mv (append decl1 decl2)
+                   (cond ((or (equal term1 ''nil) (equal term2 ''nil)) ''nil)
+                         ((equal term1 ''t) term2)
+                         ((equal term2 ''t) term1)
+                         (t `(if ,term1 ,term2 'nil))))))
+            ((equal (car term) 'not)
+             (b* (((mv decl0 term0) (extract-disjunct (cadr term) fixinfo)))
+               (mv decl0
+                   (cond ((equal term0 ''nil) ''t)
+                         ((equal term0 ''t)   ''nil)
+                         (t `(not ,term0))))))
+            ((to-extract term fixinfo)
+             (mv (list term) ''t))
+            (t (mv nil term)))))
+  )
+
+(verify-guards extract-conjunct)
+
+(define extractor ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
+  :returns (mv (hypo-lst pseudo-term-listp) (theorem pseudo-termp))
+  (extract-disjunct term fixinfo))
+
+#|
+(extractor '(if (if (equal x2 (binary-+ x0 x1))
+                    (if (equal x1 (rfix y))
+                        (if (equal x0 (ifix x)) 't 'nil)
+                      'nil)
+                  'nil)
+                (if (if (< x y)
+                        (if (integerp x) (rationalp y) 'nil)
+                      'nil)
+                    (< x2 '0)
+                  't)
+              't)
+           `((integerp . ,(make-info-pair :fn-type :recognizer))
+             (rationalp . ,(make-info-pair :fn-type :recognizer))))
+|#
+
+(defthm-extract-flag
+  (defthm correctness-of-extract-disjunct
+    (implies (and (pseudo-termp term)
+                  (smt-fixtype-info-p fixinfo)
+                  (alistp a))
+             (b* (((mv hypo-lst new-term)
+                   (extract-disjunct term fixinfo)))
+               (iff (ev-smtcp `(if ,(conjoin hypo-lst) ,new-term 't) a)
+                    (ev-smtcp term a))))
+    :flag extract-disjunct
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (extract-disjunct extract-conjunct) ())))))
+  (defthm correctness-of-extract-conjunct
+    (implies (and (pseudo-termp term)
+                  (smt-fixtype-info-p fixinfo)
+                  (alistp a))
+             (b* (((mv hypo-lst new-term)
+                   (extract-conjunct term fixinfo)))
+               (iff (ev-smtcp `(if ,(conjoin hypo-lst) ,new-term 'nil) a)
+                    (ev-smtcp term a))))
+    :flag extract-conjunct
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (extract-disjunct extract-conjunct) ()))))))
+
+(defthm correctness-of-extractor
+  (implies (and (pseudo-termp term)
+                (smt-fixtype-info-p fixinfo)
+                (alistp a))
+           (b* (((mv hypo-lst new-term) (extractor term fixinfo)))
+             (iff (ev-smtcp `(if ,(conjoin hypo-lst) ,new-term 't) a)
+                  (ev-smtcp term a))))
+  :hints (("Goal"
+           :in-theory (enable extractor))))
+
+;;)
 

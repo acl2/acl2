@@ -21,7 +21,6 @@
 
 ;; Include SMT books
 (include-book "hint-interface")
-(include-book "extractor")
 (include-book "basics")
 (include-book "hint-please")
 (include-book "computed-hints")

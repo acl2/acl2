@@ -15,6 +15,7 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
+(include-book "reorder-hypotheses")
 (include-book "type-inference-bottomup")
 (include-book "type-inference-topdown")
 
@@ -30,7 +31,7 @@
        ((smtlink-hint h) smtlink-hint)
        (goal (disjoin cl))
        (options (construct-type-options smtlink-hint))
-       (names (all-vars goal))
+       (names (acl2::simple-term-vars goal))
        (type-judgements (type-judgement goal ''t options names state))
        (typed-term (make-typed-term :term goal :path-cond ''t
                                     :judgements type-judgements))
@@ -74,7 +75,7 @@
                             symbol-listp))
            :use ((:instance correctness-of-unify-type
                             (options (construct-type-options hint))
-                            (names (all-vars (disjoin cl)))
+                            (names (acl2::simple-term-vars (disjoin cl)))
                             (expected ''t)
                             (tterm (typed-term
                                     (disjoin cl)
@@ -82,7 +83,7 @@
                                     (type-judgement (disjoin cl)
                                                     ''t
                                                     (construct-type-options hint)
-                                                    (all-vars1 (disjoin cl) nil)
+                                                    (acl2::simple-term-vars (disjoin cl))
                                                     state)))
                             (a a)))))
   :rule-classes :clause-processor)
