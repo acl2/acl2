@@ -489,7 +489,7 @@
      (xdoc::codeblock
       "(defthm *program*-well-formed ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('*program*') stating that
+      "where @('...') is an assertion about @('*program*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
        i.e. it compiles according to [C].")
@@ -502,7 +502,7 @@
      (xdoc::codeblock
       "(defthm *program*-fn-correct ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('fn') and @('*program*')
+      "where @('...') is an assertion about @('fn') and @('*program*')
        stating that,
        under the guard of @('fn'),
        executing the C dynamic semantics on

@@ -2281,12 +2281,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-prog-wf-thm ((prog-const symbolp)
-                             (proofs booleanp)
-                             (print evmac-input-print-p)
-                             (names-to-avoid symbol-listp)
-                             ctx
-                             state)
+(define atc-gen-wf-thm ((prog-const symbolp)
+                        (proofs booleanp)
+                        (print evmac-input-print-p)
+                        (names-to-avoid symbol-listp)
+                        ctx
+                        state)
   :returns (mv erp
                (val "A @('(tuple (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
@@ -2367,7 +2367,7 @@
   (b* (((mv fenv-const-event fenv-const names-to-avoid)
         (atc-gen-fenv-const prog-const names-to-avoid (w state)))
        ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
-        (atc-gen-prog-wf-thm prog-const proofs print names-to-avoid ctx state))
+        (atc-gen-wf-thm prog-const proofs print names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil prog-const proofs print
