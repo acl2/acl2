@@ -1443,14 +1443,6 @@
                     (+ (- (expt 2 size)) (bvchop size i1) (bvchop size i2)))))
   :hints (("Goal" :in-theory (enable bvchop mod-sum-cases))))
 
-;some way to automate this kind of reasoning?
-(defthm slice-leibniz
-  (implies (and (equal high1 high2)
-                (equal low1 low2)
-                (equal x1 x2))
-           (equal (equal (slice high1 low1 x1) (slice high2 low2 x2))
-                  t)))
-
 (defthm bvchop-of-both-sides
   (implies (equal x y)
            (equal (bvchop size x)
@@ -2467,7 +2459,7 @@
                                             )))))
 
 ;do this better with congruences?
-(defthm bvcat-of-+-high
+(defthmd bvcat-of-+-high
   (implies (and (integerp x)
                 (integerp y)
                 (natp highsize)

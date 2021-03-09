@@ -343,3 +343,10 @@
 
 (defthm bitp-of-getbit
   (bitp (acl2::getbit n x)))
+
+;; could restrict to when the v's are identical
+(defthmd getbit-leibniz
+  (implies (and (equal n1 n2)
+                (equal v1 v2))
+           (equal (equal (getbit n1 v1) (getbit n2 v2))
+                  t)))

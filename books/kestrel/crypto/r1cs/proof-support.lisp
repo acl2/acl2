@@ -22,7 +22,6 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/crypto/r1cs/fe-listp" :dir :system) ;for fe-listp, todo: reduce
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -31,7 +30,6 @@
 (local (include-book "kestrel/bv/rules4" :dir :system))
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; for bvchop-not-0-when-getbit-not-0
 
-(acl2::add-known-boolean pfield::fe-listp)
 (acl2::add-known-boolean acl2::bit-listp)
 
 ;; TODO: Oraganize this material
@@ -98,10 +96,6 @@
                   (and (equal x (acl2::getbit 8 (acl2::bvplus 9 w z)))
                        (equal y (acl2::bvplus 8 w z)))))
   :hints (("Goal" :use (:instance acl2::adding-8-idiom))))
-
-;for Axe
-(defthm pfield::booleanp-of-fe-listp
-  (booleanp (fe-listp elems prime)))
 
 (defthm acl2::bitp-when-bit-listp-and-memberp
   (implies (and (acl2::bit-listp free)
@@ -715,7 +709,7 @@
     (acl2::make-bitp-claims-aux (rest terms)
                                 (cons `(bitp ,(first terms)) acc))))
 
-
+;; Make a list of terms that together assert that all of the TERMS satisfy bitp.
 (defun acl2::make-bitp-claims (terms)
   (declare (xargs :guard (true-listp terms)))
   (acl2::make-bitp-claims-aux (acl2::reverse-list terms) nil))
