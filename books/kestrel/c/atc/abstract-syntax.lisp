@@ -650,7 +650,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod param-declon
-  :short "Fixtype of parameter declarations [C:6.7.5]."
+  :short "Fixtype of parameter declarations [C:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
