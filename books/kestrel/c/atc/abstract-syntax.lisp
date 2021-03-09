@@ -523,7 +523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod decl
+(fty::defprod declon
   :short "Fixtype of declarations [C:6.7]."
   :long
   (xdoc::topstring
@@ -546,8 +546,8 @@
   ((type tyspecseq)
    (name ident)
    (init expr))
-  :tag :decl
-  :pred declp)
+  :tag :declon
+  :pred declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,7 +625,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are declarations and statements."))
-    (:decl ((get decl)))
+    (:declon ((get declon)))
     (:stmt ((get stmt)))
     :pred block-itemp)
 
@@ -649,7 +649,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-decl
+(fty::defprod param-declon
   :short "Fixtype of parameter declarations [C:6.7.5]."
   :long
   (xdoc::topstring
@@ -660,35 +660,35 @@
      and an identifier."))
   ((type tyspecseq)
    (name ident))
-  :tag :param-decl
-  :pred param-declp)
+  :tag :param-declon
+  :pred param-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist param-decl-list
+(fty::deflist param-declon-list
   :short "Fixtype of lists of parameter declarations."
-  :elt-type param-decl
+  :elt-type param-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred param-decl-listp)
+  :pred param-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection param-decl-list->type-list ((x param-decl-listp))
+(std::defprojection param-declon-list->type-list ((x param-declon-listp))
   :result-type tyspecseq-listp
-  :short "Lift @(tsee param-decl->type) to lists."
-  (param-decl->type x)
+  :short "Lift @(tsee param-declon->type) to lists."
+  (param-declon->type x)
   ///
-  (fty::deffixequiv param-decl-list->type-list))
+  (fty::deffixequiv param-declon-list->type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-param-decl ()
-  :returns (param param-declp)
+(define irr-param-declon ()
+  :returns (param param-declonp)
   :short "An irrelevant parameter declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (param-decl-fix :irrelevant)))
+  (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-param-decl))))
+  (in-theory (disable (:e irr-param-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -705,7 +705,7 @@
      Richer forms may be added in the future."))
   ((result tyspecseq)
    (name ident)
-   (params param-decl-list)
+   (params param-declon-list)
    (body stmt))
   :tag :fundef
   :pred fundefp)
@@ -732,7 +732,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum ext-decl
+(fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C:6.9]."
   :long
   (xdoc::topstring
@@ -741,30 +741,30 @@
      We add a placeholder for other top-level declarations,
      which we will flesh out later."))
   (:fundef ((get fundef)))
-  (:decl ())
-  :pred ext-declp)
+  (:declon ())
+  :pred ext-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist ext-decl-list
+(fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
-  :elt-type ext-decl
+  :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-decl-listp)
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-ext-decl ()
-  :returns (ext ext-declp)
+(define irr-ext-declon ()
+  :returns (ext ext-declonp)
   :short "An irrelevant external declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (ext-decl-fix :irrelevant)))
+  (with-guard-checking :none (ec-call (ext-declon-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-ext-decl))))
+  (in-theory (disable (:e irr-ext-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list->fundef-list ((exts ext-decl-listp))
+(define ext-declon-list->fundef-list ((exts ext-declon-listp))
   :returns (defs fundef-listp)
   :short "Extract from a list of external declarations
           the list of function definitions, in the same order."
@@ -774,10 +774,10 @@
     "Declarations are discarded. Only function definitions are projected."))
   (b* (((when (endp exts)) nil)
        (ext (car exts)))
-    (ext-decl-case ext
-                   :fundef (cons (ext-decl-fundef->get ext)
-                                 (ext-decl-list->fundef-list (cdr exts)))
-                   :decl (ext-decl-list->fundef-list (cdr exts))))
+    (ext-declon-case ext
+                   :fundef (cons (ext-declon-fundef->get ext)
+                                 (ext-declon-list->fundef-list (cdr exts)))
+                   :declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -793,7 +793,7 @@
      We create this one-field product fixtype
      so that in the future it may be easier to extend this fixtype
      with more information if needed."))
-  ((decls ext-decl-list))
+  ((declons ext-declon-list))
   :tag :transunit
   :pred transunitp)
 

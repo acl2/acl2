@@ -220,18 +220,19 @@
            (mv (error :limit) (compustate-fix compst))))
        (block-item-case
         item
-        :decl (b* (((decl decl) item.get)
-                   ((mv init compst)
-                    (exec-expr-call-or-pure-induct decl.init compst fenv
-                                                   (1- limit) (1- limit1))))
-                (value-result-case
-                 init
-                 :ok (b* ((new-compst (create-var decl.name init.get compst)))
-                       (compustate-result-case
-                        new-compst
-                        :ok (mv (value-option-result-ok nil) new-compst.get)
-                        :err (mv new-compst.get compst)))
-                 :err (mv init.get compst)))
+        :declon (b* (((declon declon) item.get)
+                     ((mv init compst)
+                      (exec-expr-call-or-pure-induct declon.init compst fenv
+                                                     (1- limit) (1- limit1))))
+                  (value-result-case
+                   init
+                   :ok (b* ((new-compst
+                             (create-var declon.name init.get compst)))
+                         (compustate-result-case
+                          new-compst
+                          :ok (mv (value-option-result-ok nil) new-compst.get)
+                          :err (mv new-compst.get compst)))
+                   :err (mv init.get compst)))
         :stmt (exec-stmt-induct item.get compst fenv
                                 (1- limit) (1- limit1))))
      :measure (nfix limit))

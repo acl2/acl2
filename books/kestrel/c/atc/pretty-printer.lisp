@@ -760,14 +760,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-decl ((decl declp) (level natp))
+(define pprint-declon ((declon declonp) (level natp))
   :returns (part msgp)
   :short "Pretty-print a declaration."
-  (b* (((decl decl) decl))
+  (b* (((declon declon) declon))
     (pprint-line (msg "~@0 ~@1 = ~@2;"
-                      (pprint-tyspecseq decl.type)
-                      (pprint-ident decl.name)
-                      (pprint-expr decl.init (expr-grade-top)))
+                      (pprint-tyspecseq declon.type)
+                      (pprint-ident declon.name)
+                      (pprint-expr declon.init (expr-grade-top)))
                  (lnfix level)))
   :hooks (:fix))
 
@@ -880,7 +880,7 @@
   (define pprint-block-item ((item block-itemp) (level natp))
     :returns (lines msg-listp)
     (block-item-case item
-                     :decl (list (pprint-decl item.get level))
+                     :declon (list (pprint-declon item.get level))
                      :stmt (pprint-stmt item.get level))
     :measure (block-item-count item))
 
@@ -893,10 +893,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-param-decl ((param param-declp))
+(define pprint-param-declon ((param param-declonp))
   :returns (part msgp)
   :short "Pretty-print a parameter declaration."
-  (b* (((param-decl param) param))
+  (b* (((param-declon param) param))
     (msg "~@0 ~@1"
          (pprint-tyspecseq param.type)
          (pprint-ident param.name)))
@@ -904,12 +904,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-param-decl-list ((params param-decl-listp))
+(define pprint-param-declon-list ((params param-declon-listp))
   :returns (parts msg-listp)
   :short "Pretty-print a list of parameter-declarations."
   (cond ((endp params) nil)
-        (t (cons (pprint-param-decl (car params))
-                 (pprint-param-decl-list (cdr params)))))
+        (t (cons (pprint-param-declon (car params))
+                 (pprint-param-declon-list (cdr params)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -926,34 +926,34 @@
                                     (pprint-tyspecseq fdef.result)
                                     (pprint-ident fdef.name)
                                     (pprint-comma-sep
-                                     (pprint-param-decl-list fdef.params)))
+                                     (pprint-param-declon-list fdef.params)))
                                0))
             (pprint-stmt fdef.body 1)
             (list (pprint-line "}" 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ext-decl ((edecl ext-declp))
+(define pprint-ext-declon ((ext ext-declonp))
   :returns (lines msg-listp)
   :short "Pretty-print an external declaration."
-  (ext-decl-case edecl
-                 :fundef (pprint-fundef edecl.get)
-                 :decl (raise "Internal error: ~
-                               non-function-definition external declarations ~
-                               not supported.")))
+  (ext-declon-case ext
+                   :fundef (pprint-fundef ext.get)
+                   :declon (raise "Internal error: ~
+                                 non-function-definition external declarations ~
+                                 not supported.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ext-decl-list ((edecls ext-decl-listp))
+(define pprint-ext-declon-list ((exts ext-declon-listp))
   :returns (lines msg-listp)
   :short "Pretty-print a list of external declarations."
   :long
   (xdoc::topstring-p
    "We print a blank line before each one.")
-  (cond ((endp edecls) nil)
+  (cond ((endp exts) nil)
         (t (append (list (pprint-line-blank))
-                   (pprint-ext-decl (car edecls))
-                   (pprint-ext-decl-list (cdr edecls))))))
+                   (pprint-ext-declon (car exts))
+                   (pprint-ext-declon-list (cdr exts))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -961,7 +961,7 @@
   :returns (lines msg-listp)
   :short "Pretty-print a translation units."
   (b* (((transunit tunit) tunit))
-    (pprint-ext-decl-list tunit.decls)))
+    (pprint-ext-declon-list tunit.declons)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

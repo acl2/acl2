@@ -1386,7 +1386,7 @@
      and the limit for the remaining block items.
      The first block item is either a declaration or an assignment.
      If it is a declaration, we need 1 to go from @(tsee exec-block-item)
-     to the @(':decl') case and to @(tsee exec-expr-call-or-pure).
+     to the @(':declon') case and to @(tsee exec-expr-call-or-pure).
      If it is an assignment, we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
@@ -1455,10 +1455,10 @@
               (b* (((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
-                   (decl (make-decl :type (atc-gen-tyspecseq init-type)
-                                    :name (make-ident :name (symbol-name var))
-                                    :init init-expr))
-                   (item (block-item-decl decl))
+                   (declon (make-declon :type (atc-gen-tyspecseq init-type)
+                                        :name (make-ident :name (symbol-name var))
+                                        :init init-expr))
+                   (item (block-item-declon declon))
                    (vars (atc-add-var var init-type vars))
                    ((er (list body-items body-type body-limit))
                     (atc-gen-stmt body vars fn prec-fns ctx state))
@@ -1568,14 +1568,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-decl ((formal symbolp)
-                            (fn symbolp)
-                            (guard-conjuncts pseudo-term-listp)
-                            (guard pseudo-termp)
-                            ctx
-                            state)
+(define atc-gen-param-declon ((formal symbolp)
+                              (fn symbolp)
+                              (guard-conjuncts pseudo-term-listp)
+                              (guard pseudo-termp)
+                              ctx
+                              state)
   :returns (mv erp
-               (val (tuple (param param-declp)
+               (val (tuple (param param-declonp)
                            (type typep)
                            val))
                state)
@@ -1587,16 +1587,16 @@
      we also (try and) retrieve its C type from the guard."))
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-param-decl) (irr-type))
+        (er-soft+ ctx t (list (irr-param-declon) (irr-type))
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn))
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list (irr-param-decl) (irr-type)) state)))
-    (acl2::value (list (make-param-decl :name (make-ident :name name)
-                                        :type (atc-gen-tyspecseq type))
+       ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state)))
+    (acl2::value (list (make-param-declon :name (make-ident :name name)
+                                          :type (atc-gen-tyspecseq type))
                        type)))
   ///
   (more-returns
@@ -1604,14 +1604,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-decl-list ((formals symbol-listp)
-                                 (fn symbolp)
-                                 (guard-conjuncts pseudo-term-listp)
-                                 (guard pseudo-termp)
-                                 ctx
-                                 state)
+(define atc-gen-param-declon-list ((formals symbol-listp)
+                                   (fn symbolp)
+                                   (guard-conjuncts pseudo-term-listp)
+                                   (guard pseudo-termp)
+                                   ctx
+                                   state)
   :returns (mv erp
-               (val (tuple (params param-decl-listp)
+               (val (tuple (params param-declon-listp)
                            (vars atc-symbol-type-alist-listp)
                            val))
                state)
@@ -1634,25 +1634,25 @@
                       another formal parameter among ~x2; ~
                       this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
-       ((mv erp (list param type) state) (atc-gen-param-decl formal
-                                                             fn
-                                                             guard-conjuncts
-                                                             guard
-                                                             ctx
-                                                             state))
+       ((mv erp (list param type) state) (atc-gen-param-declon formal
+                                                               fn
+                                                               guard-conjuncts
+                                                               guard
+                                                               ctx
+                                                               state))
        ((when erp) (mv erp (list nil nil) state))
-       ((er (list params vars)) (atc-gen-param-decl-list (cdr formals)
-                                                         fn
-                                                         guard-conjuncts
-                                                         guard
-                                                         ctx
-                                                         state)))
+       ((er (list params vars)) (atc-gen-param-declon-list (cdr formals)
+                                                           fn
+                                                           guard-conjuncts
+                                                           guard
+                                                           ctx
+                                                           state)))
     (acl2::value (list (cons param params)
                        (atc-add-var formal type vars))))
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-param-decl-list)
+  (verify-guards atc-gen-param-declon-list)
 
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -2098,17 +2098,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl ((fn symbolp)
-                          (prec-fns atc-symbol-fninfo-alistp)
-                          (prog-const symbolp)
-                          (proofs booleanp)
-                          (print evmac-input-print-p)
-                          (fenv-const symbolp)
-                          (names-to-avoid symbol-listp)
-                          ctx
-                          state)
+(define atc-gen-ext-declon ((fn symbolp)
+                            (prec-fns atc-symbol-fninfo-alistp)
+                            (prog-const symbolp)
+                            (proofs booleanp)
+                            (print evmac-input-print-p)
+                            (fenv-const symbolp)
+                            (names-to-avoid symbol-listp)
+                            ctx
+                            state)
   :returns (mv erp
-               (val "A @('(tuple (ext ext-declp)
+               (val "A @('(tuple (ext ext-declonp)
                                  (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
                                  (updated-prec-fns atc-symbol-fninfo-alistp)
@@ -2143,12 +2143,12 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params vars)) (atc-gen-param-decl-list formals
-                                                         fn
-                                                         guard-conjuncts
-                                                         guard
-                                                         ctx
-                                                         state))
+       ((er (list params vars)) (atc-gen-param-declon-list formals
+                                                           fn
+                                                           guard-conjuncts
+                                                           guard
+                                                           ctx
+                                                           state))
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    vars
@@ -2156,7 +2156,7 @@
                                                    prec-fns
                                                    ctx
                                                    state))
-       (ext (ext-decl-fundef
+       (ext (ext-declon-fundef
              (make-fundef :result (atc-gen-tyspecseq type)
                           :name (make-ident :name name)
                           :params params
@@ -2182,24 +2182,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl-list ((fns symbol-listp)
-                               (prec-fns atc-symbol-fninfo-alistp)
-                               (prog-const symbolp)
-                               (proofs booleanp)
-                               (print evmac-input-print-p)
-                               (fenv-const symbolp)
-                               (names-to-avoid symbol-listp)
-                               ctx
-                               state)
+(define atc-gen-ext-declon-list ((fns symbol-listp)
+                                 (prec-fns atc-symbol-fninfo-alistp)
+                                 (prog-const symbolp)
+                                 (proofs booleanp)
+                                 (print evmac-input-print-p)
+                                 (fenv-const symbolp)
+                                 (names-to-avoid symbol-listp)
+                                 ctx
+                                 state)
   :returns (mv erp
-               (val "A @('(tuple (exts ext-decl-listp)
+               (val "A @('(tuple (exts ext-declon-listp)
                                  (local-events pseudo-event-form-listp)
                                  (exported-events pseudo-event-form-listp)
                                  (updated-names-to-avoid symbol-listp)
                                  val)').")
                state)
   :mode :program
-  :short "Lift @(tsee atc-gen-ext-decl) to lists."
+  :short "Lift @(tsee atc-gen-ext-declon) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2216,11 +2216,11 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-decl fn prec-fns prog-const proofs print fenv-const
-                          names-to-avoid ctx state))
+        (atc-gen-ext-declon fn prec-fns prog-const proofs print fenv-const
+                            names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-decl-list rest-fns prec-fns prog-const proofs print
-                               fenv-const names-to-avoid ctx state)))
+        (atc-gen-ext-declon-list rest-fns prec-fns prog-const proofs print
+                                 fenv-const names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -2365,9 +2365,9 @@
         (atc-gen-prog-wf-thm prog-const proofs print names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-decl-list fn1...fnp nil prog-const proofs print
-                               fenv-const names-to-avoid ctx state))
-       (tunit (make-transunit :decls exts))
+        (atc-gen-ext-declon-list fn1...fnp nil prog-const proofs print
+                                 fenv-const names-to-avoid ctx state))
+       (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (atc-gen-prog-const prog-const tunit print))
        (local-events (append (list local-const-event)

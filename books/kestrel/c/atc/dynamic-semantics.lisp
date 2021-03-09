@@ -1010,7 +1010,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-scope ((formals param-decl-listp) (actuals value-listp))
+(define init-scope ((formals param-declon-listp) (actuals value-listp))
   :returns (result scope-resultp)
   :short "Initialize the variable scope for a function call."
   :long
@@ -1020,7 +1020,7 @@
      pairing them up into the scope.
      We return an error if they do not match in number,
      or if there are repeated parameters."))
-  (b* ((formals (param-decl-list-fix formals))
+  (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
         (if (endp actuals)
@@ -1034,7 +1034,7 @@
      :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
-              (name (param-decl->name formal)))
+              (name (param-declon->name formal)))
            (if (omap::in name scope)
                (error (list :init-scope :duplicate-param name))
              (omap::update name actual scope)))))
@@ -1271,17 +1271,17 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :decl (b* (((decl decl) item.get)
-                  ((mv init compst)
-                   (exec-expr-call-or-pure decl.init compst fenv (1- limit))))
-               (value-result-case
-                init
-                :ok (b* ((new-compst (create-var decl.name init.get compst)))
-                      (compustate-result-case
-                       new-compst
-                       :ok (mv (value-option-result-ok nil) new-compst.get)
-                       :err (mv new-compst.get compst)))
-                :err (mv init.get compst)))
+       :declon (b* (((declon declon) item.get)
+                    ((mv init compst)
+                     (exec-expr-call-or-pure declon.init compst fenv (1- limit))))
+                 (value-result-case
+                  init
+                  :ok (b* ((new-compst (create-var declon.name init.get compst)))
+                        (compustate-result-case
+                         new-compst
+                         :ok (mv (value-option-result-ok nil) new-compst.get)
+                         :err (mv new-compst.get compst)))
+                  :err (mv init.get compst)))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1371,7 +1371,7 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
-     :fn exec-stmt)
+      :fn exec-stmt)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1410,23 +1410,23 @@
      starting from the empty environment.
      If an external declaration that is not a function definition is found,
      we defensively return an error."))
-  (init-fun-env-aux (transunit->decls tunit) nil)
+  (init-fun-env-aux (transunit->declons tunit) nil)
   :hooks (:fix)
 
   :prepwork
-  ((define init-fun-env-aux ((decls ext-decl-listp) (fenv fun-envp))
+  ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))
      :returns (result fun-env-resultp)
      :parents nil
-     (b* (((when (endp decls)) (fun-env-fix fenv))
-          (decl (car decls)))
-       (ext-decl-case
-        decl
-        :decl (error :external-declaration-is-not-a-function)
-        :fundef (b* ((fenv (fun-env-extend decl.get fenv)))
+     (b* (((when (endp declons)) (fun-env-fix fenv))
+          (declon (car declons)))
+       (ext-declon-case
+        declon
+        :declon (error :external-declaration-is-not-a-function)
+        :fundef (b* ((fenv (fun-env-extend declon.get fenv)))
                   (fun-env-result-case
                    fenv
                    :err (error fenv.get)
-                   :ok (init-fun-env-aux (cdr decls) fenv.get)))))
+                   :ok (init-fun-env-aux (cdr declons) fenv.get)))))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

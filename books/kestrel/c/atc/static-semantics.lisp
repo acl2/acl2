@@ -763,21 +763,21 @@
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
-     :decl (b* (((decl decl) item.get)
-                (wf (check-ident decl.name))
-                ((when (errorp wf)) (error (list :decl-error-var wf)))
-                (type (type-name-to-type (tyname decl.type)))
-                (init-type (check-expr-call-or-pure decl.init funtab vartab))
-                ((when (errorp init-type))
-                 (error (list :decl-error-init init-type)))
-                ((unless (equal init-type type))
-                 (error (list :decl-mistype decl.type decl.name decl.init
-                              :required type
-                              :supplied init-type)))
-                (vartab (var-table-add-var decl.name type vartab))
-                ((when (errorp vartab)) (error (list :decl-error vartab))))
-             (make-stmt-type :return-types (set::insert nil nil)
-                             :variables vartab))
+     :declon (b* (((declon declon) item.get)
+                  (wf (check-ident declon.name))
+                  ((when (errorp wf)) (error (list :declon-error-var wf)))
+                  (type (type-name-to-type (tyname declon.type)))
+                  (init-type (check-expr-call-or-pure declon.init funtab vartab))
+                  ((when (errorp init-type))
+                   (error (list :declon-error-init init-type)))
+                  ((unless (equal init-type type))
+                   (error (list :declon-mistype declon.type declon.name declon.init
+                                :required type
+                                :supplied init-type)))
+                  (vartab (var-table-add-var declon.name type vartab))
+                  ((when (errorp vartab)) (error (list :declon-error vartab))))
+               (make-stmt-type :return-types (set::insert nil nil)
+                               :variables vartab))
      :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
 
@@ -809,7 +809,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-decl ((param param-declp) (vartab var-tablep))
+(define check-param-declon ((param param-declonp) (vartab var-tablep))
   :returns (new-vartab var-table-resultp)
   :short "Check a parameter declaration."
   :long
@@ -822,7 +822,7 @@
      the latter check fails if there is a duplicate parameter.
      If all checks succeed, we return the variable table
      updated with the parameter."))
-  (b* (((param-decl param) param)
+  (b* (((param-declon param) param)
        (wf (check-ident param.name))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var param.name
@@ -832,19 +832,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-param-decl-list ((params param-decl-listp) (vartab var-tablep))
+(define check-param-declon-list ((params param-declon-listp) (vartab var-tablep))
   :returns (new-vartab var-table-resultp)
   :short "Check a list of parameter declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through each element of the list,
-     calling @(tsee check-param-decl)
+     calling @(tsee check-param-declon)
      and threading the variable table through."))
   (b* (((when (endp params)) (var-table-fix vartab))
-       (vartab (check-param-decl (car params) vartab))
+       (vartab (check-param-declon (car params) vartab))
        ((when (errorp vartab)) (error (list :param-error vartab))))
-    (check-param-decl-list (cdr params) vartab))
+    (check-param-declon-list (cdr params) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -876,7 +876,7 @@
      we extend the function table."))
   (b* (((fundef fundef) fundef)
        (in-types (type-name-list-to-type-list
-                  (tyname-list (param-decl-list->type-list fundef.params))))
+                  (tyname-list (param-declon-list->type-list fundef.params))))
        (out-type (type-name-to-type (tyname fundef.result)))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
@@ -884,7 +884,7 @@
        (wf (check-ident fundef.name))
        ((when (errorp wf)) (error (list :fundef-name-error wf)))
        (vartab (var-table-init))
-       (vartab (check-param-decl-list fundef.params vartab))
+       (vartab (check-param-declon-list fundef.params vartab))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
        (stype (check-stmt fundef.body funtab vartab))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
@@ -898,21 +898,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-decl ((ext ext-declp) (funtab fun-tablep))
+(define check-ext-declon ((ext ext-declonp) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
   :short "Check an external declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow function definitions."))
-  (ext-decl-case ext
+  (ext-declon-case ext
                  :fundef (check-fundef ext.get funtab)
-                 :decl (fun-table-fix funtab))
+                 :declon (fun-table-fix funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-decl-list ((exts ext-decl-listp) (funtab fun-tablep))
+(define check-ext-declon-list ((exts ext-declon-listp) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
   :short "Check a list of external declarations."
   :long
@@ -920,9 +920,9 @@
    (xdoc::p
     "We thread the function table through."))
   (b* (((when (endp exts)) (fun-table-fix funtab))
-       (funtab (check-ext-decl (car exts) funtab))
-       ((when (errorp funtab)) (error (list :ext-decl-error funtab))))
-    (check-ext-decl-list (cdr exts) funtab))
+       (funtab (check-ext-declon (car exts) funtab))
+       ((when (errorp funtab)) (error (list :ext-declon-error funtab))))
+    (check-ext-declon-list (cdr exts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -939,7 +939,7 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       (funtab (check-ext-decl-list tunit.decls funtab))
+       (funtab (check-ext-declon-list tunit.declons funtab))
        ((when (errorp funtab)) (error (list :transunit-error funtab))))
     :wellformed)
   :hooks (:fix))
