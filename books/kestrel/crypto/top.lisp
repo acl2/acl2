@@ -24,6 +24,7 @@
 ;; (include-book "r1cs/top") ; brings in skip-proofs
 (include-book "r1cs/doc")
 (include-book "r1cs/sparse/doc")
+(include-book "blake/top")
 
 (include-book "attachments/top")
 
