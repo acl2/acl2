@@ -180,7 +180,7 @@
          (xdoc::p "Defprime generates, for a prime named FOO:")
          (xdoc::ul "A constant, *FOO*, representing the prime."
                    "A theorem that *FOO* is prime."
-                   "A 0-ary function, FOO, representing the prime."
+                   "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs)."
                    "A theorem that the function FOO always returns a prime."
                    "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value)."
                    "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil."
