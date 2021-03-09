@@ -59,7 +59,11 @@
                 (acl2::member-equal x free))
            (fep x p)))
 
-(acl2::add-known-boolean r1cs::fe-listp)
+(acl2::add-known-boolean pfield::fe-listp)
+
+;for Axe
+(defthm pfield::booleanp-of-fe-listp
+  (booleanp (fe-listp elems prime)))
 
 (defun fe-listp-rules ()
   '(pfield::fep-when-fe-listp-and-memberp

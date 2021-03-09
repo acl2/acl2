@@ -166,7 +166,7 @@
                                   (short ':auto)
                                   (long ':auto))
   `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc
-                 ',parents ',short ',long
+                 ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
@@ -185,7 +185,7 @@
                                         (short ':auto)
                                         (long ':auto))
   `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc
-                 ',parents ',short ',long
+                 ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce an alias of an existing prime introduced with defprime."

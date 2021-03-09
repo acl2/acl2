@@ -2391,12 +2391,6 @@
 ;;   (declare (ignore tag))
 ;;   `(localvar ,n s0))
 
-(defthm getbit-leibniz
-  (implies (and (equal n1 n2)
-                (equal v1 v2))
-           (equal (equal (getbit n1 v1) (getbit n2 v2))
-                  t)))
-
 ;; (defthm ARRAY-ELEM-2D-leibniz
 ;;   (implies (and (equal a1 a2)
 ;;                 (equal i1 i2)
