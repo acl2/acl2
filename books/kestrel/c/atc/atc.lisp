@@ -88,18 +88,20 @@
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
-  (xdoc::evmac-topic-implementation-item-input "const-name")
-
   (xdoc::evmac-topic-implementation-item-input "proofs")
+
+  (xdoc::evmac-topic-implementation-item-input "const-name")
 
   (xdoc::evmac-topic-implementation-item-input "print")
 
   xdoc::*evmac-topic-implementation-item-call*
 
-  "@('prog-const') is the symbol specified by @('const-name')."
+  "@('prog-const') is the symbol specified by @('const-name').
+   This is @('nil') if @('proofs') is @('nil')."
 
   "@('fenv-const') is the symbol used to name the local constant
-   whose value is the function environment of the generated translation unit."
+   whose value is the function environment of the generated translation unit.
+   This is @('nil') if @('proofs') is @('nil')."
 
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
@@ -243,8 +245,8 @@
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
   (list :output-file
-        :const-name
         :proofs
+        :const-name
         :print)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
@@ -256,8 +258,8 @@
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
                                  (output-file stringp)
-                                 (prog-const symbolp)
                                  (proofs booleanp)
+                                 (prog-const symbolp)
                                  (print evmac-input-print-p)
                                  val)').")
                state)
@@ -270,36 +272,47 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
+       ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
-       (const-name-option (assoc-eq :const-name options))
-       (const-name (if const-name-option
-                       (cdr const-name-option)
-                     :auto))
-       (proofs-option (assoc-eq :proofs options))
-       (proofs (if proofs-option
-                   (cdr proofs-option)
-                 t))
-       (print-option (assoc-eq :print options))
-       (print (if print-option
-                  (cdr print-option)
-                :result))
-       ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
                                         state))
-       ((er prog-const) (atc-process-const-name const-name ctx state))
+       (proofs-option (assoc-eq :proofs options))
+       (proofs (if proofs-option
+                   (cdr proofs-option)
+                 t))
        ((er &) (acl2::ensure-value-is-boolean$ proofs
-                                               "The :PROOFS input" t nil))
+                                               "The :PROOFS input"
+                                               t
+                                               nil))
+       (const-name-option (assoc-eq :const-name options))
+       ((er prog-const)
+        (if proofs
+            (b* ((const-name (if const-name-option
+                                 (cdr const-name-option)
+                               :auto)))
+              (atc-process-const-name const-name ctx state))
+          (if const-name-option
+              (er-soft+ ctx t nil
+                        "Since the :PROOFS input is NIL, ~
+                         the :CONST-NAME input must be absent, ~
+                         but it is ~x0 instead."
+                        (cdr const-name-option))
+            (acl2::value nil))))
+       (print-option (assoc-eq :print options))
+       (print (if print-option
+                  (cdr print-option)
+                :result))
        ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
                        output-file
-                       prog-const
                        proofs
+                       prog-const
                        print))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2534,7 +2547,7 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
-       ((er (list fn1...fnp output-file prog-const proofs print))
+       ((er (list fn1...fnp output-file proofs prog-const print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file

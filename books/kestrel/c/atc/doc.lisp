@@ -50,8 +50,8 @@
     (xdoc::codeblock
      "(atc fn1 ... fn"
      "     :output-file ...  ; no default"
-     "     :const-name  ...  ; default :auto"
      "     :proofs      ...  ; default t"
+     "     :const-name  ...  ; default :auto"
      "     :print       ...  ; default :result"
      "  )"))
 
@@ -85,23 +85,6 @@
        The file must include a @('.c') extension."))
 
     (xdoc::desc
-     "@(':const-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Name of the generated ACL2 named constant
-       that holds the abstract syntax tree of the generated C program.")
-     (xdoc::p
-      "This must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('*program*')
-        in the @('\"C\"') package.")
-      (xdoc::li
-       "Any other symbol, to use as the name of the constant."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*program*') be the symbol specified by this input."))
-
-    (xdoc::desc
      "@(':proofs') &mdash; default @('t')"
      (xdoc::p
       "Specifies whether proofs should be generated or not.")
@@ -116,6 +99,27 @@
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
        in case proof generation is (temporarily) broken."))
+
+    (xdoc::desc
+     "@(':const-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Name of the generated ACL2 named constant
+       that holds the abstract syntax tree of the generated C program.")
+     (xdoc::p
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the symbol @('*program*')
+        in the @('\"C\"') package.")
+      (xdoc::li
+       "Any other symbol, to use as the name of the constant."))
+     (xdoc::p
+      "This input must be absent if @(':proofs') is @('nil').
+       The named constant is generated only if @(':proofs') is @('t').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('*program*') be the symbol specified by this input,
+       if applicable (i.e. when @(':proofs') is @('t'))."))
 
     (xdoc::evmac-input-print atc))
 
@@ -478,6 +482,9 @@
        the generated C translation unit,
        which ATC also pretty-prints and writes
        to the file specified by the @(':output-file') input."))
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this constant is not generated.")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
