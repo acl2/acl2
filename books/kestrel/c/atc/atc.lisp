@@ -1282,6 +1282,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-tyspecseq ((type typep))
+  :guard (not (type-case type :pointer))
   :returns (tyspecseq tyspecseqp)
   :short "Generate a type specifier sequence for a type."
   :long
@@ -1305,13 +1306,15 @@
              :ushort (tyspecseq-ushort)
              :uint (tyspecseq-uint)
              :ulong (tyspecseq-ulong)
-             :ullong (tyspecseq-ullong))
+             :ullong (tyspecseq-ullong)
+             :pointer (prog2$ (impossible) (irr-tyspecseq)))
   :hooks (:fix)
   ///
 
   (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
-    (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
-           (type-fix type))
+    (implies (not (type-case type :pointer))
+             (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
+                    (type-fix type)))
     :enable type-name-to-type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1383,7 +1386,8 @@
      we generate a declaration for the variable,
      initialized with the expression obtained
      from the term that the variable is bound to,
-     which also determines the type of the variable.
+     which also determines the type of the variable;
+     the type must not be a pointer type (code generation fails if it is).
      Otherwise, we check whether a variable with the same symbol
      is in the innermost scope (only the innermost):
      in that case, we ensure that the type of the existing variable
@@ -1474,6 +1478,11 @@
               (b* (((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
+                   ((when (type-case init-type :pointer))
+                    (er-soft+ ctx t (list nil (irr-type) 0)
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not have a C pointer type, but it does."
+                              val var))
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
@@ -1607,7 +1616,11 @@
   (xdoc::topstring
    (xdoc::p
     "Besides checking that the name of the parameter is adequate,
-     we also (try and) retrieve its C type from the guard."))
+     we also (try and) retrieve its C type from the guard.")
+   (xdoc::p
+    "Since @(tsee atc-find-param-type) does not recognize pointer types,
+     we do not expect that the type will be a pointer type.
+     So we stop with an internal error if it does; this should never happen."))
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t (list (irr-param-declon) (irr-type))
@@ -1617,7 +1630,12 @@
                   name formal fn))
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state)))
+       ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state))
+       ((when (type-case type :pointer))
+        (raise "Internal error: ~
+                parameter ~x0 of function ~x1 has pointer type ~x2."
+               formal fn type)
+        (acl2::value (list (irr-param-declon) (irr-type)))))
     (acl2::value (list (make-param-declon
                         :declor (make-declor :ident (make-ident :name name))
                         :type (atc-gen-tyspecseq type))
@@ -2180,6 +2198,11 @@
                                                    prec-fns
                                                    ctx
                                                    state))
+       ((when (type-case type :pointer))
+        (acl2::value
+         (raise "Internal error: ~
+                 the return type ~x0 of function ~x1 cannot be a pointer."
+                type fn)))
        (ext (ext-declon-fundef
              (make-fundef :result (atc-gen-tyspecseq type)
                           :name (make-ident :name name)

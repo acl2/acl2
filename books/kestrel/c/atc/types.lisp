@@ -39,12 +39,16 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only model the plain @('char') type and
-     the standard signed and unsigned integer types.")
+     the standard signed and unsigned integer types,
+     as well as pointer types.
+     The referenced type of a pointer type may be any type (that we model),
+     including a pointer type.
+     The recursion bottoms out at the @('char') and standard integer types.")
    (xdoc::p
-    "This is currently the same as @(tsee tyspecseq),
-     but we expect that in the future @(tsee tyspecseq)
-     will be generalized to accommodate more sequences of type specifiers,
-     some of which may denote the same type in fact (see @(see types))."))
+    "This semantic model is more general
+     than its syntactic counterpart @(tsee tyname):
+     the latter only allows one level of pointers currently.
+     In any case, initially we make a limited use of pointer types."))
   (:char ())
   (:schar ())
   (:sshort ())
@@ -56,6 +60,7 @@
   (:uint ())
   (:ulong ())
   (:ullong ())
+  (:pointer ((referenced type)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,29 +114,23 @@
   (xdoc::topstring
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
-     This ACL2 function returns the denoted type.
-     Currently this is essentially an identity (modulo wrappers),
-     but see the discussion in @(see types).")
-   (xdoc::p
-    "For now we stop with an error if the type name includes a pointer.
-     This will change soon, as we extend types to include pointers."))
-  (b* ((pointerp (tyname->pointerp tyname))
-       ((when pointerp)
-        (raise "Internal error: ~x0 not supported." tyname)
-        (ec-call (type-fix :irrelevant)))
-       (tyspecseq (tyname->specs tyname)))
-    (tyspecseq-case tyspecseq
-                    :char (type-char)
-                    :schar (type-schar)
-                    :sshort (type-sshort)
-                    :sint (type-sint)
-                    :slong (type-slong)
-                    :sllong (type-sllong)
-                    :uchar (type-uchar)
-                    :ushort (type-ushort)
-                    :uint (type-uint)
-                    :ulong (type-ulong)
-                    :ullong (type-ullong)))
+     This ACL2 function returns the denoted type."))
+  (b* ((tyspecseq (tyname->specs tyname))
+       (type (tyspecseq-case tyspecseq
+                             :char (type-char)
+                             :schar (type-schar)
+                             :sshort (type-sshort)
+                             :sint (type-sint)
+                             :slong (type-slong)
+                             :sllong (type-sllong)
+                             :uchar (type-uchar)
+                             :ushort (type-ushort)
+                             :uint (type-uint)
+                             :ulong (type-ulong)
+                             :ullong (type-ullong))))
+    (if (tyname->pointerp tyname)
+        (type-pointer type)
+      type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
