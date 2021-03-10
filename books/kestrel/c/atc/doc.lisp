@@ -170,9 +170,14 @@
       which determines the C type of
       the corresponding parameter of the C function:")
     (xdoc::ul
-     (xdoc::li "@('(ucharp x)'), representing @('unsigned char').")
-     (xdoc::li "@('(sintp x)'), representing @('int').")
-     (xdoc::li "@('(uchar-arrayp)'), representing @('unsigned char *')."))
+     (xdoc::li
+      "@('(ucharp x)'), representing @('unsigned char').")
+     (xdoc::li
+      "@('(sintp x)'), representing @('int').")
+     (xdoc::li
+      "@('(uchar-arrayp)'), representing @('unsigned char *').
+       Currently, this may be used only if @(':proofs') is @('nil');
+       proof generation support for arrays will be added eventually."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
@@ -356,7 +361,9 @@
        this will be improved in future extensions to ATC.")
      (xdoc::li
       "A call of @(tsee uchar-array-read-sint) on an allowed boolean term.
-       This represents an array subscripting expression.")
+       This represents an array subscripting expression.
+       Currently, this may be used only if @(':proofs') is @('nil');
+       proof generation support for arrays will be added eventually.")
      (xdoc::li
       "A call of @(tsee sint01) on an allowed boolean term.
        This converts an allowed boolean term
