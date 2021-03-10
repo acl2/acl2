@@ -18,18 +18,18 @@
 (include-book "kestrel/crypto/r1cs/fe-listp" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "kestrel/prime-fields/bv-rules" :dir :system)
-(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
-(include-book "kestrel/bv/rotate" :dir :system)
-(include-book "kestrel/utilities/defopeners" :dir :system)
+;(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (include-book "kestrel/typed-lists-light/bit-listp" :dir :system) ;drop?
+(include-book "kestrel/bv-lists/bits-to-bytes-little2" :dir :system) ;move?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; for ACL2::MOVE-MINUS-HACK2?
-(local (include-book "kestrel/axe/basic-rules" :dir :system))
+
+(local (in-theory (disable acl2::bvcat-recombine))) ;todo
 
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper
   (implies (and (unsigned-byte-p lowsize lowval)
@@ -145,8 +145,8 @@
                   (getbit n (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable add ACL2::BVPLUS unsigned-byte-p))))
 
-(include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
-(acl2::defopeners acl2::bits-to-bytes-little)
+
+
 
 ;mostly for axe
 (DEFTHMd ACL2::EQUAL-OF-CONS-when-quotep

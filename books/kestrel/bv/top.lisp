@@ -139,6 +139,9 @@
 ;; One's complement arithmetic:
 (include-book "ones-complement")
 
+;; Rules about BV operations of size 1:
+(include-book "single-bit")
+
 ;; Mixed rules:
 (include-book "rules0")
 (include-book "rules")
