@@ -2060,8 +2060,8 @@
 
 (define atc-gen-fn-thms ((fn symbolp)
                          (prec-fns atc-symbol-fninfo-alistp)
-                         (prog-const symbolp)
                          (proofs booleanp)
+                         (prog-const symbolp)
                          (print evmac-input-print-p)
                          (fenv-const symbolp)
                          (limit natp)
@@ -2124,8 +2124,8 @@
 
 (define atc-gen-ext-declon ((fn symbolp)
                             (prec-fns atc-symbol-fninfo-alistp)
-                            (prog-const symbolp)
                             (proofs booleanp)
+                            (prog-const symbolp)
                             (print evmac-input-print-p)
                             (fenv-const symbolp)
                             (names-to-avoid symbol-listp)
@@ -2191,7 +2191,7 @@
                   fn-returns-value-thm
                   fn-exec-var-limit-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-thms fn prec-fns prog-const proofs print fenv-const
+        (atc-gen-fn-thms fn prec-fns proofs prog-const print fenv-const
                          limit names-to-avoid ctx state))
        (info (make-atc-fn-info
               :type type
@@ -2208,8 +2208,8 @@
 
 (define atc-gen-ext-declon-list ((fns symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
-                                 (prog-const symbolp)
                                  (proofs booleanp)
+                                 (prog-const symbolp)
                                  (print evmac-input-print-p)
                                  (fenv-const symbolp)
                                  (names-to-avoid symbol-listp)
@@ -2240,10 +2240,10 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-declon fn prec-fns prog-const proofs print fenv-const
+        (atc-gen-ext-declon fn prec-fns proofs prog-const print fenv-const
                             names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list rest-fns prec-fns prog-const proofs print
+        (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const print
                                  fenv-const names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
@@ -2300,8 +2300,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-wf-thm ((prog-const symbolp)
-                        (proofs booleanp)
+(define atc-gen-wf-thm ((proofs booleanp)
+                        (prog-const symbolp)
                         (print evmac-input-print-p)
                         (names-to-avoid symbol-listp)
                         ctx
@@ -2361,8 +2361,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
-                           (prog-const symbolp)
                            (proofs booleanp)
+                           (prog-const symbolp)
                            (print evmac-input-print-p)
                            (names-to-avoid symbol-listp)
                            ctx
@@ -2386,10 +2386,10 @@
   (b* (((mv fenv-const-event fenv-const names-to-avoid)
         (atc-gen-fenv-const prog-const names-to-avoid (w state)))
        ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
-        (atc-gen-wf-thm prog-const proofs print names-to-avoid ctx state))
+        (atc-gen-wf-thm proofs prog-const print names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil prog-const proofs print
+        (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const print
                                  fenv-const names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
@@ -2494,9 +2494,9 @@
 
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (output-file stringp)
+                            (proofs booleanp)
                             (prog-const symbolp)
                             (print evmac-input-print-p)
-                            (proofs booleanp)
                             (call pseudo-event-formp)
                             ctx
                             state)
@@ -2515,7 +2515,7 @@
      Thus, we locally install the simpler ancestor check."))
   (b* ((names-to-avoid (list prog-const))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp prog-const proofs print
+        (atc-gen-transunit fn1...fnp proofs prog-const print
                            names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
@@ -2551,9 +2551,9 @@
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
+                        proofs
                         prog-const
                         print
-                        proofs
                         call
                         ctx
                         state)))
