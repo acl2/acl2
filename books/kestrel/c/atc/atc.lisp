@@ -1618,9 +1618,13 @@
     "Besides checking that the name of the parameter is adequate,
      we also (try and) retrieve its C type from the guard.")
    (xdoc::p
-    "Since @(tsee atc-find-param-type) does not recognize pointer types,
-     we do not expect that the type will be a pointer type.
-     So we stop with an internal error if it does; this should never happen."))
+    "If the type is a pointer type,
+     we put the pointer indication into the declarator.
+     Currently @(tsee atc-find-param-type) does not recognize pointer types,
+     but that will be generalized soon.
+     In any case, only pointers to non-pointer types will be allowed
+     (i.e. not pointers to pointers),
+     so we stop with an internal error if we encounter a pointer to pointer."))
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t (list (irr-param-declon) (irr-type))
@@ -1631,14 +1635,17 @@
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state))
-       ((when (type-case type :pointer))
-        (raise "Internal error: ~
-                parameter ~x0 of function ~x1 has pointer type ~x2."
-               formal fn type)
+       ((mv pointerp ref-type)
+        (if (type-case type :pointer)
+            (mv t (type-pointer->referenced type))
+          (mv nil type)))
+       ((when (type-case ref-type :pointer))
+        (raise "Internal error: pointer type to pointer type ~x0." ref-type)
         (acl2::value (list (irr-param-declon) (irr-type)))))
     (acl2::value (list (make-param-declon
-                        :declor (make-declor :ident (make-ident :name name))
-                        :type (atc-gen-tyspecseq type))
+                        :declor (make-declor :ident (make-ident :name name)
+                                             :pointerp pointerp)
+                        :type (atc-gen-tyspecseq ref-type))
                        type)))
   ///
   (more-returns
