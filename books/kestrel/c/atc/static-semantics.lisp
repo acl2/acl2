@@ -453,6 +453,7 @@
                  ((unless type) (error (list :var-not-found e.get))))
               type)
      :const (check-const e.get)
+     :arrsub (error (list :expr-arrsub-todo e))
      :call (error (list :expr-non-pure e))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))

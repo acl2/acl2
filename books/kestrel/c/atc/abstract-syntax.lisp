@@ -426,13 +426,13 @@
        whose structure provides the grouping.")
      (xdoc::p
       "Of the postfix expressions [C:6.5.2],
-       for now we only cover function calls
-       (where we require the function to be an identifier)
+       for now we only cover
+       array subscripting,
+       function calls (where we require the function to be an identifier),
        and post-increment/decrement.
        Richer expressions for functions in function calls
        (e.g. function pointers)
        will be added if/when needed.
-       Array subscripts will be added later.
        Structure and union member accesses will be added later.
        Compound literals will be added as needed.")
      (xdoc::p
@@ -474,6 +474,7 @@
        It will be easy to include, if needed."))
     (:ident ((get ident)))
     (:const ((get const)))
+    (:arrsub ((arr expr) (sub expr)))
     (:call ((fun ident)
             (args expr-list)))
     (:postinc ((arg expr)))

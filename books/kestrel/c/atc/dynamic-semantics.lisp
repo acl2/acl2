@@ -958,6 +958,7 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
+     :arrsub (error (list :exec-arrsub-todo e))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))

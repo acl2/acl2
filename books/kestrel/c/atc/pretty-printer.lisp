@@ -399,7 +399,7 @@
      once on @('left') and once on @('right').
      Because of the grammar rule
      <i>additive-expression:
-       additive-expression <tt>+</tt> multiplicative-expression</i>
+        additive-expression <tt>+</tt> multiplicative-expression</i>
      that corresponds to the super-expression,
      the recursive call on @('left') will have as second argument
      the grade of <i>additive-expression</i>,
@@ -522,6 +522,7 @@
   (expr-case expr
              :ident (expr-grade-primary)
              :const (expr-grade-primary)
+             :arrsub (expr-grade-postfix)
              :call (expr-grade-postfix)
              :postinc (expr-grade-postfix)
              :postdec (expr-grade-postfix)
@@ -684,6 +685,9 @@
                 expr
                 :ident (pprint-ident expr.get)
                 :const (pprint-const expr.get)
+                :arrsub (msg "~@0[~@1]"
+                             (pprint-expr expr.arr (expr-grade-postfix))
+                             (pprint-expr expr.sub (expr-grade-top)))
                 :call (msg "~@0(~@1)"
                            (pprint-ident expr.fun)
                            (pprint-comma-sep
