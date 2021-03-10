@@ -87,6 +87,15 @@
            (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
                   (equal w (add x (add y z p) p)))))
 
+(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma-alt
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp p))
+           (equal (equal 0 (add x (add y (add (neg w p) z p) p) p))
+                  (equal w (add x (add y z p) p)))))
+
 (defthm equal-of-0-and-add-of-add-of-neg-lemma
   (implies (and (fep w p)
                 (integerp x)
