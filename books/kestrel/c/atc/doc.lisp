@@ -164,18 +164,26 @@
       (the package names are ignored).")
 
     (xdoc::p
-     "The guard of each @('fni') must include conjuncts of the form
-      @('(sintp x)') for every formal parameter @('x').
-      The conjuncts may be at any level of nesting,
+     "The guard of each @('fni') must include,
+      for every formal parameter @('x'),
+      a conjunct of one of the following forms,
+      which determines the C type of
+      the corresponding parameter of the C function:")
+    (xdoc::ul
+     (xdoc::li "@('(ucharp x)'), representing @('unsigned char').")
+     (xdoc::li "@('(sintp x)'), representing @('int')."))
+    (xdoc::p
+     "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
       the @(tsee and) structure of the (translated) guard term.
-      Thus, all the formal parameters of the C function represented by @('fni')
-      have type @('int');
-      the rest of the guard (i.e. additional requirements)
-      are not explicitly represented in the C code.
-      The C function returns an @('int') result;
-      that this is the correct return type
-      is guaranteed by the restrictions given below.")
+      The rest of the guard (i.e. other than the conjuncts above)
+      is not explicitly represented in the C code.")
+
+    (xdoc::p
+     "The return type of the C function corresponding to @('fni')
+      is automatically determined from the body.
+      The restrictions on the body, given below,
+      make the determination of the return type possible in all cases.")
 
     (xdoc::p
      "Each function @('fni') must be in logic mode and guard-verified.
