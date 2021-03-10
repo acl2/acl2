@@ -86,9 +86,9 @@
    @('prec-fns') consists of (information about) the target function symbols
    that @('fn') is allowed to call."
 
-  (xdoc::evmac-topic-implementation-item-input "const-name")
-
   (xdoc::evmac-topic-implementation-item-input "output-file")
+
+  (xdoc::evmac-topic-implementation-item-input "const-name")
 
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
@@ -144,30 +144,6 @@
         (er-soft+ ctx t nil
                   "At least one target function must be supplied.")))
     (acl2::value nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-process-const-name (const-name ctx state)
-  :returns (mv erp (prog-const "A @(tsee symbolp).") state)
-  :mode :program
-  :short "Process the @(':const-name') input."
-  (b* (((er &) (acl2::ensure-value-is-symbol$ const-name
-                                              "The :CONST-NAME input"
-                                              t
-                                              nil))
-       (name (if (eq const-name :auto)
-                 'c::*program*
-               const-name))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input"
-                     name)
-                'const
-                nil
-                t
-                nil)))
-    (acl2::value name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -240,10 +216,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-process-const-name (const-name ctx state)
+  :returns (mv erp (prog-const "A @(tsee symbolp).") state)
+  :mode :program
+  :short "Process the @(':const-name') input."
+  (b* (((er &) (acl2::ensure-value-is-symbol$ const-name
+                                              "The :CONST-NAME input"
+                                              t
+                                              nil))
+       (name (if (eq const-name :auto)
+                 'c::*program*
+               const-name))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONST-NAME input"
+                     name)
+                'const
+                nil
+                t
+                nil)))
+    (acl2::value name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  (list :const-name
-        :output-file
+  (list :output-file
+        :const-name
         :proofs
         :print)
   ///
@@ -255,8 +255,8 @@
 (define atc-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (val "A @('(tuple (fn1...fnp symbol-listp)
-                                 (prog-const symbolp)
                                  (output-file stringp)
+                                 (prog-const symbolp)
                                  (proofs booleanp)
                                  (print evmac-input-print-p)
                                  val)').")
@@ -270,35 +270,35 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       (const-name-option (assoc-eq :const-name options))
-       (const-name (if const-name-option
-                       (cdr const-name-option)
-                     :auto))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
+       (const-name-option (assoc-eq :const-name options))
+       (const-name (if const-name-option
+                       (cdr const-name-option)
+                     :auto))
        (proofs-option (assoc-eq :proofs options))
        (proofs (if proofs-option
                    (cdr proofs-option)
                  t))
-       ((er &)
-        (acl2::ensure-value-is-boolean$ proofs "The :PROOFS input" t nil))
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
                 :result))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
-       ((er prog-const) (atc-process-const-name const-name ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
                                         state))
+       ((er prog-const) (atc-process-const-name const-name ctx state))
+       ((er &) (acl2::ensure-value-is-boolean$ proofs
+                                               "The :PROOFS input" t nil))
        ((er &) (evmac-process-input-print print ctx state)))
     (acl2::value (list fn1...fnp
-                       prog-const
                        output-file
+                       prog-const
                        proofs
                        print))))
 
@@ -2474,8 +2474,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((fn1...fnp symbol-listp)
-                            (prog-const symbolp)
                             (output-file stringp)
+                            (prog-const symbolp)
                             (print evmac-input-print-p)
                             (proofs booleanp)
                             (call pseudo-event-formp)
@@ -2528,11 +2528,11 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
-       ((er (list fn1...fnp prog-const output-file proofs print))
+       ((er (list fn1...fnp output-file prog-const proofs print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
-                        prog-const
                         output-file
+                        prog-const
                         print
                         proofs
                         call

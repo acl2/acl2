@@ -49,8 +49,8 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
+     "     :const-name  ...  ; default :auto"
      "     :proofs      ...  ; default t"
      "     :print       ...  ; default :result"
      "  )"))
@@ -67,6 +67,22 @@
       "Each @('fni') must be a symbol that names a function
        that satisfies the conditions discussed in the section
        `Representation of C Code in ACL2'."))
+
+    (xdoc::desc
+     "@(':output-file') &mdash; no default"
+     (xdoc::p
+      "Path of the file where the generated C code goes.")
+     (xdoc::p
+      "This must be an ACL2 string that is a file path.
+       The path may be absolute,
+       or relative to
+       the " (xdoc::seetopic "cbd" "current working directory") ".")
+     (xdoc::p
+      "The directory must exist.
+       The file may or may not exist:
+       if it does not exist, it is created;
+       if it exists, it is overwritten.
+       The file must include a @('.c') extension."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -100,22 +116,6 @@
       "While it is obviously recommended to generate proofs,
        setting this to @('nil') may be useful
        in case proof generation is (temporarily) broken."))
-
-    (xdoc::desc
-     "@(':output-file') &mdash; no default"
-     (xdoc::p
-      "Path of the file where the generated C code goes.")
-     (xdoc::p
-      "This must be an ACL2 string that is a file path.
-       The path may be absolute,
-       or relative to
-       the " (xdoc::seetopic "cbd" "current working directory") ".")
-     (xdoc::p
-      "The directory must exist.
-       The file may or may not exist:
-       if it does not exist, it is created;
-       if it exists, it is overwritten.
-       The file must include a @('.c') extension."))
 
     (xdoc::evmac-input-print atc))
 
