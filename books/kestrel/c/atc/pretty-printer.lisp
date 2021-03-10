@@ -691,7 +691,7 @@
                 :call (msg "~@0(~@1)"
                            (pprint-ident expr.fun)
                            (pprint-comma-sep
-                            (pprint-expr-list expr.args expected-grade)))
+                            (pprint-expr-list expr.args (expr-grade-top))))
                 :postinc (msg "~@0++"
                               (pprint-expr expr.arg (expr-grade-postfix)))
                 :postdec (msg "~@0--"
