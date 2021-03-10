@@ -2259,6 +2259,10 @@
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This constant is not generated if @(':proofs') is @('nil')."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant ~x0..." ',prog-const))))
@@ -2289,7 +2293,9 @@
      We use the name @('c::*environment*');
      if that constant happens to be in use,
      we add @('$') characters until we find an unused constant name
-     @('c::*environment$...$*')."))
+     @('c::*environment$...$*').")
+   (xdoc::p
+    "This constant is not generated if @(':proofs') is @('nil')."))
   (b* (((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix 'c::*environment*
                                                  'acl2::const
@@ -2384,7 +2390,9 @@
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
   (b* (((mv fenv-const-event fenv-const names-to-avoid)
-        (atc-gen-fenv-const prog-const names-to-avoid (w state)))
+        (if proofs
+            (atc-gen-fenv-const prog-const names-to-avoid (w state))
+          (mv nil nil names-to-avoid)))
        ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
         (atc-gen-wf-thm proofs prog-const print names-to-avoid ctx state))
        ((er
@@ -2393,9 +2401,11 @@
                                  fenv-const names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
-        (atc-gen-prog-const prog-const tunit print))
-       (local-events (append (list local-const-event)
-                             (list fenv-const-event)
+        (if proofs
+            (atc-gen-prog-const prog-const tunit print)
+          (mv nil nil)))
+       (local-events (append (and proofs (list local-const-event))
+                             (and proofs (list fenv-const-event))
                              wf-thm-local-events
                              fn-thm-local-events))
        (exported-events (append (list exported-const-event)
