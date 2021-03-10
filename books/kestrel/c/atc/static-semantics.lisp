@@ -771,7 +771,8 @@
                   (var (declor->ident declon.declor))
                   (wf (check-ident var))
                   ((when (errorp wf)) (error (list :declon-error-var wf)))
-                  (type (type-name-to-type (tyname declon.type)))
+                  (type (type-name-to-type (make-tyname :specs declon.type
+                                                        :pointerp nil)))
                   (init-type (check-expr-call-or-pure declon.init funtab vartab))
                   ((when (errorp init-type))
                    (error (list :declon-error-init init-type)))
@@ -835,7 +836,8 @@
        (wf (check-ident var))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var var
-                       (type-name-to-type (tyname param.type))
+                       (type-name-to-type (make-tyname :specs param.type
+                                                       :pointerp nil))
                        vartab))
   :hooks (:fix))
 
@@ -885,8 +887,9 @@
      we extend the function table."))
   (b* (((fundef fundef) fundef)
        (in-types (type-name-list-to-type-list
-                  (tyname-list (param-declon-list->type-list fundef.params))))
-       (out-type (type-name-to-type (tyname fundef.result)))
+                  (param-declon-list->tyname-list fundef.params)))
+       (out-type (type-name-to-type (make-tyname :specs fundef.result
+                                                 :pointerp nil)))
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))

@@ -378,8 +378,12 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only capture type names consisting of
-     the type specifier sequences captured by @(tsee tyspecseq)."))
-  ((specs tyspecseq))
+     the type specifier sequences captured by @(tsee tyspecseq),
+     and pointers thereof (only single pointers, not pointers to pointers).
+     We capture the presence or absence of @('*') (for pointer)
+     via a boolean flag."))
+  ((specs tyspecseq)
+   (pointerp bool))
   :tag :tyname
   :pred tynamep)
 
@@ -391,15 +395,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred tyname-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection tyname-list ((x tyspecseq-listp))
-  :result-type tyname-listp
-  :short "Lift @(tsee tyname) to lists."
-  (tyname x)
-  ///
-  (fty::deffixequiv tyname-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,21 +691,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection param-declon-list->type-list ((x param-declon-listp))
-  :result-type tyspecseq-listp
-  :short "Lift @(tsee param-declon->type) to lists."
-  (param-declon->type x)
-  ///
-  (fty::deffixequiv param-declon-list->type-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define irr-param-declon ()
   :returns (param param-declonp)
   :short "An irrelevant parameter declaration, usable as a dummy return value."
   (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-param-declon))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon->tyname ((param param-declonp))
+  :returns (tyname tynamep)
+  :short "Turn a parameter declaration into the corresponding type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is obtained by removing the identifier."))
+  (make-tyname :specs (param-declon->type param)
+               :pointerp (declor->pointerp (param-declon->declor param)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection param-declon-list->tyname-list ((x param-declon-listp))
+  :result-type tyname-listp
+  :short "Lift @(tsee param-declon->tyname) to lists."
+  (param-declon->tyname x)
+  ///
+  (fty::deffixequiv param-declon-list->tyname-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

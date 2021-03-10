@@ -111,8 +111,15 @@
     "A type name denotes a type [C:6.7.7/2].
      This ACL2 function returns the denoted type.
      Currently this is essentially an identity (modulo wrappers),
-     but see the discussion in @(see types)."))
-  (b* ((tyspecseq (tyname->specs tyname)))
+     but see the discussion in @(see types).")
+   (xdoc::p
+    "For now we stop with an error if the type name includes a pointer.
+     This will change soon, as we extend types to include pointers."))
+  (b* ((pointerp (tyname->pointerp tyname))
+       ((when pointerp)
+        (raise "Internal error: ~x0 not supported." tyname)
+        (ec-call (type-fix :irrelevant)))
+       (tyspecseq (tyname->specs tyname)))
     (tyspecseq-case tyspecseq
                     :char (type-char)
                     :schar (type-schar)

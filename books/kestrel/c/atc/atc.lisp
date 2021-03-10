@@ -744,8 +744,14 @@
   (case-match term
     ((fn arg)
      (case fn
-       (sint-from-uchar (mv t (tyname (tyspecseq-sint)) arg))
-       (uchar-from-sint (mv t (tyname (tyspecseq-uchar)) arg))
+       (sint-from-uchar (mv t
+                            (make-tyname :specs (tyspecseq-sint)
+                                         :pointerp nil)
+                            arg))
+       (uchar-from-sint (mv t
+                            (make-tyname :specs (tyspecseq-uchar)
+                                         :pointerp nil)
+                            arg))
        (t (mv nil (irr-tyname) nil))))
     (& (mv nil (irr-tyname) nil)))
   ///
@@ -1291,7 +1297,7 @@
   ///
 
   (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
-    (equal (type-name-to-type (tyname (atc-gen-tyspecseq type)))
+    (equal (type-name-to-type (tyname (atc-gen-tyspecseq type) nil))
            (type-fix type))
     :enable type-name-to-type))
 
