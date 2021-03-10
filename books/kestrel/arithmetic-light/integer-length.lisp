@@ -22,6 +22,7 @@
 (local (include-book "floor"))
 (local (include-book "expt"))
 (local (include-book "expt2"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;move?
 (defthm integer-length-bound
@@ -156,10 +157,10 @@
            :in-theory (disable unsigned-byte-p-of-integer-length))))
 
 (defthm unsigned-byte-p-integer-length-one-less
-  (implies (and (natp index)
+  (implies (and (integerp index)
                 (< index len) ;move to conclusion?
                 (integerp len))
-           (unsigned-byte-p (integer-length (+ -1 len)) index))
+           (equal (unsigned-byte-p (integer-length (+ -1 len)) index)
+                  (<= 0 index)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p integer-length)
-                                  ( ;(:TYPE-PRESCRIPTION INTEGER-LENGTH)
-                                   )))))
+                                  ()))))
