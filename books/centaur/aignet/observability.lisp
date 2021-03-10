@@ -475,20 +475,13 @@
          :short "List of literals"))
 
 (local
- (encapsulate
-   ()
-
-   (local
-    (defthm lemma
-      (< (lit-eval nil invals regvals aignet)
-         1)
-      :hints (("goal" :in-theory (enable nth lit-eval-list lit-eval)))
-      :rule-classes :linear))
-
-   (defthm nth-of-lit-eval-list
-     (bit-equiv (nth n (lit-eval-list lits invals regvals aignet))
-                (lit-eval (nth n lits) invals regvals aignet))
-     :hints(("Goal" :in-theory (enable nth lit-eval-list))))))
+ (defthm nth-of-lit-eval-list
+   (bit-equiv (nth n
+                   (lit-eval-list lits invals regvals aignet))
+              (lit-eval (nth n lits)
+                        invals regvals aignet))
+   :hints (("goal" :in-theory (enable nth lit-eval-list)
+            :expand (lit-eval nil invals regvals aignet)))))
 
 (define observability-fix-hyps/concls ((hyps lit-listp)
                                        (concls lit-listp)
