@@ -1959,35 +1959,11 @@
 
 (in-theory (disable bvmod))  ;fixme drop
 
-
-
 ;; (thm
 ;;  (implies (not (natp n))
 ;;           (equal (getbit n x)
 ;;                  0))
 ;;  :hints (("Goal" :in-theory (e/d (getbit slice) (anti-slice bvchop-1-becomes-getbit slice-becomes-getbit)))))
-
-;gen the indices
-(defthm bvchop-not-0-when-getbit-not-0
-  (implies (and (not (equal 0 (getbit (+ -1 size) x)))
-                (posp size))
-           (equal (equal (bvchop size x) 0)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
-  :hints (("Goal" :use (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT (n (+ -1 size)))
-           :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT ; BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                               ))))
-
-(defthm bvchop-not-0-when-low-bit-not-0
-  (implies (and (not (equal 0 (getbit 0 x)))
-                (posp size))
-           (equal (equal (bvchop size x) 0)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
-  :hints (("Goal"
-           :in-theory (disable BVCHOP-SUBST-CONSTANT BVCAT-SLICE-SAME)
-           :use (:instance split-with-bvcat (hs (+ -1 size)) (ls 1)))))
-
 
 (in-theory (disable BIT-BLAST-3)) ;move up
 
@@ -15260,14 +15236,12 @@
 (defthm bvlt-of-bitxor-of-1-same
   (equal (bvlt 1 (bitxor 1 x) x)
          (equal 1 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable ;bitxor
-                              ))))
+  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm bvlt-of-bitxor-of-1-same-two
   (equal (bvlt 1 x (bitxor 1 x))
          (equal 0 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable ;bitxor
-                              ))))
+  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm <-of-shift-of-slice-and-same
   (implies (and ;(natp k)

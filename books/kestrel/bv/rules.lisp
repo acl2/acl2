@@ -21,9 +21,9 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(include-book "single-bit")
 (include-book "bvxor")
 (include-book "bitor")
-(include-book "bitnot")
 (include-book "bitand")
 (include-book "logapp")
 (include-book "bvcat2")
@@ -1606,16 +1606,6 @@
   :hints (("Goal" :in-theory (e/d (bitxor slice-too-high-is-0)
                                   (bvxor-1-becomes-bitxor)))))
 
-(defthm bitxor-of-bitnot-arg1
-  (equal (bitxor (bitnot x) y)
-         (bitnot (bitxor x y)))
-  :hints (("Goal" :in-theory (e/d (bitnot bitxor bvxor) (bvxor-1-becomes-bitxor)))))
-
-(defthm bitxor-of-bitnot-arg2
-  (equal (bitxor y (bitnot x))
-         (bitnot (bitxor y x)))
-  :hints (("Goal" :in-theory (e/d (bitnot bitxor bvxor) (bvxor-1-becomes-bitxor)))))
-
 ;;We'd like BVNOT to be invisible when commuting BVXOR nests.  But BVNOT is not
 ;;unary, so I don't think ACL2's built-in notion of invisible-fns will work.
 ;;So we implement our own version here for BVXOR calls.
@@ -2023,27 +2013,6 @@
   :hints (("Goal" :use (:instance bvnot-1-becomes-bitnot-better))))
 
 (theory-invariant (incompatible (:rewrite bitnot-becomes-bvnot) (:rewrite bvnot-1-becomes-bitnot-better)))
-
-(defthm bitxor-of-1-becomes-bitnot-arg1
-  (equal (bitxor 1 x)
-         (bitnot x))
-  :hints (("Goal" :in-theory (e/d (bitxor bitnot bvxor) (bvxor-1-becomes-bitxor)))))
-
-;drop if we commute
-(defthm bitxor-of-1-becomes-bitnot-arg2
-  (equal (bitxor x 1)
-         (bitnot x))
-  :hints (("Goal" :in-theory (enable BITXOR-COMMUTATIVE))))
-
-(defthm bitnot-becomes-bitxor-with-1
-  (equal (bitnot x)
-         (bitxor 1 x))
-  :hints (("Goal" :cases ((equal 0 x)
-                          (equal 1 x))
-           :in-theory (enable bvnot bitnot))))
-
-(in-theory (disable bitxor-of-1-becomes-bitnot-arg1)) ;which way should we go on this?
-(theory-invariant (incompatible (:rewrite bitnot-becomes-bitxor-with-1) (:rewrite bitxor-of-1-becomes-bitnot-arg1)))
 
 ;bozo how can we decide which branch to move the lognot into?
 (defthmd bvnot-of-bvxor-1
@@ -2928,13 +2897,6 @@
   :hints (("Goal" :in-theory (e/d (bitnot bvnot-1-becomes-bitnot-better)
                                   (bitnot-becomes-bitxor-with-1 ;bozo
                                    )))))
-
-;rename
-(defthm bit-equal-bitxor-rewrite
-  (equal (equal (bitnot y) (bitxor x y))
-         (equal 1 (getbit 0 x)))
-  :hints (("Goal"   :do-not '(preprocess)
-           :in-theory (e/d (bitxor) (bvxor-1-becomes-bitxor)))))
 
 ;rewrite to have bitnot in lhs?
 (defthm bitor-x-not-x
@@ -4010,8 +3972,8 @@
   :hints (("Goal"
            :cases ((equal 0 (GETBIT 0 X))
                    (equal 1 (GETBIT 0 X)))
-           :in-theory (e/d ( bitnot-becomes-bitxor-with-1)
-                           (bvxor-1-becomes-bitxor)))))
+           :in-theory (e/d (bitnot-becomes-bitxor-with-1)
+                           (BITXOR-OF-1-BECOMES-BITNOT-ARG1 bvxor-1-becomes-bitxor)))))
 
 (defthm equal-of-bvmult-and-*
   (implies (and (integerp x)
@@ -5849,12 +5811,12 @@
 (defthm bitand-of-bitxor-of-1-same
   (equal (bitand x (bitxor 1 x))
          0)
-  :hints (("Goal" :in-theory (e/d (bitand bitxor) (BVXOR-1-BECOMES-BITXOR)))))
+  :hints (("Goal" :in-theory (e/d (bitand bitxor bitnot) (BVXOR-1-BECOMES-BITXOR)))))
 
 (defthm bitand-of-bitxor-of-1-same-alt
   (equal (bitand x (bitand (bitxor 1 x) w)) ;yuck: replacing w with y fails due to alpha order
          0)
-  :hints (("Goal" :in-theory (e/d (bitand bitxor) (BVXOR-1-BECOMES-BITXOR)))))
+  :hints (("Goal" :in-theory (e/d (bitand bitxor bitnot) (BVXOR-1-BECOMES-BITXOR)))))
 
 ;fixme gen!
 (defthm bvlt-of-floor-arg2
@@ -6039,12 +6001,6 @@
                          (+ -1 size)
                          (bvnot (+ -1 size) x)
                          ))))
-
-;fixme just choose bitnot or bitxor 1...
-(defthm bitnot-of-bitxor-of-1
-  (equal (bitnot (bitxor 1 x))
-         (getbit 0 x))
-  :hints (("Goal" :in-theory (enable bitnot-becomes-bitxor-with-1))))
 
 (defthm equal-constant-when-unsigned-byte-p
   (implies (and (syntaxp (quotep k))

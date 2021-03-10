@@ -12,7 +12,7 @@
 
 (include-book "portcullis")
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system)
+(local (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system))
 (include-book "kestrel/prime-fields/rules2" :dir :system) ;reduce?
 (include-book "kestrel/utilities/def-constant-opener" :dir :system) ;reduce?
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
@@ -26,9 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/bv/rules" :dir :system))
-(local (include-book "kestrel/bv/rules4" :dir :system))
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; for bvchop-not-0-when-getbit-not-0
+(local (include-book "kestrel/bv/rules" :dir :system)) ; for  ACL2::GETBIT-OF-PLUS
 
 (acl2::add-known-boolean acl2::bit-listp)
 
@@ -250,7 +248,7 @@
                                    ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG1
                                    ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG2
                                    bitnot-becomes-subtract)
-                                  (ACL2::BVCAT-OF-+-HIGH ;looped
+                                  (;ACL2::BVCAT-OF-+-HIGH ;looped
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1)))))
 
@@ -305,10 +303,11 @@
                 (natp n))
            (equal (acl2::getbit n (+ x (* (expt 2 n) bit)))
                   (acl2::bitxor bit (acl2::getbit n x))))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
+  :hints (("Goal" :cases ((equal bit 0))
+           :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot ACL2::BVCHOP-OF-SUM-CASES)
+                           (acl2::slice-becomes-getbit
+                            acl2::bvchop-1-becomes-getbit
+                            acl2::bvchop-of-logtail-becomes-slice)))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
   (implies (and (bitp bit)
@@ -399,10 +398,10 @@
                                    ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG1
                                    bitnot-becomes-subtract
                                    bvxor-of-+-of-1-split)
-                                  (ACL2::BVCAT-OF-+-HIGH
+                                  (;ACL2::BVCAT-OF-+-HIGH
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
-                                   ACL2::BVCAT-OF-*-LOW
+                                   ;ACL2::BVCAT-OF-*-LOW
                                    ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
@@ -432,10 +431,10 @@
                                    bitnot-becomes-subtract
                                    bvxor-of-+-of-1-split
                                    mul)
-                                  (ACL2::BVCAT-OF-+-HIGH
+                                  (;ACL2::BVCAT-OF-+-HIGH
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
-                                   ACL2::BVCAT-OF-*-LOW
+                                   ;ACL2::BVCAT-OF-*-LOW
                                    ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
@@ -630,7 +629,8 @@
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
                                acl2::bvcat-equal-rewrite-alt
                                acl2::bvcat-equal-rewrite
-                               acl2::<-of-bvcat))))
+                               ;;acl2::<-of-bvcat
+                               ))))
 
 (defthm add-of-bvcat-of-0-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p lowsize lowval)
@@ -643,7 +643,8 @@
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
                                acl2::bvcat-equal-rewrite-alt
                                acl2::bvcat-equal-rewrite
-                               acl2::<-of-bvcat))))
+                               ;;acl2::<-of-bvcat
+                               ))))
 
 ;; since for size 1 we'll have a bitp hyp
 ;; instead just rewrite (unsigned-byte-p 1 ..) to (bitp ..) ?

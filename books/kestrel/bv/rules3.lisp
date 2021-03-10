@@ -3008,7 +3008,7 @@
            (equal (GETBIT n x)
                   (bitnot (getbit n (+ (expt 2 n) x)))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthm getbit-of-+-bvchop-expand
   (implies (and (natp n)
@@ -3018,7 +3018,7 @@
                       (getbit n (bvchop (+ 1 n) x))
                     (bitnot (getbit n (bvchop (+ 1 n) x))))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)
@@ -3029,7 +3029,7 @@
                       (getbit n (bvchop (+ 1 n) (+ y x)))
                     (bitnot (getbit n (bvchop (+ 1 n) (+ y x)))))))
 ;  :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthmd getbit-of-+-bvchop-expand3
   (implies (and (natp n)
