@@ -24,7 +24,12 @@
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv/rules8" :dir :system)
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
-(include-book "rules1")
+(include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
+(include-book "rules1") ;drop? to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
+(include-book "kestrel/bv-lists/bvchop-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
+(include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
 (include-book "kestrel/bv/sbvrem-rules" :dir :system)
 (include-book "kestrel/utilities/mydefconst" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
@@ -108,7 +113,8 @@
   (implies (unsigned-byte-p 8 a)
            (equal (cons a nil)
                   (bv-array-write 8 1 0 a (list 0))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (;update-nth-becomes-update-nth2-extend-gen
+                                                                )))))
 
 ;gen and use this more
 ;yikes! this lets data be a quotep
@@ -119,7 +125,8 @@
            (equal (cons a data)
                   (bv-array-write 8 (+ 1 (len data)) 0 a (cons 0 data ))))
   :hints
-  (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (update-nth-becomes-update-nth2-extend-gen)))))
+  (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (;update-nth-becomes-update-nth2-extend-gen
+                                                         )))))
 
 (defthm plus-equal-bvplus-rewrite
   (implies (and (natp x)
@@ -312,7 +319,7 @@
 
 (in-theory (disable MOD-OF-FLOOR-EQUAL-REWRITE))
 
-(in-theory (disable BV-ARRAY-WRITE-DOES-NOTHING ;TRIM-TO-N-BITS-META-RULE
+(in-theory (disable ;BV-ARRAY-WRITE-DOES-NOTHING ;TRIM-TO-N-BITS-META-RULE
                     BV-ARRAY-READ-SHORTEN-DATA))
 
 (defthm eric-hack-1000
@@ -362,7 +369,7 @@
 ;;          x)
 ;;   :hints (("Goal" :in-theory (enable sbvdiv floor-by-4))))
 
-(in-theory (disable NOT-<-SELF2)) ;bozo
+;(in-theory (disable NOT-<-SELF2)) ;bozo
 
 (in-theory (disable divisibility-in-terms-of-floor))
 
@@ -642,7 +649,7 @@
                             ;bvchop-leq
                             <-of-logext-false
                             <-of-logext-true
-                            logext-when-top-bit-0 not-<-self2 sbp-32-when-non-neg
+                            logext-when-top-bit-0 sbp-32-when-non-neg
                             LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP
                             TRUNCATE-=-X/Y
                             truncate-minus
@@ -687,11 +694,10 @@
                 (posp k))
            (<= (* x (/ k)) x)))
 
-
-
 ;(in-theory (disable (:rewrite mod-x-y-=-x . 2)))
 
-(defthm logext-becomes-bvchop-when-positive
+;could loop?
+(defthmd logext-becomes-bvchop-when-positive
   (implies (<= 0 (logext 32 x))
            (equal (logext 32 x)
                   (bvchop 31 x)))
@@ -699,6 +705,7 @@
 
 ;;(bvuminus 32 (bvdiv 31 (bvuminus 31 x) y))
 
+;could loop?
 (defthmd logext-when-positive-gen
   (implies (<= 0 (logext size x))
            (equal (logext size x)
@@ -923,7 +930,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (anti-bvplus)))))
 
-(in-theory (disable LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE))
+
 
 ;gen
 (defthm sbvlt-of-minus
@@ -996,9 +1003,7 @@
                                    ;bvchop-leq
                                    <-of-logext-false
                                    <-of-logext-true
-                                   logext-when-top-bit-0 not-<-self2 sbp-32-when-non-neg)))))
-
-
+                                   logext-when-top-bit-0 sbp-32-when-non-neg)))))
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
@@ -4059,8 +4064,6 @@
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
-(in-theory (disable BV-ARRAY-WRITE-TIGHTEN-TO-1-BIT)) ;improve
-
 ;add -dag to name
 (in-theory (disable BV-ARRAY-WRITE-WHEN-DATA-ISNT-AN-ALL-UNSIGNED-BYTE-P BV-ARRAY-READ-WHEN-DATA-ISNT-AN-ALL-UNSIGNED-BYTE-P))
 
@@ -5443,7 +5446,8 @@
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg)
                                   (UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT
                                    UNSIGNED-BYTE-P-OF-+-OF-MINUS
-                                   update-nth-becomes-update-nth2-extend-gen)))))
+                                   ;;update-nth-becomes-update-nth2-extend-gen
+                                   )))))
 
 ;;fixme clear-nth becomes bv-array-clear?
 
@@ -6206,20 +6210,6 @@
                                    getbit-of-+ ;looped
                                    )))))
 
-(defthm nth-of-bv-array-write-becomes-bv-array-read-strong
-  (implies (natp len)
-           (equal (nth n (bv-array-write esize len index val data))
-                  (if (< (nfix n) len)
-                      (if (natp n)
-                          ;usual case:
-                          (bv-array-read esize len n (bv-array-write esize len index val data))
-                        (bv-array-read esize len 0 (bv-array-write esize len index val data)))
-                    nil)))
-  :hints (("Goal"
-           :expand ((BV-ARRAY-READ ESIZE LEN 0 DATA))
-           :in-theory (enable ;list::nth-with-large-index
-                       nth-when-<=-len
-                       natp))))
 
 (mutual-recursion
 ;note: there is no attempt to make sure a repeated variable in the pattern matches the same term each time
@@ -8950,6 +8940,7 @@
   (equal (boolor (not (equal 31 x)) (not (bvlt 5 13 x)))
          (not (equal 31 x))))
 
+;move
 (defthm equal-of-bv-array-write-same
   (implies (and (natp width)
                 (natp index)
