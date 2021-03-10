@@ -55,3 +55,28 @@
 ;only needed for axe?
 (defthm booleanp-of-all-equal$
   (booleanp (all-equal$ x lst)))
+
+(defthm nth-when-all-equal$-helper
+  (implies (and (all-equal$ val data)
+                (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
+                (natp index)
+                (< index (len data))
+                )
+           (equal (nth index data)
+                  val))
+  :hints (("Goal" :in-theory (e/d (all-equal$ nth) ()))))
+
+(defthm nth-when-all-equal$
+  (implies (and (all-equal$ val data)
+                (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
+;                (natp index)
+                (< index (len data))
+                )
+           (equal (nth index data)
+                  (if (equal 0 (len data))
+                      nil
+                  val)))
+  :otf-flg t
+  :hints (("Goal" :use (:instance  nth-when-all-equal$-helper (index (nfix index)))
+           :in-theory (e/d (;NTH-WHEN-N-IS-ZP
+                            )( nth-when-all-equal$-helper)))))

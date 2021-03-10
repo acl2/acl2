@@ -228,3 +228,8 @@
            (equal (bvchop-list arg lst)
                   (bvchop-list 0 lst)))
   :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm bvchop-list-of-true-list-fix
+  (equal (bvchop-list element-size (true-list-fix lst))
+         (bvchop-list element-size lst))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
