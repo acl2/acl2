@@ -51,6 +51,12 @@
               (no-duplicatesp-equal x)))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
 
+;; Avoids splitting into cases
+(defthm no-duplicatesp-equal-of-cons-no-split
+  (implies (not (member-equal a x))
+           (equal (no-duplicatesp-equal (cons a x))
+                  (no-duplicatesp-equal x))))
+
 (defthm no-duplicatesp-equal-of-append
   (equal (no-duplicatesp-equal (append x y))
          (and (no-duplicatesp-equal x)
