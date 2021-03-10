@@ -15,6 +15,7 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
+(include-book "arrays")
 (include-book "exec-limit-theorems")
 (include-book "proof-support")
 
@@ -777,6 +778,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-array-read ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arr pseudo-termp :hyp :guard)
+               (sub pseudo-termp :hyp :guard)
+               (type typep))
+  :short "Check if a term represents an array read."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C array read operations
+     (currently just @(tsee uchar-array-read-sint)),
+     we return the two argument terms.
+     This way, the caller can translate the argument terms to C expressions
+     and form a C array subscripting expression.")
+   (xdoc::p
+    "We also return the result C type of the operator.")
+   (xdoc::p
+    "If the term does not have the form explained above,
+     we return an indication of failure."))
+  (case-match term
+    ((fn arr sub)
+     (case fn
+       (uchar-array-read-sint (mv t arr sub (type-uchar)))
+       (t (mv nil nil nil (irr-type)))))
+    (& (mv nil nil nil (irr-type))))
+  ///
+
+  (defret acl2-count-of-atc-check-array-read-arr
+    (implies yes/no
+             (< (acl2-count arr)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-array-read-sub
+    (implies yes/no
+             (< (acl2-count sub)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-callable-fn ((term pseudo-termp)
                                (prec-fns atc-symbol-fninfo-alistp))
   :returns (mv (yes/no booleanp)
@@ -950,6 +993,11 @@
        (Future versions of ATC will avoid the cast
        when the conversion happens automatically in C.)")
      (xdoc::p
+      "If the terms fits the pattern of an array read,
+       we translate it to an array subscripting expression
+       on the recursively generated expressions.
+       The type is the array's element type.")
+     (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive ACL2 function
        that translates the argument (which must be an allowed boolean term)
@@ -1022,7 +1070,22 @@
                                                                   state)))
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
-                               (type-name-to-type tyname))))))
+                               (type-name-to-type tyname)))))
+         ((mv okp arr sub type) (atc-check-array-read term))
+         ((when okp)
+          (b* (((er (list arr-expr &)) (atc-gen-expr-pure-nonbool arr
+                                                                  vars
+                                                                  fn
+                                                                  ctx
+                                                                  state))
+               ((er (list sub-expr &)) (atc-gen-expr-pure-nonbool sub
+                                                                  vars
+                                                                  fn
+                                                                  ctx
+                                                                  state)))
+            (acl2::value (list (make-expr-arrsub :arr arr-expr
+                                                 :sub sub-expr)
+                               type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
@@ -1575,7 +1638,7 @@
      among the conjuncts of the function's guard,
      where @('<type>') is a predicate corresponding to a C type
      and @('<formal>') is the formal argument in question.
-     For now we only accept @(tsee sintp) and @(tsee ucharp) as @('<type>'),
+     For now we only accept certain types,
      but this will be extended to more C types in the future."))
   (b* (((when (endp guard-conjuncts))
         (er-soft+ ctx t (irr-type)
@@ -1591,10 +1654,14 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
-               (sintp (type-sint))
-               (ucharp (type-uchar))
+               ('ucharp (type-uchar))
+               ('sintp (type-sint))
+               (uchar-arrayp (type-pointer (type-uchar)))
                (t nil)))
        ((when (not type))
+        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
+       (arg (acl2::fargn conjunct 1))
+       ((unless (eq formal arg))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
     (acl2::value type)))
 
@@ -1620,9 +1687,7 @@
    (xdoc::p
     "If the type is a pointer type,
      we put the pointer indication into the declarator.
-     Currently @(tsee atc-find-param-type) does not recognize pointer types,
-     but that will be generalized soon.
-     In any case, only pointers to non-pointer types will be allowed
+     Only pointers to non-pointer types are allowed
      (i.e. not pointers to pointers),
      so we stop with an internal error if we encounter a pointer to pointer."))
   (b* ((name (symbol-name formal))
@@ -2438,7 +2503,7 @@
                              (and proofs (list fenv-const-event))
                              wf-thm-local-events
                              fn-thm-local-events))
-       (exported-events (append (list exported-const-event)
+       (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
                                 fn-thm-exported-events)))
     (acl2::value (list tunit

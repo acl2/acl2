@@ -171,7 +171,8 @@
       the corresponding parameter of the C function:")
     (xdoc::ul
      (xdoc::li "@('(ucharp x)'), representing @('unsigned char').")
-     (xdoc::li "@('(sintp x)'), representing @('int')."))
+     (xdoc::li "@('(sintp x)'), representing @('int').")
+     (xdoc::li "@('(uchar-arrayp)'), representing @('unsigned char *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
@@ -232,7 +233,8 @@
        as defined in Section `Portable ASCII C Identifiers' below,
        @('term') is an allowed non-boolean term,
        and @('body') is an allowed outer term.
-       This represents one of the following:"
+       The C type of @('term') must not be a pointer type.
+       This @(tsee let) represents one of the following:"
       (xdoc::ul
        (xdoc::li
         "A declaration of a C local variable represented by @('var'),
@@ -352,6 +354,9 @@
        as an operand of an @('int') arithmetic operation),
        currently ATC always generates explicit casts;
        this will be improved in future extensions to ATC.")
+     (xdoc::li
+      "A call of @(tsee uchar-array-read-sint) on an allowed boolean term.
+       This represents an array subscripting expression.")
      (xdoc::li
       "A call of @(tsee sint01) on an allowed boolean term.
        This converts an allowed boolean term
