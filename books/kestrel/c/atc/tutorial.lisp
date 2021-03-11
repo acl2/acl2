@@ -579,7 +579,7 @@
    "               (c::sint-sub |z| (c::sint-const 3))))")
   (xdoc::p
    "We represent the expression of the @('return') statement
-    that form the body of the function @('f').
+    that forms the body of the function @('f').
     In ACL2, terms are implicitly returned,
     so there is no need to represent the @('return') statement explicitly.")
 
@@ -615,7 +615,7 @@
 
   (xdoc::p
    "That is, the guard must include explicit conjuncts
-    that spell out the C types of the function's parameter.
+    that spell out the C types of the function's parameters.
     For the example function, these are as follows:")
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
@@ -634,7 +634,7 @@
     but they must be easily extractable
     by looking at the @(tsee and) tree structure of the guard:
     the conjuncts of interest must be leaves in that tree,
-    one for each funcion parameter.
+    one for each function parameter.
     For instance, the following would be equally acceptable:")
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
@@ -766,7 +766,7 @@
   (atc-tutorial-section "Code Generation")
 
   (xdoc::p
-   "Given the guard-verified ACL2 function @('|f|) above,
+   "Given the guard-verified ACL2 function @('|f|') above,
     the C function @('f') can be generated as follows:")
   (xdoc::codeblock
    "(include-book \"kestrel/c/atc/atc\" :dir :system)"
@@ -779,7 +779,7 @@
     see the tests in @('[books]/kestrel/c/atc/tests') for examples.")
 
   (xdoc::p
-   "The ATC tool in invoked on one or more ACL2 function symbols,
+   "The ATC tool is invoked on one or more ACL2 function symbols,
     in this case just @('|f|').
     The @(':output-file') option says where the generated output file goes,
     in this case @('f.c') in the current working directory.
@@ -822,7 +822,7 @@
    "    int y = -2;"
    "    int z = 8;"
    "    int r = f(x, y, z);"
-   "    printf(\"f(%d, %d, %d) = %d\n\", x, y, z, r);"
+   "    printf(\"f(%d, %d, %d) = %d\\n\", x, y, z, r);"
    "}")
   (xdoc::p
    "This file calls the generated function on specific values,
