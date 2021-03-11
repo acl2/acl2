@@ -1563,7 +1563,7 @@
    (xdoc::h4 "Program Mode")
 
    (xdoc::p
-    "Currently SOFT only supports logic-mode second-order funcions.
+    "Currently SOFT only supports logic-mode second-order functions.
      Supporting program-mode functions as well may be useful.")
 
    (xdoc::h4 "Guards of Instances of Second-Order Functions")
