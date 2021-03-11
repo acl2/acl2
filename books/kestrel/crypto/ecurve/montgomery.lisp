@@ -547,14 +547,12 @@
      with the only difference that
      it has this nullary predicate as hypothesis."))
   (forall (curve point1 point2)
-          (implies (and (montgomery-curvep curve)
-                        (montgomery-curve-primep curve)
-                        (pointp point1)
-                        (pointp point2)
+          (implies (and (montgomery-curve-primep curve)
                         (point-on-montgomery-p point1 curve)
                         (point-on-montgomery-p point2 curve))
                    (point-on-montgomery-p (montgomery-add point1 point2 curve)
                                           curve)))
+  :verify-guards nil
   :enabled :thm)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -589,11 +587,7 @@
     "Note that we need to assume the closure of addition, in the guard,
      in order to verify the guards of this function."))
   (forall (curve point1 point2 point3)
-          (implies (and (montgomery-curvep curve)
-                        (montgomery-curve-primep curve)
-                        (pointp point1)
-                        (pointp point2)
-                        (pointp point3)
+          (implies (and (montgomery-curve-primep curve)
                         (point-on-montgomery-p point1 curve)
                         (point-on-montgomery-p point2 curve)
                         (point-on-montgomery-p point3 curve))
@@ -603,6 +597,7 @@
                           (montgomery-add point1
                                           (montgomery-add point2 point3 curve)
                                           curve))))
+  :verify-guards nil
   :enabled :thm)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -755,9 +750,7 @@
      (defret point-on-montgomery-p-of-montgomery-mul-nonneg
        (point-on-montgomery-p point1 curve)
        :hyp (and (montgomery-add-closure)
-                 (montgomery-curvep curve)
                  (montgomery-curve-primep curve)
-                 (pointp point)
                  (point-on-montgomery-p point curve)))
      (verify-guards montgomery-mul-nonneg)))
 
@@ -766,9 +759,7 @@
   (defret point-on-montgomery-p-of-montgomery-mul
     (point-on-montgomery-p point1 curve)
     :hyp (and (montgomery-add-closure)
-              (montgomery-curvep curve)
               (montgomery-curve-primep curve)
-              (pointp point)
               (point-on-montgomery-p point curve))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -786,9 +777,7 @@
   (defruled montogomery-mul-nonneg-of-scalar-addition
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
-                  (montgomery-curvep curve)
                   (montgomery-curve-primep curve)
-                  (pointp point)
                   (point-on-montgomery-p point curve)
                   (natp scalar1)
                   (natp scalar2))
@@ -801,9 +790,7 @@
   (defruled montgomery-mul-of-scalar-addition
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
-                  (montgomery-curvep curve)
                   (montgomery-curve-primep curve)
-                  (pointp point)
                   (point-on-montgomery-p point curve)
                   (natp scalar1)
                   (natp scalar2))
