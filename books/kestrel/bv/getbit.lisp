@@ -342,7 +342,7 @@
                                    bvchop-1-becomes-getbit)))))
 
 (defthm bitp-of-getbit
-  (bitp (acl2::getbit n x)))
+  (bitp (getbit n x)))
 
 ;; could restrict to when the v's are identical
 (defthmd getbit-leibniz
@@ -350,3 +350,11 @@
                 (equal v1 v2))
            (equal (equal (getbit n1 v1) (getbit n2 v2))
                   t)))
+
+(defthm getbit-of-1-of-+-of-*-of-2
+  (implies (and (bitp bit1)
+                (bitp bit2))
+           (equal (getbit 1 (+ bit1 (* 2 bit2)))
+                  bit2))
+  :hints (("Goal" :in-theory (e/d (bitp)
+                                  (bitp-becomes-unsigned-byte-p)))))

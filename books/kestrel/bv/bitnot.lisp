@@ -74,3 +74,18 @@
   (equal (equal (bitnot x) (bitnot y))
          (equal (getbit 0 x) (getbit 0 y)))
   :hints (("Goal" :in-theory (enable bitnot))))
+
+(defthmd bitnot-becomes-subtract
+  (implies (bitp x)
+           (equal (bitnot x)
+                  (- 1 x)))
+  :hints (("Goal" :cases ((equal 0 x)))))
+
+(defthm getbit-of-1-and-+-of-2
+  (implies (integerp x)
+           (equal (getbit 1 (+ 2 x))
+                  (bitnot (getbit 1 x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))

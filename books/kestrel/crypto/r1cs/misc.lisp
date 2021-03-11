@@ -78,33 +78,6 @@
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
 (table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp 1)
 
-(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
-  (implies (and (fep w p)
-                (integerp x)
-                (integerp y)
-                (integerp z)
-                (posp p))
-           (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
-                  (equal w (add x (add y z p) p)))))
-
-(defthm equal-of-0-and-add-of-add-of-neg-lemma
-  (implies (and (fep w p)
-                (integerp x)
-                (integerp y)
-                (posp p))
-           (equal (equal 0 (add x (add (neg w p) y p) p))
-                  (equal w (add x y p)))))
-
-(defthm unsigned-byte-p-of-add
-  (implies (and (unsigned-byte-p (+ -1 n) x)
-                (unsigned-byte-p (+ -1 n) y)
-                (posp p)
-                (posp n)
-                (< (expt 2 n) p) ; tighten?
-                )
-           (unsigned-byte-p n (add x y p)))
-  :hints (("Goal" :in-theory (enable add))))
-
 ;; todo: floating point gadgets?  strings (dan boneh alligator..)
 
 (defthm add-becomes-bvplus-33
@@ -145,17 +118,13 @@
                   (getbit n (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable add ACL2::BVPLUS unsigned-byte-p))))
 
-
-
-
 ;mostly for axe
-(DEFTHMd ACL2::EQUAL-OF-CONS-when-quotep
-  (IMPLIES (SYNTAXP (QUOTEP k))
-           (EQUAL (EQUAL k (CONS x y))
-                  (AND (CONSP k)
-                       (EQUAL x (CAR k))
-                       (EQUAL y (CDR k))))))
-
+(defthmd acl2::equal-of-cons-when-quotep
+  (implies (syntaxp (quotep k))
+           (equal (equal k (cons x y))
+                  (and (consp k)
+                       (equal x (car k))
+                       (equal y (cdr k))))))
 
 (defthm equal-of-1-and-add-when-bitp-arg1
   (implies (and (bitp x)

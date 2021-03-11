@@ -922,3 +922,87 @@
                          (not (quotep x))))
            (equal (add x (add k y p) p)
                   (add k (add x y p) p))))
+
+;; Commutes the neg forward, which we may occasionally want
+; warning: can loop if there are multiple negs
+(defthmd add-of-neg-commute
+  (equal (add x (neg y p) p)
+         (add (neg y p) x p)))
+
+;; Commutes the neg forward, which we may occasionally want
+; warning: can loop if there are multiple negs
+(defthmd add-of-neg-commute-2
+  (equal (add x (add (neg y p) z p) p)
+         (add (neg y p) (add x z p) p)))
+
+(defthm equal-of-add-same-arg2
+  (implies (and (posp p)
+                (natp x)
+                (integerp y))
+           (equal (equal x (add y x p))
+                  (and (fep x p)
+                       (equal 0 (mod y p)))))
+  :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
+
+;; a bit odd, but we should not usually be calling inv on 0
+(defthm inv-of-0
+  (implies (primep p)
+           (equal (inv 0 p)
+                  (if (equal p 2)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (enable inv))))
+
+(defthm neg-of-2
+  (implies (integerp x)
+           (equal (neg x 2)
+                  (mod x 2)))
+  :hints (("Goal" :in-theory (enable neg))))
+
+(defthm div-of-0-arg2
+  (implies (and (primep p)
+                (integerp x))
+           (equal (div x 0 p)
+                  (if (equal p 2)
+                      (mod x p)
+                    0)))
+  :hints (("Goal" :in-theory (enable div))))
+
+;can loop with other rules?
+(defthmd mul-of-constant-normalize-to-fep
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (not (fep x p)) ; gets computed
+                ;; these two hyps ensure that the mod will return a fep:
+                (integerp x)
+                (posp p))
+           (equal (mul x y p)
+                  ;; the (mod x p) gets computed:
+                  (mul (mod x p) y p))))
+
+;; or just distribute
+(defthm mul-of-add-of-mul-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (posp p))
+           (equal (mul k1 (add (mul k2 x p) y p) p)
+                  (add (mul (mul k1 k2 p) x p)
+                       (mul k1 y p)
+                       p))))
+
+(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp p))
+           (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
+                  (equal w (add x (add y z p) p)))))
+
+(defthm equal-of-0-and-add-of-add-of-neg-lemma
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (equal 0 (add x (add (neg w p) y p) p))
+                  (equal w (add x y p)))))
