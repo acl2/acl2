@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,4 +20,4 @@
   ((fn (function-namep fn (w state)) "Function to check."))
   :short "Cause an error if a function is in program mode."
   :body (((logicp fn (w state))
-          "~@0 must be in logic mode." description)))
+          "~@0 is not in logic mode." description fn)))
