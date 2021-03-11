@@ -664,9 +664,7 @@
   ///
 
   (defrule point-on-montgomery-p-of-montgomery-neg
-    (implies (and (montgomery-curvep curve)
-                  (montgomery-curve-primep curve)
-                  (pointp point)
+    (implies (and (montgomery-curve-primep curve)
                   (point-on-montgomery-p point curve))
              (point-on-montgomery-p (montgomery-neg point curve)
                                     curve))
@@ -678,7 +676,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define montgomery-sub ((point1 pointp) (point2 pointp) (curve montgomery-curvep))
+(define montgomery-sub ((point1 pointp)
+                        (point2 pointp)
+                        (curve montgomery-curvep))
   :guard (and (montgomery-curve-primep curve)
               (point-on-montgomery-p point1 curve)
               (point-on-montgomery-p point2 curve))
