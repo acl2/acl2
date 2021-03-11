@@ -668,6 +668,7 @@
     cdr-cons
     compustate-of-fields
     compustate->frames-of-compustate
+    compustate->heap-of-compustate
     compustate-fix-when-compustatep
     compustatep-of-compustate
     frame->function-of-frame
@@ -677,6 +678,8 @@
     frame-list-fix-when-frame-listp
     frame-listp-of-compustate->frames
     framep-of-frame
+    heap-fix-when-heapp
+    heapp-of-compustate->heap
     not-errorp-when-compustatep
     omap::in-of-update
     pop-frame-of-push-frame

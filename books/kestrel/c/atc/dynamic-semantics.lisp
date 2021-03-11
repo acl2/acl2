@@ -13,6 +13,7 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "integers")
+(include-book "arrays")
 (include-book "function-environments")
 (include-book "types")
 
@@ -75,6 +76,22 @@
      it has no explicit counterpart in the execution state of the C code."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod address
+  :short "Fixtype of addresses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we treat addresses as essentially abstract entities,
+     whose only purpose is to identify objects in memory.
+     We model addresses as natural numbers,
+     but we do not use any properties of natural numbers.
+     This fixtype wraps natural numbers, for greater abstraction."))
+  ((number nat))
+  :tag :address
+  :pred addressp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,18 +247,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap heap
+  :short "Fixtype of heaps."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The heap is the memory area manipulated by @('malloc') and @('free').
+     [C] does not actually use the term `heap';
+     in fact, [C] does not appear to use a specific term for this memory area.
+     However, `heap' is sufficiently commonly used
+     that is seems adequate to use it here.")
+   (xdoc::p
+    "For now we model the heap just as a finite map
+     from addresses to @('unsigned char') arrays.
+     That is, we only really consider this kind of arrays initially."))
+  :key-type address
+  :val-type uchar-array
+  :pred heapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod compustate
   :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A computation state consists of a stack of frames.
-     More components will be added (e.g. a heap)
+    "A computation state consists of a stack of frames and a heap.
+     More components may be added
      as our modeling coverage of C increases.")
    (xdoc::p
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
-  ((frames frame-list))
+  ((frames frame-list)
+   (heap heap))
   :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1461,7 +1499,7 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((compst (make-compustate :frames nil))
+     :ok (b* ((compst (make-compustate :frames nil :heap nil))
               ((mv result  &)
                (exec-fun fun args compst fenv.get 1000000000))) ; 10^9
            result)))

@@ -89,7 +89,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C] does not appear to impose any limit on the length of an array.
+    "[C:6.2.5/20] requires arrays to be non-empty,
+     i.e. to contain at least one element,
+     i.e. to have positive length..")
+   (xdoc::p
+    "[C] does not appear to impose any upper limit on the length of an array.
      [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
      addition between the pointer @('a') and the integer @('i'),
      and [C:6.5.6/2] allows the integer to have any integer type.
@@ -103,20 +107,25 @@
      mathematically nothing prevents some integer types
      to consists of thousands of millions of bits.")
    (xdoc::p
-    "Besides of all of the above,
+    "Because of all of the above,
      our model of C arrays puts no length constraints on arrays.
-     (This is in contrast with Java, where arrays have a bounded length.)
-     Thus, our fixtype is just a wrapper of lists of arbitrary length.")
+     (This is in contrast with Java,
+     where arrays have a bounded length and may be also empty.)
+     We model arrays as (wrappers of) lists of arbitrary positive length.")
    (xdoc::p
     "This is sufficient to represent all the actual arrays of interest, clearly.
      If one uses an @('int') to access an array
      whose length exceeds the maximum value of @('int'),
      that simply means that the access can only apply to part of the array.")
    (xdoc::p
-    "So this fixtype is just a wrapper of lists.
+    "So this fixtype is just a wrapper of lists,
+     with a non-emptiness requirement.
      The wrapper provides better abstraction,
      and facilitates changes."))
-  ((elements uchar-list))
+  ((elements uchar-list :reqfix (if (consp elements)
+                                    elements
+                                  (list (uchar 0)))))
+  :require (consp elements)
   :pred uchar-arrayp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
