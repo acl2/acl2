@@ -12776,7 +12776,8 @@
                      (msg "The measures specified for ~&0 (mutually recursive ~
                            with ~x1) are \"calls\" of :?, rather than true ~
                            measures"
-                          bad-names))
+                          bad-names
+                          fn))
                     (t
                      (msg "The measure specified for ~&0~@1 is a \"call\" of ~
                            :?, rather than a true measure"
