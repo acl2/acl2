@@ -78,6 +78,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod address
+  :short "Fixtype of addresses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we treat addresses as essentially abstract entities,
+     whose only purpose is to identify objects in memory.
+     We model addresses as natural numbers,
+     but we do not use any properties of natural numbers.
+     This fixtype wraps natural numbers, for greater abstraction."))
+  ((number nat))
+  :tag :address
+  :pred addressp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defflatsum value
   :short "Fixtype of values."
   :long
