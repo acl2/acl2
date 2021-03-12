@@ -228,6 +228,7 @@
     (:e const-kind)
     (:e declon->init)
     (:e declon->declor)
+    (:e declon->type)
     (:e declor->ident)
     (:e declor->pointerp)
     (:e expr-binary->arg1)
@@ -251,6 +252,7 @@
     (:e fun-env-lookup)
     (:e fun-info->body)
     (:e fun-info->params)
+    (:e fun-info->result)
     (:e iconst->base)
     (:e iconst->type)
     (:e iconst->unsignedp)
@@ -265,6 +267,7 @@
     (:e acl2::sbyte32p)
     (:e omap::in)
     (:e param-declon->declor)
+    (:e param-declon->type)
     (:e param-declon-list-fix)
     (:e scope-list-fix)
     (:e scope-listp)
@@ -280,8 +283,11 @@
     (:e stmt-ifelse->then)
     (:e stmt-kind)
     (:e stmt-return->value)
+    (:e tyname)
     (:e type-kind)
     (:e type-name-to-type)
+    (:e type-uchar)
+    (:e type-sint)
     (:e unop-fix)
     (:e unop-kind)
     (:e valuep)
@@ -361,6 +367,7 @@
     sint-logand
     sint-logor
     top-frame
+    type-of-value
     write-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
