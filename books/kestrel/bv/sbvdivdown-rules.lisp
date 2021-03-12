@@ -60,7 +60,6 @@
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    SBVLT-REWRITE
-                                   BVCAT-RECOMBINE
                                    ;anti-bvplus
                                    )))))
 ;gen
@@ -111,7 +110,6 @@
                                    truncate-becomes-floor-other
                                    ) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;mod-sum-cases
-                                   BVCAT-RECOMBINE
 ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;SBVDIV-rewrite
@@ -157,7 +155,6 @@
                                    BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;SBVDIV-rewrite
