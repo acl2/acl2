@@ -132,7 +132,7 @@
            (equal (logtail (* 8 n) (packbv len 8 vals))
                   (packbv (- len n) 8 (butlast vals n))))
   :hints (("Goal" :induct (packbv len 8 vals)
-           :in-theory (enable packbv))))
+           :in-theory (enable packbv bvchop-of-logtail-becomes-slice))))
 
 (defthm logtail-8-of-packbv
   (implies (equal len (len vals))

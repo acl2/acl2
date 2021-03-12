@@ -1384,3 +1384,13 @@
   :hints (("Goal"
            :in-theory (disable BVCHOP-SUBST-CONSTANT BVCAT-SLICE-SAME)
            :use (:instance split-with-bvcat (hs (+ -1 size)) (ls 1)))))
+
+(defthm bvchop-of-bvcat-cases-gen
+  (equal (bvchop n (bvcat highsize highval lowsize lowval))
+         (if (not (natp n))
+             0
+           (if (<= n (nfix lowsize))
+               (bvchop n lowval)
+               (bvcat (min (binary-+ n (unary-- (nfix lowsize)))
+                           (nfix highsize))
+                      highval (nfix lowsize) lowval)))))

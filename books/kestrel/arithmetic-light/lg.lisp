@@ -15,30 +15,10 @@
 ;but my current rules may target integer-length?
 
 (include-book "power-of-2p")
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;include less? for FLOOR-BOUNDED-BY-/
-(local (include-book "kestrel/library-wrappers/arithmetic-equalities" :dir :system))
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-
-(defthm integer-length-of-expt2
-  (implies (integerp n)
-           (equal (integer-length (expt 2 n))
-                  (if (< n 0)
-                      0
-                    (+ 1 n))))
-  :hints
-  (("Goal" :in-theory (e/d (;integer-length*
-                            integer-length expt)
-                           (expt-hack)))))
-
-(defthm integer-length-of-mask
-  (implies (natp size)
-           (equal (integer-length (+ -1 (expt 2 size)))
-                  size))
-  :hints (("Goal" :induct t
-           :expand (integer-length (+ -1 (* 2 (expt 2 (+ -1 size)))))
-           :in-theory (e/d (integer-length expt) (expt-hack)))))
+(local (include-book "integer-length"))
 
 ;for integer-length proofs
 (defun double-floor-by-2-induct (i j)

@@ -30,13 +30,7 @@
 (local (in-theory (disable BVCAT-RECOMBINE))) ;todo
 
 (local (in-theory (disable DEFAULT-+-2 DEFAULT-*-2
-                           expt-hack)))
-
-;;move and gen
-(defthm equal-of-expt-same
-  (equal (equal (expt 2 n) 2)
-         (equal 1 n))
-  :hints (("Goal" :in-theory (enable expt zip expt-of-+))))
+                           )))
 
 (defun full-adder-sum (bit1 bit2 carryin)
   (bitxor bit1 (bitxor bit2 carryin)))

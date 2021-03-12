@@ -348,16 +348,6 @@
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
-(defthm bvchop-of-bvcat-cases-gen
-  (equal (bvchop n (bvcat highsize highval lowsize lowval))
-         (if (not (natp n))
-             0
-           (if (<= n (nfix lowsize))
-               (bvchop n lowval)
-               (bvcat (min (binary-+ n (unary-- (nfix lowsize)))
-                           (nfix highsize))
-                      highval (nfix lowsize) lowval)))))
-
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen
   (implies (< size (+ lowsize highsize))

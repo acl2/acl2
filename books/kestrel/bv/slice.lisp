@@ -241,7 +241,7 @@
 
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
-(defthm bvchop-of-logtail-becomes-slice
+(defthmd bvchop-of-logtail-becomes-slice
   (implies (and (natp size1)
                 (natp size2))
            (equal (bvchop size1 (logtail size2 x))

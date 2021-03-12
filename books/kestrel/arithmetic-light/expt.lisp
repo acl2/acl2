@@ -132,3 +132,9 @@
   :hints (("Goal" :in-theory (enable ;expt-of-+
                               )))
   :rule-classes :linear)
+
+;gen the 1
+(defthm <-of-1-and-expt
+  (implies (integerp n)
+           (equal (< 1 (expt 2 n))
+                  (< 0 n))))
