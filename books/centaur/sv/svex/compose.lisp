@@ -103,6 +103,7 @@ full update functions.")
   :parents (sv)
   :short "Compose together a network of svex assignments, stopping when a
 variable depends on itself."
+  :flag-local nil
 
   (define svex-compose-dfs ((x svex-p "svex we're traversing")
                             (assigns svex-alist-p "alist of assign stmts")
@@ -139,8 +140,9 @@ variable depends on itself."
                    ;; if it has no assignment OR we're already traversing it, leave it
                    (mv x updates memo))
                   (stack (hons-acons x.name t stack))
-                  ((mv composed-assign updates memo)
-                   (svex-compose-dfs assign assigns updates memo stack))
+                  ((mv composed-assign updates memo1)
+                   (svex-compose-dfs assign assigns updates nil stack))
+                  (- (fast-alist-free memo1))
                   (- (acl2::fast-alist-pop stack))
                   (updates (svex-fastacons x.name composed-assign updates)))
                (mv composed-assign updates memo)))))

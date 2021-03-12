@@ -691,6 +691,11 @@ svex-eval).</p>"
              (if xk (svex-eval xk env) (4vec-x))))
     :hints(("Goal" :in-theory (enable svex-env-lookup svex-lookup))))
 
+  (defthm svex-env-boundp-of-svex-alist-eval
+    (iff (svex-env-boundp k (svex-alist-eval x env))
+         (svex-lookup k x))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup))))
+
   (defthm svex-alist-eval-of-append
     (equal (svex-alist-eval (append a b) env)
            (append (svex-alist-eval a env)
