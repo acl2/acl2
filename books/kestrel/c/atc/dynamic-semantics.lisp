@@ -44,7 +44,7 @@
    (xdoc::p
     "The dynamic semantics is defined over the C abstract syntax,
      but for now it does not support the execution of some constructs,
-     just because ATC does not generate those constructs for now.
+     just because currently ATC does not generate those constructs.
      This way, we keep the dynamic semantics simpler.
      Being more restrictive is adequate here:
      if we have a proof of functional equivalence between some ACL2 code
@@ -55,9 +55,9 @@
     "We distinguish between pure (i.e. side-effect-free) expressions
      and expressions that may have side effects.
      We allow the latter to appear only in certain parts of statements,
-     and we push restrictions to ensure a predictable order of evaluation.
+     and we put restrictions to ensure a predictable order of evaluation.
      Pure expressions may be evaluated in any order;
-     we evaluate them left to write.")
+     we evaluate them left to right.")
    (xdoc::p
     "We formalize a big-step operational interpretive semantics.
      To ensure the termination of the ACL2 mutually recursive functions
@@ -88,7 +88,7 @@
      whose only purpose is to identify objects in memory.
      We model addresses as natural numbers,
      but we do not use any properties of natural numbers.
-     This fixtype wraps natural numbers, for greater abstraction."))
+     This fixtype wraps these natural numbers, for better abstraction."))
   ((number nat))
   :tag :address
   :pred addressp)
@@ -156,6 +156,15 @@
 (encapsulate ()
   (local (in-theory (enable valuep ucharp sintp)))
   (defresult value-option "optional values"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-value ((val valuep))
+  :returns (type typep)
+  :short "Type of a value."
+  (cond ((ucharp val) (type-uchar))
+        ((sintp val) (type-sint))
+        (t (prog2$ (impossible) (irr-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,7 +265,7 @@
      [C] does not actually use the term `heap';
      in fact, [C] does not appear to use a specific term for this memory area.
      However, `heap' is sufficiently commonly used
-     that is seems adequate to use it here.")
+     that it seems adequate to use it here.")
    (xdoc::p
     "For now we model the heap just as a finite map
      from addresses to @('unsigned char') arrays.
@@ -1057,7 +1066,7 @@
    (xdoc::p
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
-     We return an error if they do not match in number,
+     We return an error if they do not match in number or types,
      or if there are repeated parameters.")
    (xdoc::p
     "For now we return an error if we encounter a pointer declarator."))
@@ -1076,9 +1085,17 @@
      :ok (b* ((formal (car formals))
               (actual (car actuals))
               (declor (param-declon->declor formal))
-              ((when (declor->pointerp declor))
-               (error (list :unsupported-pointer-declarator declor)))
-              (name (declor->ident declor)))
+              (pointerp (declor->pointerp declor))
+              (name (declor->ident declor))
+              (formal-type (type-name-to-type
+                            (make-tyname :specs (param-declon->type formal)
+                                         :pointerp pointerp)))
+              (actual-type (type-of-value actual))
+              ((unless (equal formal-type actual-type))
+               (error (list :formal-actual-mistype
+                            :name name
+                            :formal formal-type
+                            :actual actual-type))))
            (if (omap::in name scope)
                (error (list :init-scope :duplicate-param name))
              (omap::update name actual scope)))))
@@ -1138,7 +1155,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used for expressions that must be assgnments,
+      "This is only used for expressions that must be assignments,
        whose left subexpression is a variable
        and whose right subexpression is a function call or pure;
        this is what we support for now.")
@@ -1185,9 +1202,8 @@
        We initialize a scope with the argument values,
        and we push a frame onto the call stack.
        We execute the function body,
-       which must return a result,
-       which must match the function's result type
-       (but we do not check this because every value is an @('int') for now).
+       which must return a result,,
+       which must match the function's result type.
        We pop the frame and return the value of the function call as result."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (info (fun-env-lookup fun fenv))
@@ -1207,9 +1223,22 @@
              (value-option-result-case
               val-opt
               :err (mv val-opt.get compst)
-              :ok (mv (or val-opt.get
-                          (error (list :no-return-value (ident-fix fun))))
-                      compst)))))
+              :ok (if val-opt.get
+                      (mv val-opt.get compst)
+                    ;; The following check is currently commented out
+                    ;; because it requires some extensions to proof generation.
+                    ;; (if (equal (type-of-value val-opt.get)
+                    ;;            (type-name-to-type
+                    ;;             (make-tyname :specs info.result
+                    ;;                          :pointerp nil)))
+                    ;;     (mv val-opt.get compst)
+                    ;;   (mv (error (list :return-value-mistype
+                    ;;                    :required info.result
+                    ;;                    :supplied (type-of-value
+                    ;;                               val-opt.get)))
+                    ;;       compst))
+                    (mv (error (list :no-return-value (ident-fix fun)))
+                        compst))))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1309,7 +1338,7 @@
       "If the block item is a declaration,
        we first execute the expression,
        then we add the variable to the top scope of the top frame.
-       For now we reject pointer declarators.")
+       The initializer value must have the same type as the variable.")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
@@ -1317,21 +1346,26 @@
       (block-item-case
        item
        :declon (b* (((declon declon) item.get)
-                    ((mv init compst)
-                     (exec-expr-call-or-pure declon.init compst fenv (1- limit))))
-                 (value-result-case
-                  init
-                  :ok (b* (((when (declor->pointerp declon.declor))
-                            (mv (error (list :unsupported-pointer-declarator
-                                         declon.declor))
-                                compst))
-                           (var (declor->ident declon.declor))
-                           (new-compst (create-var var init.get compst)))
-                        (compustate-result-case
-                         new-compst
-                         :ok (mv (value-option-result-ok nil) new-compst.get)
-                         :err (mv new-compst.get compst)))
-                  :err (mv init.get compst)))
+                    ((mv init compst) (exec-expr-call-or-pure declon.init
+                                                              compst
+                                                              fenv
+                                                              (1- limit)))
+                    ((when (errorp init)) (mv init compst))
+                    (var (declor->ident declon.declor))
+                    (pointerp (declor->pointerp declon.declor))
+                    (type (type-name-to-type
+                           (make-tyname :specs declon.type
+                                        :pointerp pointerp)))
+                    ((unless (equal type (type-of-value init)))
+                     (mv (error (list :decl-var-mistype var
+                                      :required type
+                                      :supplied (type-of-value init)))
+                         compst))
+                    (new-compst (create-var var init compst)))
+                 (compustate-result-case
+                  new-compst
+                  :ok (mv (value-option-result-ok nil) new-compst.get)
+                  :err (mv new-compst.get compst)))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 

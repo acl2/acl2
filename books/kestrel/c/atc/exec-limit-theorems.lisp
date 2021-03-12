@@ -146,9 +146,20 @@
               (value-option-result-case
                val-opt
                :err (mv val-opt.get compst)
-               :ok (mv (or val-opt.get
-                           (error (list :no-return-value (ident-fix fun))))
-                       compst)))))
+               :ok (if val-opt.get
+                       (mv val-opt.get compst)
+                     ;; (if (equal (type-of-value val-opt.get)
+                     ;;            (type-name-to-type
+                     ;;             (make-tyname :specs info.result
+                     ;;                          :pointerp nil)))
+                     ;;     (mv val-opt.get compst)
+                     ;;   (mv (error (list :return-value-mistype
+                     ;;                    :required info.result
+                     ;;                    :supplied (type-of-value
+                     ;;                               val-opt.get)))
+                     ;;       compst))
+                     (mv (error (list :no-return-value (ident-fix fun)))
+                         compst))))))
      :measure (nfix limit))
 
    (define exec-stmt-induct (s compst fenv limit limit1)
@@ -223,20 +234,23 @@
         :declon (b* (((declon declon) item.get)
                      ((mv init compst)
                       (exec-expr-call-or-pure-induct declon.init compst fenv
-                                                     (1- limit) (1- limit1))))
-                  (value-result-case
-                   init
-                   :ok (b* (((when (declor->pointerp declon.declor))
-                             (mv (error (list :unsupported-pointer-declarator
-                                          declon.declor))
-                                 compst))
-                            (var (declor->ident declon.declor))
-                            (new-compst (create-var var init.get compst)))
-                         (compustate-result-case
-                          new-compst
-                          :ok (mv (value-option-result-ok nil) new-compst.get)
-                          :err (mv new-compst.get compst)))
-                   :err (mv init.get compst)))
+                                                     (1- limit) (1- limit1)))
+                     ((when (errorp init)) (mv init compst))
+                     (var (declor->ident declon.declor))
+                     (pointerp (declor->pointerp declon.declor))
+                     (type (type-name-to-type
+                            (make-tyname :specs declon.type
+                                         :pointerp pointerp)))
+                     ((unless (equal type (type-of-value init)))
+                      (mv (error (list :decl-var-mistype var
+                                       :required type
+                                       :supplied (type-of-value init)))
+                          compst))
+                     (new-compst (create-var var init compst)))
+                  (compustate-result-case
+                   new-compst
+                   :ok (mv (value-option-result-ok nil) new-compst.get)
+                   :err (mv new-compst.get compst)))
         :stmt (exec-stmt-induct item.get compst fenv
                                 (1- limit) (1- limit1))))
      :measure (nfix limit))
