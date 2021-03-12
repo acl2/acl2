@@ -17,6 +17,7 @@
 (include-book "../bv/bvchop")
 (include-book "../bv/bvxor")
 (include-book "../bv/bitxor")
+(include-book "../bv/bitnot")
 (include-book "../bv/bvcat")
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -96,3 +97,23 @@
                 )
            (unsigned-byte-p n (add x y p)))
   :hints (("Goal" :in-theory (enable add))))
+
+(defthm equal-of-1-and-add-when-bitp-arg1
+  (implies (and (bitp x)
+                (fep y p)
+                (integerp p)
+                (< 1 p))
+           (equal (equal 1 (add x y p))
+                  (equal y (acl2::bitnot x))))
+  :hints (("Goal" :in-theory (e/d ()
+                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
+
+(defthm equal-of-1-and-add-when-bitp-arg2
+  (implies (and (bitp x)
+                (fep y p)
+                (integerp p)
+                (< 1 p))
+           (equal (equal 1 (add y x p))
+                  (equal y (acl2::bitnot x))))
+  :hints (("Goal" :in-theory (e/d ()
+                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
