@@ -1782,6 +1782,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-returns-value-thm ((fn symbolp)
+                                      (type typep)
                                       (prec-fns atc-symbol-fninfo-alistp)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
@@ -1821,13 +1822,25 @@
      the definition of @('fn'),
      the return type theorems of @(tsee sint-const) and related functions,
      and the theorems about the preceding functions;
-     we also add a @(':use') hint fot the guard theorem of @('fn')."))
-  (b* ((name (add-suffix fn "-RETURNS-VALUE"))
+     we also add a @(':use') hint fot the guard theorem of @('fn').")
+   (xdoc::p
+    "We use the C value predicate corresponding to
+     the type of the body of the function;
+     the type is passed to this ACL2 function as the @('type') parameter.
+     This will always be one among @('unsigned char') and @('int'),
+     by construction;
+     thus, we stop with an error if it is any other type,
+     but that should never happen."))
+  (b* ((pred (case (type-kind type)
+               (:uchar 'ucharp)
+               (:sint 'sintp)
+               (t (raise "Internal error: function return type is ~x0." type))))
+       (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
-       (formula `(implies ,guard (valuep (,fn ,@formals))))
+       (formula `(implies ,guard (,pred (,fn ,@formals))))
        (theory `(,fn
                  ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
                  sintp-of-sint-const
@@ -1855,9 +1868,7 @@
                  sintp-of-sint-logand
                  sintp-of-sint-logor
                  sintp-of-sint-from-uchar
-                 ucharp-of-uchar-from-sint
-                 valuep-when-ucharp
-                 valuep-when-sintp))
+                 ucharp-of-uchar-from-sint))
        (hints `(("Goal"
                  :in-theory ',theory
                  :use (:guard-theorem ,fn))))
@@ -2157,6 +2168,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thms ((fn symbolp)
+                         (type typep)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (prog-const symbolp)
@@ -2179,7 +2191,7 @@
   (b* (((when (not proofs)) (acl2::value (list nil nil names-to-avoid)))
        (wrld (w state))
        ((mv fn-returns-value-event fn-returns-value-thm names-to-avoid)
-        (atc-gen-fn-returns-value-thm fn prec-fns names-to-avoid wrld))
+        (atc-gen-fn-returns-value-thm fn type prec-fns names-to-avoid wrld))
        ((mv fn-exec-const-limit-correct-event
             fn-exec-const-limit-correct-thm
             names-to-avoid)
@@ -2294,7 +2306,7 @@
                   fn-returns-value-thm
                   fn-exec-var-limit-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-thms fn prec-fns proofs prog-const print fenv-const
+        (atc-gen-fn-thms fn type prec-fns proofs prog-const print fenv-const
                          limit names-to-avoid ctx state))
        (info (make-atc-fn-info
               :type type
