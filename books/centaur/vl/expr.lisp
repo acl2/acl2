@@ -2295,8 +2295,7 @@ unnamed (plain) arguments followed by some named arguments.</p>"
   (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
-    :hints(("Goal" :in-theory (enable acl2::take))))
-  (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
+    :hints(("Goal" :in-theory (enable acl2::take)))))
 
 
 

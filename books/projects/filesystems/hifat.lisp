@@ -1317,12 +1317,6 @@
   (("goal" :in-theory (e/d (fat32-filename-list-fix)
                            (take-of-too-many take-when-atom take-of-cons)))))
 
-(defcong
-  fat32-filename-list-equiv
-  fat32-filename-list-equiv
-  (nthcdr n l)
-  2)
-
 (defthm
   prefixp-of-fat32-filename-list-fix
   (implies (prefixp x y)

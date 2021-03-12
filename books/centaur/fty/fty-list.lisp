@@ -409,7 +409,17 @@
                                     (append x y-equiv)))
                  :rule-classes (:congruence)
                  :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
-                          :induct (append x y)))))))))
+                          :induct (append x y))))))
+
+      ,@(and (not x.non-emptyp)
+             `((defcong
+                 ,x.equiv
+                 ,x.equiv
+                 (nthcdr n l)
+                 2
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix nthcdr)
+                          :induct t
+                          :expand ((,x.fix l) (,x.fix l-equiv))))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))
