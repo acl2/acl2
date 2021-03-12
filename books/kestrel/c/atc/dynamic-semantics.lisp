@@ -1224,19 +1224,16 @@
               val-opt
               :err (mv val-opt.get compst)
               :ok (if val-opt.get
-                      (mv val-opt.get compst)
-                    ;; The following check is currently commented out
-                    ;; because it requires some extensions to proof generation.
-                    ;; (if (equal (type-of-value val-opt.get)
-                    ;;            (type-name-to-type
-                    ;;             (make-tyname :specs info.result
-                    ;;                          :pointerp nil)))
-                    ;;     (mv val-opt.get compst)
-                    ;;   (mv (error (list :return-value-mistype
-                    ;;                    :required info.result
-                    ;;                    :supplied (type-of-value
-                    ;;                               val-opt.get)))
-                    ;;       compst))
+                      (if (equal (type-of-value val-opt.get)
+                                 (type-name-to-type
+                                  (make-tyname :specs info.result
+                                               :pointerp nil)))
+                          (mv val-opt.get compst)
+                        (mv (error (list :return-value-mistype
+                                         :required info.result
+                                         :supplied (type-of-value
+                                                    val-opt.get)))
+                            compst))
                     (mv (error (list :no-return-value (ident-fix fun)))
                         compst))))))
     :measure (nfix limit))
