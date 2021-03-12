@@ -219,11 +219,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-const-name (const-name ctx state)
+(define atc-process-const-name (const-name
+                                (const-name? booleanp)
+                                (proofs booleanp)
+                                ctx
+                                state)
   :returns (mv erp (prog-const "A @(tsee symbolp).") state)
   :mode :program
   :short "Process the @(':const-name') input."
-  (b* (((er &) (acl2::ensure-value-is-symbol$ const-name
+  (b* (((when (not proofs))
+        (if const-name?
+            (er-soft+ ctx t nil
+                      "Since the :PROOFS input is NIL, ~
+                       the :CONST-NAME input must be absent, ~
+                       but it is ~x0 instead."
+                      const-name)
+          (acl2::value nil)))
+       ((er &) (acl2::ensure-value-is-symbol$ const-name
                                               "The :CONST-NAME input"
                                               t
                                               nil))
@@ -292,19 +304,15 @@
                                                t
                                                nil))
        (const-name-option (assoc-eq :const-name options))
-       ((er prog-const)
-        (if proofs
-            (b* ((const-name (if const-name-option
-                                 (cdr const-name-option)
-                               :auto)))
-              (atc-process-const-name const-name ctx state))
-          (if const-name-option
-              (er-soft+ ctx t nil
-                        "Since the :PROOFS input is NIL, ~
-                         the :CONST-NAME input must be absent, ~
-                         but it is ~x0 instead."
-                        (cdr const-name-option))
-            (acl2::value nil))))
+       ((mv const-name const-name?)
+        (if const-name-option
+            (mv (cdr const-name-option) t)
+          (mv :auto nil)))
+       ((er prog-const) (atc-process-const-name const-name
+                                                const-name?
+                                                proofs
+                                                ctx
+                                                state))
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
