@@ -16,6 +16,7 @@
 (include-book "kestrel/axe/dag-size" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defun pair-with-rational-cdrp (x)
   (declare (xargs :guard t))

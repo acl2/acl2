@@ -135,6 +135,13 @@
       (list x y)
     (double-cdr-induct (cdr x) (cdr y))))
 
+(defthmd equal-when-equal-of-car-and-car
+  (implies (and (equal (car x) (car y))
+                (consp x)
+                (consp y))
+           (equal (equal x y)
+                  (equal (cdr x) (cdr y)))))
+
 ;move
 ;newly disabled
 (defthmd equal-when-last-items-equal
@@ -150,16 +157,16 @@
   :hints (("Goal" :in-theory (e/d (take ;len
                                    nth-of-0
                                    ;;LIST::LEN-OF-CDR-BETTER
+                                   equal-when-equal-of-car-and-car
                                    )
                                   (len
                                    CONSP-FROM-LEN-CHEAP ;why?
                                    TAKE-OF-CDR
-                                   ;TRUE-LISTP
+                                   ;;TRUE-LISTP
+                                   cdr-iff ;disable?
                                    ))
            :induct (double-cdr-induct lst1 lst2)
            :do-not '(generalize eliminate-destructors))))
-
-
 
 (defthm fw-1
   (implies (perm bag1 (update-nth n val bag2))
@@ -727,14 +734,6 @@
            (equal (consp x)
                   t))
   :rule-classes nil)
-
-;if we know that the length is equal to something, turn a consp question into a question about that thing..
-(defthm consp-when-len-equal
-  (implies (and (equal (len x) free) ;putting the free variable first was bad: (fixme why?!)
-                ;;(equal free (len x)) ;;saw a loop when the "rhs" of this hyp was simplified!
-                (syntaxp (quotep free))) ;new to prevent loops with len-equal-0-rewrite-alt - could just require free to be smaller than (len x)?
-           (equal (consp x)
-                  (< 0 free))))
 
 (defthmd update-nth-equal-cons-same
   (equal (equal (update-nth 0 val lst) (cons val rest))

@@ -79,3 +79,11 @@
 ;; Only needed for Axe
 (defthm booleanp-of-all-true-listp
   (booleanp (all-true-listp x)))
+
+;; Permuted, for Axe only
+(defthmd consp-when-len-equal-constant-alt
+  (implies (and (equal free (len x))
+                (syntaxp (quotep free)))
+           (equal (consp x)
+                  (< 0 free)))
+  :hints (("Goal" :in-theory (e/d (len) ()))))

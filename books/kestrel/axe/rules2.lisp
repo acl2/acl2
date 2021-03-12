@@ -1556,8 +1556,6 @@
 ;;          (myif test (s-bit n x1) (s-bit n x2)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-;(local (in-theory (disable consp-when-len-equal)))
-
 ;; ;unsigned...
 ;; ;drop or gen?
 ;; (defund nthbyte (n x)

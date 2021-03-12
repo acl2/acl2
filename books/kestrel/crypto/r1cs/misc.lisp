@@ -172,10 +172,3 @@
                 (posp p))
            (equal (equal k (add y (neg x p) p))
                   (equal x (add (- k) y p)))))
-
-(defthm acl2::consp-when-len-equal-alt
-  (implies (and (equal acl2::free (len acl2::x))
-                (syntaxp (quotep acl2::free)))
-           (equal (consp acl2::x)
-                  (< 0 acl2::free)))
-  :hints (("Goal" :in-theory (e/d (len) ()))))
