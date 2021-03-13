@@ -279,6 +279,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                          (=== '==)
                          (==? 'safer-==?)
                          (bit?! 'bit?)
+                         (?! '?*)
                          (otherwise x.fn))
                        args-eval)))
               (if (4vec-xfree-p res)
@@ -308,6 +309,7 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
                                         svex-eval-when-4vec-xfree-of-minval-apply-===
                                         svex-eval-when-4vec-xfree-of-minval-apply-==?
                                         svex-eval-when-4vec-xfree-of-minval-apply-bit?!
+                                        svex-eval-when-4vec-xfree-of-minval-apply-?!
                                         eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct

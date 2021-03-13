@@ -34,11 +34,6 @@
 (local (include-book "std/lists/sets" :dir :system))
 
 
-(defthm svex-env-boundp-of-svex-alist-eval
-  (iff (svex-env-boundp k (svex-alist-eval al env))
-       (svex-lookup k al))
-  :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup svex-alist-eval))))
-
 (defsection svex-alist-eval-equiv
   (def-universal-equiv svex-alist-eval-equiv
     :qvars (var)
