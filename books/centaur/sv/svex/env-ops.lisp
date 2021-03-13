@@ -282,6 +282,20 @@ Variables that are present in keys but not env will be left unbound."
     :hints(("Goal" :in-theory (e/d (svex-env-extract svarlist-fix)
                                    (svex-env-reduce)))))
 
+
+  (defthmd svex-env-reduce-redef
+    (equal (svex-env-reduce keys env)
+           (if (atom keys)
+               nil
+             (if (svex-env-boundp (car keys) env)
+                 (cons (cons (svar-fix (car keys))
+                             (svex-env-lookup (car keys) env))
+                       (svex-env-reduce (cdr keys) env))
+               (svex-env-reduce (cdr keys) env))))
+    :hints (("goal" :in-theory (enable svex-env-boundp svex-env-lookup)
+             :expand ((svex-env-reduce keys env))))
+    :rule-classes :definition)
+
   ;; for :fix hook
   (local (in-theory (enable svex-env-reduce))))
 
@@ -403,6 +417,9 @@ of @(see svex-env-lookup), and they bind the same variables.")
     :hints ((witness)))
 
   (defcong svex-envs-similar svex-envs-similar (append a b) 2
+    :hints ((witness)))
+
+  (defrefinement svex-env-equiv svex-envs-equivalent
     :hints ((witness))))
 
 
@@ -449,6 +466,62 @@ of @(see svex-env-lookup), and they bind the same variables.")
     (equal (svex-lookup v sub-alist)
            (and (member (svar-fix v) (svarlist-fix keys))
                 (or (svex-lookup v alist) (svex-x))))
+    :hints(("Goal"
+            :in-theory
+            (e/d (svex-lookup hons-assoc-equal svarlist-fix)
+
+; Matt K.:  The following rewrite rule made the proof fail after introducing
+; the change, after v8-0, to keep LET expressions on right-hand-sides of
+; rewrite rules, like this one.
+
+                 (hons-assoc-equal-of-svex-alist-fix))))))
+
+
+
+(define svex-alist-reduce-aux ((keys svarlist-p)
+                                (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  (if (atom keys)
+      nil
+    (let ((look (svex-fastlookup (car keys) alist)))
+      (if look
+          (cons (cons (svar-fix (car keys)) look)
+                (svex-alist-reduce-aux (cdr keys) alist))
+        (svex-alist-reduce-aux (cdr keys) alist)))))
+
+(define svex-alist-reduce ((keys svarlist-p)
+                            (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  :verify-guards nil
+  (mbe :logic
+       (if (atom keys)
+           nil
+         (let ((look (svex-fastlookup (car keys) alist)))
+           (if look
+               (cons (cons (svar-fix (car keys)) look)
+                     (svex-alist-reduce (cdr keys) alist))
+             (svex-alist-reduce (cdr keys) alist))))
+       :exec (with-fast-alist alist (svex-alist-reduce-aux keys alist)))
+  ///
+  (local (defthm svex-alist-reduce-aux-elim
+           (equal (svex-alist-reduce-aux x alist)
+                  (svex-alist-reduce x alist))
+           :hints(("Goal" :in-theory (enable svex-alist-reduce-aux)))))
+
+  (verify-guards svex-alist-reduce)
+
+  (defret svex-alist-eval-of-svex-alist-reduce
+    (equal (svex-alist-eval sub-alist env)
+           (svex-env-reduce keys (svex-alist-eval alist env)))
+    :hints(("Goal" :in-theory (enable svex-env-reduce-redef)
+            :induct t
+            :expand ((svex-alist-eval nil env)
+                     (:free (a b) (svex-alist-eval (cons a b) env))))))
+
+  (defret lookup-in-svex-alist-reduce
+    (equal (svex-lookup v sub-alist)
+           (and (member (svar-fix v) (svarlist-fix keys))
+                (svex-lookup v alist)))
     :hints(("Goal"
             :in-theory
             (e/d (svex-lookup hons-assoc-equal svarlist-fix)

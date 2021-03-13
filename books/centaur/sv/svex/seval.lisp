@@ -236,6 +236,15 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                   (case x.fn
                     (? (s4vec-? test then else))
                     (?* (s4vec-?* test then else)))))
+               (?!
+                (b* (((unless (eql (len x.args) 3))
+                      (svex-s4apply x.fn (svexlist-s4eval x.args env)))
+                     (test (svex-s4eval (first x.args) env))
+                     ((s4vec test))
+                     (testvec (sparseint-bitand test.upper test.lower))
+                     ((when (sparseint-equal testvec 0))
+                      (svex-s4eval (third x.args) env)))
+                  (svex-s4eval (second x.args) env)))
                (bit?
                 (b* (((unless (eql (len x.args) 3))
                       (svex-s4apply x.fn (svexlist-s4eval x.args env)))
@@ -441,7 +450,7 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                          (svex-eval x (svex-s4env->svex-env env)))
                 :do-not-induct t)
               (and stable-under-simplificationp
-                   '(:in-theory (enable svex-apply)))
+                   '(:in-theory (enable svex-apply 4vec-?!)))
               (and stable-under-simplificationp
                    '(:in-theory (enable s4vec->4vec))))
       :fn svex-s4eval)
@@ -468,6 +477,7 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                        (=== '==)
                        (==? 'safer-==?)
                        (bit?! 'bit?)
+                       (?! '?*)
                        (otherwise x.fn))))
         ;; Shortcuts for ?, bit?, bitand, bitor
         (case x.fn
@@ -675,7 +685,7 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                          (svex-xeval x))
                 :do-not '(preprocess))
               (and stable-under-simplificationp
-                   '(:in-theory (enable svex-apply))))
+                   '(:in-theory (enable svex-apply 4vec-?!))))
       :fn svex-s4xeval)
     (defret svexlist-s4xeval-is-svexlist-xeval
       (equal (s4veclist->4veclist val)

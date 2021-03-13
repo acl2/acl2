@@ -1571,56 +1571,6 @@ value is X), the regular value will go through.</p>"
            (elses 4vec))))
 
 
-(define 4vec-bit?! ((tests 4vec-p)
-                    (thens 4vec-p)
-                    (elses 4vec-p))
-  :returns (choices 4vec-p)
-  :short "Bitwise multiple if-then-elses of @(see 4vec)s; doesn't unfloat
-then/else values; uses else branch bits for any test bits not equal to
-1 (non-monotonic semantics in this respect)."
-
-  :long "<p>We carry out an independent if-then-else for each bit of
-@('tests'), @('thens'), and @('elses'), producing a new vector with all of the
-answers.  This result is computed bit by bit, with @('result[i]') being set
-to:</p>
-
-<ul>
-<li>@('thens[i]') if @('tests[i]') is 1,</li>
-<li>@('elses[i]') if @('tests[i]') is not 1.</li>
-</ul>
-
-<p>This is used for conditionally overriding signals, as in:</p>
-@({
- (bit?! override-test override-val regular-val)
- })
-
-<p>This way, if the override-test is left out of the environment (therefore its
-value is X), the regular value will go through.</p>"
-
-  (b* (((4vec tests))
-       ((4vec thens))
-       ((4vec elses))
-       (pick-then (logand tests.upper tests.lower)))
-    (mbe :logic (b* ((pick-else (lognot pick-then))
-                     (upper (logior (logand pick-then thens.upper)
-                                    (logand pick-else elses.upper)))
-                     (lower (logior (logand pick-then thens.lower)
-                                    (logand pick-else elses.lower))))
-                  (4vec upper lower))
-         :exec (b* (((when (eql pick-then -1)) thens)
-                    ((when (eql pick-then 0)) elses)
-                    (pick-else (lognot pick-then))
-                    (upper (logior (logand pick-then thens.upper)
-                                   (logand pick-else elses.upper)))
-                    (lower (logior (logand pick-then thens.lower)
-                                   (logand pick-else elses.lower))))
-                 (4vec upper lower))))
-                 
-  ///
-  (deffixequiv 4vec-bit?!
-    :args ((tests 4vec)
-           (thens 4vec)
-           (elses 4vec))))
 
 (define 4vec-?! ((test 4vec-p)
                  (then 4vec-p)
