@@ -147,6 +147,10 @@ expect or preserve @(see fast-alists)."
   (mbe :logic (consp (hons-assoc-equal (svar-fix var) env))
        :exec (consp (assoc-equal var env)))
   ///
+  (defthm svex-env-boundp-of-nil
+    (not (svex-env-boundp k nil))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
   (deffixequiv svex-env-boundp))
 
 (define svex-env-fastlookup ((var svar-p)
