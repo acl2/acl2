@@ -16,6 +16,7 @@
 (include-book "getbit")
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (defund bvxor (size x y)
   (declare (type integer x y)
@@ -228,8 +229,7 @@
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
 (defthm bvxor-numeric-bound
-  (implies (and (<= (expt 2 size) k)
-                (natp size))
+  (implies (<= (expt 2 size) k)
            (< (bvxor size x y) k))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor)
            :in-theory (disable unsigned-byte-p-of-bvxor unsigned-byte-p-of-bvxor-gen))))
@@ -357,3 +357,11 @@
                                   (z (bvchop size y))
                                   (x (bvchop size y)))
            :in-theory (e/d (bvxor-commutative) (bvxor-cancel)))))
+
+(defthm bvxor-of-constant-trim-arg1
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (integerp size))
+           (equal (bvxor size k x)
+                  (bvxor size (bvchop size k) x))))

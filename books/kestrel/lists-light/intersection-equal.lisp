@@ -54,3 +54,28 @@
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthmd intersection-equal-when-member-equal-of-car
+  (implies (and (member-equal (car x) y)
+                (consp x))
+           (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-when-member-equal-of-car-cheap
+  (implies (and (member-equal (car x) y)
+                (consp x))
+           (intersection-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 1)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-of-cons-arg2-iff
+  (iff (intersection-equal x (cons a y))
+       (or (member-equal a x)
+           (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthm intersection-equal-when-intersection-equal-of-cdr-arg1-cheap
+  (implies (intersection-equal (cdr x) y)
+           (intersection-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))

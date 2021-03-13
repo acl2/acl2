@@ -153,11 +153,21 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand))))
 
+(defthm bvand-of-bvchop-arg1-same
+  (equal (bvand size (bvchop size x) y)
+         (bvand size x y))
+  :hints (("Goal" :in-theory (enable bvand))))
+
 (defthm bvand-of-bvchop-2
   (implies (and (<= size size2)
                 (integerp size2))
            (equal (bvand size x (bvchop size2 y))
                   (bvand size x y)))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bvand-of-bvchop-arg2-same
+  (equal (bvand size x (bvchop size y))
+         (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm bvand-with-mask-basic
@@ -229,3 +239,13 @@
                   (natp size)))
   :hints (("Goal" :cases ((<= n size))
            :in-theory (enable bvand))))
+
+(defthm bvand-of-expt-same
+  (equal (bvand size x (expt 2 size))
+         0)
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bvand-of-expt-same2
+  (equal (bvand size (expt 2 size) x)
+         0)
+  :hints (("Goal" :in-theory (enable bvand))))

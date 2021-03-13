@@ -38,4 +38,6 @@
     pfield::mul-associative
     pfield::mul-of-mod-arg1
     pfield::mul-of-mod-arg2
-    pfield::integerp-when-fep))
+    ;; this one has a free var which can be expensive to relieve.  we could specialize it for the prime of interest if we need it:
+    ;;pfield::integerp-when-fep
+    ))

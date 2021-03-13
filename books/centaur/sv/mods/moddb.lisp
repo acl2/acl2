@@ -383,7 +383,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 
 (defsection remove-later-duplicates
   (local (in-theory (enable acl2::remove-later-duplicates)))
-  
+
 
   (defthm modnamelist-p-of-remove-later-duplicates
     (implies (modnamelist-p x)
@@ -402,12 +402,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
   (defthm len-elab-modinst-list-fix
     (equal (len (elab-modinst-list-fix x))
            (len x)))
-
-  (defthm nth-of-elab-modinst-list-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (elab-modinst-list-fix x))
-                    (elab-modinst-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable nth elab-modinst-list-fix))))
 
   (define elab-modinst-list-names ((x elab-modinst-list-p))
     :returns (names namelist-p)
@@ -1026,12 +1020,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              (equal (wirelist-fix (take n x))
                     (take n (wirelist-fix x))))
     :hints(("Goal" :in-theory (enable wirelist-fix take))))
-
-  (defthm nth-of-wirelist-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (wirelist-fix x))
-                    (wire-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable nth wirelist-fix))))
 
   (local (defthm member-take
            (implies (<= (nfix n) (len x))
@@ -2084,12 +2072,6 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
 (defsection elab-modlist
   (deflist elab-modlist :elt-type elab-mod :true-listp t)
 
-  (defthm nth-of-elab-modlist-fix
-    (implies (< (nfix n) (len x))
-             (equal (nth n (elab-modlist-fix x))
-                    (elab-mod$a-fix (nth n x))))
-    :hints(("Goal" :in-theory (enable elab-modlist-fix nth))))
-
   (defthm nth-of-elab-modlist-fix-under-elab-mod$a-equiv
     (elab-mod$a-equiv (nth n (elab-modlist-fix x))
                       (nth n x))
@@ -2371,6 +2353,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (defthm moddb-fix-under-moddb-norm-equiv
       (moddb-norm-equiv (moddb-fix x)
                         x))))
+
+(local (in-theory (disable
+                   (:rewrite nth-of-elab-modlist-fix))))
 
 ;; We can't make moddb into an abstract stobj if we still want to let-bind
 ;; modules within it.  But we can define a strong interface that still
@@ -4192,6 +4177,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                              (g i y)))))))
 
 
+(local (in-theory (e/d
+                   ((:rewrite nth-of-elab-modlist-fix)))))
+
 (defsection moddb-add-modinst
   (define moddb-add-modinst-to-last ((instname name-p)
                                      (modidx natp "instantiated module")
@@ -4253,7 +4241,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (fty::deffixcong moddb-norm-equiv moddb-norm-equiv
       (moddb-add-modinst-to-last instname modidx moddb) moddb
       :hints (("goal" :in-theory (disable elab-mod$a->totalwires
-                                          elab-mod$a->totalinsts))
+                                          elab-mod$a->totalinsts
+                                      (:rewrite nth-of-elab-modlist-fix)))
               (and stable-under-simplificationp
                    '(:in-theory (e/d (moddb-norm)
                                      (elab-mod$a->totalwires
@@ -4347,13 +4336,19 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                                elab-mod$a-ninsts)))
              :rule-classes :linear))
 
-    (local (defthm ninsts-of-add-inst-upper-bound
-             (<= (elab-mod$a-ninsts (elab-mod$a-add-inst inst elab-mod))
-                 (+ 1 (elab-mod$a-ninsts elab-mod)))
-             :hints(("Goal" :in-theory (enable elab-mod$a-add-inst
-                                               elab-mod$a-ninsts
-                                               len)))
-             :rule-classes :linear))
+    (local
+     (defthm
+       ninsts-of-add-inst-upper-bound
+       (<= (elab-mod$a-ninsts (elab-mod$a-add-inst inst elab-mod))
+           (+ 1 (elab-mod$a-ninsts elab-mod)))
+       :hints
+       (("goal"
+         :in-theory
+         (e/d
+          (elab-mod$a-add-inst elab-mod$a-ninsts len)
+          ((:congruence
+            elab-modinst-list-equiv-implies-elab-modinst-list-equiv-append-2)))))
+       :rule-classes :linear))
 
     (local (defthm moddb-modinst-order-ok-of-add-inst-for-existing
              (implies (case-split (< (nfix instidx) (elab-mod$a-ninsts mod)))
@@ -4704,6 +4699,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                 (moddb-add-modinst-to-last instname modidx moddb)))
       :hints(;; (and stable-under-simplificationp
              ;;      '(:in-theory (enable* elab-mod$a-add-inst)))
+             ("Goal" :in-theory (disable
+                                 (:rewrite nth-of-elab-modlist-fix)))
              (and stable-under-simplificationp
                   '(
                     :in-theory (e/d (moddb-mods-not-ok
@@ -5678,6 +5675,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                          (x (elab-modinsts-rem-dups insts))))
            :in-theory (disable len-of-elab-modinst-list-names))))
 
+(local (in-theory (disable
+                   (:rewrite nth-of-elab-modlist-fix))))
 
 (define moddb-wireidx->path/decl ((wireidx natp)
                                   (modidx natp)

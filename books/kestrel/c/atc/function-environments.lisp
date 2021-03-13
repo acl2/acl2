@@ -46,7 +46,7 @@
      without the name.
      This is because names are used as keys in a function environment.
      The other components form the value associated to the key."))
-  ((params param-decl-list)
+  ((params param-declon-list)
    (result tyspecseq)
    (body stmt))
   :pred fun-infop)

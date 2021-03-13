@@ -220,16 +220,10 @@ svex-nth)."
 
            ACL2::LOGEXT-IDENTITY
            ACL2::BFIX-WHEN-NOT-BITP
-           CAR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEX-EQUIV
-           CAR-OF-4VECLIST-FIX-X-NORMALIZE-CONST-UNDER-4VEC-EQUIV
-           SVEX-XEVAL-OF-SVEX-FIX-EXPR-NORMALIZE-CONST
            ACL2::CANCEL_TIMES-EQUAL-CORRECT
            ACL2::CANCEL_PLUS-EQUAL-CORRECT
            ACL2::CANCEL_PLUS-LESSP-CORRECT
            SVEX-EVAL-OF-QUOTED
-           SVEX-EVAL-OF-SVEX-FIX-X-NORMALIZE-CONST
-           SVEX-EVAL-OF-SVEX-ENV-FIX-ENV-NORMALIZE-CONST
-           CDR-OF-SVEXLIST-FIX-X-NORMALIZE-CONST-UNDER-SVEXLIST-EQUIV
            ;; 4VMASK-P-WHEN-MEMBER-EQUAL-OF-4VMASKLIST-P
 
            )))
@@ -1245,7 +1239,7 @@ shifts instead of right shifts.</p>"
               ;; for sure and we don't care about lsb or in
               (list 0 -1 0))
              (widthval (sparseint-val widthval))
-             
+
              ((unless (s4vec-2vec-p lsbval))
               ;; Don't know what the lsb is. The one thing we can do in this
               ;; case: if there are no mask bits inside the width, then we
@@ -1316,11 +1310,11 @@ shifts instead of right shifts.</p>"
                             mask
                             (sparseint-concatenate
                              widthval
-                             0 
+                             0
                              (sparseint-ash mask
                                             (- (+ lsbval widthval))))))
                    (valmask (sparseint-concatenate widthval (sparseint-rightshift lsbval mask) 0)))
-                (list -1 -1 
+                (list -1 -1
                       inmask
                       valmask)))
              ((when (sparseint-< (sparseint-unary-minus lsbval) widthval))
@@ -1805,7 +1799,7 @@ in which case we don't care about @('test') at all."
  (defsection branches-same-under-mask-lemmas
 
    (local (in-theory (disable not)))
-                     
+
    (local (in-theory (enable (:t logbitp) (:t bool->bit))))
    (defthmd branches-same-under-mask-p-correct
      (implies (and (branches-same-under-mask-p mask then else)
@@ -2311,7 +2305,7 @@ checking that the xeval is 0, though.</li>
               `(binary-+ ,target (unary-- ,(cadr x)))))))
 
   (local (defattach bitops::eqbylbp-solve-for-var bitops::my-eqbylbp-solve-for-var))
-  
+
   (local (in-theory (enable (:t logbitp) (:t bit->bool))))
 
   (local (defthm lemma1
@@ -2612,4 +2606,3 @@ outside of the expression and into the arguments.</p>"
                    (args1 (4veclist-mask
                            (svex-argmasks mask fn args)
                            (svexlist-eval args env)))))))))
-

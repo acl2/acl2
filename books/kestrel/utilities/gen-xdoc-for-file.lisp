@@ -39,6 +39,12 @@
 
 ;; TODO: Consider deleting :hints and :guard-hints when generating xdoc.
 
+;; TODO: Consider allowing the ITEMS given to have different parents.  For now,
+;; one can just call gen-xdoc-for-file more than once, one for each set of
+;; parents.
+
+;; TODO: Allow some ITEMS to be combined in the same topic.
+
 (include-book "std/io/read-file-lines-no-newlines" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)

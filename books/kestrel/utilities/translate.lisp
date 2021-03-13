@@ -12,27 +12,32 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; Translate a term (by expanding macros, quoting constants, turing lets into
-;; lambdas, etc.).
-;; Returns the translation of TERM.
-;; I think this is based on something Matt K. wrote.
-;; This throws an informative hard error if something is wrong with the term.
-;; See also check-user-term.
+;; Returns (mv ctx msg-or-val), a context-message-pair.
+(defun translate-term-with-defaults (term ctx wrld)
+  (declare (xargs :mode :program
+                  ;; todo: guard
+                  ))
+  (translate-cmp term
+                 t ;stobjs-out, don't enforce stobj restrictions
+                 t ;logic-modep ;; means :program mode cannot be involved (TRANSLATE-CMP explicitly checks for that).
+                 t ;known-stobjs
+                 ctx
+                 wrld
+                 (default-state-vars nil)))
+
+;; Translates a term (by expanding macros, quoting constants, turing lets into
+;; lambdas, etc.).  Returns the translation of TERM, or throws an informative
+;; hard error if something is wrong.  I think this is based on something Matt
+;; K. wrote.  See also check-user-term.
 (defun translate-term (term ctx wrld)
   (declare (xargs :mode :program
                   ;; todo: guard
                   ))
-  (mv-let (erp result) ;TODO: This is a context-message pair.  Use the error message in the error case.
-    (translate-cmp term
-                   t ;stobjs-out, don't enforce stobj restrictions
-                   t ;logic-modep ;; means :program mode cannot be involved (TRANSLATE-CMP explicitly checks for that).
-                   t ;known-stobjs
-                   ctx
-                   wrld
-                   (default-state-vars nil))
-    (if erp
-        (er hard! ctx "Failed to translate term ~x0. ~@1" term result)
-      result)))
+  (mv-let (ctx msg-or-val)
+    (translate-term-with-defaults term ctx wrld)
+    (if ctx
+        (er hard! ctx "Failed to translate term ~x0. ~@1" term msg-or-val)
+      msg-or-val)))
 
 ;; Translate a list of terms.
 ;; Compare to TRANSLATE-TERM-LST?

@@ -47,7 +47,7 @@
          :ttag ,clause-processor-name)
 
        ;; Returns a defthm event.
-       (defun ,defthm-with-clause-processor-fn-name (name term rules rule-lists remove-rules no-splitp rule-classes print state)
+       (defun ,defthm-with-clause-processor-fn-name (name term tactic rules rule-lists remove-rules no-splitp rule-classes print state)
          (declare (xargs :guard (and (symbolp name)
                                      ;; term need not be a pseudo-term
                                      (rule-item-listp rules)
@@ -70,7 +70,8 @@
                                                                           '((:must-prove . t)
                                                                             (:rule-lists . ,rule-lists)
                                                                             (:no-splitp . ,no-splitp)
-                                                                            (:print . ,print))
+                                                                            (:print . ,print)
+                                                                            (:tactic . ,tactic))
                                                                           state)))
               ,@(if (eq :auto rule-classes)
                     nil
@@ -80,6 +81,7 @@
        (defmacro ,defthm-with-clause-processor-name (name
                                                      term
                                                      &key
+                                                     (tactic '(:rep :rewrite :subst))
                                                      (rules 'nil)
                                                      (rule-lists 'nil)
                                                      (remove-rules 'nil)
@@ -89,9 +91,9 @@
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
-             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))
+             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))
            ;; Don't evaluate TERM:
-           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))))
+           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))))
 
        )))
 

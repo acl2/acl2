@@ -51,17 +51,6 @@
            (acl2-numberp x))
   :rule-classes ((:forward-chaining :trigger-terms ((integerp x))) :rewrite))
 
-(DEFTHM BITS-UPPER-BOUND
-  (IMPLIES (AND (INTEGERP I) (INTEGERP J))
-           (< (BITS X I J) (EXPT 2 (1+ (- I J)))))
-  :INSTRUCTIONS
-  (:PROMOTE
-   (:CLAIM (AND (NATP (BITS X I J))
-                (< (BITS X I J) (EXPT 2 (1+ (- I J)))))
-           :HINTS (("Goal" :USE (:INSTANCE BITS-BOUNDS))))
-   :BASH)
-  :rule-classes ((:forward-chaining :trigger-terms ((BITS X I J))) :rewrite))
-
 (DEFTHM BITS-UPPER-BOUND-LE
  (IMPLIES (AND (INTEGERP I) (INTEGERP J) (<= 0 I) (>= i j))
           (<= (BITS X I j) (1- (EXPT 2 (1+ (- I J))))))
@@ -159,7 +148,7 @@
     (acl2::signed-byte-p 64 n))
    (= (stk_sz (STK_push n Obj))
       (1+ (stk_sz Obj)))))
-  
+
 
 (defthm stk_sz-of-STK_pop--thm
   (implies
@@ -185,4 +174,3 @@
     (spacep Obj)
     (acl2::signed-byte-p 64 n))
    (= (nth 1 (STK_top (STK_pop (STK_push n Obj)))) (nth 1 (STK_top Obj)))))
-

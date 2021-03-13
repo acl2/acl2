@@ -29,8 +29,6 @@
 (local
  (in-theory
   (disable
-   (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite abs-separate-correctness-1-lemma-19)
    (:rewrite m1-file-alist-p-when-subsetp-equal)
    (:rewrite
     abs-fs-fix-of-put-assoc-equal-lemma-2)
@@ -390,8 +388,7 @@
     :in-theory
     (e/d (prefixp abs-find-file-helper
                   ctx-app ctx-app-ok names-at addrs-at)
-         (nfix (:rewrite abs-addrs-of-ctx-app-1-lemma-4)
-               (:rewrite remove-when-absent)
+         (nfix (:rewrite remove-when-absent)
                (:rewrite abs-find-file-helper-when-m1-file-alist-p)
                (:rewrite abs-file-contents-p-when-m1-file-contents-p)
                (:rewrite abs-addrs-of-ctx-app)
@@ -3858,7 +3855,7 @@
     :in-theory
     (e/d
      (abs-find-file collapse
-                    abs-separate-of-frame->frame-of-collapse-this-lemma-10
+                    abs-complete-when-atom-abs-addrs
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)
@@ -3982,7 +3979,7 @@
    (in-theory
     (e/d
      (abs-find-file collapse
-                    abs-separate-of-frame->frame-of-collapse-this-lemma-10
+                    abs-complete-when-atom-abs-addrs
                     len-of-fat32-filename-list-fix)
      ((:definition remove-equal)
       (:definition assoc-equal)

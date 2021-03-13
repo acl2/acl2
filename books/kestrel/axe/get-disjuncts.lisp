@@ -18,6 +18,7 @@
 (include-book "def-dag-builder-theorems")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
@@ -240,17 +241,17 @@
 
 ;; The disjuncts are always nodenums.
 (defthm nat-listp-of-mv-nth-2-of-get-disjuncts
-  (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                 (dargp-less-than item dag-len)
-                 (nat-listp acc))
-            (nat-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (dargp-less-than item dag-len)
+                (nat-listp acc))
+           (nat-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 (verify-guards get-disjuncts :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-get-disjuncts
-  (implies  (true-listp acc)
-            (true-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+  (implies (true-listp acc)
+           (true-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 (defthm all-<-of-mv-nth-2-of-get-disjuncts
@@ -262,6 +263,11 @@
             (all-< (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))
                    (mv-nth 4 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts CAR-BECOMES-NTH-OF-0) (natp)))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-2-of-get-disjuncts
+  (implies (no-duplicatesp-equal acc)
+           (no-duplicatesp-equal (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 ;; Extends ACC with nodenums whose disjunction is equivalent to the disjunction of the NODENUMS.
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
@@ -305,6 +311,11 @@
              (reverse acc)
              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   :hints (("Goal" :in-theory (enable get-disjuncts-from-nodes))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-2-of-get-disjuncts-from-nodes
+  (implies (no-duplicatesp-equal acc)
+           (no-duplicatesp-equal (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 ;move
 (local

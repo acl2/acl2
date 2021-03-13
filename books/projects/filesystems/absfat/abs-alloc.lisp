@@ -30,7 +30,6 @@
                         (:rewrite natp-of-car-when-nat-listp)
                         (:rewrite when-zp-src-of-1st-collapse-1)
                         (:rewrite ctx-app-ok-of-abs-fs-fix-1)
-                        (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
                         (:rewrite
                          abs-fs-fix-of-put-assoc-equal-lemma-2)
                         (:rewrite hifat-file-alist-fix-guard-lemma-1)

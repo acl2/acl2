@@ -1,4 +1,4 @@
-(STR::PREFIX-LINES-AUX (127 7 (:DEFINITION LEN))
+(STR::PREFIX-LINES-AUX (128 7 (:DEFINITION LEN))
                        (77 14 (:REWRITE LEN-WHEN-ATOM))
                        (68 2 (:REWRITE NTH-WHEN-BIGGER))
                        (56 56
@@ -18,6 +18,8 @@
                        (5 1 (:REWRITE DEFAULT-CAR))
                        (2 2 (:REWRITE FOLD-CONSTS-IN-+))
                        (1 1
+                          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                       (1 1
                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                        (1 1 (:REWRITE CONSP-OF-CDDR-BY-LEN))
                        (1 1
@@ -25,7 +27,7 @@
 (STR::PREFIX-LINES)
 (STR::CHARACTER-LISTP-OF-PREFIX-LINES-AUX
      (1945 60 (:REWRITE NTH-WHEN-BIGGER))
-     (1576 94 (:DEFINITION LEN))
+     (1582 94 (:DEFINITION LEN))
      (1018 188 (:REWRITE LEN-WHEN-ATOM))
      (513 151 (:REWRITE DEFAULT-CDR))
      (428 428 (:REWRITE CONSP-BY-LEN))
@@ -47,6 +49,8 @@
          (:LINEAR LEN-OF-NONEMPTY-STRING-IS-POSITIVE))
      (10 5 (:REWRITE UNICITY-OF-0))
      (8 8 (:REWRITE NATP-RW))
+     (6 6
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (5 5 (:REWRITE CONSP-OF-CDDDR-BY-LEN))
      (5 5 (:DEFINITION FIX)))
 (STR::PREFIX-LINES (112 6 (:DEFINITION LEN))

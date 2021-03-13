@@ -33,16 +33,6 @@
      It only needs to represent the C programs that ATC generates,
      not necessarily all the possible C programs.")
    (xdoc::p
-    "We start with an abstract syntax for a subset of C.
-     This initial subset can represent C programs consisting of
-     a single translation unit
-     with multiple functions
-     that manipulate integer values
-     (excluding pointers to integers, which are pointer values).
-     This suffices to support the generation of interesting C programs,
-     but we plan to extend the abstract syntax
-     to represent a much wider range of C programs.")
-   (xdoc::p
     "At the same time, we plan to formalize
      a more comprehensive abstract syntax of C
      as part of our "
@@ -264,7 +254,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We capture all of them, since they all take and return integers
+    "We capture all of them; they all take and return integers
      (along with values of other types).
      The C grammar does not have a nonterminal for binary operators
      (it has one for unary operators [C:6.5.3]),
@@ -340,10 +330,7 @@
     "For now we only capture type specifier sequences for
      the plain @('char') type and
      the standard signed and unsigned integer types.
-     We only capture one sequence for each, implicitly.")
-   (xdoc::p
-    "These type specifier sequences should suffice to represent
-     C programs that manipulate integers."))
+     We only capture one sequence for each, implicitly."))
   (:char ())
   (:schar ())
   (:sshort ())
@@ -391,9 +378,12 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only capture type names consisting of
-     the type specifier sequences captured by @(tsee tyspecseq).
-     This should suffice to represent C programs that manipulate integers."))
-  ((specs tyspecseq))
+     the type specifier sequences captured by @(tsee tyspecseq),
+     and pointers thereof (only single pointers, not pointers to pointers).
+     We capture the presence or absence of @('*') (for pointer)
+     via a boolean flag."))
+  ((specs tyspecseq)
+   (pointerp bool))
   :tag :tyname
   :pred tynamep)
 
@@ -408,12 +398,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection tyname-list ((x tyspecseq-listp))
-  :result-type tyname-listp
-  :short "Lift @(tsee tyname) to lists."
-  (tyname x)
+(define irr-tyname ()
+  :returns (tyname tynamep)
+  :short "An irrelevant type name, usable as a dummy value."
+  (with-guard-checking :none (ec-call (tyname-fix :irrelevant)))
   ///
-  (fty::deffixequiv tyname-list))
+  (in-theory (disable (:e irr-tyname))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,13 +426,13 @@
        whose structure provides the grouping.")
      (xdoc::p
       "Of the postfix expressions [C:6.5.2],
-       for now we only cover function calls
-       (where we require the function to be an identifier)
+       for now we only cover
+       array subscripting,
+       function calls (where we require the function to be an identifier),
        and post-increment/decrement.
        Richer expressions for functions in function calls
        (e.g. function pointers)
        will be added if/when needed.
-       Array subscripts will be added later.
        Structure and union member accesses will be added later.
        Compound literals will be added as needed.")
      (xdoc::p
@@ -484,6 +474,7 @@
        It will be easy to include, if needed."))
     (:ident ((get ident)))
     (:const ((get const)))
+    (:arrsub ((arr expr) (sub expr)))
     (:call ((fun ident)
             (args expr-list)))
     (:postinc ((arg expr)))
@@ -528,7 +519,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod decl
+(fty::defprod declor
+  :short "Fixtype of declarators [C:6.7.6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only capture declarators
+     that consist of single direct declarators
+     that consist of identifiers
+     optionally preceded by a single pointer indication without type qualifiers.
+     That is, for now a declarator is
+     either an identifier or a @('*') followed by an identifier.
+     We model the presence or absence of the @('*') via boolean flag.
+     This will be generalized eventually."))
+  ((pointerp bool)
+   (ident ident))
+  :tag :declor
+  :pred declorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod declon
   :short "Fixtype of declarations [C:6.7]."
   :long
   (xdoc::topstring
@@ -541,18 +552,17 @@
      no type qualifiers,
      no function specifiers,
      no alignment specifiers,
-     and a single declarator consisting of an identifier,
-     with an initializer expression.
-     This suffices to declare and initialize integer variables.")
+     and a single declarator (see @(tsee declor))
+     with an initializer expression.")
    (xdoc::p
     "We will support richer forms of declarations when needed.")
    (xdoc::p
     "We do not support static assertions for now."))
   ((type tyspecseq)
-   (name ident)
+   (declor declor)
    (init expr))
-  :tag :decl
-  :pred declp)
+  :tag :declon
+  :pred declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,7 +640,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are declarations and statements."))
-    (:decl ((get decl)))
+    (:declon ((get declon)))
     (:stmt ((get stmt)))
     :pred block-itemp)
 
@@ -654,46 +664,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-decl
-  :short "Fixtype of parameter declarations [C:6.7.5]."
+(fty::defprod param-declon
+  :short "Fixtype of parameter declarations [C:6.7.6]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "C parameter declarations are a restricted form of
+     (general) declarations in C.")
    (xdoc::p
     "For now we capture a very limited form of parameter declarations,
      namely the ones consisting of
      a type specifier sequence (see @(tsee tyspecseq))
-     and an identifier."))
+     and a declarator (see @(tsee declor))."))
   ((type tyspecseq)
-   (name ident))
-  :tag :param-decl
-  :pred param-declp)
+   (declor declor))
+  :tag :param-declon
+  :pred param-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist param-decl-list
+(fty::deflist param-declon-list
   :short "Fixtype of lists of parameter declarations."
-  :elt-type param-decl
+  :elt-type param-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred param-decl-listp)
+  :pred param-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection param-decl-list->type-list ((x param-decl-listp))
-  :result-type tyspecseq-listp
-  :short "Lift @(tsee param-decl->type) to lists."
-  (param-decl->type x)
-  ///
-  (fty::deffixequiv param-decl-list->type-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-param-decl ()
-  :returns (param param-declp)
+(define irr-param-declon ()
+  :returns (param param-declonp)
   :short "An irrelevant parameter declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (param-decl-fix :irrelevant)))
+  (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-param-decl))))
+  (in-theory (disable (:e irr-param-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -710,7 +714,7 @@
      Richer forms may be added in the future."))
   ((result tyspecseq)
    (name ident)
-   (params param-decl-list)
+   (params param-declon-list)
    (body stmt))
   :tag :fundef
   :pred fundefp)
@@ -737,7 +741,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum ext-decl
+(fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C:6.9]."
   :long
   (xdoc::topstring
@@ -746,30 +750,30 @@
      We add a placeholder for other top-level declarations,
      which we will flesh out later."))
   (:fundef ((get fundef)))
-  (:decl ())
-  :pred ext-declp)
+  (:declon ())
+  :pred ext-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist ext-decl-list
+(fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
-  :elt-type ext-decl
+  :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-decl-listp)
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-ext-decl ()
-  :returns (ext ext-declp)
+(define irr-ext-declon ()
+  :returns (ext ext-declonp)
   :short "An irrelevant external declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (ext-decl-fix :irrelevant)))
+  (with-guard-checking :none (ec-call (ext-declon-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-ext-decl))))
+  (in-theory (disable (:e irr-ext-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list->fundef-list ((exts ext-decl-listp))
+(define ext-declon-list->fundef-list ((exts ext-declon-listp))
   :returns (defs fundef-listp)
   :short "Extract from a list of external declarations
           the list of function definitions, in the same order."
@@ -779,10 +783,10 @@
     "Declarations are discarded. Only function definitions are projected."))
   (b* (((when (endp exts)) nil)
        (ext (car exts)))
-    (ext-decl-case ext
-                   :fundef (cons (ext-decl-fundef->get ext)
-                                 (ext-decl-list->fundef-list (cdr exts)))
-                   :decl (ext-decl-list->fundef-list (cdr exts))))
+    (ext-declon-case ext
+                   :fundef (cons (ext-declon-fundef->get ext)
+                                 (ext-declon-list->fundef-list (cdr exts)))
+                   :declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -798,7 +802,7 @@
      We create this one-field product fixtype
      so that in the future it may be easier to extend this fixtype
      with more information if needed."))
-  ((decls ext-decl-list))
+  ((declons ext-declon-list))
   :tag :transunit
   :pred transunitp)
 

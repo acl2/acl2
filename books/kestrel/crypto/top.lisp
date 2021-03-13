@@ -16,6 +16,7 @@
 (include-book "interfaces/top")
 (include-book "keccak/top")
 (include-book "hmac/top")
+(include-book "mimc/top")
 (include-book "padding/top")
 (include-book "pfcs/top")
 (include-book "sha-2/top")
@@ -23,6 +24,7 @@
 ;; (include-book "r1cs/top") ; brings in skip-proofs
 (include-book "r1cs/doc")
 (include-book "r1cs/sparse/doc")
+(include-book "blake/top")
 
 (include-book "attachments/top")
 

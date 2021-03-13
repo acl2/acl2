@@ -1556,8 +1556,6 @@
 ;;          (myif test (s-bit n x1) (s-bit n x2)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-;(local (in-theory (disable consp-when-len-equal)))
-
 ;; ;unsigned...
 ;; ;drop or gen?
 ;; (defund nthbyte (n x)
@@ -2390,12 +2388,6 @@
 ;; (defmacro old (tag n)
 ;;   (declare (ignore tag))
 ;;   `(localvar ,n s0))
-
-(defthm getbit-leibniz
-  (implies (and (equal n1 n2)
-                (equal v1 v2))
-           (equal (equal (getbit n1 v1) (getbit n2 v2))
-                  t)))
 
 ;; (defthm ARRAY-ELEM-2D-leibniz
 ;;   (implies (and (equal a1 a2)

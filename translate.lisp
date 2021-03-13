@@ -7409,7 +7409,7 @@
 ;    (binary-+ '1 x))
 
 ; '(lambda (x)
-;    (declare (type integer x)           ; TYPE, IGNORE, IGNOREABLE allowed
+;    (declare (type integer x)           ; TYPE, IGNORE, IGNORABLE allowed
 ;             (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
 ;                    :split-types t))                       ; translated and
 ;   (binary-+ '1 x))                                        ; include types
@@ -16617,9 +16617,7 @@
                 (trans-er-let*
                  ((targ2 (translate11 arg2
                                       nil ; ilk
-                                      (if (inside-defabsstobj wrld)
-                                          t
-                                        stobjs-out)
+                                      stobjs-out
                                       bindings known-stobjs
                                       flet-alist x ctx wrld state-vars))
                   (targ3 (translate11 arg3
@@ -16762,7 +16760,11 @@
                  (erp targ2 targ2-bindings)
                  (translate11 arg2
                               nil ; ilk
-                              '(nil) bindings known-stobjs flet-alist x
+                              (if (and (eq key 'progn)
+                                       (inside-defabsstobj wrld))
+                                  t
+                                '(nil))
+                              bindings known-stobjs flet-alist x
                               ctx wrld state-vars)
                  (declare (ignore targ2-bindings))
                  (cond

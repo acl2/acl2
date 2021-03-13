@@ -86,7 +86,11 @@
 (defn f3 (x y) (declare (type rational x y)) (+ x y))
 (defn g3 (x y) (declare (type rational x y)) (+ 1 -1 x y))
 (DEFTHM |F3-is-G3| (EQUAL (F3 X Y) (G3 X Y)) :RULE-CLASSES NIL)
-(memoize 'f3 :invoke 'g3 :commutative t)
+(with-output :off :all
+; This use of with-output avoids the need to update memoize-invoke-log.txt
+; whenever a change to the absolute-event-number causes a different
+; value-triple to be generated.
+  (memoize 'f3 :invoke 'g3 :commutative t))
 (trace$ g3)
 ; The following produces trace$ output showing that g2 is indeed called
 ; (with "1>" and "<1" missing as noted in an earlier comment).

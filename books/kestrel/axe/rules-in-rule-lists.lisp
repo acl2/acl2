@@ -31,6 +31,7 @@
 (include-book "bv-array-rules-axe")
 ;(include-book "rules1" :dir :system) ;included by bv-array-rules-axe
 (include-book "axe-rules-mixed") ;reduce? since some rules in this file are now in the basic jvm rule set? for NOT-EQUAL-MAX-INT-WHEN-<=, etc.
+(include-book "kestrel/bv/sbvdivdown-rules" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)

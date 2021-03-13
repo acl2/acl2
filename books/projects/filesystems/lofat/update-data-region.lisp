@@ -234,9 +234,11 @@
 (encapsulate
   ()
 
+  ;; Trying to remove this is hazardous, even though it doesn't seem to be used
+  ;; anywhere!
   (local
    (defthm
-     lofat-fs-p-guard-lemma-2
+     lemma-1
      (implies (and
                (fat32$c-p fat32$c)
                (>= (bpb_bytspersec fat32$c) *ms-min-bytes-per-sector*)
@@ -294,7 +296,7 @@
 
   (local
    (defthm
-     lofat-fs-p-guard-lemma-3
+     lemma-2
      (implies (and (fat32$c-p fat32$c)
                    (< 0 (bpb_bytspersec fat32$c)))
               (< (fat-entry-count fat32$c)
@@ -362,7 +364,7 @@
        (lofat-fs-p cluster-size fat-entry-count)
        (fat32$c-p))
       :use
-      lofat-fs-p-guard-lemma-3))
+      lemma-2))
     :rule-classes
     ((:rewrite
       :corollary

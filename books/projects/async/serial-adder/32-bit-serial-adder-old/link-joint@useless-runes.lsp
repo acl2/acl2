@@ -223,25 +223,36 @@
                  (131 131 (:REWRITE DEFAULT-+-1))
                  (126 13
                       (:REWRITE ADE::ASSOC-EQ-VALUES-ARGS-PAIRLIS$-ARGS))
+                 (80 4 (:REWRITE LEN-WHEN-PREFIXP))
                  (75 19 (:REWRITE ADE::ASSOC-EQ-VALUES-ATOM))
                  (72 72 (:LINEAR LEN-WHEN-PREFIXP))
                  (56 20 (:REWRITE ADE::BV-IS-TRUE-LIST))
+                 (56 11 (:REWRITE PREFIXP-WHEN-PREFIXP))
                  (47 5
                      (:REWRITE ADE::UPDATE-ALIST-OF-NOT-A-KEY))
                  (36 36 (:TYPE-PRESCRIPTION ADE::BVP))
                  (36 36
                      (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-                 (36 4 (:REWRITE LEN-WHEN-PREFIXP))
+                 (30 2 (:REWRITE TAKE-WHEN-PREFIXP))
                  (28 6 (:DEFINITION ALISTP))
+                 (27 27 (:TYPE-PRESCRIPTION PREFIXP))
                  (21 2
                      (:REWRITE ADE::ALL-UNBOUND-IN-BODY-ATOM-NAMES))
-                 (18 2 (:REWRITE TAKE-WHEN-PREFIXP))
                  (16 4
                      (:REWRITE ADE::NOT-EQUAL-WITH-SI-OF-DIFF-SYMBOL
                                . 2))
                  (16 4 (:DEFINITION BINARY-APPEND))
-                 (12 12 (:TYPE-PRESCRIPTION PREFIXP))
                  (12 12 (:TYPE-PRESCRIPTION BOOLEANP))
+                 (11 11
+                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                 (11 11
+                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                 (11 11 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                 (11 11 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                 (11 11
+                     (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                 (11 11
+                     (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                  (11 5 (:REWRITE ADE::FV-IF-WHEN-BVP))
                  (11 5 (:REWRITE ADE::F-BUF-OF-NOT-BOOLEANP))
                  (11 5 (:REWRITE ADE::F-BUF-OF-3VP))
@@ -251,16 +262,6 @@
                  (8 4 (:REWRITE DEFAULT-<-2))
                  (8 4 (:REWRITE DEFAULT-<-1))
                  (6 6 (:TYPE-PRESCRIPTION ADE::3VP))
-                 (6 6
-                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                 (6 6
-                    (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                 (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                 (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                 (6 6
-                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                 (6 6
-                    (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
                  (5 5 (:DEFINITION STRIP-CARS))
                  (4 4
                     (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
@@ -269,16 +270,18 @@
                  (4 4 (:REWRITE ADE::NO-DUPLICATESP-SIS))
                  (4 4 (:REWRITE DEFAULT-SYMBOL-NAME))
                  (4 2
-                    (:REWRITE ADE::ASSOC-EQ-VALUES-DE-OCC-UPDATE-ALIST)))
+                    (:REWRITE ADE::ASSOC-EQ-VALUES-DE-OCC-UPDATE-ALIST))
+                 (1 1
+                    (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV)))
 (ADE::LINK$VALID-ST-PRESERVED
      (1056 168 (:DEFINITION LEN))
      (996 18 (:DEFINITION TAKE))
+     (980 10 (:REWRITE LEN-WHEN-PREFIXP))
      (822 411
           (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
-     (660 20
+     (680 40
           (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (482 12 (:REWRITE TAKE-WHEN-PREFIXP))
-     (480 10 (:REWRITE LEN-WHEN-PREFIXP))
+     (610 40 (:REWRITE PREFIXP-WHEN-PREFIXP))
      (411 411 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (358 190 (:REWRITE DEFAULT-+-2))
      (348 174
@@ -287,6 +290,7 @@
      (276 36 (:REWRITE ADE::LEN-NTHCDR))
      (240 36 (:REWRITE TAKE-WHEN-ATOM))
      (214 214 (:REWRITE NTH-WHEN-PREFIXP))
+     (212 12 (:REWRITE TAKE-WHEN-PREFIXP))
      (206 206 (:LINEAR LEN-WHEN-PREFIXP))
      (190 190 (:REWRITE DEFAULT-+-1))
      (176 24 (:REWRITE ZP-OPEN))
@@ -296,24 +300,24 @@
      (140 35 (:DEFINITION STRIP-CARS))
      (103 103
           (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
+     (100 40
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (100 40
+          (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (100 10 (:DEFINITION ADE::V-THREEFIX))
-     (80 20
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (80 20
-         (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (90 90 (:TYPE-PRESCRIPTION PREFIXP))
      (52 4 (:REWRITE REPEAT-WHEN-ZP))
      (42 14 (:REWRITE ADE::BVP-NTHCDR))
-     (40 40 (:TYPE-PRESCRIPTION PREFIXP))
+     (40 40 (:REWRITE PREFIXP-TRANSITIVE . 2))
+     (40 40 (:REWRITE PREFIXP-TRANSITIVE . 1))
+     (40 40
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+     (40 40
+         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (36 4 (:REWRITE CONSP-OF-TAKE))
      (35 35 (:TYPE-PRESCRIPTION STRIP-CARS))
      (35 5 (:REWRITE ADE::CAR-V-THREEFIX))
      (24 8 (:DEFINITION NATP))
-     (20 20 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (20 20 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (20 20
-         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (20 20
-         (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
      (20 2 (:REWRITE CAR-OF-TAKE))
      (16 16 (:TYPE-PRESCRIPTION ADE::FV-IF))
      (8 8 (:TYPE-PRESCRIPTION NATP))

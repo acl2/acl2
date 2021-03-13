@@ -19,6 +19,7 @@
 (local (in-theory nil))
 
 (include-book "defs")
+(include-book "rac")
 
 ;;;**********************************************************************
 ;;;			Radix-4 Booth Encoding
@@ -31,17 +32,135 @@
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
+(defthm theta-bounds
+  (and (<= -2 (theta i y))
+       (<= (theta i y) 2))
+  :rule-classes :linear)
+
 (defun sum-theta (m y)
    (if (zp m)
        0
      (+ (* (expt 2 (* 2 (1- m))) (theta (1- m) y))
 	(sum-theta (1- m) y))))
 
+;; Signed version
+
+(defthmd sum-theta-lemma-signed
+  (implies (and (posp m)
+                (bvecp y (* 2 m)))
+           (equal (sum-theta m y)
+                  (si y (* 2 m)))))
+
+(defund bmux4signed (zeta x n)
+  (case zeta
+    (1  x)
+    (-1 (bits (lognot x) (1- n) 0))
+    (2  (bits (* 2 x) (1- n) 0))
+    (-2 (bits (lognot (* 2 x)) (1- n) 0))
+    (0  0)))
+
+(defthm bvecp-bmux4signed
+  (implies (and (integerp zeta)
+                (<= -2 zeta)
+                (<= zeta 2)
+                (integerp n)
+                (bvecp x n))
+           (bvecp (bmux4signed zeta x n)
+                  n))
+  :hints (("Goal" :in-theory (enable bmux4signed bvecp)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (bvecp (bmux4signed zeta x n)
+                    n)))
+   (:type-prescription
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (natp (bmux4signed zeta x n))))
+   (:linear
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (< (bmux4signed zeta x n)
+                (expt 2 n))))))
+
+(defund tau (zeta sign)
+  (if (equal zeta 0)
+      0
+    (if (< 0 zeta)
+        sign
+      (lognot1 sign))))
+
+(defun neg (x) (if (< x 0) 1 0))
+
+(defund pp4signed-theta (i x y n)
+   (if (zerop i)
+       (cat 1 1
+	    (lognot1 (tau (theta i y)
+                          (bitn x (1- n))))
+            1
+	    (bmux4signed (theta i y) x n)
+            n)
+     (cat 1 1
+	  (lognot1 (tau (theta i y)
+                        (bitn x (1- n))))
+          1
+	  (bmux4signed (theta i y) x n)
+          n
+	  0 1
+	  (neg (theta (1- i) y))
+          1
+	  0 (* 2 (1- i)))))
+
+(defun sum-pp4signed-theta (x y m n)
+  (if (zp m)
+      0
+    (+ (pp4signed-theta (1- m) x y n)
+       (sum-pp4signed-theta x y (1- m) n))))
+
+(defthmd booth4signed-corollary
+  (implies (and (posp m)
+                (posp n)
+                (bvecp x n)
+                (bvecp y (* 2 m)))
+           (equal (sum-pp4signed-theta x y m n)
+                  (+ (- (expt 2 n))
+                     (- (* (expt 2 (* 2 (1- m)))
+                           (neg (theta (1- m) y))))
+                     (expt 2 (+ n (* 2 m)))
+                     (* (si x n) (si y (* 2 m)))))))
+
+(defthmd booth4signed-corollary-alt
+  (implies (and (posp m)
+                (posp n)
+                (bvecp x n)
+                (bvecp y (* 2 m)))
+           (equal (+ (expt 2 n)
+                     (* (expt 2 (* 2 (1- m)))
+                        (neg (theta (1- m) y)))
+                     (sum-pp4signed-theta x y m n))
+                  (+ (expt 2 (+ n (* 2 m)))
+                     (* (si x n) (si y (* 2 m)))))))
+
+;; Unsigned versions
+
 (defthm sum-theta-lemma
     (implies (and (not (zp m))
 		  (bvecp y (1- (* 2 m))))
 	     (equal y (sum-theta m y)))
-  :rule-classes ())
+    :rule-classes ())
 
 (defun bmux4 (zeta x n)
   (case zeta
@@ -50,8 +169,6 @@
     (2  (* 2 x))
     (-2 (bits (lognot (* 2 x)) (1- n) 0))
     (0  0)))
-
-(defun neg (x) (if (< x 0) 1 0))
 
 (defun pp4-theta (i x y n)
    (if (zerop i)

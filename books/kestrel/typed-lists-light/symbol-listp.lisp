@@ -91,3 +91,15 @@
   (implies (symbol-listp x)
            (symbol-listp (reverse x)))
   :hints (("Goal" :in-theory (enable reverse))))
+
+;this matches something in STD
+(defthm true-listp-when-symbol-listp
+  (implies (symbol-listp x)
+           (true-listp x))
+  :rule-classes :compound-recognizer)
+
+;; Can't call this true-listp-when-symbol-listp because std uses that name for a :compound-recognizer rule.
+;; Can't call this true-listp-when-symbol-listp-rewrite because std uses that name for a backchain-limited rule.
+(defthmd true-listp-when-symbol-listp-rewrite-unlimited
+  (implies (symbol-listp x)
+           (true-listp x)))

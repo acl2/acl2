@@ -275,38 +275,49 @@
                      (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP))
                  (4 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
                  (3 1 (:REWRITE BITOPS::LOGCDR-OF-BIT))
-                 (2 2 (:TYPE-PRESCRIPTION BITP)))
-(BITOPS::ASH-<-LOGCDR-LEMMA (338 160
-                                 (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
-                            (316 316
-                                 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                            (186 93
-                                 (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-                            (111 111 (:TYPE-PRESCRIPTION NATP))
-                            (103 9 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                            (59 22 (:REWRITE DEFAULT-<-2))
-                            (33 17 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                            (32 8 (:REWRITE <-0-+-NEGATIVE-1))
-                            (31 31
-                                (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
-                            (31 22 (:REWRITE DEFAULT-<-1))
-                            (30 30 (:META CANCEL_PLUS-LESSP-CORRECT))
-                            (12 3 (:REWRITE ZP-WHEN-GT-0))
-                            (9 9 (:TYPE-PRESCRIPTION IFIX))
-                            (9 9 (:REWRITE ASH-GOES-TO-0))
-                            (9 9 (:REWRITE ASH-0))
-                            (9 3 (:REWRITE BITOPS::LOGCDR-OF-BIT))
-                            (8 8 (:REWRITE DEFAULT-+-2))
-                            (8 8 (:REWRITE DEFAULT-+-1))
-                            (6 6 (:TYPE-PRESCRIPTION BITP))
-                            (6 6 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-                            (4 4 (:TYPE-PRESCRIPTION NEGP))
-                            (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                            (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                            (3 3 (:REWRITE ZP-WHEN-INTEGERP))
-                            (3 3 (:REWRITE ZP-OPEN))
-                            (3 3 (:REWRITE BITOPS::LOGCONS->-CONSTANT))
-                            (3 3 (:REWRITE BITOPS::LOGCDR-<-CONST)))
+                 (2 2 (:TYPE-PRESCRIPTION BITP))
+                 (1 1
+                    (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                 (1 1
+                    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
+(BITOPS::ASH-<-LOGCDR-LEMMA
+     (338 160
+          (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
+     (316 316
+          (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+     (186 93
+          (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
+     (111 111 (:TYPE-PRESCRIPTION NATP))
+     (103 9 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+     (59 22 (:REWRITE DEFAULT-<-2))
+     (33 17 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (32 8 (:REWRITE <-0-+-NEGATIVE-1))
+     (31 31
+         (:TYPE-PRESCRIPTION BIT->BOOL$INLINE))
+     (31 22 (:REWRITE DEFAULT-<-1))
+     (30 30 (:META CANCEL_PLUS-LESSP-CORRECT))
+     (17 17
+         (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (12 3 (:REWRITE ZP-WHEN-GT-0))
+     (9 9 (:TYPE-PRESCRIPTION IFIX))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (9 9
+        (:REWRITE-QUOTED-CONSTANT BFIX-UNDER-BIT-EQUIV))
+     (9 9 (:REWRITE ASH-GOES-TO-0))
+     (9 9 (:REWRITE ASH-0))
+     (9 3 (:REWRITE BITOPS::LOGCDR-OF-BIT))
+     (8 8 (:REWRITE DEFAULT-+-2))
+     (8 8 (:REWRITE DEFAULT-+-1))
+     (6 6 (:TYPE-PRESCRIPTION BITP))
+     (6 6 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
+     (4 4 (:TYPE-PRESCRIPTION NEGP))
+     (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
+     (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
+     (3 3 (:REWRITE ZP-WHEN-INTEGERP))
+     (3 3 (:REWRITE ZP-OPEN))
+     (3 3 (:REWRITE BITOPS::LOGCONS->-CONSTANT))
+     (3 3 (:REWRITE BITOPS::LOGCDR-<-CONST)))
 (BITOPS::INTEGER-LENGTH-BOUNDED-BY-EXPT
    (209 209
         (:TYPE-PRESCRIPTION BITOPS::INTEGER-LENGTH-TYPE-PRESCRIPTION-STRONG))
@@ -323,6 +334,8 @@
        (:LINEAR BITOPS::INTEGER-LENGTH-OF-LOGCDR-WEAK))
    (13 6 (:REWRITE DEFAULT-+-2))
    (10 10 (:TYPE-PRESCRIPTION BITP))
+   (8 8
+      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
    (8 2 (:REWRITE <-0-+-NEGATIVE-1))
    (7 5 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
    (7 5 (:REWRITE IFIX-WHEN-INTEGERP))
@@ -340,8 +353,8 @@
    (2 2 (:REWRITE NATP-RW))
    (2 2 (:REWRITE BITOPS::LOGCDR-<-CONST)))
 (BITOPS::|(integer-length (mod a (expt 2 n)))|
-    (59 3 (:REWRITE LOGHEAD-IDENTITY))
-    (50 3 (:DEFINITION UNSIGNED-BYTE-P))
+    (62 3 (:REWRITE LOGHEAD-IDENTITY))
+    (53 3 (:DEFINITION UNSIGNED-BYTE-P))
     (42 39
         (:TYPE-PRESCRIPTION BITOPS::INTEGER-LENGTH-TYPE-PRESCRIPTION-STRONG))
     (30 6 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
@@ -351,6 +364,8 @@
     (13 10 (:REWRITE DEFAULT-<-2))
     (11 10 (:REWRITE DEFAULT-<-1))
     (10 10 (:META CANCEL_PLUS-LESSP-CORRECT))
+    (6 6
+       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
     (6 6 (:REWRITE ASH-GOES-TO-0))
     (6 6 (:REWRITE ASH-0))
     (6 3 (:REWRITE NATP-WHEN-INTEGERP))

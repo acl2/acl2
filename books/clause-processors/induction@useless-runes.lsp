@@ -412,19 +412,19 @@
                 (4 2 (:REWRITE DEFAULT-<-2))
                 (4 2 (:REWRITE DEFAULT-<-1))
                 (2 2 (:META CANCEL_PLUS-LESSP-CORRECT)))
-(REPLACE-O-FIN-PART-REL (1145 245 (:REWRITE DEFAULT-<-1))
+(REPLACE-O-FIN-PART-REL (1179 251 (:REWRITE DEFAULT-<-1))
+                        (1095 52 (:REWRITE FIRST-<-RST-WHEN-O-P))
                         (1060 48 (:REWRITE O-P-OF-O-RST))
-                        (1028 50 (:REWRITE FIRST-<-RST-WHEN-O-P))
-                        (598 193
+                        (623 200
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                        (487 245 (:REWRITE DEFAULT-<-2))
-                        (406 29 (:REWRITE ZP-WHEN-GT-0))
-                        (203 29 (:REWRITE ZP-WHEN-INTEGERP))
-                        (183 183 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                        (183 183 (:META CANCEL_PLUS-EQUAL-CORRECT))
+                        (511 251 (:REWRITE DEFAULT-<-2))
+                        (420 30 (:REWRITE ZP-WHEN-GT-0))
+                        (210 30 (:REWRITE ZP-WHEN-INTEGERP))
+                        (187 187 (:META CANCEL_TIMES-EQUAL-CORRECT))
+                        (187 187 (:META CANCEL_PLUS-EQUAL-CORRECT))
                         (172 52 (:REWRITE NATP-WHEN-GTE-0))
                         (106 34 (:REWRITE NFIX-WHEN-NOT-NATP))
-                        (65 65 (:REWRITE DEFAULT-CAR))
+                        (67 67 (:REWRITE DEFAULT-CAR))
                         (54 54 (:TYPE-PRESCRIPTION NATP))
                         (52 52 (:REWRITE NATP-WHEN-INTEGERP))
                         (52 52 (:REWRITE NATP-RW))
@@ -506,8 +506,11 @@
              (14 14 (:REWRITE NATP-RW))
              (11 11 (:META CANCEL_TIMES-EQUAL-CORRECT))
              (11 11 (:META CANCEL_PLUS-EQUAL-CORRECT))
-             (6 6
-                (:REWRITE INEQUALITY-WITH-NFIX-HYP-2)))
+             (6 6 (:REWRITE INEQUALITY-WITH-NFIX-HYP-2))
+             (2 2
+                (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+             (2 2
+                (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV)))
 (NTHCDR-END (55 10 (:REWRITE NTHCDR-OPEN))
             (37 27 (:REWRITE DEFAULT-<-2))
             (36 36
@@ -771,6 +774,10 @@
           (2 1 (:REWRITE DEFAULT-<-2))
           (2 1 (:REWRITE DEFAULT-+-2))
           (1 1 (:TYPE-PRESCRIPTION NFIX))
+          (1 1
+             (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+          (1 1
+             (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
           (1 1 (:REWRITE DEFAULT-CDR))
           (1 1 (:REWRITE DEFAULT-<-1))
           (1 1 (:REWRITE DEFAULT-+-1))

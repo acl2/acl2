@@ -83,7 +83,8 @@
                      (concatenate 'string
                                   (symbol-name fix) "-UNDER-" (symbol-name equiv))
                      equiv)
-             (,equiv (,fix x) x))
+             (,equiv (,fix x) x)
+             :rule-classes (:rewrite :rewrite-quoted-constant))
            ,@(and forward
                   `((defthm ,(intern-in-package-of-symbol
                               (concatenate 'string "EQUAL-OF-" (symbol-name fix) "-1-FORWARD-TO-" (symbol-name equiv))
@@ -253,10 +254,7 @@
           (raise "Not a fixtype name or predicate: ~x0" type)))
        (fix (fixtype->fix fixtype))
        (equiv (fixtype->equiv fixtype))
-       (pred (fixtype->pred fixtype))
        (hints (getarg :hints nil kwd-alist))
-       (skip-const-thm (or (getarg :skip-const-thm nil kwd-alist)
-                           (not (fixtype->executablep fixtype))))
        (skip-cong-thm (getarg :skip-cong-thm nil kwd-alist))
        ((unless (and (consp form) (symbolp (car form))))
         (raise "Form should be a function call term, but it's ~x0" form))
@@ -280,11 +278,6 @@
          (concatenate
           'string (symbol-name basename) "-OF-" (symbol-name fix) "-" (symbol-name arg)
           under-out-equiv suffix)
-         pkg))
-       (const-thmname
-        (intern-in-package-of-symbol
-         (concatenate
-          'string (symbol-name basename) "-OF-" (symbol-name fix) "-" (symbol-name arg) "-NORMALIZE-CONST" under-out-equiv suffix)
          pkg))
        (congruence-thmname
         (intern-in-package-of-symbol
@@ -311,14 +304,6 @@
        (fix-thm `(defthm ,fix-thmname
                    ,fix-body
                    :hints ,hints))
-       (const-thm (and (not skip-const-thm)
-                       `(defthm ,const-thmname
-                          (implies (syntaxp (and (quotep ,arg)
-                                                 (not (,pred (cadr ,arg)))))
-                                   (,out-equiv ,form
-                                               ,(acl2::sublis-var subst-alist form)))
-                          :hints (("Goal" :in-theory
-                                   '(,out-equiv-equiv-rune ,fix-thmname))))))
        (cong-thm (and (not skip-cong-thm)
                       `(defthm ,congruence-thmname
                          (implies (,equiv ,arg ,argequiv)
@@ -338,7 +323,6 @@
      :kwd-alist kwd-alist
      :fix-body fix-body
      :fix-thm fix-thm
-     :const-thm const-thm
      :cong-thm cong-thm)))
 
 (defun fixequiv-events (fixequiv)

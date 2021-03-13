@@ -140,7 +140,7 @@
      "Its guard consists of @(tsee byte-listp) for both arguments and,
       if applicable, conditions on their lengths as explained above.")
     (xdoc::p
-     "This funcion is constrained to:")
+     "This function is constrained to:")
     (xdoc::ul
      (xdoc::li
       "Return a @(tsee byte-listp)

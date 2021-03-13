@@ -16,6 +16,7 @@
 ;; functions.
 
 (include-book "all-unsigned-byte-p")
+(local (include-book "../utilities/equal-of-booleans"))
 
 ;unlike all-unsigned-byte-p, this one implies true-listp.
 ;also in std/typed-lists/unsigned-byte-listp.lisp
@@ -43,6 +44,13 @@
 (defthm unsigned-byte-listp-forward-to-true-listp
   (implies (unsigned-byte-listp n x)
            (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm natp-of-car-when-unsigned-byte-listp-forward
+  (implies (and (unsigned-byte-listp size x)
+                (consp x))
+           (natp (car x)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
 
@@ -75,3 +83,10 @@
   (implies (unsigned-byte-listp width x)
            (unsigned-byte-listp width (nthcdr n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))
+
+(defthm integerp-of-nth-when-unsigned-byte-listp
+  (implies (unsigned-byte-listp size x)
+           (equal (integerp (nth n x))
+                  (< (nfix n) (len x))))
+  :hints (("Goal" :in-theory (e/d ( nth)
+                                  ()))))

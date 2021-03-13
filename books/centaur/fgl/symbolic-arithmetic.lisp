@@ -422,7 +422,7 @@ for computing:</p>
                      :rule-classes nil
                      :hints nil)))
 
-          
+
           ,@(and (not (cdr (assoc :custom kwd-alist)))
                  `(,@(and (not (std::getarg :already-defined nil kwd-alist))
                           (defsymbolic-define-return-thms returns))
@@ -489,14 +489,14 @@ for computing:</p>
           ;;                           ,(intern$
           ;;                             (concatenate 'string "AABF-EXTENSION-PRESERVES-" (symbol-name exec-name))
           ;;                             "FGL"))))
-          
+
 
 
           ,@post-///
 
           (verify-guards+ ,exec-name
             :hints ,(cdr (assoc :guard-hints kwd-alist)))
-          
+
           (table defsymbolic-forms ',name ',args)))))
 
 (defmacro defsymbolic (name &rest args)
@@ -679,7 +679,11 @@ for computing:</p>
   (equal (logcons (bool->bit (car v))
                   (bools->int (scdr v)))
          (bools->int v))
-  :hints(("Goal" :in-theory (enable bools->int scdr))))
+  :hints
+  (("goal" :in-theory
+    (e/d (bools->int scdr)
+         ((:congruence bools->int-boolean-list-equiv-congruence-on-x)
+          (:congruence acl2::list-equiv-implies-equal-consp-1))))))
 
 (defthm aabflist-p-of-nil
   (aabflist-p nil man))
@@ -705,7 +709,14 @@ for computing:</p>
 (defthm logcdr-of-bools->int
   (equal (logcdr (bools->int x))
          (bools->int (scdr x)))
-  :hints(("Goal" :in-theory (enable scdr bools->int))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d
+     (scdr bools->int)
+     ((:congruence
+       bools->int-boolean-list-equiv-congruence-on-x)
+      (:congruence acl2::list-equiv-implies-equal-consp-1))))))
 
 (local (in-theory (disable not-s-endp-compound-recognizer
                            (:type-prescription aabf-scons)
@@ -895,7 +906,7 @@ for computing:</p>
     (aabf-logtail-ns (1- place) (scdr x))))
 
 
-         
+
 
 (defthm s-endp-of-aabflist-eval
   (equal (s-endp (aabflist-eval x env man))
@@ -926,7 +937,7 @@ for computing:</p>
 ;; (local (defthm bool->bit-of-xor
 ;;          (equal (bool->bit (xor x y))
 ;;                 (b-xor x y))))
-                  
+
 (local (defthm bool->bit-of-xor
          (equal (bool->bit (xor a b))
                 (b-xor (bool->bit a) (bool->bit b)))))
@@ -1187,7 +1198,7 @@ for computing:</p>
   :returns (bound posp :rule-classes :type-prescription)
   (max (len x) 1)
   /// ///
-  (local 
+  (local
    (defthm s-endp-true-by-len
      (implies (<= (len x) 1)
               (s-endp x))
@@ -1433,7 +1444,7 @@ for computing:</p>
               :in-theory (disable aabf-syntactically-equal-implies-equal-aabf-eval-1)))))
 
 
-                
+
 
 (defsymbolic aabf-<-ss ((a s) (b s) man)
   :returns (mv (a<b b (< a b)) new-man)
@@ -1960,7 +1971,7 @@ for computing:</p>
                     man))               ;; (mod  0  b) = 0
                   (bound (aabf-integer-length-bound-s b man))
                   ((mv rm man) (aabf-nest (aabf-scons first (aabf-mod-ss-aux rest b not-b)) man)))
-               
+
                (aabf-nest (aabf-ite-bss
                            (aabf-<-ss rm b) rm
                            (aabf-loghead-ns bound
@@ -2095,7 +2106,7 @@ for computing:</p>
                                man)
   :returns (mv (app s (logapp n x y)) new-man)
   :prepwork ((local (in-theory (enable logcons acl2::rev)))
-             
+
              (local (in-theory (disable acl2::ash**
                                         acl2::logtail-identity
                                         acl2::loghead-identity
@@ -2191,7 +2202,7 @@ for computing:</p>
                      '(:expand ((aabflist-eval (list (car n)) env man))
                        :in-theory (enable aabf-syntactically-true-p-rewrite
                                           aabf-syntactically-false-p-rewrite))))))
-    
+
 
 ;; (defsymbolic aabf-logapp-uss ((w n)
 ;;                              (n u)
@@ -2320,6 +2331,3 @@ for computing:</p>
   :correct-hints ('(:in-theory (enable ;;zero-when-all-nil
                                 aabf-syntactically-zero-p-implies-unsigned
                                 logcons))))
-
-
-

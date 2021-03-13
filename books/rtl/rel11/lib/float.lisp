@@ -115,6 +115,10 @@
 	     (equal (expo (expt 2 n))
 		    n)))
 
+(defthmd bitn-expo
+  (implies (not (zp x))
+           (equal (bitn x (expo x)) 1)))
+
 (defthmd expo-monotone
   (implies (and (<= (abs x) (abs y))
                 (case-split (rationalp x))

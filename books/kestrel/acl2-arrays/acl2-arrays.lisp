@@ -49,7 +49,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (header name l)
                   (header :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (header) ()))))
+  :hints (("Goal" :in-theory (enable header))))
 
 (local (in-theory (enable normalize-header-name)))
 
@@ -57,7 +57,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (default name l)
                   (default :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (default) ()))))
+  :hints (("Goal" :in-theory (enable default))))
 
 (local (in-theory (enable normalize-default-name)))
 
@@ -65,7 +65,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (maximum-length name l)
                   (maximum-length :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (maximum-length) ()))))
+  :hints (("Goal" :in-theory (enable maximum-length))))
 
 (local (in-theory (enable normalize-maximum-length-name)))
 
@@ -73,7 +73,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (dimensions name l)
                   (dimensions :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (dimensions) ()))))
+  :hints (("Goal" :in-theory (enable dimensions))))
 
 (local (in-theory (enable normalize-dimensions-name)))
 
@@ -81,7 +81,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (compress11 name l i n default)
                   (compress11 :fake-name l i n default)))
-  :hints (("Goal" :in-theory (e/d (compress11) ()))))
+  :hints (("Goal" :in-theory (enable compress11))))
 
 (local (in-theory (enable normalize-compress11-name)))
 
@@ -89,9 +89,83 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (compress1 name l)
                   (compress1 :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (compress1) ()))))
+  :hints (("Goal" :in-theory (enable compress1))))
 
 (local (in-theory (enable normalize-compress1-name)))
+
+(defthmd normalize-compress211-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress211 name l i x j default)
+                  (compress211 :fake-name l i x j default)))
+  :hints (("Goal" :in-theory (enable compress211))))
+
+(local (in-theory (enable normalize-compress211-name)))
+
+(defthmd normalize-compress21-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress21 name l n i j default)
+                  (compress21 :fake-name l n i j default)))
+  :hints (("Goal" :in-theory (enable compress21))))
+
+(local (in-theory (enable normalize-compress21-name)))
+
+(defthmd normalize-compress2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (compress2 name l)
+                  (compress2 :fake-name l)))
+  :hints (("Goal" :in-theory (enable compress2))))
+
+(local (in-theory (enable normalize-compress2-name)))
+
+(defthmd normalize-aref1-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aref1 name l n)
+                  (aref1 :fake-name l n)))
+  :hints (("Goal" :in-theory (enable aref1))))
+
+;; (local (in-theory (enable normalize-aref1-name)))
+
+(defthmd normalize-aset1-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aset1 name l n val)
+                  (aset1 :fake-name l n val)))
+  :hints (("Goal" :in-theory (enable aset1))))
+
+;; (local (in-theory (enable normalize-aset1-name)))
+
+(defthmd normalize-aset2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aset2 name l i j val)
+                  (aset2 :fake-name l i j val)))
+  :hints (("Goal" :in-theory (enable aset2))))
+
+;; (local (in-theory (enable normalize-aset2-name)))
+
+(defthmd normalize-aref2-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (aref2 name l i j)
+                  (aref2 :fake-name l i j)))
+  :hints (("Goal" :in-theory (enable aref2))))
+
+;; (local (in-theory (enable normalize-aref2-name)))
+
+(defthmd normalize-array1p-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (array1p name l)
+                  (and (symbolp name)
+                       (array1p :fake-name l))))
+  :hints (("Goal" :in-theory (enable array1p))))
+
+;; (local (in-theory (enable normalize-array1p-name)))
+
+(defthmd normalize-array2p-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (array2p name l)
+                  (and (symbolp name)
+                       (array2p :fake-name l))))
+  :hints (("Goal" :in-theory (enable array2p))))
+
+;; (local (in-theory (enable normalize-array2p-name)))
 
 ;; The -1 is here because array1p requries the length to be strictly less than
 ;; the :MAXIMUM-LENGTH (why?), and the :MAXIMUM-LENGTH is at most

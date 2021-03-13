@@ -30,12 +30,18 @@
 
 ;rename fresh-symbol ?
 ;example: (make-fresh-name 'x '(x x1 x2 x3 x5)) = x4
-(defun make-fresh-name (desired-name names-to-avoid)
+(defund make-fresh-name (desired-name names-to-avoid)
   (declare (xargs :guard (and (symbolp desired-name)
                               (symbol-listp names-to-avoid))))
   (if (not (member-eq desired-name names-to-avoid))
       desired-name
     (fresh-var-name desired-name 1 names-to-avoid)))
+
+;; ;type-prescription already knows this?
+;; (defthm symbolp-of-make-fresh-name
+;;   (implies (symbolp desired-name)
+;;            (symbolp (make-fresh-name desired-name names-to-avoid)))
+;;   :rule-classes :type-prescription)
 
 (defun fresh-var-names (num starting-name vars-to-avoid)
   (declare (type (integer 0 *) num)
@@ -44,3 +50,20 @@
       nil
     (let ((fresh-name (fresh-var-name starting-name 0 vars-to-avoid))) ;should this return a new starting-num?
       (cons fresh-name (fresh-var-names (+ -1 num) starting-name (cons fresh-name vars-to-avoid))))))
+
+;; TODO: Make later names avoid earlier names?
+(defun make-fresh-names (desired-names names-to-avoid)
+  (declare (xargs :guard (and (symbol-listp desired-names)
+                              (symbol-listp names-to-avoid))))
+  (if (endp desired-names)
+      nil
+    (cons (make-fresh-name (first desired-names) names-to-avoid)
+          (make-fresh-names (rest desired-names) (rest names-to-avoid)))))
+
+(defthm symbol-listp-of-make-fresh-names
+  (implies (symbol-listp desired-names)
+           (symbol-listp (make-fresh-names desired-names names-to-avoid))))
+
+(defthm len-of-make-fresh-names
+  (equal (len (make-fresh-names desired-names names-to-avoid))
+         (len desired-names)))

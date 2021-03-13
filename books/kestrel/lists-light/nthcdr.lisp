@@ -116,6 +116,11 @@
           ("Subgoal *1/1" :cases ((consp x)))
           ("Goal" :in-theory (enable nthcdr))))
 
+(defthmd cdr-of-nthcdr
+  (equal (cdr (nthcdr n x))
+         (nthcdr (+ 1 (nfix n)) x))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
 (defthmd nthcdr-opener-alt
   (implies (not (zp n))
            (equal (nthcdr n l)
@@ -130,6 +135,18 @@
                         (nthcdr (+ 1 n) l))))
   :hints (("goal" :induct (nthcdr n l)
            :in-theory (enable zp nthcdr))))
+
+;rename?
+(defthmd nthcdr-of-+-opener
+  (implies (and (syntaxp (quotep k))
+                (posp k)
+                (natp n))
+           (equal (nthcdr (+ k n) x)
+                  (cdr (nthcdr (+ (+ -1 k) n) x))))
+  :hints (("Goal" :in-theory (enable cdr-of-nthcdr))))
+
+(theory-invariant (incompatible (:rewrite nthcdr-of-+-opener)
+                                (:rewrite cdr-of-nthcdr)))
 
 ;same as in std
 (defthm car-of-nthcdr
@@ -156,10 +173,7 @@
 
 (theory-invariant (incompatible (:rewrite true-list-fix-of-nthcdr) (:rewrite nthcdr-of-true-list-fix)))
 
-(defthmd cdr-of-nthcdr
-  (equal (cdr (nthcdr n x))
-         (nthcdr (+ 1 (nfix n)) x))
-  :hints (("Goal" :in-theory (enable nthcdr))))
+
 
 ;todo: think about this
 (defthmd 3-cdrs
@@ -231,3 +245,9 @@
            :in-theory (e/d (nthcdr)
                            (nthcdr-of-cdr-combine-strong
                             nthcdr-of-cdr-combine)))))
+
+(defthm true-listp-of-nthcdr-3
+  (equal (true-listp (nthcdr n x))
+         (if (<= (nfix n) (len x))
+             (true-listp x)
+           t)))

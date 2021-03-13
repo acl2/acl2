@@ -165,7 +165,8 @@
                             (:REWRITE SV::4VEC-FIX-OF-4VEC)
                             (:DEFINITION INTEGER-LISTP)
                             (:REWRITE SV::4VEC-P-OF-NTH-WHEN-4VECLIST-P)
-                            (:TYPE-PRESCRIPTION INTEGER-LISTP))))))
+                            (:TYPE-PRESCRIPTION INTEGER-LISTP)
+                            (:REWRITE SV::NTH-OF-4VECLIST-FIX))))))
 
 (acl2::defines
  svex-eval-wog

@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,5 +20,4 @@
   :parents (error-checking)
   :short "Cause an error if a value is not the name of an existing function."
   :body (((function-namep x (w state))
-          "~@0 must be the name of an existing function, but it is ~x1 instead."
-          description x)))
+          "~@0, ~x1, is not an existing function." description x)))

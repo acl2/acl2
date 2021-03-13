@@ -255,11 +255,6 @@
                   0))
   :hints (("Goal" :in-theory (enable power-of-2p lg))))
 
-(defthm power-of-2p-forward-to-integerp
-  (implies (power-of-2p x)
-           (integerp x))
-  :rule-classes ((:forward-chaining)))
-
 (defthm rightrotate-becomes-leftrotate
   (implies (and (power-of-2p width)
                 (< amt width)

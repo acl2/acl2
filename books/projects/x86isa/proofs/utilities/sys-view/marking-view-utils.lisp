@@ -955,22 +955,8 @@
                        (:rewrite rvm08-no-error)
                        (:rewrite xr-rme08-state-sys-view)
                        (:rewrite acl2::distributivity-of-minus-over-+)
-                       (:rewrite !prefixes->seg$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->seg$inline-of-8bits-fix-seg-normalize-const)
-                       (:rewrite !prefixes->rep$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->rep$inline-of-8bits-fix-rep-normalize-const)
-                       (:rewrite !prefixes->lck$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->lck$inline-of-8bits-fix-lck-normalize-const)
-                       (:rewrite !prefixes->opr$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->opr$inline-of-8bits-fix-opr-normalize-const)
-                       (:rewrite !prefixes->adr$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->adr$inline-of-8bits-fix-adr-normalize-const)
                        (:rewrite acl2::zp-open)
-                       (:rewrite default-unary-minus)
-                       (:rewrite !prefixes->nxt$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->nxt$inline-of-8bits-fix-nxt-normalize-const)
-                       (:rewrite !prefixes->num$inline-of-prefixes-fix-x-normalize-const)
-                       (:rewrite !prefixes->num$inline-of-4bits-fix-num-normalize-const)))))
+                       (:rewrite default-unary-minus)))))
 
      (defthmd xr-fault-and-get-prefixes-in-sys-view
        (implies

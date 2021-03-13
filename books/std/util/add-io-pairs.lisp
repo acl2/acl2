@@ -454,27 +454,24 @@
 
  <p>It is also instructive to look at the implementation of @(tsee
  merge-io-pairs).  We can see what is going on by using single-step
- macroexpansion, below: first, @('add-io-pairs-lenience') removes the usual
- @('check-io-pairs-lenience') check discussed above; next, the books are included;
- then, @(tsee install-io-pairs) merges all I/O pairs for each function
- (as discussed below); and finally, the @('check-io-pairs-lenience') checks are
- restored.</p>
+ macroexpansion, below: first, @('push-io-pairs-lenience') removes any
+ @('check-io-pairs-lenience') checks discussed above for the indicated function
+ symbols; next, the books are included; then, @(tsee install-io-pairs) merges
+ all I/O pairs for each function (as discussed below); and finally, the
+ @('pop-io-pairs-lenience') call undoes the effect of the
+ @('push-io-pairs-lenience') call.</p>
 
  @({
  ACL2 !>:trans1 (merge-io-pairs (f g h)
                                 (include-book \"book1\")
                                 (include-book \"book2\"))
-  (PROGN (ADD-IO-PAIRS-LENIENCE F T)
-         (ADD-IO-PAIRS-LENIENCE G T)
-         (ADD-IO-PAIRS-LENIENCE H T)
+  (PROGN (PUSH-IO-PAIRS-LENIENCE F G H)
          (INCLUDE-BOOK \"book1\")
          (INCLUDE-BOOK \"book2\")
          (INSTALL-IO-PAIRS F)
          (INSTALL-IO-PAIRS G)
          (INSTALL-IO-PAIRS H)
-         (ADD-IO-PAIRS-LENIENCE F NIL)
-         (ADD-IO-PAIRS-LENIENCE G NIL)
-         (ADD-IO-PAIRS-LENIENCE H NIL))
+         (POP-IO-PAIRS-LENIENCE F G H))
  ACL2 !>
  })
 
@@ -738,12 +735,16 @@
 (table io-pairs-lenience-table nil nil
 
 ; Note that we do not require the key to be a function symbol.  We want to be
-; able to sest the lenience (typically by way of merge-io-pairs) before we have
+; able to set the lenience (typically by way of merge-io-pairs) before we have
 ; introduced the function of interest (which may be defined in a book we want
 ; to include).
 
+; Each value in the table is typically a list of nils.  The empty list
+; signifies that lenience is being checked; see push-io-pairs-lenience and
+; pop-io-pairs-lenience.
+
        :guard (and (symbolp key)
-                   (member-eq val '(t nil :warn))))
+                   (true-listp val)))
 
 (defun update-io-lookup-init (args val)
 
@@ -1112,14 +1113,40 @@
                         (cons ai vars)
                         (list* ai-binding xi-binding bindings))))))
 
-(defmacro add-io-pairs-lenience (fn val)
-  `(table io-pairs-lenience-table ',fn ',val))
+(defun push-io-pairs-lenience-fn (fns)
+  (cond
+   ((endp fns) nil)
+   (t
+    (cons `(table io-pairs-lenience-table
+                  ',(car fns)
+                  (cons nil
+                        (cdr (assoc-eq ',(car fns)
+                                       (table-alist 'io-pairs-lenience-table
+                                                    world)))))
+          (push-io-pairs-lenience-fn (cdr fns))))))
+
+(defmacro push-io-pairs-lenience (&rest fns)
+  (cons 'progn (push-io-pairs-lenience-fn fns)))
+
+(defun pop-io-pairs-lenience-fn (fns)
+  (cond
+   ((endp fns) nil)
+   (t
+    (cons `(table io-pairs-lenience-table
+                  ',(car fns)
+                  (cdr (cdr (assoc-eq ',(car fns)
+                                      (table-alist 'io-pairs-lenience-table
+                                                   world)))))
+          (pop-io-pairs-lenience-fn (cdr fns))))))
+
+(defmacro pop-io-pairs-lenience (&rest fns)
+  (cons 'progn (pop-io-pairs-lenience-fn fns)))
 
 (defun check-io-pairs-lenience-fn (fn old-entry caller state)
   (b* ((wrld (w state))
        (lenience (cdr (assoc-eq fn (table-alist 'io-pairs-lenience-table
                                                 wrld))))
-       ((when (eq lenience t))
+       ((when lenience)
         (value '(value-triple :invisible)))
        (current-entry
         (cdr (assoc-eq fn (table-alist 'io-pairs-table wrld))))
@@ -1137,25 +1164,14 @@
                      "what it was previously at that point (perhaps during ~
                       the first pass of an encapsulate event)")))
           (with-output!
-            :on (error warning)
-            (case lenience
-              (:warn ; not advertised
-               (pprogn (warning$ ctx "Add-io-pairs" str
-                                 caller
-                                 fn
-                                 num2
-                                 book
-                                 str4
-                                 "warning")
-                       (value '(value-triple :invisible))))
-              (otherwise ; val=nil by table guard on 'io-pairs-lenience-table
-               (er soft ctx str
-                   caller
-                   fn
-                   num2
-                   book
-                   str4
-                   "error")))))))
+            :on error
+            (er soft ctx str
+                caller
+                fn
+                num2
+                book
+                str4
+                "error")))))
     (value '(value-triple :invisible))))
 
 (defmacro check-io-pairs-lenience (fn old-entry caller)
@@ -1334,13 +1350,11 @@
 (defun merge-io-pairs-fn (fns events)
   (declare (xargs :guard (and (symbol-listp fns)
                               (true-listp events))))
-  `(progn ,@(pairlis-x1 'add-io-pairs-lenience
-                        (pairlis-x2 fns '(t)))
+  `(progn (push-io-pairs-lenience ,@fns)
           ,@events
           ,@(pairlis-x1 'install-io-pairs
                         (pairlis-x2 fns nil))
-          ,@(pairlis-x1 'add-io-pairs-lenience
-                        (pairlis-x2 fns '(nil)))))
+          (pop-io-pairs-lenience ,@fns)))
 
 (defmacro merge-io-pairs (x &rest events)
   (declare (xargs :guard (or (symbolp x)

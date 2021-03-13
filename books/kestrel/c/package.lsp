@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,7 +21,8 @@
                                   error
                                   pprint-indent
                                   type
-                                  typep))
+                                  typep
+                                  value))
              '(any
                bool
                cw-event
@@ -35,9 +36,13 @@
                e/d*
                enable*
                er-soft+
+               evmac-generate-defthm
+               evmac-input-print->=
                evmac-input-print-p
                evmac-prepare-proofs
+               evmac-process-input-print
                flatten-ands-in-lit
+               get-ruleset
                implode
                impossible
                lnfix

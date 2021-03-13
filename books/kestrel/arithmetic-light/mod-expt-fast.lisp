@@ -23,5 +23,16 @@
                 (natp i)
                 (integerp n))
            (integerp (acl2::mod-expt-fast a i n)))
-  :rule-classes :type-prescription
+  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable acl2::mod-expt-fast))))
+
+;; Other variants may be possible
+(defthm <=-of-0-and-mod-expt-fast
+  (implies (and (<= 0 a)
+                (rationalp a)
+                (<= 0 n)
+                (rationalp n))
+           (<= 0 (acl2::mod-expt-fast a i n)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :cases ((equal 0 n))
+           :in-theory (enable acl2::mod-expt-fast))))

@@ -13216,6 +13216,9 @@
               *fchecksum-symbol-memo*
             (make-hash-table :test 'eq)))
          #-acl2-loop-only
+         (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
+                                         'stolen))
+         #-acl2-loop-only
          (*inside-include-book-fn* (if behalf-of-certify-flg
                                        'hcomp-build
                                      t))
@@ -21129,26 +21132,28 @@
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
               (mv-let (name formals guard-post logic exec stobjs)
-                      (mv (access absstobj-method method :NAME)
-                          (access absstobj-method method :FORMALS)
-                          (access absstobj-method method :GUARD-POST)
-                          (access absstobj-method method :LOGIC)
-                          (access absstobj-method method :EXEC)
-                          (remove1 st$c (collect-non-x
-                                         nil
-                                         (access absstobj-method method
-                                                 :STOBJS-IN-EXEC))))
-                      `(,name ,formals
-                              (declare (xargs ,@(and stobjs
-                                                     `(:STOBJS ,stobjs))
-                                              :GUARD ,guard-post))
+                (mv (access absstobj-method method :NAME)
+                    (access absstobj-method method :FORMALS)
+                    (access absstobj-method method :GUARD-POST)
+                    (access absstobj-method method :LOGIC)
+                    (access absstobj-method method :EXEC)
+                    (remove1 st$c (collect-non-x
+                                   nil
+                                   (access absstobj-method method
+                                           :STOBJS-IN-EXEC))))
+                `(,name ,formals
+                        (declare (xargs ,@(and stobjs
+                                               `(:STOBJS ,stobjs))
+                                        :GUARD ,guard-post))
 
-; We use mbe, rather than just its :logic component, because we want to track
-; functions that might be called in raw Lisp, in particular for avoiding the
-; violation of important invariants; see put-invariant-risk.
+; We use prog2$ here, rather than just returning its last argument, because we
+; want to track functions that might be called in raw Lisp, in particular for
+; avoiding the violation of important invariants; see put-invariant-risk.
 
-                              (mbe :logic (,logic ,@formals)
-                                   :exec (,exec ,@formals)))))
+; We formerly used mbe, but that caused a soundness bug; see :DOC note-8-4.
+
+                        (prog2$ (,exec ,@formals)
+                                (,logic ,@formals)))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun defabsstobj-raw-def (method)
@@ -30842,6 +30847,14 @@
         (ec-call
          (pairlis$ (lambda-object-formals ,fn)
                    ,args))))
+
+(defmacro our-quote-macro (x)
+
+; This odd little macro is just an alist for quote, which add-trip uses to
+; communicate information to install-for-add-trip (as described in comments in
+; those functions).
+
+  (list 'quote x))
 
 ; Essay on Memoization with Partial Functions (Memoize-partial)
 

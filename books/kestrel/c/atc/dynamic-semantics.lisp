@@ -13,7 +13,9 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "integers")
+(include-book "arrays")
 (include-book "function-environments")
+(include-book "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +44,7 @@
    (xdoc::p
     "The dynamic semantics is defined over the C abstract syntax,
      but for now it does not support the execution of some constructs,
-     just because ATC does not generate those constructs for now.
+     just because currently ATC does not generate those constructs.
      This way, we keep the dynamic semantics simpler.
      Being more restrictive is adequate here:
      if we have a proof of functional equivalence between some ACL2 code
@@ -53,9 +55,9 @@
     "We distinguish between pure (i.e. side-effect-free) expressions
      and expressions that may have side effects.
      We allow the latter to appear only in certain parts of statements,
-     and we push restrictions to ensure a predictable order of evaluation.
+     and we put restrictions to ensure a predictable order of evaluation.
      Pure expressions may be evaluated in any order;
-     we evaluate them left to write.")
+     we evaluate them left to right.")
    (xdoc::p
     "We formalize a big-step operational interpretive semantics.
      To ensure the termination of the ACL2 mutually recursive functions
@@ -77,11 +79,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflatsum value-result
-  :short "Fixtype of values and errors."
-  (:ok sint)
-  (:err error)
-  :pred value-resultp)
+(fty::defprod address
+  :short "Fixtype of addresses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we treat addresses as essentially abstract entities,
+     whose only purpose is to identify objects in memory.
+     We model addresses as natural numbers,
+     but we do not use any properties of natural numbers.
+     This fixtype wraps these natural numbers, for better abstraction."))
+  ((number nat))
+  :tag :address
+  :pred addressp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defflatsum value
+  :short "Fixtype of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support @('unsigned char') and @('int') values."))
+  (:uchar uchar)
+  (:sint sint)
+  :pred valuep)
+
+(defruled sintp-when-valuep-and-not-ucharp
+  (implies (and (valuep x)
+                (not (ucharp x)))
+           (sintp x))
+  :enable valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+  (local (in-theory (enable ucharp sintp value-kind)))
+  (defresult value "values"))
+
+(defruled errorp-when-value-resultp-and-not-valuep
+  (implies (and (value-resultp x)
+                (not (valuep x)))
+           (errorp x)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -96,29 +135,36 @@
 
 (fty::deflist value-list
   :short "Fixtype of lists of values."
-  :elt-type sint
+  :elt-type value
   :true-listp t
   :elementp-of-nil nil
   :pred value-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable sintp)))
-  (defresult value-list "lists of values"))
+(defresult value-list "lists of values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption value-option
-  sint
+  value
   :short "Fixtype of optional values."
   :pred value-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable sintp)))
+  (local (in-theory (enable valuep ucharp sintp)))
   (defresult value-option "optional values"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-value ((val valuep))
+  :returns (type typep)
+  :short "Type of a value."
+  (cond ((ucharp val) (type-uchar))
+        ((sintp val) (type-sint))
+        (t (prog2$ (impossible) (irr-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,14 +173,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A variable scope is a finite map from identifiers to @('int') values
-     (for now these are the only values that we model).
+    "A variable scope is a finite map from identifiers to values.
      It represents the contents of the variables in a scope;
      currently this is always a block scope,
      because we do not model variables with file scope
      (i.e. variables declared at the top level)."))
   :key-type ident
-  :val-type sint
+  :val-type value
   :pred scopep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -211,18 +256,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap heap
+  :short "Fixtype of heaps."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The heap is the memory area manipulated by @('malloc') and @('free').
+     [C] does not actually use the term `heap';
+     in fact, [C] does not appear to use a specific term for this memory area.
+     However, `heap' is sufficiently commonly used
+     that it seems adequate to use it here.")
+   (xdoc::p
+    "For now we model the heap just as a finite map
+     from addresses to @('unsigned char') arrays.
+     That is, we only really consider this kind of arrays initially."))
+  :key-type address
+  :val-type uchar-array
+  :pred heapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod compustate
   :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A computation state consists of a stack of frames.
-     More components will be added (e.g. a heap)
+    "A computation state consists of a stack of frames and a heap.
+     More components may be added
      as our modeling coverage of C increases.")
    (xdoc::p
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
-  ((frames frame-list))
+  ((frames frame-list)
+   (heap heap))
   :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -469,7 +535,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-var ((var identp) (val sintp) (compst compustatep))
+(define create-var ((var identp) (val valuep) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
   :short "Create a variable in a computation state."
@@ -487,7 +553,7 @@
        (scope (car scopes))
        (pair (omap::in (ident-fix var) scope))
        ((when (consp pair)) (error (list :var-redefinition (ident-fix var))))
-       (new-scope (omap::update (ident-fix var) (sint-fix val) scope))
+       (new-scope (omap::update (ident-fix var) (value-fix val) scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
@@ -573,7 +639,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-var ((var identp) (val sintp) (compst compustatep))
+(define write-var ((var identp) (val valuep) (compst compustatep))
   :returns (new-compst compustate-resultp)
   :short "Write a variable in the computation state."
   :long
@@ -582,13 +648,10 @@
     "We look for the variable in the same way as in @(tsee read-var),
      i.e. in the top frame's scopes from innermost to outermost.
      The variable must exist, it is not created;
-     variables are created via @(tsee create-var).
+     variables are created only via @(tsee create-var).
      The new value must have the same type as the old value;
      note that, in our restricted dynamic semantics of C,
-     variables always have values, they are never uninitialized.
-     Currently the new value is always an @('int'),
-     and so is the old value (so there is no need to actually check them),
-     but this will be generalized at some point."))
+     variables always have values, they are never uninitialized."))
   (b* (((unless (> (compustate-frames-number compst) 0))
         (error (list :write-var-empty-frame-stack (ident-fix var))))
        (frame (top-frame compst))
@@ -599,15 +662,20 @@
   :hooks (:fix)
 
   :prepwork
-  ((define write-var-aux ((var identp) (val sintp) (scopes scope-listp))
+  ((define write-var-aux ((var identp) (val valuep) (scopes scope-listp))
      :returns (new-scopes scope-list-resultp)
      (b* (((when (endp scopes))
            (error (list :write-var-not-found (ident-fix var))))
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
           ((when (consp pair))
-           (cons (omap::update (ident-fix var) (sint-fix val) scope)
-                 (scope-list-fix (cdr scopes))))
+           (if (eq (value-kind (cdr pair))
+                   (value-kind val))
+               (cons (omap::update (ident-fix var) (value-fix val) scope)
+                     (scope-list-fix (cdr scopes)))
+             (error (list :write-var-mistype (ident-fix var)
+                          :required (value-kind (cdr pair))
+                          :supplied (value-kind val)))))
           (new-cdr-scopes (write-var-aux var val (cdr scopes)))
           ((when (errorp new-cdr-scopes)) new-cdr-scopes))
        (cons scope new-cdr-scopes))
@@ -712,20 +780,25 @@
      For now we only support some unary operators.")
    (xdoc::p
     "These unary operators are all pure,
-     so we just return a value as result (if there is no error)."))
+     so we just return a value as result (if there is no error).")
+   (xdoc::p
+    "We temporarily disallow @('unsigned char') values,
+     by returning an error when we encounter them
+     (this rejects valid programs, but does not accept invalid ones).
+     We will add support for @('unsigned char') values later."))
   (b* ((op (unop-fix op))
        (arg (value-result-fix arg)))
-    (value-result-case
-     arg
-     :err arg.get
-     :ok (unop-case
-          op
-          :plus (sint-plus arg.get)
-          :minus (if (sint-minus-okp arg.get)
-                     (sint-minus arg.get)
-                   (error (list :exec-unary op arg)))
-          :bitnot (sint-bitnot arg.get)
-          :lognot (sint-lognot arg.get))))
+    (cond ((errorp arg) arg)
+          ((ucharp arg) (error (list :exec-unary-uchar-todo op arg)))
+          (t (unop-case
+              op
+              :plus (sint-plus arg)
+              :minus (if (sint-minus-okp arg)
+                         (sint-minus arg)
+                       (error (list :exec-unary op arg)))
+              :bitnot (sint-bitnot arg)
+              :lognot (sint-lognot arg)))))
+  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -742,51 +815,56 @@
    (xdoc::p
     "The arguments are the results of
      recursively executing the operand expressions,
-     both of which must be considered because the operator is non-strict.
-     These operators are pure,
-     so we just return a value as result (if there is no error)."))
+     both of which must be considered because the operator is non-strict.")
+   (xdoc::p
+    "These operators are pure,
+     so we just return a value as result (if there is no error).")
+   (xdoc::p
+    "We temporarily disallow @('unsigned char') values,
+     by returning an error when we encounter them
+     (this rejects valid programs, but does not accept invalid ones).
+     We will add support for @('unsigned char') values later."))
   (b* ((op (binop-fix op))
        (arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
-    (if (value-result-case arg1 :ok)
-        (if (value-result-case arg2 :ok)
-            (case (binop-kind op)
-              (:mul (if (sint-mul-okp arg1 arg2)
-                        (sint-mul arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:div (if (sint-div-okp arg1 arg2)
-                        (sint-div arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:rem (if (sint-rem-okp arg1 arg2)
-                        (sint-rem arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:add (if (sint-add-okp arg1 arg2)
-                        (sint-add arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:sub (if (sint-sub-okp arg1 arg2)
-                        (sint-sub arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:shl (if (sint-shl-sint-okp arg1 arg2)
-                        (sint-shl-sint arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:shr (if (sint-shr-sint-okp arg1 arg2)
-                        (sint-shr-sint arg1 arg2)
-                      (error (list :exec-binary op arg1 arg2))))
-              (:lt (sint-lt arg1 arg2))
-              (:gt (sint-gt arg1 arg2))
-              (:le (sint-le arg1 arg2))
-              (:ge (sint-ge arg1 arg2))
-              (:eq (sint-eq arg1 arg2))
-              (:ne (sint-ne arg1 arg2))
-              (:bitand (sint-bitand arg1 arg2))
-              (:bitxor (sint-bitxor arg1 arg2))
-              (:bitior (sint-bitior arg1 arg2))
-              (t (prog2$ (impossible) (irr-value-result))))
-          arg2)
-      (if (value-result-case arg2 :ok)
-          arg1
-        (error (list :exec-binary op arg1 arg2)))))
-  :guard-hints (("Goal" :in-theory (enable value-result-kind
+    (cond ((errorp arg1) arg1)
+          ((errorp arg2) arg2)
+          ((ucharp arg1) (error (list :exec-binary-uchar-todo op arg1)))
+          ((ucharp arg2) (error (list :exec-binary-uchar-todo op arg2)))
+          (t (case (binop-kind op)
+               (:mul (if (sint-mul-okp arg1 arg2)
+                         (sint-mul arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:div (if (sint-div-okp arg1 arg2)
+                         (sint-div arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:rem (if (sint-rem-okp arg1 arg2)
+                         (sint-rem arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:add (if (sint-add-okp arg1 arg2)
+                         (sint-add arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:sub (if (sint-sub-okp arg1 arg2)
+                         (sint-sub arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:shl (if (sint-shl-sint-okp arg1 arg2)
+                         (sint-shl-sint arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:shr (if (sint-shr-sint-okp arg1 arg2)
+                         (sint-shr-sint arg1 arg2)
+                       (error (list :exec-binary op arg1 arg2))))
+               (:lt (sint-lt arg1 arg2))
+               (:gt (sint-gt arg1 arg2))
+               (:le (sint-le arg1 arg2))
+               (:ge (sint-ge arg1 arg2))
+               (:eq (sint-eq arg1 arg2))
+               (:ne (sint-ne arg1 arg2))
+               (:bitand (sint-bitand arg1 arg2))
+               (:bitxor (sint-bitxor arg1 arg2))
+               (:bitior (sint-bitior arg1 arg2))
+               (t (error (impossible)))))))
+  :guard-hints (("Goal" :in-theory (enable value-resultp
+                                           valuep
                                            binop-strictp
                                            binop-purep)))
   :hooks (:fix))
@@ -809,15 +887,15 @@
      and return 0 or 1 depending on whether it is 0 or non-0.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
-  (value-result-case
-   arg1
-   :err arg1.get
-   :ok (if (sint-nonzerop arg1.get)
-           (value-result-case
-            arg2
-            :err arg2.get
-            :ok (sint01 (sint-nonzerop arg2.get)))
-         (sint 0)))
+  (b* ((arg1 (value-result-fix arg1))
+       (arg2 (value-result-fix arg2)))
+    (cond ((errorp arg1) arg1)
+          ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
+          ((not (sint-nonzerop arg1)) (sint 0))
+          ((errorp arg2) arg2)
+          ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+          (t (sint01 (sint-nonzerop arg2)))))
+  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -838,15 +916,15 @@
      and return 0 or 1 depending on whether it is 0 or non-0.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
-  (value-result-case
-   arg1
-   :err arg1.get
-   :ok (if (sint-nonzerop arg1.get)
-           (sint 1)
-         (value-result-case
-          arg2
-          :err arg2.get
-          :ok (sint01 (sint-nonzerop arg2.get)))))
+  (b* ((arg1 (value-result-fix arg1))
+       (arg2 (value-result-fix arg2)))
+    (cond ((errorp arg1) arg1)
+          ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
+          ((sint-nonzerop arg1) (sint 1))
+          ((errorp arg2) arg2)
+          ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+          (t (sint01 (sint-nonzerop arg2)))))
+  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -872,6 +950,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-cast ((tyname tynamep) (arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support conversions
+     between @('int')s and @('unsigned char')s."))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       (type (type-name-to-type tyname)))
+    (cond ((and (type-case type :uchar) (sintp arg))
+           (uchar-from-sint arg))
+          ((and (type-case type :sint) (ucharp arg))
+           (sint-from-uchar arg))
+          (t (error (list :cast-not-supported :from arg :to :uchar)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -890,6 +988,10 @@
     "For now we reject cast expressions just for lack of support,
      but eventually we will support them, since they are pure.")
    (xdoc::p
+    "For now we reject tests of conditionals
+     that are @('unsigned char') values.
+     We will add support for them later.")
+   (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
      Thus, we may extend this ACL2 function
@@ -903,6 +1005,7 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
+     :arrsub (error (list :exec-arrsub-todo e))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
@@ -910,22 +1013,25 @@
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst)))
               (exec-unary e.op arg))
-     :cast (error (list :unsupported-expr e))
+     :cast (exec-cast e.type (exec-expr-pure e.arg compst))
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :non-pure-expr e)))
                   (arg1 (exec-expr-pure e.arg1 compst))
                   (arg2 (exec-expr-pure e.arg2 compst)))
                (exec-binary-pure e.op arg1 arg2))
-     :cond (b* ((test (exec-expr-pure e.test compst)))
-             (value-result-case
-              test
-              :ok (if (sint-nonzerop test.get)
-                      (exec-expr-pure e.then compst)
-                    (exec-expr-pure e.else compst))
-              :err test.get))))
+     :cond (b* ((test (exec-expr-pure e.test compst))
+                ((when (errorp test)) test)
+                ((when (ucharp test)) (error (list :exec-cond-uchar-todo e))))
+             (if (sint-nonzerop test)
+                 (exec-expr-pure e.then compst)
+               (exec-expr-pure e.else compst)))))
   :measure (expr-count e)
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+  :verify-guards nil ; done below
+  ///
+  (verify-guards exec-expr-pure
+    :hints (("Goal" :in-theory (enable errorp-when-value-resultp-and-not-valuep
+                                       sintp-when-valuep-and-not-ucharp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -952,7 +1058,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-scope ((formals param-decl-listp) (actuals value-listp))
+(define init-scope ((formals param-declon-listp) (actuals value-listp))
   :returns (result scope-resultp)
   :short "Initialize the variable scope for a function call."
   :long
@@ -960,9 +1066,11 @@
    (xdoc::p
     "We go through formal parameters and actual arguments,
      pairing them up into the scope.
-     We return an error if they do not match in number,
-     or if there are repeated parameters."))
-  (b* ((formals (param-decl-list-fix formals))
+     We return an error if they do not match in number or types,
+     or if there are repeated parameters.")
+   (xdoc::p
+    "For now we return an error if we encounter a pointer declarator."))
+  (b* ((formals (param-declon-list-fix formals))
        (actuals (value-list-fix actuals))
        ((when (endp formals))
         (if (endp actuals)
@@ -976,7 +1084,18 @@
      :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
-              (name (param-decl->name formal)))
+              (declor (param-declon->declor formal))
+              (pointerp (declor->pointerp declor))
+              (name (declor->ident declor))
+              (formal-type (type-name-to-type
+                            (make-tyname :specs (param-declon->type formal)
+                                         :pointerp pointerp)))
+              (actual-type (type-of-value actual))
+              ((unless (equal formal-type actual-type))
+               (error (list :formal-actual-mistype
+                            :name name
+                            :formal formal-type
+                            :actual actual-type))))
            (if (omap::in name scope)
                (error (list :init-scope :duplicate-param name))
              (omap::update name actual scope)))))
@@ -991,6 +1110,7 @@
 
 (defines exec
   :short "Mutually recursive functions for execution."
+  :flag-local nil
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1035,7 +1155,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used for expressions that must be assgnments,
+      "This is only used for expressions that must be assignments,
        whose left subexpression is a variable
        and whose right subexpression is a function call or pure;
        this is what we support for now.")
@@ -1082,9 +1202,8 @@
        We initialize a scope with the argument values,
        and we push a frame onto the call stack.
        We execute the function body,
-       which must return a result,
-       which must match the function's result type
-       (but we do not check this because every value is an @('int') for now).
+       which must return a result,,
+       which must match the function's result type.
        We pop the frame and return the value of the function call as result."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (info (fun-env-lookup fun fenv))
@@ -1104,9 +1223,19 @@
              (value-option-result-case
               val-opt
               :err (mv val-opt.get compst)
-              :ok (mv (or val-opt.get
-                          (error (list :no-return-value (ident-fix fun))))
-                      compst)))))
+              :ok (if val-opt.get
+                      (if (equal (type-of-value val-opt.get)
+                                 (type-name-to-type
+                                  (make-tyname :specs info.result
+                                               :pointerp nil)))
+                          (mv val-opt.get compst)
+                        (mv (error (list :return-value-mistype
+                                         :required info.result
+                                         :supplied (type-of-value
+                                                    val-opt.get)))
+                            compst))
+                    (mv (error (list :no-return-value (ident-fix fun)))
+                        compst))))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1148,16 +1277,22 @@
        :if (b* ((test (exec-expr-pure s.test compst)))
              (value-result-case
               test
-              :ok (if (sint-nonzerop test.get)
-                      (exec-stmt s.then compst fenv (1- limit))
-                    (mv nil (compustate-fix compst)))
+              :ok (if (ucharp test.get)
+                      (mv (error (list :exec-if-uchar-todo s))
+                          (compustate-fix compst))
+                    (if (sint-nonzerop test.get)
+                        (exec-stmt s.then compst fenv (1- limit))
+                      (mv nil (compustate-fix compst))))
               :err (mv test.get (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr-pure s.test compst)))
                  (value-result-case
                   test
-                  :ok (if (sint-nonzerop test.get)
-                          (exec-stmt s.then compst fenv (1- limit))
-                        (exec-stmt s.else compst fenv (1- limit)))
+                  :ok (if (ucharp test.get)
+                          (mv (error (list :exec-if-uchar-todo s))
+                              (compustate-fix compst))
+                        (if (sint-nonzerop test.get)
+                            (exec-stmt s.then compst fenv (1- limit))
+                          (exec-stmt s.else compst fenv (1- limit))))
                   :err (mv test.get (compustate-fix compst))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1199,24 +1334,35 @@
      (xdoc::p
       "If the block item is a declaration,
        we first execute the expression,
-       then we add the variable to the top scope of the top frame.")
+       then we add the variable to the top scope of the top frame.
+       The initializer value must have the same type as the variable.")
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :decl (b* (((decl decl) item.get)
-                  ((mv init compst)
-                   (exec-expr-call-or-pure decl.init compst fenv (1- limit))))
-               (value-result-case
-                init
-                :ok (b* ((new-compst (create-var decl.name init.get compst)))
-                      (compustate-result-case
-                       new-compst
-                       :ok (mv (value-option-result-ok nil) new-compst.get)
-                       :err (mv new-compst.get compst)))
-                :err (mv init.get compst)))
+       :declon (b* (((declon declon) item.get)
+                    ((mv init compst) (exec-expr-call-or-pure declon.init
+                                                              compst
+                                                              fenv
+                                                              (1- limit)))
+                    ((when (errorp init)) (mv init compst))
+                    (var (declor->ident declon.declor))
+                    (pointerp (declor->pointerp declon.declor))
+                    (type (type-name-to-type
+                           (make-tyname :specs declon.type
+                                        :pointerp pointerp)))
+                    ((unless (equal type (type-of-value init)))
+                     (mv (error (list :decl-var-mistype var
+                                      :required type
+                                      :supplied (type-of-value init)))
+                         compst))
+                    (new-compst (create-var var init compst)))
+                 (compustate-result-case
+                  new-compst
+                  :ok (mv (value-option-result-ok nil) new-compst.get)
+                  :err (mv new-compst.get compst)))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1240,7 +1386,7 @@
          ((when (endp items)) (mv nil (compustate-fix compst)))
          ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
          ((when (value-option-result-case val? :err)) (mv val? compst))
-         ((when val?) (mv val? compst)))
+         ((when (valuep val?)) (mv val? compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
@@ -1306,7 +1452,7 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
-     :fn exec-stmt)
+      :fn exec-stmt)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1345,23 +1491,23 @@
      starting from the empty environment.
      If an external declaration that is not a function definition is found,
      we defensively return an error."))
-  (init-fun-env-aux (transunit->decls tunit) nil)
+  (init-fun-env-aux (transunit->declons tunit) nil)
   :hooks (:fix)
 
   :prepwork
-  ((define init-fun-env-aux ((decls ext-decl-listp) (fenv fun-envp))
+  ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))
      :returns (result fun-env-resultp)
      :parents nil
-     (b* (((when (endp decls)) (fun-env-fix fenv))
-          (decl (car decls)))
-       (ext-decl-case
-        decl
-        :decl (error :external-declaration-is-not-a-function)
-        :fundef (b* ((fenv (fun-env-extend decl.get fenv)))
+     (b* (((when (endp declons)) (fun-env-fix fenv))
+          (declon (car declons)))
+       (ext-declon-case
+        declon
+        :declon (error :external-declaration-is-not-a-function)
+        :fundef (b* ((fenv (fun-env-extend declon.get fenv)))
                   (fun-env-result-case
                    fenv
                    :err (error fenv.get)
-                   :ok (init-fun-env-aux (cdr decls) fenv.get)))))
+                   :ok (init-fun-env-aux (cdr declons) fenv.get)))))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1384,7 +1530,7 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((compst (make-compustate :frames nil))
+     :ok (b* ((compst (make-compustate :frames nil :heap nil))
               ((mv result  &)
                (exec-fun fun args compst fenv.get 1000000000))) ; 10^9
            result)))

@@ -187,11 +187,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags Library"))
 
    (xdoc::p
     "This is a library that represents bags (a.k.a. multisets)
-     as non-strictly ordered lists.
+     as non-strictly-ordered lists.
      Thus, they capture (up to isomorphism) the mathematical notion of bag;
      in particular, bag equality is @(tsee equal).")
 
@@ -200,6 +200,20 @@
     (xdoc::seetopic "set::std/osets" "the library of ordered sets")
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "mimc::mimc" "MiMC Library"))
+
+   (xdoc::p
+    "This is a library that formally specifies and implements
+     the Minimal Multiplicative Complexity (MiMC) hash function
+     as used by "
+    (xdoc::seetopic "zksemaphore::semaphore" "Ethereum's Semaphore")
+     ". "
+     "This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -547,7 +561,7 @@
 
    (xdoc::p
     "A formalization of "
-    (xdoc::seetopic "ecurve::montgomery-curves" "Montgomery curves")
+    (xdoc::seetopic "ecurve::montgomery" "Montgomery curves")
     " has been added.")
 
    (xdoc::p
@@ -558,11 +572,15 @@
     " has been added.")
 
    (xdoc::p
-    "The files
-     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
-     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
-     have been added.
-     They introduce some parameters of the BLS12-377 elliptic curve.")
+    "The file
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+     has been added.
+     It introduced some parameters of the BLS12-377 elliptic curve.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
+    " has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

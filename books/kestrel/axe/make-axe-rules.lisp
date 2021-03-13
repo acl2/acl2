@@ -57,31 +57,6 @@
   :hints (("Goal" :expand ((pseudo-termp x)))))
 
 ;move
-(defthm consp-of-my-sublis-var
-  (implies (consp term)
-           (consp (my-sublis-var alist term)))
-  :hints (("Goal" :expand ((my-sublis-var alist term)))))
-
-;move
-(defthm car-of-my-sublis-var
-  (equal (car (my-sublis-var alist form))
-         (if (variablep form)
-             (if (assoc-eq form alist)
-                 (cadr (assoc-eq form alist))
-               nil)
-           (car form))))
-
-(defthm cdr-of-my-sublis-var
-  (equal (cdr (my-sublis-var alist form))
-         (if (variablep form)
-             (if (assoc-eq form alist)
-                 (cddr (assoc-eq form alist))
-               nil)
-           (if (equal 'quote (car form))
-               (cdr form)
-             (my-sublis-var-lst alist (cdr form))))))
-
-;move
 (defthm ilks-plist-worldp-forward-to-plist-worldp
   (implies (ilks-plist-worldp wrld)
            (plist-worldp wrld))

@@ -39,6 +39,7 @@
 (include-book "keyword-value-lists")
 (include-book "lists/top")
 (include-book "magic-macroexpand")
+(include-book "magic-macroexpand1-dollar")
 (include-book "make-executable")
 (include-book "make-termination-theorem")
 (include-book "maybe-unquote")

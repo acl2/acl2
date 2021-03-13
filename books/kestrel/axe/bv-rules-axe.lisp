@@ -18,6 +18,8 @@
 
 ;; See also bv-rules-axe0.lisp.
 
+;; TODO: Rename rules end in -dag to instead end in -axe.
+
 (include-book "kestrel/bv/rules3" :dir :system) ;for SLICE-TIGHTEN-TOP
 (include-book "kestrel/bv/rules6" :dir :system) ;for BVMULT-TIGHTEN
 (include-book "bv-rules-axe0") ;drop?
@@ -80,8 +82,7 @@
            :in-theory (e/d (power-of-2p) (floor-when-usb-bind-free-dag)))))
 
 (defthmd bvnot-trim-dag-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -117,15 +118,13 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvminus-trim-arg1-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvminus size x y)
                   (bvminus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvminus-trim-arg2-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvminus size y x)
                   (bvminus size y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -156,7 +155,15 @@
 (defthmd getbit-trim-dag-all
   (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
                 (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
-                (natp n))
+                (integerp n))
+           (equal (getbit n x)
+                  (getbit n (trim (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd getbit-trim-dag-all-gen
+  (implies (and (<= 0 n)
+                (axe-syntaxp (term-should-be-trimmed-axe-plus-one n x 'all dag-array))
+                (integerp n))
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -198,80 +205,69 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvplus-trim-arg1-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvplus-trim-arg2-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvplus-trim-arg1-dag-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (e/d (trim)
                                   ()))))
 
 (defthmd bvplus-trim-arg2-dag-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (e/d (trim)
                                   ()))))
 
 (defthmd bvxor-trim-arg1-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvxor size x y)
                   (bvxor size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvxor-trim-arg2-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvxor size y x)
                   (bvxor size y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvif-trim-arg1-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvif size test x y)
                   (bvif size test (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvif-trim-arg2-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvif size test y x)
                   (bvif size test y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvif-trim-arg1-dag-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvif size test x y)
                   (bvif size test (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvif-trim-arg2-dag-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvif size test y x)
                   (bvif size test y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvand-trim-arg1-dag
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
-                (natp size))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvand size x y)
                   (bvand size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
@@ -455,38 +451,56 @@
            (equal (bitxor x y)
                   (bitxor y x))))
 
-(defthmd bitxor-commutative-2-dag
-  (implies (axe-syntaxp (should-commute-args-dag 'bitxor x y dag-array)
-                        )
-           (equal (bitxor x (bitxor y z))
-                  (bitxor y (bitxor x z)))))
-
 (defthmd bitxor-commutative-increasing-dag
   (implies (axe-syntaxp (should-commute-args-increasing-dag 'bitxor x y dag-array))
            (equal (bitxor x y)
                   (bitxor y x))))
 
-(defthmd bitxor-commutative-2-increasing-dag
-  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bitxor x y dag-array)
-                        )
+(defthmd bitxor-commutative-2-dag
+  (implies (axe-syntaxp (should-commute-args-dag 'bitxor x y dag-array))
            (equal (bitxor x (bitxor y z))
                   (bitxor y (bitxor x z)))))
 
+(defthmd bitxor-commutative-2-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bitxor x y dag-array))
+           (equal (bitxor x (bitxor y z))
+                  (bitxor y (bitxor x z)))))
+
+;;; bvxor
+
+;rename to bvxor-commutative-increasing-dag
 (defthmd bvxor-commutative-dag
-  (implies (axe-syntaxp (should-commute-args-increasing-dag ;should-commute-args-dag
-                         'bvxor x y dag-array))
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x y)
                   (bvxor size y x)))
   :hints (("Goal" :use (:instance bvxor-commutative)
            :in-theory (disable bvxor-commutative))))
 
+;rename to bvxor-commutative-dag
+(defthmd bvxor-commutative-dag-old
+  (implies (axe-syntaxp (should-commute-args-dag 'bvxor x y dag-array))
+           (equal (bvxor size x y)
+                  (bvxor size y x)))
+  :hints (("Goal" :use (:instance bvxor-commutative)
+           :in-theory (disable bvxor-commutative))))
+
+;rename to bvxor-commutative-2-increasing-dag
 (defthmd bvxor-commutative-2-dag
-  (implies (axe-syntaxp (should-commute-args-increasing-dag ;should-commute-args-dag
-                         'bvxor x y dag-array))
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvxor x y dag-array))
            (equal (bvxor size x (bvxor size y z))
                   (bvxor size y (bvxor size x z))))
   :hints (("Goal" :use (:instance bvxor-commutative-2)
            :in-theory (disable bvxor-commutative-2))))
+
+;rename to bvxor-commutative-2-dag
+(defthmd bvxor-commutative-2-dag-old
+  (implies (axe-syntaxp (should-commute-args-dag 'bvxor x y dag-array))
+           (equal (bvxor size x (bvxor size y z))
+                  (bvxor size y (bvxor size x z))))
+  :hints (("Goal" :use (:instance bvxor-commutative-2)
+           :in-theory (disable bvxor-commutative-2))))
+
+;;; bvand
 
 (defthmd bvand-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvand x y dag-array))
@@ -501,6 +515,8 @@
   :hints (("Goal" :use (:instance bvand-commutative-2)
            :in-theory (disable bvand-commutative-2))))
 
+;;; bvor
+
 (defthmd bvor-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvor x y dag-array))
            (equal (bvor size x y)
@@ -514,26 +530,48 @@
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
+;;; bvplus
+
 (defthmd bvplus-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size y x))))
+
+(defthmd bvplus-commutative-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
            (equal (bvplus size x y)
                   (bvplus size y x))))
 
 (defthmd bvplus-commutative-2-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
            (equal (bvplus size x (bvplus size y z))
-                  (bvplus size y (bvplus size x z))))
-  :hints (("Goal" :in-theory (enable ;bvplus
-                              ))))
+                  (bvplus size y (bvplus size x z)))))
+
+(defthmd bvplus-commutative-2-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
+           (equal (bvplus size x (bvplus size y z))
+                  (bvplus size y (bvplus size x z)))))
+
+;;; bvmult
 
 (defthmd bvmult-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
            (equal (bvmult size x y)
                   (bvmult size y x))))
 
+(defthmd bvmult-commutative-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvmult x y dag-array))
+           (equal (bvmult size x y)
+                  (bvmult size y x))))
+
 (defthmd bvmult-commutative-2-dag
-  (implies (and (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
-                (natp size))
+  (implies (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
+           (equal (bvmult size x (bvmult size y z))
+                  (bvmult size y (bvmult size x z))))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthmd bvmult-commutative-2-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
                   (bvmult size y (bvmult size x z))))
   :hints (("Goal" :in-theory (enable))))
@@ -1343,7 +1381,7 @@
                 (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
-                (natp size)
+                ;(natp size)
                 (natp size2))
            (equal (bvplus size y (bvplus size x z))
                   (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
@@ -1356,7 +1394,7 @@
                 (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
-                (natp size)
+                ;(natp size)
                 (natp size2))
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
@@ -1933,3 +1971,7 @@
            (equal (myif x x y)
                   (myif x t y)))
   :hints (("Goal" :in-theory (enable myif))))
+
+;only needed for axe
+(defthm not-<-of-bvcat-and-0
+  (not (< (bvcat highsize highval lowsize lowval) 0)))

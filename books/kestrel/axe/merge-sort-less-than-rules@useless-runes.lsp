@@ -871,7 +871,7 @@
                    (651 651 (:REWRITE USE-ALL-<))
                    (631 457 (:REWRITE DEFAULT-CAR))
                    (588 252 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
-                   (524 418 (:REWRITE DEFAULT-CDR))
+                   (522 416 (:REWRITE DEFAULT-CDR))
                    (504 504 (:TYPE-PRESCRIPTION ALL-<))
                    (485 485 (:REWRITE DEFAULT-+-1))
                    (450 50
@@ -1570,16 +1570,16 @@
      (7 7 (:REWRITE <=-ALL-TRANS-1))
      (6 2 (:REWRITE SORTEDP-<=-OF-CDR))
      (1 1 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP)))
-(<=-ALL-OF-MERGE-< (8681 445
+(<=-ALL-OF-MERGE-< (8645 445
                          (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
-                   (6781 188 (:REWRITE SORTEDP-<=-OF-APPEND))
+                   (6745 188 (:REWRITE SORTEDP-<=-OF-APPEND))
                    (6120 276 (:REWRITE USE-ALL-<-FOR-CAR))
                    (3720 73 (:REWRITE ALL-<=-ALL-OF-CONS-ARG2))
-                   (3711 267 (:REWRITE SORTEDP-<=-OF-CDR))
+                   (3695 267 (:REWRITE SORTEDP-<=-OF-CDR))
                    (3072 87 (:REWRITE ALL-<-OF-APPEND))
                    (2349 476 (:REWRITE ALL-<-WHEN-NOT-CONSP))
                    (2307 1078 (:REWRITE DEFAULT-<-1))
-                   (2136 2136 (:TYPE-PRESCRIPTION SORTEDP-<=))
+                   (2082 2082 (:TYPE-PRESCRIPTION SORTEDP-<=))
                    (2072 130
                          (:REWRITE ALL-<=-ALL-OF-REVERSE-LIST-ARG1))
                    (2014 1078 (:REWRITE DEFAULT-<-2))
@@ -1635,7 +1635,8 @@
                    (111 26 (:REWRITE SORTED-OF-MERGE-<))
                    (76 76 (:TYPE-PRESCRIPTION MEMBERP))
                    (65 46 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
-                   (26 26 (:REWRITE EQUAL-OF-LEN-AND-0)))
+                   (26 26 (:REWRITE EQUAL-OF-LEN-AND-0))
+                   (18 18 (:REWRITE SORTEDP-<=-OF-SINGLETON)))
 (<=-ALL-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX
      (1308 107 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (957 64 (:REWRITE USE-ALL-<-FOR-CAR))

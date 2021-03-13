@@ -30,6 +30,7 @@
             byte-listp
             define
             define-sk
+            defret
             defrule
             defruled
             defrulel

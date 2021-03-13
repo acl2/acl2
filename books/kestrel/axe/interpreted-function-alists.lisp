@@ -1,4 +1,4 @@
-; Alists mapping functions to definitions
+; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
@@ -12,102 +12,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "kestrel/alists-light/symbol-alistp" :dir :system)
-(include-book "kestrel/alists-light/acons" :dir :system)
+(include-book "interpreted-function-alistp")
 (include-book "kestrel/utilities/terms" :dir :system) ; for get-fns-in-term
 (local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
-
-(in-theory (disable getprops
-                    acons))
-
-;; For each interpreted function, we store its formals and body.
-;; TODO: Check that the vars in the body are a subset of the formals.
-(defun interpreted-function-infop (info)
-  (declare (xargs :guard t))
-  (and (true-listp info)
-       (= 2 (len info))
-       (symbol-listp (first info))
-       (pseudo-termp (second info))))
-
-;; Defines all-interpreted-function-infop.
-(defforall-simple interpreted-function-infop :guard t)
-
-;;
-;; interpreted-function-alistp
-;;
-
-;; An interpreted-function-alist maps function names (symbols) to items of the
-;; form (list formals body). TODO: Consider making the items in the alist cons
-;; pairs instead.
-
-(defund interpreted-function-alistp (alist)
-  (declare (xargs :guard t))
-  (and (symbol-alistp alist)
-       (all-interpreted-function-infop (strip-cdrs alist))))
-
-(defthm interpreted-function-alistp-forward-to-alistp
-  (implies (interpreted-function-alistp alist)
-           (alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
-
-(defthm interpreted-function-alistp-forward-to-symbol-alistp
-  (implies (interpreted-function-alistp alist)
-           (symbol-alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
-
-(defthm interpreted-function-alistp-of-acons
-  (equal (interpreted-function-alistp (acons fn info alist))
-         (and (interpreted-function-alistp alist)
-              (symbolp fn)
-              (interpreted-function-infop info)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
-
-(defthm interpreted-function-infop-of-cdr-of-assoc-equal
-  (implies (and (all-interpreted-function-infop (strip-cdrs interpreted-function-alist))
-                (assoc-equal fn interpreted-function-alist))
-           (interpreted-function-infop (cdr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (disable interpreted-function-infop))))
-
-(defthm interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (lookup-equal fn interpreted-function-alist))
-           (interpreted-function-infop (lookup-equal fn interpreted-function-alist)))
-  :hints (("Goal" ; :induct t
-           :in-theory (e/d (interpreted-function-alistp
-                            lookup-equal
-                            assoc-equal
-                            strip-cdrs
-                            all-interpreted-function-infop)
-                           (interpreted-function-infop)))))
-
-;maybe use a custom lookup and handle this rule of it?
-(defthmd true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (true-listp (cadr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :use (:instance interpreted-function-infop-of-cdr-of-assoc-equal)
-           :in-theory (e/d (interpreted-function-alistp)
-                           (interpreted-function-infop-of-cdr-of-assoc-equal)))))
-
-(defthmd symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (symbol-listp (cadr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :use (:instance interpreted-function-infop-of-cdr-of-assoc-equal)
-           :in-theory (e/d (interpreted-function-alistp)
-                           (interpreted-function-infop-of-cdr-of-assoc-equal)))))
-
-(defthmd pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (pseudo-termp (caddr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :use (:instance interpreted-function-infop-of-cdr-of-assoc-equal)
-           :in-theory (e/d (interpreted-function-alistp)
-                           (interpreted-function-infop-of-cdr-of-assoc-equal)))))
 
 ; this does not take pains to add subfunctions called by fn
 ;todo: call fn-formals?
@@ -130,8 +37,12 @@
               (prog2$ (er hard? 'add-to-interpreted-function-alist "Bad body for ~x0: ~x1" fn body)
                       alist)
             (let ((match (lookup-eq fn alist))
-                  ;; We call remove-guard-holders-weak to get rid of
-                  ;; calls of return-last (and other things):
+                  ;; We call remove-guard-holders-weak to get rid of calls of
+                  ;; return-last (and other things).  Note that this will get
+                  ;; the :logic part of an MBE.  We might prefer the :exec
+                  ;; part, but its correctness assumes the guards hold.  If the
+                  ;; :logic part is too slow, consider building the function
+                  ;; into an evaluator.
                   (body (remove-guard-holders-weak body)))
               (if match
                   (if (equal match (list formals body))
@@ -181,43 +92,14 @@
   (implies (symbol-listp fns)
            (interpreted-function-alistp (make-interpreted-function-alist fns wrld))))
 
-(defthmd true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (true-listp (cadr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
+;;;
+;;; interpreted-function-alist-completep
+;;;
 
-(defthmd symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (symbol-listp (cadr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
-
-(defthmd consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (consp (cdr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
-
-(defthmd cddr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (interpreted-function-alistp interpreted-function-alist)
-           (iff (cddr (assoc-equal fn interpreted-function-alist))
-                (assoc-equal fn interpreted-function-alist)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
-
-(defthmd consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (interpreted-function-alistp interpreted-function-alist)
-           (iff (consp (cddr (assoc-equal fn interpreted-function-alist)))
-                (assoc-equal fn interpreted-function-alist)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
-
-(defthmd consp-of-car-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp alist)
-                (consp alist))
-           (consp (car alist)))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
-
-(defun interpreted-function-completep-aux (alist all-fns)
+;; Checks that there are no missing functions in the interpreted-function-alist
+;; (functions called by other functions in the alist, which will cause
+;; evaluation of functions in the alist to fail).
+(defun interpreted-function-alist-completep-aux (alist all-fns)
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp all-fns))
                   :guard-hints (("Goal" :in-theory (enable INTERPRETED-FUNCTION-ALISTP)))))
@@ -232,11 +114,11 @@
       (if (not (subsetp-equal mentioned-fns all-fns))
           (prog2$ (cw "WARNING: Intepreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns all-fns) fn)
                   nil)
-        (interpreted-function-completep-aux (rest alist) all-fns)))))
+        (interpreted-function-alist-completep-aux (rest alist) all-fns)))))
 
-(defun interpreted-function-completep (alist built-in-fns)
+(defun interpreted-function-alist-completep (alist built-in-fns)
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp built-in-fns))))
-  (interpreted-function-completep-aux alist
-                                      (append (strip-cars alist)
-                                              built-in-fns)))
+  (interpreted-function-alist-completep-aux alist
+                                            (append (strip-cars alist)
+                                                    built-in-fns)))
