@@ -671,6 +671,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montgomery-add-neg-inverse
+  :short "Property that negation is left and right inverse for addition."
+
+  (defrule montgomery-add-of-neg-left
+    (implies (and (montgomery-curve-primep curve)
+                  (point-on-montgomery-p point curve))
+             (equal (montgomery-add (montgomery-neg point curve) point curve)
+                    (montgomery-zero)))
+    :enable (montgomery-add
+             montgomery-neg
+             montgomery-zero
+             pointp
+             point-fix
+             point-kind))
+
+  (defrule montgomery-add-of-neg-right
+    (implies (and (montgomery-curve-primep curve)
+                  (point-on-montgomery-p point curve))
+             (equal (montgomery-add point (montgomery-neg point curve) curve)
+                    (montgomery-zero)))
+    :enable (montgomery-add
+             montgomery-neg
+             montgomery-zero
+             point-finite
+             point-finite->x
+             point-finite->y
+             pointp
+             point-kind
+             point-on-montgomery-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-sub ((point1 pointp)
                         (point2 pointp)
                         (curve montgomery-curvep))
