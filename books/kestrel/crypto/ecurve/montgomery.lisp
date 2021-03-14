@@ -598,6 +598,7 @@
                                           (montgomery-add point2 point3 curve)
                                           curve))))
   :verify-guards nil
+  :thm-name montgomery-add-associative-right
   :enabled :thm)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
