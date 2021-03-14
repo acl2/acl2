@@ -620,7 +620,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection montogomery-add-zero-identity
+(defsection montogomery-zero-identity
   :short "Left and right identity properties of the neutral point."
 
   (defrule montgomery-add-of-montgomery-zero-left
@@ -671,7 +671,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection montgomery-add-neg-inverse
+(defsection montgomery-neg-inverse
   :short "Property that negation is left and right inverse for addition."
 
   (defrule montgomery-add-of-neg-left
