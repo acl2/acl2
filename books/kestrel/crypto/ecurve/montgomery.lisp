@@ -582,7 +582,12 @@
      because it is essentially the associativity theorem,
      which is a good rewrite rule to have enabled,
      with the only difference that
-     it has this nullary predicate as hypothesis.")
+     it has this nullary predicate as hypothesis.
+     That rewrite rules rewrites additions to associate to the right.
+     We also add a disabled associativity rule
+     that rewrites additions to associate to the left instead;
+     this may be occasionally useful in algebraic manipulations.
+     We add a theory invariant preventing both rules from being enabled.")
    (xdoc::p
     "Note that we need to assume the closure of addition, in the guard,
      in order to verify the guards of this function."))
@@ -599,7 +604,25 @@
                                           curve))))
   :verify-guards nil
   :thm-name montgomery-add-associative-right
-  :enabled :thm)
+  :enabled :thm
+  ///
+
+  (defruled montgomery-add-associative-left
+    (implies (and (montgomery-add-associativity)
+                  (montgomery-curve-primep curve)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (point-on-montgomery-p point3 curve))
+             (equal (montgomery-add point1
+                                    (montgomery-add point2 point3 curve)
+                                    curve)
+                    (montgomery-add (montgomery-add point1 point2 curve)
+                                    point3
+                                    curve))))
+
+  (theory-invariant (incompatible
+                     (:rewrite montgomery-add-associative-right)
+                     (:rewrite montgomery-add-associative-left))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
