@@ -973,7 +973,11 @@
                  (montgomery-curve-primep curve)
                  (point-on-montgomery-p point curve)))
 
-     (verify-guards montgomery-mul-nonneg)))
+     (verify-guards montgomery-mul-nonneg)
+
+     (defrule montgomery-mul-nonneg-of-0
+       (equal (montgomery-mul-nonneg 0 point curve)
+              (montgomery-zero)))))
 
   ///
 
@@ -981,7 +985,11 @@
     (point-on-montgomery-p point1 curve)
     :hyp (and (montgomery-add-closure)
               (montgomery-curve-primep curve)
-              (point-on-montgomery-p point curve))))
+              (point-on-montgomery-p point curve)))
+
+  (defrule montgomery-mul-of-0
+    (equal (montgomery-mul 0 point curve)
+           (montgomery-zero))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
