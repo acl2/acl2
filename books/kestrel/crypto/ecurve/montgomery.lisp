@@ -977,7 +977,11 @@
 
      (defrule montgomery-mul-nonneg-of-0
        (equal (montgomery-mul-nonneg 0 point curve)
-              (montgomery-zero)))))
+              (montgomery-zero)))
+
+     (defrule montgomery-mul-nonneg-of-1
+       (equal (montgomery-mul-nonneg 1 point curve)
+              (point-fix point)))))
 
   ///
 
@@ -989,7 +993,11 @@
 
   (defrule montgomery-mul-of-0
     (equal (montgomery-mul 0 point curve)
-           (montgomery-zero))))
+           (montgomery-zero)))
+
+  (defrule montgomery-mul-of-1
+    (equal (montgomery-mul 1 point curve)
+           (point-fix point))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
