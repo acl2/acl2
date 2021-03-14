@@ -461,6 +461,11 @@
                                             (set-equiv (intersection-equal y x)
                                                        x))))))
 
+(defthm list-equiv-when-atom
+  (implies (not (consp path))
+           (list-equiv path nil))
+  :rule-classes :forward-chaining)
+
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))

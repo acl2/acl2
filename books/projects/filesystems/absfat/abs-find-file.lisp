@@ -177,7 +177,8 @@
       x
       (abs-file->contents (mv-nth 0 (abs-find-file-helper fs relpath)))))
     (consp (assoc-equal x (abs-fs-fix fs)))))
-  :hints (("goal" :in-theory (e/d (abs-find-file-helper names-at))
+  :hints (("goal" :in-theory (e/d (abs-find-file-helper names-at)
+                                  (list-equiv-when-atom))
            :induct (abs-find-file-helper fs relpath))))
 
 (defund
