@@ -30,7 +30,7 @@
 
 (acl2::add-known-boolean acl2::bit-listp)
 
-;; TODO: Oraganize this material
+;; TODO: Organize this material
 
 ;; For when the constant is negative.  Not sure which normal form is better.
 (defthmd pfield::mul-when-constant-becomes-neg-of-mul

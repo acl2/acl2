@@ -20,12 +20,16 @@
 (include-book "kestrel/prime-fields/bv-rules" :dir :system)
 ;(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (include-book "kestrel/typed-lists-light/bit-listp" :dir :system) ;drop?
+(include-book "kestrel/arithmetic-light/lg" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper
@@ -77,7 +81,7 @@
 
 ;; todo: floating point gadgets?  strings (dan boneh alligator..)
 
-(defthm add-becomes-bvplus-33
+(defthmd add-becomes-bvplus-33
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
                 (posp p)
@@ -87,7 +91,7 @@
                   (bvplus 33 x y)))
   :hints (("Goal" :in-theory (enable add BVPLUS))))
 
-(defthm add-becomes-bvplus-34
+(defthmd add-becomes-bvplus-34
   (implies (and (unsigned-byte-p 33 x)
                 (unsigned-byte-p 33 y)
                 (posp p)
@@ -100,52 +104,63 @@
 ;try the other one first
 (table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34 1)
 
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+;move
+(defthm <-of-expt-2-and-one-less-than-integer-length
+  (implies (posp n)
+           (equal (< (expt 2 (+ -1 (integer-length n))) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (e/d (integer-length power-of-2p expt) (acl2::expt-hack)))))
 
-(defthm getbit-of-add-becomes-getbit-of-bvplus-32
-  (implies (and (natp n)
+;move
+(defthm <-of-expt-2-of-lg-same
+  (implies (posp n)
+           (equal (< (expt 2 (acl2::lg n)) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (enable acl2::lg))))
+
+;move
+(defthm <-of-expt-2-of-lg-same-linear
+  (implies (and (not (power-of-2p n))
+                (posp n))
+           (< (expt 2 (acl2::lg n)) n))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable acl2::lg))))
+
+;move
+(defthm not-power-of-2p-when-oddp
+  (implies (and (oddp n)
+                (< 1 n))
+           (not (power-of-2p n)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+;; ;; Turns add into a 32-bit sum (even if N is smaller than 31).
+;; (defthmd getbit-of-add-becomes-getbit-of-bvplus-32
+;;   (implies (and (< n 32)
+;;                 ;; ensure the mod p does nothing:
+;;                 (< ;34359738368 ;
+;;                  (expt 2 35) ; tighten?
+;;                    p)
+;;                 (integerp p)
+;;                 (unsigned-byte-p 34 x) ;gen?
+;;                 (unsigned-byte-p 34 y) ; gen?
+;;                 (natp n)
+;;                 )
+;;            (equal (getbit n (add x y p))
+;;                   (getbit n (bvplus 32 x y))))
+;;   :hints (("Goal" :in-theory (enable add acl2::bvplus unsigned-byte-p))))
+
+;; Usually p will be a constant
+(defthmd getbit-of-add-becomes-getbit-of-bvplus-32
+  (implies (and (unsigned-byte-p (+ -1 (acl2::lg p)) x)
+                (unsigned-byte-p (+ -1 (acl2::lg p)) y)
                 (< n 32)
-                (< 34359738368 ;17179869184 ;;(expt 2 34) ; tighten?
-                   p)
-                (posp p)
-                (unsigned-byte-p 34 x) ;gen?
-                (unsigned-byte-p 34 y) ; gen?
-                )
+                (< 1 p)
+                (oddp p)
+                (integerp p)
+                (natp n))
            (equal (getbit n (add x y p))
                   (getbit n (bvplus 32 x y))))
-  :hints (("Goal" :in-theory (enable add ACL2::BVPLUS unsigned-byte-p))))
-
-;mostly for axe
-(defthmd acl2::equal-of-cons-when-quotep
-  (implies (syntaxp (quotep k))
-           (equal (equal k (cons x y))
-                  (and (consp k)
-                       (equal x (car k))
-                       (equal y (cdr k))))))
-
-;or just turn equals around?
-;only needed for axe
-(defthmd acl2::equal-of-cons-when-quotep-alt
-  (implies (syntaxp (quotep k))
-           (equal (equal (cons x y) k)
-                  (and (consp k)
-                       (equal x (car k))
-                       (equal y (cdr k))))))
-
-(defthm equal-of-constant-and-add-of-neg-arg1
-  (implies (and (syntaxp (quotep k))
-                (fep k p)
-                (fep x p)
-                (fep y p)
-                (posp p))
-           (equal (equal k (add (neg x p) y p))
-                  (equal x (add (- k) y p)))))
-
-(defthm equal-of-constant-and-add-of-neg-arg2
-  (implies (and (syntaxp (quotep k))
-                (fep k p)
-                (fep x p)
-                (fep y p)
-                (posp p))
-           (equal (equal k (add y (neg x p) p))
-                  (equal x (add (- k) y p)))))
+  :hints (("Goal"
+           :use (:instance acl2::mod-when-< (x (+ x y)) (y p))
+           :in-theory (e/d (add acl2::bvplus unsigned-byte-p)
+                           (acl2::equal-of-mod-same-arg1 oddp)))))
