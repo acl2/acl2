@@ -1921,7 +1921,7 @@
      unsigned-byte-p-of-bvplus-1
 
      ;;CONSP-FROM-LEN ;new ;loops with LIST::LEN-OF-NON-CONSP
-     consp-when-len-equal
+     consp-when-len-equal-constant
      add-to-end
      car-of-bv-array-write
      sbvrem-when-positive

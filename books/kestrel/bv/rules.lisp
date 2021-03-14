@@ -17,7 +17,6 @@
 
 (include-book "signed-byte-p")
 (include-book "rules0") ;for BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION
-;(include-book "../utilities/convert-to-logic-mode")
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
@@ -34,7 +33,7 @@
 (include-book "bitxor")
 (include-book "bvmult")
 (include-book "bvuminus")
-(include-book "kestrel/arithmetic-light/integer-length" :dir :system)
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (include-book "kestrel/booleans/booleans" :dir :system) ;why included here? maybe to get bool-to-bit...
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
@@ -59,8 +58,10 @@
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
+(local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "floor-mod-expt"))
 (local (include-book "arith")) ;todo
@@ -69,7 +70,7 @@
 ;(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;move
-(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
+(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
 
 (local (in-theory (disable EQUAL-/
                            logapp-0
@@ -430,7 +431,7 @@
                   (if (equal 0 n)
                       (logbitp 0 x)
                     (logbitp (- n m) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp floor) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logbitp floor oddp expt-of-+) (LOGBITP-IFF-GETBIT)))))
 
 ;(local (in-theory (disable hack-6))) ;bozo
 
@@ -1013,7 +1014,8 @@
                            x)
                    (BITAND lowval
                            x)))
-   :hints (("Goal" :in-theory (e/d (BITAND bvand) (BVAND-1-BECOMES-BITAND)))))
+   :hints (("Goal" :in-theory (e/d (BITAND bvand) (BVAND-1-BECOMES-BITAND
+                                                   BVCHOP-OF-BVCAT-CASES-GEN)))))
 
 (defthm bitand-of-bvcat-arg2
    (implies (and (< 0 lowsize)
@@ -5947,22 +5949,22 @@
            :in-theory (enable bvsx bitand bvand))))
 
 ;why does logtail arise?
-(defthm bvand-logtail-arg1
+(defthmd bvand-logtail-arg1
   (implies (and (natp size)
                 (< 0 size)
                 (natp n))
            (equal (bvand size (logtail n x) y)
                   (bvand size (slice (+ -1 n size) n x) y)))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand bvchop-of-logtail-becomes-slice))))
 
 ;why does logtail arise?
-(defthm bvand-logtail-arg2
+(defthmd bvand-logtail-arg2
   (implies (and (natp size)
                 (< 0 size)
                 (natp n))
            (equal (bvand size y (logtail n x))
                   (bvand size y (slice (+ -1 n size) n x))))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand bvchop-of-logtail-becomes-slice))))
 
 ;why does logtail arise?
 ;can loop with defn slice?
@@ -5972,7 +5974,8 @@
                 (natp n))
            (equal (bvxor size (logtail n x) y)
                   (bvxor size (slice (+ -1 n size) n x) y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
+  :hints (("Goal" :in-theory (e/d (bvxor bvchop-of-logtail-becomes-slice)
+                                  (LOGXOR-BVCHOP-BVCHOP)))))
 
 ;why does logtail arise?
 ;can loop with defn slice?
@@ -5982,7 +5985,8 @@
                 (natp n))
            (equal (bvxor size y (logtail n x))
                   (bvxor size y (slice (+ -1 n size) n x))))
-  :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
+  :hints (("Goal" :in-theory (e/d (bvxor bvchop-of-logtail-becomes-slice)
+                                  (LOGXOR-BVCHOP-BVCHOP)))))
 
 ;add some of these?
 (defthm leftrotate32-of-logext-32

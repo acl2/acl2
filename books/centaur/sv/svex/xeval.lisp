@@ -141,6 +141,7 @@ and we get, for instance:</p>
                        (=== '==)
                        (==? 'safer-==?)
                        (bit?! 'bit?)
+                       (?!    '?*)
                        (otherwise expr.fn))))
         (mbe :logic
              (svex-apply expr.fn (svexlist-xeval expr.args))
@@ -252,7 +253,7 @@ and we get, for instance:</p>
 
   (verify-guards svex-xeval
     :hints((and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth)
+                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth 4vec-?!)
                                   (svex-xeval))
                   :expand ((svexlist-xeval (svex-call->args expr))
                            (svexlist-xeval (cdr (svex-call->args expr)))

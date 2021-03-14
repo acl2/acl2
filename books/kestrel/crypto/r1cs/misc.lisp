@@ -20,7 +20,6 @@
 (include-book "kestrel/prime-fields/bv-rules" :dir :system)
 ;(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (include-book "kestrel/typed-lists-light/bit-listp" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bits-to-bytes-little2" :dir :system) ;move?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -28,8 +27,6 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-
-(local (in-theory (disable acl2::bvcat-recombine))) ;todo
 
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper
   (implies (and (unsigned-byte-p lowsize lowval)
@@ -126,26 +123,6 @@
                        (equal x (car k))
                        (equal y (cdr k))))))
 
-(defthm equal-of-1-and-add-when-bitp-arg1
-  (implies (and (bitp x)
-                (fep y p)
-                (posp p)
-                (< 1 p))
-           (equal (equal 1 (add x y p))
-                  (equal y (bitnot x))))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
-
-(defthm equal-of-1-and-add-when-bitp-arg2
-  (implies (and (bitp x)
-                (fep y p)
-                (posp p)
-                (< 1 p))
-           (equal (equal 1 (add y x p))
-                  (equal y (bitnot x))))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
-
 ;or just turn equals around?
 ;only needed for axe
 (defthmd acl2::equal-of-cons-when-quotep-alt
@@ -172,10 +149,3 @@
                 (posp p))
            (equal (equal k (add y (neg x p) p))
                   (equal x (add (- k) y p)))))
-
-(defthm acl2::consp-when-len-equal-alt
-  (implies (and (equal acl2::free (len acl2::x))
-                (syntaxp (quotep acl2::free)))
-           (equal (consp acl2::x)
-                  (< 0 acl2::free)))
-  :hints (("Goal" :in-theory (e/d (len) ()))))

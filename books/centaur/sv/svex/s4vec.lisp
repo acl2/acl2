@@ -851,6 +851,22 @@
   (s4vec-correct))
 
 
+(define s4vec-?! ((test s4vec-p)
+                  (then s4vec-p)
+                  (else s4vec-p))
+  :returns (choices s4vec-p)
+  :short "If-then-elses of @(see s4vec)s following the SystemVerilog semantics for
+          procedural conditional branches, i.e. if the test has any bit that is
+          exactly 1 (not 0, Z, or X), we choose the then branch, else the else
+          branch. (Non-monotonic semantics)."
+
+  (b* (((s4vec test))
+       ;; We choose the THEN branch if any bit has upper and lower both set.
+       (pick-else (sparseint-equal 0 (sparseint-bitand test.upper test.lower))))
+    (if pick-else (s4vec-fix else) (s4vec-fix then)))
+  ///
+  (s4vec-correct))
+
 (define s3vec-?* ((test s4vec-p)
                   (then s4vec-p)
                   (else s4vec-p))

@@ -287,7 +287,7 @@
         (value
          (cons `(cw-event "~%~%~%~s0~s1~s0~%"
                           "!!!!!!!!!!!!!!!!!!!!"
-                          "The proof is partial (no :QED).")
+                          " The proof is partial (no :QED). ")
                events)))
        (command (car commands))
        ((unless (and (true-listp command)

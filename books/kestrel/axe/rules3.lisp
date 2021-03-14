@@ -86,13 +86,6 @@
          (posp (nfix n)))
   :hints (("Goal" :in-theory (enable repeat))))
 
-(defthm equal-of-true-list-fix-and-bvchop-list-same
-  (implies (natp size)
-           (equal (equal (true-list-fix x)
-                         (bvchop-list size x))
-                  (all-unsigned-byte-p size x)))
-  :hints (("Goal" :in-theory (enable bvchop-list))))
-
 ;todo: move the rest of the prefixp rules out of this file
 
 ;todo: uncomment:(add-known-boolean prefixp) ;todo: make a list-rules-axe book.  prefixp-when-longer-work-hard etc could also go there
@@ -263,11 +256,12 @@
   (implies (natp x)
            (equal (SBVDIV 32 (BVCAT 2 x 2 2) 4)
                   (bvchop 2 x)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv bvcat logapp) (bvcat-recombine
-                                                         USB-PLUS-FROM-BOUNDS
-                                                         BVPLUS-OF-*-ARG2
-                                                         TIMES-2-OF-BVPLUS-BECOMES-BVMULT-OF-BVPLUS
-                                                         GETBIT-WHEN-BVLT-OF-SMALL-HELPER)))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv bvcat logapp bvchop-of-logtail-becomes-slice)
+                                  (bvcat-recombine
+                                   usb-plus-from-bounds
+                                   bvplus-of-*-arg2
+                                   times-2-of-bvplus-becomes-bvmult-of-bvplus
+                                   getbit-when-bvlt-of-small-helper)))))
 
 (defthm bvcat-tighten-from-bound-4-20-2
   (implies (and (< x 4)
@@ -2183,7 +2177,8 @@
          (slice 30 2 x))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (bvdiv bvchop-when-i-is-not-an-integer
-                                  SLICE-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                  SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
+                                  bvchop-of-logtail-becomes-slice)
                            ()))))
 
 (defthm high-slice-equal-1-rewrite
@@ -2441,7 +2436,8 @@
   :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus bvlt
                                               logext
                                               slice-of-sum-cases
-                                              ;bvchop-of-sum-cases
+                                              ;;bvchop-of-sum-cases
+                                              bvchop-of-logtail-becomes-slice
                                               )
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   anti-bvplus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))
@@ -17617,7 +17613,7 @@
 (defthm bvlt-when-top-bit-one
   (implies (and (not (equal free (getbit 1 x)))
                 (equal 0 free))
-           (equal (bvlt '2 '1 x)
+           (equal (bvlt 2 1 x)
                   t))
   :hints (("Goal"
            :use (:instance split-bv (y (bvchop 2 x)) (m 1) (n 2))
@@ -17673,18 +17669,13 @@
            (not (< x (expt 2 (+ -1 (integer-length x))))))
   :hints (("Goal" :in-theory (enable integer-length))))
 
+;move
 (defthm <-of-integer-length-arg2
   (implies (and (posp x)
                 (natp n))
            (equal (< n (integer-length x))
                   (<= (expt 2 n) x)))
   :hints (("Goal" :in-theory (enable integer-length))))
-
-;gen the 1
-(defthm <-of-1-and-expt
-  (implies (integerp n)
-           (equal (< 1 (expt 2 n))
-                  (< 0 n))))
 
 (defthm <-of-integer-length-arg1
   (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT

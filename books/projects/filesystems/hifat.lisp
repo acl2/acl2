@@ -1362,14 +1362,6 @@
           (:instance (:rewrite len-of-fat32-filename-list-fix)
                      (x x-equiv))))))
 
-(defcong
-  fat32-filename-list-equiv
-  fat32-filename-list-equiv (take n l)
-  2
-  :hints
-  (("goal" :in-theory (e/d (fat32-filename-list-equiv)
-                           (take-of-fat32-filename-list-fix)))))
-
 (defthmd car-of-last-of-fat32-filename-list-fix
   (equal (car (last (fat32-filename-list-fix x)))
          (if (consp x)

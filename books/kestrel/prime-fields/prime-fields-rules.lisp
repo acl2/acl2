@@ -999,6 +999,15 @@
            (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
                   (equal w (add x (add y z p) p)))))
 
+(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma-alt
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp p))
+           (equal (equal 0 (add x (add y (add (neg w p) z p) p) p))
+                  (equal w (add x (add y z p) p)))))
+
 (defthm equal-of-0-and-add-of-add-of-neg-lemma
   (implies (and (fep w p)
                 (integerp x)
@@ -1006,3 +1015,23 @@
                 (posp p))
            (equal (equal 0 (add x (add (neg w p) y p) p))
                   (equal w (add x y p)))))
+
+(defthm equal-of-constant-and-add-of-neg-arg1
+  (implies (and (syntaxp (quotep k))
+                (fep k p)
+                (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal k (add (neg x p) y p))
+                  (equal x (add (- k) y p))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+(defthm equal-of-constant-and-add-of-neg-arg2
+  (implies (and (syntaxp (quotep k))
+                (fep k p)
+                (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal k (add y (neg x p) p))
+                  (equal x (add (- k) y p))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))

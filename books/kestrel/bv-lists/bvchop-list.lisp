@@ -233,3 +233,10 @@
   (equal (bvchop-list element-size (true-list-fix lst))
          (bvchop-list element-size lst))
   :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm equal-of-true-list-fix-and-bvchop-list-same
+  (implies (natp size)
+           (equal (equal (true-list-fix x)
+                         (bvchop-list size x))
+                  (all-unsigned-byte-p size x)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))

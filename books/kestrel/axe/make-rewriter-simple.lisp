@@ -52,6 +52,7 @@
 (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
 (local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defthm trees-to-memoizep-of-cons-if-not-equal-car
   (equal (trees-to-memoizep (cons-if-not-equal-car tree trees))

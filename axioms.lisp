@@ -6612,11 +6612,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (member-eq (car form) '(defun-nx defund-nx)))
                   :verify-guards nil))
   `(with-output :stack :push :off :all
-       (progn (with-output :stack :pop
-                ,(defun-nx-form form))
-              (encapsulate
+       (progn (encapsulate
                 ()
                 (logic)
+                (set-state-ok t)
+                (with-output :stack :pop
+                  ,(defun-nx-form form))
                 (with-output :stack :pop :off summary
                   (in-theory (disable (:e ,(cadr form))))))
               (with-output :stack :pop :off summary
