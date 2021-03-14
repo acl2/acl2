@@ -159,6 +159,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled montgomery-points-with-same-x-have-same-or-neg-y
+  :short "Theorem about points on the curve with the same abscissa
+          having the same or opposite ordinates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If two points on the curve have the same @($x$),
+     they have either the same or opposite @($y$)."))
+  (implies (and (montgomery-curve-primep curve)
+                (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve)
+                (equal (point-kind point1) :finite)
+                (equal (point-kind point2) :finite)
+                (equal (point-finite->x point1)
+                       (point-finite->x point2)))
+           (or (equal (point-finite->y point1)
+                      (point-finite->y point2))
+               (equal (point-finite->y point1)
+                      (neg (point-finite->y point2)
+                           (montgomery-curve->p curve)))))
+  :enable (point-on-montgomery-p
+           montgomery-curve-primep)
+  :prep-books ((include-book "prime-field-extra-rules")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule montgomery-only-point-with-y-0-when-aa-minus-4-non-square
   :short "Theorem about the only point with zero ordinate
           for certain Montgomery curves."
@@ -835,6 +861,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled montgomery-points-with-same-x-are-same-or-neg-point
+  :short "Theorem about points on the curve with the same abscissa
+          being the same or opposite points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If two points on the curve have the same @($x$),
+     they are either the same or opposites."))
+  (implies (and (montgomery-curve-primep curve)
+                (pointp point1)
+                (pointp point2)
+                (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve)
+                (equal (point-kind point1) :finite)
+                (equal (point-kind point2) :finite)
+                (equal (point-finite->x point1)
+                       (point-finite->x point2)))
+           (or (equal point1 point2)
+               (equal point1 (montgomery-neg point2 curve))))
+  :enable (montgomery-neg
+           point-finite
+           point-finite->x
+           point-finite->y
+           pointp)
+  :use montgomery-points-with-same-x-have-same-or-neg-y)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-sub ((point1 pointp)
                         (point2 pointp)
                         (curve montgomery-curvep))
@@ -897,6 +951,7 @@
   :hooks (:fix)
 
   :prepwork
+
   ((define montgomery-mul-nonneg ((scalar natp)
                                   (point pointp)
                                   (curve montgomery-curvep))
@@ -911,11 +966,13 @@
      :verify-guards nil ; done below
      :hooks (:fix)
      ///
+
      (defret point-on-montgomery-p-of-montgomery-mul-nonneg
        (point-on-montgomery-p point1 curve)
        :hyp (and (montgomery-add-closure)
                  (montgomery-curve-primep curve)
                  (point-on-montgomery-p point curve)))
+
      (verify-guards montgomery-mul-nonneg)))
 
   ///
