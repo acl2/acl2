@@ -2783,8 +2783,8 @@
 
 (defun member-complement-term1 (lit cl)
 
-; Lit is known not to begin with not and not to be an equality or iff.
-; This fn is equivalent to (member-equal `(not ,lit) cl).
+; Lit is known not to be an equality or iff.  This fn is equivalent to
+; (member-equal `(not ,lit) cl).
 
   (cond ((null cl) nil)
         ((and (ffn-symb-p (car cl) 'not)
@@ -2821,9 +2821,34 @@
              (eq (ffn-symb lit) 'iff))
          (member-complement-term2 (ffn-symb lit) (fargn lit 1) (fargn lit 2)
                                   cl))
-        ((eq (ffn-symb lit) 'not)
-         (member-term (fargn lit 1) cl))
-        (t (member-complement-term1 lit cl))))
+        (t
+
+; Before Version_8.4, in the case (eq (ffn-symb lit) 'not), we only checked
+; (member-term (fargn lit 1) cl).  But we found a case where lit was of the
+; form (not u) and cl contains (not (not u)), and we want to catch that case,
+; too.  This problem was evidenced as follows; after the fix, we get a more
+; appropriate result (NIL NIL).
+
+;   ACL2 !>(GUARD-CLAUSES '(FLOOR X Y)
+;                          NIL T
+;                          '((NOT (RATIONALP X))
+;                            (NOT (RATIONALP Y))
+;                            (NOT (NOT (EQL Y '0))))
+;                          (w state) NIL 'NEWV)
+;   ((((NOT (NOT (EQL Y '0)))
+;      (NOT (RATIONALP Y))
+;      (NOT (RATIONALP X))
+;      (NOT (EQL Y '0))))
+;    NIL)
+;   ACL2 !>
+
+; The term (NOT (NOT (EQL Y '0))) arises from clausify, specifically from a
+; call of call-stack under if-interp.  A long comment in call-stack explains
+; why we return (list 'not x), but not "simplify (not (not x)) to x".
+
+         (or (and (eq (ffn-symb lit) 'not)
+                  (member-term (fargn lit 1) cl))
+             (member-complement-term1 lit cl)))))
 
 )
 
