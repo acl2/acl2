@@ -15,6 +15,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/isar/defisar" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -724,6 +725,113 @@
              pointp
              point-kind
              point-on-montgomery-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-add-inverse-uniqueness
+  :short "Uniqueness of inverse (i.e. negation)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If adding a point @($P$) to a point @($Q$) yields the neutral point,
+     then each point is the inverse of the other.
+     This is a general group property:
+     we prove it based on group properties only,
+     without using the definitions of addition, negation, and zero.
+     We first prove a local lemma saying that,
+     and then we use the lemma to prove two rewrite rules
+     that may be enabled when needed."))
+
+  (local
+   (acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curve-primep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (montgomery-add point1 point2 curve)
+                         (montgomery-zero)))
+             (and (equal (montgomery-neg point2 curve)
+                         point1)
+                  (equal (montgomery-neg point1 curve)
+                         point2)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:curve-prime (montgomery-curve-primep curve)))
+     (:assume (:point1 (and (pointp point1)
+                            (point-on-montgomery-p point1 curve))))
+     (:assume (:point2 (and (pointp point2)
+                            (point-on-montgomery-p point2 curve))))
+     (:assume (:add-is-zero (equal (montgomery-add point1 point2 curve)
+                                   (montgomery-zero))))
+     (:derive (:add-neg-point1 (equal (montgomery-add
+                                       (montgomery-neg point1 curve)
+                                       (montgomery-add point1 point2 curve)
+                                       curve)
+                                      (montgomery-add
+                                       (montgomery-neg point1 curve)
+                                       (montgomery-zero)
+                                       curve)))
+      :from (:add-is-zero))
+     (:derive (:add-neg-point2 (equal (montgomery-add
+                                       (montgomery-add point1 point2 curve)
+                                       (montgomery-neg point2 curve)
+                                       curve)
+                                      (montgomery-add
+                                       (montgomery-zero)
+                                       (montgomery-neg point2 curve)
+                                       curve)))
+      :from (:add-is-zero))
+     (:derive (:point1-is-neg-point2 (equal (montgomery-neg point2 curve)
+                                            point1))
+      :from (:add-neg-point2 :point1 :point2
+             :associativity :closure :curve-prime))
+     (:derive (:point2-is-neg-point1 (equal (montgomery-neg point1 curve)
+                                            point2))
+      :from (:add-neg-point1 :point1 :point2
+             :associativity :closure :curve-prime)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:derive (:conclusion (and (equal (montgomery-neg point2 curve)
+                                       point1)
+                                (equal (montgomery-neg point1 curve)
+                                       point2)))
+      :from (:point1-is-neg-point2 :point2-is-neg-point1))
+     (:qed))))
+
+  (defruled montgomery-add-zero-left-is-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curve-primep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (equal (montgomery-add point1 point2 curve)
+                           (montgomery-zero))
+                    (equal point1
+                           (montgomery-neg point2 curve))))
+    :use lemma
+    :disable lemma)
+
+  (defruled montgomery-add-zero-right-is-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curve-primep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (equal (montgomery-add point1 point2 curve)
+                           (montgomery-zero))
+                    (equal point2
+                           (montgomery-neg point1 curve))))
+    :use lemma
+    :disable lemma))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
