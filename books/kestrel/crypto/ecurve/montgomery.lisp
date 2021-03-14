@@ -718,7 +718,12 @@
     :disable pfield::fep-of-neg
     :use (:instance pfield::fep-of-neg
           (x (point-finite->y point))
-          (p (montgomery-curve->p curve)))))
+          (p (montgomery-curve->p curve))))
+
+  (defrule montgomery-neg-of-zero
+    (equal (montgomery-neg (montgomery-zero) curve)
+           (montgomery-zero))
+    :enable montgomery-zero))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
