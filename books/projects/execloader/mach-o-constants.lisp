@@ -1,4 +1,4 @@
-; EL Library
+; EXLD Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -45,7 +45,7 @@
 
 ;; ==================================================================-
 
-(in-package "EL")
+(in-package "EXLD")
 (include-book "base")
 
 (local (xdoc::set-default-parents mach-o-reader))

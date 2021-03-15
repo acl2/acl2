@@ -2,6 +2,6 @@
 (set-deferred-ttag-notes t state)
 
 (ld "cert.acl2" :ld-missing-input-ok t)
-(in-package "EL")
+(in-package "EXLD")
 
 (reset-prehistory)

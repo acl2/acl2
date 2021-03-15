@@ -255,7 +255,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "el::execloader"
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
                              "Read and Parse ELF/Mach-O Binary Files"))
 
    (xdoc::p
@@ -641,6 +641,16 @@
    (xdoc::p
     "Some general XDOC topics about event macros have been added,
      which can be referenced by the user documentation of event macros.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "ELF reader now gets the contents of all the sections listed in
+    the headers of a given ELF binary. Also, the package name has been
+    changed from @('EL') to @('EXLD').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
