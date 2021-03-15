@@ -373,17 +373,7 @@
                                    (:free (a b) (,x.fix (cons a b))))
                           :in-theory (enable (:i repeat)))))))
 
-      ,@(and (not x.non-emptyp)
-             `((defthm ,nth-of-foo-fix
-                 (equal (nth n (,x.fix x))
-                        (if (< (nfix n) (len x))
-                            (,x.elt-fix (nth n x))
-                          nil))
-                 :hints (("goal"
-                          :induct (nth n x)
-                          :expand ((,x.fix x))
-                          :in-theory (enable nth len))))))
-
+      ;; Mihir M. mod: 6 lemmas are added below.
       ,@(and x.true-listp (not x.non-emptyp)
              `((defthm ,list-equiv-refines-foo-equiv
                  (implies (list-equiv x y) (,x.equiv x y))
@@ -396,7 +386,16 @@
                  :rule-classes :refinement)))
 
       ,@(and (not x.non-emptyp)
-             `((defthm ,foo-equiv-implies-foo-equiv-append-1
+             `((defthm ,nth-of-foo-fix
+                 (equal (nth n (,x.fix x))
+                        (if (< (nfix n) (len x))
+                            (,x.elt-fix (nth n x))
+                          nil))
+                 :hints (("goal"
+                          :induct (nth n x)
+                          :expand ((,x.fix x))
+                          :in-theory (enable nth len))))
+               (defthm ,foo-equiv-implies-foo-equiv-append-1
                  (implies (,x.equiv x x-equiv)
                           (,x.equiv (append x y)
                                     (append x-equiv y)))
@@ -409,7 +408,24 @@
                                     (append x y-equiv)))
                  :rule-classes (:congruence)
                  :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
-                          :induct (append x y)))))))))
+                          :induct (append x y))))
+               (defcong
+                 ,x.equiv
+                 ,x.equiv
+                 (nthcdr n l)
+                 2
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix nthcdr)
+                          :induct t
+                          :expand ((,x.fix l) (,x.fix l-equiv)))))
+               (defcong
+                 ,x.equiv
+                 ,x.equiv
+                 (take n l)
+                 2
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix take
+                                                    cons-equal default-car)
+                          :induct t
+                          :expand ((,x.fix l) (,x.fix l-equiv))))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))

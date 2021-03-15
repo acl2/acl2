@@ -1322,12 +1322,6 @@
   (("goal" :in-theory (e/d (fat32-filename-list-fix)
                            (take-of-too-many take-when-atom take-of-cons)))))
 
-(defcong
-  fat32-filename-list-equiv
-  fat32-filename-list-equiv
-  (nthcdr n l)
-  2)
-
 (defthm
   prefixp-of-fat32-filename-list-fix
   (implies (prefixp x y)
@@ -1372,14 +1366,6 @@
     :use ((:rewrite len-of-fat32-filename-list-fix)
           (:instance (:rewrite len-of-fat32-filename-list-fix)
                      (x x-equiv))))))
-
-(defcong
-  fat32-filename-list-equiv
-  fat32-filename-list-equiv (take n l)
-  2
-  :hints
-  (("goal" :in-theory (e/d (fat32-filename-list-equiv)
-                           (take-of-fat32-filename-list-fix)))))
 
 (defthmd car-of-last-of-fat32-filename-list-fix
   (equal (car (last (fat32-filename-list-fix x)))
