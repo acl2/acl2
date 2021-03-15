@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "all-logic-fns")
 (include-book "apply-fn-if-known")
 (include-book "auto-instance")
 (include-book "auto-termination")
