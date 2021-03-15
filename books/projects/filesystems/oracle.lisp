@@ -1563,6 +1563,133 @@
                   (consp (nth n queues))))
   :hints (("goal" :in-theory (enable nth cp-spec-3 nonempty-queues))))
 
+;; Move later.
+(defthm path-clear-of-frame->frame
+  (implies (path-clear path frame)
+           (path-clear path (frame->frame frame)))
+  :hints (("goal" :in-theory (enable frame->frame))))
+
+(assert-event
+ (b*
+     (((mv frame st)
+       (absfat-oracle-multi-step
+        (frame-with-root
+         '(("TMP        "
+            (D-E 0 0 0 0 0 0 0 0 0 0 0 0
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents
+             ("TICKET2 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . ""))
+             ("TICKET3 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . ""))
+             ("TICKET1 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . ""))))
+           ("VAR        "
+            (d-e 0 0 0 0 0 0 0 0 0 0 0 16
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents
+             ("TMP        "
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 16
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents)))))
+         nil)
+        '((:set-path "TMP        " "TICKET2 TXT")
+          :open (:set-count . 4294967296)
+          :pread :close
+          (:set-path "VAR        "
+                     "TMP        " "TICKET2 TXT")
+          :open :pwrite :close
+          (:set-path "TMP        " "TICKET3 TXT")
+          :open (:set-count . 4294967296)
+          :pread :close
+          (:set-path "VAR        "
+                     "TMP        " "TICKET3 TXT")
+          :open :pwrite :close
+          (:set-path "TMP        " "TICKET1 TXT")
+          :open (:set-count . 4294967296)
+          :pread :close
+          (:set-path "VAR        "
+                     "TMP        " "TICKET1 TXT")
+          :open
+          :pwrite :close)
+        (make-fat-st))))
+   (and
+    (equal
+     frame
+     '((0
+        (path)
+        (dir
+         ("TMP        "
+          (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+          (contents
+           ("TICKET2 TXT"
+            (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents . ""))
+           ("TICKET3 TXT"
+            (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents . ""))
+           ("TICKET1 TXT"
+            (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents . ""))))
+         ("VAR        "
+          (d-e 0 0 0 0 0 0 0 0 0 0 0 16
+               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+          (contents
+           ("TMP        "
+            (d-e 0 0 0 0 0 0 0 0 0 0 0 16
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+            (contents 1)))))
+        (src . 0))
+       (1
+        (path "VAR        " "TMP        ")
+        (dir ("TICKET2 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . ""))
+             ("TICKET3 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . ""))
+             ("TICKET1 TXT"
+              (d-e 0 0 0 0 0 0 0 0 0 0 0 0
+                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+              (contents . "")))
+        (src . 0))))
+    (equal st
+           '((fd . 0)
+             (buf . "")
+             (offset . 0)
+             (count . 4294967296)
+             (retval . 0)
+             (errno . 0)
+             (PATH "VAR        "
+                   "TMP        " "TICKET1 TXT")
+             (stat (st_size . 0))
+             (statfs (f_type . 0)
+                     (f_bsize . 0)
+                     (f_blocks . 0)
+                     (f_bfree . 0)
+                     (f_bavail . 0)
+                     (f_files . 0)
+                     (f_ffree . 0)
+                     (f_fsid . 0)
+                     (f_namelen . 72))
+             (dirp . 0)
+             (fd-table)
+             (file-table)
+             (dir-stream-table)
+             (oracle))))))
+
 ;; (thm
 ;;  (implies
 ;;   (and (consp syscall-sym-list)
@@ -1610,7 +1737,9 @@
 ;;           t
 ;;           :in-theory
 ;;           (e/d (nth cp-spec-3 absfat-oracle-multi-step
-;;                     absfat-oracle-single-step)
+;;                     absfat-oracle-single-step
+;;                     abs-open abs-pread abs-pwrite abs-close
+;;                     hifat-open hifat-close)
 ;;            ((:linear lofat-to-hifat-helper-correctness-1)
 ;;             (:rewrite
 ;;              lofat-to-hifat-helper-of-place-contents)
@@ -1636,9 +1765,58 @@
 ;;             (:rewrite abs-find-file-src-correctness-1)
 ;;             (:rewrite member-of-abs-addrs-when-natp . 2)))
 ;;           :expand
-;;           (:free
-;;            (frame syscall-sym-list st)
-;;            (absfat-oracle-multi-step frame syscall-sym-list st)))))
+;;           ((:free
+;;             (frame st)
+;;             (absfat-oracle-multi-step frame syscall-sym-list st))
+;;            (:free
+;;             (frame st)
+;;             (absfat-oracle-multi-step frame (cdr syscall-sym-list) st))
+;;            (:free
+;;             (frame st)
+;;             (absfat-oracle-multi-step frame (cddr syscall-sym-list) st))))))
+
+;; (defund abs-pwrit1 (fd buf offset frame fd-table file-table)
+;;   (declare (xargs :guard (and (frame-p frame) (fd-table-p fd-table) (file-table-p file-table)
+;;                               (natp fd) (stringp buf) (natp offset) (consp (assoc-equal 0 frame)))
+;;                   :guard-hints
+;;                   (("goal"
+;;                     :do-not-induct t
+;;                     :in-theory (e/d (len-of-insert-text abs-no-dups-file-p
+;;                                                         abs-no-dups-p abs-pwrite)
+;;                                     (unsigned-byte-p))
+;;                     :expand (:with m1-file-contents-fix-when-m1-file-contents-p
+;;                                    (:free (oldtext)
+;;                                           (m1-file-contents-fix
+;;                                            (implode (insert-text oldtext offset buf)))))))))
+;;   (b*
+;;       ((fd-table-entry (assoc-equal fd fd-table))
+;;        ((unless (consp fd-table-entry)) (mv frame -1 *ebadf*))
+;;        (file-table-entry (assoc-equal (cdr fd-table-entry) file-table))
+;;        ((unless (consp file-table-entry)) (mv frame -1 *ebadf*))
+;;        ((unless (unsigned-byte-p 32 (+ offset (length buf)))) (mv frame -1 *enospc*))
+;;        (path (file-table-element->fid (cdr file-table-entry)))
+;;        ((unless (consp path)) (mv frame -1 *enoent*))
+;;        (dirname (dirname path))
+;;        (frame (partial-collapse frame dirname))
+;;        ;; After partial-collapse, either the parent directory is there in one
+;;        ;; variable, or it isn't there at all.
+;;        ((mv parent-dir error-code) (abs-find-file frame dirname))
+;;        ((when (and (consp dirname) (not (zp error-code))
+;;                    (not (equal error-code *enoent*))))
+;;         (mv frame -1 *enotdir*))
+;;        ((when (and (consp dirname) (not (zp error-code))))
+;;         (mv frame -1 *enoent*))
+;;        ((when (and (consp dirname) (m1-regular-file-p parent-dir)))
+;;         (mv frame -1 *enotdir*))
+;;        (src (abs-find-file-src frame dirname))
+;;        ((mv frame retval errno)
+;;         (abs-pwrite fd buf offset frame fd-table file-table))
+;;        ((unless (fat32-filename-list-equiv
+;;                  dirname
+;;                  (frame-val->path (cdr (assoc-equal src frame)))))
+;;         (mv frame retval errno))
+;;        (frame (collapse-this frame src)))
+;;     (mv frame retval errno)))
 
 ;; (thm (implies(and
 ;;               (cp-spec-3 queues dst)

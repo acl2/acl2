@@ -3938,16 +3938,28 @@
   :rule-classes
   :congruence)
 
-;; Probably tricky to get a refinement relationship (in the defrefinement
-;; sense) between literally absfat-equiv and hifat-equiv. But we can still have
-;; some kind of substitute...
+;; It's probably tricky to get a refinement relationship (in the defrefinement
+;; sense) between absfat-equiv and hifat-equiv. But we can still have some kind
+;; of substitute...
+;;
+;; This theorem previously needed a :use hint of an
+;; :equivalence rule for its second corollary. This bothered me, so I asked on
+;; Slack
+;; (https://acl2community.slack.com/archives/CDZ1QA8P6/p1615757997080000), and
+;; Matt explained that while (absfat-equiv abs-file-alist1 abs-file-alist2) and
+;; (absfat-equiv abs-file-alist1 abs-file-alist2) would be normalised by ACL2
+;; to the same term (in order of term-order) were they on the type-alist, in
+;; this case of this particular corollary and its subgoal, they are not. This
+;; can be remedied by initially proving the lemma in terms of iff, and having
+;; equal in the corollaries - because iff forces a case-split and equal does
+;; not.
 (defthm
   hifat-equiv-when-absfat-equiv
   (implies (m1-file-alist-p (abs-fs-fix abs-file-alist1))
-           (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
-                  (and (hifat-equiv (abs-fs-fix abs-file-alist1)
-                                    (abs-fs-fix abs-file-alist2))
-                       (m1-file-alist-p (abs-fs-fix abs-file-alist2)))))
+           (iff (absfat-equiv abs-file-alist1 abs-file-alist2)
+                (and (hifat-equiv (abs-fs-fix abs-file-alist1)
+                                  (abs-fs-fix abs-file-alist2))
+                     (m1-file-alist-p (abs-fs-fix abs-file-alist2)))))
   :hints
   (("goal"
     :in-theory
@@ -3957,18 +3969,20 @@
     :use absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-lemma-1
     :do-not-induct t))
   :rule-classes
-  (:rewrite
+  ((:rewrite
+    :corollary
+    (implies (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+             (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
+                    (and (hifat-equiv (abs-fs-fix abs-file-alist1)
+                                      (abs-fs-fix abs-file-alist2))
+                         (m1-file-alist-p (abs-fs-fix abs-file-alist2))))))
    (:rewrite
     :corollary
     (implies (m1-file-alist-p (abs-fs-fix abs-file-alist1))
              (equal (absfat-equiv abs-file-alist2 abs-file-alist1)
                     (and (hifat-equiv (abs-fs-fix abs-file-alist2)
                                       (abs-fs-fix abs-file-alist1))
-                         (m1-file-alist-p (abs-fs-fix abs-file-alist2)))))
-    :hints (("goal" :do-not-induct t
-             :use (:instance absfat-equiv-is-an-equivalence
-                             (x abs-file-alist2)
-                             (y abs-file-alist1)))))))
+                         (m1-file-alist-p (abs-fs-fix abs-file-alist2))))))))
 
 (defund
   names-at (fs relpath)

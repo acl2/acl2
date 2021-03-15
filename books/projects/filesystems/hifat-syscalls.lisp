@@ -58,6 +58,22 @@
   :hints (("goal" :in-theory (enable dirname)
            :expand ((len (cdr path)) (len path)))))
 
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/prefixp" :dir :system))
+
+  (defthm prefixp-of-dirname
+    (prefixp (dirname path)
+             (fat32-filename-list-fix path))
+    :hints (("goal" :in-theory (enable dirname)))
+    :rule-classes
+    ((:rewrite
+      :corollary
+      (fat32-filename-list-prefixp (dirname path) path)
+      :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp-alt))))
+     :rewrite)))
+
 (defund basename (path)
   (declare (xargs :guard (fat32-filename-list-p path)
                   :guard-debug t))
