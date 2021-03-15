@@ -949,7 +949,8 @@ constructed separately.)</p>"
                                (x vl-plainarg-p)
                                (port-type vl-datatype-p)
                                (type-err vl-maybe-type-error-p)
-                               (ss vl-scopestack-p))
+                               (ss vl-scopestack-p)
+                               (scopes vl-elabscopes-p))
   :guard (vl-plainarg->expr x)
   :returns (warnings vl-warninglist-p)
   (b* (((unless type-err) nil)
@@ -958,19 +959,25 @@ constructed separately.)</p>"
     (vl-type-error-case type-err
       :trunc/extend (b* (((when (vl-expr-is-extensional expr))
                           ;; Don't warn about extints.
-                          nil))
-                      (fatal :type :vl-port-size-mismatch
-                             :msg "~s0ort ~s1 has size ~x2, but its connection expression ~a3 has size ~x4"
-                             :args (list (case (vl-maybe-direction-fix portdir)
-                                           ;; ugly
-                                           ((nil) "P")
-                                           (:vl-input "Input p")
-                                           (:vl-output "Output p")
-                                           (otherwise "Inout p"))
-                                         (string-fix portname)
-                                         type-err.lhs-size
-                                         expr
-                                         type-err.rhs-selfsize)))
+                          nil)
+                         (type (if (and (eql type-err.rhs-selfsize 32)
+                                        (< type-err.lhs-size 32)
+                                        (consp (vl-collect-unsized-ints
+                                                (vl-expr-interesting-size-atoms expr) ss scopes)))
+                                   :vl-port-size-mismatch-minor
+                                 :vl-port-size-mismatch)))
+                      (warn :type type
+                            :msg "~s0ort ~s1 has size ~x2, but its connection expression ~a3 has size ~x4"
+                            :args (list (case (vl-maybe-direction-fix portdir)
+                                          ;; ugly
+                                          ((nil) "P")
+                                          (:vl-input "Input p")
+                                          (:vl-output "Output p")
+                                          (otherwise "Inout p"))
+                                        (string-fix portname)
+                                        type-err.lhs-size
+                                        expr
+                                        type-err.rhs-selfsize)))
       :otherwise (vl-type-error-basic-warn expr nil type-err (vl-idexpr portname) port-type ss))))
        
 
@@ -1032,7 +1039,7 @@ constructed separately.)</p>"
              nil
            port-type)
          ss scopes :compattype :equiv))
-       ((wvmv vttree) (vl-port-type-err-warn portname (vl-direction-fix portdir) x port-type type-err ss))
+       ((wvmv vttree) (vl-port-type-err-warn portname (vl-direction-fix portdir) x port-type type-err ss scopes))
 
        ((unless x-type) (fail vttree))
        ((mv err multi x-size ?port-size)
@@ -1384,7 +1391,7 @@ constructed separately.)</p>"
              :replicatedp (and arraysize t))))
 
        ((wvmv vttree)
-        (vl-port-type-err-warn y.name x.dir x y-type type-err ss))
+        (vl-port-type-err-warn y.name x.dir x y-type type-err ss scopes))
 
        ((unless x-type) (fail vttree))
        ((mv err ?multi ?x-size ?y-size)
