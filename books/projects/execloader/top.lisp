@@ -1,4 +1,4 @@
-; EL (execloader) Library
+; EXLD (execloader) Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -36,7 +36,7 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@gmail.com>
 
-(in-package "EL")
+(in-package "EXLD")
 (include-book "elf-reader")
 (include-book "mach-o-reader")
 
@@ -44,7 +44,20 @@
 ;; library ([books]/projects/x86isa/tools/execution/exec-loaders) and
 ;; modified them a little. Now they are their own stand-alone library.
 
+;; ----------------------------------------------------------------------
+
 (defxdoc execloader
   :parents (acl2::software-verification acl2::projects)
   :short "Read in some sections of ELF and Mach-O format files into stobjs")
 
+(xdoc::order-subtopics
+ execloader
+ (elf-reader mach-o-reader))
+
+(xdoc::order-subtopics
+ elf-reader
+ (populate-elf
+  get-symtab-entries
+  get-label-addresses))
+
+;; ----------------------------------------------------------------------

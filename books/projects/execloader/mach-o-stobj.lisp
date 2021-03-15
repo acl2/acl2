@@ -1,4 +1,4 @@
-; EL Library
+; EXLD Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -40,7 +40,7 @@
 ; [books]/projects/x86isa/tools/execution/exec-loaders, but now it's
 ; in a stand-alone library of its own.
 
-(in-package "EL")
+(in-package "EXLD")
 
 (include-book "mach-o-constants")
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)

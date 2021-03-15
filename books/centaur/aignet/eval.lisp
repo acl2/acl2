@@ -1025,7 +1025,6 @@ literal:</p>
              (equal (aignet-record-vals vals invals (take k regvals) aignet)
                     (aignet-record-vals vals invals regvals aignet)))))
 
-
 (local (defthm bit-list-fix-of-true-list-fix
          (Equal (bit-list-fix (true-list-fix x))
                 (bit-list-fix x))
@@ -1196,10 +1195,14 @@ literal:</p>
                     (bit-list-equiv (take m x)
                                     (take m y)))
            :hints (("goal" :use ((:instance take-of-bit-list-fix
-                                  (n m) (x (take n x)))
+                                            (n m) (x (take n x)))
                                  (:instance take-of-bit-list-fix
-                                  (n m) (x (take n y))))
-                    :in-theory (disable take-of-bit-list-fix)))))
+                                            (n m) (x (take n y))))
+                    :in-theory (disable take-of-bit-list-fix
+                                        (:congruence acl2::bit-equiv-implies-equal-bfix-1)
+                                        (:congruence bit-list-equiv-implies-bit-list-equiv-take-2)
+                                        (:congruence iff-implies-equal-not)
+                                        (:congruence acl2::nat-equiv-implies-equal-take-1))))))
 
   (local (in-theory (disable acl2::zp-when-integerp
                              nth-without-early-out

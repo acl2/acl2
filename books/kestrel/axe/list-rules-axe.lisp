@@ -87,3 +87,20 @@
            (equal (consp x)
                   (< 0 free)))
   :hints (("Goal" :in-theory (e/d (len) ()))))
+
+;mostly for axe
+(defthmd acl2::equal-of-cons-when-quotep
+  (implies (syntaxp (quotep k))
+           (equal (equal k (cons x y))
+                  (and (consp k)
+                       (equal x (car k))
+                       (equal y (cdr k))))))
+
+;or just turn equals around?
+;only needed for axe
+(defthmd acl2::equal-of-cons-when-quotep-alt
+  (implies (syntaxp (quotep k))
+           (equal (equal (cons x y) k)
+                  (and (consp k)
+                       (equal x (car k))
+                       (equal y (cdr k))))))

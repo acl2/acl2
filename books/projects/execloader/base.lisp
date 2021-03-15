@@ -1,4 +1,4 @@
-; EL (execloader) Library
+; EXLD (execloader) Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -42,7 +42,7 @@
 
 ;; ----------------------------------------------------------------------
 
-(in-package "EL")
+(in-package "EXLD")
 (include-book "std/lists/take" :dir :system)
 (include-book "std/lists/nthcdr" :dir :system)
 (include-book "kestrel/fty/byte-list" :dir :system)
@@ -53,6 +53,7 @@
 ;; ----------------------------------------------------------------------
 
 (define bytes->charlist ((bytes byte-listp))
+  :short "Convert a list of bytes to a list of characters."
   :returns (lst character-listp :hyp (byte-listp bytes))
   (if (endp bytes)
       nil
@@ -60,6 +61,7 @@
           (bytes->charlist (cdr bytes)))))
 
 (define charlist->bytes ((charlist character-listp))
+  :short "Convert a list of characters to a list of bytes."
   :returns (bl byte-listp :hyp :guard)
   :prepwork ((local (in-theory (e/d (acl2::bytep) ()))))
   (if (endp charlist)
@@ -72,16 +74,21 @@
              (equal (len bl) (len charlist)))))
 
 (define string->bytes ((str stringp))
+  :short "Convert a string to a list of bytes."
   :returns (bl byte-listp :hyp :guard
                :hints (("Goal"
                         :in-theory (e/d () (str::coerce-to-list-removal)))))
   (charlist->bytes (coerce str 'LIST)))
 
 (define bytes->string ((bytes byte-listp))
+  :short "Convert a list of bytes to a string."
   :returns (str stringp :hyp :guard)
   (coerce (bytes->charlist bytes) 'STRING))
 
 (define take-till-zero ((bytes byte-listp))
+  :short "Return all initial elements of @('bytes') until a @('0')
+  element is encountered or the end of @('bytes') is reached,
+  whichever happens first."
   :returns (bs byte-listp :hyp :guard)
   (if (endp bytes)
       nil
@@ -92,7 +99,8 @@
 ;; ----------------------------------------------------------------------
 
 (define merge-bytes ((bytes byte-listp))
-  :short "Concatenates @('bytes'), least-significant first, to form a single natural number"
+  :short "Concatenates @('bytes') (least-significant byte appears
+  first) to form a single natural number"
   :returns (merged natp :rule-classes :type-prescription)
   (bitops::merge-unsigneds 8 (acl2::reverse bytes))
   ///
@@ -103,7 +111,7 @@
 
 (define split-bytes ((n natp)
                      (bytes byte-listp))
-  :short "Split @('bytes') into two lists, where first part has @('n') elements"  
+  :short "Split @('bytes') into two lists, where first part has @('n') elements"
   :returns (mv (one byte-listp :hyp (byte-listp bytes))
                (two byte-listp :hyp (byte-listp bytes)))
   (b* ((rest (nthcdr n bytes))
@@ -122,14 +130,15 @@
 
 (define merge-first-split-bytes ((n natp)
                                  (bytes byte-listp))
-  :short "Merge first @('n') bytes (least-significant first) from @('bytes'); return remaining bytes"
+  :short "Merge first @('n') bytes (least-significant byte first) from
+  @('bytes'); return remaining bytes"
   :returns (mv (merged-num natp :rule-classes :type-prescription)
                (rest byte-listp :hyp (byte-listp bytes)))
   (b* (((mv first rest) (split-bytes n bytes)))
     (mv (merge-bytes first) rest))
   ///
   (local (in-theory (e/d () (unsigned-byte-p))))
-  
+
   (defret width-of-mv-nth-0-<fn>
     (implies (and (equal m (* 8 n)) (natp n))
              (unsigned-byte-p m merged-num))
@@ -141,7 +150,7 @@
              :in-theory (e/d ()
                              (len-of-mv-nth-0-split-bytes
                               width-of-merge-bytes)))))
-                              
+
   (defret len-of-mv-nth-1-<fn>
     (equal (len rest) (nfix (- (len bytes) (nfix n))))))
 

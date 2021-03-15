@@ -65,74 +65,59 @@
 ;; elf stobj:
 ;;----------------------------------------------------------------------
 
-(defun elf-load-text-section (el::elf x86)  
-  (declare (xargs :stobjs (el::elf x86)))
-  (b* ((text-section-addr (el::@text-addr el::elf))
-       (text-section-bytes (el::@text-bytes el::elf))
-       (- (if (equal text-section-bytes nil)
-              (cw "~%Text section empty.~%~%")
-            t))
-       ((when (or (not (canonical-address-p text-section-addr))
-                  (not (canonical-address-p (+ text-section-addr
-                                               (len text-section-bytes))))))
-        (mv (cons 'text-section-addr text-section-addr) x86)))
-    (write-bytes-to-memory text-section-addr text-section-bytes x86)))
+(define load-elf-sections ((sections exld::section-info-list-p)
+                           x86)
+  :returns (mv flg
+               (new-x86 x86p :hyp (x86p x86)))
+  (b* (((when (atom sections)) (mv nil x86))
+       ((mv flg x86) (load-elf-sections (cdr sections) x86))
+       ((exld::section-info section) (car sections))
+       ((exld::elf-section-header header) section.header)
+       ((unless section.bytes)
+        (prog2$
+         (cw "~%Empty ~s0 section! Nothing loaded.~%" header.name-str)
+         (mv flg x86))))
+    ;; Source: https://refspecs.linuxfoundation.org/elf/elf.pdf
+    ;; Section Attribute Flags, sh_flags
 
-(defun elf-load-data-section (el::elf x86)
-  (declare (xargs :stobjs (el::elf x86)))
-  (b* ((data-section-addr (el::@data-addr el::elf))
-       (data-section-bytes (el::@data-bytes el::elf))
-       (- (if (equal data-section-bytes nil)
-              (cw "~%Data section empty.~%~%")
-            t))
-       ((when (or (not (canonical-address-p data-section-addr))
-                  (not (canonical-address-p (+ (len
-                                                data-section-bytes)
-                                               data-section-addr)))))
-        (mv (cons 'data-section-addr data-section-addr) x86)))
-    (write-bytes-to-memory data-section-addr data-section-bytes x86)))
+    ;; SHF_WRITE 0x1
+    ;; The section contains data that should be writable during
+    ;; process execution.
 
-(defun elf-load-bss-section (el::elf x86)
-  (declare (xargs :stobjs (el::elf x86)))
-  (b* ((bss-section-addr (el::@bss-addr el::elf))
-       (bss-section-bytes (el::@bss-bytes el::elf))
-       (- (if (equal bss-section-bytes nil)
-              (cw "~%Bss section empty.~%~%")
-            t))
-       ((when (or (not (canonical-address-p bss-section-addr))
-                  (not (canonical-address-p (+ (len
-                                                bss-section-bytes)
-                                               bss-section-addr)))))
-        (mv (cons 'bss-section-addr bss-section-addr) x86)))
-    (write-bytes-to-memory bss-section-addr bss-section-bytes x86)))
+    ;; SHF_ALLOC 0x2
+    ;; The section occupies memory during process execution. Some
+    ;; control sections do not reside in the memory image of an
+    ;; object file; this attribute is off for those sections.
 
-(defun elf-load-rodata-section (el::elf x86)
-  (declare (xargs :stobjs (el::elf x86)))
-  (b* ((rodata-section-addr (el::@rodata-addr el::elf))
-       (rodata-section-bytes (el::@rodata-bytes el::elf))
-       (- (if (equal rodata-section-bytes nil)
-              (cw "~%Rodata section empty.~%~%")
-            t))
-       ((when (or (not (canonical-address-p rodata-section-addr))
-                  (not (canonical-address-p (+ (len
-                                                rodata-section-bytes)
-                                               rodata-section-addr)))))
-        (mv (cons 'rodata-section-addr rodata-section-addr) x86)))
-    (write-bytes-to-memory rodata-section-addr rodata-section-bytes x86)))
+    ;; SHF_EXECINSTR 0x4
+    ;; The section contains executable machine instructions.
+
+    ;; SHF_MASKPROC 0xf0000000
+    ;; All bits included in this mask are reserved for
+    ;; processor-specific semantics.
+    (if (logbitp 1 header.flags) ;; SHF_ALLOC
+        (if (and (canonical-address-p header.addr)
+                 (canonical-address-p (+ (len section.bytes) header.addr)))
+            (write-bytes-to-memory header.addr section.bytes x86)
+          (mv (cons header.name-str flg) x86))
+      (prog2$
+       (cw "~%Section ~s0 is not marked as SHF_ALLOC in its ELF section header, ~
+ so we don't allocate memory for it in the RV model.~%" header.name-str)
+       (mv nil x86)))))
 
 ;;----------------------------------------------------------------------
 ;; Functions to load the x86 stobj based on the information in the
 ;; mach-o stobj:
 ;; ----------------------------------------------------------------------
 
-;; (el::populate-mach-o-contents <file-byte-list> mach-o state)
+;; (exld::populate-mach-o-contents <file-byte-list> mach-o state)
 
 ;; (load-qwords-into-physical-memory-list *1-gig-page-tables* x86)
 
-(defun mach-o-load-text-section (el::mach-o x86)
-  (declare (xargs :stobjs (el::mach-o x86)))
-  (b* ((text-sec-load-addr (el::@TEXT-text-section-addr el::mach-o))
-       (text-section-bytes (el::@TEXT-text-section-bytes el::mach-o))
+(defun mach-o-load-text-section (exld::mach-o x86)
+  (declare (xargs :stobjs (exld::mach-o x86)))
+  (b* ((text-sec-load-addr (exld::@TEXT-text-section-addr exld::mach-o))
+       (text-section-bytes (exld::@TEXT-text-section-bytes exld::mach-o))
        (- (if (equal text-section-bytes nil)
               (cw "~%Text section empty.~%~%")
             t))
@@ -142,10 +127,10 @@
         (mv (cons 'text-sec-load-addr text-sec-load-addr) x86)))
     (write-bytes-to-memory text-sec-load-addr text-section-bytes x86)))
 
-(defun mach-o-load-data-section (el::mach-o x86)
-  (declare (xargs :stobjs (el::mach-o x86)))
-  (b* ((data-sec-load-addr (el::@DATA-data-section-addr el::mach-o))
-       (data-section-bytes (el::@DATA-data-section-bytes el::mach-o))
+(defun mach-o-load-data-section (exld::mach-o x86)
+  (declare (xargs :stobjs (exld::mach-o x86)))
+  (b* ((data-sec-load-addr (exld::@DATA-data-section-addr exld::mach-o))
+       (data-section-bytes (exld::@DATA-data-section-bytes exld::mach-o))
        (- (if (equal data-section-bytes nil)
               (cw "~%Data section empty.~%~%")
             t))
@@ -173,15 +158,15 @@
        (x86 (!ctri *cr3* #x0 x86)))
   x86)
 
-(mach-o-load-text-section el::mach-o x86)
+(mach-o-load-text-section exld::mach-o x86)
 
 ||#
 
 ;; ----------------------------------------------------------------------
 
 (define binary-file-load-fn ((filename stringp)
-                             el::elf
-                             el::mach-o x86 state
+                             exld::elf
+                             exld::mach-o x86 state
                              &key
                              ((elf booleanp) 't)
                              ((mach-o booleanp) 'nil))
@@ -191,45 +176,40 @@
   :long "<p>The following macro makes it convenient to call this
   function to load a program:</p>
 <code> (binary-file-load \"fib.o\" :elf t) ;; or :mach-o t</code>"
-  :returns (mv alst
-               (new-elf el::good-elf-p :hyp (el::elfp el::good-elf-p))
-               (new-mach-o el::good-mach-o-p :hyp (el::mach-op el::good-mach-o-p))
+  :returns (mv (new-elf exld::good-elf-p :hyp (exld::elfp exld::good-elf-p))
+               (new-mach-o exld::good-mach-o-p :hyp (exld::mach-op exld::good-mach-o-p))
                (new-x86 x86p :hyp (x86p x86))
                state)
   (cond
    ((and elf (not mach-o))
-    (b* (((mv header section-headers el::elf state)
-          (el::populate-elf filename el::elf state))
-         ((mv flg0 x86)
-          (elf-load-text-section el::elf x86))
-         ((mv flg1 x86)
-          (elf-load-data-section el::elf x86))
-         ((when (or flg0 flg1))
+    (b* (((mv exld::elf state)
+          (exld::populate-elf filename exld::elf state))
+         ((mv flg x86)
+          (load-elf-sections (exld::@sections exld::elf) x86))
+         ((when flg)
           (prog2$
            (raise "[ELF]: Error encountered while loading sections in the x86 model's memory!~%")
-           (mv t el::elf el::mach-o x86 state))))
-      (mv (list (cons :HEADER header)
-                (cons :SECTION-HEADERS section-headers))
-          el::elf el::mach-o x86 state)))
+           (mv exld::elf exld::mach-o x86 state))))
+      (mv exld::elf exld::mach-o x86 state)))
    ((and mach-o (not elf))
-    (b* (((mv alst el::mach-o state)
-          (el::populate-mach-o filename el::mach-o state))
+    (b* (((mv ?alst exld::mach-o state)
+          (exld::populate-mach-o filename exld::mach-o state))
          ((mv flg0 x86)
-          (mach-o-load-text-section el::mach-o x86))
+          (mach-o-load-text-section exld::mach-o x86))
          ((mv flg1 x86)
-          (mach-o-load-data-section el::mach-o x86))
+          (mach-o-load-data-section exld::mach-o x86))
          ((when (or flg0 flg1))
           (prog2$
            (raise "[Mach-O]: Error encountered while loading sections in the x86 model's memory!~%")
-           (mv t el::elf el::mach-o x86 state))))
-      (mv alst el::elf el::mach-o x86 state)))
+           (mv exld::elf exld::mach-o x86 state))))
+      (mv exld::elf exld::mach-o x86 state)))
    (t
     (prog2$
      (raise "~%We support only ELF and Mach-O files for now! Use this function with either :elf t ~
  or :mach-o t.~%")
-     (mv nil el::elf el::mach-o x86 state)))))
-  
+     (mv exld::elf exld::mach-o x86 state)))))
+
 (defmacro binary-file-load (filename &key (elf 't) (mach-o 'nil))
-  `(binary-file-load-fn ,filename el::elf el::mach-o x86 state :elf ,elf :mach-o ,mach-o))
+  `(binary-file-load-fn ,filename exld::elf exld::mach-o x86 state :elf ,elf :mach-o ,mach-o))
 
 ;; ----------------------------------------------------------------------

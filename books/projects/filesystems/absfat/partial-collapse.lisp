@@ -136,8 +136,7 @@
         (frame-val->src
          (cdr
           (assoc-equal
-           (1st-complete-under-path (frame->frame frame)
-                                    pathname)
+           head-index
            (frame->frame frame))))))
     (if
         (zp src)

@@ -5,7 +5,7 @@
 (include-book "centaur/fty/portcullis" :dir :system)
 (include-book "centaur/bitops/portcullis" :dir :system)
 
-(defpkg "EL"
+(defpkg "EXLD"
   (union-eq
    '(
      binary-logand
@@ -42,8 +42,8 @@
              std::*std-exports*             
              *common-lisp-symbols-from-main-lisp-package*)))
 
-#!EL
-(defconst *el-exports*
+#!EXLD
+(defconst *exld-exports*
   '(elf
     populate-elf
     mach-o

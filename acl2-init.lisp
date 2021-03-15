@@ -1971,10 +1971,12 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; notes say that "command-line option "--tls-limit" can be used to alter the
 ; maximum number of thread-local symbols from its default of 4096".  We chose
 ; 8192 because it was sufficient for the book above, but perhaps it can be
-; increased significantly more without bad effect (not sure).
+; increased significantly more without bad effect (not sure).  But then in
+; March 2021, on a Mac, that same book again failed with the same error; so we
+; doubled the tls-limit.
 
-         "~s --tls-limit 8192 --dynamic-space-size ~s --control-stack-size 64 ~
-          --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
+         "~s --tls-limit 16384 --dynamic-space-size ~s --control-stack-size ~
+          64 --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
           --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
          prog
          *sbcl-dynamic-space-size*
