@@ -139,10 +139,10 @@
   :hints (("Goal" :in-theory (e/d (expt)
                                   ()))))
 
-;strengthen?
-(defthm expt-integer-hack
-  (implies (posp n)
-           (integerp (* 1/2 (expt 2 n))))
+(defthm integerp-of-*-of-1/2-and-expt-2
+  (implies (integerp n)
+           (equal (integerp (* 1/2 (expt 2 n)))
+                  (< 0 n)))
   :hints (("Goal" :in-theory (e/d (expt)
                                   ()))))
 
