@@ -21,6 +21,7 @@
       (list n x y)
     (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y))))
 
+;; todo: rephrase using take?
 ;; ;could also phrase this using clear-nth
 (defthm equal-of-update-nth
   (implies (and (natp n)
@@ -60,13 +61,6 @@
                   (cons (nth n x) (FINALCDR X))))
   :hints (("Goal" :in-theory (enable))))
 
-(defthm update-nth-0-equal-rewrite
-  (equal (EQUAL (UPDATE-NTH 0 v1 lst)
-                (cons v2 rst))
-         (and (equal v1 v2)
-              (equal (cdr lst)
-                     rst))))
-
 (DEFTHM UPDATE-NTH-WITH-LAST-VAL-gen
   (IMPLIES (AND; (SYNTAXP (AND (QUOTEP N)))
                 (EQUAL (+ N 1) (LEN LST))
@@ -104,17 +98,3 @@
   (implies (equal y (nthcdr n x))
            (equal (equal (nth n x) (car y))
                   t)))
-
-(defthm no-duplicatesp-equal-of-cons-no-split
-  (implies (not (member-equal a x))
-           (equal (no-duplicatesp-equal (cons a x))
-                  (no-duplicatesp-equal x)))
-  :hints (("Goal" :in-theory (enable ;no-duplicatesp-equal-of-cons
-                              ))))
-
-(defthm equal-of-update-nth-same
-  (implies (natp n)
-           (equal (equal x (update-nth n val x))
-                  (and (< n (len x))
-                       (equal val (nth n x)))))
-  :hints (("Goal" :in-theory (enable update-nth))))

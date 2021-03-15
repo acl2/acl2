@@ -834,7 +834,6 @@
           (:rewrite abs-file-contents-p-when-m1-file-contents-p)
           (:rewrite m1-file-contents-p-correctness-1)
           (:definition member-equal)
-          (:rewrite abs-addrs-of-ctx-app-1-lemma-4)
           (:definition assoc-equal)
           (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
           (:type-prescription abs-directory-file-p-when-m1-file-p-lemma-1)))
@@ -871,7 +870,6 @@
                (:rewrite abs-file-contents-p-when-m1-file-contents-p)
                (:rewrite m1-file-contents-p-correctness-1)
                (:definition member-equal)
-               (:rewrite abs-addrs-of-ctx-app-1-lemma-4)
                (:definition assoc-equal)
                (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
                (:rewrite abs-file-alist-p-correctness-1)))
@@ -1131,38 +1129,7 @@
               (collapse (frame-with-root root2 frame))))))))
 
 (defthm
-  collapse-congruence-lemma-4
-  (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
-                (m1-file-alist-p (abs-fs-fix abs-file-alist1)))
-           (and
-            (equal (abs-addrs
-                    (abs-fs-fix abs-file-alist2))
-                   nil)
-            (abs-complete (abs-fs-fix abs-file-alist2))))
-  :hints
-  (("goal"
-    :in-theory (e/d (absfat-equiv
-                     abs-separate-of-frame->frame-of-collapse-this-lemma-10)
-                    (abs-addrs-when-absfat-equiv-lemma-1))
-    :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
-                     (abs-file-alist1 (abs-fs-fix abs-file-alist1))
-                     (abs-file-alist2 (abs-fs-fix abs-file-alist2)))
-          (:instance abs-addrs-when-absfat-equiv-lemma-1
-                     (abs-file-alist1 (abs-fs-fix abs-file-alist2))
-                     (abs-file-alist2 (abs-fs-fix abs-file-alist1))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
-                  (m1-file-alist-p (abs-fs-fix abs-file-alist1))
-                  (abs-fs-p abs-file-alist2))
-             (and
-              (equal (abs-addrs abs-file-alist2) nil)
-              (abs-complete abs-file-alist2))))))
-
-(defthm
-  collapse-congruence-lemma-5
+  collapse-congruence-lemma-2
   (implies (and (consp (assoc-equal x frame))
                 (absfat-equiv (frame-val->dir (cdr (assoc-equal x frame)))
                               (frame-val->dir val)))
@@ -5532,9 +5499,14 @@
     (("goal"
       :in-theory
       (e/d
-       (absfat-equiv-upto-n (:rewrite 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)
-                            (:rewrite 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-23)))
-      :induct (dec-induct n)))))
+       (absfat-equiv-upto-n
+        (:rewrite
+         1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)
+        (:rewrite
+         1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-23))
+       (hifat-equiv-when-absfat-equiv))
+      :induct (dec-induct n)
+      :do-not-induct t))))
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-28
@@ -6535,9 +6507,9 @@
       :do-not-induct t
       :in-theory
       (e/d (intersectp-equal
-            abs-separate-of-frame->frame-of-collapse-this-lemma-10)
+            abs-complete-when-atom-abs-addrs)
            (lemma-1 1st-complete-correctness-2
-                                                   subsetp-member))
+                    subsetp-member))
       :use (lemma-1
             (:instance 1st-complete-correctness-2
                        (frame (frame->frame (collapse-seq frame seq)))
@@ -7195,7 +7167,9 @@
           (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:type-prescription assoc-when-zp-len)
           (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
-          (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2))))))
+          (:rewrite
+           collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
+          hifat-equiv-when-absfat-equiv)))))
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse
@@ -7551,7 +7525,9 @@
                            (:definition no-duplicatesp-equal)
                            (:rewrite subsetp-when-prefixp)
                            (:rewrite valid-seqp-when-prefixp)
-                           (:rewrite true-listp-when-abs-file-alist-p)))
+                           (:rewrite true-listp-when-abs-file-alist-p)
+                           hifat-equiv-when-absfat-equiv
+                           absfat-equiv-implies-equal-m1-file-alist-p-of-abs-fs-fix-1))
       :induct (induction-scheme dir frame seq x)
       :expand
       (collapse-seq
@@ -7650,8 +7626,7 @@
                   (frame-val->src (cdr (assoc-equal x frame))))
        frame))
      (root root))))
-  :rule-classes :congruence
-  :otf-flg t)
+  :rule-classes :congruence)
 
 (defthm
   partial-collapse-correctness-lemma-1
@@ -8341,19 +8316,31 @@
                                  (frame-addrs-root (frame->frame frame))))
              (hifat-equiv (mv-nth 0
                                   (collapse (partial-collapse frame path)))
-                          (mv-nth 0 (collapse frame)))))
-   (:rewrite
-    :corollary
-    (implies (and (frame-p frame)
-                  (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                  (abs-separate frame)
-                  (mv-nth 1 (collapse frame))
-                  (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
-                  (subsetp-equal (abs-addrs (frame->root frame))
-                                 (frame-addrs-root (frame->frame frame))))
-             (collapse-equiv (partial-collapse frame path)
-                             frame))
-    :hints (("goal" :in-theory (enable collapse-equiv))))))
+                          (mv-nth 0 (collapse frame)))))))
+
+(defthm partial-collapse-correctness-lemma-12
+  (implies (consp (assoc-equal 0 frame))
+           (consp (assoc-equal 0 (partial-collapse frame path))))
+  :hints (("goal" :in-theory (enable partial-collapse)))
+  :rule-classes :type-prescription)
+
+(defthm
+  partial-collapse-correctness-lemma-15
+  (implies
+   (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+          0)
+   (equal (frame-val->src (cdr (assoc-equal 0 (partial-collapse frame path))))
+          0))
+  :hints (("goal" :in-theory (enable partial-collapse
+                                     collapse-this frame-with-root)))
+  :rule-classes :type-prescription)
+
+(defthm partial-collapse-correctness-2
+  (implies (good-frame-p frame)
+           (collapse-equiv (partial-collapse frame path)
+                           frame))
+  :hints (("goal" :in-theory (enable collapse-equiv good-frame-p)
+           :do-not-induct t)))
 
 (defund
   seq-this-under-path

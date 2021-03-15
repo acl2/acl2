@@ -11,3 +11,10 @@
 (in-package "ACL2")
 
 (include-book "defprime")
+(include-book "euler2-support")
+(include-book "quadratic-residue")
+(include-book "tonelli-shanks")
+
+(defxdoc number-theory
+  :parents (arithmetic)
+  :short "Some utilities related to number theory")

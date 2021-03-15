@@ -903,7 +903,8 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
        (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al state))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexlist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexlist x :count nil)))
        ((flexlist x) x)
@@ -923,7 +924,8 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
        (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexalist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexalist x :count nil)))
        ((flexalist x) x)
@@ -944,7 +946,8 @@
                            (get-fixtypes-alist (w state))))
        (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
        (x (change-flexalist x :strategy :drop-keys))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexalist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexalist x :count nil)))
        ((flexalist x) x)

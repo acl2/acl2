@@ -15,8 +15,11 @@
 (include-book "logext")
 (include-book "bvmod")
 (include-book "unsigned-byte-p-forced")
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;fixme make sure this is what i want and that it matches what java does
 (defund sbvrem (n x y)
@@ -31,9 +34,7 @@
   (implies (<= size size2)
            (equal (unsigned-byte-p size2 (sbvrem size x y))
                   (natp size2)))
-  :hints (("Goal" :in-theory (e/d (sbvrem) ( ;TRUNCATE-BECOMES-FLOOR-GEN4
-                                            TRUNCATE-TYPE ;UNSIGNED-BYTE-P-RESOLVER
-                                            )))))
+  :hints (("Goal" :in-theory (enable sbvrem))))
 
 (defthm natp-of-sbvrem
   (natp (sbvrem size x y)))
@@ -53,7 +54,10 @@
                 )
            (equal (equal 0 (sbvrem width x n))
                   (equal 0 x)))
-  :hints (("Goal" :in-theory (enable sbvrem))))
+  :hints (("Goal" :in-theory (enable ;logext logapp
+                                     sbvrem
+                                     bvchop-of-sum-cases
+                                     truncate-becomes-floor-gen))))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvrem-of-bvchop-arg2
@@ -78,13 +82,7 @@
          (natp size))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced natp sbvrem))))
 
-;todo: move?
-(defund sbvmoddown (n x y)
-  (declare (type integer x y)
-           (type (integer 1 *) n)
-           (xargs :guard (not (EQUAL (LOGEXT N Y) 0))) ;rephrase in terms of bvchop?
-           )
-  (bvchop n (mod (logext n x) (logext n y))))
+
 
 (defthm sbvrem-of-0-arg1
   (equal (sbvrem 0 x y)
@@ -94,7 +92,7 @@
 (defthm sbvrem-of-0-arg2
   (equal (sbvrem size 0 y)
          0)
-  :hints (("Goal" :in-theory (e/d (sbvrem truncate) (REM-=-0 TRUNCATE-=-X/Y)))))
+  :hints (("Goal" :in-theory (enable sbvrem truncate))))
 
 ;do not remove.  this helps justify the translation to STP.
 (defthm sbvrem-of-0-arg3

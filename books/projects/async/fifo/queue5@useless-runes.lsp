@@ -201,6 +201,7 @@
                       (:REWRITE ADE::QUEUE5$IN-ACT-INACTIVE))
                    (4 1 (:REWRITE COMMUTATIVITY-OF-+))
                    (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                   (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
                    (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
                    (1 1
@@ -485,6 +486,8 @@
      (543 272 (:REWRITE DEFAULT-<-2))
      (543 272 (:REWRITE DEFAULT-<-1))
      (480 320 (:REWRITE DEFAULT-UNARY-MINUS))
+     (393 393
+          (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (192 64
           (:REWRITE ADE::QUEUE5$OUT-ACT-INACTIVE))
      (3 1 (:DEFINITION NATP))

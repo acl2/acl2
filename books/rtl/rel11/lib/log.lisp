@@ -62,12 +62,12 @@
                            (logxor (mod x 2) (mod y 2))))))))
   :rule-classes ((:definition :controller-alist ((binary-logxor t t)))))
 
-(defthm logand-bnd
-    (implies (<= 0 x)
-	     (and (<= 0 (logand x y))
-                  (<= (logand x y) x)))
-  :rule-classes :linear)
-
+(defun log-induct (x y)
+  (declare (xargs :measure (abs (* (ifix x) (ifix y)))))
+  (if (or (not (integerp x)) (not (integerp y)) (= x 0) (= y 0) (= x y))
+      (+ x y)
+    (log-induct (fl (/ x 2)) (fl (/ y 2)))))
+    
 (defthm logand-bvecp
     (implies (and (natp n)
 		  (bvecp x n)
@@ -84,6 +84,12 @@
 		  (bvecp y n)
                   (natp n))
 	     (bvecp (logxor x y) n)))
+
+(defthmd logand-plus-logxor
+  (implies (and (integerp x)
+                (integerp y))
+	   (equal (+ (logand x y) (logxor x y))
+	          (logior x y))))
 
 (defthmd logand-mod
   (implies (and (integerp x)

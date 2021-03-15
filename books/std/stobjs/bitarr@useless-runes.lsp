@@ -77,6 +77,10 @@
                          (6 6 (:REWRITE DEFAULT-<-1))
                          (6 6 (:REWRITE DEFAULT-+-1))
                          (5 1 (:REWRITE BFIX-WHEN-NOT-BITP))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (4 4
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                          (3 1
                             (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
@@ -96,6 +100,10 @@
                          (12 3 (:REWRITE ZP-WHEN-INTEGERP))
                          (10 10 (:REWRITE DEFAULT-+-1))
                          (9 3 (:REWRITE ZP-WHEN-GT-0))
+                         (5 5
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                         (5 5
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (5 5 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                          (4 4 (:REWRITE DEFAULT-CAR))
                          (3 1
@@ -126,16 +134,21 @@
                     (1 1 (:REWRITE BFIX-WHEN-NOT-BITP))
                     (1 1 (:REWRITE BFIX-WHEN-NOT-1))
                     (1 1 (:LINEAR LEQ-POSITION-EQUAL-LEN)))
-(RESIZE-BITS{CORRESPONDENCE} (56 4 (:REWRITE NTH-WITH-LARGE-INDEX))
-                             (25 4 (:DEFINITION LEN))
-                             (10 5 (:REWRITE DEFAULT-+-2))
-                             (7 7 (:REWRITE DEFAULT-CDR))
-                             (6 3 (:REWRITE DEFAULT-<-2))
-                             (5 5 (:REWRITE DEFAULT-+-1))
-                             (3 3 (:REWRITE DEFAULT-<-1))
-                             (3 3 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                             (3 1
-                                (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
-                             (1 1 (:REWRITE DEFAULT-CAR))
-                             (1 1 (:REWRITE CDR-CONS)))
+(RESIZE-BITS{CORRESPONDENCE}
+     (56 4 (:REWRITE NTH-WITH-LARGE-INDEX))
+     (25 4 (:DEFINITION LEN))
+     (10 5 (:REWRITE DEFAULT-+-2))
+     (7 7 (:REWRITE DEFAULT-CDR))
+     (6 3 (:REWRITE DEFAULT-<-2))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+     (5 5
+        (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
+     (5 5 (:REWRITE DEFAULT-+-1))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 3 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+     (3 1
+        (:DEFINITION STOBJS::1D-ARR-TMP-LISTP))
+     (1 1 (:REWRITE DEFAULT-CAR))
+     (1 1 (:REWRITE CDR-CONS)))
 (RESIZE-BITS{PRESERVED})

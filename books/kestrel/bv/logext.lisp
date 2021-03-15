@@ -225,6 +225,13 @@
                   (signed-byte-p size x)))
   :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
 
+;; See also logext-identity
+(defthm logext-when-signed-byte-p
+  (implies (signed-byte-p size x)
+           (equal (logext size x)
+                  x))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
+
 (defthm acl2-numberp-of-logext
   (acl2-numberp (logext size i)))
 
@@ -404,4 +411,45 @@
                 (natp x))
            (<= (logext size x) x))
   :rule-classes :linear
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-when-top-bit-0
+  (implies (and (equal (getbit (+ -1 n) x) 0)
+                (posp n))
+           (equal (logext n x)
+                  (bvchop (+ -1 n) x)))
+  :hints (("Goal" :use ((:instance logext-identity (size n) (i (bvchop n x))))
+           :in-theory (e/d (logext)
+                           (logext-identity
+                            logext-does-nothing-rewrite)))))
+
+(defthmd logext-when-positive
+  (implies (and (equal 0 (getbit (+ -1 size) x))
+                (posp size))
+           (equal (logext size x)
+                  (bvchop (+ -1 size) x)))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd logext-when-negative
+  (implies (< (logext 32 x) 0)
+           (equal (logext 32 x)
+                  (+ (bvchop 31 x)
+                     (- (expt 2 31)))))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+(defthmd logext-when-negative-2
+  (implies (and (equal 1 (getbit (+ -1 size) x))
+                (posp size))
+           (equal (logext size x)
+                  (+ (bvchop (+ -1 size) x)
+                     (- (expt 2 (+ -1 size))))))
+  :hints (("Goal" :in-theory (e/d (logext logapp bvchop)
+                                  (logapp-equal-rewrite)))))
+
+(defthm logext-negative
+  (implies (and (integerp x)
+                (< 0 n)
+                (natp n))
+           (equal (< (logext n x) 0)
+                  (equal 1 (getbit (+ -1 n) x))))
   :hints (("Goal" :in-theory (enable logext))))

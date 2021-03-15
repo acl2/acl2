@@ -165,13 +165,6 @@
                              (not action))))
   `(table hons 'slow-alist-warning ,action))
 
-(defn get-slow-alist-action (state)
-  (declare (xargs :stobjs state))
-  (let* ((alist   (table-alist 'hons (w state)))
-         (warning (hons-assoc-equal 'slow-alist-warning alist)))
-    (and (consp warning)
-         (cdr warning))))
-
 #+(or acl2-loop-only (not hons))
 (defn hons-acons! (key val alist)
   ;; Has an under-the-hood implementation

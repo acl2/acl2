@@ -211,6 +211,10 @@
                       (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
                   (48 16
                       (:REWRITE HONS-DUPLICITY-ALIST-P-WHEN-NOT-CONSP))
+                  (35 35
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (35 35
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (35 27 (:REWRITE DEFAULT-+-2))
                   (32 32
                       (:TYPE-PRESCRIPTION HONS-DUPLICITY-ALIST-P))
@@ -257,6 +261,10 @@
                       (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
                   (16 16
                       (:TYPE-PRESCRIPTION HONS-DUPLICITY-ALIST-P))
+                  (15 15
+                      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                  (15 15
+                      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                   (15 11 (:REWRITE DEFAULT-+-2))
                   (14 2
                       (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
@@ -305,6 +313,8 @@
                    (29 29
                        (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
                    (28 2 (:DEFINITION TRUE-LISTP))
+                   (13 13
+                       (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                    (13 13 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
                    (9 9
                       (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
@@ -382,6 +392,8 @@
     (:TYPE-PRESCRIPTION HONS-DUPLICITY-ALIST-P))
  (4 4 (:REWRITE SUBSETP-OF-CDR))
  (4 4 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
+ (2 2
+    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
  (2 2 (:REWRITE SUBSETP-MEMBER . 2))
  (2 2 (:REWRITE SUBSETP-MEMBER . 1))
  (1 1
@@ -1048,6 +1060,8 @@
                        (14 6 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
                        (12 4
                            (:REWRITE CONSP-OF-CAR-WHEN-ATOM-LISTP))
+                       (2 2
+                          (:REWRITE-QUOTED-CONSTANT FIX-UNDER-NUMBER-EQUIV))
                        (2 2 (:REWRITE EQUAL-CONSTANT-+)))
 (MAX-NAT-LIST-OF-NUMLIST
      (100 28 (:REWRITE NATP-WHEN-GTE-0))

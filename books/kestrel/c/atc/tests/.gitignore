@@ -24,3 +24,9 @@ locvars
 
 assign.c
 assign
+
+conversions.c
+conversions
+
+arrays.c
+arrays

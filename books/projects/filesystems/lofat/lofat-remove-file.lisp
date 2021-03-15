@@ -72,7 +72,6 @@
     (:linear find-n-free-clusters-correctness-1)
     (:rewrite fat32-masked-entry-list-p-when-not-consp)
     (:rewrite fat32-masked-entry-list-p-when-bounded-nat-listp)
-    (:rewrite hifat-place-file-when-hifat-equiv-1)
     (:rewrite nat-listp-when-unsigned-byte-listp)
     (:rewrite bounded-nat-listp-correctness-1)
     (:rewrite hifat-subsetp-preserves-assoc)
@@ -87,8 +86,6 @@
     (:rewrite nth-of-effective-fat)
     (:rewrite
      not-intersectp-list-of-set-difference$-lemma-1)
-    (:rewrite
-     d-e-cc-contents-of-lofat-place-file-coincident-lemma-4)
     (:rewrite nats=>chars-of-take)
     (:rewrite intersectp-when-subsetp)
     (:rewrite take-of-len-free)))))
@@ -612,6 +609,13 @@
                               (lofat-remove-file fat32$c rootclus path)))
    (count-of-clusters fat32$c))
   :hints (("goal" :in-theory (enable lofat-remove-file))))
+
+(defthm lofat-remove-file-correctness-3
+  (natp (mv-nth 1
+                (lofat-remove-file fat32$c root-d-e path)))
+  :hints (("goal" :in-theory (enable lofat-remove-file
+                                     lofat-remove-file-helper)))
+  :rule-classes :type-prescription)
 
 (encapsulate
   ()
@@ -2126,7 +2130,6 @@
       (:rewrite not-intersectp-list-when-atom)
       (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
       (:rewrite another-lemma-about-member-intersectp)
-      (:rewrite lofat-remove-file-correctness-1-lemma-14)
       (:rewrite d-e-cc-of-update-dir-contents-coincident)
       (:rewrite lofat-place-file-correctness-lemma-56)
       (:rewrite lofat-place-file-correctness-lemma-83)
@@ -2713,8 +2716,9 @@
          d-e-list entry-limit))
        0)))
     :hints
-    (("goal" :in-theory (disable
-                         lofat-remove-file-correctness-1-lemma-2)
+    (("goal" :in-theory (e/d
+                         (non-free-index-listp)
+                         (lofat-remove-file-correctness-1-lemma-2))
       :use (:instance
             lofat-remove-file-correctness-1-lemma-2
             (x nil)))))
@@ -5996,8 +6000,9 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (disable
-                lofat-remove-file-correctness-lemma-1)
+    :in-theory (e/d
+                (non-free-index-listp)
+                (lofat-remove-file-correctness-lemma-1))
     :use
     (:instance
      lofat-remove-file-correctness-lemma-1

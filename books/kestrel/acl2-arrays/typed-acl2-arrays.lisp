@@ -34,6 +34,7 @@
      ;; correct.
      (defund ,checker-fn (array-name array index ,@extra-vars)
        (declare (xargs :measure (nfix (+ 1 index))
+                       :hints (("Goal" :in-theory (enable natp)))
                        :guard (and (array1p array-name array)
                                    (integerp index)
                                    (< index (alen1 array-name array))
@@ -351,13 +352,14 @@
                                 (natp index)
                                 (equal ,default (default array-name array)))
                            (,aux-fn array-name array index ,@extra-vars))
-                  :hints (("subgoal *1/5" :cases ((<= index (+ -1 (alen1 array-name array))))
-                           :use (:instance ,(pack$ 'type-of-aref1-when- aux-fn)
-                                           (top-index (+ -1 (ALEN1 ARRAY-NAME ARRAY))))
-                           :in-theory (e/d (aref1-when-too-large)
-                                           (,(pack$ 'type-of-aref1-when- aux-fn))))
-                          ("Goal"
-                           :in-theory (enable ,aux-fn))))
+                  :hints (("Goal" :induct (,aux-fn array-name array index ,@extra-vars)
+                           :in-theory (enable ,aux-fn))
+                          (and stable-under-simplificationp
+                               '(:cases ((<= index (+ -1 (alen1 array-name array))))
+                                        :use (:instance ,(pack$ 'type-of-aref1-when- aux-fn)
+                                                        (top-index (+ -1 (ALEN1 ARRAY-NAME ARRAY))))
+                                        :in-theory (e/d (aref1-when-too-large)
+                                                        (,(pack$ 'type-of-aref1-when- aux-fn)))))))
 
                 (defthm ,(pack$ aux-fn '-of-expand-array-helper)
                   (implies (and (<= (alen1 array-name array) index2) ;or we wouldn't be calling expand-array

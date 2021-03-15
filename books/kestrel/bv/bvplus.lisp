@@ -76,6 +76,13 @@
                   0))
   :hints (("Goal" :in-theory (enable bvplus))))
 
+(defthm bvplus-when-not-natp-arg1-cheap
+  (implies (not (natp size))
+           (equal (bvplus size x y)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (1)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
 ;drop?
 (defthm bvchop-of-bvplus2
   (implies (and (<= size2 size1)

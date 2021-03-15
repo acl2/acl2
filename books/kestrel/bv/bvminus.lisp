@@ -81,3 +81,29 @@
                 (integerp size1))
            (unsigned-byte-p size1 (bvminus size i j)))
   :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvchop-arg2
+  (implies (and (<= size size1)
+                (integerp size1))
+           (equal (bvminus size (bvchop size1 x) y)
+                  (bvminus size x y)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvchop-arg2-same
+  (equal (bvminus size (bvchop size x) y)
+         (bvminus size x y))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvchop-arg3
+  (implies (and (<= size size1)
+                (integerp size1))
+           (equal (bvminus size y (bvchop size1 x))
+                  (bvminus size y x)))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvchop-arg3-same
+  (equal (bvminus size y (bvchop size x))
+         (bvminus size y x))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable bvminus))))

@@ -21,8 +21,22 @@
             pfield::inv
             pfield::pow
             pfield::div
+            pfield::fe-listp
             lookup-equal
             lookup-eq
 	    b*
-            keywords-to-acl2-package)
+            keywords-to-acl2-package
+            ;; some bv concepts:
+            getbit
+            bvchop
+            slice
+            bvcat
+            bitxor
+            bvxor
+            bitnot
+            bvnot
+            bvshr
+            bvshl
+            bvplus
+            power-of-2p)
           *acl2-exports*))

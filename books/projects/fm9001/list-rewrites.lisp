@@ -47,7 +47,7 @@
                          (list-as-collected-nth l (1- len) (1+ n)))))))
 
 (in-theory (disable list-as-collected-nth))
-  
+
 (defthmd equal-len-4-as-collected-nth
   (implies (and (equal (len l) 4)
                 (true-listp l))

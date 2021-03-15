@@ -1,5 +1,30 @@
 #!/bin/sh
 
+##########
+
+# Cheat sheet for using this file (a more conventional description
+# follows):
+
+# (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
+#     to regenerate @useless-runes.lsp files.
+
+# (2) Run ordinary "everything" regression.
+
+# (3) Check for failures, avoiding bad @useless-runes.lsp files by
+#     editing .acl2 files and removing them (using git rm if already
+#     under git control).
+
+# (4) Run, in that same directory:
+
+#     ./bin/new-useless-runes-files.sh acl2 tmp
+
+# (5) After "cd books", run "git add" and "git rm" as suggested by the
+#     output.
+
+# (6) Commit, pull, commit, push.
+
+##########
+
 # Run
 
 # ./bin/new-useless-runes-files.sh acl2 tmp

@@ -77,7 +77,10 @@
 
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
+(include-book "sbvdivdown-rules")
 (include-book "sbvrem")
+(include-book "sbvrem-rules")
+(include-book "sbvmoddown")
 
 ;; Sign extension and masks
 (include-book "repeatbit")
@@ -136,6 +139,9 @@
 ;; One's complement arithmetic:
 (include-book "ones-complement")
 
+;; Rules about BV operations of size 1:
+(include-book "single-bit")
+
 ;; Mixed rules:
 (include-book "rules0")
 (include-book "rules")
@@ -144,5 +150,9 @@
 (include-book "rules4")
 (include-book "rules5")
 (include-book "rules6")
+(include-book "rules7")
+(include-book "rules8")
+
+;; (include-book "bv-tests") ; not including this one because it just contains tests
 
 (include-book "doc")

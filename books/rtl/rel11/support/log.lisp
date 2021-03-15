@@ -2,13 +2,13 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
-(local (include-book "basic"))
-(local (include-book "bits"))
-(include-book "definitions")
+(local (include-book "rtl/rel11/support/basic" :dir :system))
+(local (include-book "rtl/rel11/support/bits" :dir :system))
+(include-book "rtl/rel11/support/definitions" :dir :system)
 
 (local (encapsulate ()
 
-(local (include-book "../rel9-rtl-pkg/lib/log"))
+(local (include-book "rtl/rel11/rel9-rtl-pkg/lib/log" :dir :system))
 
 ;; The following lemmas from arithmetic-5 have given me trouble:
 
@@ -958,6 +958,28 @@
 		  (case-split (integerp n)))
 	     (equal (bitn (logxor x y) n)
 		    (logxor (bitn x n) (bitn y n)))))
+
+
+
+(defun log-induct (x y)
+  (declare (xargs :measure (abs (* (ifix x) (ifix y)))
+                  :hints (("Subgoal 1" :nonlinearp t
+		                       :use ((:instance fl-half-int (n x))
+                                             (:instance fl-half-int (n y)))))))
+  (if (or (not (integerp x)) (not (integerp y)) (= x 0) (= y 0) (= x y))
+      (+ x y)
+    (log-induct (fl (/ x 2)) (fl (/ y 2)))))
+    
+(defthmd logand-plus-logxor
+  (implies (and (integerp x)
+                (integerp y))
+	   (equal (+ (logand x y) (logxor x y))
+	          (logior x y)))
+  :hints (("Goal" :induct (log-induct x y))
+          ("Subgoal *1/2" :use (logand-def logior-def logxor-def
+			        (:instance mod012 (m x))
+			        (:instance mod012 (m y))))))
+
 
 
 ;;;**********************************************************************

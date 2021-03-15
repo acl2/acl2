@@ -715,14 +715,6 @@
                   (bvcat highsize highval lowsize (bvif lowsize test a b))))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
-(defthmd bvcat-special-opener
-  (implies (and (not (equal 0 (getbit 0 x)))
-                (natp n))
-           (equal (bvcat 1 x n y)
-                  (+ (expt 2 n) (bvchop n y))))
-  :hints (("Goal" :in-theory (e/d (getbit bvcat logapp bvchop)
-                                  (bvchop-1-becomes-getbit slice-becomes-getbit bvcat-recombine)))))
-
 (local
  (defun induct-floor-and-sub1 (x n)
    (if (zp n)
@@ -1115,21 +1107,6 @@
   :HINTS
   (("Goal" :IN-THEORY (E/D (BVIF) (BVIF-OF-MYIF-ARG2)))))
 
-(defthm bvcat-when-equal-of-getbit-0-low
-  (implies (and (equal (getbit 0 lowval) free)
-                (syntaxp (and (quotep free)
-                              (not (quotep lowval)))))
-           (equal (bvcat highsize highval 1 lowval)
-                  (bvcat highsize highval 1 free))))
-
-(defthm bvcat-when-equal-of-getbit-0-high
-  (implies (and (equal (getbit 0 highval) free)
-                (syntaxp (and (quotep free)
-                              (not (quotep highval)))))
-           (equal (bvcat 1 highval lowsize lowval)
-                  (bvcat 1 free lowsize lowval))))
-
-
 (in-theory (disable bvminus)) ;bozo?
 
 ;disable!
@@ -1465,14 +1442,6 @@
                       (+ (bvchop size i1) (bvchop size i2))
                     (+ (- (expt 2 size)) (bvchop size i1) (bvchop size i2)))))
   :hints (("Goal" :in-theory (enable bvchop mod-sum-cases))))
-
-;some way to automate this kind of reasoning?
-(defthm slice-leibniz
-  (implies (and (equal high1 high2)
-                (equal low1 low2)
-                (equal x1 x2))
-           (equal (equal (slice high1 low1 x1) (slice high2 low2 x2))
-                  t)))
 
 (defthm bvchop-of-both-sides
   (implies (equal x y)
@@ -2490,7 +2459,7 @@
                                             )))))
 
 ;do this better with congruences?
-(defthm bvcat-of-+-high
+(defthmd bvcat-of-+-high
   (implies (and (integerp x)
                 (integerp y)
                 (natp highsize)
@@ -2501,7 +2470,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                             )))))
 
-(defthm bvcat-of-+-low
+(defthmd bvcat-of-+-low
   (implies (and (integerp x)
                 (integerp y)
                 (natp highsize)
@@ -2608,18 +2577,6 @@
                           (equal x (- c2 c1))
                         (equal (fix c1) c2))
                     nil))))
-
-(defthm logext-when-top-bit-0
-  (implies (and (equal (getbit (+ -1 n) x) 0)
-                (posp n))
-           (equal (logext n x)
-                  (bvchop (+ -1 n) x)))
-  :hints (("Goal" :use ((:instance logext-identity (size n) (i (bvchop n x))))
-           :in-theory (e/d (logext)
-                           ( logext-identity
-                             REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
-                             logext-does-nothing-rewrite)))))
-
 
 (defthm <-of-expt-and*-*-of-2-and-expt
   (IMPLIES (AND (INTEGERP N)
@@ -3051,7 +3008,7 @@
            (equal (GETBIT n x)
                   (bitnot (getbit n (+ (expt 2 n) x)))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthm getbit-of-+-bvchop-expand
   (implies (and (natp n)
@@ -3061,7 +3018,7 @@
                       (getbit n (bvchop (+ 1 n) x))
                     (bitnot (getbit n (bvchop (+ 1 n) x))))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)
@@ -3072,7 +3029,7 @@
                       (getbit n (bvchop (+ 1 n) (+ y x)))
                     (bitnot (getbit n (bvchop (+ 1 n) (+ y x)))))))
 ;  :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus BITNOT-BECOMES-BITXOR-WITH-1))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 (defthmd getbit-of-+-bvchop-expand3
   (implies (and (natp n)

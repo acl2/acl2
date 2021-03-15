@@ -43,9 +43,8 @@
   :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm getbit-0-of-bitnot
-  (implies (integerp x)
-           (equal (getbit 0 (bitnot x))
-                  (bitnot x)))
+  (equal (getbit 0 (bitnot x))
+         (bitnot x))
   :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm unsigned-byte-p-of-bitnot
@@ -67,3 +66,26 @@
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-bitnot
   (unsigned-byte-p 1 (bitnot x)))
+
+(defthm bitp-of-bitnot
+  (bitp (bitnot x)))
+
+(defthm equal-of-bitnot-and-bitnot
+  (equal (equal (bitnot x) (bitnot y))
+         (equal (getbit 0 x) (getbit 0 y)))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
+(defthmd bitnot-becomes-subtract
+  (implies (bitp x)
+           (equal (bitnot x)
+                  (- 1 x)))
+  :hints (("Goal" :cases ((equal 0 x)))))
+
+(defthm getbit-of-1-and-+-of-2
+  (implies (integerp x)
+           (equal (getbit 1 (+ 2 x))
+                  (bitnot (getbit 1 x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))

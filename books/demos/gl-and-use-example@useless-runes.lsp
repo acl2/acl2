@@ -632,6 +632,8 @@
  (8 8 (:REWRITE |(mod (floor x y) z)| . 2))
  (6 6 (:REWRITE |(< y (+ (- c) x))|))
  (6 6 (:REWRITE |(< x (+ c/d y))|))
+ (1 1
+    (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
  (1 1 (:REWRITE DEFAULT-DIVIDE))
  (1 1 (:REWRITE |(not (equal x (/ y)))|))
  (1 1 (:REWRITE |(equal x (/ y))|))

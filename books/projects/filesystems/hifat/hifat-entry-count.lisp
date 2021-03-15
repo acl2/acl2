@@ -13,7 +13,9 @@
 (defund
   hifat-entry-count (fs)
   (declare (xargs :guard (and (m1-file-alist-p fs)
-                              (hifat-no-dups-p fs))))
+                              (hifat-no-dups-p fs))
+                  :guard-hints
+                  (("Goal" :in-theory (disable m1-directory-file-p-of-m1-file-fix)))))
   (if
    (atom fs)
    0
@@ -98,6 +100,7 @@
        (m1-file-alist1 m1-file-alist2)
      (declare
       (xargs
+       :ruler-extenders nil ; Matt K. change for ruler-extenders mod 2/2021
        :guard (and (m1-file-alist-p m1-file-alist1)
                    (m1-file-alist-p m1-file-alist2))
        :hints (("goal" :in-theory (enable m1-file->contents

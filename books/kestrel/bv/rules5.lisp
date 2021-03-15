@@ -524,15 +524,6 @@
 
 (local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
 
-;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
-(defthm expt-half-linear
-  (implies (natp i)
-           (equal (expt 2 i)
-                  (+ (expt 2 (+ -1 i))
-                     (expt 2 (+ -1 i)))))
-  :hints (("Goal" :in-theory (enable expt-of-+)))
-  :rule-classes :linear)
-
 ;If k+x<y with k>=0, then x<y (usually).
 (defthm sbvlt-when-sbvlt-of-bvplus-of-constant
   (implies (and (sbvlt size (bvplus size k x) y)

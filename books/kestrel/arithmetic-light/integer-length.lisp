@@ -16,12 +16,12 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
-(local (include-book "ihs/logops-lemmas" :dir :system)) ;include less?
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;include less?
-(local (include-book "arithmetic/equalities" :dir :system)) ;include less?
 (local (include-book "floor"))
+(local (include-book "mod"))
 (local (include-book "expt"))
 (local (include-book "expt2"))
+(local (include-book "plus"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;move?
 (defthm integer-length-bound
@@ -32,7 +32,7 @@
   :hints ( ;("subgoal *1/5" :use (:instance floor-bound (x n)))
           ("Goal"
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (integer-length)
+           :in-theory (e/d (integer-length EXPT-OF-+)
                            (floor-bound
                             ;;COLLECT-CONSTANTS-TIMES-EQUAL ;bozo looped
                             )))))
@@ -45,7 +45,7 @@
                       0
                     (+ 1 n))))
   :hints
-  (("Goal" :in-theory (e/d (integer-length* integer-length expt)
+  (("Goal" :in-theory (e/d (integer-length expt)
                            (expt-hack)))))
 
 (defthm integer-length-of-mask
@@ -156,10 +156,10 @@
            :in-theory (disable unsigned-byte-p-of-integer-length))))
 
 (defthm unsigned-byte-p-integer-length-one-less
-  (implies (and (natp index)
+  (implies (and (integerp index)
                 (< index len) ;move to conclusion?
                 (integerp len))
-           (unsigned-byte-p (integer-length (+ -1 len)) index))
+           (equal (unsigned-byte-p (integer-length (+ -1 len)) index)
+                  (<= 0 index)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p integer-length)
-                                  ( ;(:TYPE-PRESCRIPTION INTEGER-LENGTH)
-                                   )))))
+                                  ()))))

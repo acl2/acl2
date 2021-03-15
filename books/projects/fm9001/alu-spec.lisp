@@ -15,7 +15,7 @@
 (include-book "hard-spec")
 
 ;; ======================================================================
-  
+
 ;; CVZBV is used to construct all of the values returned by the ALU
 ;; specification V-ALU.
 
@@ -53,11 +53,11 @@
   :rule-classes :type-prescription)
 
 (defthm booleanp-bvp-cvzbv
-  (and 
+  (and
    (equal (booleanp (c (cvzbv c v bv)))
           (booleanp c))
    (equal (booleanp (v (cvzbv c v bv)))
-          (booleanp v))  
+          (booleanp v))
    (equal (bvp (bv (cvzbv c v bv)))
           (bvp bv))))
 
@@ -147,20 +147,20 @@
                               (consp b)
                               (true-listp b))))
   (cond ((equal op *v0000*) (cvzbv nil nil (v-buf a)))
-        ((equal op *v0001*) (cvzbv-inc a))                   
-        ((equal op *v0010*) (cvzbv-v-adder c a b))           
-        ((equal op *v0011*) (cvzbv-v-adder nil a b))           
-        ((equal op *v0100*) (cvzbv-neg a))                   
-        ((equal op *v0101*) (cvzbv-dec a))                   
-        ((equal op *v0110*) (cvzbv-v-subtracter c a b))      
-        ((equal op *v0111*) (cvzbv-v-subtracter nil a b))      
-        ((equal op *v1000*) (cvzbv-v-ror c a))               
-        ((equal op *v1001*) (cvzbv-v-asr a))   
+        ((equal op *v0001*) (cvzbv-inc a))
+        ((equal op *v0010*) (cvzbv-v-adder c a b))
+        ((equal op *v0011*) (cvzbv-v-adder nil a b))
+        ((equal op *v0100*) (cvzbv-neg a))
+        ((equal op *v0101*) (cvzbv-dec a))
+        ((equal op *v0110*) (cvzbv-v-subtracter c a b))
+        ((equal op *v0111*) (cvzbv-v-subtracter nil a b))
+        ((equal op *v1000*) (cvzbv-v-ror c a))
+        ((equal op *v1001*) (cvzbv-v-asr a))
         ((equal op *v1010*) (cvzbv-v-lsr a))
-        ((equal op *v1011*) (cvzbv nil nil (v-xor a b)))         
+        ((equal op *v1011*) (cvzbv nil nil (v-xor a b)))
         ((equal op *v1100*) (cvzbv nil nil (v-or  a b)))
-        ((equal op *v1101*) (cvzbv nil nil (v-and a b)))         
-        ((equal op *v1110*) (cvzbv-v-not a))           
+        ((equal op *v1101*) (cvzbv nil nil (v-and a b)))
+        ((equal op *v1110*) (cvzbv-v-not a))
         (t                  (cvzbv nil nil (v-buf a)))))
 
 (defthm true-listp-v-alu
@@ -209,7 +209,7 @@
 (defthm len-cvzbv-subtracter
   (equal (len (cvzbv-v-subtracter c a b))
          (+ 3 (len a))))
-  
+
 (defthm len-v-alu
   (implies (equal (len b) (len a))
            (equal (len (v-alu c a b op))
@@ -231,10 +231,10 @@
 
 ;; UNARY-OP-CODE-P op-code
 
-;; Recognizes ALU op-codes which are unary operations on the A operand.  
+;; Recognizes ALU op-codes which are unary operations on the A operand.
 ;; For unary ALU op-codes, the B operand is arbitrary.  We also define a
 ;; "1-argument" version of V-ALU which is equivalent to V-ALU when the
-;; ALU op-code is unary. 
+;; ALU op-code is unary.
 
 (defun unary-op-code-p (op-code)
   (declare (xargs :guard t))

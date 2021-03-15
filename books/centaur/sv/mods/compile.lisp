@@ -399,6 +399,12 @@ svex-assigns-compose)).</li>
        (aliases (set-alias n lhs1 aliases)))
     (aliases-indexed->named-aux (1+ (lnfix n)) aliases scope moddb indnamememo))
   ///
+  (local
+   (defthm lemma
+     (implies (<= (len aliases) (nfix m))
+              (not (consp (nth m aliases))))
+     :hints (("goal" :in-theory (enable nth len nfix)))))
+
   (defthm aliases-indexed->named-preserves-lesser-indices
     (implies (< (nfix m) (nfix n))
              (equal (nth m (mv-nth 0 (aliases-indexed->named-aux
@@ -428,7 +434,7 @@ svex-assigns-compose)).</li>
                   (hons-acons entry.varname entry.decl (var-decl-map-fix acc)))
               (var-decl-map-fix acc))))
     (indnamememo-to-var-decl-map (1+ (lnfix n)) indnamememo acc)))
-        
+
 
 (define aliases-indexed->named (aliases (scope modscope-p) (moddb moddb-ok))
   :returns (mv (new-aliases (equal (len new-aliases) (len aliases)))
@@ -703,7 +709,7 @@ svex-assigns-compose)).</li>
        (ans (make-lhs-override :lhs lhs :test 1 :val rhs.value))
        (nrev (acl2::nrev-push ans nrev)))
     (assigns-to-overrides-nrev (cdr x) nrev)))
-  
+
 
 (define assigns-to-overrides ((x assigns-p))
   :returns (override lhs-overridelist-p)
@@ -734,7 +740,7 @@ svex-assigns-compose)).</li>
                                       assigns-vars
                                       lhs-overridelist-keys
                                       lhs-override-vars)))))
-  
+
 
 ;; (define svex-overrides-boundedp ((x svex-overridelist-p) (bound natp))
 ;;   (if (atom x)
@@ -1049,7 +1055,7 @@ svex-assigns-compose)).</li>
        (final-assigns1 (fast-alist-free
                         (fast-alist-clean
                          (svex-apply-overrides (assigns-to-overrides final-fixups) res-assigns))))
-       
+
        (final-assigns (svex-alist-truncate-by-var-decls final-assigns1 var-decls nil))
        ;; Collect all variables referenced and add delays as needed.
        (delayvars (svarlist-collect-delays (svexlist-collect-vars (svex-alist-vals res-assigns))))
@@ -1182,7 +1188,7 @@ should address this again later.</p>"
                                            (indexedp 'nil)
                                            ((moddb "overwritten") 'moddb)
                                            ((aliases "overwritten") 'aliases))
-  
+
   :parents (svex-compilation)
   :short "Flatten a hierarchical SV design and apply alias normalization to it."
   :long "<p>This does all of the steps of @(see svex-design-compile) except for

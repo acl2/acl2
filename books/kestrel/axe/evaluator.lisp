@@ -54,6 +54,7 @@
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
 (include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
 (include-book "safe-unquote")
+(include-book "interpreted-function-alists") ; for make-interpreted-function-alist
 (include-book "print-constant") ; drop?
 (include-book "kestrel/maps/maps" :dir :system) ;for key-list
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM

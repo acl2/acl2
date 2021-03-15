@@ -222,11 +222,6 @@
                (list n0 envs)
              (lookup-ind (1- n0) (1- n1) (cdr envs)))))
 
-  (local (defthm nth-of-svex-envlist-fix
-           (equal (nth n (svex-envlist-fix x))
-                  (svex-env-fix (nth n x)))
-           :hints(("Goal" :in-theory (enable svex-envlist-fix nth)))))
-
   (defret lookup-in-svex-envs-update-nth
     (equal (svex-env-lookup v0 (nth n0 (svex-envs-update-nth v1 val n1 envs)))
            (if (and (svar-equiv v0 v1)

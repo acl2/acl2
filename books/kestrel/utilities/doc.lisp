@@ -298,17 +298,17 @@
             (defxdoc ,name
               ,@(and short `(:short ,short))
               ,@(and parents `(:parents ,parents))
-              :long ,(N-STRING-APPEND
-                      (xdoc-for-macro-general-form name macro-args)
-                      ;(newline-string)
-                      (xdoc-for-macro-inputs macro-args input-descriptions)
-                      (newline-string)
-                      (newline-string)
-                      (if long
-                          (n-string-append *xdoc-description-header*
+              :long (n-string-append
+                     ,(xdoc-for-macro-general-form name macro-args)
+                     ;;(newline-string)
+                     ,(xdoc-for-macro-inputs macro-args input-descriptions)
+                     (newline-string)
+                     (newline-string)
+                     ,(if long
+                          `(n-string-append *xdoc-description-header*
                                            (newline-string)
                                            (newline-string)
-                                           long)
+                                           ,long)
                         ""))))))
 
 (defmacro defmacrodoc (name macro-args &rest rest)

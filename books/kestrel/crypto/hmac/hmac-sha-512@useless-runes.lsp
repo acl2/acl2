@@ -1,29 +1,27 @@
-(HMAC::HMAC-SHA-512 (495 10 (:DEFINITION BVXOR-LIST))
-                    (422 10
+(HMAC::HMAC-SHA-512 (455 10 (:DEFINITION BVXOR-LIST))
+                    (398 10
                          (:REWRITE ALL-UNSIGNED-BYTE-P-WHEN-NOT-CONSP))
                     (155 10 (:REWRITE CDR-OF-APPEND))
                     (135 27 (:DEFINITION LEN))
                     (115 5 (:REWRITE CDR-OF-REPEAT))
                     (112 9 (:REWRITE REPEAT-WHEN-ZP))
                     (106 12 (:REWRITE ZP-OPEN))
-                    (105 10 (:REWRITE BVXOR-COMMUTATIVE))
                     (86 43 (:REWRITE DEFAULT-+-2))
+                    (85 10 (:REWRITE BVXOR-COMMUTATIVE))
                     (74 9 (:REWRITE CONSP-OF-APPEND))
                     (69 49 (:REWRITE DEFAULT-<-2))
-                    (55 20
-                        (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
-                    (55 20
-                        (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
                     (53 49 (:REWRITE DEFAULT-<-1))
                     (50 10 (:REWRITE CAR-OF-APPEND))
                     (47 43 (:REWRITE DEFAULT-+-1))
                     (46 30
                         (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
                     (43 43 (:REWRITE DEFAULT-CDR))
-                    (40 20 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
                     (40 5 (:REWRITE CONSP-OF-REPEAT))
+                    (35 20
+                        (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
+                    (35 20
+                        (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
                     (24 9 (:REWRITE FOLD-CONSTS-IN-+))
-                    (21 21 (:TYPE-PRESCRIPTION POWER-OF-2P))
                     (20 20
                         (:REWRITE BVXOR-WHEN-SIZE-IS-NOT-POSITIVE))
                     (20 20
@@ -38,35 +36,32 @@
                     (12 6 (:DEFINITION TRUE-LISTP))
                     (10 10 (:REWRITE DEFAULT-CAR))
                     (7 7 (:TYPE-PRESCRIPTION ZP))
-                    (6 2 (:REWRITE CONSP-OF-BYTES-TO-BITS))
-                    (2 1 (:REWRITE NATP-WHEN-POWER-OF-2P)))
+                    (6 2 (:REWRITE CONSP-OF-BYTES-TO-BITS)))
 (HMAC::ALL-UNSIGNED-BYTE-P-OF-HMAC-SHA-512
-     (254 4 (:DEFINITION BVXOR-LIST))
+     (238 4 (:DEFINITION BVXOR-LIST))
      (62 4 (:REWRITE CDR-OF-APPEND))
      (58 5 (:REWRITE ZP-OPEN))
-     (54 4 (:REWRITE BVXOR-COMMUTATIVE))
      (54 3 (:REWRITE REPEAT-WHEN-ZP))
+     (46 4 (:REWRITE BVXOR-COMMUTATIVE))
      (46 2 (:REWRITE CDR-OF-REPEAT))
      (42 1
          (:REWRITE ALL-UNSIGNED-BYTE-P-WHEN-NOT-CONSP))
      (38 2 (:REWRITE CONSP-OF-APPEND))
-     (34 8
-         (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
-     (34 8
-         (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
      (34 2 (:REWRITE CONSP-OF-REPEAT))
      (32 16 (:REWRITE DEFAULT-<-2))
      (30 4 (:REWRITE CAR-OF-APPEND))
+     (26 8
+         (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
+     (26 8
+         (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
      (25 5 (:DEFINITION LEN))
      (18 2 (:REWRITE CAR-OF-REPEAT))
      (16 16 (:REWRITE DEFAULT-<-1))
-     (16 8 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
      (16 8 (:REWRITE DEFAULT-+-2))
      (15 10
          (:REWRITE APPEND-WHEN-NOT-CONSP-ARG1-CHEAP))
      (10 2 (:DEFINITION POSP))
      (9 9 (:REWRITE DEFAULT-CDR))
-     (8 8 (:TYPE-PRESCRIPTION POWER-OF-2P))
      (8 8 (:REWRITE DEFAULT-+-1))
      (8 8
         (:REWRITE BVXOR-WHEN-SIZE-IS-NOT-POSITIVE))
@@ -83,25 +78,24 @@
         (:REWRITE ALL-UNSIGNED-BYTE-P-FROM-ALL-UNSIGNED-BYTE-P-NARROWER)))
 (HMAC::ALL-INTEGERP-OF-HMAC-SHA-512)
 (HMAC::LEN-OF-HMAC-SHA-512
-     (254 4 (:DEFINITION BVXOR-LIST))
+     (238 4 (:DEFINITION BVXOR-LIST))
      (62 4 (:REWRITE CDR-OF-APPEND))
      (58 5 (:REWRITE ZP-OPEN))
-     (54 4 (:REWRITE BVXOR-COMMUTATIVE))
      (54 3 (:REWRITE REPEAT-WHEN-ZP))
+     (46 4 (:REWRITE BVXOR-COMMUTATIVE))
      (46 2 (:REWRITE CDR-OF-REPEAT))
      (45 5 (:DEFINITION LEN))
      (38 2 (:REWRITE CONSP-OF-APPEND))
-     (34 8
-         (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
-     (34 8
-         (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
      (34 2 (:REWRITE CONSP-OF-REPEAT))
      (30 15 (:REWRITE DEFAULT-<-2))
      (30 4 (:REWRITE CAR-OF-APPEND))
+     (26 8
+         (:REWRITE BVXOR-WHEN-Y-IS-NOT-AN-INTEGER))
+     (26 8
+         (:REWRITE BVXOR-WHEN-X-IS-NOT-AN-INTEGER))
      (25 25
          (:TYPE-PRESCRIPTION SHA2::SHA-512-BYTES))
      (18 2 (:REWRITE CAR-OF-REPEAT))
-     (16 8 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
      (16 8 (:REWRITE DEFAULT-+-2))
      (15 15 (:REWRITE DEFAULT-<-1))
      (15 10
@@ -111,7 +105,6 @@
      (10 10 (:TYPE-PRESCRIPTION REPEAT))
      (10 2 (:DEFINITION POSP))
      (9 9 (:REWRITE DEFAULT-CDR))
-     (8 8 (:TYPE-PRESCRIPTION POWER-OF-2P))
      (8 8 (:REWRITE DEFAULT-+-1))
      (8 8
         (:REWRITE BVXOR-WHEN-SIZE-IS-NOT-POSITIVE))

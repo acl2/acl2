@@ -102,13 +102,6 @@
   (local (defthm len-equal-0
            (equal (Equal (len x) 0)
                   (not (consp x)))))
-  (local (defthm nth-of-bit-list-fix
-           (equal (nth n (bit-list-fix x))
-                  (if (< (nfix n) (len x))
-                      (bfix (nth n x))
-                    nil))
-           :hints(("Goal" :in-theory (enable nth bit-list-fix)
-                   :induct (nth n x)))))
   (defthm bits-equiv-of-bit-list-fix
     (bits-equiv (bit-list-fix x) x)
     :hints(("Goal" :in-theory (enable bits-equiv)))))
@@ -134,7 +127,7 @@
   (b* (((acl2::local-stobjs copy copy2 strash strash2 mark aignet-tmp)
         (mv new-lit aignet2 state copy copy2 strash strash2 mark aignet-tmp))
        (gatesimp (observability-config->gatesimp config))
-       
+
        ((mv constr-lit strash2 copy2 aignet-tmp)
         (aignet-lit-constprop-init-and-sweep lit aignet gatesimp strash2 copy2 aignet-tmp))
 
@@ -176,7 +169,7 @@
                 0)
          (equal (stype-count :nxst new-aignet2)
                 0)))
-         
+
 
   (defret aignet-litp-of-<fn>
     (aignet-litp new-lit new-aignet2))
@@ -409,5 +402,3 @@
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
-
-

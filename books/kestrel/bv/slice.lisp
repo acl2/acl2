@@ -241,7 +241,7 @@
 
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
-(defthm bvchop-of-logtail-becomes-slice
+(defthmd bvchop-of-logtail-becomes-slice
   (implies (and (natp size1)
                 (natp size2))
            (equal (bvchop size1 (logtail size2 x))
@@ -452,3 +452,18 @@
            (equal (equal (logtail low x) (slice high low x))
                   t))
   :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm slice-of-+-of--1-and-expt-same
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low (+ -1 (expt 2 low)))
+                  0))
+  :hints (("Goal" :in-theory (e/d (slice) (acl2::bvchop-of-logtail-becomes-slice)))))
+
+;some way to automate this kind of reasoning?
+(defthmd slice-leibniz
+  (implies (and (equal high1 high2)
+                (equal low1 low2)
+                (equal x1 x2))
+           (equal (equal (slice high1 low1 x1) (slice high2 low2 x2))
+                  t)))

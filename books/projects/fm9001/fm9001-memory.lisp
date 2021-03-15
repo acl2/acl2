@@ -30,7 +30,7 @@
 
 ;; Memory control states:
 
-;; 0 -- The quiet state.  
+;; 0 -- The quiet state.
 ;; 1 -- Read wait.
 ;; 2 -- Write wait.
 ;; x -- Error.
@@ -100,7 +100,7 @@
            (write-error (list* (constant-ram mem (make-list 32
                                                             :initial-element
                                                             *x*))
-                               3 (cdr clock) 
+                               3 (cdr clock)
                                (1- mem-delay) (zp mem-delay)
                                rw-address-data))
            (reset-error  (list* (constant-ram mem (make-list 32
@@ -176,15 +176,11 @@
 
             reset-error))))))
 
-;; (defthm true-listp-next-memory-state
-;;   (true-listp (next-memory-state st strobe- rw- address data))
-;;   :rule-classes :type-prescription)
-
 (defthm len-next-memory-state
   (equal (len (next-memory-state st strobe- rw- address data))
          8)
   :hints (("Goal" :in-theory (disable zp-open nfix))))
-                 
+
 (in-theory (disable next-memory-state))
 
 (defun memory-value (st strobe- rw- address data)
@@ -201,7 +197,7 @@
     (let ((mem-delay   (nfix (car clock)))
           (x-vector    (make-list (len data) :initial-element *x*))
           (z-vector    (make-list (len data) :initial-element *z*)))
-      
+
       (let ((unknown        (cons *x* x-vector))
             (default        (cons *x* z-vector))
             (read-wait      (cons t x-vector))
@@ -218,10 +214,7 @@
         (let ((bvp-equal-address (and* (equal address last-address)
                                        (and* (bvp address)
                                              (bvp last-address)))))
-                                       
-
           (if* (and* (booleanp strobe-) (booleanp rw-))
-            
                (case cntl
                  (0 (if* strobe-
                          default
@@ -328,7 +321,7 @@
          8))
 
 (in-theory (disable mem-value mem-state))
-  
+
 
 
 

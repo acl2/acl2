@@ -12,8 +12,6 @@
                      . 3)
                     (:linear listpos-upper-bound-strong-2)
                     (:rewrite <<-sort-consp)
-                    (:rewrite
-                     hifat-find-file-correctness-3-lemma-2)
                     (:rewrite no-duplicatesp-of-member)
                     (:linear getopt::defoptions-lemma-8)
                     (:rewrite assoc-of-car-when-member)
@@ -695,8 +693,6 @@
                          (:rewrite take-when-atom)
                          (:linear
                           len-of-explode-when-m1-file-contents-p-1)
-                         (:rewrite
-                          hifat-find-file-correctness-3-lemma-2)
                          (:rewrite take-of-len-free)
                          (:rewrite str::consp-of-explode)
                          (:linear position-when-member)

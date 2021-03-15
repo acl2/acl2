@@ -183,6 +183,10 @@
                         (22 11
                             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
                         (20 4 (:DEFINITION LEN))
+                        (15 15
+                            (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+                        (15 15
+                            (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                         (8 4 (:REWRITE DEFAULT-+-2))
                         (4 4 (:REWRITE DEFAULT-+-1)))
 (X86ISA::STRINGP-OF-CREATE-ARG-DOC)
@@ -294,6 +298,10 @@
        (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
   (84 84
       (:REWRITE X86ISA::INST->FN$INLINE-OF-INST-FIX-X-NORMALIZE-CONST))
+  (44 44
+      (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
+  (44 44
+      (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
   (16 16
       (:REWRITE X86ISA::INST->MNEMONIC$INLINE-OF-INST-FIX-X-NORMALIZE-CONST))
   (12 6 (:REWRITE DEFAULT-SYMBOL-NAME))

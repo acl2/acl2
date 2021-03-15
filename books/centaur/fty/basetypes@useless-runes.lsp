@@ -93,15 +93,18 @@
                           (2 2 (:REWRITE DEFAULT-<-2))
                           (2 2 (:REWRITE DEFAULT-<-1))
                           (1 1 (:TYPE-PRESCRIPTION NATP)))
-(MAYBE-NATP-FIX-UNDER-NAT-EQUIV (8 1
-                                   (:REWRITE MAYBE-NATP-FIX-WHEN-MAYBE-NATP))
-                                (5 1 (:REWRITE MAYBE-NATP-WHEN-NATP))
-                                (3 3 (:REWRITE DEFAULT-<-2))
-                                (3 3 (:REWRITE DEFAULT-<-1))
-                                (3 1 (:DEFINITION NATP))
-                                (2 2
-                                   (:TYPE-PRESCRIPTION MAYBE-NATP$INLINE))
-                                (1 1 (:TYPE-PRESCRIPTION NATP)))
+(MAYBE-NATP-FIX-UNDER-NAT-EQUIV
+     (8 7 (:REWRITE DEFAULT-<-1))
+     (8 1
+        (:REWRITE MAYBE-NATP-FIX-WHEN-MAYBE-NATP))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (5 1 (:REWRITE MAYBE-NATP-WHEN-NATP))
+     (3 1 (:DEFINITION NATP))
+     (2 2
+        (:TYPE-PRESCRIPTION MAYBE-NATP$INLINE))
+     (1 1 (:TYPE-PRESCRIPTION NATP))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (FTY::TMP-DEFFIXTYPE-IDEMPOTENT (5 1 (:REWRITE MAYBE-NATP-WHEN-NATP))
                                 (3 1 (:DEFINITION NATP))
                                 (2 2
@@ -136,16 +139,16 @@
                              (:TYPE-PRESCRIPTION MAYBE-POSP$INLINE))
                           (2 2 (:REWRITE DEFAULT-<-2))
                           (2 2 (:REWRITE DEFAULT-<-1)))
-(MAYBE-POSP-FIX-UNDER-POS-EQUIV (8 1
+(MAYBE-POSP-FIX-UNDER-POS-EQUIV (12 2 (:REWRITE POS-FIX-WHEN-POSP))
+                                (10 3 (:DEFINITION POSP))
+                                (8 1
                                    (:REWRITE MAYBE-POSP-FIX-WHEN-MAYBE-POSP))
-                                (6 2 (:REWRITE POS-FIX-WHEN-POSP))
-                                (6 2 (:DEFINITION POSP))
+                                (5 5 (:TYPE-PRESCRIPTION POSP))
                                 (5 1 (:REWRITE MAYBE-POSP-WHEN-POSP))
-                                (2 2 (:TYPE-PRESCRIPTION POSP))
+                                (3 3 (:REWRITE DEFAULT-<-2))
+                                (3 3 (:REWRITE DEFAULT-<-1))
                                 (2 2
-                                   (:TYPE-PRESCRIPTION MAYBE-POSP$INLINE))
-                                (2 2 (:REWRITE DEFAULT-<-2))
-                                (2 2 (:REWRITE DEFAULT-<-1)))
+                                   (:TYPE-PRESCRIPTION MAYBE-POSP$INLINE)))
 (FTY::TMP-DEFFIXTYPE-IDEMPOTENT (5 1 (:REWRITE MAYBE-POSP-WHEN-POSP))
                                 (3 1 (:DEFINITION POSP))
                                 (2 2
@@ -174,12 +177,12 @@
                          (2 1 (:DEFINITION MAYBE-BITP$INLINE))
                          (1 1
                             (:TYPE-PRESCRIPTION MAYBE-BITP$INLINE)))
-(MAYBE-BIT-FIX-UNDER-BIT-EQUIV (7 1
+(MAYBE-BIT-FIX-UNDER-BIT-EQUIV (8 2 (:REWRITE BFIX-BITP))
+                               (7 1
                                   (:REWRITE MAYBE-BIT-FIX-WHEN-MAYBE-BITP))
-                               (4 2 (:REWRITE BFIX-BITP))
-                               (3 3 (:DEFINITION BITP))
+                               (5 5 (:TYPE-PRESCRIPTION BITP))
+                               (5 4 (:DEFINITION BITP))
                                (3 1 (:REWRITE MAYBE-BITP-WHEN-BITP))
-                               (2 2 (:TYPE-PRESCRIPTION BITP))
                                (2 1 (:DEFINITION MAYBE-BITP$INLINE))
                                (1 1
                                   (:TYPE-PRESCRIPTION MAYBE-BITP$INLINE)))

@@ -8514,20 +8514,15 @@
 
 ; We ensure that these are sorted, although this may no longer be important.
 
-  (let ((lst '(mv-list return-last)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+  (let ((lst '(if mv-list return-last)))
+    (sort-symbol-listp lst)))
 
 (defconst *basic-ruler-extenders-plus-lambdas*
 
 ; We ensure that these are sorted, although this may no longer be important.
-; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
-; front is no longer sorted, then we will have to call sort-symbol-listp.  But
-; here we got lucky.
 
   (let ((lst (cons :lambdas *basic-ruler-extenders*)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+    (sort-symbol-listp lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -12781,7 +12776,8 @@
                      (msg "The measures specified for ~&0 (mutually recursive ~
                            with ~x1) are \"calls\" of :?, rather than true ~
                            measures"
-                          bad-names))
+                          bad-names
+                          fn))
                     (t
                      (msg "The measure specified for ~&0~@1 is a \"call\" of ~
                            :?, rather than a true measure"

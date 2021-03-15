@@ -112,6 +112,14 @@
            (< (+ -1 (/ i j)) (floor i j)))
   :hints (("Goal" :in-theory (enable floor))))
 
+(defthm my-floor-lower-bound-linear
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (< (+ -1 (/ i j)) (floor i j)))
+  :rule-classes ((:linear :trigger-terms ((floor i j))))
+  :hints (("Goal" :in-theory (enable floor))))
+
 ;; In this version, we have multiplied through by j.
 (defthm my-floor-lower-bound-alt
   (implies (and (rationalp i)
@@ -466,7 +474,7 @@
                            (i2 (+ y n))
                            (j y)))))
 
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;why? for FLOOR-BOUNDED-BY-/? and to prove FLOOR-PEEL-OFF-CONSTANT
+;(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;why? for FLOOR-BOUNDED-BY-/? and to prove FLOOR-PEEL-OFF-CONSTANT
 
 (defthm floor-peel-off-constant
   (implies (and (syntaxp (quotep k))

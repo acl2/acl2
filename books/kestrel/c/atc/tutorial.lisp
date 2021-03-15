@@ -151,7 +151,7 @@
    "ATC translates a subset of ACL2 to C.
     The ACL2 subset is designed to be close to C,
     i.e. to be essentially ``C written in ACL2'',
-    so that it is easy to translate to C.
+    so that it is relatively easy to translate to C.
     There is a direct translation to the C constructs
     from their representation in ACL2.")
 
@@ -294,28 +294,28 @@
   (xdoc::p
    "C provides the following unary and binary @('int') operations [C:6.5]:")
   (xdoc::ul
-   (xdoc::li "@('+') (unary)")
-   (xdoc::li "@('-') (unary)")
-   (xdoc::li "@('~') (unary)")
-   (xdoc::li "@('!') (unary)")
-   (xdoc::li "@('+') (binary)")
-   (xdoc::li "@('-') (binary)")
-   (xdoc::li "@('*') (binary)")
-   (xdoc::li "@('/') (binary)")
-   (xdoc::li "@('%') (binary)")
-   (xdoc::li "@('<<') (binary)")
-   (xdoc::li "@('>>') (binary)")
-   (xdoc::li "@('<') (binary)")
-   (xdoc::li "@('>') (binary)")
-   (xdoc::li "@('<=') (binary)")
-   (xdoc::li "@('>=') (binary)")
-   (xdoc::li "@('==') (binary)")
-   (xdoc::li "@('!=') (binary)")
-   (xdoc::li "@('&') (binary)")
-   (xdoc::li "@('^') (binary)")
-   (xdoc::li "@('|') (binary)")
-   (xdoc::li "@('&&') (binary)")
-   (xdoc::li "@('||') (binary)"))
+   (xdoc::li "@('+') (unary) &mdash; no value change, but mirrors unary @('-')")
+   (xdoc::li "@('-') (unary) &mdash; arithmetic negation")
+   (xdoc::li "@('~') (unary) &mdash; bitwise complement")
+   (xdoc::li "@('!') (unary) &mdash; logical negation/complement")
+   (xdoc::li "@('+') (binary) &mdash; addition")
+   (xdoc::li "@('-') (binary) &mdash; subtraction")
+   (xdoc::li "@('*') (binary) &mdash; multiplication")
+   (xdoc::li "@('/') (binary) &mdash; division")
+   (xdoc::li "@('%') (binary) &mdash; remainder")
+   (xdoc::li "@('<<') (binary) &mdash; left shift")
+   (xdoc::li "@('>>') (binary) &mdash; right shift")
+   (xdoc::li "@('<') (binary) &mdash; less-than")
+   (xdoc::li "@('>') (binary) &mdash; greater-than")
+   (xdoc::li "@('<=') (binary) &mdash; less-than-or-equal-to")
+   (xdoc::li "@('>=') (binary) &mdash; greater-than-or-equal-to")
+   (xdoc::li "@('==') (binary) &mdash; equality")
+   (xdoc::li "@('!=') (binary) &mdash; non-equality")
+   (xdoc::li "@('&') (binary) &mdash; bitwise conjunction")
+   (xdoc::li "@('^') (binary) &mdash; bitwise exclusive disjunction")
+   (xdoc::li "@('|') (binary) &mdash; bitwise inclusive disjunction")
+   (xdoc::li "@('&&') (binary) &mdash; logical (short-circuit) conjunction")
+   (xdoc::li "@('||') (binary) &mdash; logical (short-circuit) disjunction"))
   (xdoc::p
    "These not only take, but also return, @('int') values.
     This uniformity is also due to the fact that C represents booleans
@@ -389,32 +389,31 @@
     to cover more of the options allowed by [C].")
 
   (xdoc::p
-   "We also provide ACL2 functions corresponding to the operations listed above,
-    which we list in the same order here
-    (and the correspondence should be also obvious based on the names):")
+   "We also provide ACL2 functions
+    corresponding to the operations listed above:")
   (xdoc::ul
-   (xdoc::li "@(tsee sint-plus)")
-   (xdoc::li "@(tsee sint-minus)")
-   (xdoc::li "@(tsee sint-bitnot)")
-   (xdoc::li "@(tsee sint-lognot)")
-   (xdoc::li "@(tsee sint-add)")
-   (xdoc::li "@(tsee sint-sub)")
-   (xdoc::li "@(tsee sint-mul)")
-   (xdoc::li "@(tsee sint-div)")
-   (xdoc::li "@(tsee sint-rem)")
-   (xdoc::li "@(tsee sint-shl-sint)")
-   (xdoc::li "@(tsee sint-shr-sint)")
-   (xdoc::li "@(tsee sint-lt)")
-   (xdoc::li "@(tsee sint-gt)")
-   (xdoc::li "@(tsee sint-le)")
-   (xdoc::li "@(tsee sint-ge)")
-   (xdoc::li "@(tsee sint-eq)")
-   (xdoc::li "@(tsee sint-ne)")
-   (xdoc::li "@(tsee sint-bitand)")
-   (xdoc::li "@(tsee sint-bitxor)")
-   (xdoc::li "@(tsee sint-bitior)")
-   (xdoc::li "@(tsee sint-logand)")
-   (xdoc::li "@(tsee sint-logor)"))
+   (xdoc::li "@(tsee sint-plus) &mdash; for unary @('+')")
+   (xdoc::li "@(tsee sint-minus) &mdash; for unary @('-')")
+   (xdoc::li "@(tsee sint-bitnot) &mdash; for @('~')")
+   (xdoc::li "@(tsee sint-lognot) &mdash; for @('!')")
+   (xdoc::li "@(tsee sint-add) &mdash; for binary @('+')")
+   (xdoc::li "@(tsee sint-sub) &mdash; for binary @('-')")
+   (xdoc::li "@(tsee sint-mul) &mdash; for @('*')")
+   (xdoc::li "@(tsee sint-div) &mdash; for @('/')")
+   (xdoc::li "@(tsee sint-rem) &mdash; for @('%')")
+   (xdoc::li "@(tsee sint-shl-sint) &mdash; for @('<<')")
+   (xdoc::li "@(tsee sint-shr-sint) &mdash; for @('>>')")
+   (xdoc::li "@(tsee sint-lt) &mdash; for @('<')")
+   (xdoc::li "@(tsee sint-gt) &mdash; for @('>')")
+   (xdoc::li "@(tsee sint-le) &mdash; for @('<=')")
+   (xdoc::li "@(tsee sint-ge) &mdash; for @('>=')")
+   (xdoc::li "@(tsee sint-eq) &mdash; for @('==')")
+   (xdoc::li "@(tsee sint-ne) &mdash; for @('!=')")
+   (xdoc::li "@(tsee sint-bitand) &mdash; for @('&')")
+   (xdoc::li "@(tsee sint-bitxor) &mdash; for @('^')")
+   (xdoc::li "@(tsee sint-bitior) &mdash; for @('|')")
+   (xdoc::li "@(tsee sint-logand) &mdash; for @('&&')")
+   (xdoc::li "@(tsee sint-logor) &mdash; for @('||')"))
   (xdoc::p
    "The @('-sint') at the end of the names of the shift operations
     is motivated by the fact that, as mentioned earlier,
@@ -579,7 +578,7 @@
    "               (c::sint-sub |z| (c::sint-const 3))))")
   (xdoc::p
    "We represent the expression of the @('return') statement
-    that form the body of the function @('f').
+    that forms the body of the function @('f').
     In ACL2, terms are implicitly returned,
     so there is no need to represent the @('return') statement explicitly.")
 
@@ -615,7 +614,7 @@
 
   (xdoc::p
    "That is, the guard must include explicit conjuncts
-    that spell out the C types of the function's parameter.
+    that spell out the C types of the function's parameters.
     For the example function, these are as follows:")
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
@@ -634,7 +633,7 @@
     but they must be easily extractable
     by looking at the @(tsee and) tree structure of the guard:
     the conjuncts of interest must be leaves in that tree,
-    one for each funcion parameter.
+    one for each function parameter.
     For instance, the following would be equally acceptable:")
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
@@ -766,7 +765,7 @@
   (atc-tutorial-section "Code Generation")
 
   (xdoc::p
-   "Given the guard-verified ACL2 function @('|f|) above,
+   "Given the guard-verified ACL2 function @('|f|') above,
     the C function @('f') can be generated as follows:")
   (xdoc::codeblock
    "(include-book \"kestrel/c/atc/atc\" :dir :system)"
@@ -779,7 +778,7 @@
     see the tests in @('[books]/kestrel/c/atc/tests') for examples.")
 
   (xdoc::p
-   "The ATC tool in invoked on one or more ACL2 function symbols,
+   "The ATC tool is invoked on one or more ACL2 function symbols,
     in this case just @('|f|').
     The @(':output-file') option says where the generated output file goes,
     in this case @('f.c') in the current working directory.
@@ -822,7 +821,7 @@
    "    int y = -2;"
    "    int z = 8;"
    "    int r = f(x, y, z);"
-   "    printf(\"f(%d, %d, %d) = %d\n\", x, y, z, r);"
+   "    printf(\"f(%d, %d, %d) = %d\\n\", x, y, z, r);"
    "}")
   (xdoc::p
    "This file calls the generated function on specific values,
@@ -963,6 +962,314 @@
     In any case, any portable ASCII C identifiers,
     including ones with uppercase letters,
     are representable via ACL2 symbols."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page multiple-functions
+
+  "ACL2 representation and generation of multiple C functions"
+
+  (xdoc::p
+   "As mentioned in @(see atc-tutorial-int-programs),
+    there is a one-to-one representational correspondence
+    between ACL2 functions and C functions.
+    This tutorial page explains in more details and exemplifies
+    the representation and generation of multiple functions.")
+
+  (xdoc::p
+   "Consider a C program consisting of multiple functions:")
+  (xdoc::codeblock
+   "int f(int x, int y) {"
+   "    return x < y;"
+   "}"
+   ""
+   "int g (int z) {"
+   "    return f(z, ~z);"
+   "}"
+   ""
+   "int h (int a, int b) {"
+   "    return g(a & b);"
+   "}")
+  (xdoc::p
+   "(We have chosen C operations that are well-defined over all @('int')s
+    to avoid guards that constrain the ranges of the function parameter.)")
+
+  (xdoc::p
+   "[C:6.2.1] disallows forward references among function definitions.
+    Specifically, [C:6.2.1/4] says that an external declaration
+    (i.e. one that is not inside any block),
+    which includes function definitions,
+    has a file scope that terminates at the end of the file;
+    it seems implicit in this that the scope starts with the definition,
+    and includes the function's body to make (singly) recursive calls possible.
+    Mutually recursive C function definitions,
+    and generally C function definitions that call functions
+    defined later in a file,
+    are allowed via function declarations (e.g. through header files)
+    that are not function definitions,
+    where the scope of the non-definition declaration
+    starts before the definition.
+    However, currently ATC only generates C files
+    without header files or function declarations that are not definitions.
+    Thus, the generated C functions cannot have forward references.")
+
+  (xdoc::p
+   "These restrictions mean that the C functions exemplified above
+    must appear exactly in that order in the generated C file.
+    This order matches ACL2's event order.
+    The C program above is represented by
+    the following three ACL2 functions:")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y|)"
+   "  (declare (xargs :guard (and (c::sintp |z|) (c::sintp |y|))))"
+   "  (c::sint-lt |x| |y|))"
+   ""
+   "(defun |g| (|z|)"
+   "  (declare (xargs :guard (c::sintp |z|)))"
+   "  (|f| |z| (c::sint-bitnot |z|)))"
+   ""
+   "(defun |h| (|a| |b|)"
+   "  (declare (xargs :guard (and (c::sintp |a|) (c::sintp |b|))))"
+   "  (|g| (c::sint-bitand |a| |b|)))")
+  (xdoc::p
+   "These three functions must necessarily appear in this order,
+    but of course they do not have to be contiguous events
+    in the ACL2 @(see world),
+    i.e. there may be any number of events between them.")
+
+  (xdoc::p
+   "The ACL2 functions to be translated to C functions
+    must be always supplied to ATC in order
+    (i.e. their order in the ACL2 @(see world) and in the C file).
+    ATC checks that each supplied function
+    only calls earlier functions in the list.
+    This excludes any form of recursion, mutual or single.
+    (This restriction may be eventually lifted, but for now it applies.)")
+
+  (xdoc::p
+   "For the example above, ATC must be called as follows:")
+  (xdoc::codeblock
+   "(c::atc |f| |g| |h| :output-file ...)")
+  (xdoc::p
+   "Since each function listed only calls earlier functions in the list,
+    this list is accepted by ATC,
+    and the C program above is generated.")
+
+  (xdoc::p
+   "As mentioned above, currently ATC generates a single C file.
+    As seen in previous examples,
+    this is specified by the @(':output-file') option,
+    which must be present.
+    The file should have extension @('.c'),
+    but ATC does not currently enforce that.
+    In technical terms, the generated C file is a translation unit [C:5.1.1.1].
+    More precisely, the file is a source file,
+    which is read (by a C implementation, e.g. compiler)
+    into a preprocessing translation unit,
+    which becomes a translation unit after preprocessing.
+    Since ATC currently generates files without preprocessing directives,
+    preprocessing translation units coincide with translation units
+    as far as the C code generated by ATC is concerned."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page events
+
+  "ACL2 events generated by ATC."
+
+  (xdoc::p
+   "(This page may be skipped at first reading.)")
+
+  (xdoc::p
+   "As briefly mentioned in @(see atc-tutorial-int-programs),
+    ATC generates some events, besides the C file.
+    This page describes these events in more detail.")
+
+  (xdoc::p
+   "These events are generated only if the @(':proofs') option is @('t'),
+    which is the default, i.e. if proofs are generated.
+    The events all pertain to the proofs.
+    When @(':proofs') is @('nil'), ATC only generates the C file.")
+
+  (xdoc::p
+   "These events are generated in an @(tsee encapsulate),
+    from which they are exported.
+    The @(tsee encapsulate) also includes
+    some locally generated events that support the exported events.
+    The option @(':print :all') can be used to see all the events,
+    including the local ones.")
+
+  (atc-tutorial-section "Program Constant")
+
+  (xdoc::p
+   "ATC generates a named constant whose value is
+    the AST of the generated C program.
+    More precisely, it is the AST of the generated translation unit,
+    which is a value of the fixtype @(tsee transunit) in "
+   (xdoc::seetopic "atc-abstract-syntax" "ATC's abstract syntax of C")
+   ". The translation unit is the content of the generated file:
+    the AST is "
+   (xdoc::seetopic "atc-pretty-printer" "pretty-printed")
+   " to the @('.c') file.
+    Currently ATC generates C programs that consist of
+    single translation units in single C files.")
+
+  (xdoc::p
+   "The @(':const-name') option directly controls the name of this constant.")
+
+  (xdoc::p
+   "The reason for generating this constant is so that
+    it can be used in the generated theorems described next,
+    making the theorems more readable.")
+
+  (atc-tutorial-section "Static Correctness Theorem")
+
+  (xdoc::p
+   "ATC generates a theorem asserting that
+    the generated C program is statically correct,
+    according to "
+   (xdoc::seetopic "atc-static-semantics" "ATC's static semantics of C")
+   ".")
+
+  (xdoc::p
+   "More precisely, ATC generates a theorem of the form")
+  (xdoc::codeblock
+   "(defthm <constant>-well-formed"
+   "  (equal (check-transunit <constant>) :wellformed))")
+  (xdoc::p
+   "This asserts that
+    when @(tsee check-transunit) is applied
+    to the named constant described above
+    (i.e. the abstract syntax of the generated C program),
+    the result is the value @(':wellformed').
+    That is, the AST satisfies all the requirements
+    of the static semantics of C:
+    the code can be compiled by a C compiler,
+    which is a prerequisite for executing it.")
+
+  (xdoc::p
+   "Since the program AST is a constant
+    and @(tsee check-transunit) is executable,
+    the theorem is proved easily by execution.")
+
+  (xdoc::p
+   "The name of the theorem is obtained by appending @('-well-formed')
+    after the name of the constant for the generated program.
+    Currently ATC provides no option
+    to control directly the name of this theorem;
+    it can be controlled only indirectly,
+    via the @(':const-name') option for the constant name (see above).")
+
+  (atc-tutorial-section "Dynamic Correctness Theorems")
+
+  (xdoc::p
+   "ATC generates theorems asserting that
+    the generated C program is dynamically correct,
+    according to "
+   (xdoc::seetopic "atc-dynamic-semantics" "ATC's dynamic semantics of C")
+   ".")
+
+  (xdoc::p
+   "More precisely, for each target function @('fn')
+    (see @(see atc-tutorial-multiple-functions) for details on
+    how multiple ACL2 functions are translated to corresponding C functions),
+    ATC generates a theorem of the form")
+  (xdoc::codeblock
+   "(defthm <constant>-<fn>-correct"
+   "  (implies <guard-of-fn>"
+   "           (equal (run-fun (ident \"<fn>\")"
+   "                           (list <x1> ... <xn>)"
+   "                           <constant>)"
+   "                  (<fn> <x1> ... <xn>))))")
+  (xdoc::p
+   "This asserts that, under the guard of @('fn'),
+    running the C function corresponding to @('fn')
+    yields the same result as @('fn').
+    Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').")
+
+  (xdoc::p
+   "As explained in @(tsee atc-tutorial-identifiers),
+    the function @('fn') is translated to a C function
+    whose name is the @(tsee symbol-name) of @('fn'):
+    thus, @(tsee run-fun) is called on that string as first argument.
+    The second argument is the list of formals of @('fn').
+    The third argument is the program AST.
+    The call of @(tsee run-fun) executes the C code generated for @('fn')
+    according to the C dynamic semantics:
+    it looks up the definition of the function in the program,
+    runs its body, which may call other functions, etc.")
+
+  (xdoc::p
+   "Note that, since @('fn') does not return error values,
+    the theorem implies that the execution of the C code
+    never results in an error, including unsafe operations.
+    This is because the dynamic semantics is defensive,
+    i.e. it checks the validity of every operation before performing it,
+    returning an error if the operation is invalid.")
+
+  (xdoc::p
+   "The guard satisfaction hypothesis is critical.
+    Without it, the C code may return some error,
+    e.g. if the result of an @('int') addition does not fit in an @('int').
+    Also see the discussion in @(see atc-tutorial-int-representation)
+    about the guards of the ACL2 functions that represent C operations.")
+
+  (xdoc::p
+   "The dynamic semantics of C is formalized in terms of
+    a deep embedding of C in ACL2:
+    C ASTs are explicitly modeled in ACL2,
+    and (static and dynamic) semantics is defined on the ASTs.
+    In contrast, the ACL2 representation of C programs,
+    e.g. as described in @(tsee atc-tutorial-int-representation),
+    is like a shallow embedding of C in ACL2.
+    Thus, the correctness theorem above provides
+    a bridge between shallow and deep embedding.
+    The two embeddings are in close correspondence by design,
+    but the proofs are still not trivial,
+    because the two embeddings
+    are actually quite different in nature and details.")
+
+  (xdoc::p
+   "The correctness theorem above is proved by
+    expanding @('fn') (for the shallow embedding)
+    and symbolically executing its C counterpart (for the deep embedding).
+    The two converge to the same (non-error) result.")
+
+  (xdoc::p
+   "These correctness proofs for functions are
+    modular with respect to the function call graph:
+    theorems about the correctness of callees
+    are used to prove theorems about the correctness of callers.
+    This is achieved via locally generated theorems
+    that are more general than the exported ones
+    (the latter are not compositional).
+    Future versions of ATC may
+    export these theorems from the @(tsee encapsulate).")
+
+  (xdoc::p
+   "See @(tsee atc-proof-support) and @(tsee atc-implementation) for details
+    on the generated theorems and their proofs.")
+
+  (atc-tutorial-section "Code Generation after the Events")
+
+  (xdoc::p
+   "The actual code is generated (i.e. written into the file)
+    after the events above have been successfully processed by ACL2.
+    Thus, if one of the theorems above fails for some reason,
+    no code is generated.
+    The rationale is that, unless the code can be proved correct,
+    it should not be generated.
+    Of course, this is easily defated by setting @(':proofs') to @('nil').
+    Nonetheless, when @(':proofs') is @('t'),
+    it seems appropriate to generate the code after the proofs.")
+
+  (xdoc::p
+   "This deferral is achieved by having ATC not generate the code directly,
+    but by having ATC generate an event that generates the code.
+    Thus, ATC generates this and the events above,
+    putting the latter before the former,
+    and submits the events, in that order.
+    The effect is as desired."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

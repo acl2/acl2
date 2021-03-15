@@ -210,6 +210,7 @@
                     (3 1 (:REWRITE ADE::FV-IF-WHEN-BVP))
                     (2 2 (:REWRITE ADE::LEN-QUEUE5$DATA-OUT-2))
                     (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                    (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
                     (1 1
@@ -286,6 +287,7 @@
                     (6 3 (:REWRITE DEFAULT-UNARY-MINUS))
                     (5 5 (:REWRITE ADE::LEN-QUEUE4$DATA-OUT-2))
                     (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                    (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
                     (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
                     (1 1
@@ -672,7 +674,7 @@
      (2 2 (:REWRITE CONSP-OF-TAKE)))
 (ADE::QUEUE10$Q5-DATA-IN-REWRITE
      (142 5 (:REWRITE TAKE-OF-TOO-MANY))
-     (73 11 (:DEFINITION LEN))
+     (74 11 (:DEFINITION LEN))
      (63 21
          (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
      (54 1 (:DEFINITION TAKE))
@@ -716,7 +718,10 @@
      (2 2 (:TYPE-PRESCRIPTION BINARY-APPEND))
      (2 2 (:REWRITE LEN-OF-TAKE))
      (2 2 (:REWRITE CONSP-OF-TAKE))
+     (2 1 (:REWRITE PREFIXP-WHEN-PREFIXP))
      (2 1 (:REWRITE DEFAULT-UNARY-MINUS))
+     (1 1
+        (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (1 1 (:REWRITE PREFIXP-TRANSITIVE . 2))
      (1 1 (:REWRITE PREFIXP-TRANSITIVE . 1))
      (1 1

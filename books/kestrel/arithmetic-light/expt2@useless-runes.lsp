@@ -339,23 +339,27 @@
            (30 3 (:LINEAR EXPT-<-1-TWO))
            (28 3 (:LINEAR EXPT-X->=-X))
            (28 3 (:LINEAR EXPT-X->-X))
-           (24 24
+           (26 26
                (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+           (26 2 (:LINEAR EXPT-HALF-LINEAR))
+           (22 2 (:DEFINITION NATP))
            (21 21 (:REWRITE DEFAULT-EXPT-2))
            (21 21 (:REWRITE DEFAULT-EXPT-1))
-           (16 2 (:REWRITE |(< (+ c x) d)|))
-           (15 15 (:REWRITE SIMPLIFY-SUMS-<))
-           (15 15
+           (17 17 (:REWRITE SIMPLIFY-SUMS-<))
+           (17 17
                (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-           (15 15 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+           (17 17 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+           (17 17 (:REWRITE DEFAULT-<-2))
+           (17 17 (:REWRITE DEFAULT-<-1))
+           (17 17 (:REWRITE |(< (- x) (- y))|))
+           (16 2 (:REWRITE |(< (+ c x) d)|))
            (15 15
                (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
            (15 15 (:REWRITE NORMALIZE-ADDENDS))
-           (15 15 (:REWRITE DEFAULT-<-2))
-           (15 15 (:REWRITE DEFAULT-<-1))
            (15 15 (:REWRITE DEFAULT-+-2))
            (15 15 (:REWRITE DEFAULT-+-1))
-           (15 15 (:REWRITE |(< (- x) (- y))|))
+           (6 6
+              (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
            (6 6 (:REWRITE |(expt x (- n))|))
            (6 6 (:REWRITE |(expt 2^i n)|))
            (6 6 (:REWRITE |(expt 1/c n)|))
@@ -374,19 +378,18 @@
               (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
            (6 3
               (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-           (4 4
-              (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+           (3 3
+              (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
            (3 3
               (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
            (3 3 (:REWRITE |(equal (- x) (- y))|))
            (3 3 (:REWRITE |(< 0 (- x))|))
+           (3 3 (:REWRITE |(< (- x) 0)|))
            (3 3 (:LINEAR EXPT->-1-TWO))
            (3 3 (:LINEAR EXPT-<-1-ONE))
-           (1 1
-              (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+           (2 2 (:TYPE-PRESCRIPTION NATP))
            (1 1 (:REWRITE REDUCE-INTEGERP-+))
            (1 1 (:REWRITE INTEGERP-MINUS-X))
-           (1 1 (:REWRITE |(< (- x) 0)|))
            (1 1 (:META META-INTEGERP-CORRECT)))
 (EXPT-BOUND-WHEN-NEGATIVE
      (27 27 (:TYPE-PRESCRIPTION NATP-OF-EXPT))

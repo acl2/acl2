@@ -100,9 +100,11 @@
 ;; following 15 objects in 4-bit chunks (total 60 bits).  Since we only have 6
 ;; kinds of scratchobj, that gives us room to grow up to 16.
 
+(encapsulate
+  ()
 
-
-(fty::deflist scratch-nontagidxlist :elt-type scratch-nontagidx :true-listp t)
+  (local (in-theory (enable len)))
+  (fty::deflist scratch-nontagidxlist :elt-type scratch-nontagidx :true-listp t))
 
 (defstobj stack$c
   (stack$c-minor :type (array t (3)) :resizable t)
@@ -190,12 +192,15 @@
     (equal (nth-nontag m (update-nth n val l))
            (if (equal (nfix m) (nfix n))
                (scratch-nontagidx-fix val)
-             (nth-nontag m l))))
+             (nth-nontag m l)))
+    :hints (("Goal" :in-theory
+             (disable (:rewrite nth-of-scratch-nontagidxlist-fix)))))
 
 
   (fty::deffixcong scratch-nontagidxlist-equiv scratch-nontagidx-equiv (nth n x) x
-    :hints(("Goal" :in-theory (enable scratch-nontagidxlist-fix nth)
-            :induct (nth n x))))
+                   :hints(("Goal" :in-theory (e/d (scratch-nontagidxlist-fix nth)
+                                                  ((:rewrite nth-of-scratch-nontagidxlist-fix)))
+                           :induct (nth n x))))
 
   (fty::deffixequiv nth-nontag)
 

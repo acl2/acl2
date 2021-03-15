@@ -49,8 +49,9 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
+     "     :proofs      ...  ; default t"
+     "     :const-name  ...  ; default :auto"
      "     :print       ...  ; default :result"
      "  )"))
 
@@ -68,23 +69,6 @@
        `Representation of C Code in ACL2'."))
 
     (xdoc::desc
-     "@(':const-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Name of the generated ACL2 named constant
-       that holds the abstract syntax tree of the generated C program.")
-     (xdoc::p
-      "This must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('*program*')
-        in the @('\"C\"') package.")
-      (xdoc::li
-       "Any other symbol, to use as the name of the constant."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const*') be the symbol specified by this input."))
-
-    (xdoc::desc
      "@(':output-file') &mdash; no default"
      (xdoc::p
       "Path of the file where the generated C code goes.")
@@ -99,6 +83,43 @@
        if it does not exist, it is created;
        if it exists, it is overwritten.
        The file must include a @('.c') extension."))
+
+    (xdoc::desc
+     "@(':proofs') &mdash; default @('t')"
+     (xdoc::p
+      "Specifies whether proofs should be generated or not.")
+     (xdoc::p
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to generate proofs.")
+      (xdoc::li
+       "@('nil'), to not generate proofs."))
+     (xdoc::p
+      "While it is obviously recommended to generate proofs,
+       setting this to @('nil') may be useful
+       in case proof generation is (temporarily) broken."))
+
+    (xdoc::desc
+     "@(':const-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Name of the generated ACL2 named constant
+       that holds the abstract syntax tree of the generated C program.")
+     (xdoc::p
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the symbol @('*program*')
+        in the @('\"C\"') package.")
+      (xdoc::li
+       "Any other symbol, to use as the name of the constant."))
+     (xdoc::p
+      "This input must be absent if @(':proofs') is @('nil').
+       The named constant is generated only if @(':proofs') is @('t').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('*program*') be the symbol specified by this input,
+       if applicable (i.e. when @(':proofs') is @('t'))."))
 
     (xdoc::evmac-input-print atc))
 
@@ -143,18 +164,32 @@
       (the package names are ignored).")
 
     (xdoc::p
-     "The guard of each @('fni') must include conjuncts of the form
-      @('(sintp x)') for every formal parameter @('x').
-      The conjuncts may be at any level of nesting,
+     "The guard of each @('fni') must include,
+      for every formal parameter @('x'),
+      a conjunct of one of the following forms,
+      which determines the C type of
+      the corresponding parameter of the C function:")
+    (xdoc::ul
+     (xdoc::li
+      "@('(ucharp x)'), representing @('unsigned char').")
+     (xdoc::li
+      "@('(sintp x)'), representing @('int').")
+     (xdoc::li
+      "@('(uchar-arrayp)'), representing @('unsigned char *').
+       Currently, this may be used only if @(':proofs') is @('nil');
+       proof generation support for arrays will be added eventually."))
+    (xdoc::p
+     "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
       the @(tsee and) structure of the (translated) guard term.
-      Thus, all the formal parameters of the C function represented by @('fni')
-      have type @('int');
-      the rest of the guard (i.e. additional requirements)
-      are not explicitly represented in the C code.
-      The C function returns an @('int') result;
-      that this is the correct return type
-      is guaranteed by the restrictions given below.")
+      The rest of the guard (i.e. other than the conjuncts above)
+      is not explicitly represented in the C code.")
+
+    (xdoc::p
+     "The return type of the C function corresponding to @('fni')
+      is automatically determined from the body.
+      The restrictions on the body, given below,
+      make the determination of the return type possible in all cases.")
 
     (xdoc::p
      "Each function @('fni') must be in logic mode and guard-verified.
@@ -203,7 +238,8 @@
        as defined in Section `Portable ASCII C Identifiers' below,
        @('term') is an allowed non-boolean term,
        and @('body') is an allowed outer term.
-       This represents one of the following:"
+       The C type of @('term') must not be a pointer type.
+       This @(tsee let) represents one of the following:"
       (xdoc::ul
        (xdoc::li
         "A declaration of a C local variable represented by @('var'),
@@ -305,6 +341,29 @@
        this represents a strict (i.e. not non-strict) use of them;
        see below for how to represent non-strict uses of them,
        but the strict version is slightly simpler when usable.")
+     (xdoc::li
+      "A call of one of the following functions
+       on allowed pure non-boolean terms:"
+      (xdoc::ul
+       (xdoc::li "@(tsee sint-from-uchar)")
+       (xdoc::li "@(tsee uchar-from-sint)"))
+      "This represents
+       a cast to the type indicated by the first part of the function name.
+       The guard verification requirement ensures that
+       the conversion is always applied to
+       a value of the type indicated by the last part of the function name
+       and yields a well-defined result.
+       Even though the conversion from @('unsigned char') to @('int')
+       happens automatically under certain common circumstances
+       (e.g. when an @('unsigned char') is used
+       as an operand of an @('int') arithmetic operation),
+       currently ATC always generates explicit casts;
+       this will be improved in future extensions to ATC.")
+     (xdoc::li
+      "A call of @(tsee uchar-array-read-sint) on an allowed boolean term.
+       This represents an array subscripting expression.
+       Currently, this may be used only if @(':proofs') is @('nil');
+       proof generation support for arrays will be added eventually.")
      (xdoc::li
       "A call of @(tsee sint01) on an allowed boolean term.
        This converts an allowed boolean term
@@ -437,12 +496,15 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defconst *const* ...)")
+      "(defconst *program* ...)")
      (xdoc::p
       "where @('...') is the abstract syntax tree of
        the generated C translation unit,
        which ATC also pretty-prints and writes
        to the file specified by the @(':output-file') input."))
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this constant is not generated.")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -452,25 +514,32 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defthm *const*-well-formed ...)")
+      "(defthm *program*-well-formed ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('*const*') stating that
+      "where @('...') is an assertion about @('*program*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
        i.e. it compiles according to [C].")
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this theorem is not generated.")
 
      (xdoc::p
       "For each target function @('fn'), ATC generates an event")
      (xdoc::codeblock
-      "(defthm *const*-fn-correct ...)")
+      "(defthm *program*-fn-correct ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('fn') and @('*const*') stating that,
+      "where @('...') is an assertion about @('fn') and @('*program*')
+       stating that,
        under the guard of @('fn'),
        executing the C dynamic semantics on
        the C function generated from @('fn')
        yields the same result as the function @('fn').
        That is,
-       the C function is functionally equivalent to the ACL2 function.")))
+       the C function is functionally equivalent to the ACL2 function.")
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this theorem is not generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -84,14 +84,6 @@
            (iff (consp (assoc-equal name (l2-to-l1-fs fs)))
                 (consp (assoc-equal name fs)))))
 
-(defthm l2-stat-correctness-1-lemma-2
-  (implies (and (l2-fs-p fs)
-                (consp (assoc-equal name fs))
-                (consp (cdr (assoc-equal name fs)))
-                (stringp (car (cdr (assoc-equal name fs)))))
-           (equal (cdr (assoc-equal name (l2-to-l1-fs fs)))
-                  (car (cdr (assoc-equal name fs))))))
-
 (defthm l2-stat-correctness-1-lemma-3
   (implies (and (l2-fs-p fs)
                 (consp (assoc-equal name fs))
@@ -124,11 +116,6 @@
     :in-theory (disable l2-to-l1-fs-correctness-1)
     :use (:instance l2-to-l1-fs-correctness-1
                     (fs (cdr (assoc-equal (car hns) fs)))))))
-
-(defthm l2-stat-correctness-2-lemma-1
-  (implies (and (l2-fs-p fs) (consp (assoc-equal name fs)))
-           (implies (not (stringp (cadr (assoc-equal name fs))))
-                    (not (stringp (cdr (assoc-equal name (l2-to-l1-fs fs))))))))
 
 (defthm l2-stat-correctness-2-lemma-2
   (implies (not (stringp fs))
@@ -241,11 +228,6 @@
                                    newlength))))
                           (l2-wrchs (cdr hns) contents start text)))
                   (remove1-assoc (car hns) fs))))))))
-
-(defthm l2-wrchs-returns-fs-lemma-1
-  (implies (and (consp (assoc-equal s fs))
-                (l2-fs-p fs))
-           (symbolp (car (assoc-equal s fs)))))
 
 (defthm l2-wrchs-returns-fs-lemma-2
   (implies (l2-fs-p fs)
@@ -362,20 +344,6 @@
 (defthm l2-read-after-write-1-lemma-1
   (implies (consp (assoc-equal name alist))
            (equal (car (assoc-equal name alist)) name)))
-
-(defthm l2-read-after-write-1-lemma-3
-  (implies (l2-rdchs hns fs start n)
-           (stringp (l2-stat hns fs))))
-
-(defthm l2-read-after-write-1-lemma-4
-  (implies (and (l2-fs-p fs)
-                (stringp text)
-                (symbol-listp hns)
-                (natp start)
-                (stringp (l2-stat hns fs)))
-           (<= (+ start (len (coerce text 'list)))
-               (len (coerce (l2-stat hns (l2-wrchs hns fs start text))
-                            'list)))))
 
 (defthm l2-read-after-write-2-lemma-1
   (implies (l2-fs-p fs)

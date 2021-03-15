@@ -332,7 +332,25 @@ acl2::4v-monotonicity).</p>"
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))
-           )))
+           ))
+
+  (defthm 4vec-?!-monotonic-on-nontest-args
+    (implies (and (4vec-[= then1 then2)
+                  (4vec-[= else1 else2))
+             (4vec-[= (4vec-?! test then1 else1)
+                      (4vec-?! test then2 else2)))
+    :hints(("Goal" :in-theory (enable 4vec-?! 4vec-[=))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil)))))
+
+  (defthm 4vec-?*-[=-?!
+    (4vec-[= (4vec-?* test then else)
+             (4vec-?! test then else))
+    :hints(("Goal" :in-theory (enable 4vec-?! 4vec-[= 4vec-?* 3vec-?* 3vec-fix))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:bdd (:vars nil))))))
 
 (defsection 4veclist-[=
   :parents (4vec-[= 4veclist)
@@ -418,6 +436,8 @@ an approximation of its value in @('y')?"
                   (or (not (eq (fnsym-fix fn) '==?))
                       (equal (4veclist-nth-safe 1 x) (4veclist-nth-safe 1 y)))
                   (or (not (eq (fnsym-fix fn) 'bit?!))
+                      (equal (4veclist-nth-safe 0 x) (4veclist-nth-safe 0 y)))
+                  (or (not (eq (fnsym-fix fn) '?!))
                       (equal (4veclist-nth-safe 0 x) (4veclist-nth-safe 0 y))))
              (4vec-[= (svex-apply fn x) (svex-apply fn y)))
     :hints(("Goal" :in-theory (e/d (svex-apply)
@@ -446,6 +466,13 @@ any environment."
                           '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
                                             (4vec-bit?-[=-bit?!))
                             :use ((:instance 4vec-bit?-[=-bit?!
+                                   (test (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
+                                   (then (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))
+                                   (else (4veclist-nth-safe 2 (svexlist-eval (svex-call->args x) env)))))))
+                         ((member-equal '(not (equal (SVEX-CALL->FN$INLINE X) '?!)) clause)
+                          '(:in-theory (e/d (svex-apply 4vec-[=-transitive-2)
+                                            (4vec-?*-[=-?!))
+                            :use ((:instance 4vec-?*-[=-?!
                                    (test (4veclist-nth-safe 0 (svexlist-eval (svex-call->args x) env)))
                                    (then (4veclist-nth-safe 1 (svexlist-eval (svex-call->args x) env)))
                                    (else (4veclist-nth-safe 2 (svexlist-eval (svex-call->args x) env)))))))
@@ -558,6 +585,7 @@ any environment."
                   (not (eq (fnsym-fix fn) '===))
                   (not (eq (fnsym-fix fn) '==?))
                   (not (eq (fnsym-fix fn) 'bit?!))
+                  (not (eq (fnsym-fix fn) '?!))
                   (4vec-xfree-p (svex-apply fn (svexlist-xeval args))))
              (equal (svex-apply fn (svexlist-eval args env))
                     (svex-apply fn (svexlist-xeval args))))
@@ -598,7 +626,18 @@ any environment."
                            (n (svex-call 'bit?! args))))
              :in-theory (disable svex-eval-when-4vec-xfree-of-minval
                                  equal-of-4vecs 4vec-xfree-p)
-             :expand ((svex-xeval (svex-call 'bit?! args)))))))
+             :expand ((svex-xeval (svex-call 'bit?! args))))))
+
+  (defthmd svex-eval-when-4vec-xfree-of-minval-apply-?!
+    (implies (and (syntaxp (not (equal env ''nil)))
+                  (4vec-xfree-p (svex-apply '?* (svexlist-xeval args))))
+             (equal (svex-apply '?! (svexlist-eval args env))
+                    (svex-apply '?* (svexlist-xeval args))))
+    :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                           (n (svex-call '?! args))))
+             :in-theory (disable svex-eval-when-4vec-xfree-of-minval
+                                 equal-of-4vecs 4vec-xfree-p)
+             :expand ((svex-xeval (svex-call '?! args)))))))
 
 
 
@@ -613,6 +652,10 @@ any environment."
       :quote t
       :call (and (or (and (not (eq x.fn '===))
                           (or (not (eq x.fn 'bit?!))
+                              (b* ((test (nth 0 x.args)))
+                                (or (not test)
+                                    (svex-case test :quote))))
+                          (or (not (eq x.fn '?!))
                               (b* ((test (nth 0 x.args)))
                                 (or (not test)
                                     (svex-case test :quote))))
