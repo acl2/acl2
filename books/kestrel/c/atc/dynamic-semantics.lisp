@@ -183,15 +183,6 @@
                 (not (valuep x)))
            (errorp x)))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(define irr-value-result ()
-  :returns (result value-resultp)
-  :short "An irrelevant value result, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-value-result))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist value-list
