@@ -233,8 +233,10 @@ This comment motivates the macro install-not-normalized, defined below.
  ``type reasoning'' to deduce that @('return-nil') always returns the value,
  @('nil').  So if @('foo') is the only enabled rule, then we are left trying to
  prove that @('nil') equals @('(return-nil x)').  Of course, this example is
- trivial to fix by enabling @('foo'); but we want to support development of
- tools that leave @('foo') disabled for some reason.</p>
+ trivial to fix by enabling @('return-nil'), or even just its @(':')@(tsee
+ type-prescription) rule, but we want to support development of robust tools
+ that manipulate functions without needing to know anything about their callees.
+ </p>
 
  <p>To solve this problem, we can invoke @('(install-not-normalized foo)'),
  which generates the following @(':')@(tsee definition) rule.</p>
