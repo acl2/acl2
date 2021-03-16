@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "all-logic-fns")
 (include-book "apply-fn-if-known")
 (include-book "auto-instance")
 (include-book "auto-termination")
@@ -30,6 +29,7 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-tuples-between")
+(include-book "functions-in-world")
 (include-book "gen-xdoc-for-file")
 (include-book "include-book-paths")
 (include-book "integer-arithmetic/top")
