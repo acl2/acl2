@@ -363,8 +363,6 @@
 ;;          x)
 ;;   :hints (("Goal" :in-theory (enable sbvdiv floor-by-4))))
 
-;(in-theory (disable NOT-<-SELF2)) ;bozo
-
 (in-theory (disable divisibility-in-terms-of-floor))
 
 ;move
@@ -1001,13 +999,12 @@
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
+;move
 (defthm expt-split-hack
   (implies (posp size)
            (equal (+ (- (EXPT 2 SIZE)) (EXPT 2 (+ -1 SIZE)))
                   (- (EXPT 2 (+ -1 SIZE)))))
   :hints (("Goal" :in-theory (enable expt-of-+))))
-
-
 
 (defthm sbvlt-0-bvuminus
   (equal (sbvlt 32 0 (bvuminus 32 x))
@@ -1078,8 +1075,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-
-
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
 (in-theory (disable bvlt))
@@ -1095,10 +1090,6 @@
 ;;                  (sbvlt 32 x (bvminus 32 k2 k1))))
 ;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (sbvlt bvplus bvuminus bvminus bvcat logapp) (anti-bvplus BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS BVCAT-RECOMBINE)))))
-
-
-
-
 
 (defthm bvlt-of-bvplus-add-to-both-sides
   (implies (integerp x)
@@ -15869,10 +15860,6 @@
   :hints (("Goal" :use (:instance equal-of-myif-and-bvif-same)
            :in-theory (disable equal-of-myif-and-bvif-same))))
 
-(defthm firstn-of-0
-  (equal (firstn 0 lst)
-         nil))
-
 ;yuck?
 (defthm equal-of-bv-array-read-and-bv-array-read-lens-differ
   (implies (and (< index len1)
@@ -15886,14 +15873,6 @@
   :otf-flg t
   :hints (("Goal" :cases ((< len1 len2))
            :in-theory (e/d (BV-ARRAY-READ-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
-
-
-
-(defthm unsigned-byte-p-of-car-when-all-unsigned-byte-p
-  (implies (all-unsigned-byte-p bytes x)
-           (equal (unsigned-byte-p bytes (car x))
-                  (consp x)))
-  :hints (("Goal" :in-theory (disable nth-becomes-bv-array-read2))))
 
 (defthm prefixp-of-bv-array-write-when-prefixp
   (implies (and (< (len x) len)

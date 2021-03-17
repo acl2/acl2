@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -2119,7 +2119,7 @@
                                     val))))))
   :hints (("Goal" :in-theory (e/d (leftrotate)
 ;for speed:
-                                  (;NOT-<-SELF2 ;INTP-BECOMES-SBP32 JVM::INT-LEMMA0
+                                  (;INTP-BECOMES-SBP32 JVM::INT-LEMMA0
                                    )))))
 
 
