@@ -228,10 +228,12 @@
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."
-  (cond ((ucharp val) (type-uchar))
-        ((sintp val) (type-sint))
-        ((pointerp val) (type-pointer (pointer->reftype val)))
-        (t (prog2$ (impossible) (irr-type)))))
+  (b* ((val (value-fix val)))
+    (cond ((ucharp val) (type-uchar))
+          ((sintp val) (type-sint))
+          ((pointerp val) (type-pointer (pointer->reftype val)))
+          (t (prog2$ (impossible) (irr-type)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,15 +733,14 @@
   :prepwork
   ((define write-var-aux ((var identp) (val valuep) (scopes scope-listp))
      :returns (new-scopes scope-list-resultp)
-     (b* ((val (value-fix val))
-          ((when (endp scopes))
+     (b* (((when (endp scopes))
            (error (list :write-var-not-found (ident-fix var))))
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
           ((when (consp pair))
            (if (equal (type-of-value (cdr pair))
                       (type-of-value val))
-               (cons (omap::update (ident-fix var) val scope)
+               (cons (omap::update (ident-fix var) (value-fix val) scope)
                      (scope-list-fix (cdr scopes)))
              (error (list :write-var-mistype (ident-fix var)
                           :required (type-of-value (cdr pair))
