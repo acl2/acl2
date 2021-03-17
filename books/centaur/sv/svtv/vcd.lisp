@@ -221,7 +221,8 @@
                        (vcd-moddb->modinst-scopes (nfix n) modidx codeidx wireoffset moddb vcd-wiremap)
                        (:free (modidx codeidx wireoffset moddb vcd-wiremap)
                         (vcd-moddb->scopes instname modidx codeidx wireoffset moddb vcd-wiremap))
-                       (vcd-moddb->scopes (name-fix instname) modidx codeidx wireoffset moddb vcd-wiremap)))))
+                       (vcd-moddb->scopes (name-fix instname) modidx codeidx wireoffset moddb vcd-wiremap))
+              :in-theory (disable nth-of-elab-modlist-fix))))
 
   (local (include-book "arithmetic/top-with-meta" :dir :system))
 

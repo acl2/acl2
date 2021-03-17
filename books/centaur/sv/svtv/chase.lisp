@@ -1302,6 +1302,8 @@ What you can enter at the SVTV-CHASE prompt:
                        :do-not-induct t)))
   :returns (mv new-svtv-chase-data new-state)
   :measure (file-measure *standard-oi* state)
+
+  :short "Re-enter the @(see svtv-chase) read-eval-print loop, with no change to the environment or SVTV."
   (b* (((mv exitp svtv-chase-data state) (svtv-chase-rep))
        ((when exitp)
         (cw! "~%Exiting SVTV-CHASE.  You may execute ~x0 to re-enter or ~x1 ~
@@ -1408,6 +1410,8 @@ What you can enter at the SVTV-CHASE prompt:
                 ;; (and stable-under-simplificationp
                 ;;      '(:in-theory (enable chase-position-addr-p)))
                 )
+  :parents (svtv-chase)
+  :short "Re-enter the @(see svtv-chase) read-eval-print loop, updating the environment but keeping the same SVTV."
   :returns (mv new-debugdata new-svtv-chase-data new-state)
   (b* ((evaldata (svtv-chase-inalist-to-evaldata env))
        (svtv-chase-data (update-chase-stack nil svtv-chase-data))
@@ -1442,6 +1446,38 @@ What you can enter at the SVTV-CHASE prompt:
                                           svtv-debug-set-svtv)))
                 (and stable-under-simplificationp
                      '(:in-theory (enable debugdatap))))
+  :parents (svtv)
+  :short "Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
+          read-eval-print loop."
+  :long "<p>To enter this read-eval-print loop for the first time, run:</p>
+@({
+ (svtv-chase svtv env)
+ })
+
+<p>where SVTV is an svtv object (as produced by defsvtv) and env is an
+assignment to the input/override signals of that SVTV.  Depending on the
+complexity of the SVTV, the initial setup done by this command may take a few
+minutes.</p>
+
+<p>When setup is complete, you'll be shown an @('SVTV-CHASE >') prompt.  Typing
+@('?') at this prompt shows the commands that may be used there.  Typically
+you'll start by going to a signal of interest at a certain phase, using the
+@('G') command.  At a given signal/phase, SVTV-CHASE will print the type of
+signal -- primary input, initial state, previous state, or internal signal.
+For internal signals, it will also print the list of signals that are this
+signal's immediate dependencies.  To see the expression driving the current
+signal, you may enter @('EXPR').  The next step is usually to select one of the
+signal's dependencies and go to it, by typing its number.  To go back to the
+signal you just left, you may type @('B') to pop the stack of signal/phase
+positions.</p>
+
+<p>At some point you may want to exit the read-eval-print loop, which you can
+do by typing @('X') at the prompt.  To re-enter the loop, you can skip the
+initial setup by running @('(svtv-chase-repl)').  You may also skip much of the
+setup but change the input assignment by running @('(svtv-chase-update
+env)').</p>
+
+"
   (b* (((svtv x))
        (mod-fn (intern-in-package-of-symbol
                 (str::cat (symbol-name x.name) "-MOD")
