@@ -24,6 +24,7 @@
             (neg neg-unguarded)
             (mul mul-unguarded)
             (inv inv-unguarded)
+            (div div-unguarded)
             (pow pow-unguarded)
             pos-fix
             (fep fep-unguarded)
