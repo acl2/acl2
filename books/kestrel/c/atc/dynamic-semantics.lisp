@@ -188,15 +188,6 @@
                 (not (valuep x)))
            (errorp x)))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(define irr-value-result ()
-  :returns (result value-resultp)
-  :short "An irrelevant value result, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-value-result))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist value-list
@@ -1045,13 +1036,13 @@
                  ((ucharp arg) arg)
                  ((pointerp arg) (error (list :cast-not-supported
                                               :from arg :to type)))
-                 (t (prog2$ (impossible) (irr-value-result)))))
+                 (t (error (impossible)))))
           ((type-case type :sint)
            (cond ((sintp arg) arg)
                  ((ucharp arg) (sint-from-uchar arg))
                  ((pointerp arg) (error (list :cast-pointer-not-supported
                                               :from arg :to type)))
-                 (t (prog2$ (impossible) (irr-value-result)))))
+                 (t (error (impossible)))))
           (t (error (list :cast-not-supported :from arg :to type)))))
   :hooks (:fix))
 
