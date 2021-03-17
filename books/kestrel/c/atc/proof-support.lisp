@@ -580,6 +580,10 @@
     (equal (ucharp (if a b c))
            (if a (ucharp b) (ucharp c))))
 
+  (defruled sintp-of-if
+    (equal (sintp (if a b c))
+           (if a (sintp b) (sintp c))))
+
   (defruled pointerp-of-if
     (equal (pointerp (if a b c))
            (if a (pointerp b) (pointerp c))))
@@ -676,6 +680,7 @@
     errorp-of-if
     valuep-of-if
     ucharp-of-if
+    sintp-of-if
     pointerp-of-if
     car-of-if
     1+nat-greater-than-0
