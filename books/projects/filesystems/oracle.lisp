@@ -1613,46 +1613,7 @@
          path)))))
     :hints (("goal" :in-theory (enable path-clear
                                        abs-find-file-src frame-p strip-cars
-                                       no-duplicatesp-equal names-at))))
-
-  (thm
-   (implies
-    (and
-     ;; (not
-     ;;  (zp
-     ;;   (abs-find-file-src frame path)))
-     (frame-p frame)
-     (abs-complete
-      (frame-val->dir
-       (cdr
-        (assoc-equal
-         (abs-find-file-src frame path)
-         frame))))
-     (no-duplicatesp-equal (strip-cars frame))
-     (path-clear path
-                 (remove-assoc-equal
-                  (abs-find-file-src frame path)
-                  frame))
-     (not
-      (fat32-filename-list-equiv
-       path
-       (frame-val->path
-        (cdr
-         (assoc-equal
-          (abs-find-file-src frame path)
-          frame)))))
-     (atom (assoc-equal 0 frame)))
-    (equal (1st-complete-under-path frame path)
-           0))
-   :hints (("goal" :in-theory (enable 1st-complete-under-path remove-assoc-equal
-                                      path-clear
-                                      abs-find-file-src
-                                      no-duplicatesp-equal
-                                      strip-cars
-                                      frame-p)
-            :expand ((:free
-                      (fs)
-                      (names-at fs nil)))))))
+                                       no-duplicatesp-equal names-at)))))
 
 (assert-event
  (b*
