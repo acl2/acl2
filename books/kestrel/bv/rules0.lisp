@@ -122,8 +122,7 @@
            (equal (bvmult n 2 x)
                   (bvcat (+ -1 n) x 1 0)))
   :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
-                                  (bvcat-recombine
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))

@@ -251,3 +251,9 @@
            (equal (unsigned-byte-p n (myif test a b))
                   t))
   :hints (("Goal" :in-theory (enable myif))))
+
+;strengthen?
+(defthm acl2-numberp-of-myif
+  (implies (and (acl2-numberp a) (acl2-numberp b))
+           (equal (acl2-numberp (myif test a b)) t))
+  :hints (("Goal" :in-theory (enable myif))))

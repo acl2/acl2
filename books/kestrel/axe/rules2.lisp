@@ -1747,7 +1747,7 @@
 ;;                 )
 ;;            (equal (bvcat highsize highval lowsize lowval)
 ;;                   (bvcat highsize (bvchop highsize highval) lowsize lowval)))
-;;   :hints (("Goal" :in-theory (e/d (bvcat) (BVCAT-RECOMBINE)))))
+;;   :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 1 x)
@@ -1783,7 +1783,7 @@
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
 ;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) (BVCAT-RECOMBINE)))))
+;;                                    ) ()))))
 
 ;; (defthm bvxor-convert-arg2-to-unsigned-better
 ;;   (implies (and (syntaxp; (and (not (quotep y))
@@ -1798,7 +1798,7 @@
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size x (bvchop size y))))
 ;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) (BVCAT-RECOMBINE)))))
+;;                                    ) ()))))
 
 (local (in-theory (disable ;BVCHOP-LEQ
                    ;LOGTAIL-LEQ
@@ -1899,7 +1899,7 @@
 ;;            (equal (BVXOR size Z (bvcat SIZE2 Y size X))
 ;;                   (BVXOR size Z X)))
 ;;   :hints (("Goal" :cases ((integerp x))
-;;            :in-theory (e/d (bvcat bvxor BVCHOP-LOGAPP) (BVCAT-RECOMBINE LOGXOR-BVCHOP-BVCHOP)))))
+;;            :in-theory (e/d (bvcat bvxor BVCHOP-LOGAPP) (LOGXOR-BVCHOP-BVCHOP)))))
 
 ;; (defthmd add-bvchop-to-bvcat-2
 ;;   (implies (and (syntaxp (and (not (quotep highval))

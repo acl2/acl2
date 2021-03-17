@@ -22,6 +22,7 @@
 
 (include-book "kestrel/bv/rules3" :dir :system) ;for SLICE-TIGHTEN-TOP
 (include-book "kestrel/bv/rules6" :dir :system) ;for BVMULT-TIGHTEN
+(include-book "kestrel/bv/sbvrem-rules" :dir :system)
 (include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ;todo: make local
@@ -442,7 +443,7 @@
                 (unsigned-byte-p-forced newsize highval))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat newsize highval lowsize lowval)))
-  :hints (("Goal" :do-not '(preprocess) :in-theory (e/d (bvcat UNSIGNED-BYTE-P-FORCED) (bvcat-recombine)))))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (e/d (bvcat UNSIGNED-BYTE-P-FORCED) ()))))
 
 ;or should we bring heavier terms to the front to increase sharing?
 ;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
@@ -1975,3 +1976,12 @@
 ;only needed for axe
 (defthm not-<-of-bvcat-and-0
   (not (< (bvcat highsize highval lowsize lowval) 0)))
+
+(defthm sbvrem-when-positive-work-hard
+  (implies (and (work-hard (sbvle size 0 x))
+                (work-hard (sbvle size 0 y))
+                (posp size))
+           (equal (sbvrem size x y)
+                  (bvmod (+ -1 size) x y)))
+  :hints (("Goal" :use (:instance sbvrem-when-positive)
+           :in-theory (disable sbvrem-when-positive))))

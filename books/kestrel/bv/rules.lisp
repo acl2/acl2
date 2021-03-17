@@ -1043,7 +1043,7 @@
                            (size size2)
                            (x x)
                            (y y)))
-           :in-theory (disable bvcat-recombine bvplus-of-bvchop-arg2))))
+           :in-theory (disable bvplus-of-bvchop-arg2))))
 
 (defthm bvplus-of-bvcat-irrel-arg1
   (implies (and (<= size2 size)
@@ -1271,7 +1271,7 @@
                             (x y)
                             (y x)))
            :in-theory (e/d ( ;bvmult
-                            ) (bvcat-RECOMBINE BVMULT-OF-BVCHOP-arg2
+                            ) (BVMULT-OF-BVCHOP-arg2
                             BVMULT-OF-BVCHOP-arg3
                             )))))
 
@@ -1300,8 +1300,7 @@
                            (x (bvcat highsize highval lowsize lowval))
                            (y x))
            :in-theory (e/d ( ;bvmult
-                            ) (bvcat-RECOMBINE
-                            BVMULT-OF-BVCHOP-arg2)))))
+                            ) (BVMULT-OF-BVCHOP-arg2)))))
 
 ;bozo simplify the rhs?
 (defthm bvmult-of-bvcat-trim-arg2
@@ -1315,7 +1314,7 @@
                            (x (bvcat highsize highval lowsize lowval))
                            (y x))
            :in-theory (e/d ( ;bvmult
-                            ) (bvcat-RECOMBINE BVMULT-OF-BVCHOP-arg2)))))
+                            ) (BVMULT-OF-BVCHOP-arg2)))))
 
 (defthm bvchop-of-bvminus
   (implies (and (<= size1 size2)
@@ -1508,7 +1507,7 @@
             (equal (bvcat highsize y size (logext size x))
                    (bvcat highsize y size x)))
    :hints (("Goal" :in-theory (e/d (bvcat ;bvchop-logapp
-                                    ) (bvcat-recombine)))))
+                                    ) ()))))
 
 (defthm logapp-of-logext
    (implies (and (natp size2)
@@ -1661,7 +1660,7 @@
                          lowsize
                          (bvxor lowsize (bvchop lowsize x) lowval))))
   :hints (("Goal" :in-theory (e/d (bvcat bvxor LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
-                                  (bvcat-recombine)))))
+                                  ()))))
 
 (defthmd bvxor-of-bvcat-alt
   (implies (and (equal size (+ lowsize highsize))
@@ -1685,7 +1684,7 @@
                          (bvor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvor logtail-of-bvchop-becomes-slice) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat bvor logtail-of-bvchop-becomes-slice) ()))))
 
 (defthmd bvor-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -1710,7 +1709,7 @@
                          (bvand highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvand lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvand logtail-of-bvchop-becomes-slice) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat bvand logtail-of-bvchop-becomes-slice) ()))))
 
 (defthmd bvand-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -2327,7 +2326,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvand size2 z y) lowsize x)
                   (bvcat size1 (bvand size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 ;use trim
 (defthm bvcat-of-bvor-tighten-2
@@ -2339,7 +2338,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvor size2 z y) lowsize x)
                   (bvcat size1 (bvor size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 ;i'll leave this off, since it gets rid of bvand and is sort of scary
 ;bozo do i want to open from the top or the bottom?  which one is faster?
@@ -2382,7 +2381,7 @@
                    (bvand lowsize (bvchop lowsize x)
                           lowval))))
   :hints (("Goal" :in-theory (e/d (bvcat bvand slice)
-                                  (bvcat-recombine bvchop-of-logtail-becomes-slice)))))
+                                  (bvchop-of-logtail-becomes-slice)))))
 
 ;(local (in-theory (disable LOGAPP-0-NEW2)));why?
 
@@ -2422,7 +2421,7 @@
                    (bvxor (- size lowsize) (slice (+ -1 size) lowsize x) (bvchop highsize highval)) lowsize
                    (bvxor lowsize (bvchop lowsize x) lowval)))) ;could tighetn the slice?
   :hints (("Goal" :in-theory (e/d (                              ;bvcat bvxor
-                                   ) (bvcat-RECOMBINE )))))
+                                   ) ( )))))
 
 ;fixme what does repeatbit do if not given a bit??
 
@@ -2815,7 +2814,7 @@
                 (natp lowsize))
            (equal (bvor size (bvcat highsize highval lowsize lowval) x)
                   (bvor size lowval x)))
-  :hints (("Goal" :in-theory (e/d (bvor) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvor) ()))))
 
 (defthm bvor-of-bvcat-low-arg3
   (implies (and (<= size lowsize)
@@ -2823,7 +2822,7 @@
                 (natp lowsize))
            (equal (bvor size x (bvcat highsize highval lowsize lowval))
                   (bvor size x lowval)))
-  :hints (("Goal" :in-theory (e/d (bvor) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvor) ()))))
 
 (defthm bvand-of-bvcat-low-arg2
   (implies (and (<= size lowsize)
@@ -2831,7 +2830,7 @@
                 (natp lowsize))
            (equal (bvand size (bvcat highsize highval lowsize lowval) x)
                   (bvand size lowval x)))
-  :hints (("Goal" :in-theory (e/d (bvand) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvand) ()))))
 
 (defthm bvand-of-bvcat-low-arg3
   (implies (and (<= size lowsize)
@@ -2839,7 +2838,7 @@
                 (natp lowsize))
            (equal (bvand size x (bvcat highsize highval lowsize lowval))
                   (bvand size x lowval)))
-  :hints (("Goal" :in-theory (e/d (bvand) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvand) ()))))
 
 ;bozo analogue for bvand?
 (defthm bitand-of-slice-arg1
@@ -3573,7 +3572,7 @@
                 (natp low))
            (equal (* 4 (slice high low x))
                   (bvcat (+ high 1 (- low)) (slice high low x) 2 0)))
-  :hints (("Goal" :in-theory (e/d (logapp bvcat) (BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (logapp bvcat) ()))))
 
 ;I don't think this is needed now, because of the built in rule SIGNED-BYTE-P-FORWARD-TO-INTEGERP
 ;; (defthm sbp-forward-to-integerp
@@ -3887,7 +3886,7 @@
                   (< (/ (- k1 (bvchop lowsize k2)) (expt 2 lowsize)) ;this gets computed
                      (bvchop highsize x))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp bvchop)
-                                  (bvcat-recombine  <-*-left-cancel))
+                                  (<-*-left-cancel))
            :use (:instance <-*-left-cancel
                            (x (* (/ (expt 2 lowsize)) k1))
                            (y (+ (bvchop highsize x) (* (/ (expt 2 lowsize)) k2)))
@@ -3905,7 +3904,7 @@
 ;this gets computed:
                      (/ (- k1 (bvchop lowsize k2)) (expt 2 lowsize)))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp bvchop)
-                                  (bvcat-recombine  <-*-left-cancel))
+                                  (<-*-left-cancel))
            :use (:instance <-*-left-cancel
                            (y (+ (* K1 (/ (EXPT 2 LOWSIZE)))
                                  (- (* (/ (EXPT 2 LOWSIZE))
@@ -4466,7 +4465,7 @@
                   (bvcat newsize highval lowsize lowval)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d (bvcat unsigned-byte-p-forced)
-                           (BVCAT-RECOMBINE ;bozo add t-i
+                           ( ;bozo add t-i
                             )))))
 
 (defthm getbit-too-high-cheap
@@ -4893,7 +4892,7 @@
            :in-theory (e/d (power-of-2p) ( slice-of-bvmult-of-expt-gen)))))
 
 ;new:
-(in-theory (disable BVCHOP-OF-* BVCAT-RECOMBINE))
+(in-theory (disable BVCHOP-OF-*))
 
 ;kill the special purpose versions
 ;rename bvmult-of-expt and use that name for this:
@@ -5272,8 +5271,7 @@
                             (size2 lowsize)))
            :in-theory (e/d ( ;bvnot ;bvcat
                             )
-                           (BVCAT-RECOMBINE
-                            BVNOT-OF-BVCHOP
+                           (BVNOT-OF-BVCHOP
                             BVNOT-OF-BVCHOP-same
 ;BVCAT-EQUAL-REWRITE-ALT
 ;BVCAT-EQUAL-REWRITE
@@ -6179,7 +6177,7 @@
            (equal (bvcat highsize (logext size2 highval) lowsize lowval)
                   (bvcat highsize highval lowsize lowval)))
   :hints (("Goal" :in-theory (e/d (bvcat) ;yuck?
-                                  (bvcat-recombine)))))
+                                  ()))))
 
 (defthm logext-not-nil1
   (equal (equal (logext n x) nil)
@@ -7213,7 +7211,7 @@
            (equal (< (BVCHOP (+ 1 HIGH) X) (EXPT 2 HIGH))
                   (not (EQUAL 1 (GETBIT HIGH X)))))
   :hints (("Goal" :use (:instance split-with-bvcat (x x) (hs 1) (ls high))
-           :in-theory (e/d (bvcat logapp) (BVCAT-RECOMBINE))
+           :in-theory (e/d (bvcat logapp) ())
            )))
 
 (defthmd getbit-when-bvlt-of-small-helper
@@ -7424,7 +7422,7 @@
            :in-theory (e/d (sbvdivdown bvlt getbit-when-bvlt-of-small-helper)
                            (<-becomes-bvlt <-becomes-bvlt-alt
                                            EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                           BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-recombine BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
+                                           BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
 (defthm bvchop-plus-bvchop-bound
   (implies (integerp size)
@@ -8706,8 +8704,7 @@
                        (n 32)
                        (m 31)
                        (y (bvchop 32 x)))
-          :in-theory (e/d (bvcat logapp) (acl2::logapp-of-bvchop-same
-                                          bvcat-recombine)))))
+          :in-theory (e/d (bvcat logapp) (acl2::logapp-of-bvchop-same)))))
 
 
 ;gen
