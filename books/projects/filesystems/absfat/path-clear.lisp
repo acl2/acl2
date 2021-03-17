@@ -62,28 +62,39 @@
 
 (defthm
   1st-complete-under-path-when-path-clear-of-prefix
-  (implies (and (fat32-filename-list-p path2)
-                (path-clear path1 frame)
-                (prefixp (fat32-filename-list-fix path1)
-                         (fat32-filename-list-fix path2))
+  (implies (and (path-clear path1 frame)
+                (fat32-filename-list-prefixp path1 path2)
                 (not (fat32-filename-list-equiv path1 path2)))
            (equal (1st-complete-under-path frame path2)
                   0))
   :hints
   (("goal" :in-theory (e/d (frame-p path-clear
-                                    1st-complete-under-path names-at)
+                                    1st-complete-under-path names-at
+                                    fat32-filename-list-prefixp-alt)
                            (prefixp-when-equal-lengths len-when-prefixp)))))
 
 ;; I suspect this might be useful later.
 (defthm partial-collapse-when-path-clear-of-prefix
-  (implies (and (fat32-filename-list-p path2)
-                (path-clear path1 (frame->frame frame))
-                (prefixp (fat32-filename-list-fix path1)
-                         (fat32-filename-list-fix path2))
+  (implies (and (path-clear path1 (frame->frame frame))
+                (fat32-filename-list-prefixp path1 path2)
                 (not (fat32-filename-list-equiv path1 path2)))
            (equal (partial-collapse frame path2)
                   frame))
-  :hints (("Goal" :in-theory (enable partial-collapse))))
+  :hints (("goal" :in-theory (enable partial-collapse))))
+
+(defthmd path-clear-of-fat32-filename-list-fix
+  (equal (path-clear (fat32-filename-list-fix path)
+                     frame)
+         (path-clear path frame))
+  :hints (("goal" :in-theory (enable path-clear))))
+
+(defcong fat32-filename-list-equiv equal (path-clear path frame) 1
+  :hints (("Goal"
+           :use
+           (path-clear-of-fat32-filename-list-fix
+            (:instance
+             path-clear-of-fat32-filename-list-fix
+             (path path-equiv))))))
 
 (local
  (defund
