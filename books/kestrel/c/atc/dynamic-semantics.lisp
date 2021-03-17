@@ -1135,19 +1135,7 @@
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
-  :hooks (:fix)
-
-  :prepwork
-
-  ((defrulel lemma1
-     (implies (and (value-resultp x)
-                   (not (errorp x)))
-              (valuep x)))
-
-   (defrulel lemma2
-     (implies (and (value-list-resultp x)
-                   (not (errorp x)))
-              (value-listp x)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

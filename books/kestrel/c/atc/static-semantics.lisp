@@ -525,9 +525,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
-  :returns (types type-list-resultp
-                  :hints ('(:cases ((type-listp
-                                     (check-expr-pure-list (cdr es) vartab))))))
+  :returns (types type-list-resultp)
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -536,10 +534,8 @@
   (b* (((when (endp es)) nil)
        (type (check-expr-pure (car es) vartab))
        ((when (errorp type)) type)
-       ((unless (mbt (typep type))) (error :impossible))
        (types (check-expr-pure-list (cdr es) vartab))
-       ((when (errorp types)) types)
-       ((unless (mbt (type-listp types))) (error :impossible)))
+       ((when (errorp types)) types))
     (cons type types))
   :hooks (:fix))
 
