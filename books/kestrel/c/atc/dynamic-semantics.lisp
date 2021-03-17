@@ -1139,13 +1139,24 @@
      the order of evaluation does not matter.
      Thus, we proceed left to right."))
   (b* (((when (endp es)) nil)
-       (val/err (exec-expr-pure (car es) compst))
-       ((when (value-result-case val/err :err)) (value-result-err->get val/err))
-       (val (value-result-ok->get val/err))
+       (val (exec-expr-pure (car es) compst))
+       ((when (errorp val)) val)
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  :prepwork
+
+  ((defrulel lemma1
+     (implies (and (value-resultp x)
+                   (not (errorp x)))
+              (valuep x)))
+
+   (defrulel lemma2
+     (implies (and (value-list-resultp x)
+                   (not (errorp x)))
+              (value-listp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1169,27 +1180,25 @@
           (error (list :init-scope :extra-actuals actuals))))
        ((when (endp actuals))
         (error (list :init-scope :extra-formals formals)))
-       (scope (init-scope (cdr formals) (cdr actuals))))
-    (scope-result-case
-     scope
-     :err scope.get
-     :ok (b* ((formal (car formals))
-              (actual (car actuals))
-              (declor (param-declon->declor formal))
-              (pointerp (declor->pointerp declor))
-              (name (declor->ident declor))
-              (formal-type (type-name-to-type
-                            (make-tyname :specs (param-declon->type formal)
-                                         :pointerp pointerp)))
-              (actual-type (type-of-value actual))
-              ((unless (equal formal-type actual-type))
-               (error (list :formal-actual-mistype
-                            :name name
-                            :formal formal-type
-                            :actual actual-type))))
-           (if (omap::in name scope)
-               (error (list :init-scope :duplicate-param name))
-             (omap::update name actual scope)))))
+       (scope (init-scope (cdr formals) (cdr actuals)))
+       ((when (errorp scope)) scope)
+       (formal (car formals))
+       (actual (car actuals))
+       (declor (param-declon->declor formal))
+       (pointerp (declor->pointerp declor))
+       (name (declor->ident declor))
+       (formal-type (type-name-to-type
+                     (make-tyname :specs (param-declon->type formal)
+                                  :pointerp pointerp)))
+       (actual-type (type-of-value actual))
+       ((unless (equal formal-type actual-type))
+        (error (list :formal-actual-mistype
+                     :name name
+                     :formal formal-type
+                     :actual actual-type))))
+    (if (omap::in name scope)
+        (error (list :init-scope :duplicate-param name))
+      (omap::update name actual scope)))
   :hooks (:fix)
   :measure (len formals)
   :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))

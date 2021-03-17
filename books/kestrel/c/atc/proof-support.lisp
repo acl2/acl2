@@ -422,6 +422,11 @@
      This distribution happens at the goal level,
      but not in the rewriter by default."))
 
+  (defruled not-errorp-when-scopep
+    (implies (scopep x)
+             (not (errorp x)))
+    :enable (errorp scopep))
+
   (defruled scope-result-kind-when-scopep
     (implies (scopep scope)
              (equal (scope-result-kind scope)
@@ -653,6 +658,7 @@
     compustate-result-ok->get-when-compustatep
     len-of-cons
     1+len-greater-than-0
+    not-errorp-when-scopep
     not-errorp-when-valuep
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
