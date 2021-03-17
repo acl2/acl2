@@ -29,7 +29,7 @@
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe") ;for MYIF-SAME-ARG1-ARG2-WHEN-BOOLEANP-AXE
-(include-book "bvseq-rules-axe") ;for BVXOR-LIST-BASE
+(include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
 (include-book "kestrel/bv/rules3" :dir :system) ; for ifix-does-nothing
 (include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
