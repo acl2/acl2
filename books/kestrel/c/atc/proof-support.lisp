@@ -490,7 +490,7 @@
   (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :enable (errorp valuep sintp ucharp))
+    :enable (errorp valuep sintp ucharp pointerp))
 
   (defruled not-errorp-when-value-listp
     (implies (value-listp x)
@@ -506,6 +506,11 @@
     (implies (sintp x)
              (not (ucharp x)))
     :enable (sintp ucharp))
+
+  (defruled not-pointerp-when-sintp
+    (implies (sintp x)
+             (not (pointerp x)))
+    :enable (sintp pointerp))
 
   (defruled value-kind-when-sintp
     (implies (sintp x)
@@ -574,6 +579,10 @@
   (defruled ucharp-of-if
     (equal (ucharp (if a b c))
            (if a (ucharp b) (ucharp c))))
+
+  (defruled pointerp-of-if
+    (equal (pointerp (if a b c))
+           (if a (pointerp b) (pointerp c))))
 
   (defruled 1+nat-greater-than-0
     (implies (natp x)
@@ -644,6 +653,7 @@
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
     not-ucharp-when-sintp
+    not-pointerp-when-sintp
     scope-result-kind-when-scopep
     scope-result-ok->get-when-scopep
     sint-nonzerop-of-0
@@ -666,6 +676,7 @@
     errorp-of-if
     valuep-of-if
     ucharp-of-if
+    pointerp-of-if
     car-of-if
     1+nat-greater-than-0
     natp-of-1+
