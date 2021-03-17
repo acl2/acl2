@@ -1,7 +1,7 @@
 ; A book about the sign-extending operation logext
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -453,3 +453,16 @@
            (equal (< (logext n x) 0)
                   (equal 1 (getbit (+ -1 n) x))))
   :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd logext-bound-when-unsigned-byte-p
+  (implies (and (syntaxp (quotep k))
+                (< 0 k)
+                (natp k)
+                (<= k (expt 2 (+ -1 n)))
+                (< x k)
+                (unsigned-byte-p n x)
+                (natp n)
+                (< 0 n))
+           (< (logext n x) k))
+  :hints (("Goal" :in-theory (enable ;logext
+                              ))))

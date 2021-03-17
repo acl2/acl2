@@ -53,6 +53,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrulel tuplep-of-2-of-list
+  (std::tuplep 2 (list x y)))
+
+(defrulel tuplep-of-3-of-list
+  (std::tuplep 3 (list x y z)))
+
+(local (in-theory (disable std::tuplep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation
 
  atc
@@ -1614,6 +1624,8 @@
                        type
                        limit)))
 
+  :prepwork ((local (in-theory (disable natp)))) ; for speed
+
   :verify-guards nil ; done below
 
   ///
@@ -1671,7 +1683,8 @@
        (arg (acl2::fargn conjunct 1))
        ((unless (eq formal arg))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
-    (acl2::value type)))
+    (acl2::value type))
+  :guard-hints (("Goal" :in-theory (disable acl2::member-of-cons)))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1752,9 +1765,9 @@
                             (symbol-name-lst (cdr formals))))
         (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
-                      has the same symbol name as ~
-                      another formal parameter among ~x2; ~
-                      this is disallowed, even if the package names differ."
+                   has the same symbol name as ~
+                   another formal parameter among ~x2; ~
+                   this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
        ((mv erp (list param type) state) (atc-gen-param-declon formal
                                                                fn
@@ -1773,11 +1786,13 @@
                        (atc-add-var formal type vars))))
 
   :verify-guards nil ; done below
+
   ///
-  (verify-guards atc-gen-param-declon-list)
 
   (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+   (val true-listp :rule-classes :type-prescription)) ; speeds up guard proofs
+
+  (verify-guards atc-gen-param-declon-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

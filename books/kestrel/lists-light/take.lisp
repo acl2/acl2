@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function take.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -217,4 +217,11 @@
 (defthm equal-of-take-and-take-same
   (equal (equal (take n1 x) (take n2 x))
          (equal (nfix n1) (nfix n2)))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthmd take-opener
+  (implies (not (zp n))
+           (equal (take n lst)
+                  (cons (nth 0 lst)
+                        (take (+ -1 n) (cdr lst)))))
   :hints (("Goal" :in-theory (enable take))))

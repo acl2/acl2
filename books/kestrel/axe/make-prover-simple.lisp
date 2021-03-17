@@ -1,7 +1,7 @@
 ; A tool to make an Axe Prover for a given application
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -4887,10 +4887,10 @@
                (mv (erp-nil) (list clause)))))))))
 
 (defmacro make-prover-simple (suffix
-                              apply-axe-evaluator-to-quoted-args-name
+                              evaluator-base-name
                               eval-axe-syntaxp-expr-name
                               eval-axe-bind-free-function-application-name)
   (make-prover-simple-fn suffix
-                         apply-axe-evaluator-to-quoted-args-name
+                         evaluator-base-name
                          eval-axe-syntaxp-expr-name
                          eval-axe-bind-free-function-application-name))

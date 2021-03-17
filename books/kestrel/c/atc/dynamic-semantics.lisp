@@ -84,6 +84,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "Addresses are mentioned in several places in [C],
+     but there seems to be no specific place in [C] that defines them.
+     Nonetheless, based on how they are mentioned,
+     it is quite clear that an address is essentially a hardware address,
+     i.e. a number that identifies a memory location,
+     even though [C] does not prescribe a particular representation.")
+   (xdoc::p
     "For now we treat addresses as essentially abstract entities,
      whose only purpose is to identify objects in memory.
      We model addresses as natural numbers,
@@ -93,6 +100,60 @@
   :tag :address
   :pred addressp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption address-option
+  address
+  :short "Fixtype of optional addresses."
+  :pred address-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pointer
+  :short "Fixtype of pointers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Pointers are mentioned in several places in [C],
+     but there seems to be no specific place in [C] that defines them.
+     Nonetheless, we can get a precise picture from various places.
+     [C:6.2.5/20] says that pointer types describe objects
+     whose values provide references to entities.
+     [C:6.3.2.3] specifies several thingss about pointers;
+     in particular, it talks about null pointers.
+     Thus, the picture is the following:
+     a pointer is either an address or a null pointer.
+     In our defensive dynamic semantics, where values are tagged by their types,
+     we also include in a pointer the type of its referenced value.")
+   (xdoc::p
+    "Thus, we define a pointer as consisting of an optional address and a type.
+     The address is absent for a null pointer;
+     note that [C] does not prescribe 0 to represent a null pointer,
+     even though 0 is used in null pointer constants [C:6.3.2.3/3].
+     The type is not the pointer type, but the referenced type;
+     this way, we avoid having to constrain the type to be a pointer type.
+     The type of the pointer is the type of pointer to the referenced type."))
+  ((address? address-option)
+   (reftype type))
+  :tag :pointer
+  :pred pointerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pointer-nullp ((ptr pointerp))
+  :returns (yes/no booleanp)
+  :short "Check if a pointer is null."
+  (not (pointer->address? ptr))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pointer-null ((reftype typep))
+  :returns (ptr pointerp)
+  :short "Null pointer for a given referenced type."
+  (make-pointer :address? nil :reftype reftype)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflatsum value
@@ -100,36 +161,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support @('unsigned char') and @('int') values."))
+    "For now we only support @('unsigned char') and @('int') values,
+     as well as pointer values of any referenced type.
+     (However, only some pointer values can be generated and used
+     in our current dynamic semantics of C.)"))
   (:uchar uchar)
   (:sint sint)
+  (:pointer pointer)
   :pred valuep)
 
-(defruled sintp-when-valuep-and-not-ucharp
+(defruled sintp-when-valuep-and-not-ucharp/pointerp
   (implies (and (valuep x)
-                (not (ucharp x)))
+                (not (ucharp x))
+                (not (pointerp x)))
            (sintp x))
   :enable valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable ucharp sintp value-kind)))
+  (local (in-theory (enable ucharp sintp pointerp value-kind)))
   (defresult value "values"))
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
                 (not (valuep x)))
            (errorp x)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define irr-value-result ()
-  :returns (result value-resultp)
-  :short "An irrelevant value result, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-value-result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +211,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable valuep ucharp sintp)))
+  (local (in-theory (enable valuep ucharp sintp pointerp)))
   (defresult value-option "optional values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,9 +219,12 @@
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."
-  (cond ((ucharp val) (type-uchar))
-        ((sintp val) (type-sint))
-        (t (prog2$ (impossible) (irr-type)))))
+  (b* ((val (value-fix val)))
+    (cond ((ucharp val) (type-uchar))
+          ((sintp val) (type-sint))
+          ((pointerp val) (type-pointer (pointer->reftype val)))
+          (t (prog2$ (impossible) (irr-type)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,13 +729,13 @@
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
           ((when (consp pair))
-           (if (eq (value-kind (cdr pair))
-                   (value-kind val))
+           (if (equal (type-of-value (cdr pair))
+                      (type-of-value val))
                (cons (omap::update (ident-fix var) (value-fix val) scope)
                      (scope-list-fix (cdr scopes)))
              (error (list :write-var-mistype (ident-fix var)
-                          :required (value-kind (cdr pair))
-                          :supplied (value-kind val)))))
+                          :required (type-of-value (cdr pair))
+                          :supplied (type-of-value val)))))
           (new-cdr-scopes (write-var-aux var val (cdr scopes)))
           ((when (errorp new-cdr-scopes)) new-cdr-scopes))
        (cons scope new-cdr-scopes))
@@ -789,16 +849,17 @@
   (b* ((op (unop-fix op))
        (arg (value-result-fix arg)))
     (cond ((errorp arg) arg)
+          ((pointerp arg) (error (list :exec-unary-pointer op arg)))
           ((ucharp arg) (error (list :exec-unary-uchar-todo op arg)))
-          (t (unop-case
-              op
-              :plus (sint-plus arg)
-              :minus (if (sint-minus-okp arg)
-                         (sint-minus arg)
-                       (error (list :exec-unary op arg)))
-              :bitnot (sint-bitnot arg)
-              :lognot (sint-lognot arg)))))
-  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
+          ((sintp arg) (unop-case
+                        op
+                        :plus (sint-plus arg)
+                        :minus (if (sint-minus-okp arg)
+                                   (sint-minus arg)
+                                 (error (list :exec-unary op arg)))
+                        :bitnot (sint-bitnot arg)
+                        :lognot (sint-lognot arg)))
+          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -829,44 +890,45 @@
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
           ((errorp arg2) arg2)
+          ((pointerp arg1) (error (list :exec-binary-pointer op arg1)))
+          ((pointerp arg2) (error (list :exec-binary-pointer op arg2)))
           ((ucharp arg1) (error (list :exec-binary-uchar-todo op arg1)))
           ((ucharp arg2) (error (list :exec-binary-uchar-todo op arg2)))
-          (t (case (binop-kind op)
-               (:mul (if (sint-mul-okp arg1 arg2)
-                         (sint-mul arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:div (if (sint-div-okp arg1 arg2)
-                         (sint-div arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:rem (if (sint-rem-okp arg1 arg2)
-                         (sint-rem arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:add (if (sint-add-okp arg1 arg2)
-                         (sint-add arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:sub (if (sint-sub-okp arg1 arg2)
-                         (sint-sub arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:shl (if (sint-shl-sint-okp arg1 arg2)
-                         (sint-shl-sint arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:shr (if (sint-shr-sint-okp arg1 arg2)
-                         (sint-shr-sint arg1 arg2)
-                       (error (list :exec-binary op arg1 arg2))))
-               (:lt (sint-lt arg1 arg2))
-               (:gt (sint-gt arg1 arg2))
-               (:le (sint-le arg1 arg2))
-               (:ge (sint-ge arg1 arg2))
-               (:eq (sint-eq arg1 arg2))
-               (:ne (sint-ne arg1 arg2))
-               (:bitand (sint-bitand arg1 arg2))
-               (:bitxor (sint-bitxor arg1 arg2))
-               (:bitior (sint-bitior arg1 arg2))
-               (t (error (impossible)))))))
-  :guard-hints (("Goal" :in-theory (enable value-resultp
-                                           valuep
-                                           binop-strictp
-                                           binop-purep)))
+          ((and (sintp arg1) (sintp arg2))
+           (case (binop-kind op)
+             (:mul (if (sint-mul-okp arg1 arg2)
+                       (sint-mul arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:div (if (sint-div-okp arg1 arg2)
+                       (sint-div arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:rem (if (sint-rem-okp arg1 arg2)
+                       (sint-rem arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:add (if (sint-add-okp arg1 arg2)
+                       (sint-add arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:sub (if (sint-sub-okp arg1 arg2)
+                       (sint-sub arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:shl (if (sint-shl-sint-okp arg1 arg2)
+                       (sint-shl-sint arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:shr (if (sint-shr-sint-okp arg1 arg2)
+                       (sint-shr-sint arg1 arg2)
+                     (error (list :exec-binary op arg1 arg2))))
+             (:lt (sint-lt arg1 arg2))
+             (:gt (sint-gt arg1 arg2))
+             (:le (sint-le arg1 arg2))
+             (:ge (sint-ge arg1 arg2))
+             (:eq (sint-eq arg1 arg2))
+             (:ne (sint-ne arg1 arg2))
+             (:bitand (sint-bitand arg1 arg2))
+             (:bitxor (sint-bitxor arg1 arg2))
+             (:bitior (sint-bitior arg1 arg2))
+             (t (error (impossible)))))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -890,12 +952,16 @@
   (b* ((arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
+          ((pointerp arg1) (error (list :exec-logand-pointer arg1)))
           ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
-          ((not (sint-nonzerop arg1)) (sint 0))
-          ((errorp arg2) arg2)
-          ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
-          (t (sint01 (sint-nonzerop arg2)))))
-  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
+          ((sintp arg1)
+           (cond ((not (sint-nonzerop arg1)) (sint 0))
+                 ((errorp arg2) arg2)
+                 ((pointerp arg2) (error (list :exec-logand-pointer arg2)))
+                 ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+                 (t (error (impossible)))))
+          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -919,12 +985,16 @@
   (b* ((arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
+          ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
           ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
-          ((sint-nonzerop arg1) (sint 1))
-          ((errorp arg2) arg2)
-          ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
-          (t (sint01 (sint-nonzerop arg2)))))
-  :guard-hints (("Goal" :in-theory (enable value-resultp valuep)))
+          ((sintp arg1)
+           (cond ((sint-nonzerop arg1) (sint 1))
+                 ((errorp arg2) arg2)
+                 ((pointerp arg2) (error (list :exec-logor-pointer arg2)))
+                 ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+                 (t (error (impossible)))))
+          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -961,11 +1031,19 @@
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
        (type (type-name-to-type tyname)))
-    (cond ((and (type-case type :uchar) (sintp arg))
-           (uchar-from-sint arg))
-          ((and (type-case type :sint) (ucharp arg))
-           (sint-from-uchar arg))
-          (t (error (list :cast-not-supported :from arg :to :uchar)))))
+    (cond ((type-case type :uchar)
+           (cond ((sintp arg) (uchar-from-sint arg))
+                 ((ucharp arg) arg)
+                 ((pointerp arg) (error (list :cast-not-supported
+                                              :from arg :to type)))
+                 (t (error (impossible)))))
+          ((type-case type :sint)
+           (cond ((sintp arg) arg)
+                 ((ucharp arg) (sint-from-uchar arg))
+                 ((pointerp arg) (error (list :cast-pointer-not-supported
+                                              :from arg :to type)))
+                 (t (error (impossible)))))
+          (t (error (list :cast-not-supported :from arg :to type)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1021,7 +1099,11 @@
                (exec-binary-pure e.op arg1 arg2))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
-                ((when (ucharp test)) (error (list :exec-cond-uchar-todo e))))
+                ((when (pointerp test)) (error
+                                         (list :exec-cond-pointer-todo e)))
+                ((when (ucharp test)) (error
+                                       (list :exec-cond-uchar-todo e)))
+                ((unless (mbt (sintp test))) (error (impossible))))
              (if (sint-nonzerop test)
                  (exec-expr-pure e.then compst)
                (exec-expr-pure e.else compst)))))
@@ -1030,8 +1112,8 @@
   :verify-guards nil ; done below
   ///
   (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable errorp-when-value-resultp-and-not-valuep
-                                       sintp-when-valuep-and-not-ucharp)))))
+    :hints
+    (("Goal" :in-theory (enable errorp-when-value-resultp-and-not-valuep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1048,9 +1130,8 @@
      the order of evaluation does not matter.
      Thus, we proceed left to right."))
   (b* (((when (endp es)) nil)
-       (val/err (exec-expr-pure (car es) compst))
-       ((when (value-result-case val/err :err)) (value-result-err->get val/err))
-       (val (value-result-ok->get val/err))
+       (val (exec-expr-pure (car es) compst))
+       ((when (errorp val)) val)
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
@@ -1078,27 +1159,25 @@
           (error (list :init-scope :extra-actuals actuals))))
        ((when (endp actuals))
         (error (list :init-scope :extra-formals formals)))
-       (scope (init-scope (cdr formals) (cdr actuals))))
-    (scope-result-case
-     scope
-     :err scope.get
-     :ok (b* ((formal (car formals))
-              (actual (car actuals))
-              (declor (param-declon->declor formal))
-              (pointerp (declor->pointerp declor))
-              (name (declor->ident declor))
-              (formal-type (type-name-to-type
-                            (make-tyname :specs (param-declon->type formal)
-                                         :pointerp pointerp)))
-              (actual-type (type-of-value actual))
-              ((unless (equal formal-type actual-type))
-               (error (list :formal-actual-mistype
-                            :name name
-                            :formal formal-type
-                            :actual actual-type))))
-           (if (omap::in name scope)
-               (error (list :init-scope :duplicate-param name))
-             (omap::update name actual scope)))))
+       (scope (init-scope (cdr formals) (cdr actuals)))
+       ((when (errorp scope)) scope)
+       (formal (car formals))
+       (actual (car actuals))
+       (declor (param-declon->declor formal))
+       (pointerp (declor->pointerp declor))
+       (name (declor->ident declor))
+       (formal-type (type-name-to-type
+                     (make-tyname :specs (param-declon->type formal)
+                                  :pointerp pointerp)))
+       (actual-type (type-of-value actual))
+       ((unless (equal formal-type actual-type))
+        (error (list :formal-actual-mistype
+                     :name name
+                     :formal formal-type
+                     :actual actual-type))))
+    (if (omap::in name scope)
+        (error (list :init-scope :duplicate-param name))
+      (omap::update name actual scope)))
   :hooks (:fix)
   :measure (len formals)
   :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))
@@ -1277,22 +1356,34 @@
        :if (b* ((test (exec-expr-pure s.test compst)))
              (value-result-case
               test
-              :ok (if (ucharp test.get)
-                      (mv (error (list :exec-if-uchar-todo s))
-                          (compustate-fix compst))
-                    (if (sint-nonzerop test.get)
-                        (exec-stmt s.then compst fenv (1- limit))
-                      (mv nil (compustate-fix compst))))
+              :ok (cond ((pointerp test.get)
+                         (mv (error (list :exec-if-pointer-todo s))
+                             (compustate-fix compst)))
+                        ((ucharp test.get)
+                         (mv (error (list :exec-if-uchar-todo s))
+                             (compustate-fix compst)))
+                        ((sintp test.get)
+                         (if (sint-nonzerop test.get)
+                             (exec-stmt s.then compst fenv (1- limit))
+                           (mv nil (compustate-fix compst))))
+                        (t (mv (error (impossible))
+                               (compustate-fix compst))))
               :err (mv test.get (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr-pure s.test compst)))
                  (value-result-case
                   test
-                  :ok (if (ucharp test.get)
-                          (mv (error (list :exec-if-uchar-todo s))
-                              (compustate-fix compst))
-                        (if (sint-nonzerop test.get)
-                            (exec-stmt s.then compst fenv (1- limit))
-                          (exec-stmt s.else compst fenv (1- limit))))
+                  :ok (cond ((pointerp test.get)
+                             (mv (error (list :exec-if-pointer-todo s))
+                                 (compustate-fix compst)))
+                            ((ucharp test.get)
+                             (mv (error (list :exec-if-uchar-todo s))
+                                 (compustate-fix compst)))
+                            ((sintp test.get)
+                             (if (sint-nonzerop test.get)
+                                 (exec-stmt s.then compst fenv (1- limit))
+                               (exec-stmt s.else compst fenv (1- limit))))
+                            (t (mv (error (impossible))
+                                   (compustate-fix compst))))
                   :err (mv test.get (compustate-fix compst))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))

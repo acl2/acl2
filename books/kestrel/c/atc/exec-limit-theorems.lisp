@@ -182,25 +182,37 @@
         :if (b* ((test (exec-expr-pure s.test compst)))
               (value-result-case
                test
-               :ok (if (ucharp test.get)
-                       (mv (error (list :exec-if-uchar-todo s))
-                           (compustate-fix compst))
-                     (if (sint-nonzerop test.get)
-                         (exec-stmt-induct s.then compst fenv
-                                           (1- limit) (1- limit1))
-                       (mv nil (compustate-fix compst))))
+               :ok (cond ((pointerp test.get)
+                          (mv (error (list :exec-if-pointer-todo s))
+                              (compustate-fix compst)))
+                         ((ucharp test.get)
+                          (mv (error (list :exec-if-uchar-todo s))
+                              (compustate-fix compst)))
+                         ((sintp test.get)
+                          (if (sint-nonzerop test.get)
+                              (exec-stmt-induct s.then compst fenv
+                                                (1- limit) (1- limit1))
+                            (mv nil (compustate-fix compst))))
+                         (t (mv (error (impossible))
+                                (compustate-fix compst))))
                :err (mv test.get (compustate-fix compst))))
         :ifelse (b* ((test (exec-expr-pure s.test compst)))
                   (value-result-case
                    test
-                   :ok (if (ucharp test.get)
-                           (mv (error (list :exec-if-uchar-todo s))
-                               (compustate-fix compst))
-                         (if (sint-nonzerop test.get)
-                             (exec-stmt-induct s.then compst fenv
-                                               (1- limit) (1- limit1))
-                           (exec-stmt-induct s.else compst fenv
-                                             (1- limit) (1- limit1))))
+                   :ok (cond ((pointerp test.get)
+                              (mv (error (list :exec-if-pointer-todo s))
+                                  (compustate-fix compst)))
+                             ((ucharp test.get)
+                              (mv (error (list :exec-if-uchar-todo s))
+                                  (compustate-fix compst)))
+                             ((sintp test.get)
+                              (if (sint-nonzerop test.get)
+                                  (exec-stmt-induct s.then compst fenv
+                                                    (1- limit) (1- limit1))
+                                (exec-stmt-induct s.else compst fenv
+                                                  (1- limit) (1- limit1))))
+                             (t (mv (error (impossible))
+                                    (compustate-fix compst))))
                    :err (mv test.get (compustate-fix compst))))
         :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :while (mv (error (list :exec-stmt s)) (compustate-fix compst))

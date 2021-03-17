@@ -418,6 +418,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-arrsub ((arr-expr exprp) (arr-type typep)
+                      (sub-expr exprp) (sub-type typep))
+  :returns (type type-resultp)
+  :short "Check an array subscripting expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check @('arr-type') and @('sub-type');
+     @('arr-expr') and @('sub-expr') are just used for errors.
+     The first expression must have a pointer type [C:6.5.2.1/1].
+     The second expression must have an integer type [C:6.5.2.1/1];
+     for now we more restrictively require it to be @('int').
+     The type of the array subscripting expression
+     is the type referenced by the pointer."))
+  (b* (((unless (type-case arr-type :pointer))
+        (error (list :array-mistype (expr-fix arr-expr)
+                     :required :pointer
+                     :supplied (type-fix arr-type))))
+       ((unless (type-case sub-type :sint))
+        (error (list :subscript-mistype (expr-fix sub-expr)
+                     :required (type-sint)
+                     :supplied (type-fix sub-type)))))
+    (type-pointer->referenced arr-type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-pure ((e exprp) (vartab var-tablep))
   :returns (type type-resultp)
   :short "Check a pure expression."
@@ -448,7 +475,13 @@
                  ((unless type) (error (list :var-not-found e.get))))
               type)
      :const (check-const e.get)
-     :arrsub (error (list :expr-arrsub-todo e))
+     :arrsub (b* ((arr-type (check-expr-pure e.arr vartab))
+                  ((when (errorp arr-type))
+                   (error (list :arrsub e arr-type)))
+                  (sub-type (check-expr-pure e.sub vartab))
+                  ((when (errorp sub-type))
+                   (error (list :arrsub e sub-type))))
+               (check-arrsub e.arr arr-type e.sub sub-type))
      :call (error (list :expr-non-pure e))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
@@ -492,9 +525,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
-  :returns (types type-list-resultp
-                  :hints ('(:cases ((type-listp
-                                     (check-expr-pure-list (cdr es) vartab))))))
+  :returns (types type-list-resultp)
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -503,10 +534,8 @@
   (b* (((when (endp es)) nil)
        (type (check-expr-pure (car es) vartab))
        ((when (errorp type)) type)
-       ((unless (mbt (typep type))) (error :impossible))
        (types (check-expr-pure-list (cdr es) vartab))
-       ((when (errorp types)) types)
-       ((unless (mbt (type-listp types))) (error :impossible)))
+       ((when (errorp types)) types))
     (cons type types))
   :hooks (:fix))
 
