@@ -8807,3 +8807,42 @@
   (equal (bitxor x (leftrotate width amt y))
          (bitxor x (trim 1 (leftrotate width amt y))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;gen the 32s!
+(defthm equal-of-leftrotate-and-leftrotate
+  (implies (and (equal 32 size) ;gen!
+                (natp size)
+                ;(<= size 32)
+                )
+           (equal (equal (leftrotate size n x) (leftrotate size n y))
+                  (equal (bvchop size x) (bvchop size y))))
+  :hints (("Goal" :in-theory (enable leftrotate))))
+
+;move
+(defthm equal-of-leftrotate32-and-leftrotate32
+  (equal (equal (leftrotate32 n x) (leftrotate32 n y))
+         (equal (bvchop 32 x) (bvchop 32 y)))
+  :hints (("Goal" :in-theory (enable leftrotate32))))
+
+(defthm bvchop-subst-constant-from-logext
+  (implies (and (equal (logext free x) k)
+                (syntaxp (quotep k))
+                (<= size free)
+                (posp size)
+                (integerp free)
+                )
+           (equal (bvchop size x)
+                  (bvchop size k)))
+  :hints (("Goal"
+           :cases ((equal size (+ -1 free))
+                   (< size (+ -1 free)))
+           :in-theory (e/d (logext logtail-of-bvchop)
+                           ( slice  BVCHOP-OF-LOGTAIL
+                                    )))))
+
+(defthm not-equal-max-int-when-<=
+  (IMPLIES (AND (NOT (SBVLT 32 free x))
+                (NOT (EQUAL (BVCHOP 32 free)
+                            2147483647)))
+           (not (EQUAL 2147483647 (BVCHOP 32 x))))
+  :hints (("Goal" :in-theory (enable SBVLT))))

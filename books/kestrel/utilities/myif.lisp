@@ -243,3 +243,11 @@
   (equal (consp (myif test a b))
          (myif test (consp a) (consp b)))
   :hints (("Goal" :in-theory (enable myif))))
+
+;strengthen?
+(defthm unsigned-byte-p-of-myif
+  (implies (and (unsigned-byte-p n a)
+                (unsigned-byte-p n b))
+           (equal (unsigned-byte-p n (myif test a b))
+                  t))
+  :hints (("Goal" :in-theory (enable myif))))

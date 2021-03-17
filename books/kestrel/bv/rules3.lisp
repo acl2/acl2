@@ -2649,22 +2649,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;anti-bvplus
                                                                                                   )))))
 
-(defthm bvchop-subst-constant-from-logext
-  (implies (and (equal (logext free x) k)
-                (syntaxp (quotep k))
-                (<= size free)
-                (posp size)
-                (integerp free)
-                )
-           (equal (bvchop size x)
-                  (bvchop size k)))
-  :hints (("Goal"
-           :cases ((equal size (+ -1 free))
-                   (< size (+ -1 free)))
-           :in-theory (e/d (logext logtail-of-bvchop)
-                           ( ;LOGBITP-BVCHOP
-                            UNSIGNED-BYTE-P-LOGAPP)))))
-
 (defthm logtail-of-one-more
   (implies (and (integerp x)
 ;                (equal n 32)
