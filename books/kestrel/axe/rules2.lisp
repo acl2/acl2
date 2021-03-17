@@ -2496,15 +2496,6 @@
                   (cons a (myif test b c))))
   :hints (("Goal" :in-theory (enable myif))))
 
-;move
-;strengthen?
-(defthm unsigned-byte-p-of-myif
-  (implies (and (unsigned-byte-p n a)
-                (unsigned-byte-p n b))
-           (equal (unsigned-byte-p n (myif test a b))
-                  t))
-  :hints (("Goal" :in-theory (enable myif))))
-
 ;gen? -alt?
 (defthm myif-of-logext-logior-32-hack
   (implies (signed-byte-p 32 x)
@@ -3628,16 +3619,6 @@
 ;;       nil
 ;;     (cons (bvchop size (car lst))
 ;;           (bvchop-list size (cdr lst)))))
-
-(defthm bvnth-when-data-isnt-an-all-unsigned-byte-p
-  (implies (and (not (all-unsigned-byte-p esize data))
-                (natp esize))
-           (equal (bvnth esize isize index data)
-                  (bvnth esize isize index (bvchop-list esize data))))
-  :hints (("Goal"
-           :cases ((<= (len data) (BVCHOP ISIZE INDEX)))
-           :in-theory (enable BVNTH BVCHOP-WHEN-I-IS-NOT-AN-INTEGER ;LIST::NTH-WITH-LARGE-INDEX
-                              ))))
 
 (defthm all-signed-byte-p-implies-all-integerp
   (implies (all-signed-byte-p free x)

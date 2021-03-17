@@ -25,6 +25,6 @@
 ;; make-rewriter-simple-fn.  The main interface functions are
 ;; simplify-term-basic, simp-term-basic, and simp-terms-basic.
 (make-rewriter-simple basic
-                      apply-axe-evaluator-basic-to-quoted-args
+                      axe-evaluator-basic
                       eval-axe-syntaxp-expr-basic
                       eval-axe-bind-free-function-application-basic)

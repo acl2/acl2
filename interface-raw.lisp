@@ -9890,9 +9890,11 @@
 (defun-one-output print-list-without-stobj-arrays (lst)
   (loop for x in lst
         collect
-        (or (and (arrayp x)
-                 (stobj-print-symbol x *user-stobj-alist*))
-            x)))
+        (if (eq x *the-live-state*)
+            '|<state>|
+          (or (and (arrayp x)
+                   (stobj-print-symbol x *user-stobj-alist*))
+              x))))
 
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail)
   (and (live-stobjp x)

@@ -29,6 +29,7 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-tuples-between")
+(include-book "functions-in-world")
 (include-book "gen-xdoc-for-file")
 (include-book "include-book-paths")
 (include-book "integer-arithmetic/top")

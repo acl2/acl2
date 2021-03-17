@@ -14,7 +14,6 @@
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (local (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system))
 (include-book "kestrel/prime-fields/rules2" :dir :system) ;reduce?
-(include-book "kestrel/utilities/def-constant-opener" :dir :system) ;reduce?
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
@@ -42,11 +41,6 @@
                   (neg (mul (neg k p) x p) p)
                   ))
   :hints (("Goal" :in-theory (enable mul neg sub))))
-
-;(acl2::def-constant-opener neg)
-;(acl2::def-constant-opener pfield::pos-fix)
-(acl2::def-constant-opener unsigned-byte-p) ;todo: built into basic evaluator!
-(acl2::def-constant-opener acl2::integer-range-p)
 
 ;;todo: use an axe-bind-free rule?
 (defthm pfield::move-negation-1

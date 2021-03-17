@@ -422,6 +422,11 @@
      This distribution happens at the goal level,
      but not in the rewriter by default."))
 
+  (defruled not-errorp-when-scopep
+    (implies (scopep x)
+             (not (errorp x)))
+    :enable (errorp scopep))
+
   (defruled scope-result-kind-when-scopep
     (implies (scopep scope)
              (equal (scope-result-kind scope)
@@ -490,7 +495,7 @@
   (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :enable (errorp valuep sintp ucharp))
+    :enable (errorp valuep sintp ucharp pointerp))
 
   (defruled not-errorp-when-value-listp
     (implies (value-listp x)
@@ -506,6 +511,11 @@
     (implies (sintp x)
              (not (ucharp x)))
     :enable (sintp ucharp))
+
+  (defruled not-pointerp-when-sintp
+    (implies (sintp x)
+             (not (pointerp x)))
+    :enable (sintp pointerp))
 
   (defruled value-kind-when-sintp
     (implies (sintp x)
@@ -575,6 +585,14 @@
     (equal (ucharp (if a b c))
            (if a (ucharp b) (ucharp c))))
 
+  (defruled sintp-of-if
+    (equal (sintp (if a b c))
+           (if a (sintp b) (sintp c))))
+
+  (defruled pointerp-of-if
+    (equal (pointerp (if a b c))
+           (if a (pointerp b) (pointerp c))))
+
   (defruled 1+nat-greater-than-0
     (implies (natp x)
              (< 0 (1+ x))))
@@ -640,10 +658,12 @@
     compustate-result-ok->get-when-compustatep
     len-of-cons
     1+len-greater-than-0
+    not-errorp-when-scopep
     not-errorp-when-valuep
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
     not-ucharp-when-sintp
+    not-pointerp-when-sintp
     scope-result-kind-when-scopep
     scope-result-ok->get-when-scopep
     sint-nonzerop-of-0
@@ -666,6 +686,8 @@
     errorp-of-if
     valuep-of-if
     ucharp-of-if
+    sintp-of-if
+    pointerp-of-if
     car-of-if
     1+nat-greater-than-0
     natp-of-1+

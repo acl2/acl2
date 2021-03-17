@@ -1,7 +1,7 @@
 ; A lightweight book of theorems about subrange.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -432,3 +432,28 @@
                                         (- end (len x))
                                         y))))))
   :hints (("Goal" :in-theory (enable equal-of-append))))
+
+;use iff?
+;drop this one?
+;for axe?
+(defthm subrange-not-nil1
+  (implies (and ;(consp lst)
+                (natp start)
+                (natp end))
+           (equal (equal (subrange start end lst) nil)
+                  (< end start)
+                  ))
+  :hints (("Goal" :in-theory (e/d (subrange) (;anti-subrange
+                                              )))))
+
+;use iff?
+;for axe?
+(defthm subrange-not-nil2
+  (implies (and ;(consp lst)
+                (natp start)
+                (natp end))
+           (equal (equal nil (subrange start end lst))
+                  (< end start)
+                  ))
+  :hints (("Goal" :use (:instance subrange-not-nil1)
+           :in-theory (disable subrange-not-nil1))))

@@ -2669,6 +2669,8 @@
            :use (:instance alistp-when-frame-p
                            (x (frame-with-root root frame))))))
 
+;; Gonna assume that both of these are disabled because of their potential to
+;; cause case splits...
 (defthmd put-assoc-equal-of-frame-with-root
   (equal (put-assoc-equal key val (frame-with-root root frame))
          (if (equal key 0)
@@ -2676,13 +2678,20 @@
            (frame-with-root root (put-assoc-equal key val frame))))
   :hints (("goal" :do-not-induct t
            :in-theory (enable frame-with-root))))
-
 (defthmd assoc-equal-of-frame-with-root
   (equal (assoc-equal x (frame-with-root root frame))
          (if (equal x 0)
              (cons 0 (frame-val nil (abs-fs-fix root) 0))
              (assoc-equal x frame)))
   :hints (("goal" :in-theory (enable frame-with-root))))
+
+;; Move later.
+(defthm
+  remove-assoc-of-frame-with-root-1
+  (equal (remove-assoc-equal 0 (frame-with-root root frame))
+         (remove-assoc-equal 0 frame))
+  :hints (("goal" :in-theory (enable frame-with-root remove-assoc-equal)
+           :do-not-induct t)))
 
 (defund frame->root (frame)
   (declare (xargs :guard (and (frame-p frame) (consp (assoc-equal 0 frame)))))
@@ -4284,6 +4293,29 @@
                                          (abs-fs-fix abs-file-alist1)))
                (strip-cars (abs-fs-fix abs-file-alist2))))))))
 
+(defthm
+  names-at-of-put-assoc
+  (implies (and (abs-fs-p fs)
+                (fat32-filename-p name))
+           (equal (names-at (put-assoc-equal name val fs)
+                            relpath)
+                  (cond ((and (atom relpath)
+                              (atom (assoc-equal name fs)))
+                         (append (names-at fs relpath)
+                                 (list name)))
+                        ((and (consp relpath)
+                              (equal (fat32-filename-fix (car relpath))
+                                     name)
+                              (abs-directory-file-p (abs-file-fix val)))
+                         (names-at (abs-file->contents val)
+                                   (cdr relpath)))
+                        ((and (consp relpath)
+                              (equal (fat32-filename-fix (car relpath))
+                                     name))
+                         nil)
+                        (t (names-at fs relpath)))))
+  :hints (("goal" :in-theory (enable names-at))))
+
 ;; The change we're making to this theorem is going to potentially make us
 ;; regret having done this...
 (defthm
@@ -4294,13 +4326,11 @@
     (names-at (ctx-app root abs-file-alist x x-path)
               relpath)
     (cond ((and (ctx-app-ok root x x-path)
-                (equal (fat32-filename-list-fix x-path)
-                       (fat32-filename-list-fix relpath)))
+                (fat32-filename-list-equiv x-path relpath))
            (append (names-at root relpath)
                    (names-at abs-file-alist nil)))
           ((and (ctx-app-ok root x x-path)
-                (prefixp (fat32-filename-list-fix x-path)
-                         (fat32-filename-list-fix relpath))
+                (fat32-filename-list-prefixp x-path relpath)
                 (not (member-equal (nth (len x-path)
                                         (fat32-filename-list-fix relpath))
                                    (names-at root x-path))))
@@ -4308,20 +4338,21 @@
                      (nthcdr (len x-path) relpath)))
           (t (names-at root relpath)))))
   :hints
-  (("goal" :induct (mv (ctx-app root abs-file-alist x x-path)
-                       (fat32-filename-list-prefixp x-path relpath))
-    :in-theory (e/d (prefixp names-at ctx-app-ok addrs-at ctx-app
-                             names-at fat32-filename-list-fix)
-                    (nfix
-                     (:REWRITE REMOVE-WHEN-ABSENT)
-                     (:DEFINITION MEMBER-EQUAL)
-                     (:DEFINITION REMOVE-EQUAL)
-                     (:REWRITE ABS-FILE-ALIST-P-CORRECTNESS-1)
-                     (:REWRITE ABS-ADDRS-WHEN-M1-FILE-ALIST-P)
-                     (:DEFINITION NO-DUPLICATESP-EQUAL)
-                     (:REWRITE
-                      ABSFAT-EQUIV-IMPLIES-SET-EQUIV-ADDRS-AT-1-LEMMA-1)
-                     (:REWRITE M1-FILE-CONTENTS-P-CORRECTNESS-1))))
+  (("goal"
+    :induct (mv (ctx-app root abs-file-alist x x-path)
+                (fat32-filename-list-prefixp x-path relpath))
+    :in-theory
+    (e/d (prefixp names-at ctx-app-ok addrs-at ctx-app
+                  names-at fat32-filename-list-fix)
+         (nfix (:rewrite remove-when-absent)
+               (:definition member-equal)
+               (:definition remove-equal)
+               (:rewrite abs-file-alist-p-correctness-1)
+               (:rewrite abs-addrs-when-m1-file-alist-p)
+               (:definition no-duplicatesp-equal)
+               (:rewrite absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
+               (:rewrite m1-file-contents-p-correctness-1)
+               nthcdr-of-cdr)))
    ("subgoal *1/4" :cases ((null (fat32-filename-fix (car relpath)))))))
 
 ;; Shorter name for distinguish names.
@@ -4523,34 +4554,11 @@
                        relpath frame))
   :hints
   (("goal"
-    :in-theory (e/d (dist-names names-at)
+    :in-theory (e/d (dist-names names-at fat32-filename-list-prefixp-alt)
                     ((:rewrite remove-when-absent)
                      (:rewrite abs-fs-p-correctness-1)
                      (:rewrite prefixp-of-append-arg1)
                      (:rewrite prefixp-of-append-arg2))))))
-
-(defthm
-  names-at-of-put-assoc
-  (implies (and (abs-fs-p fs)
-                (fat32-filename-p name))
-           (equal (names-at (put-assoc-equal name val fs)
-                            relpath)
-                  (cond ((and (atom relpath)
-                              (atom (assoc-equal name fs)))
-                         (append (names-at fs relpath)
-                                 (list name)))
-                        ((and (consp relpath)
-                              (equal (fat32-filename-fix (car relpath))
-                                     name)
-                              (abs-directory-file-p (abs-file-fix val)))
-                         (names-at (abs-file->contents val)
-                                   (cdr relpath)))
-                        ((and (consp relpath)
-                              (equal (fat32-filename-fix (car relpath))
-                                     name))
-                         nil)
-                        (t (names-at fs relpath)))))
-  :hints (("goal" :in-theory (enable names-at))))
 
 (defund
   abs-separate (frame)

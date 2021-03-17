@@ -12,8 +12,10 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; A tool to get the event (defun or mutual-recursion) corresponding to a given
-;; name, in untranslated form.
+;; A tool to get the event (defun or mutual-recursion or defuns) corresponding
+;; to a given name, in untranslated form.  This works better than the built-in
+;; utility get-event (e.g., on built-in functions introduced in :program mode
+;; and later lifted to :logic mode).
 
 (include-book "std/util/bstar" :dir :system) ;could drop even this
 
@@ -71,6 +73,3 @@
                                 )))
         (er hard 'my-get-event "Unxpected kind of event for ~x0: ~x1" name event)
       event)))
-
-;(my-get-event 'pseudo-termp (w state))
-;(my-get-event 'optimize-stobj-recognizers1-lst (w state))

@@ -1,7 +1,7 @@
 ; A utility to check all elements of a list for equality with a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,8 +75,6 @@
            (equal (nth index data)
                   (if (equal 0 (len data))
                       nil
-                  val)))
-  :otf-flg t
+                    val)))
   :hints (("Goal" :use (:instance  nth-when-all-equal$-helper (index (nfix index)))
-           :in-theory (e/d (;NTH-WHEN-N-IS-ZP
-                            )( nth-when-all-equal$-helper)))))
+           :in-theory (disable nth-when-all-equal$-helper))))

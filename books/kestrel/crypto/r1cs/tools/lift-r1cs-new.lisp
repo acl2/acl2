@@ -25,6 +25,8 @@
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
 (include-book "kestrel/prime-fields/rules2" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
+;; The following include-books bring in rules mentioned in lift-r1cs-rules:
+(include-book "kestrel/arithmetic-light/mod" :dir :system) ; for ACL2::MOD-OF-1-ARG1
 
 ;; Check that all the rules we'll use for lifting have been brought in above:
 (acl2::ensure-rules-known (lift-r1cs-rules))

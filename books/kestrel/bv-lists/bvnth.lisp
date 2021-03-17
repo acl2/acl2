@@ -15,6 +15,9 @@
 ;; See also bv-array-read.
 
 (include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "all-unsigned-byte-p")
+(include-book "bvchop-list")
+(local (include-book "kestrel/lists-light/nth" :dir :system))
 
 ;we go from nth to this to bvnth - do we still?
 (defund nth2 (indexsize n lst)
@@ -57,3 +60,12 @@
 (defthm bvchop-8-bvnth-8
   (equal (bvchop 8 (bvnth 8 isize i vals))
          (bvnth 8 isize i vals)))
+
+(defthm bvnth-when-data-isnt-an-all-unsigned-byte-p
+  (implies (and (not (all-unsigned-byte-p esize data))
+                (natp esize))
+           (equal (bvnth esize isize index data)
+                  (bvnth esize isize index (bvchop-list esize data))))
+  :hints (("Goal"
+           :cases ((<= (len data) (bvchop isize index)))
+           :in-theory (enable bvnth bvchop-when-i-is-not-an-integer))))
