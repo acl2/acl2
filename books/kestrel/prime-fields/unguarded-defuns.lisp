@@ -139,3 +139,12 @@
          (inv x p))
   :hints (("Goal" :in-theory (enable inv
                                      inv-unguarded))))
+
+(defun div-unguarded (x y p)
+  (declare (xargs :guard t))
+  (mul-unguarded x (inv-unguarded y p) p))
+
+(defthm div-unguarded-correct
+  (equal (div-unguarded x y p)
+         (div x y p))
+  :hints (("Goal" :in-theory (enable div div-unguarded))))

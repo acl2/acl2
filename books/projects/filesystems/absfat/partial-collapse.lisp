@@ -2674,7 +2674,9 @@
                                                    (frame->frame frame)))))))))
     :hints
     (("goal"
-      :in-theory (disable (:rewrite names-at-of-ctx-app))
+      :in-theory
+      (e/d (fat32-filename-list-equiv$inline fat32-filename-list-prefixp-alt)
+           ((:rewrite names-at-of-ctx-app)))
       :use
       (:instance
        (:rewrite names-at-of-ctx-app)
@@ -2741,21 +2743,23 @@
           (len relpath)
           (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))))))
     :hints
-    (("goal" :in-theory (e/d (ctx-app-list intersectp-equal)
-                             ((:rewrite nthcdr-when->=-n-len-l)
-                              (:rewrite partial-collapse-correctness-lemma-2)
-                              (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8 . 3)
-                              (:definition len)
-                              (:rewrite
-                               ctx-app-ok-when-absfat-equiv-lemma-4)
-                              (:rewrite prefixp-one-way-or-another . 1)
-                              (:definition assoc-equal)
-                              (:rewrite
-                               nat-listp-if-fat32-masked-entry-list-p)
-                              (:linear position-when-member)
-                              (:linear position-equal-ac-when-member)
-                              (:rewrite
-                               ctx-app-list-when-set-equiv-lemma-7)))))))
+    (("goal"
+      :in-theory
+      (e/d (ctx-app-list intersectp-equal
+                         fat32-filename-list-prefixp-alt
+                         fat32-filename-list-equiv)
+           ((:rewrite nthcdr-when->=-n-len-l)
+            (:rewrite partial-collapse-correctness-lemma-2)
+            (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                      . 3)
+            (:definition len)
+            (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
+            (:rewrite prefixp-one-way-or-another . 1)
+            (:definition assoc-equal)
+            (:rewrite nat-listp-if-fat32-masked-entry-list-p)
+            (:linear position-when-member)
+            (:linear position-equal-ac-when-member)
+            (:rewrite ctx-app-list-when-set-equiv-lemma-7)))))))
 
 (encapsulate
   ()
@@ -7920,8 +7924,7 @@
                                          (frame->frame frame))))))
     (consp (assoc-equal x (frame->frame frame)))
     (abs-separate frame)
-    (abs-complete
-     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
+    (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (frame-p (frame->frame frame))
     (prefixp
      (frame-val->path
@@ -8117,7 +8120,9 @@
                                             (frame->frame frame)))))))))
     :hints
     (("goal"
-      :in-theory (disable prefixp-nthcdr-nthcdr)
+      :in-theory
+      (e/d (fat32-filename-list-prefixp-alt fat32-filename-list-equiv)
+           (prefixp-nthcdr-nthcdr))
       :use
       ((:instance
         prefixp-nthcdr-nthcdr

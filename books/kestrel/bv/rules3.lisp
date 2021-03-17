@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -2119,7 +2119,7 @@
                                     val))))))
   :hints (("Goal" :in-theory (e/d (leftrotate)
 ;for speed:
-                                  (;NOT-<-SELF2 ;INTP-BECOMES-SBP32 JVM::INT-LEMMA0
+                                  (;INTP-BECOMES-SBP32 JVM::INT-LEMMA0
                                    )))))
 
 
@@ -2648,22 +2648,6 @@
                               (+ -1 (expt 2 32))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;anti-bvplus
                                                                                                   )))))
-
-(defthm bvchop-subst-constant-from-logext
-  (implies (and (equal (logext free x) k)
-                (syntaxp (quotep k))
-                (<= size free)
-                (posp size)
-                (integerp free)
-                )
-           (equal (bvchop size x)
-                  (bvchop size k)))
-  :hints (("Goal"
-           :cases ((equal size (+ -1 free))
-                   (< size (+ -1 free)))
-           :in-theory (e/d (logext logtail-of-bvchop)
-                           ( ;LOGBITP-BVCHOP
-                            UNSIGNED-BYTE-P-LOGAPP)))))
 
 (defthm logtail-of-one-more
   (implies (and (integerp x)

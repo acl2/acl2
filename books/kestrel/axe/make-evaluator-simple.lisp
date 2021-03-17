@@ -154,6 +154,10 @@
        ;; These just check the correctness of the aliases:
        (local (progn ,@(make-alias-checking-theorems fns-and-aliases wrld)))
 
+       ;; These speed up the proofs, by avoid the need for destructor elimination:
+       (local (in-theory (enable consp-of-cdr-of-nth-when-all-myquotep
+                                 consp-of-nth-when-all-myquotep)))
+
        (mutual-recursion
 
         ;; Returns (mv erp result).

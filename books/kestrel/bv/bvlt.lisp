@@ -824,3 +824,20 @@
                 (natp y))
            (< x y))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-when-bvlt-false
+   (implies (and (syntaxp (quotep size))
+                 (syntaxp (quotep k))
+                 (bvlt size x free)
+                 (syntaxp (quotep free))
+                 (bvle size free (+ 1 k))
+                 (integerp k)
+                 (natp size))
+            (equal (bvlt size k x)
+                   nil))
+   :hints
+   (("Goal"
+     :cases ((integerp k))
+     :in-theory
+     (e/d (bvlt bvchop-of-sum-cases)
+          (<-becomes-bvlt <-becomes-bvlt-alt)))))

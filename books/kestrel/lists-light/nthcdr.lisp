@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nthcdr.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -135,6 +135,14 @@
                         (nthcdr (+ 1 n) l))))
   :hints (("goal" :induct (nthcdr n l)
            :in-theory (enable zp nthcdr))))
+
+(defthmd nthcdr-opener
+  (implies (not (zp n))
+           (equal (nthcdr n l)
+                  (nthcdr (+ n -1) (cdr l))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(theory-invariant (incompatible (:rewrite nthcdr-opener) (:rewrite |3-cdrs|)))
 
 ;rename?
 (defthmd nthcdr-of-+-opener

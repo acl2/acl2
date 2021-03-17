@@ -363,8 +363,6 @@
 ;;          x)
 ;;   :hints (("Goal" :in-theory (enable sbvdiv floor-by-4))))
 
-;(in-theory (disable NOT-<-SELF2)) ;bozo
-
 (in-theory (disable divisibility-in-terms-of-floor))
 
 ;move
@@ -1001,13 +999,12 @@
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
+;move
 (defthm expt-split-hack
   (implies (posp size)
            (equal (+ (- (EXPT 2 SIZE)) (EXPT 2 (+ -1 SIZE)))
                   (- (EXPT 2 (+ -1 SIZE)))))
   :hints (("Goal" :in-theory (enable expt-of-+))))
-
-
 
 (defthm sbvlt-0-bvuminus
   (equal (sbvlt 32 0 (bvuminus 32 x))
@@ -1078,8 +1075,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-
-
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
 (in-theory (disable bvlt))
@@ -1095,10 +1090,6 @@
 ;;                  (sbvlt 32 x (bvminus 32 k2 k1))))
 ;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (sbvlt bvplus bvuminus bvminus bvcat logapp) (anti-bvplus BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS BVCAT-RECOMBINE)))))
-
-
-
-
 
 (defthm bvlt-of-bvplus-add-to-both-sides
   (implies (integerp x)
@@ -4148,30 +4139,6 @@
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
-
-
-
-
-
-(defthm bvlt-when-bvlt-false
-   (implies (and (syntaxp (quotep size))
-                 (syntaxp (quotep k))
-                 (bvlt size x free)
-                 (syntaxp (quotep free))
-                 (bvle size free (+ 1 k))
-                 (integerp k)
-                 (natp size))
-            (equal (bvlt size k x)
-                   nil))
-   :hints
-   (("Goal"
-     :cases ((integerp k))
-     :in-theory
-     (e/d (bvlt bvchop-of-sum-cases)
-          (<-becomes-bvlt <-becomes-bvlt-alt bvlt-of-plus-arg1
-                          bvlt-of-plus-arg2 <-of-bvmult-hack
-                          <-of-bvplus-becomes-bvlt-arg1
-                          <-of-bvplus-becomes-bvlt-arg2)))))
 
 ;; ;can we weaken other rules by using +1?
 ;; (defthm bvlt-when-bvlt-false
@@ -7799,13 +7766,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
                                   (anti-bvplus GETBIT-OF-+ bvlt-of-plus-arg1 bvlt-of-plus-arg2 plus-becomes-bvplus
                                                plus-becomes-bvplus-free)))))
-
-(defthm equal-of-bvchop-of-car-and-bv-array-read
-  (implies (equal len (len x))
-           (equal (equal (bvchop 8 (car x)) (bv-array-read 8 len 0 x))
-                  t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) (nth-of-bv-array-write-becomes-bv-array-read
-                                                   NTH-BECOMES-BV-ARRAY-READ2)))))
 
 (defthm equal-of-minval-and-bvplus-of-bvminus
   (implies (unsigned-byte-p 31 x)
@@ -12722,22 +12682,6 @@
            (bvchop 32 x)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
 
-;gen the 32s!
-(defthm equal-of-leftrotate-and-leftrotate
-  (implies (and (equal 32 size) ;gen!
-                (natp size)
-                ;(<= size 32)
-                )
-           (equal (equal (leftrotate size n x) (leftrotate size n y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :in-theory (enable leftrotate))))
-
-;move
-(defthm equal-of-leftrotate32-and-leftrotate32
-  (equal (equal (leftrotate32 n x) (leftrotate32 n y))
-         (equal (bvchop 32 x) (bvchop 32 y)))
-  :hints (("Goal" :in-theory (enable leftrotate32))))
-
 (in-theory (disable NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ))
 
 ;gen!
@@ -15869,10 +15813,6 @@
   :hints (("Goal" :use (:instance equal-of-myif-and-bvif-same)
            :in-theory (disable equal-of-myif-and-bvif-same))))
 
-(defthm firstn-of-0
-  (equal (firstn 0 lst)
-         nil))
-
 ;yuck?
 (defthm equal-of-bv-array-read-and-bv-array-read-lens-differ
   (implies (and (< index len1)
@@ -15886,14 +15826,6 @@
   :otf-flg t
   :hints (("Goal" :cases ((< len1 len2))
            :in-theory (e/d (BV-ARRAY-READ-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
-
-
-
-(defthm unsigned-byte-p-of-car-when-all-unsigned-byte-p
-  (implies (all-unsigned-byte-p bytes x)
-           (equal (unsigned-byte-p bytes (car x))
-                  (consp x)))
-  :hints (("Goal" :in-theory (disable nth-becomes-bv-array-read2))))
 
 (defthm prefixp-of-bv-array-write-when-prefixp
   (implies (and (< (len x) len)
@@ -18243,12 +18175,6 @@
   (implies (and (not (sbvlt 32 free x))
                 (sbvlt 32 free y))
            (sbvlt 32 x y)))
-
-(defthm not-equal-max-int-when-<=
- (IMPLIES (AND (NOT (SBVLT 32 free x))
-               (NOT (EQUAL (BVCHOP 32 free)
-                           2147483647)))
-          (not (EQUAL 2147483647 (BVCHOP 32 x)))))
 
 ;in case we don't chose a normal form:
 ;TODO: Add other variants of this.  Or just choose a normal form...
