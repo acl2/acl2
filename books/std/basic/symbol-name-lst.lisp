@@ -1,6 +1,6 @@
 ; Standard Basic Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,8 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection std/basic/symbol-name-lst
-  :parents (std/basic-extensions std/basic)
-  :short "Theorems about @('symbol-name-lst')
+  :parents (std/basic symbol-name-lst)
+  :short "Theorems about @(tsee symbol-name-lst)
           in the @(csee std/basic) library."
 
   (defthm string-listp-of-symbol-name-lst
