@@ -1290,7 +1290,7 @@
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
    "  (let ((|z| (c::sint-lt |x| |y|)))"
-   "    (c::lognot |z|)))")
+   "    (c::sint-lognot |z|)))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1324,15 +1324,15 @@
     "  (let ((|x_lt_y| (c::sint-lt |x| |y|)))"
     "    (let ((|x_eq_y| (c::sint-eq |x| |y|)))"
     "      (let ((|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "        (c::lognot |x_le_y|)))))")
+    "        (c::sint-lognot |x_le_y|)))))")
    (xdoc::p
     "represents the C function")
    (xdoc::codeblock
     "int g(int x, int y) {"
-    "    int x_less_than_y = x < y;"
-    "    int x_equal_to_y = x == y;"
-    "    int x_less_than_or_equal_to_y = x_less_than_y || x_equal_to_y;"
-    "    return !x_less_than_or_equal_to_y;"
+    "    int x_lt_y = x < y;"
+    "    int x_eq_y = x == y;"
+    "    int x_le_y = x_lt_y || x_eq_y;"
+    "    return !x_le_y;"
     "}")
 
    (xdoc::p
@@ -1343,7 +1343,7 @@
     "  (let* ((|x_lt_y| (c::sint-lt |x| |y|))"
     "         (|x_eq_y| (c::sint-eq |x| |y|))"
     "         (|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "    (c::lognot |x_le_y|)))")
+    "    (c::sint-lognot |x_le_y|)))")
    (xdoc::p
     "This form may be more readable:
      the variables are not indented,
