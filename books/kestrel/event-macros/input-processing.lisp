@@ -89,10 +89,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a replacement for @(tsee evmac-process-input-hints).
-     When that utility is no longer used, it will be removed,
-     and this new utility will be renamed to @('evmac-process-input-hints').")
-   (xdoc::p
     "This is for event macros that have a @(':hints') input
      for user-supplied hints to prove applicability conditions.")
    (xdoc::p
