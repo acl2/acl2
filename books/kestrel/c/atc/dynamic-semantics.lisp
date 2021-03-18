@@ -336,6 +336,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defresult uchar-array "@('unsigned char') arrays")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deref ((ptr pointerp) (heap heapp))
+  :returns (array uchar-array-resultp)
+  :short "Dereference a pointer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the pointer is null, we return an error:
+     a null pointer cannot be dereferenced.
+     Otherwise, we check whether the heap has an array at the pointer's address,
+     which we return if it does (otherwise we return an error).
+     We also ensure that the pointer's type is @('unsigned char'),
+     because for now the heap only contains @('unsigned char') arrays."))
+  (b* (((unless (equal (pointer->reftype ptr) (type-uchar)))
+        (error (list :mistype-pointer-dereference
+                     :required (type-uchar)
+                     :supplied (pointer->reftype ptr))))
+       (address (pointer->address? ptr)))
+    (if address
+        (b* ((pair (omap::in address (heap-fix heap))))
+          (if pair
+              (cdr pair)
+            (error (list :address-not-found address
+                         :heap (heap-fix heap)))))
+      (error :null-pointer-dereference)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod compustate
   :short "Fixtype of computation states."
   :long
@@ -1048,6 +1080,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-expr-arrsub ((arr value-resultp) (sub value-resultp) (heap heapp))
+  :returns (result value-resultp)
+  :short "Execute an array subscripting expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first operand must be a pointer that can be derefenced
+     (this means that it must be a non-null pointer to @('unsigned char');
+     see @(tsee deref)),
+     obtaining an array.
+     The second operand must be an @('int'),
+     which is a bit more restrictive than [C18],
+     which allows any integer;
+     we will relax this at some point.
+     The resulting index must be in range for the array,
+     and the indexed element is returned as result."))
+  (b* ((arr (value-result-fix arr))
+       (sub (value-result-fix sub))
+       ((when (errorp arr)) arr)
+       ((when (errorp sub)) sub)
+       ((unless (pointerp arr)) (error (list :mistype-array :array
+                                             :required :pointer
+                                             :supplied (type-of-value arr))))
+       ((unless (sintp sub)) (error (list :mistype-array :index
+                                          :required (type-sint)
+                                          :supplied (type-of-value sub))))
+       (array (deref arr heap))
+       ((when (errorp array))
+        (error (list :array-not-found arr (heap-fix heap))))
+       ((unless (uchar-array-sint-index-okp array sub))
+        (error (list :array-index-out-of-range
+                     :pointer arr
+                     :array array
+                     :index sub))))
+    (uchar-array-read-sint array sub))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -1083,7 +1154,9 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
-     :arrsub (error (list :exec-arrsub-todo e))
+     :arrsub (b* ((arr (exec-expr-pure e.arr compst))
+                  (sub (exec-expr-pure e.sub compst)))
+               (exec-expr-arrsub arr sub (compustate->heap compst)))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
