@@ -2369,7 +2369,7 @@
 ; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems))
+         (mv (reverse bad) (reverse macros) (reverse theorems)))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond

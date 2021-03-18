@@ -302,7 +302,13 @@
                                         pkg)))
         `(encapsulate
            ()
-           (local (make-flag ,flag-name ,fn :last-body t))
+           (local (make-flag ,flag-name ,fn
+
+; Perhaps instead of specifying :body :last, we could want a flexible
+; mechanism, for example to provide an alist that specifies the results of
+; install-not-normalized.
+
+                             :body :last))
            ,encap
            (local (in-theory (congruence-theory-extension
                               ',equiv

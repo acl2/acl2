@@ -29,7 +29,15 @@
 ; Original authors: Sol Swords and Jared Davis
 ;                   {sswords,jared}@centtech.com
 
-; Matt Kaufmann added the :last-body argument of make-flag, May 2018.
+; Matt Kaufmann added the :last-body argument of make-flag, May 2018, but
+; replaced it by the more general :body argument in March 2021.  The formal
+; parameter last-body in some functions below was deliberately left as is
+; during the change from :last-body to :body, just to make that argument easy
+; to locate textually.
+
+; Matt Kaufmann modified the syntax for :flag-mapping to be a list of doublets,
+; as requested by Alessandro Coglio and Eric Smith; but after considering an
+; email from Sol Swords, we also allow dotted pairs for backward compatibility,
 
 #||  for interactive development, you'll need to ld the package first:
 
@@ -109,10 +117,11 @@ more discussion below.</p>
     (make-flag flag-pseudo-termp               ; flag function name (optional)
                pseudo-termp                    ; any member of the clique
                ;; optional arguments:
-               :flag-mapping ((pseudo-termp      . term)
-                              (pseudo-term-listp . list))
+               :flag-mapping ((pseudo-termp      term)
+                              (pseudo-term-listp list))
                :defthm-macro-name defthm-pseudo-termp
                :flag-var flag
+               :body :last                     ; use last body, not original
                :hints ((\"Goal\" ...))         ; for the measure theorem
                                                ; usually not necessary
                )
@@ -131,7 +140,11 @@ of the clique member's name.</p>
 <li>@(':flag-mapping') specifies short names to identify with each of the
 functions of the clique.  By default we just use the function names themselves,
 but it's usually nice to pick shorter names since you'll have to mention them
-in the theorems you prove.</li>
+in the theorems you prove.  The argument, if supplied and non-@('nil'), should
+be a list that specifies a short name for every function in the clique.  Each
+member of that list should be of the form @('(old new)') where (of course)
+@('old') and @('new') are symbols, except that for backward compatibility the
+form @('(old . new)') is also allowed.</li>
 
 <li>@(':defthm-macro-name') lets you name the new macro that will be generated
 for proving theorems by inducting with the flag function.  By default it is
@@ -147,9 +160,15 @@ package.</li>
 <li>@(':ruler-extenders') lets you give a value for the @(see
 acl2::ruler-extenders) of the new flag function.</li>
 
-<li>@(':last-body') is @('nil') by default, specifying that the original
-definition is used when extracting the body of each function; otherwise, the
-most recent definition rule is used.</li>
+<li>@(':body') is @('nil') by default, specifying that the original definition
+is used when extracting the body of each function.  The most recent definition
+rule is used if @(':body') is @(':last').  Otherwise @(':body') should be an
+list with members of the form @('(fn1 fn2)'), indicating that instead the
+definition associated with a rule named @('fn2'), if there is one, should be
+used as the definition for @('fn1').  See the community book
+@('books/tools/flag-tests.lisp') for an example of using an alist value for
+@(':body'), in particular for the purpose of using definitions installed with
+@(tsee acl2::install-not-normalized).</li>
 
 </ul>
 
@@ -436,15 +455,18 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun get-formals (fn world)
   (getprop fn 'formals :none 'current-acl2-world world))
 
-(defun get-body (fn latest-def world)
+(defun get-body (fn last-body world)
   ;; If latest-def is nil (the default for make-flag), this gets the original,
   ;; normalized or non-normalized body based on what the user typed for the
   ;; :normalize xarg.  The use of "last" skips past any other :definition rules
   ;; that have been added since then.
   (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
-         (body (if latest-def
-                   (car bodies)
-                 (car (last bodies)))))
+         (body (cond ((eq last-body :last)
+                      (car bodies))
+                     ((let ((pair (assoc-eq fn last-body)))
+                        (and pair
+                             (acl2::original-def-body1 (cadr pair) bodies))))
+                     (t (car (last bodies))))))
     (if (access def-body body :hyp)
         (er hard 'get-body
             "Attempt to call get-body on a body with a non-nil hypothesis, ~x0"
@@ -552,19 +574,29 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun make-flag-body (fn-name flag-var alist hints ruler-extenders last-body world)
   (let ((formals (merge-formals alist world)))
-  `(defun-nx ,fn-name (,flag-var . ,formals)
-     (declare (xargs :verify-guards nil
-                     :normalize nil
-                     :measure ,(make-flag-measure flag-var alist world)
-                     :hints ,hints
-                     ,@(and ruler-extenders
-                            `(:ruler-extenders ,ruler-extenders))
-                     :well-founded-relation ,(get-wfr (caar alist) world)
-                     :mode :logic)
-              (ignorable . ,formals))
-     (cond
-       .
-       ,(make-flag-body-aux flag-var fn-name formals alist alist last-body world)))))
+    (cond
+     ((or (null last-body) ; optimization
+          (eq last-body :last)
+          (and (symbol-doublet-listp last-body)
+               (symbol-listp (acl2::strip-cadrs last-body))))
+      `(defun-nx ,fn-name (,flag-var . ,formals)
+         (declare (xargs :verify-guards nil
+                         :normalize nil
+                         :measure ,(make-flag-measure flag-var alist world)
+                         :hints ,hints
+                         ,@(and ruler-extenders
+                                `(:ruler-extenders ,ruler-extenders))
+                         :well-founded-relation ,(get-wfr (caar alist) world)
+                         :mode :logic)
+                  (ignorable . ,formals))
+         (cond
+          .
+          ,(make-flag-body-aux flag-var fn-name formals alist alist last-body world))))
+     (t (er hard 'make-flag
+            "The :BODY argument of ~x0 must be either ~x1, :LAST, or an alist ~
+             mapping symbols to symbols.  The value ~x2 for :LAST is ~
+             therefore illegal."
+            'make-flag nil last-body)))))
 
 (defun extract-keyword-from-args (kwd args)
   (if (consp args)
@@ -1018,15 +1050,35 @@ one such form may affect what you might think of as the proof of another.</p>
    (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
    flag-fn-name))
 
+(defun convert-flag-mapping (x x-original)
+  (let ((str "The :flag-mapping argument of make-flag must be a true-list, ~
+              each of whose members is ideally of the forms (name1 name2) but ~
+              can also be of the form (name1 . name2), where both names must ~
+              be symbols.  The value ~x0 is thus illegal."))
+    (cond ((null x) nil)
+          ((atom x) (er hard 'make-flag str x-original))
+          (t (b* ((old (car x))
+                  (new (case-match old
+                         ((s1 s2) (and (symbolp s1)
+                                       (symbolp s2)
+                                       (cons s1 s2)))
+                         ((s1 . s2) (and (symbolp s1)
+                                         (symbolp s2)
+                                         old))
+                         (& (er hard 'make-flag str x-original)))))
+               (cons new
+                     (convert-flag-mapping (cdr x) x-original)))))))
+
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
                                   formals-subst
                                   local ruler-extenders last-body world)
   (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
-         (alist (or flag-mapping
-                    (pairlis$ (get-clique-members clique-member-name world)
-                              (get-clique-members clique-member-name world))))
+         (alist (if flag-mapping
+                    (convert-flag-mapping flag-mapping flag-mapping)
+                  (pairlis$ (get-clique-members clique-member-name world)
+                            (get-clique-members clique-member-name world))))
          (defthm-macro-name (or defthm-macro-name
                                 (thm-macro-name flag-fn-name)))
          (equiv-thm-name (equivalences-name flag-fn-name))
@@ -1096,7 +1148,7 @@ one such form may affect what you might think of as the proof of another.</p>
     :defthm-macro-name
     :local
     :ruler-extenders
-    :last-body))
+    :body))
 
 (defun make-flag-dwim (args world)
   ;; Stupid wrapper so that you don't have to explicitly name the flag var
@@ -1133,7 +1185,7 @@ one such form may affect what you might think of as the proof of another.</p>
                   (cdr (assoc :formals-subst kwd-alist))
                   (cdr (assoc :local kwd-alist))
                   (cdr (assoc :ruler-extenders kwd-alist))
-                  (cdr (assoc :last-body kwd-alist))
+                  (cdr (assoc :body kwd-alist))
                   world)))
 
 (defmacro make-flag (&rest args)
