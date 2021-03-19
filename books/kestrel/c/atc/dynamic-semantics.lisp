@@ -1630,36 +1630,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-fun-env ((tunit transunitp))
-  :returns (result fun-env-resultp)
-  :short "Initialize the function environment for a translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go though the external declarations that form the translation unit
-     and we build the function environment for the function definitions,
-     starting from the empty environment.
-     If an external declaration that is not a function definition is found,
-     we defensively return an error."))
-  (init-fun-env-aux (transunit->declons tunit) nil)
-  :hooks (:fix)
-
-  :prepwork
-  ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))
-     :returns (result fun-env-resultp)
-     :parents nil
-     (b* (((when (endp declons)) (fun-env-fix fenv))
-          (declon (car declons)))
-       (ext-declon-case
-        declon
-        :declon (error :external-declaration-is-not-a-function)
-        :fundef (b* ((fenv (fun-env-extend declon.get fenv))
-                     ((when (errorp fenv)) fenv))
-                  (init-fun-env-aux (cdr declons) fenv))))
-     :hooks (:fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define run-fun ((fun identp) (args value-listp) (tunit transunitp))
   :returns (result value-resultp)
   :short "Execute a function call."
