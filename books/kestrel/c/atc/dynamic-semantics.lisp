@@ -255,15 +255,6 @@
 
 (defresult scope "scopes")
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled scopep-when-scope-resultp-ok
-  (implies (and (scope-resultp scope)
-                (scope-result-case scope :ok))
-           (scopep scope))
-  :enable (scope-resultp
-           scope-result-kind))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult scope-list "lists of scopes")
@@ -1261,7 +1252,6 @@
       (omap::update name actual scope)))
   :hooks (:fix)
   :measure (len formals)
-  :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))
   :verify-guards nil ; done below
   ///
   (verify-guards init-scope))
