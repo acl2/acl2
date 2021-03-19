@@ -75,7 +75,7 @@
                 (natp n))
            (equal (+ x (BVCAT m y n 0))
                   (bvcat m y n x)))
-  :hints (("Goal" :in-theory (e/d (BVCAT LOGAPP) (BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (BVCAT LOGAPP) ()))))
 
 
 ;deprecate!
@@ -105,7 +105,6 @@
            :use (:instance split-bv (n newsize) (m newsize2))
            :in-theory (e/d (BVCAT LOGAPP bvchop)
                            (mod-=-0
-                            BVCAT-RECOMBINE
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm plus-bvcat-with-0-alt
@@ -275,8 +274,7 @@
                                    split-when-low-bit-0-hack
 ;bvchop
                                    times-of-2-and-bvchop-of-sub-1)
-                           (BVCAT-RECOMBINE
-                            bvchop-of-*
+                           (bvchop-of-*
                             BVCHOP-SHIFT-GEN-CONSTANT-VERSION
                             BVCHOP-SHIFT
                             anti-slice
@@ -974,7 +972,7 @@
   (implies (integerp x)
            (equal (< (BVCAT 31 x 1 0) 64)
                   (< (bvchop 31 x) 32)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) ()))))
 
 (defthm logapp-minus-1-negative
   (IMPLIES (INTEGERP X)
@@ -1027,7 +1025,7 @@
   (implies (integerp x)
            (equal (< (BVCAT 27 x 5 y) 64)
                   (< (bvchop 27 x) 2)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) ()))))
 
 ;bozo more generally, turn if into bvif if we can figure out the sizes?
 (defthmd myif-of-constants-becomes-bvif
@@ -2040,7 +2038,7 @@
                   (and (equal (getbit 0 x) 0)
                        (< (bvchop lowsize y) k))))
   :hints (("Goal" :in-theory (e/d (BVCAT LOGAPP bvchop
-                                         ) (BVCAT-RECOMBINE)))))
+                                         ) ()))))
 
 
 (defthmd getbit-numeric-bound
@@ -2079,7 +2077,7 @@
                          0)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat GETBIT)
                                   (bvchop-of-*
-                                   BVCAT-RECOMBINE BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+                                   BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
 
 ;(EQUAL y (BITOR X y))
 
@@ -2369,7 +2367,7 @@
            (not (< 43 (BVCAT '5 x '1 y))))
   :hints (("Goal" :in-theory (e/d (bvcat LOGAPP bvchop-identity ;BAG::UNSIGNED-BYTE-P-FROM-BOUNDS
                                          )
-                                  (BVCAT-RECOMBINE)))))
+                                  ()))))
 
 
 ;might be slow
@@ -2411,7 +2409,6 @@
 ;;                   (+ 1 (* 2 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (anti-bvplus
-;;                                    bvcat-recombine
 ;;                                    bvchop-1-becomes-getbit
 ;;                                    slice-becomes-getbit
 ;;                                    bvplus-1-becomes-bitxor)))))
@@ -2423,7 +2420,6 @@
 ;;                   (* 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (anti-bvplus
-;;                                    bvcat-recombine
 ;;                                    bvchop-1-becomes-getbit
 ;;                                    slice-becomes-getbit
 ;;                                    bvplus-1-becomes-bitxor)))))
@@ -2513,7 +2509,7 @@
            :in-theory (e/d (bvcat logapp bvplus bvchop
                                   bvchop-of-sum-cases
                                   mod-sum-cases)
-                           (bvcat-recombine ;anti-bvplus
+                           ( ;anti-bvplus
                             expt
                             )))))
 
@@ -2902,8 +2898,7 @@
 (defthm bvuminus-of-bvcat-of-0-16-8
   (equal (bvuminus '16 (bvcat '8 x '8 '0))
          (bvcat '8 (bvuminus 8 x) '8 '0))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvcat bvminus) (bvcat-recombine
-                                                            bvminus-becomes-bvplus-of-bvuminus
+  :hints (("Goal" :in-theory (e/d (bvuminus bvcat bvminus) (bvminus-becomes-bvplus-of-bvuminus
                                                             bvchop-of-*)))))
 
 ;gen or add non-dag trim rule?

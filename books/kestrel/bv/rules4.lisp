@@ -192,8 +192,7 @@
                  )
            :in-theory (e/d (logapp slice) (;plus-of-times-expt-bound2
                                            ;PLUS-OF-TIMES-EXPT-BOUND
-                                           anti-slice bvcat-recombine
-                                           )))))
+                                           anti-slice)))))
 
 (defthm <-of-bvcat
   (implies (and (natp lowsize)
@@ -218,7 +217,7 @@
                                   (bvchop lowsize x))))))))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvcat slice
-                                         ) (BVCAT-RECOMBINE anti-slice)))))
+                                         ) (anti-slice)))))
 
 (defthm bvlt-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize))
@@ -283,7 +282,6 @@
                            ( ;;plus-of-times-expt-bound2
                             PLUS-OF-TIMES-EXPT-BOUND
                             anti-slice
-                            bvcat-recombine
                             logtail-lessp
                             multiply-both-sides-hack
                             )))))
@@ -308,8 +306,7 @@
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (bvcat slice
-                                         ) (BVCAT-RECOMBINE anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (bvcat slice) (anti-slice)))))
 
 (defthm <-of-bvcat-alt
   (implies (and (natp lowsize)

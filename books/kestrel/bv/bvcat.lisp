@@ -563,8 +563,7 @@
                                     slice
                                     ;;bvchop
                                     logtail
-                                    bvcat-recombine
-                                    )
+                                    bvcat-recombine)
                                    (bvchop-of-logtail-becomes-slice
                                     bvchop-of-logtail)))))
 

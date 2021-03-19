@@ -30,7 +30,6 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
 (include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
-(include-book "kestrel/bv/sbvrem-rules" :dir :system)
 (include-book "kestrel/utilities/mydefconst" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 (include-book "kestrel/lists-light/prefixp" :dir :system)
@@ -245,7 +244,7 @@
          (bvcat 30 x 2 0))
   :hints (("Goal" :in-theory
            (e/d (bvmult bvcat logapp BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-RECOMBINE LOGAPP-EQUAL-REWRITE
+                (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          bvchop-of-*)))))
 
 (in-theory (disable BV-ARRAY-READ-OF-BV-ARRAY-WRITE-BOTH))
@@ -257,8 +256,7 @@
            (equal (SBVDIV 32 (BVCAT 2 x 2 2) 4)
                   (bvchop 2 x)))
   :hints (("Goal" :in-theory (e/d (sbvdiv bvcat logapp bvchop-of-logtail-becomes-slice)
-                                  (bvcat-recombine
-                                   usb-plus-from-bounds
+                                  (usb-plus-from-bounds
                                    bvplus-of-*-arg2
                                    times-2-of-bvplus-becomes-bvmult-of-bvplus
                                    getbit-when-bvlt-of-small-helper)))))
@@ -319,22 +317,22 @@
 (defthm eric-hack-1000
    (equal (bvplus 32 4294967295 (bvcat 2 specparam0 2 3))
           (bvcat 2 specparam0 2 2))
-   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (bvcat-recombine anti-bvplus)))))
+   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus)))))
 
 (defthm eric-hack-1001
    (equal (bvplus 32 4294967294 (bvcat 2 specparam0 2 2))
           (bvcat 2 specparam0 2 0))
-   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (bvcat-recombine anti-bvplus)))))
+   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus)))))
 
 (defthm eric-hack-1002
    (equal (bvplus 32 4294967295 (bvcat 2 specparam0 2 2))
           (bvcat 2 specparam0 2 1))
-   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (bvcat-recombine anti-bvplus)))))
+   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus)))))
 
 (defthm eric-hack-1003
    (equal (bvplus 32 4294967295 (bvcat 2 specparam0 2 1))
           (bvcat 2 specparam0 2 0))
-   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (bvcat-recombine anti-bvplus)))))
+   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus)))))
 
 ;gen
 ;turn sbvdiv into an unsgined version when nothing is negative
@@ -1089,7 +1087,7 @@
 ;;           (equal (sbvlt 32 (bvplus 32 k1 x) k2)
 ;;                  (sbvlt 32 x (bvminus 32 k2 k1))))
 ;;  :otf-flg t
-;;  :hints (("Goal" :in-theory (e/d (sbvlt bvplus bvuminus bvminus bvcat logapp) (anti-bvplus BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS BVCAT-RECOMBINE)))))
+;;  :hints (("Goal" :in-theory (e/d (sbvlt bvplus bvuminus bvminus bvcat logapp) (anti-bvplus BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm bvlt-of-bvplus-add-to-both-sides
   (implies (integerp x)
@@ -1136,7 +1134,6 @@
 ;;                        )))))
 ;;  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN bvcat logapp)
 ;;                                  ( ;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
-;;                                   BVCAT-RECOMBINE
 ;;                                   anti-bvplus plus-1-and-bvchop-becomes-bvplus)))))
 
 ;gen
@@ -2010,7 +2007,7 @@
 (defthmd bvchop-32-split-30-hack
   (equal (bvchop 32 x)
          (+ (bvchop 30 x) (* (expt 2 30) (slice 31 30 x))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-recombine))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use ((:instance split-with-bvcat (hs 2) (ls 30))))))
 
 (defthm bvplus-30-expand
@@ -2032,8 +2029,7 @@
                                         plus-1-and-bvchop-becomes-bvplus
                                         ;slice-when-bvlt
                                         bvchop-tighten-when-slice-0
-                                        BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-RECOMBINE
-                                        )))))
+                                        BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)))))
 
 ;can loop...
 (defthmd bvplus-32-of-bvplus-30
@@ -2056,15 +2052,14 @@
 (defthmd bvchop-32-split-30-hack2
   (equal (bvchop 32 x)
          (bvcat 2 (slice 31 30 x) 30 x))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-recombine))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use ((:instance split-with-bvcat (hs 2) (ls 30))))))
 
 (defthm bvplus-3221225472-hack
   (implies (unsigned-byte-p 30 x)
            (equal (bvplus 32 3221225472 x) ;the low bits are all 0
                   (bvcat 2 3 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus BVLT-OF-BVCHOP-ARG2 BVLT-OF-BVCHOP-ARG3 BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2
-                                                                     BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus BVLT-OF-BVCHOP-ARG2 BVLT-OF-BVCHOP-ARG3 BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2)))))
 
 
 
@@ -2079,8 +2074,7 @@
   (implies (posp size)
            (equal (bvchop (+ -1 size) y)
                   (- (bvchop size y) (* (expt 2 (+ -1 size)) (getbit (+ -1 size) y)))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp posp) ( bvcat-of-getbit-and-x-adjacent
-                                                        bvcat-recombine))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp posp) (bvcat-of-getbit-and-x-adjacent))
            :use ((:instance split-with-bvcat (x y) (hs 1) (ls (+ -1 size)))))))
 
 
@@ -2337,7 +2331,7 @@
 ;;  :otf-flg t
 ;;  :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 30) (ls 2)))
 ;;           :in-theory (e/d (slice bvchop-of-sum-cases) (anti-slice
-;;                                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-recombine BVCAT-OF-GETBIT-AND-X-ADJACENT
+;;                                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT
 ;;                                                         BVCAT-OF-GETBIT-AND-X-ADJACENT
 ;;                                                         )))))
 
@@ -2390,7 +2384,7 @@
                 (unsigned-byte-p 31 x))
            (< x 2147483645))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 30) (ls 2)))
-           :in-theory (e/d (bvcat logapp unsigned-byte-p) (bvcat-recombine)))))
+           :in-theory (e/d (bvcat logapp unsigned-byte-p) ()))))
 
 (local (in-theory (enable sbvlt-rewrite))) ;fixme
 
@@ -2553,8 +2547,7 @@
                         t
                       nil))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 1) (ls 31)))
-           :in-theory (e/d (bvlt bvcat logapp) (<-BECOMES-BVLT <-BECOMES-BVLT-alt
-                                                               BVCAT-RECOMBINE)))))
+           :in-theory (e/d (bvlt bvcat logapp) (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
 
 
 
@@ -2999,12 +2992,12 @@
 (defthm bvplus-of-bvcat-hack
   (equal (BVPLUS 32 4 (BVCAT 2 3 30 x))
          (bvplus 32 3221225476 (bvchop 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-of-bvcat-hack2
   (equal (BVPLUS 32 5 (BVCAT 2 3 30 x))
          (bvplus 32 3221225477 (bvchop 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 
 (defthm bvlt-of-bvplus-hack
@@ -3017,29 +3010,29 @@
                 (natp x))
            (equal (BVPLUS 32 3221225476 (BVPLUS 30 1073741820 x))
                   (bvplus 32 (+ 3221225476 1073741820) (bvchop 30 x))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-32-30-hack2
   (implies (and (< x 4)
                 (natp x))
            (equal (BVPLUS 32 3221225477 (BVPLUS 30 1073741820 x))
                   (bvplus 32 (+ 3221225477 1073741820) (bvchop 30 x))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-of-bvcat-hack4
   (equal (BVPLUS 32 19 (BVCAT 2 3 30 x))
          (bvplus 32 (+ 19 (* 3 (expt 2 30))) (bvchop 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-of-bvcat-hack5
   (equal (BVPLUS 32 16 (BVCAT 2 3 30 x))
          (bvplus 32 (+ 16 (* 3 (expt 2 30))) (bvchop 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-of-bvcat-hack6
   (equal (BVPLUS 32 18 (BVCAT 2 3 30 x))
          (bvplus 32 (+ 18 (* 3 (expt 2 30))) (bvchop 30 x)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVCAT-RECOMBINE BVPLUS-OF-PLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus BVPLUS-OF-PLUS)))))
 
 (defthm bvplus-of-bvuminus-tighten
   (implies (and (unsigned-byte-p 4 x)
@@ -3060,7 +3053,7 @@
   :otf-flg t
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 2) (ls 2)))
            :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp)
-                           (bvchop-of-* anti-bvplus bvminus-becomes-bvplus-of-bvuminus BVCAT-RECOMBINE)))))
+                           (bvchop-of-* anti-bvplus bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;usb shift rule?
 
@@ -3129,7 +3122,7 @@
  (implies (natp x)
           (equal (EQUAL (+ 1 x) (BVPLUS 5 1 x))
                  (< x 31)))
- :hints (("Goal" :in-theory (e/d (bvplus) (anti-bvplus BVCAT-RECOMBINE)))))
+ :hints (("Goal" :in-theory (e/d (bvplus) (anti-bvplus)))))
 
 (defthm bvlt-when-usb-hack100
   (implies (unsigned-byte-p 4 x)
@@ -3233,7 +3226,7 @@
                   (if (equal 0 (slice 3 2 garg0))
                       (bvchop 30 k)
                     (bvplus 30 (bvplus 30 536870908 k) (bvuminus 2 (slice 3 2 garg0))))))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp) (anti-bvplus bvminus-becomes-bvplus-of-bvuminus bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp) (anti-bvplus bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;;536870917
 
@@ -3321,7 +3314,7 @@
                   (if (equal 0 (slice 3 2 garg0))
                       (bvchop 29 k)
                     (bvplus 29 (bvplus 29 536870908 k) (bvuminus 2 (slice 3 2 garg0))))))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp) (anti-bvplus bvminus-becomes-bvplus-of-bvuminus bvcat-recombine PLUS-BECOMES-BVPLUS)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp) (anti-bvplus bvminus-becomes-bvplus-of-bvuminus PLUS-BECOMES-BVPLUS)))))
 
 ;-alt?
 (defthm bvlt-tighten-non-dag
@@ -3506,7 +3499,7 @@
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp
                                             bvchop-when-i-is-not-an-integer)
-                                  (anti-bvplus bvminus-becomes-bvplus-of-bvuminus bvcat-recombine PLUS-BECOMES-BVPLUS)))))
+                                  (anti-bvplus bvminus-becomes-bvplus-of-bvuminus PLUS-BECOMES-BVPLUS)))))
 
 (defthm bvplus-of-bvuminus-when-bvchop-gen
   (implies (and (equal (bvchop 2 x) 0)
@@ -3519,7 +3512,7 @@
   :otf-flg t
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 2) (ls 2)))
            :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp unsigned-byte-p-of-integer-length-gen)
-                           (bvchop-of-* anti-bvplus bvminus-becomes-bvplus-of-bvuminus BVCAT-RECOMBINE PLUS-BECOMES-BVPLUS
+                           (bvchop-of-* anti-bvplus bvminus-becomes-bvplus-of-bvuminus  PLUS-BECOMES-BVPLUS
                                          unsigned-byte-p-of-+-of-minus-alt
                                          unsigned-byte-p-of-+-of-minus)))))
 
@@ -3537,7 +3530,7 @@
                 )
            (equal (bvplus size k (bvcat highsize highval lowsize lowval))
                   (bvplus size (+ k (* (bvchop highsize highval) (expt 2 lowsize))) (bvchop lowsize lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus bvcat-recombine bvplus-of-plus plus-becomes-bvplus
+  :hints (("Goal" :in-theory (e/d (bvcat logapp bvplus) (anti-bvplus  bvplus-of-plus plus-becomes-bvplus
                                                                      BVLT-OF-PLUS-ARG1
                                                                      BVLT-OF-PLUS-ARG2)))))
 
@@ -3557,7 +3550,7 @@
                                          bvuminus
                                          bvminus
                                          )
-                                  (anti-bvplus bvcat-recombine bvplus-of-plus
+                                  (anti-bvplus  bvplus-of-plus
                                                BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                                <-becomes-bvlt <-becomes-bvlt-alt
                                                <-of-bvmult-hack ;bozo
@@ -3648,7 +3641,7 @@
                                   (bvchop-of-*
                                    logapp-equal-rewrite
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite
-                                   bvcat-recombine)))))
+                                   )))))
 
 (in-theory (disable BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF-CONSTANT-INDICES)) ;move up -will this break anything?
 
@@ -3706,7 +3699,7 @@
            :cases ((equal 0 (GETBIT 0 K)) (equal 1 (GETBIT 0 K)))
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
            :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp)
-                           (BVCAT-RECOMBINE
+                           (
                             anti-bvplus
                             PLUS-BECOMES-BVPLUS
                             <-becomes-bvlt <-becomes-bvlt-alt
@@ -3728,7 +3721,7 @@
                   (slice (+ -1 high) low x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil)))
   :hints (("Goal" :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ high (- low))))
-           :in-theory (e/d (bvcat logapp posp) ( split-with-bvcat BVCAT-RECOMBINE))
+           :in-theory (e/d (bvcat logapp posp) ( split-with-bvcat ))
            )))
 
 ;maybe the trim rules should use force-unsigned-byte-p
@@ -3767,7 +3760,7 @@
   (("Goal" :IN-THEORY
     (E/D (BVCAT LOGAPP BVPLUS BVCHOP-OF-SUM-CASES
                 BVLT BVUMINUS BVMINUS)
-         (ANTI-BVPLUS BVCAT-RECOMBINE BVPLUS-OF-PLUS
+         (ANTI-BVPLUS  BVPLUS-OF-PLUS
                       BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                       <-BECOMES-BVLT
                       <-BECOMES-BVLT-ALT <-OF-BVMULT-HACK
@@ -3827,7 +3820,7 @@
            :use (:instance split-with-bvcat (x x) (hs 1) (ls 2))
            :in-theory (e/d (bvlt unsigned-byte-p bvchop-of-sum-cases bvplus bvcat logapp)
                            (<-becomes-bvlt <-becomes-bvlt-alt
-                                           bvcat-recombine
+
                                            plus-becomes-bvplus
                                            anti-bvplus
                                            <-of-bvmult-hack ;bozo
@@ -4003,7 +3996,7 @@
   :hints (("Goal"
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
            :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus) (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
-                                                                               bvcat-recombine
+
                                                                                bvlt-of-plus-arg1
                                                                                bvminus-becomes-bvplus-of-bvuminus
                                                                                bvlt-of-plus-arg2
@@ -4363,7 +4356,7 @@
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 3) (ls 2)))
            :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp)
                            (bvchop-of-*
-                            anti-bvplus GETBIT-OF-+ bvminus-becomes-bvplus-of-bvuminus BVCAT-RECOMBINE PLUS-BECOMES-BVPLUS
+                            anti-bvplus GETBIT-OF-+ bvminus-becomes-bvplus-of-bvuminus  PLUS-BECOMES-BVPLUS
                                         BVLT-OF-PLUS-ARG1
                                         BVLT-OF-PLUS-ARG2)))))
 
@@ -4411,7 +4404,7 @@
                           (bvmult (+ highsize lowsize) (expt 2 lowsize) (bvchop highsize highval)))))
   :hints (("Goal" :in-theory (e/d (bvcat bvmult logapp bvplus)
                                   (bvchop-of-*
-                                   anti-bvplus GETBIT-OF-+ BVCAT-RECOMBINE
+                                   anti-bvplus GETBIT-OF-+
                                                BVLT-OF-PLUS-ARG1
                                                BVLT-OF-PLUS-ARG2
                                                PLUS-BECOMES-BVPLUS
@@ -4452,7 +4445,7 @@
                             ;DISTRIBUTIVITY
                             BVPLUS-OF-BVCHOP-ARG2
                             BVPLUS-OF-BVCHOP-ARG1
-                            anti-bvplus GETBIT-OF-+ BVCAT-RECOMBINE
+                            anti-bvplus GETBIT-OF-+
                             BVLT-OF-PLUS-ARG1
                             BVLT-OF-PLUS-ARG2
                             PLUS-BECOMES-BVPLUS
@@ -4539,7 +4532,7 @@
 ;;                             bvplus
 ;;                             )
 ;;                            (TIMES-OF-BVMULT-4
-;;                             anti-bvplus GETBIT-OF-+ BVCAT-RECOMBINE
+;;                             anti-bvplus GETBIT-OF-+
 ;;                             BVLT-OF-PLUS-ARG1
 ;;                             BVLT-OF-PLUS-ARG2
 ;;                             PLUS-BECOMES-BVPLUS
@@ -4611,7 +4604,7 @@
                           (bvchop-of-*
                            BVCHOP-SHIFT-GEN
                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                           anti-bvplus GETBIT-OF-+ BVCAT-RECOMBINE
+                           anti-bvplus GETBIT-OF-+
                            BVLT-OF-PLUS-ARG1
                            BVLT-OF-PLUS-ARG2
                            PLUS-BECOMES-BVPLUS
@@ -4777,7 +4770,7 @@
 ;;                             bvplus)
 ;;                            ( ;REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
 ;;                             REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2
-;;                             BVCAT-RECOMBINE
+;;
 ;;                             anti-bvplus GETBIT-OF-+
 ;;                             SLICE-OF-+
 ;;                             getbit-of-+
@@ -4840,7 +4833,7 @@
                                                   REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2
                                                   REWRITE-<-WHEN-SIZES-DONT-MATCH
                                                   REWRITE-<-WHEN-SIZES-DONT-MATCH2
-                                                  BVCAT-RECOMBINE))
+                                                  ))
            :use (:instance split-with-bvcat (x x) (hs 1) (ls 31)))))
 
 (DEFTHM BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
@@ -4870,7 +4863,7 @@
 ;;                                                   <-of-bvmult-hack ;bozo
 ;;                                                   <-of-bvplus-becomes-bvlt-arg1
 ;;                                                   <-of-bvplus-becomes-bvlt-arg2
-;;                                                   BVCAT-RECOMBINE))
+;;                                                   ))
 ;;           :use (:instance split-with-bvcat (x x) (hs 1) (ls 31)))))
 
 
@@ -4961,7 +4954,7 @@
                             <-of-bvmult-hack ;bozo
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
-                            BVCAT-RECOMBINE)))))
+                            )))))
 
 (defthm equal-of-0-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -5033,7 +5026,7 @@
                             <-of-bvmult-hack ;bozo
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
-                            BVCAT-RECOMBINE)))))
+                            )))))
 
 (defthm equal-of-0-and-getbit-of-bvplus-big-k
   (implies (and (syntaxp (and (quotep k)
@@ -5103,12 +5096,8 @@
                   (bvle 5 8 x)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs 3) (ls 2))
-           :in-theory (e/d (bvlt
-                            logapp bvcat
-
-                            )
-                           (bvcat-recombine
-                            anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
+           :in-theory (e/d (bvlt logapp bvcat)
+                           (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
                             <-becomes-bvlt <-becomes-bvlt-alt
                             bvlt-of-plus-arg1
                             bvlt-of-plus-arg2
@@ -5122,11 +5111,8 @@
                   (BVLT 5 x 4)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs 3) (ls 2))
-           :in-theory (e/d (bvlt
-                            logapp bvcat
-
-                            )
-                           (bvcat-recombine
+           :in-theory (e/d (bvlt logapp bvcat)
+                           (
                             anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
                             <-becomes-bvlt <-becomes-bvlt-alt
                             bvlt-of-plus-arg1
@@ -5157,7 +5143,7 @@
                                    logapp bvcat
                                    slice-equal-0-rewrite
                                    )
-                                  (bvcat-recombine
+                                  (
                                    anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
                                    <-becomes-bvlt <-becomes-bvlt-alt
                                    bvlt-of-plus-arg1
@@ -5264,17 +5250,6 @@
                                            <-of-bvmult-hack ;bozo
                                            <-of-bvplus-becomes-bvlt-arg1
                                            <-of-bvplus-becomes-bvlt-arg2)))))
-
-
-
-(defthm sbvrem-when-positive-work-hard
-  (implies (and (work-hard (sbvle size 0 x))
-                (work-hard (sbvle size 0 y))
-                (posp size))
-           (equal (sbvrem size x y)
-                  (bvmod (+ -1 size) x y)))
-  :hints (("Goal" :use (:instance sbvrem-when-positive)
-           :in-theory (disable sbvrem-when-positive))))
 
 ;gen
 (defthm unsigned-byte-p-of-bvmod-hack
@@ -6712,7 +6687,7 @@
            :use (:instance BVCAT-NUMERIC-BOUND (k (expt 2 (+ highsize lowsize))))
            :in-theory (e/d (bvcat logapp bvplus bvmult
                                   bvchop-of-sum-cases)
-                           (BVCAT-RECOMBINE anti-bvplus GETBIT-OF-+
+                           ( anti-bvplus GETBIT-OF-+
                                             BVCAT-NUMERIC-BOUND
                                             PLUS-BECOMES-BVPLUS
                                             BVLT-OF-PLUS-ARG1
@@ -9029,7 +9004,7 @@
          (PLUS-BECOMES-BVPLUS-FREE
           BVCHOP-OF-* BVCHOP-SHIFT-GEN BVPLUS-OF-BVCHOP-ARG2
           BVPLUS-OF-BVCHOP-ARG1
-          ANTI-BVPLUS GETBIT-OF-+ BVCAT-RECOMBINE
+          ANTI-BVPLUS GETBIT-OF-+
           BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2
           PLUS-BECOMES-BVPLUS
           <-becomes-bvlt
@@ -9514,7 +9489,7 @@
                   (bitnot (getbit n (bvplus n+1 x (bvchop n y))))))
   :hints (("Goal" :use (:instance getbit-of-bvplus-flip (x (+ x (bvchop n y))))
            :in-theory (e/d (bvcat logapp bvplus getbit-of-plus)
-                           (bvcat-recombine getbit-of-bvplus-flip
+                           ( getbit-of-bvplus-flip
 
                                             anti-bvplus GETBIT-OF-+
                                             bvlt-of-plus-arg1
@@ -9595,7 +9570,7 @@
                                      2 X)
                               (BVCHOP 29 HIGHVAL)))))
   :hints (("Goal" :use (:instance BVCAT-EQUAL-REWRITE (highsize 29) (lowsize 2) (lowval 0))
-           :in-theory (e/d (bvcat bvmult)( BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt BVCAT-RECOMBINE)
+           :in-theory (e/d (bvcat bvmult)( BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt )
 
                            ))))
 
@@ -9812,7 +9787,7 @@
                                            )
                                    (<-OF-+-OF-*-OF-SLICE-SHA1
                                     TIMES-4-OF-SLICE-BECOMES-LOGAPP ;rename, looped
-                                    BVCAT-RECOMBINE
+
                                     anti-bvplus GETBIT-OF-+
                                     SLICE-OF-+
                                     BVPLUS-OF-PLUS-ARG3
@@ -10499,7 +10474,7 @@
                            (
                             bvchop-of-* BVLT-OF-*-ARG3
                                          ;*-OF-2-BECOMES-BVMULT
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10544,7 +10519,7 @@
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10596,7 +10571,7 @@
                             PLUS-BECOMES-BVPLUS-FREE ;+-BECOMES-BVPLUS-HACK-GEN
                             PLUS-OF-MINUS-3-BV-5
                                                      bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
-                                                     BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                                      TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                                      BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                                      getbit-of-plus
                                                      <-of-bvchop-arg1
@@ -10645,7 +10620,7 @@
                            (PLUS-BECOMES-BVPLUS-FREE ;+-BECOMES-BVPLUS-HACK-GEN
                             PLUS-OF-MINUS-3-BV-5 MINUS-BECOMES-BV-2
                                                      bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
-                                                     BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                                      TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                                      BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                                      getbit-of-plus
                                                      <-of-bvchop-arg1
@@ -10695,7 +10670,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10744,7 +10719,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10798,7 +10773,7 @@
                            (
                             bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                            bvcat-recombine times-4-of-slice-becomes-logapp
+                             times-4-of-slice-becomes-logapp
                             bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                             getbit-of-plus
                             <-of-bvchop-arg1
@@ -10847,7 +10822,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10893,7 +10868,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10944,7 +10919,7 @@
                             bvchop-when-top-bit-1)
                            ( bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                           PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -10994,7 +10969,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11047,7 +11022,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11093,7 +11068,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11137,7 +11112,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11203,7 +11178,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11250,7 +11225,7 @@
                            ( <-WHEN-UNSIGNED-BYTE-P-ALT ;looped
                             bvplus-subst-value ;looped
                             bvplus-trim-leading-constant ;looped
-                            bvcat-recombine bvlt-of-bvcat-arg2 bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
+                             bvlt-of-bvcat-arg2 bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                             )))))
 
 (defthm bvlt-of-bvcat-arg2-lemma-constant-version
@@ -11298,7 +11273,7 @@
                            (<-WHEN-UNSIGNED-BYTE-P ;looped
                             bvplus-subst-value           ;looped
                             bvplus-trim-leading-constant ;looped
-                            bvcat-recombine bvlt-of-bvcat-arg3
+                             bvlt-of-bvcat-arg3
                             bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                             )))))
 
@@ -11355,7 +11330,7 @@
                             BVCHOP-IDENTITY-CHEAP
                             bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                             PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                            BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                             TIMES-4-OF-SLICE-BECOMES-LOGAPP
                             BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                             getbit-of-plus
                             <-of-bvchop-arg1
@@ -11432,7 +11407,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
-                                         BVCAT-RECOMBINE TIMES-4-OF-SLICE-BECOMES-LOGAPP
+                                          TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11536,7 +11511,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11577,7 +11552,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11622,7 +11597,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11669,7 +11644,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11736,7 +11711,7 @@
                             mod-of-expt-of-2-constant-version
                             bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                             plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                            bvcat-recombine times-4-of-slice-becomes-logapp
+                             times-4-of-slice-becomes-logapp
                             bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                             getbit-of-plus
                             <-of-bvchop-arg1
@@ -11824,7 +11799,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11875,7 +11850,7 @@
                             bvchop-when-top-bit-1)
                            (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
-                                         bvcat-recombine times-4-of-slice-becomes-logapp
+                                          times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
@@ -11969,7 +11944,7 @@
                 (<= smallsize bigsize))
            (equal (+ y (- (* k (slice (+ -1 BIGSIZE) smallsize y))))
                   (bvchop smallsize y)))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp natp) (BVCAT-RECOMBINE LOGAPP-EQUAL-REWRITE))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp natp) ( LOGAPP-EQUAL-REWRITE))
             :use (:instance split-bv (n bigsize) (m smallsize)))))
 
 (defthm +-of-minus-of-shifted-slice-of-same-alt
@@ -12048,7 +12023,7 @@
            (equal (EQUAL (BVCHOP SIZE (+ K z1)) (BVCHOP SIZE (+ (BVCHOP 2 K) z3)))
                   (EQUAL (BVCHOP SIZE (+ z1 (* (expt 2 2) (slice (+ -1 size) 2 k))))
                          (BVCHOP SIZE (+ z3)))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp natp) (BVCAT-RECOMBINE LOGAPP-EQUAL-REWRITE))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp natp) ( LOGAPP-EQUAL-REWRITE))
            :use (:instance split-bv (y k) (n size) (m 2)))))
 
 (defthm equal-of-bvchop-cancel-slice-rule-alt
@@ -12172,7 +12147,7 @@
                             FLOOR-BOUND-LEMMA3
                             MY-FLOOR-LOWER-BOUND-ALT
                             my-FLOOR-upper-BOUND-ALT
-                            bvcat-recombine
+
                             anti-slice)))))
 
 (defthm bvlt-of-bvmult-6-5-20
@@ -12343,7 +12318,7 @@
   (equal (* 1/32 (bvcat size y 5 0))
          (bvchop size y))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced slice logtail bvcat)
-                                  (BVCAT-RECOMBINE anti-slice)))))
+                                  ( anti-slice)))))
 
 ;; (thm
 ;;  (equal (REPEAT (+ x (- y))) ,,))
@@ -12496,7 +12471,7 @@
   :hints (("Goal" :use (:instance bvlt-of-bvcat-arg2 (y 0) (highsize (- size lowsize)))
            :in-theory (e/d (bvcat bvmult bvlt natp)
                            (bvlt-of-bvcat-arg2
-                            bvcat-recombine)))))
+                            )))))
 
 (defthm bvlt-of-bvmult-of-expt-arg2-constant-version
   (implies (and (syntaxp (quotep k))
@@ -12545,7 +12520,7 @@
   :hints (("Goal" :use (:instance bvlt-of-bvcat-arg3 (y 0) (highsize (- size lowsize)))
            :in-theory (e/d (bvcat bvmult bvlt)
                            ( bvlt-of-bvcat-arg3
-                             BVCAT-RECOMBINE)))))
+                             )))))
 
 (defthm bvlt-of-bvmult-of-expt-arg3-constant-version
   (implies (and (syntaxp (quotep k))
@@ -12612,7 +12587,7 @@
   :hints (("Goal"
            :use (:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                                                                          BVCAT-RECOMBINE)))))
+                                                                          )))))
 
 (defthm plus-of-slice-and-minus-of-bvmult-of-slice
   (equal (+ (slice 30 2 x) (- (bvmult 30 16 (slice 30 6 x))))
@@ -12621,7 +12596,7 @@
   :hints (("Goal"
            :use (:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                                                                          BVCAT-RECOMBINE)))))
+                                                                          )))))
 
 
 ;gen!
@@ -13092,7 +13067,7 @@
            :in-theory (e/d ( bvmult bvcat logapp bvlt slice-of-sum-cases bvchop-of-sum-cases)
                            (bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-recombine
+
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bound-when-low-bits-0
@@ -13304,7 +13279,7 @@
   :hints (("Goal"
            :use (:instance SPLIT-BV (y (bvchop 31 x)) (n 31) (m 6))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-                                                                          BVCAT-RECOMBINE)))))
+                                                                          )))))
 
 ;gen!
 (defthm bvmult-of-bvcat
@@ -13330,7 +13305,7 @@
            (equal (bvmult '31 '64 (slice '30 '6 x))
                   (bvchop 31 x)))
   :hints (("Goal"
-           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-RECOMBINE))
+           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE ))
            :use (:instance split-bv (y (bvchop 31 x))
                            (n 31)
                            (m 6)))))
@@ -13424,7 +13399,7 @@
                             (m 6)))
            :in-theory (e/d (bvlt slice bvchop-of-logtail bvplus bvcat logapp logtail FLOOR-OF-SUM bvchop-of-sum-cases
                                  )
-                           (logtail-lessp anti-slice BVCAT-RECOMBINE)))))
+                           (logtail-lessp anti-slice )))))
 
 (defthm bvplus-tighten-free-1
   (implies (and (unsigned-byte-p free y)
@@ -13455,7 +13430,7 @@
            :in-theory (e/d (bvplus bvuminus bvminus bvmult bvcat logapp)
                            (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
-                            BVCAT-RECOMBINE
+
                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;gen!
@@ -13578,7 +13553,7 @@
           :in-theory (e/d (bvplus bvuminus bvminus bvmult bvcat logapp bvlt SLICE-OF-SUM-CASES bvchop-of-sum-cases)
                           (BVCAT-EQUAL-REWRITE-ALT
                            BVCAT-EQUAL-REWRITE
-                           BVCAT-RECOMBINE
+
                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 
@@ -13606,7 +13581,7 @@
                            (BVCAT-EQUAL-REWRITE-ALT
     ;<-of-slice-and-slice-when-<-of-slice-and-slice
                             BVCAT-EQUAL-REWRITE
-                            BVCAT-RECOMBINE
+
                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 
@@ -13620,7 +13595,7 @@
                             bvmult)
                            (bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-recombine
+
                             bvminus-becomes-bvplus-of-bvuminus
                             bvcat-of-getbit-and-x-adjacent)))))
 
@@ -13727,7 +13702,7 @@
                             bvchop-of-sum-cases bvcat bvplus logapp)
                            (bvplus-of-bvcat-hack6-gen-low-open ;looped
 ;NATP-MEANS-NON-NEG
-                            BVCAT-RECOMBINE
+
 ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
                             ;;                                    EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                             ;;                                    <-OF-EXPT-AND-EXPT
@@ -13773,7 +13748,7 @@
                             )
                            (bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-recombine
+
                             bvminus-becomes-bvplus-of-bvuminus
                             bvcat-of-getbit-and-x-adjacent)))))
 
@@ -13793,7 +13768,7 @@
 ;;            :in-theory (e/d ()
 ;;                            (bvcat-equal-rewrite-alt
 ;;                             bvcat-equal-rewrite
-;;                             bvcat-recombine
+;;
 ;;                             bvminus-becomes-bvplus-of-bvuminus
 ;;                             bvcat-of-getbit-and-x-adjacent)))))
 
@@ -13801,7 +13776,7 @@
 (defthm one-fourth-hack
   (equal (BINARY-* (BVCAT '25 x '6 '0) '1/4)
          (BVCAT '25 x '4 '0))
-  :hints (("Goal" :in-theory (e/d (slice bvcat) (bvcat-recombine anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice bvcat) ( anti-slice)))))
 
 (defthm ceiling-in-terms-of-floor3
   (implies (and (rationalp i)
@@ -13914,7 +13889,7 @@
                                   logapp)
                            (bvcat-of-getbit-and-x-adjacent
                             bvcat-equal-rewrite-alt
-                            bvcat-recombine)))))
+                            )))))
 
 (defthm boolor-of-sbvlt-combine-gen-alt
   (implies (and (syntaxp (and (quotep k)
@@ -14038,7 +14013,7 @@
                            (bvcat-equal-rewrite-alt
 ;<-of-slice-and-slice-when-<-of-slice-and-slice
                             bvcat-equal-rewrite
-                            bvcat-recombine
+
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;note that we don't usually want to trim array reads
@@ -14104,7 +14079,7 @@
                                   logapp)
                            (bvcat-of-getbit-and-x-adjacent
                             bvcat-equal-rewrite-alt
-                            bvcat-recombine)))))
+                            )))))
 
 (defthm boolor-of-sbvlt-combine-gen-better-alt
   (implies (and (syntaxp (and (quotep k)
@@ -14208,7 +14183,7 @@
                                  bvcat logapp)
                            (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
-                            BVCAT-RECOMBINE
+
                             <-OF-BVCAT)))))
 
 ;was very slow!
@@ -14578,13 +14553,6 @@
                                  equal-of-slice-and-max-30-6)
                            (sbvlt-rewrite bvminus-becomes-bvplus-of-bvuminus)))))
 
-(defthm acl2-numberp-of-myif
-  (implies (and (acl2-numberp a) (acl2-numberp b))
-           (equal (acl2-numberp (myif test a b)) t))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(in-theory (disable bvcat-recombine)) ;move up
-
 (defthm sha1-hack-four-million-five
   (implies (and (not (sbvlt '32
                             (bvplus '32
@@ -14606,8 +14574,6 @@
                                  bvcat
                                  equal-of-slice-and-max-30-6)
                            (sbvlt-rewrite bvminus-becomes-bvplus-of-bvuminus)))))
-
-
 
 (defthm sha1-hack-four-million-five-alt
   (implies (and (not (sbvlt '32

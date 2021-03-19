@@ -263,9 +263,7 @@
                                       BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    MOD-EXPT-SPLIT ;bad?
                                    SLICE-BECOMES-GETBIT
-                                   BVCHOP-1-BECOMES-GETBIT
-;                                   BVCAT-RECOMBINE
-                                   )))))
+                                   BVCHOP-1-BECOMES-GETBIT)))))
 
 ;(in-theory (disable logextu-as-bvchop))
 

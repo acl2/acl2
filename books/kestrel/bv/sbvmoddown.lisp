@@ -88,7 +88,6 @@
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;sbvrem-rewrite
-                                   BVCAT-RECOMBINE
                                    ;;anti-bvplus
                                    )))))
 
@@ -135,7 +134,6 @@
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    sbvrem-rewrite
                                    ;mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;;SBVREM-BECOMES-BVMOD
@@ -202,7 +200,6 @@
                                    ;sbvrem-rewrite
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
 ;SBVREM-BECOMES-BVMOD
