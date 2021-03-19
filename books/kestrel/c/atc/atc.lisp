@@ -1813,7 +1813,7 @@
     "This is a local theorem for now.
      It will be used in upcoming proof generation extensions.")
    (xdoc::p
-    "The restrictions on the form of the functions that ATC translated to C
+    "The restrictions on the form of the functions that ATC translates to C
      ensures that, under the guard, these functions always return C values.
      This is fairly easy to see,
      thinking of the different allowed forms of these functions' bodies:")
@@ -1830,14 +1830,14 @@
      "A call of a preceding function returns a value,
       as proved by the same theorems for the preceding functions.")
     (xdoc::li
-     "An @(tsee if) reduces to the branches."))
+     "An @(tsee if) return value reduces to the branches' return values."))
    (xdoc::p
     "This suggests a coarse but adequate proof strategy:
      We use the theory consisting of
      the definition of @('fn'),
      the return type theorems of @(tsee sint-const) and related functions,
      and the theorems about the preceding functions;
-     we also add a @(':use') hint fot the guard theorem of @('fn').")
+     we also add a @(':use') hint for the guard theorem of @('fn').")
    (xdoc::p
     "We use the C value predicate corresponding to
      the type of the body of the function;
@@ -1845,7 +1845,7 @@
      This will always be one among @('unsigned char') and @('int'),
      by construction;
      thus, we stop with an error if it is any other type,
-     but that should never happen."))
+     but that should never happen currently."))
   (b* ((pred (case (type-kind type)
                (:uchar 'ucharp)
                (:sint 'sintp)
