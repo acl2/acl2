@@ -21,7 +21,7 @@
 (include-book "pfcs/top")
 (include-book "sha-2/top")
 (include-book "kdf/top")
-;; (include-book "r1cs/top") ; brings in skip-proofs
+;; (include-book "r1cs/top")
 (include-book "r1cs/doc")
 (include-book "r1cs/sparse/doc")
 (include-book "blake/top")

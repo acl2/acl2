@@ -452,9 +452,6 @@
 (defthmd bitp-of-0
   (bitp 0))
 
-;move
-(acl2::add-known-boolean bitp)
-
 ;improve the other
 (defthm pfield::mul-of--1-becomes-neg-gen
   (implies (and ;(integerp pfield::x)
