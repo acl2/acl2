@@ -1363,4 +1363,107 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-atc-tutorial-page assignments
+
+  "ACL2 representation of C assignments"
+
+  (xdoc::p
+   "In @(see atc-tutorial-page-local-variables) it was described
+    how to represent C local variable declarations
+    and use the variables in C expressions.
+    This tutorial page explains how to represent
+    assignments to these variables in ACL2.")
+
+  (xdoc::p
+   "In C, assignments are expressions that may occur at any level,
+    i.e. assignments may be sub-expressions of other expressions at any depth.
+    ATC only supports assignments that are full expressions [C:6.8/4],
+    i.e. expressions at the top level, not sub-expressions of other expressions.
+    Specifically, ATC supports expression statements [C:6.8.3]
+    whose expression is an assignment:
+    this way, assignments are treated as if they were statements,
+    keeping most expressions pure (i.e. side-effect-free)
+    and thus simplifying the formal model of C and generated proofs.")
+
+  (xdoc::p
+   "A C local variable assignment is represented by an ACL2 @(tsee let)
+    that binds a variable already bound in the same scope.
+    For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|))))"
+   "  (let* ((|a| (c::sint-bitand |x| |y|))"
+   "         (|a| (c::sint-bitnot |a|)))"
+   "    (c::sint-gt |a| (c::sint-const 0))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int f(int x, int y) {"
+   "    int a = x & y;"
+   "    a = ~a;"
+   "    return a > 0;"
+   "}")
+
+  (xdoc::p
+   "Recall that the @(tsee let*) expands to two nested @(tsee let)s.
+    The first one, as explained in @(see atc-tutorial-page-local-variables),
+    represents the local variable declaration with initializer;
+    the second one represents the assignment,
+    which in this case mentions the variable in the right sub-expression,
+    but of course it may contain any expression.
+    The point is that the second @(tsee let) binds an ACL2 variable symbol
+    that is the same as the one bound by the first @(tsee let).
+    These are two homonymous but different variables in ACL2:
+    the second one shadows the first one.
+    However, we use the homonymy of the two ACL2 variables
+    to represent them as the same variable in C,
+    i.e. to regard the second @(tsee let) as an assignment
+    rather than a declaration.
+    After all, the C scoping rules differ from the ACL2 scoping rules:
+    C disallows a variable declaration with the same name as
+    another variable in the same scope
+    (but it allows shadowing in an inner scope).")
+
+  (xdoc::p
+   "In ATC, we can also represent assignments to C function parameters
+    via @(tsee let) that bind variables
+    with the same names as the ACL2 function parameters.
+    For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |g| (|a| |b|)"
+   "  (declare (xargs :guard (and (c::sintp |a|)"
+   "                              (c::sintp |b|)"
+   "                              ;; 0 <= x <= 100:"
+   "                              (<= 0 (c::sint->get |a|))"
+   "                              (<= (c::sint->get |a|) 100))"
+   "                  :guard-hints ((\"Goal\" :in-theory (enable c::sint-add-okp"
+   "                                                           sbyte32p)))))"
+   "  (let ((|a| (c::sint-add |a| (c::sint-const 200))))"
+   "    (c::sint-lt |b| |a|)))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int g(int a, int b) {"
+   "    a = a + 200;"
+   "    return b < a;"
+   "}")
+
+  (xdoc::p
+   "Even though the @(tsee let) in the function above
+    is not nested under another @(tsee let),
+    the fact remains that it binds an ACL2 variable
+    with the same symbol as a variable in the same scope.
+    (An ACL2 function parameter is, in a way, implicitly bound.)
+    Thus, ATC treats that as an assignment instead of a variable declaration.")
+
+  (xdoc::p
+   "In general, ATC treats a @(tsee let) as
+    either a local variable declaration or a local variable assignment
+    based on whether the variable is already in the same scope or not.
+    This description is still an over-approximation,
+    which will be refined in upcoming tutorial pages."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-atc-tutorial-topics)
