@@ -1883,7 +1883,8 @@
                  sintp-of-sint-logand
                  sintp-of-sint-logor
                  sintp-of-sint-from-uchar
-                 ucharp-of-uchar-from-sint))
+                 ucharp-of-uchar-from-sint
+                 ucharp-of-uchar-array-read-sint))
        (hints `(("Goal"
                  :in-theory ',theory
                  :use (:guard-theorem ,fn))))
