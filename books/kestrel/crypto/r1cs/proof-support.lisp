@@ -21,13 +21,10 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for  ACL2::GETBIT-OF-PLUS
-
-(acl2::add-known-boolean acl2::bit-listp)
 
 ;; TODO: Organize this material
 
