@@ -2163,6 +2163,7 @@
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (lhs `(run-fun (ident ,(symbol-name fn))
                       (list ,@formals)
+                      heap
                       ,prog-const))
        (rhs `(,fn ,@formals))
        (hints `(("Goal"
