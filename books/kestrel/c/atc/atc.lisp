@@ -2166,6 +2166,7 @@
                  :in-theory '(,fn-exec-var-limit-correct-thm
                               run-fun
                               compustatep-of-compustate
+                              (:e errorp)
                               (:e ident)
                               (:e init-fun-env)
                               (:e fun-env-result-kind)
