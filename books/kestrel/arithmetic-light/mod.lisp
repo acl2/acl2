@@ -403,6 +403,16 @@
                   (equal (mod y p) (mod z p))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
+(defthm equal-of-mod-of-+-and-mod-cancel
+  (implies (and (rationalp x)
+                (rationalp z)
+                (integerp p)
+                (< 0 p))
+           (equal (equal (mod x p)
+                         (mod (+ x z) p))
+                  (equal 0 (mod z p))))
+  :hints (("Goal" :in-theory (enable mod-sum-cases))))
+
 ;enable?
 (defthmd mod-of-*-subst-arg2
   (implies (and (equal (mod y p)
@@ -700,3 +710,19 @@
                        (equal (mod (- k1 k2) y) ; gets computed
                               (mod x y)))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
+
+(defthm equal-of-mod-of-+-of-*-same-3-last
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (mod (+ x y (* p z)) p)
+                  (mod (+ x y) p))))
+
+(defthm equal-of-mod-of-+-of-*-same-3-last-alt
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (mod (+ x y (* z p)) p)
+                  (mod (+ x y) p))))
