@@ -491,7 +491,7 @@
     but present concepts that apply more generally.
     However, this page only describes the basics of
     representing and generating C @('int') programs:
-    more advanced features are presented in upcoming tutorial pages.")
+    more advanced features are presented in subsequent tutorial pages.")
 
   (atc-tutorial-section "Simple Example")
 
@@ -563,7 +563,7 @@
 
   (xdoc::p
    "More details about the mapping from ACL2 names to C names
-    are given in an upcoming tutorial page.")
+    are given in @(see atc-tutorial-identifiers).")
 
   (atc-tutorial-section "Function Body")
 
@@ -788,7 +788,7 @@
    "The above invocation of ATC generates the C file,
     as conveyed by a message printed on the screen.
     The invocation also prints certain event forms on the screen;
-    these will be described in an upcoming tutorial page,
+    these will be described in @(see atc-tutorial-events)
     and can be ignored for now.")
 
   (xdoc::p
@@ -1305,7 +1305,7 @@
     and from any other @(tsee let) variable in scope
     (the latter restriction is an over-approximation,
     that is adequate to this tutorial page
-    but will be refined in upcoming tutorial pages).
+    but is refined in subsequent tutorial pages).
     That is, it must be a new variable.
     Its name must satisfy the constraints
     described in @(tsee atc-tutorial-identifiers).
