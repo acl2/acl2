@@ -53,6 +53,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; to speed up the proofs in this file:
+
 (defrulel tuplep-of-2-of-list
   (std::tuplep 2 (list x y)))
 
