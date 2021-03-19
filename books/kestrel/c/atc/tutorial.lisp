@@ -1368,7 +1368,7 @@
   "ACL2 representation of C assignments"
 
   (xdoc::p
-   "In @(see atc-tutorial-page-local-variables) it was described
+   "In @(see atc-tutorial-local-variables) it was described
     how to represent C local variable declarations
     and use the variables in C expressions.
     This tutorial page explains how to represent
@@ -1407,7 +1407,7 @@
 
   (xdoc::p
    "Recall that the @(tsee let*) expands to two nested @(tsee let)s.
-    The first one, as explained in @(see atc-tutorial-page-local-variables),
+    The first one, as explained in @(see atc-tutorial-local-variables),
     represents the local variable declaration with initializer;
     the second one represents the assignment,
     which in this case mentions the variable in the right sub-expression,
