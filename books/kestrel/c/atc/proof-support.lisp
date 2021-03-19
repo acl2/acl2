@@ -271,7 +271,6 @@
     (:e param-declon-list-fix)
     (:e scope-list-fix)
     (:e scope-listp)
-    (:e scope-result-kind)
     (:e scopep)
     (:e stmt-compound->items)
     (:e stmt-expr->get)
@@ -293,8 +292,6 @@
     (:e valuep)
     (:e value-list-fix)
     (:e value-listp)
-    (:e value-option-result-kind)
-    (:e value-option-result-ok)
     (:e zp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -427,70 +424,10 @@
              (not (errorp x)))
     :enable (errorp scopep))
 
-  (defruled scope-result-kind-when-scopep
-    (implies (scopep scope)
-             (equal (scope-result-kind scope)
-                    :ok))
-    :enable scope-result-kind)
-
-  (defruled scope-result-ok->get-when-scopep
-    (implies (scopep scope)
-             (equal (scope-result-ok->get scope)
-                    scope))
-    :enable scope-result-ok->get)
-
-  (defruled value-result-kind-when-valuep
-    (implies (valuep x)
-             (equal (value-result-kind x)
-                    :ok))
-    :enable value-result-kind)
-
-  (defruled value-result-ok->get-when-valuep
-    (implies (valuep x)
-             (equal (value-result-ok->get x)
-                    x))
-    :enable value-result-ok->get)
-
   (defruled value-result-fix-when-valuep
     (implies (valuep x)
              (equal (value-result-fix x)
                     x)))
-
-  (defruled value-option-result-kind-when-value-optionp
-    (implies (value-optionp x)
-             (equal (value-option-result-kind x)
-                    :ok))
-    :enable value-option-result-kind)
-
-  (defruled value-option-result-ok->get-when-value-optionp
-    (implies (value-optionp x)
-             (equal (value-option-result-ok->get x)
-                    x))
-    :enable value-option-result-ok->get)
-
-  (defruled value-list-result-kind-when-value-listp
-    (implies (value-listp x)
-             (equal (value-list-result-kind x)
-                    :ok))
-    :enable value-list-result-kind)
-
-  (defruled value-list-result-ok->get-when-value-listp
-    (implies (value-listp x)
-             (equal (value-list-result-ok->get x)
-                    x))
-    :enable value-list-result-ok->get)
-
-  (defruled compustate-result-kind-when-compustatep
-    (implies (compustatep x)
-             (equal (compustate-result-kind x)
-                    :ok))
-    :enable compustate-result-kind)
-
-  (defruled compustate-result-ok->get-when-compustatep
-    (implies (compustatep x)
-             (equal (compustate-result-ok->get x)
-                    x))
-    :enable compustate-result-ok->get)
 
   (defruled not-errorp-when-valuep
     (implies (valuep x)
@@ -554,20 +491,6 @@
   (defruled car-of-if
     (equal (car (if a b c))
            (if a (car b) (car c))))
-
-  (defruled value-option-result-kind-of-if
-    (equal (value-option-result-kind (if a b c))
-           (if a (value-option-result-kind b) (value-option-result-kind c))))
-
-  (defruled value-result-kind-of-if
-    (equal (value-result-kind (if a b c))
-           (if a (value-result-kind b) (value-result-kind c)))
-    :enable value-result-kind)
-
-  (defruled value-result-ok->get-of-if
-    (equal (value-result-ok->get (if a b c))
-           (if a (value-result-ok->get b) (value-result-ok->get c)))
-    :enable value-result-ok->get)
 
   (defruled value-result-fix-of-if
     (equal (value-result-fix (if a b c))
@@ -642,20 +565,8 @@
     "Given the above, it should not be surprising to see
      rules like @('omap::in-of-update'),
      which serves to simplify, during symbolic execution,
-     the finding of a variable in a scope.")
-   (xdoc::p
-    "We also call attention to an ``asymmetry'' between
-     the presence of rules like @('scope-result-kind-when-scopep')
-     and the absence of rules like @('scope-result-kind-when-errorp'),
-     which is a natural dual.
-     The reason is that we expect the generated C code, by construction,
-     to never result in dynamic semantic errors;
-     therefore, we expect that the symbolic execution
-     will never produce actual error values.
-     Instead, it should always produce non-error values."))
+     the finding of a variable in a scope."))
   '(;; introduced in this file (see ATC-REWRITE-RULES):
-    compustate-result-kind-when-compustatep
-    compustate-result-ok->get-when-compustatep
     len-of-cons
     1+len-greater-than-0
     not-errorp-when-scopep
@@ -664,24 +575,13 @@
     not-errorp-when-scope-listp
     not-ucharp-when-sintp
     not-pointerp-when-sintp
-    scope-result-kind-when-scopep
-    scope-result-ok->get-when-scopep
     sint-nonzerop-of-0
     sint-nonzerop-of-1
     sint-lognot-of-0
     sint-lognot-of-1
     value-kind-when-sintp
     value-kind-when-ucharp
-    value-option-result-kind-when-value-optionp
-    value-option-result-kind-of-if
-    value-option-result-ok->get-when-value-optionp
-    value-list-result-kind-when-value-listp
-    value-list-result-ok->get-when-value-listp
     value-result-fix-when-valuep
-    value-result-kind-when-valuep
-    value-result-ok->get-when-valuep
-    value-result-kind-of-if
-    value-result-ok->get-of-if
     value-result-fix-of-if
     errorp-of-if
     valuep-of-if
