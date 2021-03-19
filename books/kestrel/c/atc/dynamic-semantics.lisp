@@ -755,7 +755,12 @@
 
   :prepwork
   ((define write-var-aux ((var identp) (val valuep) (scopes scope-listp))
-     :returns (new-scopes scope-list-resultp)
+     :returns (new-scopes
+               scope-list-resultp
+               :hints (("Goal"
+                        :in-theory
+                        (enable
+                         scope-listp-when-scope-list-resultp-and-not-errorp))))
      (b* (((when (endp scopes))
            (error (list :write-var-not-found (ident-fix var))))
           (scope (scope-fix (car scopes)))
@@ -1191,7 +1196,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr-pure-list ((es expr-listp) (compst compustatep))
-  :returns (result value-list-resultp)
+  :returns (result
+            value-list-resultp
+            :hints (("Goal"
+                     :in-theory
+                     (enable
+                      valuep-when-value-resultp-and-not-errorp
+                      value-listp-when-value-list-resultp-and-not-errorp))))
   :short "Execute a list of pure expression."
   :long
   (xdoc::topstring
@@ -1213,7 +1224,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-scope ((formals param-declon-listp) (actuals value-listp))
-  :returns (result scope-resultp)
+  :returns (result scope-resultp
+                   :hints (("Goal"
+                            :in-theory
+                            (enable scopep-when-scope-resultp-and-not-errorp))))
   :short "Initialize the variable scope for a function call."
   :long
   (xdoc::topstring
