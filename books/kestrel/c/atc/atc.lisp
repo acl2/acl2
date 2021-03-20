@@ -1699,6 +1699,7 @@
   :returns (mv erp
                (val (tuple (param param-declonp)
                            (type typep)
+                           (pointerp booleanp)
                            val))
                state)
   :short "Generate a C parameter declaration from an ACL2 formal parameter."
@@ -1712,29 +1713,36 @@
      we put the pointer indication into the declarator.
      Only pointers to non-pointer types are allowed
      (i.e. not pointers to pointers),
-     so we stop with an internal error if we encounter a pointer to pointer."))
+     so we stop with an internal error if we encounter a pointer to pointer.")
+   (xdoc::p
+    "If the type is a pointer type, we also return a flag indicating that.
+     This is used, in @(tsee atc-gen-param-declon-list),
+     to collect the function parameters that are pointers,
+     because they get a special treatment
+     in the formulation of the generated correctness theorems."))
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-param-declon) (irr-type))
+        (er-soft+ ctx t (list (irr-param-declon) (irr-type) nil)
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn))
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list (irr-param-declon) (irr-type)) state))
+       ((when erp) (mv erp (list (irr-param-declon) (irr-type) nil) state))
        ((mv pointerp ref-type)
         (if (type-case type :pointer)
             (mv t (type-pointer->referenced type))
           (mv nil type)))
        ((when (type-case ref-type :pointer))
         (raise "Internal error: pointer type to pointer type ~x0." ref-type)
-        (acl2::value (list (irr-param-declon) (irr-type)))))
+        (acl2::value (list (irr-param-declon) (irr-type) nil))))
     (acl2::value (list (make-param-declon
                         :declor (make-declor :ident (make-ident :name name)
                                              :pointerp pointerp)
                         :type (atc-gen-tyspecseq ref-type))
-                       type)))
+                       type
+                       pointerp)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -1750,6 +1758,7 @@
   :returns (mv erp
                (val (tuple (params param-declon-listp)
                            (vars atc-symbol-type-alist-listp)
+                           (pointers symbol-listp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -1759,33 +1768,33 @@
    (xdoc::p
     "Also generate an initial symbol table,
      consisting of a single scope
-     that maps the formal parameters to their C types."))
-  (b* (((when (endp formals)) (acl2::value (list nil (list nil))))
+     that maps the formal parameters to their C types.")
+   (xdoc::p
+    "Also return a list of the formal parameters
+     that are pointers in C.
+     These get a special treatment
+     in the formulation of the generated correctness theorems."))
+  (b* (((when (endp formals)) (acl2::value (list nil (list nil) nil)))
        (formal (mbe :logic (acl2::symbol-fix (car formals))
                     :exec (car formals)))
        ((when (member-equal (symbol-name formal)
                             (symbol-name-lst (cdr formals))))
-        (er-soft+ ctx t (list nil nil)
+        (er-soft+ ctx t (list nil nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
                    has the same symbol name as ~
                    another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
-       ((mv erp (list param type) state) (atc-gen-param-declon formal
-                                                               fn
-                                                               guard-conjuncts
-                                                               guard
-                                                               ctx
-                                                               state))
-       ((when erp) (mv erp (list nil nil) state))
-       ((er (list params vars)) (atc-gen-param-declon-list (cdr formals)
-                                                           fn
-                                                           guard-conjuncts
-                                                           guard
-                                                           ctx
-                                                           state)))
+       ((mv erp (list param type pointerp) state)
+        (atc-gen-param-declon formal fn guard-conjuncts guard ctx state))
+       ((when erp) (mv erp (list nil nil nil) state))
+       ((er (list params vars pointers))
+        (atc-gen-param-declon-list (cdr formals)
+                                   fn guard-conjuncts guard
+                                   ctx state)))
     (acl2::value (list (cons param params)
-                       (atc-add-var formal type vars))))
+                       (atc-add-var formal type vars)
+                       (if pointerp (cons formal pointers) pointers))))
 
   :verify-guards nil ; done below
 
@@ -1898,8 +1907,134 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-guard-deref-compustate ((guard pseudo-termp)
+                                           (pointers symbol-listp)
+                                           (compst-var symbolp)
+                                           (wrld plist-worldp))
+  :returns (new-guard "A @(tsee pseudo-termp).")
+  :mode :program
+  :short "Transform a target function's guard
+          to replace pointer arguments with dereferenced arrays
+          in the heap of a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An ACL2 target function may take arrays as parameters.
+     However, the corresponding C function takes pointers
+     as the corresponding parameters.
+     Thus, the guard of the ACL2 function needs to be modified
+     in order to be used as hypothesis of the generated correctness theorem(s).
+     The guard of the ACL2 function says that those parameters are arrays,
+     and may say other things about those arrays, e.g. about their lengths.
+     In the generated theorem, the ACL2 variables for those parameters
+     will be understood as C parameters instead, i.e. as pointers:
+     therefore, we need to substitute, in the guard,
+     each parameter @('x') with the array obtained by dereferencing it,
+     namely @('(deref x ...)').
+     We also need to extend the guard with conjuncts
+     saying that each parameter @('x') is a pointer value of appropriate type;
+     currently, this must always be the @('unsigned char') type,
+     but this will be generalized eventually.")
+   (xdoc::p
+    "Here we compute the modified guard as just explained.
+     The list of parameters that are pointers is passed as @('pointers'),
+     which is calculated by @(tsee atc-gen-param-declon).
+     The @('compst-var') input is the variable symbol
+     to use for the computation state;
+     this must be the same used
+     in the formulation of the correctness theorems."))
+  (b* ((derefs (loop$ for pointer in pointers
+                      collect `(deref ,pointer (compustate->heap ,compst-var))))
+       (guard-subst (acl2::fsubcor-var pointers derefs guard))
+       (guard-subst (untranslate guard-subst nil wrld))
+       (pointer-hyps (loop$ for pointer in pointers
+                            append (list `(pointerp ,pointer)
+                                         `(equal (pointer->reftype ,pointer)
+                                                 (type-uchar))))))
+    `(and ,@pointer-hyps ,guard-subst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-guard-deref-heap ((guard pseudo-termp)
+                                     (pointers symbol-listp)
+                                     (heap-var symbolp)
+                                     (wrld plist-worldp))
+  :returns (new-guard "A @(tsee pseudo-termp).")
+  :mode :program
+  :short "Transform a target function's guard
+          to replace pointer arguments with dereferenced arrays
+          in a heap."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee atc-gen-fn-guard-deref-compustate),
+     but instead of dereferencing the pointers
+     in the heap of a computation state,
+     here we dereference them in a heap directly.
+     This is used for the correctness theorem about @(tsee run-fun),
+     while the variant that uses the heap of a computation state
+     is used for the correctness theorems about @(tsee exec-fun)."))
+  (b* ((derefs (loop$ for pointer in pointers
+                      collect `(deref ,pointer ,heap-var)))
+       (guard-subst (acl2::fsubcor-var pointers derefs guard))
+       (guard-subst (untranslate guard-subst nil wrld))
+       (pointer-hyps (loop$ for pointer in pointers
+                            append (list `(pointerp ,pointer)
+                                         `(equal (pointer->reftype ,pointer)
+                                                 (type-uchar))))))
+    `(and ,@pointer-hyps ,guard-subst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-args-deref-compustate ((args symbol-listp)
+                                          (pointers symbol-listp)
+                                          (compst-var symbolp))
+  :returns (new-args pseudo-term-listp :hyp :guard)
+  :short "Transform a target function's arguments
+          to replace pointer arguments with dereferenced arrays
+          in the heap of a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is related to @(tsee atc-gen-fn-guard-deref-compustate).
+     It adjusts the pointer arguments in the call of the ACL2 function,
+     replacing them with the dereferenced arrays."))
+  (cond ((endp args) nil)
+        (t (cons (if (member-eq (car args) pointers)
+                     `(deref ,(car args) (compustate->heap ,compst-var))
+                   (car args))
+                 (atc-gen-fn-args-deref-compustate (cdr args)
+                                                   pointers
+                                                   compst-var)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-args-deref-heap ((args symbol-listp)
+                                    (pointers symbol-listp)
+                                    (heap-var symbolp))
+  :returns (new-args pseudo-term-listp :hyp :guard)
+  :short "Transform a target function's arguments
+          to replace pointer arguments with dereferenced arrays
+          in a heap."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is related to @(tsee atc-gen-fn-guard-deref-heap).
+     It adjusts the pointer arguments in the call of the ACL2 function,
+     replacing them with the dereferenced arrays."))
+  (cond ((endp args) nil)
+        (t (cons (if (member-eq (car args) pointers)
+                     `(deref ,(car args) ,heap-var)
+                   (car args))
+                 (atc-gen-fn-args-deref-compustate (cdr args)
+                                                   pointers
+                                                   heap-var)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-exec-const-limit-correct-thm
   ((fn symbolp)
+   (pointers symbol-listp)
    (prec-fns atc-symbol-fninfo-alistp)
    (fenv-const symbolp)
    (limit natp)
@@ -1997,7 +2132,9 @@
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
-       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (args (atc-gen-fn-args-deref-compustate formals pointers 'compst))
+       (guard (acl2::uguard fn wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers 'compst wrld))
        (equalities
         `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
                                              (list ,@formals)
@@ -2005,7 +2142,7 @@
                                              ,fenv-const
                                              ,limit)))
            (and (equal compst1 compst)
-                (equal result (,fn ,@formals)))))
+                (equal result (,fn ,@args)))))
        (returns-value-thms
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
        (exec-var-limit-correct-thms
@@ -2027,7 +2164,7 @@
        ((mv local-event &)
         (evmac-generate-defthm
          name
-         :formula `(implies (and ,guard
+         :formula `(implies (and ,hyps
                                  (compustatep compst))
                             ,equalities)
          :hints hints
@@ -2038,6 +2175,7 @@
 
 (define atc-gen-fn-exec-var-limit-correct-thm
   ((fn symbolp)
+   (pointers symbol-listp)
    (fenv-const symbolp)
    (limit natp)
    (fn-returns-value-thm symbolp)
@@ -2070,7 +2208,9 @@
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
-       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (args (atc-gen-fn-args-deref-compustate formals pointers 'compst))
+       (guard (acl2::uguard fn wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers 'compst wrld))
        (equalities
         `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
                                              (list ,@formals)
@@ -2078,13 +2218,18 @@
                                              ,fenv-const
                                              limit)))
            (and (equal compst1 compst)
-                (equal result (,fn ,@formals)))))
+                (equal result (,fn ,@args)))))
        (hints `(("Goal"
                  :in-theory '((:executable-counterpart ident)
                               (:executable-counterpart natp)
                               (:executable-counterpart tau-system)
                               ,fn-exec-const-limit-correct-thm)
-                 :use (,fn-returns-value-thm
+                 :use ((:instance ,fn-returns-value-thm
+                        ,@(loop$ for pointer in pointers
+                                 collect (list pointer
+                                               `(deref ,pointer
+                                                       (compustate->heap
+                                                        compst)))))
                        (:instance errorp-of-error (info :limit))
                        (:instance exec-fun-limit
                         (limit ,limit)
@@ -2095,7 +2240,7 @@
        ((mv local-event &)
         (evmac-generate-defthm
          name
-         :formula `(implies (and ,guard
+         :formula `(implies (and ,hyps
                                  (compustatep compst)
                                  (integerp limit)
                                  (>= limit ,limit))
@@ -2107,6 +2252,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-run-correct-thm ((fn symbolp)
+                                    (pointers symbol-listp)
                                     (prog-const symbolp)
                                     (fn-exec-var-limit-correct-thm symbolp)
                                     (names-to-avoid symbol-listp)
@@ -2160,16 +2306,20 @@
                 nil))
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
-       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (args (atc-gen-fn-args-deref-heap formals pointers 'heap))
+       (guard (acl2::uguard fn wrld))
+       (hyps (atc-gen-fn-guard-deref-heap guard pointers 'heap wrld))
        (lhs `(run-fun (ident ,(symbol-name fn))
                       (list ,@formals)
                       heap
                       ,prog-const))
-       (rhs `(,fn ,@formals))
+       (rhs `(,fn ,@args))
        (hints `(("Goal"
                  :in-theory '(,fn-exec-var-limit-correct-thm
                               run-fun
                               compustatep-of-compustate
+                              compustate->heap-of-compustate
+                              heap-fix-when-heapp
                               (:e errorp)
                               (:e ident)
                               (:e init-fun-env)
@@ -2178,7 +2328,9 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          name
-         :formula `(implies ,guard (equal ,lhs ,rhs))
+         :formula `(implies (and ,hyps
+                                 (heapp heap))
+                            (equal ,lhs ,rhs))
          :hints hints
          :enable nil)))
     (acl2::value (list local-event
@@ -2188,6 +2340,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thms ((fn symbolp)
+                         (pointers symbol-listp)
                          (type typep)
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
@@ -2215,12 +2368,14 @@
        ((mv fn-exec-const-limit-correct-event
             fn-exec-const-limit-correct-thm
             names-to-avoid)
-        (atc-gen-fn-exec-const-limit-correct-thm fn prec-fns fenv-const limit
+        (atc-gen-fn-exec-const-limit-correct-thm fn pointers
+                                                 prec-fns fenv-const limit
                                                  names-to-avoid wrld))
        ((mv fn-exec-var-limit-correct-event
             fn-exec-var-limit-correct-thm
             names-to-avoid)
-        (atc-gen-fn-exec-var-limit-correct-thm fn fenv-const limit
+        (atc-gen-fn-exec-var-limit-correct-thm fn pointers
+                                               fenv-const limit
                                                fn-returns-value-thm
                                                fn-exec-const-limit-correct-thm
                                                names-to-avoid wrld))
@@ -2228,7 +2383,7 @@
                   fn-run-correct-exported-event
                   fn-run-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-run-correct-thm fn prog-const
+        (atc-gen-fn-run-correct-thm fn pointers prog-const
                                     fn-exec-var-limit-correct-thm
                                     names-to-avoid ctx state))
        (progress-start?
@@ -2297,12 +2452,8 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params vars)) (atc-gen-param-declon-list formals
-                                                           fn
-                                                           guard-conjuncts
-                                                           guard
-                                                           ctx
-                                                           state))
+       ((er (list params vars pointers))
+        (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    vars
@@ -2326,7 +2477,8 @@
                   fn-returns-value-thm
                   fn-exec-var-limit-correct-thm
                   names-to-avoid))
-        (atc-gen-fn-thms fn type prec-fns proofs prog-const print fenv-const
+        (atc-gen-fn-thms fn pointers type prec-fns
+                         proofs prog-const print fenv-const
                          limit names-to-avoid ctx state))
        (info (make-atc-fn-info
               :type type
