@@ -357,7 +357,7 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the file @('[books]/kestrel/c/atc/integers.lisp').
+    is in the file @('[books]/kestrel/c/atc/signed-ints.lisp').
     This is automatically included when ATC is included,
     but one may want to include that file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
