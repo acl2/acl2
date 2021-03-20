@@ -2790,7 +2790,14 @@
   (not (member-equal
         (find-new-index fd-list)
         fd-list))
-  :hints (("Goal" :in-theory (enable find-new-index))))
+  :hints (("Goal" :in-theory (enable find-new-index)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (subsetp-equal x fd-list)
+     (not (member-equal (find-new-index fd-list)
+                        x))))))
 
 ;; Here's a problem with our current formulation: realpath-helper will receive
 ;; something that was emitted by path-to-fat32-path, and that means all

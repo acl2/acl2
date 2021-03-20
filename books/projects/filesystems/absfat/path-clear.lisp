@@ -96,6 +96,24 @@
              path-clear-of-fat32-filename-list-fix
              (path path-equiv))))))
 
+(defthm path-clear-of-frame->frame
+  (implies (path-clear path frame)
+           (path-clear path (frame->frame frame)))
+  :hints (("goal" :in-theory (enable frame->frame))))
+
+(defthmd path-clear-of-true-list-fix
+  (equal (path-clear path (true-list-fix frame))
+         (path-clear path frame))
+  :hints (("Goal" :in-theory (enable path-clear true-list-fix))))
+
+(defcong
+  list-equiv equal (path-clear path frame)
+  2
+  :hints
+  (("goal" :use (path-clear-of-true-list-fix
+                 (:instance path-clear-of-true-list-fix
+                            (frame frame-equiv))))))
+
 (local
  (defund
    path-clear-alt (path frame indices)

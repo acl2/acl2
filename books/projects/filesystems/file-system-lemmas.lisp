@@ -2010,3 +2010,17 @@
   (implies (nat-listp l) (<= 0 (nth n l)))
   :hints (("goal" :in-theory (enable nth nat-listp)))
   :rule-classes :linear)
+
+(defthm acl2-number-listp-when-rational-listp
+  (implies (rational-listp l)
+           (acl2-number-listp l)))
+
+(defthm rational-listp-when-integer-listp
+  (implies (integer-listp l)
+           (rational-listp l)))
+
+(defthm integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l)))
+
+(defthm consp-of-strip-cars (equal (consp (strip-cars x)) (consp x)))

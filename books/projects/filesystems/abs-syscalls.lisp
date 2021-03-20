@@ -1418,22 +1418,21 @@
                                          file))
           (ctx-app abs-file-alist1 fs x x-path)))))))
 
+(defthmd abs-mkdir-correctness-lemma-22
+  (implies (and (not (member-equal n (strip-cars frame)))
+                (not (equal 0 (abs-find-file-src frame path))))
+           (not (equal (abs-find-file-src frame path)
+                       n)))
+  :hints (("goal" :in-theory (enable abs-find-file-src
+                                     strip-cars member-equal))))
+
 (defthm
-  abs-mkdir-correctness-lemma-22
-  (implies
-   (not (equal 0
-               (abs-find-file-src (partial-collapse frame path)
-                                  path)))
-   (not (equal (abs-find-file-src (partial-collapse frame path)
-                                  path)
-               (find-new-index (strip-cars (partial-collapse frame path))))))
-  :instructions
-  ((:use (:instance (:rewrite find-new-index-correctness-1)
-                    (fd-list (strip-cars (partial-collapse frame path)))))
-   :split (:contrapose 1)
-   (:dive 1)
-   := :up (:rewrite member-of-strip-cars)
-   (:rewrite abs-find-file-src-correctness-1)))
+  abs-mkdir-correctness-lemma-45
+  (implies (not (equal 0 (abs-find-file-src frame path)))
+           (not (equal (abs-find-file-src frame path)
+                       (find-new-index (strip-cars frame)))))
+  :hints (("goal" :use (:instance abs-mkdir-correctness-lemma-22
+                                  (n (find-new-index (strip-cars frame)))))))
 
 (defthm
   abs-mkdir-correctness-lemma-56
@@ -9643,6 +9642,9 @@
    (:type-prescription
     :corollary
     (integerp (mv-nth 3 (abs-open path fd-table file-table))))))
+
+(defcong fat32-filename-list-equiv equal (abs-open path fd-table file-table) 1
+  :hints (("Goal" :do-not-induct t :in-theory (enable abs-open))))
 
 (defund
   abs-pread

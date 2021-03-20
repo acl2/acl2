@@ -5406,7 +5406,10 @@
   :hints (("goal" :in-theory (enable frame-addrs-root)))
   :rule-classes
   ((:rewrite :corollary (implies (subsetp-equal x (frame-addrs-root frame))
-                                 (subsetp-equal x (strip-cars frame))))))
+                                 (subsetp-equal x (strip-cars frame))))
+   (:rewrite :corollary (implies (subsetp-equal (strip-cars frame) y)
+                                 (subsetp-equal (frame-addrs-root frame)
+                                                y)))))
 
 (defthm
   frame-addrs-root-of-frame->frame-of-collapse-this-lemma-1

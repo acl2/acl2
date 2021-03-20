@@ -1395,17 +1395,6 @@
    (:type-prescription :corollary (implies (atom l)
                                            (equal (plus-list l n) nil)))))
 
-;; Move later.
-(defthm acl2-number-listp-when-rational-listp
-  (implies (rational-listp l)
-           (acl2-number-listp l)))
-(defthm rational-listp-when-integer-listp
-  (implies (integer-listp l)
-           (rational-listp l)))
-(defthm integer-listp-when-nat-listp
-  (implies (nat-listp l)
-           (integer-listp l)))
-
 (defthm
   nonempty-queues-of-append
   (equal (nonempty-queues (append x y))
@@ -1455,12 +1444,6 @@
                        (cons :set-path (append dst (list (nth n names))))
                        '(:open :pwrite :close)))))
   :hints (("goal" :in-theory (enable cp-without-subdirs-helper nth))))
-
-;; Move later.
-(defcong fat32-filename-list-equiv equal (hifat-open path fd-table file-table) 1
-  :hints (("Goal" :do-not-induct t :in-theory (enable hifat-open))))
-(defcong fat32-filename-list-equiv equal (abs-open path fd-table file-table) 1
-  :hints (("Goal" :do-not-induct t :in-theory (enable abs-open))))
 
 (defund cp-spec-1 (frame syscall-sym-list st src fs)
   (declare (xargs :verify-guards nil
@@ -1681,26 +1664,6 @@
                          :transaction)
                   (consp (nth n queues))))
   :hints (("goal" :in-theory (enable nth cp-spec-3 nonempty-queues))))
-
-;; Move later.
-(defthm path-clear-of-frame->frame
-  (implies (path-clear path frame)
-           (path-clear path (frame->frame frame)))
-  :hints (("goal" :in-theory (enable frame->frame))))
-(defthmd path-clear-of-true-list-fix
-  (equal (path-clear path (true-list-fix frame))
-         (path-clear path frame))
-  :hints (("Goal" :in-theory (enable path-clear true-list-fix))))
-(defcong
-  list-equiv equal (path-clear path frame)
-  2
-  :hints
-  (("goal" :use (path-clear-of-true-list-fix
-                 (:instance path-clear-of-true-list-fix
-                            (frame frame-equiv))))))
-
-;; Move later.
-(defthm consp-of-strip-cars (equal (consp (strip-cars x)) (consp x)))
 
 (defthm cp-without-subdirs-helper-correctness-lemma-12
   (implies (and
@@ -2386,15 +2349,6 @@
                     (no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1))
     :use no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1)))
 
-;; Really move later!
-(defthm find-new-index-correctness-1-corollary
-  (implies
-   (subsetp-equal x fd-list)
-   (not (member-equal (find-new-index fd-list)
-                      x)))
-  :hints (("goal" :in-theory (disable find-new-index-correctness-1)
-           :use find-new-index-correctness-1)))
-
 (defthm
   cp-without-subdirs-helper-correctness-lemma-30
   (implies
@@ -2410,15 +2364,6 @@
     :in-theory (e/d (assoc-of-frame->frame)
                     (path-clear-partial-collapse-when-zp-src-lemma-22))
     :use path-clear-partial-collapse-when-zp-src-lemma-22)))
-
-;; Really move later!
-(defthm
-  subsetp-of-frame-addrs-root-strip-cars-corollary
-  (implies (subsetp-equal (strip-cars frame) y)
-           (subsetp-equal (frame-addrs-root frame)
-                          y))
-  :hints (("goal" :in-theory (disable subsetp-of-frame-addrs-root-strip-cars)
-           :use subsetp-of-frame-addrs-root-strip-cars)))
 
 (defthm
   cp-without-subdirs-helper-correctness-lemma-31

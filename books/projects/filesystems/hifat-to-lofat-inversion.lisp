@@ -3594,7 +3594,8 @@
    (fat-length fat32$c))
   :hints (("goal" :in-theory (e/d (nth)
                                   ((:rewrite nfix-when-natp)
-                                   (:rewrite length-when-stringp))))))
+                                   (:rewrite length-when-stringp)
+                                   integer-listp-when-nat-listp)))))
 
 (local
  (defthm
