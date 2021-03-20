@@ -55,8 +55,7 @@
                                                     c::sint-sub-okp
                                                     c::sint->get
                                                     sbyte32p
-                                                    sbyte32-fix
-                                                    )))))
+                                                    sbyte32-fix)))))
   (if (c::sint-nonzerop (c::sint-gt |a| |b|))
       (c::sint-sub |a|
                    (if (c::sint-nonzerop (c::sint-eq |b| (c::sint-const 3)))
