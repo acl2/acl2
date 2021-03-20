@@ -1070,7 +1070,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr-arrsub ((arr value-resultp) (sub value-resultp) (heap heapp))
+(define exec-arrsub ((arr value-resultp) (sub value-resultp) (heap heapp))
   :returns (result value-resultp)
   :short "Execute an array subscripting expression."
   :long
@@ -1146,7 +1146,7 @@
      :const (exec-const e.get)
      :arrsub (b* ((arr (exec-expr-pure e.arr compst))
                   (sub (exec-expr-pure e.sub compst)))
-               (exec-expr-arrsub arr sub (compustate->heap compst)))
+               (exec-arrsub arr sub (compustate->heap compst)))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))

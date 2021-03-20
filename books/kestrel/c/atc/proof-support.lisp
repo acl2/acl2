@@ -349,22 +349,22 @@
     endp
     enter-scope
     exit-scope
+    exec-arrsub
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
     exec-binary-strict-pure
+    exec-cast
     exec-const
-    exec-expr-arrsub
     exec-iconst
     exec-ident
     exec-unary
-    exec-cast
     mv-nth
     pop-frame
     push-frame
     read-var
-    sint-const
     sint01
+    sint-const
     sint-logand
     sint-logor
     top-frame
