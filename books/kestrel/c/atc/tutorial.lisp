@@ -1176,16 +1176,28 @@
     ATC generates a theorem of the form")
   (xdoc::codeblock
    "(defthm <constant>-<fn>-correct"
-   "  (implies <guard-of-fn>"
+   "  (implies (and <guard-of-fn>"
+   "                (heap heap)"
    "           (equal (run-fun (ident \"<fn>\")"
    "                           (list <x1> ... <xn>)"
+   "                           heap"
    "                           <constant>)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
    "This asserts that, under the guard of @('fn'),
     running the C function corresponding to @('fn')
     yields the same result as @('fn').
-    Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').")
+    Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').
+    The variable @('heap') represents the C heap,
+    described in the "
+   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   ": the theorem applies to execution in every possible heap.")
+
+  (xdoc::p
+   "We remark that the form above is accurate
+    when none of the function's arguments are pointers.
+    When they are, the theorem has a slightly more general form,
+    which will be described in upcoming tutorial pages.")
 
   (xdoc::p
    "As explained in @(tsee atc-tutorial-identifiers),
