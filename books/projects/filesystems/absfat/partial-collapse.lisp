@@ -2320,7 +2320,6 @@
                             (:rewrite abs-addrs-when-m1-file-alist-p)
                             (:linear position-when-member)
                             (:linear position-equal-ac-when-member)
-                            (:rewrite list-equiv-when-true-listp)
                             (:rewrite ctx-app-ok-when-not-natp)
                             (:type-prescription assoc-equal-when-frame-p)
                             (:definition assoc-equal)
@@ -2416,7 +2415,7 @@
       nil))
     :hints
     (("goal"
-      :in-theory (e/d (take-of-nthcdr))
+      :in-theory (e/d (take-of-nthcdr list-equiv))
       :use
       (:instance
        (:rewrite ctx-app-list-when-set-equiv-lemma-2)
@@ -2578,8 +2577,8 @@
                (frame-val->path (cdr (assoc-equal (car l)
                                                   (frame->frame frame))))))))
     :hints
-    (("goal"
-      :in-theory (e/d (take-of-nthcdr)
+    (("goal" :do-not-induct t
+      :in-theory (e/d (take-of-nthcdr list-equiv)
                       ())
       :use
       (:instance
@@ -2938,7 +2937,6 @@
                             (:definition member-equal)
                             (:linear position-when-member)
                             (:linear position-equal-ac-when-member)
-                            (:rewrite list-equiv-when-true-listp)
                             (:rewrite ctx-app-ok-when-not-natp)
                             (:definition assoc-equal)
                             (:rewrite abs-file-alist-p-correctness-1)
@@ -8208,7 +8206,6 @@
           (:rewrite len-when-prefixp)
           (:rewrite m1-file-contents-p-correctness-1)
           nthcdr-when->=-n-len-l
-          list-equiv-when-true-listp
           abs-separate-of-frame->frame-of-collapse-this-lemma-8
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-15)
           (:rewrite different-from-own-src-1)))
