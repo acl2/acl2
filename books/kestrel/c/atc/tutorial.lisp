@@ -1466,4 +1466,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-atc-tutorial-page conditional-statements
+
+  "ACL2 representation of C conditional statements"
+
+  (xdoc::p
+   "Previous tutorial pages have shown how to represent C functions
+    whose bodies consists of return statements
+    and possibly local variable declarations and assignments
+    (including assignments to the function parameters).
+    This tutorial page explains how to represent C functions whose bodies
+    are (possibly nested) conditional statements.")
+
+  (xdoc::p
+   "If the body of an ACL2 function is an @(tsee if),
+    the body of the corresponding C function is an @('if-else') statement,
+    whose test is derived from the @(tsee if)'s first argument
+    and whose branches are derived from
+    the @(tsee if)'s second and third arguments.
+    If any of the second or third arguments is also an @(tsee if),
+    the corresponding branch is a nested @('if-else') statement.")
+
+  (xdoc::p
+   "However, note that @(tsee if) tests in ACL2 are (generalized) booleans,
+    i.e. they must return non-@('nil') for true and @('nil') for false,
+    while @('if') tests in C are scalars (e.g. integers),
+    i.e. they must return non-zero for true and zero for false.
+    Since @('nil') is different from the ACL2 model of any C scalar zero,
+    and also @('t') is different from the ACL2 model of any C scalar non-zero,
+    ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
+    The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
+    mentioned in @(see atc-tutorial-int-representation),
+    provides a function @(tsee sint-nonzero)
+    the converts (the ACL2 representation of) a C @('int')
+    into an ACL2 boolean:
+    it returns @('t') if the @('int') is not 0;
+    it returns @('nil') if the @('int') is 0.
+    This @(tsee sint-nonzerop) must be used as the test of an ACL2 @(tsee if),
+    applied to an ACL2 term representing an @('int') expression:
+    it represents a C @('if') test consisting of the argument expression.")
+
+  (xdoc::p
+   "For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              (c::sintp |z|))))"
+   "  (if (c::sint-nonzerop |x|)"
+   "      |y|"
+   "    |z|))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int f(int x, int y, int z) {"
+   "    if (x) {"
+   "        return y;"
+   "    } else {"
+   "        return z;"
+   "    }"
+   "}")
+
+  (xdoc::p
+   "As another example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |g| (|e|)"
+   "  (declare (xargs :guard (c::sintp |e|)))"
+   "  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))"
+   "      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))"
+   "          (c::sint-const 1)"
+   "        (c::sint-const 2))"
+   "    (c::sint-const 3)))"
+   "   )")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int g(int e) {"
+   "    if (e >= 0) {"
+   "        if (e < 1000) {"
+   "            return 1;"
+   "        } else {"
+   "            return 2;"
+   "        }"
+   "    } else {"
+   "        return 3;"
+   "    }"
+   "}")
+
+  (xdoc::p
+   "The arguments of @(tsee sint-nonzero) in @(tsee if) tests
+    may be the same ones used to describe the expressions
+    returned by @('int')-valued functions.
+    The @(tsee sint-nonzerop) just serves
+    to turn C @('int')s into ACL2 booleans;
+    it is not explicitly represented in the C code,
+    as shown in the examples above."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-atc-tutorial-topics)
