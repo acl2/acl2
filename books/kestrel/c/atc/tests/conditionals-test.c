@@ -15,6 +15,11 @@ void cond3_test(int a, int b) {
   printf("cond3(%d, %d) = %d\n", a, b, r);
 }
 
+void cond4_test(int e) {
+  int r = cond4(e);
+  printf("cond4(%d) = %d\n", e, r);
+}
+
 int main(void) {
   cond1_test(11, 8888, -220);
   cond1_test(0, 888, -220);
@@ -22,4 +27,7 @@ int main(void) {
   cond2_test(23);
   cond3_test(1700, 3);
   cond3_test(1700, -99);
+  cond4_test(-667);
+  cond4_test(67);
+  cond4_test(80000);
 }

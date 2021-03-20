@@ -63,11 +63,22 @@
                      (c::sint-const 1)))
     |b|))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |cond4| (|e|)
+  (declare (xargs :guard (c::sintp |e|)))
+  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))
+      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))
+          (c::sint-const 1)
+        (c::sint-const 2))
+    (c::sint-const 3)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |cond1|
         |cond2|
         |cond3|
+        |cond4|
         :output-file "conditionals.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
