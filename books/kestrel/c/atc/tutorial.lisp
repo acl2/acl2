@@ -1509,7 +1509,7 @@
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
     The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
-    provides a function @(tsee sint-nonzero)
+    provides a function @(tsee sint-nonzerop)
     the converts (the ACL2 representation of) a C @('int')
     into an ACL2 boolean:
     it returns @('t') if the @('int') is not 0;
@@ -1566,7 +1566,7 @@
    "}")
 
   (xdoc::p
-   "The arguments of @(tsee sint-nonzero) in @(tsee if) tests
+   "The arguments of @(tsee sint-nonzerop) in @(tsee if) tests
     may be the same ones used to describe the expressions
     returned by @('int')-valued functions.
     The @(tsee sint-nonzerop) just serves
