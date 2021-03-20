@@ -1779,9 +1779,6 @@
              (take n x)
              (append x (take (- n (len x)) y))))
   :hints (("goal" :induct (take n x))))
-(defthm take-under-iff
-  (iff (take n xs)
-       (not (zp n))))
 
 (encapsulate () (local (in-theory (disable subseq string-append)))
 

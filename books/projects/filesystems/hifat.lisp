@@ -186,12 +186,6 @@
 
 (defcong nat-equiv equal (nthcdr n l) 1)
 
-(defthm list-equiv-when-true-listp
-  (implies (and (true-listp x) (true-listp y))
-           (iff (list-equiv x y) (equal x y)))
-  :hints (("goal" :in-theory (enable fast-list-equiv)
-           :induct (fast-list-equiv x y))))
-
 (defthm
   consecutive-read-file-into-string-1
   (implies

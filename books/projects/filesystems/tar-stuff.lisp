@@ -38,6 +38,12 @@
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp take member-equal)))
 
+(defthmd list-equiv-when-true-listp
+  (implies (and (true-listp x) (true-listp y))
+           (iff (list-equiv x y) (equal x y)))
+  :hints (("goal" :in-theory (enable fast-list-equiv)
+           :induct (fast-list-equiv x y))))
+
 (defthm consp-of-remove-assocs-equal
   (iff (consp (remove-assocs-equal keys alist))
        (not (subsetp-equal (strip-cars alist) keys)))
@@ -926,7 +932,8 @@
     (("goal" :in-theory
       (e/d (hifat-tar-name-list-alist hifat-pread hifat-open hifat-lstat)
            (atom append append-of-cons
-                 (:rewrite prefixp-of-append-arg1)))))
+                 (:rewrite prefixp-of-append-arg1)))
+      :expand (list-equiv (cons name 'nil) (cons (car name-list) 'nil))))
     :rule-classes
     (:rewrite
      (:rewrite

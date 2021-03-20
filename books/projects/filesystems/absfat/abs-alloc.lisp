@@ -474,7 +474,6 @@
                                (:rewrite intersectp-equal-of-atom-left)
                                (:rewrite intersectp-equal-of-atom-right)
                                (:rewrite intersectp-is-commutative)
-                               (:rewrite list-equiv-when-true-listp)
                                (:rewrite member-of-cons)
                                (:rewrite member-when-atom)
                                (:rewrite set-difference$-when-not-intersectp)
