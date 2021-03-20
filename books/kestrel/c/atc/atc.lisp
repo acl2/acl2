@@ -1676,8 +1676,8 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
-               ('ucharp (type-uchar))
-               ('sintp (type-sint))
+               (ucharp (type-uchar))
+               (sintp (type-sint))
                (uchar-arrayp (type-pointer (type-uchar)))
                (t nil)))
        ((when (not type))
