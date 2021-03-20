@@ -231,6 +231,8 @@
     (:e declon->type)
     (:e declor->ident)
     (:e declor->pointerp)
+    (:e expr-arrsub->arr)
+    (:e expr-arrsub->sub)
     (:e expr-binary->arg1)
     (:e expr-binary->arg2)
     (:e expr-binary->op)
@@ -285,6 +287,7 @@
     (:e tyname)
     (:e type-kind)
     (:e type-name-to-type)
+    (:e type-pointer)
     (:e type-uchar)
     (:e type-sint)
     (:e unop-fix)
@@ -351,6 +354,7 @@
     exec-binary-pure
     exec-binary-strict-pure
     exec-const
+    exec-expr-arrsub
     exec-iconst
     exec-ident
     exec-unary
@@ -657,8 +661,10 @@
     sintp-of-sint-bitxor
     sintp-of-sint-bitior
     sintp-of-sint-from-uchar
+    ucharp-of-uchar-array-read-sint
     ucharp-of-uchar-from-sint
     top-frame-of-push-frame
+    valuep-when-pointerp
     valuep-when-sintp
     valuep-when-ucharp
     value-fix-when-valuep
@@ -685,7 +691,8 @@
      that represent shallowly embedded C expressions.
      These are listed here; the list may not be exhaustive,
      and may therefore be extended as needed."))
-  '((:t sint)
+  '((:t exec-block-item-list)
+    (:t sint)
     (:t sint-plus)
     (:t sint-minus)
     (:t sint-bitnot)
@@ -707,6 +714,7 @@
     (:t sint-bitxor)
     (:t sint-bitior)
     (:t sint-from-uchar)
+    (:t uchar-array-read-sint)
     (:t uchar-from-sint)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
