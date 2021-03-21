@@ -264,6 +264,7 @@
     (:e ident)
     (:e ident-fix)
     (:e identp)
+    (:e init-fun-env)
     (:e len)
     (:e natp)
     (:e acl2::sbyte32p)

@@ -112,10 +112,6 @@
   "@('prog-const') is the symbol specified by @('const-name').
    This is @('nil') if @('proofs') is @('nil')."
 
-  "@('fenv-const') is the symbol used to name the local constant
-   whose value is the function environment of the generated translation unit.
-   This is @('nil') if @('proofs') is @('nil')."
-
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2036,7 +2032,7 @@
   ((fn symbolp)
    (pointers symbol-listp)
    (prec-fns atc-symbol-fninfo-alistp)
-   (fenv-const symbolp)
+   (prog-const symbolp)
    (limit natp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
@@ -2070,6 +2066,11 @@
      and this theorem will be suitably generalized.
      The guard of @('fn') is used as hypothesis,
      along with the fact that @('compst') is a computation state.")
+   (xdoc::p
+    "We use a variable for the function environment,
+     which we equate to the translation unit's function environment
+     in a hypothesis.
+     This makes the theorem more easily applicable as a rewrite rule.")
    (xdoc::p
     "The limit passed to @(tsee exec-fun) is a constant value,
      which is calculated by the code generation code
@@ -2139,7 +2140,7 @@
         `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
                                              (list ,@formals)
                                              compst
-                                             ,fenv-const
+                                             fenv
                                              ,limit)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@args)))))
@@ -2165,7 +2166,8 @@
         (evmac-generate-defthm
          name
          :formula `(implies (and ,hyps
-                                 (compustatep compst))
+                                 (compustatep compst)
+                                 (equal fenv (init-fun-env ,prog-const)))
                             ,equalities)
          :hints hints
          :enable nil)))
@@ -2176,7 +2178,7 @@
 (define atc-gen-fn-exec-var-limit-correct-thm
   ((fn symbolp)
    (pointers symbol-listp)
-   (fenv-const symbolp)
+   (prog-const symbolp)
    (limit natp)
    (fn-returns-value-thm symbolp)
    (fn-exec-const-limit-correct-thm symbolp)
@@ -2215,7 +2217,7 @@
         `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
                                              (list ,@formals)
                                              compst
-                                             ,fenv-const
+                                             fenv
                                              limit)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@args)))))
@@ -2235,13 +2237,13 @@
                         (limit ,limit)
                         (limit1 limit)
                         (fun (ident ,(symbol-name fn)))
-                        (args (list ,@formals))
-                        (fenv ,fenv-const))))))
+                        (args (list ,@formals)))))))
        ((mv local-event &)
         (evmac-generate-defthm
          name
          :formula `(implies (and ,hyps
                                  (compustatep compst)
+                                 (equal fenv (init-fun-env ,prog-const))
                                  (integerp limit)
                                  (>= limit ,limit))
                             ,equalities)
@@ -2346,7 +2348,6 @@
                          (proofs booleanp)
                          (prog-const symbolp)
                          (print evmac-input-print-p)
-                         (fenv-const symbolp)
                          (limit natp)
                          (names-to-avoid symbol-listp)
                          ctx
@@ -2369,13 +2370,13 @@
             fn-exec-const-limit-correct-thm
             names-to-avoid)
         (atc-gen-fn-exec-const-limit-correct-thm fn pointers
-                                                 prec-fns fenv-const limit
+                                                 prec-fns prog-const limit
                                                  names-to-avoid wrld))
        ((mv fn-exec-var-limit-correct-event
             fn-exec-var-limit-correct-thm
             names-to-avoid)
         (atc-gen-fn-exec-var-limit-correct-thm fn pointers
-                                               fenv-const limit
+                                               prog-const limit
                                                fn-returns-value-thm
                                                fn-exec-const-limit-correct-thm
                                                names-to-avoid wrld))
@@ -2412,7 +2413,6 @@
                             (proofs booleanp)
                             (prog-const symbolp)
                             (print evmac-input-print-p)
-                            (fenv-const symbolp)
                             (names-to-avoid symbol-listp)
                             ctx
                             state)
@@ -2478,7 +2478,7 @@
                   fn-exec-var-limit-correct-thm
                   names-to-avoid))
         (atc-gen-fn-thms fn pointers type prec-fns
-                         proofs prog-const print fenv-const
+                         proofs prog-const print
                          limit names-to-avoid ctx state))
        (info (make-atc-fn-info
               :type type
@@ -2498,7 +2498,6 @@
                                  (proofs booleanp)
                                  (prog-const symbolp)
                                  (print evmac-input-print-p)
-                                 (fenv-const symbolp)
                                  (names-to-avoid symbol-listp)
                                  ctx
                                  state)
@@ -2527,11 +2526,11 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-declon fn prec-fns proofs prog-const print fenv-const
+        (atc-gen-ext-declon fn prec-fns proofs prog-const print
                             names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const print
-                                 fenv-const names-to-avoid ctx state)))
+                                 names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -2560,36 +2559,6 @@
                             (local ,defconst-event)
                             ,@progress-end?)))
     (mv local-event defconst-event)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-fenv-const ((prog-const symbolp)
-                            (names-to-avoid symbol-listp)
-                            (wrld plist-worldp))
-  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (fenv-const "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Generate a local event for a named constant whose value is
-          the function environment for the generated translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a local-only named constant
-     so the exact name does not need to be under user control.
-     We use the name @('c::*environment*');
-     if that constant happens to be in use,
-     we add @('$') characters until we find an unused constant name
-     @('c::*environment$...$*').")
-   (xdoc::p
-    "This constant is not generated if @(':proofs') is @('nil')."))
-  (b* (((mv name names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix 'c::*environment*
-                                                 'acl2::const
-                                                 names-to-avoid
-                                                 wrld))
-       (event `(local (defconst ,name (init-fun-env ,prog-const)))))
-    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2676,23 +2645,18 @@
     "We first generate the event for the named constant with the environment,
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
-  (b* (((mv fenv-const-event fenv-const names-to-avoid)
-        (if proofs
-            (atc-gen-fenv-const prog-const names-to-avoid (w state))
-          (mv nil nil names-to-avoid)))
-       ((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
+  (b* (((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
         (atc-gen-wf-thm proofs prog-const print names-to-avoid ctx state))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const print
-                                 fenv-const names-to-avoid ctx state))
+                                 names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (if proofs
             (atc-gen-prog-const prog-const tunit print)
           (mv nil nil)))
        (local-events (append (and proofs (list local-const-event))
-                             (and proofs (list fenv-const-event))
                              wf-thm-local-events
                              fn-thm-local-events))
        (exported-events (append (and proofs (list exported-const-event))
