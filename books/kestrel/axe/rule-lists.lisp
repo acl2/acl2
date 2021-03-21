@@ -1132,7 +1132,11 @@
   (append (bit-blast-rules-basic)
           '(blast-bvmult-into-bvplus-constant-version-arg1 ;
             blast-bvmult-into-bvplus-constant-version-arg2 ;
-            bvplus-becomes-ripple-carry-adder)))
+            bvplus-becomes-ripple-carry-adder
+            ripple-carry-adder-recursive
+            ripple-carry-adder-base
+            full-adder-sum
+            full-adder-carry)))
 
 ;fixme do i ever see logtail?
 (defun more-rules-yuck ()
@@ -1415,12 +1419,6 @@
 
     bvif-equal-0-usb1-2
     bvif-equal-0-usb1
-
-    ;; these are for bit-blasting?
-    ripple-carry-adder-recursive
-    ripple-carry-adder-base
-    full-adder-sum
-    full-adder-carry
 
     myif-of-bvif-becomes-bvif-arg2
     myif-of-bvif-becomes-bvif-arg1
