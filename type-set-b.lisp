@@ -7742,6 +7742,132 @@
       (push-lemma rune ttree)
     ttree))
 
+(defun strong-recognizer-expr-p (var x ens w)
+
+; At the top level var is nil and x is a call of IF (which is why we test for
+; such a call first, though it's a bit sad to have to do that duplicate test at
+; the top level at all).
+
+; We return (mv var tbr-true-ts tbr-false-ts tbr-runes), where var is nil on
+; failure and otherwise var is the term being recognized everywhere through the
+; IF structure of x -- unless var is :empty, signifying that we have only
+; encountered the "trivial recognizer calls" *t* and *nil*.
+
+; We don't use strengthen-recog-call here, in part because different
+; recognizers in x could then give rise to different variables that are to be
+; typed.
+
+  (cond
+   ((ffn-symb-p x 'if) ; see comment above
+    (mv-let (var test-true-ts test-false-ts test-runes)
+      (strong-recognizer-expr-p var (fargn x 1) ens w)
+      (cond
+       (var
+        (mv-let (var tbr-true-ts tbr-false-ts tbr-runes)
+          (strong-recognizer-expr-p (and (not (eq var :empty)) var)
+                                    (fargn x 2) ens w)
+          (cond
+           (var
+            (mv-let (var fbr-true-ts fbr-false-ts fbr-runes)
+              (strong-recognizer-expr-p (and (not (eq var :empty)) var)
+                                        (fargn x 3) ens w)
+              (cond
+               (var
+                (mv var
+                    (ts-union (ts-intersection test-true-ts
+                                               tbr-true-ts)
+                              (ts-intersection test-false-ts
+                                               fbr-true-ts))
+                    (ts-union (ts-intersection test-true-ts
+                                               tbr-false-ts)
+                              (ts-intersection test-false-ts
+                                               fbr-false-ts))
+                    (union-equal test-runes
+                                 (union-equal tbr-runes
+                                              fbr-runes))))
+               (t (mv nil nil nil nil)))))
+           (t (mv nil nil nil nil)))))
+       (t (mv nil nil nil nil)))))
+   ((variablep x)
+    (mv nil nil nil nil))
+   ((equal x *t*)
+    (mv (or var :empty) *ts-unknown* *ts-empty* nil))
+   ((equal x *nil*)
+    (mv (or var :empty) *ts-empty* *ts-unknown* nil))
+   ((fquotep x)
+    (mv nil nil nil nil))
+   ((flambda-applicationp x)
+    (mv nil nil nil nil))
+   ((eq (ffn-symb x) 'not)
+    (mv-let (var not-true-ts not-false-ts runes)
+      (strong-recognizer-expr-p var (fargn x 1) ens w)
+      (mv var not-false-ts not-true-ts
+          (if (and var (not (eq var :empty)))
+              (add-to-set-equal '(:definition not) runes)
+            runes))))
+   ((and (fargs x) (not (cdr (fargs x))) ; optimization (else r below is nil)
+         (or (eq var nil)
+             (eq var :empty)
+             (equal var (fargn x 1))))
+    (let ((r (most-recent-enabled-recog-tuple (ffn-symb x) w ens)))
+      (cond ((and r
+                  (access recognizer-tuple r :strongp))
+             (mv (fargn x 1)
+                 (access recognizer-tuple r :true-ts)
+                 (access recognizer-tuple r :false-ts)
+                 (list (access recognizer-tuple r :rune))))
+            (t (mv nil nil nil nil)))))
+   (t (mv nil nil nil nil))))
+
+(defun recognizer-expr-p (x ens w)
+
+; X is a function symbol call (not a lambda application).  We return (mv var
+; strongp true-ts false-ts rune[s]).  If var is nil then this call is
+; considered to be a failure.  Otherwise either x is a call of a recognizer on
+; var whose most-recent-enabled-recog-tuple has those strongp, true-ts, and
+; false-ts fields, in which case var is :one and rune[s] is a single rune; or
+; else x is a call of IF on a tree of strong compound-recognizer calls of var,
+; in which case rune[s] is is a list of runes justifying that conclusion.
+
+  (cond
+   ((eq (ffn-symb x) 'if)
+    (mv-let (var true-ts false-ts runes)
+      (strong-recognizer-expr-p nil x ens w)
+      (cond ((and var (not (eq var :empty)))
+             (assert$ (ts= false-ts (ts-complement true-ts))
+                      (mv var t true-ts false-ts runes)))
+            (t (mv nil nil nil nil nil)))))
+   ((and (fargs x) (not (cdr (fargs x)))) ; optimization
+    (let ((r (most-recent-enabled-recog-tuple (ffn-symb x) w ens)))
+      (cond (r (mv :one
+                   (access recognizer-tuple r :strongp)
+                   (access recognizer-tuple r :true-ts)
+                   (access recognizer-tuple r :false-ts)
+                   (access recognizer-tuple r :rune)))
+            (t (mv nil nil nil nil nil)))))
+   (t (mv nil nil nil nil nil))))
+
+(defun push-lemma[s] (flg rune[s] ttree)
+
+; Rune[s] is either a rune (flg=:one) or a duplicate-free list of runes.  In
+; the latter case, we essentially iterate push-lemma, but by calling
+; add-to-tag-tree just once.
+
+  (cond ((eq flg :one)
+         (push-lemma rune[s] ttree))
+        (t (let ((pair (assoc-eq 'lemma ttree))
+                 (runes (if (member-equal
+                             *fake-rune-for-anonymous-enabled-rule*
+                             rune[s])
+                            (remove1-equal
+                             *fake-rune-for-anonymous-enabled-rule*
+                             rune[s])
+                          rune[s])))
+             (cond (pair (acons 'lemma
+                                (union-equal runes (cdr pair))
+                                (remove-tag-from-tag-tree! 'lemma ttree)))
+                   (t (acons 'lemma runes ttree)))))))
+
 (mutual-recursion
 
 (defun type-set-rec (x force-flg dwp type-alist ancestors ens w ttree
@@ -9996,8 +10122,7 @@
 ;;;       ;; optional from Matt K.:
 ;;;       :hints (("Goal" :do-not '(preprocess)))))
 
-  (mv-let
-   (xnot-flg x)
+  (mv-let (xnot-flg x)
 
 ; Rockwell Addition:  This is a minor improvement.
 
@@ -10005,7 +10130,7 @@
 ; x NIL T) as (NOT x).  The former comes up when we expand (ATOM x)
 ; using its body.
 
-   (cond ((nvariablep x)
+    (cond ((nvariablep x)
 
 ; Warning:  Actually x might be a quoted constant here.  But we ask
 ; if the ffn-symb is either NOT or IF and if it is QUOTE we will
@@ -10013,34 +10138,34 @@
 ; violation of our term abstract data type.  Of course, we could use ffn-symb-p
 ; here, but then we could be testing nvariablep twice.
 
-          (cond ((eq (ffn-symb x) 'NOT)
-                 (mv t (fargn x 1)))
-                ((and (eq (ffn-symb x) 'IF)
-                      (equal (fargn x 2) *nil*)
-                      (equal (fargn x 3) *t*))
-                 (mv t (fargn x 1)))
-                (t (mv nil x))))
-         (t (mv nil x)))
+           (cond ((eq (ffn-symb x) 'NOT)
+                  (mv t (fargn x 1)))
+                 ((and (eq (ffn-symb x) 'IF)
+                       (equal (fargn x 2) *nil*)
+                       (equal (fargn x 3) *t*))
+                  (mv t (fargn x 1)))
+                 (t (mv nil x))))
+          (t (mv nil x)))
 
-   (cond
-    ((variablep x)
-     (assume-true-false1
-      xnot-flg x xttree force-flg dwp type-alist ancestors ens w
-      pot-lst pt backchain-limit))
-    ((fquotep x)
-     (if (equal x *nil*)
-         (mv-atf xnot-flg nil t nil type-alist nil xttree)
-         (mv-atf xnot-flg t nil type-alist nil nil xttree)))
-    ((flambda-applicationp x)
-     (assume-true-false1 xnot-flg x xttree
-                         force-flg dwp type-alist ancestors ens w
-                         pot-lst pt backchain-limit))
-    (t
-     (let ((recog-tuple
-            (most-recent-enabled-recog-tuple (ffn-symb x) w ens))
-           (ignore (adjust-ignore-for-atf xnot-flg ignore0)))
-       (cond
-        (recog-tuple
+    (cond
+     ((variablep x)
+      (assume-true-false1
+       xnot-flg x xttree force-flg dwp type-alist ancestors ens w
+       pot-lst pt backchain-limit))
+     ((fquotep x)
+      (if (equal x *nil*)
+          (mv-atf xnot-flg nil t nil type-alist nil xttree)
+        (mv-atf xnot-flg t nil type-alist nil nil xttree)))
+     ((flambda-applicationp x)
+      (assume-true-false1 xnot-flg x xttree
+                          force-flg dwp type-alist ancestors ens w
+                          pot-lst pt backchain-limit))
+     (t
+      (mv-let (var strongp true-ts false-ts rune[s])
+        (recognizer-expr-p x ens w)
+        (let ((ignore (adjust-ignore-for-atf xnot-flg ignore0)))
+          (cond
+           (var
 
 ; Before v2-8, we did not check whether x is already explicitly true or false
 ; in the given type-alist.  Here is an example of what can go wrong,
@@ -10085,49 +10210,41 @@
 ;;;                     (integerp n))
 ;;;                (even n)))
 
-         (let ((strongp (access recognizer-tuple recog-tuple :strongp)))
-           (mv-let
-             (ts ttree)
-             (cond (strongp
+            (mv-let
+              (ts ttree)
+              (cond (strongp
 
 ; We do not put expect to put calls of strong recognizers in the type-alist.
 ; See the discussion of strongp above the calls of
 ; extend-with-proper/improper-cons-ts-tuple below.
 
-                    (mv nil nil))
-                   (t (assoc-type-alist x type-alist w)))
-             (cond
-              ((and ts (ts= ts *ts-nil*))
-               (mv-atf xnot-flg nil t nil type-alist ttree xttree))
-              ((and ts (ts-disjointp ts *ts-nil*))
-               (mv-atf xnot-flg t nil type-alist nil ttree xttree))
-              (t
-               (mv-let (ts0 arg)
-                 (strengthen-recog-call x)
-                 (mv-let
-                   (ts ttree)
-                   (type-set-rec arg force-flg
-                                 dwp
-                                 type-alist ancestors ens w nil
-                                 pot-lst pt backchain-limit)
-                   (let ((t-int (ts-intersection ts
-                                                 (if ts0
-                                                     (ts-union
-                                                      ts0
-                                                      (access recognizer-tuple
-                                                              recog-tuple
-                                                              :true-ts))
-                                                   (access recognizer-tuple
-                                                           recog-tuple
-                                                           :true-ts))))
-                         (f-int (ts-intersection ts
-                                                 (access recognizer-tuple
-                                                         recog-tuple :false-ts)))
-                         (rune (access recognizer-tuple recog-tuple :rune)))
-                     (cond
-                      ((ts= t-int *ts-empty*)
-                       (cond
-                        ((ts= f-int *ts-empty*)
+                     (mv nil nil))
+                    (t (assoc-type-alist x type-alist w)))
+              (cond
+               ((and ts (ts= ts *ts-nil*))
+                (mv-atf xnot-flg nil t nil type-alist ttree xttree))
+               ((and ts (ts-disjointp ts *ts-nil*))
+                (mv-atf xnot-flg t nil type-alist nil ttree xttree))
+               (t
+                (mv-let (ts0 arg)
+                  (if (eq var :one)
+                      (strengthen-recog-call x)
+                    (mv nil var))
+                  (mv-let
+                    (ts ttree)
+                    (type-set-rec arg force-flg
+                                  dwp
+                                  type-alist ancestors ens w nil
+                                  pot-lst pt backchain-limit)
+                    (let ((t-int (ts-intersection ts
+                                                  (if ts0
+                                                      (ts-union ts0 true-ts)
+                                                    true-ts)))
+                          (f-int (ts-intersection ts false-ts)))
+                      (cond
+                       ((ts= t-int *ts-empty*)
+                        (cond
+                         ((ts= f-int *ts-empty*)
 
 ; We are in a contradictory context, which can happen "in the wild".  For
 ; example, if we put the following trace on type-set-rec and then run the first
@@ -10155,19 +10272,22 @@
 ; type-alist in case it's useful to the caller (see for example the handling of
 ; assume-true-false calls in rewrite-if).
 
-                         (mv-atf xnot-flg t t type-alist type-alist
-                                 (push-lemma rune
-                                             (if ts0 (puffert ttree) ttree))
-                                 xttree))
-                        (t (mv-atf xnot-flg nil t nil type-alist
-                                   (push-lemma rune
-                                               (if ts0 (puffert ttree) ttree))
-                                   xttree))))
-                      ((ts= f-int *ts-empty*)
-                       (mv-atf xnot-flg t nil type-alist nil
-                               (push-lemma rune ttree)
-                               xttree))
-                      (t
+                          (mv-atf xnot-flg t t type-alist type-alist
+                                  (push-lemma[s] var
+                                                 rune[s]
+                                                 (if ts0 (puffert ttree) ttree))
+                                  xttree))
+                         (t (mv-atf xnot-flg nil t nil type-alist
+                                    (push-lemma[s]
+                                     var
+                                     rune[s]
+                                     (if ts0 (puffert ttree) ttree))
+                                    xttree))))
+                       ((ts= f-int *ts-empty*)
+                        (mv-atf xnot-flg t nil type-alist nil
+                                (push-lemma[s] var rune[s] ttree)
+                                xttree))
+                       (t
 
 ; At this point we know that we can't determine whether (recog arg) is
 ; true or false.  We therefore will be returning two type-alists which
@@ -10180,12 +10300,13 @@
 ; shared-ttree below so we don't have to recreate this ttree twice (once
 ; for the tta and once for the fta).
 
-                       (let ((shared-ttree
-                              (push-lemma rune
-                                          (if ts0
-                                              (puffert
-                                               (cons-tag-trees ttree xttree))
-                                            (cons-tag-trees ttree xttree)))))
+                        (let ((shared-ttree
+                               (push-lemma[s]
+                                var
+                                rune[s]
+                                (if ts0
+                                    (puffert (cons-tag-trees ttree xttree))
+                                  (cons-tag-trees ttree xttree)))))
 
 ; The two calls of extend-with-proper/improper-cons-ts-tuple below can be
 ; thought of as simply extending a type-alist with (list* arg int
@@ -10203,31 +10324,32 @@
 ; and the rune, since we are exploiting the fact that recog is Boolean.  The
 ; assumption that (recog arg) is false only depends on xttree.
 
-                         (mv-atf xnot-flg nil nil
-                                 (and (not (eq ignore :tta))
-                                      (extend-with-proper/improper-cons-ts-tuple
-                                       arg t-int shared-ttree force-flg
-                                       dwp type-alist ancestors ens
-                                       (if strongp
-                                           type-alist
-                                         (extend-type-alist-simple
-                                          x *ts-t* (push-lemma rune xttree)
-                                          type-alist))
-                                       w
-                                       pot-lst pt backchain-limit))
-                                 (and (not (eq ignore :fta))
-                                      (extend-with-proper/improper-cons-ts-tuple
-                                       arg f-int shared-ttree force-flg
-                                       dwp type-alist ancestors ens
-                                       (if strongp
-                                           type-alist
-                                         (extend-type-alist-simple
-                                          x *ts-nil* xttree type-alist))
-                                       w
-                                       pot-lst pt backchain-limit))
-                                 nil nil))))))))))))
-        ((member-eq (ffn-symb x)
-                    *expandable-boot-strap-non-rec-fns*)
+                          (mv-atf xnot-flg nil nil
+                                  (and (not (eq ignore :tta))
+                                       (extend-with-proper/improper-cons-ts-tuple
+                                        arg t-int shared-ttree force-flg
+                                        dwp type-alist ancestors ens
+                                        (if strongp
+                                            type-alist
+                                          (extend-type-alist-simple
+                                           x *ts-t*
+                                           (push-lemma[s] var rune[s] xttree)
+                                           type-alist))
+                                        w
+                                        pot-lst pt backchain-limit))
+                                  (and (not (eq ignore :fta))
+                                       (extend-with-proper/improper-cons-ts-tuple
+                                        arg f-int shared-ttree force-flg
+                                        dwp type-alist ancestors ens
+                                        (if strongp
+                                            type-alist
+                                          (extend-type-alist-simple
+                                           x *ts-nil* xttree type-alist))
+                                        w
+                                        pot-lst pt backchain-limit))
+                                  nil nil)))))))))))
+           ((member-eq (ffn-symb x)
+                       *expandable-boot-strap-non-rec-fns*)
 
 ; Why do we expand these functions?  The original motivating example involved
 ; guards and stemmed from the pre-1.8 days.  However, here is a distillation of
@@ -10254,23 +10376,23 @@
 ; If the (= n 0) is not expanded into an equal, the answer reported is Boolean.
 ; We do not learn from the falsity of (= n 0) that n is non-0.
 
-         (mv-let
-          (mbt mbf tta fta ttree)
-          (assume-true-false-rec
-           (subcor-var (formals (ffn-symb x) w)
-                       (fargs x)
-                       (bbody (ffn-symb x)))
-           xttree force-flg dwp type-alist ancestors ens w
-           pot-lst pt ignore backchain-limit)
-          (if xnot-flg
-              (mv mbf mbt fta tta ttree)
-              (mv mbt mbf tta fta ttree))))
-        ((eq (ffn-symb x) 'equal)
-         (let ((arg1 (fargn x 1))
-               (arg2 (fargn x 2)))
-           (cond
-            ((equal arg1 arg2)
-             (mv-atf xnot-flg t nil type-alist nil nil
+            (mv-let
+              (mbt mbf tta fta ttree)
+              (assume-true-false-rec
+               (subcor-var (formals (ffn-symb x) w)
+                           (fargs x)
+                           (bbody (ffn-symb x)))
+               xttree force-flg dwp type-alist ancestors ens w
+               pot-lst pt ignore backchain-limit)
+              (if xnot-flg
+                  (mv mbf mbt fta tta ttree)
+                (mv mbt mbf tta fta ttree))))
+           ((eq (ffn-symb x) 'equal)
+            (let ((arg1 (fargn x 1))
+                  (arg2 (fargn x 2)))
+              (cond
+               ((equal arg1 arg2)
+                (mv-atf xnot-flg t nil type-alist nil nil
 
 ; We could just as well use (push-lemma '(:executable-counterpart equal)
 ; xttree) here instead.  But in order to maintain analogy with the general case
@@ -10281,14 +10403,14 @@
 ; intended for primitives and is thus here somewhat misused unless perhaps
 ; equiv is 'equal.
 
-                     (puffert xttree)))
-            ((and (quotep arg1) (quotep arg2))
-             (mv-atf xnot-flg nil t nil type-alist nil
-                     (push-lemma '(:executable-counterpart equal) xttree)))
-            (t
-             (mv-let
-              (occursp1 canonicalp1 arg1-canon ttree1)
-              (canonical-representative 'equal arg1 type-alist)
+                        (puffert xttree)))
+               ((and (quotep arg1) (quotep arg2))
+                (mv-atf xnot-flg nil t nil type-alist nil
+                        (push-lemma '(:executable-counterpart equal) xttree)))
+               (t
+                (mv-let
+                  (occursp1 canonicalp1 arg1-canon ttree1)
+                  (canonical-representative 'equal arg1 type-alist)
 
 ; Recall from the comment in the definition of canonical-representative that if
 ; occursp equals nil, then term-canon equals term.  It follows that in the
@@ -10298,50 +10420,50 @@
 ; we think, just a bit of efficiency.  They could of course be omitted.  We
 ; take a similar step a bit further below, with occursp2.
 
-              (cond
-               ((and occursp1 (equal arg1-canon arg2))
-                (mv-atf xnot-flg t nil type-alist nil
-                        nil
+                  (cond
+                   ((and occursp1 (equal arg1-canon arg2))
+                    (mv-atf xnot-flg t nil type-alist nil
+                            nil
 
 ; Since we know that mv-atf will make the call of cons-tag-trees, we go ahead
 ; and do it now so that puffert can be called on the outside, thus perhaps
 ; eliminating an unnecessary cons.  We pull such a stunt a number of other
 ; times in calls of mv-atf.
 
-                        (puffert (cons-tag-trees ttree1 xttree))))
-               ((and occursp1 (quotep arg1-canon) (quotep arg2))
-                (mv-atf xnot-flg nil t nil type-alist
-                        nil
-                        (push-lemma
-                         '(:executable-counterpart equal)
-                         (puffert (cons-tag-trees ttree1 xttree)))))
-               (t
-                (mv-let
-                 (occursp2 canonicalp2 arg2-canon ttree2)
-                 (canonical-representative 'equal arg2 type-alist)
-                 (cond
-                  ((and occursp2 (equal arg1-canon arg2-canon))
-                   (mv-atf xnot-flg t nil type-alist nil
-                           nil
-                           (puffert
-                            (cons-tag-trees
-                             xttree
-                             (cons-tag-trees ttree1 ttree2)))))
-                  ((and occursp2 (quotep arg1-canon) (quotep arg2-canon))
-                   (mv-atf xnot-flg nil t nil type-alist
-                           nil
-                           (push-lemma
-                            '(:executable-counterpart equal)
-                            (puffert (cons-tag-trees
-                                      xttree
-                                      (cons-tag-trees ttree1 ttree2))))))
-                  (t
-                   (let ((temp-temp
-                          (assoc-equiv 'equal arg1-canon arg2-canon
-                                       type-alist)))
-                     (cond
-                      (temp-temp
-                       (cond ((ts= (cadr temp-temp) *ts-t*)
+                            (puffert (cons-tag-trees ttree1 xttree))))
+                   ((and occursp1 (quotep arg1-canon) (quotep arg2))
+                    (mv-atf xnot-flg nil t nil type-alist
+                            nil
+                            (push-lemma
+                             '(:executable-counterpart equal)
+                             (puffert (cons-tag-trees ttree1 xttree)))))
+                   (t
+                    (mv-let
+                      (occursp2 canonicalp2 arg2-canon ttree2)
+                      (canonical-representative 'equal arg2 type-alist)
+                      (cond
+                       ((and occursp2 (equal arg1-canon arg2-canon))
+                        (mv-atf xnot-flg t nil type-alist nil
+                                nil
+                                (puffert
+                                 (cons-tag-trees
+                                  xttree
+                                  (cons-tag-trees ttree1 ttree2)))))
+                       ((and occursp2 (quotep arg1-canon) (quotep arg2-canon))
+                        (mv-atf xnot-flg nil t nil type-alist
+                                nil
+                                (push-lemma
+                                 '(:executable-counterpart equal)
+                                 (puffert (cons-tag-trees
+                                           xttree
+                                           (cons-tag-trees ttree1 ttree2))))))
+                       (t
+                        (let ((temp-temp
+                               (assoc-equiv 'equal arg1-canon arg2-canon
+                                            type-alist)))
+                          (cond
+                           (temp-temp
+                            (cond ((ts= (cadr temp-temp) *ts-t*)
 
 ; Arg1-canon and arg2-canon are both supposed to be canonical, so this case
 ; can't happen!  It would be sound to return:
@@ -10357,8 +10479,8 @@
 
 ; here, but let's see if we really understand what is going on!
 
-                              (mv-atf (er hard 'assume-true-false
-                                          "Please send the authors of ACL2 a ~
+                                   (mv-atf (er hard 'assume-true-false
+                                               "Please send the authors of ACL2 a ~
                                            replayable transcript of this ~
                                            problem if possible, so that they ~
                                            can see what went wrong in the ~
@@ -10366,137 +10488,137 @@
                                            offending call was ~x0.  The ~
                                            surprising type-set arose from a ~
                                            call of ~x1."
-                                          (list 'assume-true-false
-                                                (kwote x) '<xttree>
-                                                force-flg (kwote type-alist)
-                                                '<ens> '<w>)
-                                          (list 'assoc-equiv
-                                                ''equal
-                                                (kwote arg1-canon)
-                                                (kwote arg2-canon)
-                                                '<same_type-alist>))
-                                      nil nil nil nil nil nil))
-                             ((ts= (cadr temp-temp) *ts-nil*)
-                              (mv-atf xnot-flg nil t nil type-alist
-                                      nil
-                                      (if (and canonicalp1 canonicalp2)
+                                               (list 'assume-true-false
+                                                     (kwote x) '<xttree>
+                                                     force-flg (kwote type-alist)
+                                                     '<ens> '<w>)
+                                               (list 'assoc-equiv
+                                                     ''equal
+                                                     (kwote arg1-canon)
+                                                     (kwote arg2-canon)
+                                                     '<same_type-alist>))
+                                           nil nil nil nil nil nil))
+                                  ((ts= (cadr temp-temp) *ts-nil*)
+                                   (mv-atf xnot-flg nil t nil type-alist
+                                           nil
+                                           (if (and canonicalp1 canonicalp2)
 
 ; ... then ttree1 and ttree2 are nil (see comment in canonical-representative),
 ; and also there's no reason to puffert
 
-                                          (cons-tag-trees (cddr temp-temp)
-                                                          xttree)
-                                          (puffert
-                                           (cons-tag-trees
-                                            (cddr temp-temp)
-                                            (cons-tag-trees
-                                             ttree1
-                                             (cons-tag-trees ttree2 xttree)))))))
-                             (t
-                              (let ((erp (assume-true-false-error
-                                          type-alist x (cadr temp-temp))))
-                                (mv erp nil nil nil nil)))))
-                      (t
-                       (mv-let
-                        (ts1 ttree)
-                        (type-set-rec arg1 force-flg
-                                      dwp
-                                      type-alist ancestors ens w
-                                      nil
-                                      pot-lst pt backchain-limit)
-                        (mv-let
-                         (ts2 ttree)
-                         (type-set-rec arg2 force-flg
-                                       dwp
-                                       type-alist ancestors ens w
-                                       ttree
-                                       pot-lst pt backchain-limit)
+                                               (cons-tag-trees (cddr temp-temp)
+                                                               xttree)
+                                             (puffert
+                                              (cons-tag-trees
+                                               (cddr temp-temp)
+                                               (cons-tag-trees
+                                                ttree1
+                                                (cons-tag-trees ttree2 xttree)))))))
+                                  (t
+                                   (let ((erp (assume-true-false-error
+                                               type-alist x (cadr temp-temp))))
+                                     (mv erp nil nil nil nil)))))
+                           (t
+                            (mv-let
+                              (ts1 ttree)
+                              (type-set-rec arg1 force-flg
+                                            dwp
+                                            type-alist ancestors ens w
+                                            nil
+                                            pot-lst pt backchain-limit)
+                              (mv-let
+                                (ts2 ttree)
+                                (type-set-rec arg2 force-flg
+                                              dwp
+                                              type-alist ancestors ens w
+                                              ttree
+                                              pot-lst pt backchain-limit)
 
 ; Observe that ttree records the dependencies of both args.
 
-                         (let ((int (ts-intersection ts1 ts2)))
-                           (cond
-                            ((ts= int *ts-empty*)
-                             (mv-atf xnot-flg nil t nil type-alist
-                                     nil
-                                     (puffert
-                                      (cons-tag-trees ttree xttree))))
-                            ((and (ts= ts1 ts2)
-                                  (member ts1 *singleton-type-sets*))
-                             (mv-atf xnot-flg t nil type-alist nil
-                                     nil
-                                     (puffert
-                                      (cons-tag-trees ttree xttree))))
-                            (t
-                             (let* ((swap-flg
-                                     (term-order arg1-canon arg2-canon))
-                                    (shared-ttree-tta-p
+                                (let ((int (ts-intersection ts1 ts2)))
+                                  (cond
+                                   ((ts= int *ts-empty*)
+                                    (mv-atf xnot-flg nil t nil type-alist
+                                            nil
+                                            (puffert
+                                             (cons-tag-trees ttree xttree))))
+                                   ((and (ts= ts1 ts2)
+                                         (member ts1 *singleton-type-sets*))
+                                    (mv-atf xnot-flg t nil type-alist nil
+                                            nil
+                                            (puffert
+                                             (cons-tag-trees ttree xttree))))
+                                   (t
+                                    (let* ((swap-flg
+                                            (term-order arg1-canon arg2-canon))
+                                           (shared-ttree-tta-p
 
 ; This is the condition that must hold for shared-ttree to be used for a
 ; true-type-alist.
 
-                                     (and (not (eq ignore :tta))
-                                          (or (not (ts= ts1 int))
-                                              (not (ts= ts2 int)))))
-                                    (shared-ttree
+                                            (and (not (eq ignore :tta))
+                                                 (or (not (ts= ts1 int))
+                                                     (not (ts= ts2 int)))))
+                                           (shared-ttree
 
 ; We could just use (cons-tag-trees ttree xttree) here, but let's save a cons
 ; if we don't need that tag-tree.
 
-                                     (cond
-                                      (shared-ttree-tta-p
-                                       (cons-tag-trees ttree xttree))
-                                      (t nil)))
-                                    (xttree+
-                                     (if (and canonicalp1 canonicalp2)
+                                            (cond
+                                             (shared-ttree-tta-p
+                                              (cons-tag-trees ttree xttree))
+                                             (t nil)))
+                                           (xttree+
+                                            (if (and canonicalp1 canonicalp2)
 
 ; ... then ttree1 and ttree2 are nil (see comment in canonical-representative),
 ; and also there's no reason to puffert
 
-                                         xttree
-                                       (puffert
-                                        (cons-tag-trees
-                                         ttree1
-                                         (cons-tag-trees ttree2 xttree)))))
-                                    (true-type-alist1
-                                     (and (not (eq ignore :tta))
-                                          (extend-type-alist1
-                                           'equal occursp1 occursp2
-                                           (and canonicalp1 canonicalp2)
-                                           arg1-canon arg2-canon swap-flg x
-                                           *ts-t* xttree+ type-alist)))
-                                    (true-type-alist2
-                                     (and (not (eq ignore :tta))
-                                          (cond
-                                           ((ts= ts1 int)
-                                            true-type-alist1)
-                                           (t (extend-with-proper/improper-cons-ts-tuple
-                                               arg1 int shared-ttree
-                                               force-flg dwp type-alist
-                                               ancestors ens
-                                               true-type-alist1 w
-                                               pot-lst pt backchain-limit)))))
-                                    (true-type-alist3
-                                     (and (not (eq ignore :tta))
-                                          (cond
-                                           ((ts= ts2 int)
-                                            true-type-alist2)
-                                           (t (extend-with-proper/improper-cons-ts-tuple
-                                               arg2 int shared-ttree
-                                               force-flg dwp type-alist
-                                               ancestors ens
-                                               true-type-alist2 w
-                                               pot-lst pt backchain-limit)))))
-                                    (false-type-alist1
-                                     (and (not (eq ignore :fta))
-                                          (extend-type-alist1
-                                           'equal occursp1 occursp2
-                                           (and canonicalp1 canonicalp2)
-                                           arg1-canon arg2-canon swap-flg x
-                                           *ts-nil* xttree+ type-alist)))
-                                    (false-type-alist2
-                                     (and (not (eq ignore :fta))
-                                          (cond
+                                                xttree
+                                              (puffert
+                                               (cons-tag-trees
+                                                ttree1
+                                                (cons-tag-trees ttree2 xttree)))))
+                                           (true-type-alist1
+                                            (and (not (eq ignore :tta))
+                                                 (extend-type-alist1
+                                                  'equal occursp1 occursp2
+                                                  (and canonicalp1 canonicalp2)
+                                                  arg1-canon arg2-canon swap-flg x
+                                                  *ts-t* xttree+ type-alist)))
+                                           (true-type-alist2
+                                            (and (not (eq ignore :tta))
+                                                 (cond
+                                                  ((ts= ts1 int)
+                                                   true-type-alist1)
+                                                  (t (extend-with-proper/improper-cons-ts-tuple
+                                                      arg1 int shared-ttree
+                                                      force-flg dwp type-alist
+                                                      ancestors ens
+                                                      true-type-alist1 w
+                                                      pot-lst pt backchain-limit)))))
+                                           (true-type-alist3
+                                            (and (not (eq ignore :tta))
+                                                 (cond
+                                                  ((ts= ts2 int)
+                                                   true-type-alist2)
+                                                  (t (extend-with-proper/improper-cons-ts-tuple
+                                                      arg2 int shared-ttree
+                                                      force-flg dwp type-alist
+                                                      ancestors ens
+                                                      true-type-alist2 w
+                                                      pot-lst pt backchain-limit)))))
+                                           (false-type-alist1
+                                            (and (not (eq ignore :fta))
+                                                 (extend-type-alist1
+                                                  'equal occursp1 occursp2
+                                                  (and canonicalp1 canonicalp2)
+                                                  arg1-canon arg2-canon swap-flg x
+                                                  *ts-nil* xttree+ type-alist)))
+                                           (false-type-alist2
+                                            (and (not (eq ignore :fta))
+                                                 (cond
 
 ; Essay on Strong Handling of *ts-one*
 
@@ -10542,23 +10664,23 @@
 
 ; Keep this code in sync with *singleton-type-sets*.
 
-                                           ((or (ts= ts2 *ts-t*)
-                                                (ts= ts2 *ts-nil*)
-                                                (ts= ts2 *ts-zero*)
-                                                (and (ts= ts2 *ts-one*)
-                                                     (or (variablep arg1)
-                                                         (assoc-equal arg1
-                                                                      type-alist))))
-                                            (extend-with-proper/improper-cons-ts-tuple
-                                             arg1
-                                             (ts-intersection
-                                              ts1
-                                              (ts-complement ts2))
-                                             (if shared-ttree-tta-p
+                                                  ((or (ts= ts2 *ts-t*)
+                                                       (ts= ts2 *ts-nil*)
+                                                       (ts= ts2 *ts-zero*)
+                                                       (and (ts= ts2 *ts-one*)
+                                                            (or (variablep arg1)
+                                                                (assoc-equal arg1
+                                                                             type-alist))))
+                                                   (extend-with-proper/improper-cons-ts-tuple
+                                                    arg1
+                                                    (ts-intersection
+                                                     ts1
+                                                     (ts-complement ts2))
+                                                    (if shared-ttree-tta-p
 
 ; We use the same shared-ttree that we used in the true-type-alist cases above.
 
-                                                 shared-ttree
+                                                        shared-ttree
 
 ; Note that since here we know that ts1 and ts2 overlap but are not equal, they
 ; cannot both be singleton type-sets.  We take advantage of this observation
@@ -10567,64 +10689,64 @@
 ; false-type-alist3), which however are actually non-overlapping cases because
 ; this case implies that ts2 is a singleton and the next implies that ts1 is a
 ; singleton.
-                                               (cons-tag-trees ttree xttree))
-                                             force-flg dwp type-alist ancestors
-                                             ens false-type-alist1 w
-                                             pot-lst pt backchain-limit))
-                                           (t false-type-alist1))))
-                                    (false-type-alist3
-                                     (and (not (eq ignore :fta))
-                                          (cond
-                                           ((or (ts= ts1 *ts-t*)
-                                                (ts= ts1 *ts-nil*)
-                                                (ts= ts1 *ts-zero*)
+                                                      (cons-tag-trees ttree xttree))
+                                                    force-flg dwp type-alist ancestors
+                                                    ens false-type-alist1 w
+                                                    pot-lst pt backchain-limit))
+                                                  (t false-type-alist1))))
+                                           (false-type-alist3
+                                            (and (not (eq ignore :fta))
+                                                 (cond
+                                                  ((or (ts= ts1 *ts-t*)
+                                                       (ts= ts1 *ts-nil*)
+                                                       (ts= ts1 *ts-zero*)
 
 ; See the Essay on Strong Handling of *ts-one*, above.
 
-                                                (and (ts= ts1 *ts-one*)
-                                                     (or (variablep arg2)
-                                                         (assoc-equal arg2
-                                                                      type-alist))))
-                                            (extend-with-proper/improper-cons-ts-tuple
-                                             arg2
-                                             (ts-intersection
-                                              ts2
-                                              (ts-complement ts1))
-                                             (if shared-ttree-tta-p
-                                                 shared-ttree
-                                               (cons-tag-trees ttree xttree))
-                                             force-flg dwp type-alist ancestors
-                                             ens false-type-alist2 w
-                                             pot-lst pt backchain-limit))
-                                           (t false-type-alist2)))))
-                               (mv-atf xnot-flg nil nil
-                                       true-type-alist3 false-type-alist3
-                                       nil nil))))))))))))))))))))
-        ((eq (ffn-symb x) '<)
-         (mv-let
-          (ts0 ttree)
-          (type-set-rec x force-flg
-                        dwp
-                        type-alist ancestors ens w nil
-                        pot-lst pt backchain-limit)
-          (cond
-           ((ts= ts0 *ts-nil*)
-            (mv-atf xnot-flg nil t nil type-alist ttree xttree))
-           ((ts-disjointp ts0 *ts-nil*)
-            (mv-atf xnot-flg t nil type-alist nil ttree xttree))
-           (t
+                                                       (and (ts= ts1 *ts-one*)
+                                                            (or (variablep arg2)
+                                                                (assoc-equal arg2
+                                                                             type-alist))))
+                                                   (extend-with-proper/improper-cons-ts-tuple
+                                                    arg2
+                                                    (ts-intersection
+                                                     ts2
+                                                     (ts-complement ts1))
+                                                    (if shared-ttree-tta-p
+                                                        shared-ttree
+                                                      (cons-tag-trees ttree xttree))
+                                                    force-flg dwp type-alist ancestors
+                                                    ens false-type-alist2 w
+                                                    pot-lst pt backchain-limit))
+                                                  (t false-type-alist2)))))
+                                      (mv-atf xnot-flg nil nil
+                                              true-type-alist3 false-type-alist3
+                                              nil nil))))))))))))))))))))
+           ((eq (ffn-symb x) '<)
             (mv-let
-             (ts1 ttree)
-             (type-set-rec (fargn x 1) force-flg
-                           dwp
-                           type-alist ancestors ens w nil
-                           pot-lst pt backchain-limit)
-             (mv-let
-              (ts2 ttree)
-              (type-set-rec (fargn x 2) force-flg
+              (ts0 ttree)
+              (type-set-rec x force-flg
                             dwp
-                            type-alist ancestors ens w ttree
+                            type-alist ancestors ens w nil
                             pot-lst pt backchain-limit)
+              (cond
+               ((ts= ts0 *ts-nil*)
+                (mv-atf xnot-flg nil t nil type-alist ttree xttree))
+               ((ts-disjointp ts0 *ts-nil*)
+                (mv-atf xnot-flg t nil type-alist nil ttree xttree))
+               (t
+                (mv-let
+                  (ts1 ttree)
+                  (type-set-rec (fargn x 1) force-flg
+                                dwp
+                                type-alist ancestors ens w nil
+                                pot-lst pt backchain-limit)
+                  (mv-let
+                    (ts2 ttree)
+                    (type-set-rec (fargn x 2) force-flg
+                                  dwp
+                                  type-alist ancestors ens w ttree
+                                  pot-lst pt backchain-limit)
 
 ; In the mv-let below we effectively implement the facts that, when x
 ; is of type *ts-integer* (< x 1) is ~(< 0 x), and (< -1 x) is ~(< x
@@ -10637,27 +10759,27 @@
 ; accidentally use not-flg with x or xnot-flg with (< arg1 arg2)!  In
 ; the old code, we had only one name for these two flgs.
 
-              (mv-let
-               (not-flg arg1 arg2 ts1 ts2)
-               (cond ((and (equal (fargn x 2) *1*)
-                           (ts-subsetp ts1
-                                       (ts-union (ts-complement
-                                                  *ts-acl2-number*)
-                                                 *ts-integer*)))
-                      (mv (not xnot-flg) *0* (fargn x 1) *ts-zero* ts1))
-                     ((and (equal (fargn x 2) *2*)
-                           (ts-subsetp ts1
-                                       (ts-union (ts-complement
-                                                  *ts-acl2-number*)
-                                                 *ts-integer*)))
-                      (mv (not xnot-flg) *1* (fargn x 1) *ts-one* ts1))
-                     ((and (equal (fargn x 1) *-1*)
-                           (ts-subsetp ts2
-                                       (ts-union (ts-complement
-                                                  *ts-acl2-number*)
-                                                 *ts-integer*)))
-                      (mv (not xnot-flg) (fargn x 2) *0* ts2 *ts-zero*))
-                     (t (mv xnot-flg (fargn x 1) (fargn x 2) ts1 ts2)))
+                    (mv-let
+                      (not-flg arg1 arg2 ts1 ts2)
+                      (cond ((and (equal (fargn x 2) *1*)
+                                  (ts-subsetp ts1
+                                              (ts-union (ts-complement
+                                                         *ts-acl2-number*)
+                                                        *ts-integer*)))
+                             (mv (not xnot-flg) *0* (fargn x 1) *ts-zero* ts1))
+                            ((and (equal (fargn x 2) *2*)
+                                  (ts-subsetp ts1
+                                              (ts-union (ts-complement
+                                                         *ts-acl2-number*)
+                                                        *ts-integer*)))
+                             (mv (not xnot-flg) *1* (fargn x 1) *ts-one* ts1))
+                            ((and (equal (fargn x 1) *-1*)
+                                  (ts-subsetp ts2
+                                              (ts-union (ts-complement
+                                                         *ts-acl2-number*)
+                                                        *ts-integer*)))
+                             (mv (not xnot-flg) (fargn x 2) *0* ts2 *ts-zero*))
+                            (t (mv xnot-flg (fargn x 1) (fargn x 2) ts1 ts2)))
 
 ; Foreshadow 1:  Note that if neither of the newly bound arg1 nor arg2
 ; is *0* then not-flg is xnot-flg and arg1 and arg2 are the corresponding
@@ -10680,18 +10802,18 @@
 ; to (< 0 x).  We prefer instead to take the position that some arithmetic
 ; simplifier will reduce the +-expressions.
 
-               (mv-let
-                (not-flg arg1 arg2 ts1 ts2 ttree)
-                (cond ((and (equal arg1 *0*)
-                            (ts-subsetp ts2
+                      (mv-let
+                        (not-flg arg1 arg2 ts1 ts2 ttree)
+                        (cond ((and (equal arg1 *0*)
+                                    (ts-subsetp ts2
 
 ; It is sound to use (ts-intersection ts2 *ts-acl2-number*) in place of ts2
 ; above, but since below we see that arg2 is a call of binary-+, we know that
 ; ts2 is already contained in *ts-acl2-number*.
 
-                                        *ts-integer*)
-                            (ffn-symb-p arg2 'binary-+)
-                            (equal (fargn arg2 1) *1*))
+                                                *ts-integer*)
+                                    (ffn-symb-p arg2 'binary-+)
+                                    (equal (fargn arg2 1) *1*))
 
 ; So the term is of the form (< 0 (+ 1 x)) and we know x is some integer (or a
 ; non-number).  We transform it to ~(< x 0).  But we must determine the
@@ -10702,27 +10824,27 @@
 ; negative.  But rather than invert, we just call type-set on x, accreting onto
 ; the existing ttree.
 
-                       (mv-let (tsx ttree)
-                               (type-set-rec (fargn arg2 2) force-flg
-                                             dwp
-                                             type-alist
-                                             ancestors ens w ttree
-                                             pot-lst pt backchain-limit)
-                               (mv (not not-flg) (fargn arg2 2) *0*
-                                   tsx *ts-zero* ttree)))
-                      ((and (equal arg2 *0*)
-                            (ts-subsetp ts1 *ts-integer*)
-                            (ffn-symb-p arg1 'binary-+)
-                            (equal (fargn arg1 1) *-1*))
-                       (mv-let (tsx ttree)
-                               (type-set-rec (fargn arg1 2) force-flg
-                                             dwp
-                                             type-alist
-                                             ancestors ens w ttree
-                                             pot-lst pt backchain-limit)
-                               (mv (not not-flg) *0* (fargn arg1 2) *ts-zero*
-                                   tsx ttree)))
-                      (t (mv not-flg arg1 arg2 ts1 ts2 ttree)))
+                               (mv-let (tsx ttree)
+                                 (type-set-rec (fargn arg2 2) force-flg
+                                               dwp
+                                               type-alist
+                                               ancestors ens w ttree
+                                               pot-lst pt backchain-limit)
+                                 (mv (not not-flg) (fargn arg2 2) *0*
+                                     tsx *ts-zero* ttree)))
+                              ((and (equal arg2 *0*)
+                                    (ts-subsetp ts1 *ts-integer*)
+                                    (ffn-symb-p arg1 'binary-+)
+                                    (equal (fargn arg1 1) *-1*))
+                               (mv-let (tsx ttree)
+                                 (type-set-rec (fargn arg1 2) force-flg
+                                               dwp
+                                               type-alist
+                                               ancestors ens w ttree
+                                               pot-lst pt backchain-limit)
+                                 (mv (not not-flg) *0* (fargn arg1 2) *ts-zero*
+                                     tsx ttree)))
+                              (t (mv not-flg arg1 arg2 ts1 ts2 ttree)))
 
 ; Foreshadow 2:  Observe that if, at this point, neither the newly bound arg1
 ; nor the newly bound arg2 is *0*, then the newly bound not-flg, arg1 and arg2
@@ -10757,53 +10879,53 @@
 ; (< 0 (+ 1 x)) as true later?  Yes.  If x is non-negative, then type-set
 ; determines that (+ 1 x) is positive and hence (< 0 (+ 1 x)) is true.
 
-                (cond
-                 ((equal arg1 *0*)
-                  (cond
-                   ((ts-subsetp ts2
-                                #+:non-standard-analysis *ts-positive-real*
-                                #-:non-standard-analysis *ts-positive-rational*)
-                    (mv-atf not-flg t nil type-alist nil
-                            ttree
-                            xttree))
-                   ((ts-subsetp ts2
-                                (ts-union (ts-complement *ts-acl2-number*)
-                                          #+:non-standard-analysis
-                                          *ts-non-positive-real*
-                                          #-:non-standard-analysis
-                                          *ts-non-positive-rational*))
-                    (mv-atf not-flg nil t nil type-alist
-                            ttree
-                            xttree))
-                   (t
-                    (let* ((shared-ttree (cons-tag-trees ttree xttree))
-                           (ignore (adjust-ignore-for-atf not-flg ignore0))
-                           (true-type-alist
-                            (and (not (eq ignore :tta))
-                                 (extend-type-alist
-                                  ;;*** -simple
-                                  arg2
-                                  (ts-intersection
-                                   ts2
-                                   #+:non-standard-analysis
-                                   (ts-union *ts-positive-real*
-                                             *ts-complex*)
-                                   #-:non-standard-analysis
-                                   (ts-union *ts-positive-rational*
-                                             *ts-complex-rational*))
-                                  shared-ttree type-alist w)))
-                           (false-type-alist
-                            (and (not (eq ignore :fta))
-                                 (extend-type-alist
-                                  ;;*** -simple
-                                  arg2
-                                  (ts-intersection
-                                   ts2 (ts-complement
-                                        #+:non-standard-analysis
-                                        *ts-positive-real*
-                                        #-:non-standard-analysis
-                                        *ts-positive-rational*))
-                                  shared-ttree type-alist w))))
+                        (cond
+                         ((equal arg1 *0*)
+                          (cond
+                           ((ts-subsetp ts2
+                                        #+:non-standard-analysis *ts-positive-real*
+                                        #-:non-standard-analysis *ts-positive-rational*)
+                            (mv-atf not-flg t nil type-alist nil
+                                    ttree
+                                    xttree))
+                           ((ts-subsetp ts2
+                                        (ts-union (ts-complement *ts-acl2-number*)
+                                                  #+:non-standard-analysis
+                                                  *ts-non-positive-real*
+                                                  #-:non-standard-analysis
+                                                  *ts-non-positive-rational*))
+                            (mv-atf not-flg nil t nil type-alist
+                                    ttree
+                                    xttree))
+                           (t
+                            (let* ((shared-ttree (cons-tag-trees ttree xttree))
+                                   (ignore (adjust-ignore-for-atf not-flg ignore0))
+                                   (true-type-alist
+                                    (and (not (eq ignore :tta))
+                                         (extend-type-alist
+                                          ;;*** -simple
+                                          arg2
+                                          (ts-intersection
+                                           ts2
+                                           #+:non-standard-analysis
+                                           (ts-union *ts-positive-real*
+                                                     *ts-complex*)
+                                           #-:non-standard-analysis
+                                           (ts-union *ts-positive-rational*
+                                                     *ts-complex-rational*))
+                                          shared-ttree type-alist w)))
+                                   (false-type-alist
+                                    (and (not (eq ignore :fta))
+                                         (extend-type-alist
+                                          ;;*** -simple
+                                          arg2
+                                          (ts-intersection
+                                           ts2 (ts-complement
+                                                #+:non-standard-analysis
+                                                *ts-positive-real*
+                                                #-:non-standard-analysis
+                                                *ts-positive-rational*))
+                                          shared-ttree type-alist w))))
 
 ; We formerly put the inequality explicitly on the type-alist only in
 ; the case that (ts-intersectp ts2 *ts-complex-rational*).  We leave
@@ -10909,112 +11031,112 @@
 ; End old comment regarding the case that (ts-intersectp ts2
 ; *ts-complex-rational*).
 
-                      (mv-atf-2 not-flg true-type-alist false-type-alist
-                                (mcons-term* '< *0* arg2)
-                                xnot-flg x shared-ttree xttree ignore)))))
-                 ((equal arg1 *1*)
-                  (cond
-                   ((ts-subsetp ts2 *ts-integer>1*)
-                    (mv-atf not-flg t nil type-alist nil
-                            ttree
-                            xttree))
-                   ((ts-subsetp ts2
-                                (ts-union (ts-complement *ts-acl2-number*)
-                                          *ts-one*
-                                          *ts-non-positive-rational*))
-                    (mv-atf not-flg nil t nil type-alist
-                            ttree
-                            xttree))
-                   (t
-                    (let* ((shared-ttree (cons-tag-trees ttree xttree))
-                           (ignore (adjust-ignore-for-atf not-flg ignore0))
-                           (true-type-alist
-                            (and (not (eq ignore :tta))
-                                 (extend-type-alist
-                                  ;;*** -simple
-                                  arg2
-                                  (ts-intersection
-                                   ts2
-                                   (ts-union *ts-integer>1*
-                                             *ts-positive-ratio*
-                                             *ts-complex-rational*))
-                                  shared-ttree type-alist w)))
-                           (false-type-alist
-                            (and (not (eq ignore :fta))
-                                 (if (variablep arg2)
+                              (mv-atf-2 not-flg true-type-alist false-type-alist
+                                        (mcons-term* '< *0* arg2)
+                                        xnot-flg x shared-ttree xttree ignore)))))
+                         ((equal arg1 *1*)
+                          (cond
+                           ((ts-subsetp ts2 *ts-integer>1*)
+                            (mv-atf not-flg t nil type-alist nil
+                                    ttree
+                                    xttree))
+                           ((ts-subsetp ts2
+                                        (ts-union (ts-complement *ts-acl2-number*)
+                                                  *ts-one*
+                                                  *ts-non-positive-rational*))
+                            (mv-atf not-flg nil t nil type-alist
+                                    ttree
+                                    xttree))
+                           (t
+                            (let* ((shared-ttree (cons-tag-trees ttree xttree))
+                                   (ignore (adjust-ignore-for-atf not-flg ignore0))
+                                   (true-type-alist
+                                    (and (not (eq ignore :tta))
+                                         (extend-type-alist
+                                          ;;*** -simple
+                                          arg2
+                                          (ts-intersection
+                                           ts2
+                                           (ts-union *ts-integer>1*
+                                                     *ts-positive-ratio*
+                                                     *ts-complex-rational*))
+                                          shared-ttree type-alist w)))
+                                   (false-type-alist
+                                    (and (not (eq ignore :fta))
+                                         (if (variablep arg2)
 
 ; By restricting to variables here, we avoid a failed proof for lemma LEMMA3 in
 ; community book books/data-structures/memories/memtree.lisp (and perhaps other
 ; failed proofs).  This weakened heuristic seems consistent with the spirit of
 ; the Essay on Strong Handling of *ts-one*, above.
 
-                                     (extend-type-alist
-                                      ;;*** -simple
-                                      arg2
-                                      (ts-intersection
-                                       ts2
-                                       (ts-complement *ts-integer>1*))
-                                      shared-ttree type-alist w)
-                                   type-alist))))
-                      (mv-atf-2 not-flg true-type-alist false-type-alist
-                                (mcons-term* '< *1* arg2)
-                                xnot-flg x shared-ttree xttree ignore)))))
-                 ((equal arg2 *0*)
-                  (cond
-                   ((ts-subsetp ts1
-                                #+:non-standard-analysis
-                                *ts-negative-real*
-                                #-:non-standard-analysis
-                                *ts-negative-rational*)
-                    (mv-atf not-flg t nil type-alist nil
-                            ttree
-                            xttree))
-                   ((ts-subsetp ts1
-                                (ts-union (ts-complement *ts-acl2-number*)
-                                          #+:non-standard-analysis
-                                          *ts-non-negative-real*
-                                          #-:non-standard-analysis
-                                          *ts-non-negative-rational*))
-                    (mv-atf not-flg nil t nil type-alist
-                            ttree
-                            xttree))
-                   (t
-                    (let* ((shared-ttree (cons-tag-trees ttree xttree))
-                           (ignore (adjust-ignore-for-atf not-flg ignore0))
-                           (true-type-alist
-                            (and (not (eq ignore :tta))
-                                 (extend-type-alist
-                                  ;;*** -simple
-                                  arg1
-                                  (ts-intersection
-                                   ts1
-                                   #+:non-standard-analysis
-                                   (ts-union *ts-negative-real*
-                                             *ts-complex*)
-                                   #-:non-standard-analysis
-                                   (ts-union *ts-negative-rational*
-                                             *ts-complex-rational*))
-                                  shared-ttree type-alist w)))
-                           (false-type-alist
-                            (and (not (eq ignore :fta))
-                                 (extend-type-alist
-                                  ;;*** -simple
-                                  arg1
-                                  (ts-intersection
-                                   ts1 (ts-complement
+                                             (extend-type-alist
+                                              ;;*** -simple
+                                              arg2
+                                              (ts-intersection
+                                               ts2
+                                               (ts-complement *ts-integer>1*))
+                                              shared-ttree type-alist w)
+                                           type-alist))))
+                              (mv-atf-2 not-flg true-type-alist false-type-alist
+                                        (mcons-term* '< *1* arg2)
+                                        xnot-flg x shared-ttree xttree ignore)))))
+                         ((equal arg2 *0*)
+                          (cond
+                           ((ts-subsetp ts1
                                         #+:non-standard-analysis
                                         *ts-negative-real*
                                         #-:non-standard-analysis
-                                        *ts-negative-rational*))
-                                  shared-ttree type-alist w))))
-                      (mv-atf-2 not-flg true-type-alist false-type-alist
-                                (mcons-term* '< arg1 *0*)
-                                xnot-flg x shared-ttree xttree ignore)))))
-                 (t (mv-let
-                     (mbt mbf tta fta dttree)
-                     (assume-true-false1
-                      xnot-flg ; = not-flg
-                      x        ; = (mcons-term* '< arg1 arg2)
+                                        *ts-negative-rational*)
+                            (mv-atf not-flg t nil type-alist nil
+                                    ttree
+                                    xttree))
+                           ((ts-subsetp ts1
+                                        (ts-union (ts-complement *ts-acl2-number*)
+                                                  #+:non-standard-analysis
+                                                  *ts-non-negative-real*
+                                                  #-:non-standard-analysis
+                                                  *ts-non-negative-rational*))
+                            (mv-atf not-flg nil t nil type-alist
+                                    ttree
+                                    xttree))
+                           (t
+                            (let* ((shared-ttree (cons-tag-trees ttree xttree))
+                                   (ignore (adjust-ignore-for-atf not-flg ignore0))
+                                   (true-type-alist
+                                    (and (not (eq ignore :tta))
+                                         (extend-type-alist
+                                          ;;*** -simple
+                                          arg1
+                                          (ts-intersection
+                                           ts1
+                                           #+:non-standard-analysis
+                                           (ts-union *ts-negative-real*
+                                                     *ts-complex*)
+                                           #-:non-standard-analysis
+                                           (ts-union *ts-negative-rational*
+                                                     *ts-complex-rational*))
+                                          shared-ttree type-alist w)))
+                                   (false-type-alist
+                                    (and (not (eq ignore :fta))
+                                         (extend-type-alist
+                                          ;;*** -simple
+                                          arg1
+                                          (ts-intersection
+                                           ts1 (ts-complement
+                                                #+:non-standard-analysis
+                                                *ts-negative-real*
+                                                #-:non-standard-analysis
+                                                *ts-negative-rational*))
+                                          shared-ttree type-alist w))))
+                              (mv-atf-2 not-flg true-type-alist false-type-alist
+                                        (mcons-term* '< arg1 *0*)
+                                        xnot-flg x shared-ttree xttree ignore)))))
+                         (t (mv-let
+                              (mbt mbf tta fta dttree)
+                              (assume-true-false1
+                               xnot-flg ; = not-flg
+                               x        ; = (mcons-term* '< arg1 arg2)
 
 ; Once upon a time we had (mcons-term* '< arg1 arg2), above, instead of x.
 ; But we claim that not-flg is xnot-flg and that arg1 and arg2 are the
@@ -11026,8 +11148,8 @@
 ; see that if neither arg is *0* not-flg is xnot-flg and arg1 and arg2 are
 ; the corresponding components of x.  Q.E.D.
 
-                      xttree force-flg dwp type-alist ancestors ens w
-                      pot-lst pt backchain-limit)
+                               xttree force-flg dwp type-alist ancestors ens w
+                               pot-lst pt backchain-limit)
 
 ; Inefficiency: It is somewhat troubling that we are holding ts1 and
 ; ts2 in our hands while invoking assume-true-false1 on (< arg1 arg2),
@@ -11040,69 +11162,69 @@
 ; is known to be positive.  Then a2 is (even more) positive.  We can add that
 ; to the tta, if it changes the type-set of a2.
 
-                     (cond
-                      ((or mbt mbf)
+                              (cond
+                               ((or mbt mbf)
 
 ; Just return the already computed answers if we've settled the
 ; question.
 
-                       (mv mbt mbf tta fta dttree))
-                      (t (let ((tta
-                                (and (not (eq ignore0 :tta))
-                                     (assume-true-false-<
-                                      not-flg
-                                      arg1 arg2 ts1 ts2 tta ttree xttree w)))
-                               (fta
-                                (and (not (eq ignore0 :fta))
-                                     (assume-true-false-<
-                                      (not not-flg)
-                                      arg1 arg2 ts1 ts2 fta ttree xttree w))))
-                           (mv nil nil tta fta nil)))))))))))))))
-        ((equivalence-relationp (ffn-symb x) w)
-         (let ((arg1 (fargn x 1))
-               (arg2 (fargn x 2)))
-           (cond
-            ((equal arg1 arg2)
-             (mv-atf xnot-flg t nil type-alist nil nil (puffert xttree)))
-            (t
-             (let ((equiv (ffn-symb x)))
-               (mv-let
-                (occursp1 canonicalp1 arg1-canon ttree1)
-                (canonical-representative equiv arg1 type-alist)
-                (cond
-                 ((and occursp1
+                                (mv mbt mbf tta fta dttree))
+                               (t (let ((tta
+                                         (and (not (eq ignore0 :tta))
+                                              (assume-true-false-<
+                                               not-flg
+                                               arg1 arg2 ts1 ts2 tta ttree xttree w)))
+                                        (fta
+                                         (and (not (eq ignore0 :fta))
+                                              (assume-true-false-<
+                                               (not not-flg)
+                                               arg1 arg2 ts1 ts2 fta ttree xttree w))))
+                                    (mv nil nil tta fta nil)))))))))))))))
+           ((equivalence-relationp (ffn-symb x) w)
+            (let ((arg1 (fargn x 1))
+                  (arg2 (fargn x 2)))
+              (cond
+               ((equal arg1 arg2)
+                (mv-atf xnot-flg t nil type-alist nil nil (puffert xttree)))
+               (t
+                (let ((equiv (ffn-symb x)))
+                  (mv-let
+                    (occursp1 canonicalp1 arg1-canon ttree1)
+                    (canonical-representative equiv arg1 type-alist)
+                    (cond
+                     ((and occursp1
 
 ; See comment in the 'equal case for an explanation of this use of occursp1
 ; and a similar use of occursp2 below.
 
-                       (equal arg1-canon arg2))
-                  (mv-atf xnot-flg t nil type-alist nil
-                          nil
-                          (puffert
-                           (cons-tag-trees ttree1 xttree))))
-                 (t (mv-let
-                     (occursp2 canonicalp2 arg2-canon ttree2)
-                     (canonical-representative equiv arg2 type-alist)
-                     (cond
-                      ((and occursp2 (equal arg1-canon arg2-canon))
-                       (mv-atf xnot-flg t nil type-alist nil
-                               nil
-                               (puffert
-                                (cons-tag-trees
-                                 xttree
-                                 (cons-tag-trees ttree1 ttree2)))))
-                      (t
-                       (let ((temp-temp
-                              (assoc-equiv equiv arg1-canon arg2-canon
-                                           type-alist)))
-                         (cond
-                          (temp-temp
-                           (cond ((ts= (cadr temp-temp) *ts-t*)
+                           (equal arg1-canon arg2))
+                      (mv-atf xnot-flg t nil type-alist nil
+                              nil
+                              (puffert
+                               (cons-tag-trees ttree1 xttree))))
+                     (t (mv-let
+                          (occursp2 canonicalp2 arg2-canon ttree2)
+                          (canonical-representative equiv arg2 type-alist)
+                          (cond
+                           ((and occursp2 (equal arg1-canon arg2-canon))
+                            (mv-atf xnot-flg t nil type-alist nil
+                                    nil
+                                    (puffert
+                                     (cons-tag-trees
+                                      xttree
+                                      (cons-tag-trees ttree1 ttree2)))))
+                           (t
+                            (let ((temp-temp
+                                   (assoc-equiv equiv arg1-canon arg2-canon
+                                                type-alist)))
+                              (cond
+                               (temp-temp
+                                (cond ((ts= (cadr temp-temp) *ts-t*)
 
 ; See comment in corresponding place in the 'equal case.
 
-                                  (mv-atf (er hard 'assume-true-false
-                                              "Please send the authors of ~
+                                       (mv-atf (er hard 'assume-true-false
+                                                   "Please send the authors of ~
                                                ACL2 a replayable transcript ~
                                                of this problem if possible, ~
                                                so that they can see what went ~
@@ -11111,59 +11233,59 @@
                                                offending call was ~x0.  The ~
                                                surprising type-set arose from ~
                                                a call of ~x1."
-                                              (list 'assume-true-false
-                                                    (kwote x) '<xttree>
-                                                    force-flg
-                                                    (kwote type-alist)
-                                                    '<ens> '<w>)
-                                              (list 'assoc-equiv
-                                                    (kwote equiv)
-                                                    (kwote arg1-canon)
-                                                    (kwote arg2-canon)
-                                                    '<same_type-alist>))
-                                          nil nil nil nil nil nil))
-                                 ((ts= (cadr temp-temp) *ts-nil*)
-                                  (mv-atf xnot-flg nil t nil type-alist
-                                          nil
-                                          (if (and canonicalp1 canonicalp2)
-                                              (cons-tag-trees (cddr temp-temp)
-                                                              xttree)
-                                              (puffert
-                                               (cons-tag-trees
-                                                (cddr temp-temp)
-                                                (cons-tag-trees
-                                                 ttree1
-                                                 (cons-tag-trees ttree2 xttree)))))))
-                                 (t
-                                  (let ((erp (assume-true-false-error
-                                              type-alist x (cadr temp-temp))))
-                                    (mv erp nil nil nil nil)))))
-                          (t
-                           (let ((swap-flg
-                                  (term-order arg1-canon arg2-canon))
-                                 (xttree+
-                                  (if (and canonicalp1 canonicalp2)
-                                      xttree
-                                    (puffert
-                                     (cons-tag-trees
-                                      ttree1
-                                      (cons-tag-trees ttree2 xttree))))))
-                             (mv-atf xnot-flg nil nil
-                                     (and (not (eq ignore :tta))
-                                          (extend-type-alist1
-                                           equiv occursp1 occursp2
-                                           (and canonicalp1 canonicalp2)
-                                           arg1-canon arg2-canon swap-flg x
-                                           *ts-t* xttree+ type-alist))
-                                     (and (not (eq ignore :fta))
-                                          (extend-type-alist1
-                                           equiv occursp1 occursp2
-                                           (and canonicalp1 canonicalp2)
-                                           arg1-canon arg2-canon swap-flg x
-                                           *ts-nil* xttree+ type-alist))
-                                     nil nil))))))))))))))))
-        ((or (eq (ffn-symb x) 'car)
-             (eq (ffn-symb x) 'cdr))
+                                                   (list 'assume-true-false
+                                                         (kwote x) '<xttree>
+                                                         force-flg
+                                                         (kwote type-alist)
+                                                         '<ens> '<w>)
+                                                   (list 'assoc-equiv
+                                                         (kwote equiv)
+                                                         (kwote arg1-canon)
+                                                         (kwote arg2-canon)
+                                                         '<same_type-alist>))
+                                               nil nil nil nil nil nil))
+                                      ((ts= (cadr temp-temp) *ts-nil*)
+                                       (mv-atf xnot-flg nil t nil type-alist
+                                               nil
+                                               (if (and canonicalp1 canonicalp2)
+                                                   (cons-tag-trees (cddr temp-temp)
+                                                                   xttree)
+                                                 (puffert
+                                                  (cons-tag-trees
+                                                   (cddr temp-temp)
+                                                   (cons-tag-trees
+                                                    ttree1
+                                                    (cons-tag-trees ttree2 xttree)))))))
+                                      (t
+                                       (let ((erp (assume-true-false-error
+                                                   type-alist x (cadr temp-temp))))
+                                         (mv erp nil nil nil nil)))))
+                               (t
+                                (let ((swap-flg
+                                       (term-order arg1-canon arg2-canon))
+                                      (xttree+
+                                       (if (and canonicalp1 canonicalp2)
+                                           xttree
+                                         (puffert
+                                          (cons-tag-trees
+                                           ttree1
+                                           (cons-tag-trees ttree2 xttree))))))
+                                  (mv-atf xnot-flg nil nil
+                                          (and (not (eq ignore :tta))
+                                               (extend-type-alist1
+                                                equiv occursp1 occursp2
+                                                (and canonicalp1 canonicalp2)
+                                                arg1-canon arg2-canon swap-flg x
+                                                *ts-t* xttree+ type-alist))
+                                          (and (not (eq ignore :fta))
+                                               (extend-type-alist1
+                                                equiv occursp1 occursp2
+                                                (and canonicalp1 canonicalp2)
+                                                arg1-canon arg2-canon swap-flg x
+                                                *ts-nil* xttree+ type-alist))
+                                          nil nil))))))))))))))))
+           ((or (eq (ffn-symb x) 'car)
+                (eq (ffn-symb x) 'cdr))
 
 ; In this comment we assume (ffn-symb x) is car but everything we say is true
 ; for the cdr case as well.  Suppose xnot-flg is nil.  Then after the
@@ -11185,30 +11307,30 @@
 ; and after we are done.  The first swap is done by the let below.
 ; The second is done by mv-atf.
 
-         (mv-let (mbt mbf tta fta ttree)
-                 (assume-true-false1
-                  xnot-flg x xttree force-flg dwp type-alist ancestors ens w
-                  pot-lst pt backchain-limit)
-                 (cond ((or mbt mbf)
-                        (mv mbt mbf tta fta ttree))
-                       (t (let ((tta (if xnot-flg fta tta))
-                                (fta (if xnot-flg tta fta)))
-                            (mv-let (mbt1 mbf tta1 fta1 ttree)
-                                    (assume-true-false-rec
-                                     (fargn x 1)
-                                     xttree force-flg dwp tta ancestors ens w
-                                     pot-lst pt :fta backchain-limit)
-                                    (declare (ignore mbt1 fta1))
-                                    (mv-atf xnot-flg mbt mbf tta1 fta
-                                            ttree nil)))))))
-        ((eq (ffn-symb x) 'IF)
-         (assume-true-false-if xnot-flg x xttree force-flg dwp
-                               type-alist ancestors ens w
-                               pot-lst pt backchain-limit))
-        (t (assume-true-false1 xnot-flg x xttree
-                               force-flg dwp type-alist ancestors ens
-                               w
-                               pot-lst pt backchain-limit))))))))
+            (mv-let (mbt mbf tta fta ttree)
+              (assume-true-false1
+               xnot-flg x xttree force-flg dwp type-alist ancestors ens w
+               pot-lst pt backchain-limit)
+              (cond ((or mbt mbf)
+                     (mv mbt mbf tta fta ttree))
+                    (t (let ((tta (if xnot-flg fta tta))
+                             (fta (if xnot-flg tta fta)))
+                         (mv-let (mbt1 mbf tta1 fta1 ttree)
+                           (assume-true-false-rec
+                            (fargn x 1)
+                            xttree force-flg dwp tta ancestors ens w
+                            pot-lst pt :fta backchain-limit)
+                           (declare (ignore mbt1 fta1))
+                           (mv-atf xnot-flg mbt mbf tta1 fta
+                                   ttree nil)))))))
+           ((eq (ffn-symb x) 'IF)
+            (assume-true-false-if xnot-flg x xttree force-flg dwp
+                                  type-alist ancestors ens w
+                                  pot-lst pt backchain-limit))
+           (t (assume-true-false1 xnot-flg x xttree
+                                  force-flg dwp type-alist ancestors ens
+                                  w
+                                  pot-lst pt backchain-limit)))))))))
 
 (defun assume-true-false1 (not-flg x xttree force-flg dwp type-alist ancestors
                                    ens w pot-lst pt backchain-limit)
