@@ -542,8 +542,8 @@
     (assoc-equal (find-new-index (strip-cars alist))
                  alist)))
   :hints
-  (("goal" :in-theory (disable (:rewrite find-new-index-correctness-1))
-    :use (:instance (:rewrite find-new-index-correctness-1)
+  (("goal" :in-theory (disable find-new-index-correctness-1)
+    :use (:instance find-new-index-correctness-1
                     (fd-list (strip-cars alist))))))
 
 (defthm
