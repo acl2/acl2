@@ -195,7 +195,13 @@ you to consider the equivalence of alists regardless of the order of their
 elements, the presence of shadowed elements, etc.</p>
 
 <p>Note that @(see list-equiv) is a @(see refinement) of @(see
-alist-equiv).</p>"
+alist-equiv); however the following example shows that the two are not the
+same.</p>
+
+ @({
+  (alist-equiv '((0 . a) (0 . b)) '((0 . a) (0 . c))) ;; This is t.
+  (set-equiv '((0 . a) (0 . b)) '((0 . a) (0 . c)))   ;; This is nil.
+ })"
 
   (defund alist-equiv (a b)
     (declare (xargs :guard t))
