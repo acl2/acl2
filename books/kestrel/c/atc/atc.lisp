@@ -2204,12 +2204,10 @@
    (limit natp)
    (fn-returns-value-thm symbolp)
    (fn-exec-const-limit-correct-thm symbolp)
-   (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+               (name "A @(tsee symbolp)."))
   :mode :program
   :short "Generate the theorem asserting
           the dynamic functional correctness of the C function
@@ -2273,7 +2271,7 @@
                             ,equalities)
          :hints hints
          :enable nil)))
-    (mv local-event exported-event name names-to-avoid)))
+    (mv local-event exported-event name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2308,13 +2306,12 @@
                                                  names-to-avoid wrld))
        ((mv fn-exec-var-limit-correct-local-event
             fn-exec-var-limit-correct-exported-event
-            fn-exec-var-limit-correct-thm
-            names-to-avoid)
+            fn-exec-var-limit-correct-thm)
         (atc-gen-fn-exec-var-limit-correct-thm fn pointers
                                                prog-const fn-thms limit
                                                fn-returns-value-thm
                                                fn-exec-const-limit-correct-thm
-                                               names-to-avoid wrld))
+                                               wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
