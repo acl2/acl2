@@ -16,7 +16,7 @@
 ;; possible.
 
 (include-book "signed-byte-p")
-(include-book "rules0") ;for BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION
+;(include-book "rules0") ;for BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)

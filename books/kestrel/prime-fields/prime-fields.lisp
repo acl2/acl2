@@ -85,11 +85,19 @@
   :hints (("Goal" :in-theory (enable fep))))
 
 ;; This breaks the abstraction a bit, but mod can appear when add, sub, or neg
-;; is applied to constant arguments.
+;; is applied to constant arguments, or when we don't know that things are
+;; field elements.
 (defthm fep-of-mod
   (implies (and (integerp x)
                 (posp p))
            (fep (mod x p) p))
+  :hints (("Goal" :in-theory (enable fep))))
+
+;; combines 2 steps, dropping the mod and dropping the ifix.
+(defthmd mod-of-ifix-when-fep
+  (implies (fep x p)
+           (equal (mod (ifix x) p)
+                  x))
   :hints (("Goal" :in-theory (enable fep))))
 
 ;;;

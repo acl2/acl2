@@ -18,6 +18,7 @@
 (include-book "unsigned-byte-p")
 (include-book "bvplus")
 (include-book "rules") ; for GETBIT-OF-PLUS
+(include-book "rules0") ; for bvplus-1-becomes-bitxor
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))

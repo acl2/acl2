@@ -16,6 +16,7 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
+(include-book "power-of-2p")
 (local (include-book "floor"))
 (local (include-book "mod"))
 (local (include-book "expt"))
@@ -163,3 +164,16 @@
                   (<= 0 index)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p integer-length)
                                   ()))))
+
+(defthm <-of-expt-2-and-one-less-than-integer-length
+  (implies (posp n)
+           (equal (< (expt 2 (+ -1 (integer-length n))) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (e/d (integer-length power-of-2p expt) (expt-hack)))))
+
+(defthm <-of-integer-length-and-1
+  (equal (< (integer-length i) 1)
+         (or (not (integerp i))
+             (equal i 0)
+             (equal i -1)))
+  :hints (("Goal" :in-theory (enable integer-length))))

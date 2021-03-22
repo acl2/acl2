@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "expt"))
+(local (include-book "expt2"))
 (local (include-book "times"))
 
 ;dup
@@ -85,3 +86,10 @@
                  (:instance integerp-of-expt-when-natp
                             (r 2)
                             (i (- (+ -1 (integer-length k)) n)))))))
+
+;make a cheap version?
+(defthmd not-power-of-2p-when-oddp
+  (implies (and (oddp n)
+                (< 1 n))
+           (not (power-of-2p n)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))

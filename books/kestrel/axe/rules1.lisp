@@ -33,7 +33,9 @@
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;todo
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
+;(local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-collect-hack
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -676,7 +678,7 @@
   (implies (and (<= 2 n)
                 (power-of-2p n))
            (integerp (binary-* 1/2 n)))
-  :hints (("Goal" :in-theory (e/d (expt-collect-hack natp) (exponents-add)))))
+  :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
 
 (defthm equal-of-nthcdr-and-subrange-of-minus1
   (implies (and (natp n)

@@ -165,3 +165,23 @@
            (equal (expt 2 (lg x))
                   x))
   :hints (("Goal" :in-theory (enable power-of-2p lg))))
+
+(defthm <-of-expt-2-of-lg-same
+  (implies (posp n)
+           (equal (< (expt 2 (lg n)) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm <-of-expt-2-of-lg-same-linear
+  (implies (and (not (power-of-2p n))
+                (posp n))
+           (< (expt 2 (lg n)) n))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm <-of-lg-and-0
+  (implies (integerp i)
+           (equal (< (lg i) 0)
+                  (or (equal i 0)
+                      (equal i -1))))
+  :hints (("Goal" :in-theory (enable lg))))

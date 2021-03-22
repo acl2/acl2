@@ -1393,3 +1393,8 @@
                (bvcat (min (binary-+ n (unary-- (nfix lowsize)))
                            (nfix highsize))
                       highval (nfix lowsize) lowval)))))
+
+(defthmd bvchop-32-split-hack
+  (equal (bvchop 32 x)
+         (bvcat 1 (getbit 31 x)
+                31 (bvchop 31 x))))

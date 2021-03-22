@@ -16,6 +16,7 @@
 (local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "arith"))
+(local (include-book "rules0"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -2066,7 +2067,7 @@
            :in-theory (disable BVCHOP-OF-LOGAND))))
 
 ;move
-(defthm bvmult-of-2-gen
+(defthmd bvmult-of-2-gen
   (implies (and (< 0 size)
                 (integerp size)
                 )
@@ -2661,10 +2662,7 @@
                             mod-of-expt-of-2-constant-version
                             FLOOR-PEEL-OFF-CONSTANT)))))
 
-(defthmd bvchop-32-split-hack
-  (equal (bvchop 32 x)
-         (bvcat 1 (getbit 31 x)
-                31 (bvchop 31 x))))
+
 
 (defthm getbit-of-one-more
   (implies (integerp x)

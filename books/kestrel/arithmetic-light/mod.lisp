@@ -109,11 +109,40 @@
            (equal (mod (mod x y) y)
                   (mod x y))))
 
+(defthm mod-when-not-acl2-numberp-arg1
+  (implies (not (acl2-numberp x))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+(defthm mod-when-not-acl2-numberp-arg2
+  (implies (not (acl2-numberp y))
+           (equal (mod x y)
+                  (if (acl2-numberp x)
+                      x
+                    0)))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+;; generalizing this is hard since even if x is not rational, the quotient may be.
+(defthm mod-when-not-rationalp-arg1-and-rationalp-arg2
+  (implies (and (not (rationalp x))
+                (rationalp y))
+           (equal (mod x y)
+                  (fix x)))
+  :hints (("Goal" :in-theory (enable mod))))
+
+;; generalizing this is hard since even if x is not rational, the quotient may be.
+(defthm mod-when-rationalp-arg1-and-not-rationalp-arg2
+  (implies (and (rationalp x)
+                (not (rationalp y)))
+           (equal (mod x y)
+                  x))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
 (defthm mod-when-<
   (implies (and (< x y)
                 (<= 0 x)
-                (rationalp x)
-                (rationalp y))
+                (rationalp x))
            (equal (mod x y)
                   x))
   :hints (("Goal" :cases ((rationalp x)))))
@@ -285,35 +314,6 @@
          0)
   :hints (("Goal" :in-theory (enable mod))))
 
-(defthm mod-when-not-acl2-numberp-arg1
-  (implies (not (acl2-numberp x))
-           (equal (mod x y)
-                  0))
-  :hints (("Goal" :in-theory (enable mod floor))))
-
-(defthm mod-when-not-acl2-numberp-arg2
-  (implies (not (acl2-numberp y))
-           (equal (mod x y)
-                  (if (acl2-numberp x)
-                      x
-                    0)))
-  :hints (("Goal" :in-theory (enable mod floor))))
-
-;; generalizing this is hard since even if x is not rational, the quotient may be.
-(defthm mod-when-not-rationalp-arg1-and-rationalp-arg2
-  (implies (and (not (rationalp x))
-                (rationalp y))
-           (equal (mod x y)
-                  (fix x)))
-  :hints (("Goal" :in-theory (enable mod))))
-
-;; generalizing this is hard since even if x is not rational, the quotient may be.
-(defthm mod-when-rationalp-arg1-and-not-rationalp-arg2
-  (implies (and (rationalp x)
-                (not (rationalp y)))
-           (equal (mod x y)
-                  x))
-  :hints (("Goal" :in-theory (enable mod floor))))
 
 ;move
 (local
