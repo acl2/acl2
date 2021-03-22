@@ -1177,39 +1177,48 @@
   (xdoc::codeblock
    "(defthm <constant>-<fn>-correct"
    "  (implies (and <guard-of-fn>"
-   "                (heap heap)"
-   "           (equal (run-fun (ident \"<fn>\")"
-   "                           (list <x1> ... <xn>)"
-   "                           heap"
-   "                           <constant>)"
+   "                (compustatep compst)"
+   "                (equal fenv (init-fun-env <constant>))"
+   "                (integerp limit)"
+   "                (>= limit <number>))"
+   "           (equal (exec-fun '(:ident (name . \"<fn>\"))"
+   "                            (list <x1> ... <xn>)"
+   "                            compst"
+   "                            fenv"
+   "                            limit)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
    "This asserts that, under the guard of @('fn'),
     running the C function corresponding to @('fn')
     yields the same result as @('fn').
-    Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').
-    The variable @('heap') represents the C heap,
-    described in the "
-   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
-   ": the theorem applies to execution in every possible heap.")
+    Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').")
 
   (xdoc::p
-   "We remark that the form above is accurate
+   "The variable @('compst') represents the C computation state,
+    described in the "
+   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   ": the theorem applies to execution in every possible computation state.")
+
+  (xdoc::p
+   "The variable @('fenv') represents the "
+   (xdoc::seetopic "atc-function-environments" "C function environment")
+   " of the generated translation unit,
+    as defined by one of the hypotheses.")
+
+  (xdoc::p
+   "The variable @('limit') and the @('<number>') that provides a lower bound
+    are motivated by the fact that the big-step execution functions
+    take a limit value, as explained in the "
+   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   ". The number is calculated by ATC as sufficient to execute the function.
+    The theorem asserts that, for any limit value at or above that limit,
+    execution terminates and yields the same result as @('fn').")
+
+  (xdoc::p
+   "We remark that the form of the theorem above is accurate
     when none of the function's arguments are pointers.
     When they are, the theorem has a slightly more general form,
     which will be described in upcoming tutorial pages.")
-
-  (xdoc::p
-   "As explained in @(tsee atc-tutorial-identifiers),
-    the function @('fn') is translated to a C function
-    whose name is the @(tsee symbol-name) of @('fn'):
-    thus, @(tsee run-fun) is called on that string as first argument.
-    The second argument is the list of formals of @('fn').
-    The third argument is the program AST.
-    The call of @(tsee run-fun) executes the C code generated for @('fn')
-    according to the C dynamic semantics:
-    it looks up the definition of the function in the program,
-    runs its body, which may call other functions, etc.")
 
   (xdoc::p
    "Note that, since @('fn') does not return error values,
