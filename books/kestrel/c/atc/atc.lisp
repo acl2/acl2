@@ -310,7 +310,7 @@
                                        ctx
                                        state)
      :returns (mv erp
-                  (val "A @(tsee acl2::symbol-symbol-alistp).")
+                  (val "A @(tsee symbol-symbol-alistp).")
                   state)
      :mode :program
      (b* (((when (endp fni...fnp)) (acl2::value nil))
@@ -2331,7 +2331,7 @@
 (define atc-gen-fn-run-correct-thm ((fn symbolp)
                                     (pointers symbol-listp)
                                     (prog-const symbolp)
-                                    (fn-thms acl2::symbol-symbol-alistp)
+                                    (fn-thms symbol-symbol-alistp)
                                     (fn-exec-var-limit-correct-thm symbolp)
                                     (names-to-avoid symbol-listp)
                                     (wrld plist-worldp))
@@ -2408,7 +2408,7 @@
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (prog-const symbolp)
-                         (fn-thms acl2::symbol-symbol-alistp)
+                         (fn-thms symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit natp)
                          (names-to-avoid symbol-listp)
@@ -2469,7 +2469,7 @@
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
                             (prog-const symbolp)
-                            (fn-thms acl2::symbol-symbol-alistp)
+                            (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (names-to-avoid symbol-listp)
                             ctx
@@ -2555,7 +2555,7 @@
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
-                                 (fn-thms acl2::symbol-symbol-alistp)
+                                 (fn-thms symbol-symbol-alistp)
                                  (print evmac-input-print-p)
                                  (names-to-avoid symbol-listp)
                                  ctx
@@ -2669,7 +2669,7 @@
                            (proofs booleanp)
                            (prog-const symbolp)
                            (wf-thm symbolp)
-                           (fn-thms acl2::symbol-symbol-alistp)
+                           (fn-thms symbol-symbol-alistp)
                            (print evmac-input-print-p)
                            (names-to-avoid symbol-listp)
                            ctx
@@ -2803,7 +2803,7 @@
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
-                            (fn-thms acl2::symbol-symbol-alistp)
+                            (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (call pseudo-event-formp)
                             ctx
