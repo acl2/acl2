@@ -112,6 +112,11 @@
   "@('prog-const') is the symbol specified by @('const-name').
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('wf-thm') is the name of the generated program well-formedness theorem."
+
+  "@('fn-thms') is an alist from @('fn1'), ..., @('fnp')
+   to the names of the generated respective correctness theorems."
+
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,12 +234,36 @@
 
 (define atc-process-const-name (const-name
                                 (const-name? booleanp)
+                                (fn1...fnp symbol-listp)
                                 (proofs booleanp)
                                 ctx
                                 state)
-  :returns (mv erp (prog-const "A @(tsee symbolp).") state)
+  :returns (mv erp
+               (val "A @('(tuple (prog-const symbolp)
+                                 (wf-thm symbolp)
+                                 (fn-thms symbol-symbol-alist)
+                                 val)').")
+               state)
   :mode :program
   :short "Process the @(':const-name') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this input also determines, indirectly,
+     the names of the theorems generated and exported by ATC,
+     here we also
+     calculate the names of those theorems,
+     ensure they are fresh,
+     and return them for use in event generation.
+     More precisely, we return the name of the program well-formedness theorem
+     and the names of the function correctness theorems;
+     the latter are returned as an alist from @('fn1'), ..., @('fnp')
+     to the respective theorem names.")
+   (xdoc::p
+    "The name of each theorem is obtained by
+     appending something to the name of the constant.
+     The thing appended differs across the theorems:
+     thus, their names are all distinct by construction."))
   (b* (((when (not proofs))
         (if const-name?
             (er-soft+ ctx t nil
@@ -247,19 +276,59 @@
                                               "The :CONST-NAME input"
                                               t
                                               nil))
-       (name (if (eq const-name :auto)
-                 'c::*program*
-               const-name))
+       (prog-const (if (eq const-name :auto)
+                       'c::*program*
+                     const-name))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
+                prog-const
                 (msg "The constant name ~x0 ~
                       specified by the :CONST-NAME input"
-                     name)
+                     prog-const)
                 'const
                 nil
                 t
-                nil)))
-    (acl2::value name)))
+                nil))
+       (wf-thm (add-suffix prog-const "-WELL-FORMED"))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                wf-thm
+                (msg "The generated theorem name ~x0 ~
+                      indirectly specified by the :CONST-NAME input"
+                     wf-thm)
+                nil
+                nil
+                t
+                nil))
+       ((er fn-thms)
+        (atc-process-const-name-aux fn1...fnp prog-const ctx state)))
+    (acl2::value (list prog-const
+                       wf-thm
+                       fn-thms)))
+
+  :prepwork
+  ((define atc-process-const-name-aux ((fni...fnp symbol-listp)
+                                       (prog-const symbolp)
+                                       ctx
+                                       state)
+     :returns (mv erp
+                  (val "A @(tsee acl2::symbol-symbol-alistp).")
+                  state)
+     :mode :program
+     (b* (((when (endp fni...fnp)) (acl2::value nil))
+          (fn (car fni...fnp))
+          (fn-thm (acl2::packn
+                   (list prog-const "-" (symbol-name fn) "-CORRECT")))
+          ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                   fn-thm
+                   (msg "The generated theorem name ~x0 ~
+                         indirectly specified by the :CONST-NAME input"
+                        fn-thm)
+                   nil
+                   nil
+                   t
+                   nil))
+          ((er fn-thms) (atc-process-const-name-aux
+                         (cdr fni...fnp) prog-const ctx state)))
+       (acl2::value (acons fn fn-thm fn-thms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,6 +350,8 @@
                                  (output-file stringp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
+                                 (wf-thm symbolp)
+                                 (fn-thms symbol-symbol-alist)
                                  (print evmac-input-print-p)
                                  val)').")
                state)
@@ -316,11 +387,13 @@
         (if const-name-option
             (mv (cdr const-name-option) t)
           (mv :auto nil)))
-       ((er prog-const) (atc-process-const-name const-name
-                                                const-name?
-                                                proofs
-                                                ctx
-                                                state))
+       ((er (list prog-const wf-thm fn-thms))
+        (atc-process-const-name const-name
+                                const-name?
+                                fn1...fnp
+                                proofs
+                                ctx
+                                state))
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
@@ -330,6 +403,8 @@
                        output-file
                        proofs
                        prog-const
+                       wf-thm
+                       fn-thms
                        print))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2256,17 +2331,14 @@
 (define atc-gen-fn-run-correct-thm ((fn symbolp)
                                     (pointers symbol-listp)
                                     (prog-const symbolp)
+                                    (fn-thms acl2::symbol-symbol-alistp)
                                     (fn-exec-var-limit-correct-thm symbolp)
                                     (names-to-avoid symbol-listp)
-                                    ctx
-                                    state)
-  :returns (mv erp
-               (val "A @('(tuple (local-event pseudo-event-formp)
-                                 (exported-event pseudo-event-formp)
-                                 (name symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                                    (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting
           the dynamic functional correctness of the C function
@@ -2293,20 +2365,8 @@
      for the calculation of the function environment.")
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
-  (b* ((name (acl2::packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
+  (b* ((name (cdr (assoc-eq fn fn-thms)))
        (names-to-avoid (cons name names-to-avoid))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input ~
-                      must be such that ~x1 is a fresh theorem name, ~
-                      but it is not."
-                     prog-const name)
-                nil
-                nil
-                t
-                nil))
-       (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (args (atc-gen-fn-args-deref-heap formals pointers 'heap))
        (guard (acl2::uguard fn wrld))
@@ -2335,9 +2395,10 @@
                             (equal ,lhs ,rhs))
          :hints hints
          :enable nil)))
-    (acl2::value (list local-event
-                       exported-event
-                       names-to-avoid))))
+    (mv local-event
+        exported-event
+        name
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2347,23 +2408,19 @@
                          (prec-fns atc-symbol-fninfo-alistp)
                          (proofs booleanp)
                          (prog-const symbolp)
+                         (fn-thms acl2::symbol-symbol-alistp)
                          (print evmac-input-print-p)
                          (limit natp)
                          (names-to-avoid symbol-listp)
-                         ctx
-                         state)
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (fn-returns-value-thm symbolp)
-                                 (fn-exec-var-limit-correct-thm symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                         (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp).")
+               (fn-returns-value-thm "A @(tsee symbolp).")
+               (fn-exec-var-limit-correct-thm "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorems associated to the specified ACL2 function."
-  (b* (((when (not proofs)) (acl2::value (list nil nil names-to-avoid)))
-       (wrld (w state))
+  (b* (((when (not proofs)) (mv nil nil nil nil names-to-avoid))
        ((mv fn-returns-value-event fn-returns-value-thm names-to-avoid)
         (atc-gen-fn-returns-value-thm fn type prec-fns names-to-avoid wrld))
        ((mv fn-exec-const-limit-correct-event
@@ -2380,13 +2437,13 @@
                                                fn-returns-value-thm
                                                fn-exec-const-limit-correct-thm
                                                names-to-avoid wrld))
-       ((er (list fn-run-correct-local-event
-                  fn-run-correct-exported-event
-                  fn-run-correct-thm
-                  names-to-avoid))
-        (atc-gen-fn-run-correct-thm fn pointers prog-const
+       ((mv fn-run-correct-local-event
+            fn-run-correct-exported-event
+            fn-run-correct-thm
+            names-to-avoid)
+        (atc-gen-fn-run-correct-thm fn pointers prog-const fn-thms
                                     fn-exec-var-limit-correct-thm
-                                    names-to-avoid ctx state))
+                                    names-to-avoid wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
@@ -2400,11 +2457,11 @@
                              (list fn-run-correct-local-event)
                              progress-end?))
        (exported-events (list fn-run-correct-exported-event)))
-    (acl2::value (list local-events
-                       exported-events
-                       fn-returns-value-thm
-                       fn-exec-var-limit-correct-thm
-                       names-to-avoid))))
+    (mv local-events
+        exported-events
+        fn-returns-value-thm
+        fn-exec-var-limit-correct-thm
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2412,6 +2469,7 @@
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
                             (prog-const symbolp)
+                            (fn-thms acl2::symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (names-to-avoid symbol-listp)
                             ctx
@@ -2472,14 +2530,14 @@
                           :params params
                           :body (stmt-compound items))))
        (limit (+ 1 1 limit))
-       ((er (list local-events
-                  exported-events
-                  fn-returns-value-thm
-                  fn-exec-var-limit-correct-thm
-                  names-to-avoid))
+       ((mv local-events
+            exported-events
+            fn-returns-value-thm
+            fn-exec-var-limit-correct-thm
+            names-to-avoid)
         (atc-gen-fn-thms fn pointers type prec-fns
-                         proofs prog-const print
-                         limit names-to-avoid ctx state))
+                         proofs prog-const fn-thms print
+                         limit names-to-avoid wrld))
        (info (make-atc-fn-info
               :type type
               :returns-value-thm fn-returns-value-thm
@@ -2497,6 +2555,7 @@
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
                                  (prog-const symbolp)
+                                 (fn-thms acl2::symbol-symbol-alistp)
                                  (print evmac-input-print-p)
                                  (names-to-avoid symbol-listp)
                                  ctx
@@ -2526,11 +2585,11 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-declon fn prec-fns proofs prog-const print
-                            names-to-avoid ctx state))
+        (atc-gen-ext-declon fn prec-fns proofs prog-const fn-thms
+                            print names-to-avoid ctx state))
        ((er (list exts more-local-events more-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const print
-                                 names-to-avoid ctx state)))
+        (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const fn-thms
+                                 print names-to-avoid ctx state)))
     (acl2::value (list (cons ext exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
@@ -2564,16 +2623,12 @@
 
 (define atc-gen-wf-thm ((proofs booleanp)
                         (prog-const symbolp)
+                        (wf-thm symbolp)
                         (print evmac-input-print-p)
-                        (names-to-avoid symbol-listp)
-                        ctx
-                        state)
-  :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
-               state)
+                        (names-to-avoid symbol-listp))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting
           the static well-formedness of the generated C code
@@ -2588,43 +2643,33 @@
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
-  (b* (((unless proofs) (acl2::value (list nil nil names-to-avoid)))
-       (name (add-suffix prog-const "-WELL-FORMED"))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input ~
-                      must be such that ~x1 is a fresh theorem name, ~
-                      but it is not."
-                     prog-const name)
-                nil
-                nil
-                t
-                nil))
-       (names-to-avoid (cons name names-to-avoid))
+  (b* (((unless proofs) (mv nil nil names-to-avoid))
+       (names-to-avoid (cons wf-thm names-to-avoid))
        ((mv local-event exported-event)
         (evmac-generate-defthm
-         name
+         wf-thm
          :formula `(equal (check-transunit ,prog-const) :wellformed)
          :hints '(("Goal" :in-theory '((:e check-transunit))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the theorem ~x0..." ',name))))
+             `((cw-event "~%Generating the theorem ~x0..." ',wf-thm))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (acl2::value (list (list local-event)
-                       (list exported-event)
-                       names-to-avoid))))
+    (mv (list local-event)
+        (list exported-event)
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-transunit ((fn1...fnp symbol-listp)
                            (proofs booleanp)
                            (prog-const symbolp)
+                           (wf-thm symbolp)
+                           (fn-thms acl2::symbol-symbol-alistp)
                            (print evmac-input-print-p)
                            (names-to-avoid symbol-listp)
                            ctx
@@ -2645,12 +2690,12 @@
     "We first generate the event for the named constant with the environment,
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
-  (b* (((er (list wf-thm-local-events wf-thm-exported-events names-to-avoid))
-        (atc-gen-wf-thm proofs prog-const print names-to-avoid ctx state))
+  (b* (((mv wf-thm-local-events wf-thm-exported-events names-to-avoid)
+        (atc-gen-wf-thm proofs prog-const wf-thm print names-to-avoid))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
-        (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const print
-                                 names-to-avoid ctx state))
+        (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const fn-thms
+                                 print names-to-avoid ctx state))
        (tunit (make-transunit :declons exts))
        ((mv local-const-event exported-const-event)
         (if proofs
@@ -2757,6 +2802,8 @@
                             (output-file stringp)
                             (proofs booleanp)
                             (prog-const symbolp)
+                            (wf-thm symbolp)
+                            (fn-thms acl2::symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (call pseudo-event-formp)
                             ctx
@@ -2776,8 +2823,8 @@
      Thus, we locally install the simpler ancestor check."))
   (b* ((names-to-avoid (list prog-const))
        ((er (list tunit local-events exported-events &))
-        (atc-gen-transunit fn1...fnp proofs prog-const print
-                           names-to-avoid ctx state))
+        (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
+                           print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit output-file print state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
@@ -2808,12 +2855,20 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
-       ((er (list fn1...fnp output-file proofs prog-const print))
+       ((er (list fn1...fnp
+                  output-file
+                  proofs
+                  prog-const
+                  wf-thm
+                  fn-thms
+                  print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         output-file
                         proofs
                         prog-const
+                        wf-thm
+                        fn-thms
                         print
                         call
                         ctx
