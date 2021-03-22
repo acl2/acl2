@@ -1178,13 +1178,12 @@
    "(defthm <constant>-<fn>-correct"
    "  (implies (and <guard-of-fn>"
    "                (compustatep compst)"
-   "                (equal fenv (init-fun-env <constant>))"
    "                (integerp limit)"
    "                (>= limit <number>))"
-   "           (equal (exec-fun '(:ident (name . \"<fn>\"))"
+   "           (equal (exec-fun (ident \"<fn>\")"
    "                            (list <x1> ... <xn>)"
    "                            compst"
-   "                            fenv"
+   "                            (init-fun-env <constant>)"
    "                            limit)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
@@ -1200,10 +1199,9 @@
    ": the theorem applies to execution in every possible computation state.")
 
   (xdoc::p
-   "The variable @('fenv') represents the "
+   "The term @('(init-fun-env <constant>)') constructs the "
    (xdoc::seetopic "atc-function-environments" "C function environment")
-   " of the generated translation unit,
-    as defined by one of the hypotheses.")
+   " of the generated translation unit.")
 
   (xdoc::p
    "The variable @('limit') and the @('<number>') that provides a lower bound
