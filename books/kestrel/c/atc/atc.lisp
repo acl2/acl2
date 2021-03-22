@@ -2333,12 +2333,10 @@
                                     (prog-const symbolp)
                                     (fn-thms symbol-symbol-alistp)
                                     (fn-exec-var-limit-correct-thm symbolp)
-                                    (names-to-avoid symbol-listp)
                                     (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+               (name "A @(tsee symbolp)."))
   :mode :program
   :short "Generate the theorem asserting
           the dynamic functional correctness of the C function
@@ -2366,7 +2364,6 @@
    (xdoc::p
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (cdr (assoc-eq fn fn-thms)))
-       (names-to-avoid (cons name names-to-avoid))
        (formals (acl2::formals+ fn wrld))
        (args (atc-gen-fn-args-deref-heap formals pointers 'heap))
        (guard (acl2::uguard fn wrld))
@@ -2397,8 +2394,7 @@
          :enable nil)))
     (mv local-event
         exported-event
-        name
-        names-to-avoid)))
+        name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2439,11 +2435,10 @@
                                                names-to-avoid wrld))
        ((mv fn-run-correct-local-event
             fn-run-correct-exported-event
-            fn-run-correct-thm
-            names-to-avoid)
+            fn-run-correct-thm)
         (atc-gen-fn-run-correct-thm fn pointers prog-const fn-thms
                                     fn-exec-var-limit-correct-thm
-                                    names-to-avoid wrld))
+                                    wrld))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the theorem ~x0..."
@@ -2624,11 +2619,9 @@
 (define atc-gen-wf-thm ((proofs booleanp)
                         (prog-const symbolp)
                         (wf-thm symbolp)
-                        (print evmac-input-print-p)
-                        (names-to-avoid symbol-listp))
+                        (print evmac-input-print-p))
   :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+               (exported-events "A @(tsee pseudo-event-form-listp)."))
   :mode :program
   :short "Generate the theorem asserting
           the static well-formedness of the generated C code
@@ -2643,8 +2636,7 @@
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
-  (b* (((unless proofs) (mv nil nil names-to-avoid))
-       (names-to-avoid (cons wf-thm names-to-avoid))
+  (b* (((unless proofs) (mv nil nil))
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
@@ -2660,8 +2652,7 @@
                             ,local-event
                             ,@progress-end?)))
     (mv (list local-event)
-        (list exported-event)
-        names-to-avoid)))
+        (list exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2690,8 +2681,8 @@
     "We first generate the event for the named constant with the environment,
      because its name must be passed to the ACL2 functions
      that generate the external declarations that form the translation unit."))
-  (b* (((mv wf-thm-local-events wf-thm-exported-events names-to-avoid)
-        (atc-gen-wf-thm proofs prog-const wf-thm print names-to-avoid))
+  (b* (((mv wf-thm-local-events wf-thm-exported-events)
+        (atc-gen-wf-thm proofs prog-const wf-thm print))
        ((er
          (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
         (atc-gen-ext-declon-list fn1...fnp nil proofs prog-const fn-thms
@@ -2821,7 +2812,7 @@
      it does not seem like ACL2's heuristic ancestor check
      would ever be helpful (if this turns out to be wrong, we will re-evaluate).
      Thus, we locally install the simpler ancestor check."))
-  (b* ((names-to-avoid (list prog-const))
+  (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list tunit local-events exported-events &))
         (atc-gen-transunit fn1...fnp proofs prog-const wf-thm fn-thms
                            print names-to-avoid ctx state))
