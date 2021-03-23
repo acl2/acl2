@@ -1583,4 +1583,99 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-atc-tutorial-page conditional-expressions
+
+  "ACL2 representation of C conditional expressions"
+
+  (xdoc::p
+   "C has both conditional statements and conditional expressions.
+    Conditional expressions are ternary expressions of the form @('a ? b : c').
+    While @(see atc-tutorial-conditional-statements) explains
+    how to represent conditional statements in ACL2,
+    this tutorial page explains how to represent conditional expressions.")
+
+  (xdoc::p
+   "C conditional expressions are represented by ACL2 @(tsee if)s,
+    which also represent C conditional statements:
+    the difference is where the terms occur, in the function body.
+    If they occur in places like
+    the top level of the function,
+    or recursively at the top level of the branches,
+    they represent @('if-then') statements,
+    as explained in @(see atc-tutorial-conditional-statements);
+    On the other hand, if they occur in places where they represent
+    sub-expressions of other expressions,
+    or initializers of local variable declarations,
+    then they represent conditional expressions.")
+
+  (xdoc::p
+   "For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |h| (|x| |y|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              ;; x > 0:"
+   "                              (> (c::sint->get |x|) 0))"
+   "                  :guard-hints ((\"Goal\""
+   "                                 :in-theory (enable c::sint-sub-okp"
+   "                                                    sbyte32p"
+   "                                                    sbyte32-fix"
+   "                                                    c::sint->get)))))"
+   "  (c::sint-sub |x|"
+   "               (if (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 18)))"
+   "                   (c::sint 0)"
+   "                 (c::sint 1))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int h(int x, int y) {"
+   "    return x - (y >= 18 ? 0 : 1);"
+   "}")
+
+  (xdoc::p
+   "As another example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |i| (|a| |b|)"
+   "  (declare (xargs :guard (and (c::sintp |a|)"
+   "                              (c::sintp |b|))"
+   "                  :guard-hints ((\"Goal\" :in-theory (enable"
+   "                                                    c::sint-nonzerop"
+   "                                                    c::sint-gt"
+   "                                                    c::sint-sub-okp"
+   "                                                    c::sint->get"
+   "                                                    sbyte32p"
+   "                                                    sbyte32-fix)))))"
+   "  (if (c::sint-nonzerop (c::sint-gt |a| |b|))"
+   "      (c::sint-sub |a|"
+   "                   (if (c::sint-nonzerop"
+   "                        (c::sint-eq |b| (c::sint-const 3)))"
+   "                       (c::sint-const 0)"
+   "                     (c::sint-const 1)))"
+   "    |b|))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int i(int a, int b) {"
+   "    if (a > b) {"
+   "        return a - (b == 3 ? 0 : 1);"
+   "    } else {"
+   "        return b;"
+   "    }"
+   "}")
+  (xdoc::p
+   "Note that the two ACL2 @(tsee if)s are treated differently
+    because of the place in which they occur:
+    the outer one represents a conditional statement,
+    the inner one represents a conditional expression.")
+
+  (xdoc::p
+   "The tests of the ACL2 @(tsee if)s that represent conditional expressions
+    must return ACL2 booleans,
+    in the same way as the @(tsee if)s that represent conditional statements.
+    As explained in @(see atc-tutorial-conditional-statement),
+    the function @(tsee sint-nonzerop) is used
+    to convert C @('int')s to ACL2 booleans in the tests."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-atc-tutorial-topics)
