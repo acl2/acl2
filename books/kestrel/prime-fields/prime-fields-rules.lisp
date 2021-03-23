@@ -766,11 +766,6 @@
   :hints (("Goal" :cases ((rationalp p))
            :in-theory (enable fep))))
 
-(defthm mul-of-1-arg1-gen
-  (equal (mul 1 x p)
-         (mod (ifix x) (pos-fix p)))
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;; (* -1 y) becomes (neg y)
 (defthm mul-becomes-neg
   (implies (and (syntaxp (and (quotep x)

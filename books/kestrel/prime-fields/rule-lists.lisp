@@ -32,7 +32,7 @@
     pfield::fep-of-add
     pfield::integerp-of-mul
     pfield::pow-opener
-    pfield::pow-of-0
+    pfield::pow-of-0-arg2
     pfield::add-commutative-axe
     pfield::add-commutative-2-axe
     pfield::mul-associative
