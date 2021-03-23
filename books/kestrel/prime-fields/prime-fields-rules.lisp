@@ -1018,12 +1018,13 @@
 
 (defthm equal-of-constant-and-add-of-neg-arg1
   (implies (and (syntaxp (quotep k))
-                (fep k p)
+                ;(fep k p)
                 (fep x p)
-                (fep y p)
+                (integerp y) ;(fep y p)
                 (posp p))
            (equal (equal k (add (neg x p) y p))
-                  (equal x (add (- k) y p))))
+                  (and (fep k p)
+                       (equal x (add (- k) y p)))))
   :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
 
 (defthm equal-of-constant-and-add-of-neg-arg2
@@ -1035,3 +1036,63 @@
            (equal (equal k (add y (neg x p) p))
                   (equal x (add (- k) y p))))
   :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+(defthm equal-of-add-of-neg
+  (implies (posp p)
+           (equal (equal x (add y (neg z p) p))
+                  (and (fep x p)
+                       (equal (add x z p) (mod (ifix y) p)))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+;;  This version has no mod or ifix in the RHS
+(defthm equal-of-add-of-neg-simple
+  (implies (and (posp p)
+                (fep y p))
+           (equal (equal x (add y (neg z p) p))
+                  (and (fep x p)
+                       (equal (add x z p) y))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+;; For when the constant is negative.  Not sure which normal form is better.
+(defthmd mul-when-constant-becomes-neg-of-mul
+  (implies (and (syntaxp (quotep k))
+                (< k 0)
+                (integerp k)
+                (posp p))
+           (equal (mul k x p)
+                  (neg (mul (neg k p) x p) p)
+                  ))
+  :hints (("Goal" :in-theory (enable mul neg sub))))
+
+;rename
+;;todo: use an axe-bind-free rule?
+(defthm move-negation-1
+  (implies (and (fep lhs p) ;gen?
+                (integerp x2)
+                (integerp x3)
+                (integerp y)
+                (integerp lhs)
+                (posp p))
+           (equal (equal lhs (add x1 (add x2 (add (neg y p) x3 p) p) p))
+                  (equal (add lhs y p) (add x1 (add x2 x3 p) p))))
+  :hints (("Goal" :use (:instance equal-of-add-of-neg
+                                  (x lhs)
+                                  (z y)
+                                  (y (add x1 (add x2 x3 p) p)))
+           :in-theory (disable equal-of-add-of-neg))))
+
+(defthmd add-of---arg1-fixed
+  (implies (and (syntaxp (not (quotep x))) ;defeat acl2 matching (- x) with a constant
+                (integerp x)
+                (integerp y))
+           (equal (add (- x) y p)
+                  (add (neg x p) y p)))
+  :hints (("Goal" :in-theory (enable neg add))))
+
+(defthmd add-of---arg2-fixed
+  (implies (and (syntaxp (not (quotep y))) ;defeat acl2 matching (- y) with a constant
+                (integerp x)
+                (integerp y))
+           (equal (add x (- y) p)
+                  (add x (neg y p) p)))
+  :hints (("Goal" :in-theory (enable neg add))))

@@ -3666,6 +3666,11 @@
                   (getbit n (trim (+ 1 n) x))))
   :hints (("Goal" :in-theory (e/d ( trim) ()))))
 
+(defthm bvplus-of-1-and-1
+  (equal (bvplus 1 1 x)
+         (bitnot x))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
 (defthm getbit-of-bvuminus
   (implies (and (< low size)
                 (integerp x)
@@ -6722,7 +6727,7 @@
                                                            highval)) data)))
   :hints (("Goal" :in-theory (e/d (bvcat-rewrite) (BVMULT-OF-EXPT2)))))
 
-(in-theory (disable BVMULT-OF-2)) ;we are leaving it as a mult in some cases now
+;(in-theory (disable BVMULT-OF-2)) ;we are leaving it as a mult in some cases now
 
 (defthm bvmult-tighten-2-32-5
   (implies (unsigned-byte-p 5 x)

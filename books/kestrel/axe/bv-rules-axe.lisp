@@ -33,25 +33,6 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
-;move
-(defthm <-of-integer-length-and-1
-  (implies t;(integerp i)
-           (equal (< (integer-length i) 1)
-                  (or (not (integerp i))
-                      (equal i 0)
-                      (equal i -1))))
-  :hints (("Goal" :in-theory (enable integer-length))))
-
-;move
-(defthm <-of-lg-and-0
-  (implies (integerp i)
-           (equal (< (lg i) 0)
-                  (or (equal i 0)
-                      (equal i -1))))
-  :hints (("Goal" :in-theory (enable lg))))
-
-
-
 (add-known-boolean bvlt)
 (add-known-boolean sbvlt)
 (add-known-boolean bvle)
