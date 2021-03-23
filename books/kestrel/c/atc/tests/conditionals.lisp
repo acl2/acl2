@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond1| (|x| |y| |z|)
+(defun |f| (|x| |y| |z|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|)
                               (c::sintp |z|))))
@@ -29,7 +29,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond2| (|x|)
+(defun |g| (|e|)
+  (declare (xargs :guard (c::sintp |e|)))
+  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))
+      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))
+          (c::sint-const 1)
+        (c::sint-const 2))
+    (c::sint-const 3)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |h| (|x|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (>= (c::sint->get |x|) 0))
                   :guard-hints (("Goal" :in-theory (enable
@@ -46,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond3| (|a| |b|)
+(defun |i| (|a| |b|)
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|))
                   :guard-hints (("Goal" :in-theory (enable
@@ -63,22 +73,12 @@
                      (c::sint-const 1)))
     |b|))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun |cond4| (|e|)
-  (declare (xargs :guard (c::sintp |e|)))
-  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))
-      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))
-          (c::sint-const 1)
-        (c::sint-const 2))
-    (c::sint-const 3)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |cond1|
-        |cond2|
-        |cond3|
-        |cond4|
+(c::atc |f|
+        |g|
+        |h|
+        |i|
         :output-file "conditionals.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
