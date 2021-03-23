@@ -324,7 +324,6 @@
                 (natp low))
            (equal (slice-less-guarded high low x)
                   (slice high low x)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (slice slice-less-guarded) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defund bvchop-list-unguarded (size lst)

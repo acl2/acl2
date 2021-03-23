@@ -2715,7 +2715,6 @@
                 )
            (equal (SUBRANGE start1 end1 (UPDATE-SUBRANGE start2 end2 vals lst))
                   (SUBRANGE (- start1 start2) (- end1 start2) vals)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (SUBRANGE) (;anti-subrange
                                               )))))
 
@@ -2743,7 +2742,6 @@
            (equal (subrange start end (update-subrange (+ 1 start) end vals lst))
                   (cons (nth start lst)
                         (subrange 0 (+ end -1 (- start)) vals))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (update-subrange-rewrite
                                    ;EQUAL-CONS-CASES2
                                    SUBRANGE-OF-CONS
@@ -3032,7 +3030,6 @@
                   (if (< 2 i)
                       (< y (MAXELEM (SUBRANGE 2 (+ -1 i) x)))
                     (< y (nth 2 x)))))
-  :otf-flg t
   :hints (("Goal" :use (:instance subrange-split-top (low 2))
            :in-theory (disable subrange-split-top
                                ))))
@@ -3407,7 +3404,6 @@
                   (append (take start lst)
                           (take (+ 1 end (- start)) vals)
                           (nthcdr (+ 1 end) lst))))
-  :otf-flg t
   :hints (("Goal" :use (:instance update-subrange-rewrite
                                   (lst (true-list-fix lst))
                                   (vals (take (+ 1 end (- start)) vals)))

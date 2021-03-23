@@ -543,7 +543,6 @@
                                dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
 
 (verify-guards merge-term-into-dag-array-basic
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp

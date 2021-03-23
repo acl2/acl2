@@ -4357,7 +4357,8 @@
            :hints (("Goal" :use (:instance ,(pack$ 'prove-true-case-with- suffix '-prover-return-type))
                     :in-theory (disable ,(pack$ 'prove-true-case-with- suffix '-prover-return-type)))))
 
-       (verify-guards ,prove-true-case-name :otf-flg t
+       (verify-guards ,prove-true-case-name
+         :otf-flg t
          :hints (("Goal" :in-theory (e/d (rationalp-when-natp-for-axe
                                           <-of-+-of-1-strengthen-2
                                           integerp-when-natp-for-axe)
