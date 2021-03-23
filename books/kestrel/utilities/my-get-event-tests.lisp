@@ -26,6 +26,27 @@
                         (TRUE-LISTP (GETPROPC FN 'DEF-BODIES NIL WRLD)))))
     (CAR (GETPROPC FN 'DEF-BODIES NIL WRLD))))
 
+;; An example where the built-in utility GET-EVENT returns something not
+;; useful:
+(assert-equal
+ (my-get-event 'all-vars1 (w state))
+ '(MUTUAL-RECURSION
+   (DEFUN ALL-VARS1 (TERM ANS)
+     (DECLARE (XARGS :GUARD (AND (PSEUDO-TERMP TERM)
+                                 (SYMBOL-LISTP ANS))
+                     :MODE :PROGRAM))
+     (COND ((VARIABLEP TERM)
+            (ADD-TO-SET-EQ TERM ANS))
+           ((FQUOTEP TERM) ANS)
+           (T (ALL-VARS1-LST (FARGS TERM) ANS))))
+   (DEFUN ALL-VARS1-LST (LST ANS)
+     (DECLARE (XARGS :GUARD (AND (PSEUDO-TERM-LISTP LST)
+                                 (SYMBOL-LISTP ANS))
+                     :MODE :PROGRAM))
+     (COND ((ENDP LST) ANS)
+           (T (ALL-VARS1-LST (CDR LST)
+                             (ALL-VARS1 (CAR LST) ANS)))))))
+
 ;; Test on a name was introduced with mutual-recursion:
 (assert-equal
  (my-get-event 'pseudo-termp (w state))
