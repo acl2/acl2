@@ -471,17 +471,6 @@
            (ev-smtcp term a))
   :hints (("Goal"
            :in-theory (e/d (reorder-hypotheses)
-                           (correctness-of-extractor
-                            correctness-of-make-term-to-vars))
+                           (correctness-of-extractor))
            :use ((:instance correctness-of-extractor
-                            (fixinfo (smtlink-hint->types-info hint)))
-                 (:instance correctness-of-make-term-to-vars
-                            (hypo-lst
-                             (mv-nth 1
-                                     (filter-type-hypo
-                                      (mv-nth 0
-                                              (extractor term
-                                                         (smtlink-hint->types-info
-                                                          hint)))
-                                      (smtlink-hint->types-info hint))))
-                            (alst nil))))))
+                            (fixinfo (smtlink-hint->types-info hint)))))))
