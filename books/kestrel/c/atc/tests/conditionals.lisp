@@ -39,20 +39,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |h| (|x|)
+(defun |h| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|)
-                              (>= (c::sint->get |x|) 0))
-                  :guard-hints (("Goal" :in-theory (enable
-                                                    c::sint-nonzerop
-                                                    c::sint-lt
-                                                    c::sint-sub-okp
-                                                    c::sint-mul-okp
-                                                    c::sint->get
+                              (c::sintp |y|)
+                              ;; x > 0:
+                              (> (c::sint->get |x|) 0))
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sint-sub-okp
                                                     sbyte32p
-                                                    sbyte32-fix)))))
-  (if (c::sint-nonzerop (c::sint-lt |x| (c::sint-const 1000)))
-      (c::sint-mul |x| (c::sint-const 10))
-    (c::sint-sub |x| (c::sint-const 1000000))))
+                                                    sbyte32-fix
+                                                    c::sint->get)))))
+  (c::sint-sub |x|
+               (if (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 18)))
+                   (c::sint-const 0)
+                 (c::sint-const 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,12 +73,30 @@
                      (c::sint-const 1)))
     |b|))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |j| (|x|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (>= (c::sint->get |x|) 0))
+                  :guard-hints (("Goal" :in-theory (enable
+                                                    c::sint-nonzerop
+                                                    c::sint-lt
+                                                    c::sint-sub-okp
+                                                    c::sint-mul-okp
+                                                    c::sint->get
+                                                    sbyte32p
+                                                    sbyte32-fix)))))
+  (if (c::sint-nonzerop (c::sint-lt |x| (c::sint-const 1000)))
+      (c::sint-mul |x| (c::sint-const 10))
+    (c::sint-sub |x| (c::sint-const 1000000))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |f|
         |g|
         |h|
         |i|
+        |j|
         :output-file "conditionals.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
