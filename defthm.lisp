@@ -697,31 +697,35 @@
 ; We return a list of all the vars mentioned in hyps or, if there is
 ; a synp hyp whose var-list is 't, we return t.
 
-  (cond ((null hyps)
-         nil)
-        ((variablep (car hyps))
-         (add-to-set-eq (car hyps)
-                        (all-vars-in-hyps (cdr hyps))))
-        ((fquotep (car hyps))
-         (all-vars-in-hyps (cdr hyps)))
-        ((eq (ffn-symb (car hyps)) 'synp)
-         (cond ((equal (fargn (car hyps) 1) *nil*)
-                (all-vars-in-hyps (cdr hyps)))
-               ((equal (fargn (car hyps) 1) *t*)
-                t)
-               ((and (quotep (fargn (car hyps) 1))
-                     (not (collect-non-legal-variableps
-                           (cadr (fargn (car hyps) 1)))))
-                (union-eq (cadr (fargn (car hyps) 1))
-                          (all-vars-in-hyps (cdr hyps))))
-               (t (er hard 'free-vars-in-hyps-considering-bind-free
-                      "We thought the first argument of synp in this context ~
-                       was either 'NIL, 'T, or else a quoted true list of ~
-                       variables, but ~x0 is not!"
-                      (fargn (car hyps) 1)))))
-        (t
-         (union-eq (all-vars (car hyps))
-                   (all-vars-in-hyps (cdr hyps))))))
+  (cond
+   ((null hyps)
+    nil)
+   (t
+    (let ((vars (all-vars-in-hyps (cdr hyps))))
+      (cond
+       ((eq vars t) t)
+       ((variablep (car hyps))
+        (add-to-set-eq (car hyps) vars))
+       ((fquotep (car hyps))
+        vars)
+       ((eq (ffn-symb (car hyps)) 'synp)
+        (cond ((equal (fargn (car hyps) 1) *nil*)
+               vars)
+              ((equal (fargn (car hyps) 1) *t*)
+               t)
+              ((and (quotep (fargn (car hyps) 1))
+                    (not (collect-non-legal-variableps
+                          (cadr (fargn (car hyps) 1)))))
+               (union-eq (cadr (fargn (car hyps) 1))
+                         vars))
+              (t (er hard 'free-vars-in-hyps-considering-bind-free
+                     "We thought the first argument of synp in this context ~
+                      was either 'NIL, 'T, or else a quoted true list of ~
+                      variables, but ~x0 is not!"
+                     (fargn (car hyps) 1)))))
+       (t
+        (union-eq (all-vars (car hyps))
+                  vars)))))))
 
 (defun match-free-value (match-free hyps pat wrld)
   (or match-free
