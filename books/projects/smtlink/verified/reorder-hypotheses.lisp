@@ -10,8 +10,21 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (include-book "extractor")
+
+(defalist symbol-pseudo-term-list-alist
+  :key-type symbolp
+  :val-type pseudo-term-listp
+  :true-listp t
+  :pred symbol-pseudo-term-list-alistp)
+
+(defalist pseudo-term-symbol-list-alist
+  :key-type pseudo-termp
+  :val-type symbol-listp
+  :true-listp t
+  :pred pseudo-term-symbol-list-alistp)
 
 (define filter-type-hypo ((hypo-lst pseudo-term-listp)
                           (fixinfo smt-fixtype-info-p))
@@ -26,6 +39,24 @@
         (mv (cons hypo-hd tl-root) tl-rest)))
     (mv tl-root (cons hypo-hd tl-rest))))
 
+(defthm correctness-of-filter-type-hypo-1
+  (implies (and (pseudo-term-listp hypo-lst)
+                (smt-fixtype-info-p fixinfo))
+           (b* (((mv & rest-hypo) (filter-type-hypo hypo-lst fixinfo)))
+             (implies (ev-smtcp (conjoin hypo-lst) a)
+                      (ev-smtcp (conjoin rest-hypo) a))))
+  :hints (("Goal"
+           :in-theory (enable filter-type-hypo))))
+
+(defthm correctness-of-filter-type-hypo-2
+  (implies (and (pseudo-term-listp hypo-lst)
+                (smt-fixtype-info-p fixinfo))
+           (b* (((mv root-hypo &) (filter-type-hypo hypo-lst fixinfo)))
+             (implies (ev-smtcp (conjoin hypo-lst) a)
+                      (ev-smtcp (conjoin root-hypo) a))))
+  :hints (("Goal"
+           :in-theory (enable filter-type-hypo))))
+
 #|
 (filter-type-hypo '((equal x2 (binary-+ x0 x1))
                     (equal x1 (rfix y))
@@ -36,218 +67,368 @@
                     (rationalp . ,(make-info-pair :fn-type :recognizer))))
 |#
 
-(defalist pseudo-term-symbol-list-alist
-  :key-type pseudo-termp
-  :val-type symbol-listp
-  :true-listp t
-  :pred pseudo-term-symbol-list-alistp)
+(define update-alst ((free-vars symbol-listp)
+                     (hypo pseudo-termp)
+                     (alst symbol-pseudo-term-list-alistp))
+  :measure (len free-vars)
+  :returns (new-alst symbol-pseudo-term-list-alistp)
+  (b* ((free-vars (symbol-list-fix free-vars))
+       (hypo (pseudo-term-fix hypo))
+       (alst (symbol-pseudo-term-list-alist-fix alst))
+       ((unless (consp free-vars)) alst)
+       ((cons var-hd var-tl) free-vars)
+       (exists? (assoc-equal var-hd alst))
+       ((unless exists?)
+        (update-alst var-tl hypo (acons var-hd (list hypo) alst)))
+       (new-alst (acons var-hd (cons hypo (cdr exists?)) alst)))
+    (update-alst var-tl hypo new-alst)))
 
-(defthm symbol-list-of-simple-term-vars
-  (symbol-listp (acl2::simple-term-vars term)))
-
-(acl2::make-flag flag-merge-sort-lexorder
-                 acl2::merge-sort-lexorder
-                 :flag-mapping ((pseudo-termp     . term)
-                                (pseudo-term-listp . lst))
-                 :defthm-macro-name defthm-flag-pseudo-termp
-                 :flag-var flag)
-
-(defthm symbol-list-of-merge-lexorder
-  (implies (and (symbol-listp l1)
-                (symbol-listp l2)
-                (symbol-listp acc))
-           (symbol-listp (acl2::merge-lexorder l1 l2 acc))))
-
-(defthm symbol-list-of-evens
-  (implies (symbol-listp l) (symbol-listp (evens l)))
-  :hints (("Goal" :induct (evens l))))
-
-(defthm symbol-list-of-merge-sort-lexorder
-  (implies (symbol-listp x)
-           (symbol-listp (acl2::merge-sort-lexorder x))))
-
-(define make-nodes ((hypo-lst pseudo-term-listp)
-                    (acc pseudo-term-symbol-list-alistp))
-  :returns (branches pseudo-term-symbol-list-alistp)
+(define make-var-to-terms ((hypo-lst pseudo-term-listp)
+                           (alst symbol-pseudo-term-list-alistp))
+  :returns (new-alst symbol-pseudo-term-list-alistp)
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
-       (acc (pseudo-term-symbol-list-alist-fix acc))
-       ((unless (consp hypo-lst)) acc)
+       (alst (symbol-pseudo-term-list-alist-fix alst))
+       ((unless (consp hypo-lst)) alst)
        ((cons hypo-hd hypo-tl) hypo-lst)
        ((mv okp term) (case-match hypo-hd
                         (('equal & term) (mv t term))
                         (& (mv nil nil))))
        ((unless okp)
-        (er hard? 'reorder-hypotheses=>make-nodes "bad equality: ~q0" hypo-hd))
-       (free-vars (acl2::merge-sort-lexorder (acl2::simple-term-vars term)))
-       (exist? (assoc-equal term acc))
-       ((if exist?) (make-nodes hypo-tl acc)))
-    (make-nodes hypo-tl (acons hypo-hd free-vars acc))))
+        (er hard? 'reorder-hypotheses=>make-var-to-terms
+            "INTERNAL: bad equality: ~q0" hypo-hd))
+       (free-vars (acl2::simple-term-vars term))
+       (new-alst (update-alst free-vars hypo-hd alst)))
+    (make-var-to-terms hypo-tl new-alst)))
 
 #|
-(make-nodes '((equal x2 (binary-+ x0 x1))
-              (equal x1 (rfix y))
-              (equal x0 (ifix x))
-              (equal x3 (ifix x)))
-            nil)
+(make-var-to-terms '((equal x2 (binary-+ x0 x1))
+                     (equal x1 (rfix y))
+                     (equal x0 (ifix x)))
+                   nil)
 |#
 
-(define update-roots ((node-alist pseudo-term-symbol-list-alistp)
-                      (roots symbol-listp)
-                      (sorted pseudo-term-listp))
-  :returns (mv (new-roots symbol-listp)
-               (new-sorted pseudo-term-listp))
-  :measure (len (pseudo-term-symbol-list-alist-fix node-alist))
-  (b* ((node-alist (pseudo-term-symbol-list-alist-fix node-alist))
-       (roots (symbol-list-fix roots))
-       (sorted (pseudo-term-list-fix sorted))
-       ((unless (consp node-alist)) (mv roots sorted))
-       ((cons node-hd node-tl) node-alist)
-       ((cons equality var-lst) node-hd)
-       ((if (or (member-equal equality sorted)
-                (not (subsetp-equal var-lst roots))))
-        (update-roots node-tl roots sorted))
-       ((mv okp new-var)
-        (case-match equality
-          (('equal new-var &) (mv t new-var))
-          (& (mv nil nil))))
-       ((unless (and okp (symbolp new-var)))
-        (prog2$ (er hard? 'reorder-hypotheses=>update-roots
-                    "bad equality: ~q0" equality)
-                (mv roots sorted))))
-    (update-roots node-tl (cons new-var roots) (cons equality sorted)))
-  ///
-  (more-returns
-   (new-sorted (implies (pseudo-term-listp sorted)
-                        (>= (len new-sorted)
-                            (len sorted)))
-               :name update-roots-nondecrease-len-of-sorted)
-   (new-sorted (implies (and (pseudo-term-listp sorted)
-                             (not (equal new-sorted sorted)))
-                        (> (len new-sorted)
-                           (len sorted)))
-               :name update-roots-increase-len-of-sorted)))
-
-#|
-(update-roots '(((equal x2 (binary-+ x0 x1)) x0 x1)
-                ((equal x3 (ifix x)) x)
-                ((equal x0 (ifix x)) x)
-                ((equal x1 (rfix y)) y))
-              '(x y)
-              nil)
-
-(update-roots '(((equal x2 (binary-+ x0 x1)) x0 x1)
-                ((equal x3 (ifix x)) x)
-                ((equal x0 (ifix x)) x)
-                ((equal x1 (rfix y)) y))
-              '(x1 x0 x3 x y)
-              '((equal x1 (rfix y))
-                (equal x0 (ifix x))
-                (equal x3 (ifix x))))
-|#
-
-(define measure-of-order-equality-hypo
-  ((node-alist pseudo-term-symbol-list-alistp)
-   (sorted pseudo-term-listp))
-  :returns (m natp)
-  (if (< (len (pseudo-term-list-fix sorted))
-         (len (pseudo-term-symbol-list-alist-fix node-alist)))
-      (- (len (pseudo-term-symbol-list-alist-fix node-alist))
-         (len (pseudo-term-list-fix sorted)))
-    0))
-
-(define order-equality-hypo ((node-alist pseudo-term-symbol-list-alistp)
-                             (roots symbol-listp)
-                             (sorted pseudo-term-listp))
-  :returns (mv (new-roots symbol-listp)
-               (new-sorted pseudo-term-listp))
-  :measure (measure-of-order-equality-hypo node-alist sorted)
-  :hints (("Goal"
-           :in-theory (e/d (measure-of-order-equality-hypo)
-                           (update-roots-increase-len-of-sorted))
-           :use ((:instance update-roots-increase-len-of-sorted
-                            (node-alist (pseudo-term-symbol-list-alist-fix node-alist))
-                            (roots (symbol-list-fix roots))
-                            (sorted (pseudo-term-list-fix sorted))))))
-  (b* ((node-alist (pseudo-term-symbol-list-alist-fix node-alist))
-       (roots (symbol-list-fix roots))
-       (sorted (pseudo-term-list-fix sorted))
-       ((if (>= (len sorted) (len node-alist))) (mv roots sorted))
-       ((mv new-roots new-sorted) (update-roots node-alist roots sorted))
-       ((if (equal new-sorted sorted)) (mv new-roots new-sorted)))
-    (order-equality-hypo node-alist new-roots new-sorted)))
-
-(define initialize-roots ((type-hypo pseudo-term-listp))
-  :returns (roots symbol-listp)
-  (b* ((type-hypo (pseudo-term-list-fix type-hypo))
-       ((unless (consp type-hypo)) nil)
-       ((cons hypo-hd hypo-tl) type-hypo)
-       ((mv okp var) (case-match hypo-hd
-                       ((& var) (mv t var))
-                       (& (mv nil nil))))
-       ((unless (and okp (symbolp var)))
-        (prog2$ (er hard? 'reorder-hypotheses=>initialize-roots
-                    "bad type hypotheses: ~q0" hypo-hd)
-                nil)))
-    (cons var (initialize-roots hypo-tl))))
-
-(defthm pseudo-term-list-of-rev
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (acl2::rev x)))
-  :hints (("Goal"
-           :in-theory (enable acl2::rev)
-           :induct (acl2::rev x))))
-
-(defthm pseudo-term-list-of-reverse
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (reverse x))))
-
-(define order-hypo-lst ((hypo-lst pseudo-term-listp)
-                        (fixinfo smt-fixtype-info-p))
-  :returns (new-hypo-lst pseudo-term-listp
-                         :hints (("Goal" :in-theory (disable reverse))))
+(define make-term-to-vars ((hypo-lst pseudo-term-listp)
+                           (alst pseudo-term-symbol-list-alistp))
+  :returns (new-alst pseudo-term-symbol-list-alistp)
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
-       (fixinfo (smt-fixtype-info-fix fixinfo))
-       ((mv root-hypo rest-hypo) (filter-type-hypo hypo-lst fixinfo))
-       (node-alist (make-nodes rest-hypo nil))
-       (roots (initialize-roots root-hypo))
-       ((mv & ordered-rest)
-        (order-equality-hypo node-alist roots nil))
-       ((if (< (len ordered-rest) (len node-alist)))
-        (prog2$ (er hard? 'reorder-hypotheses=>order-hypo-lst
-                    "Can't order hypotheses: ~q0" rest-hypo)
-                hypo-lst)))
-    (append root-hypo (reverse ordered-rest))))
+       (alst (pseudo-term-symbol-list-alist-fix alst))
+       ((unless (consp hypo-lst)) alst)
+       ((cons hypo-hd hypo-tl) hypo-lst)
+       ((mv okp term) (case-match hypo-hd
+                        (('equal & term) (mv t term))
+                        (& (mv nil nil))))
+       ((unless okp)
+        (er hard? 'reorder-hypotheses=>make-term-to-vars
+            "INTERNAL: bad equality: ~q0" hypo-hd))
+       (free-vars (acl2::simple-term-vars term))
+       (exists? (assoc-equal term alst))
+       ((if exists?) (make-term-to-vars hypo-tl alst)))
+    (make-term-to-vars hypo-tl (acons hypo-hd free-vars alst))))
+
+(defthm correctness-of-make-term-to-vars
+  (implies (and (pseudo-term-listp hypo-lst)
+                (pseudo-term-symbol-list-alistp alst)
+                (alistp a)
+                (implies (ev-smtcp (conjoin hypo-lst) a)
+                         (ev-smtcp (conjoin (strip-cars alst)) a)))
+           (implies (ev-smtcp (conjoin hypo-lst) a)
+                    (ev-smtcp (conjoin
+                               (strip-cars
+                                (make-term-to-vars hypo-lst alst)))
+                              a)))
+  :hints (("Goal"
+           :in-theory (e/d (make-term-to-vars)
+                           (pseudo-termp
+                            symbol-listp pseudo-term-listp
+                            lambda-of-pseudo-lambdap
+                            pseudo-term-listp-of-symbol-listp)))))
 
 #|
-(order-hypo-lst '((equal x2 (binary-+ x0 x1))
-                  (equal x4 (unary-- x1))
-                  (equal x3 (binary-* x0 x2))
-                  (equal x1 (rfix y))
-                  (equal x0 (ifix x))
-                  (rationalp y)
-                  (integerp x))
+(make-term-to-vars '((equal x2 (binary-+ x0 x1))
+                     (equal x1 (rfix y))
+                     (equal x0 (ifix x)))
+                   nil)
+|#
+
+(define find-resolved-var ((term pseudo-termp)
+                           (fixinfo smt-fixtype-info-p))
+  :returns (var symbolp)
+  (b* ((term (pseudo-term-fix term))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       ((unless (hypo-p term fixinfo))
+        (er hard? 'reorder-hypotheses=>find-resolved-var
+            "INTERNAL: bad equality: ~q0" term)))
+    (cadr term)))
+
+#|
+(find-resolved-var '(equal x0 (ifix x))
+                   `((integerp . ,(make-info-pair :fn-type :recognizer))
+                     (rationalp . ,(make-info-pair :fn-type :recognizer))))
+(find-resolved-var '(integerp x)
+                   `((integerp . ,(make-info-pair :fn-type :recognizer))
+                     (rationalp . ,(make-info-pair :fn-type :recognizer))))
+|#
+
+(defthm remove-from-symbol-list
+  (implies (symbol-listp lst)
+           (symbol-listp (remove-equal x lst))))
+
+(defthm positive-len-of-symbol-list
+  (implies (and (symbol-listp x) x)
+           (> (len x) 0))
+  :rule-classes :linear)
+
+(define number-of-unresolved ((term-var-alst pseudo-term-symbol-list-alistp))
+  :returns (m natp)
+  :measure (len (pseudo-term-symbol-list-alist-fix term-var-alst))
+  (b* ((term-var-alst (pseudo-term-symbol-list-alist-fix term-var-alst))
+       ((unless (consp term-var-alst)) 0)
+       ((cons term-var rest-alst) term-var-alst)
+       ((cons & vars) term-var))
+    (+ (len vars) (number-of-unresolved rest-alst)))
+  ///
+  (defthm number-of-unresolved-of-cdr
+    (implies (pseudo-term-symbol-list-alistp term-var-alst)
+             (<= (number-of-unresolved (cdr term-var-alst))
+                 (number-of-unresolved term-var-alst))))
+
+  (defthm number-of-unresolved-of-cdr-when-car
+    (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                  (consp term-var-alst)
+                  (cdr (car term-var-alst)))
+             (< (number-of-unresolved (cdr term-var-alst))
+                (number-of-unresolved term-var-alst)))
+    :hints (("Goal"
+             :expand (number-of-unresolved term-var-alst))))
+
+  (defthm number-of-unresolved-of-cons-<=
+    (implies (and (pseudo-term-symbol-list-alistp alst1)
+                  (pseudo-term-symbol-list-alistp alst2)
+                  (pseudo-termp term)
+                  (symbol-listp vars1)
+                  (symbol-listp vars2)
+                  (<= (number-of-unresolved alst1)
+                      (number-of-unresolved alst2))
+                  (<= (len vars1) (len vars2)))
+             (<= (number-of-unresolved (cons (cons term vars1) alst1))
+                 (number-of-unresolved (cons (cons term vars2) alst2))))
+    :hints (("Goal"
+             :in-theory (enable number-of-unresolved))))
+
+  (defthm number-of-unresolved-of-cons-<
+    (implies (and (pseudo-term-symbol-list-alistp alst1)
+                  (pseudo-term-symbol-list-alistp alst2)
+                  (pseudo-termp term)
+                  (symbol-listp vars1)
+                  (symbol-listp vars2)
+                  (< (number-of-unresolved alst1)
+                     (number-of-unresolved alst2))
+                  (<= (len vars1) (len vars2)))
+             (< (number-of-unresolved (cons (cons term vars1) alst1))
+                (number-of-unresolved (cons (cons term vars2) alst2))))
+    :hints (("Goal"
+             :in-theory (enable number-of-unresolved))))
+
+  (defthm number-of-unresolved-of-cons-nil-<=
+    (implies (and (pseudo-term-symbol-list-alistp lst1)
+                  (pseudo-term-symbol-list-alistp lst2)
+                  (pseudo-termp term)
+                  (symbol-listp vars2)
+                  (not vars2)
+                  (<= (number-of-unresolved lst1)
+                      (number-of-unresolved lst2)))
+             (<= (number-of-unresolved (cons (list term) lst1))
+                 (number-of-unresolved (cons (cons term vars2) lst2)))))
+
+  (defthm number-of-unresolved-of-cons-nil-<
+    (implies (and (pseudo-term-symbol-list-alistp lst1)
+                  (pseudo-term-symbol-list-alistp lst2)
+                  (pseudo-termp term)
+                  (symbol-listp vars2)
+                  (not vars2)
+                  (< (number-of-unresolved lst1)
+                     (number-of-unresolved lst2)))
+             (< (number-of-unresolved (cons (list term) lst1))
+                (number-of-unresolved (cons (cons term vars2) lst2)))))
+
+  (defthm number-of-unresolved-of-cons-non-nil-<
+    (implies (and (pseudo-term-symbol-list-alistp lst1)
+                  (pseudo-term-symbol-list-alistp lst2)
+                  (pseudo-termp term)
+                  (symbol-listp vars2)
+                  (consp vars2)
+                  (<= (number-of-unresolved lst1)
+                      (number-of-unresolved lst2)))
+             (< (number-of-unresolved (cons (list term) lst1))
+                (number-of-unresolved (cons (cons term vars2) lst2))))))
+
+(defthm len-<=-of-remove
+  (<= (len (remove-equal x lst)) (len lst))
+  :rule-classes :linear)
+
+(defthm consp-of-remove
+  (implies (remove-equal x lst) (consp lst)))
+
+(define update ((term-var-alst pseudo-term-symbol-list-alistp)
+                (resolved-var symbolp)
+                (work-lst pseudo-term-listp))
+  :returns (mv (new-term-var-alst pseudo-term-symbol-list-alistp)
+               (new-work pseudo-term-listp))
+  :measure (len (pseudo-term-symbol-list-alist-fix term-var-alst))
+  (b* ((term-var-alst (pseudo-term-symbol-list-alist-fix term-var-alst))
+       (resolved-var (symbol-fix resolved-var))
+       (work-lst (pseudo-term-list-fix work-lst))
+       ((unless (consp term-var-alst)) (mv nil work-lst))
+       ((cons term-vars rest-alst) term-var-alst)
+       ((cons term vars) term-vars)
+       ((mv rest-term-var-alst rest-work)
+        (update rest-alst resolved-var work-lst))
+       ((if (null vars))
+        (mv (acons term nil rest-term-var-alst)
+            rest-work))
+       (new-vars (remove-equal resolved-var vars))
+       ((unless new-vars)
+        (mv (acons term new-vars rest-term-var-alst)
+            (cons term rest-work))))
+    (mv (acons term new-vars rest-term-var-alst)
+        rest-work))
+  ///
+  (defthm measure-of-update-nil
+    (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                  (pseudo-term-listp work-lst)
+                  (not (consp term-var-alst)))
+             (b* (((mv new-term-var-alst new-work)
+                   (update nil resolved-var work-lst)))
+               (and (equal (number-of-unresolved new-term-var-alst) 0)
+                    (equal (len new-work) (len work-lst))))))
+
+  (defthm measure-of-update-work-lst-increase
+    (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                  (pseudo-term-listp work-lst))
+             (b* (((mv & new-work)
+                   (update term-var-alst resolved-var work-lst)))
+               (>= (len new-work) (len work-lst))))
+    :rule-classes :linear)
+
+  (defthm measure-of-update-term-var-alst-decrease
+    (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                  (pseudo-term-listp work-lst))
+             (b* (((mv new-term-var-alst &)
+                   (update term-var-alst resolved-var work-lst)))
+               (<= (number-of-unresolved new-term-var-alst)
+                   (number-of-unresolved term-var-alst))))
+    :rule-classes :linear)
+
+  (defthm measure-of-update-term-var-alst-decrease-when-work-lst-increase
+    (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                  (pseudo-term-listp work-lst))
+             (b* (((mv new-term-var-alst new-work)
+                   (update term-var-alst resolved-var work-lst)))
+               (implies (> (len new-work) (len work-lst))
+                        (< (number-of-unresolved new-term-var-alst)
+                           (number-of-unresolved term-var-alst)))))
+    :rule-classes :linear)
+  )
+
+(defthm correctness-of-update-1
+  (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                (pseudo-term-listp work-lst)
+                (alistp a))
+           (b* (((mv new-term-var-alst &)
+                 (update term-var-alst resolved-var work-lst)))
+             (implies
+              (and (ev-smtcp (conjoin (strip-cars term-var-alst)) a)
+                   (ev-smtcp (conjoin work-lst) a))
+              (ev-smtcp (conjoin (strip-cars new-term-var-alst)) a))))
+  :hints (("Goal"
+           :in-theory (enable update)
+           :induct (update term-var-alst resolved-var work-lst))))
+
+(defthm correctness-of-update-2
+  (implies (and (pseudo-term-symbol-list-alistp term-var-alst)
+                (pseudo-term-listp work-lst)
+                (alistp a))
+           (b* (((mv & new-work)
+                 (update term-var-alst resolved-var work-lst)))
+             (implies
+              (and (ev-smtcp (conjoin (strip-cars term-var-alst)) a)
+                   (ev-smtcp (conjoin work-lst) a))
+              (ev-smtcp (conjoin new-work) a))))
+  :hints (("Goal"
+           :in-theory (enable update)
+           :induct (update term-var-alst resolved-var work-lst))))
+
+#|
+(update
+ '(((equal x0 (ifix x)) x)
+   ((equal x1 (rfix y)) y)
+   ((equal x2 (binary-+ x0 x1)) x1 x0))
+ 'x
+ '((rationalp y)))
+|#
+
+(define measure-of-order-hypo-lst ((term-var-alst pseudo-term-symbol-list-alistp)
+                                   (work-lst pseudo-term-listp))
+  :returns (m nat-listp)
+  (b* ((work-lst (pseudo-term-list-fix work-lst))
+       (term-var-alst (pseudo-term-symbol-list-alist-fix term-var-alst)))
+    (list (number-of-unresolved term-var-alst) (len work-lst))))
+
+(define order-hypo-lst ((work-lst pseudo-term-listp)
+                        (var-term-alst symbol-pseudo-term-list-alistp)
+                        (term-var-alst pseudo-term-symbol-list-alistp)
+                        (fixinfo smt-fixtype-info-p))
+  :returns (sorted pseudo-term-listp)
+  :measure (measure-of-order-hypo-lst term-var-alst work-lst)
+  :hints (("Goal"
+           :in-theory (e/d (measure-of-order-hypo-lst) ())))
+  :well-founded-relation l<
+  (b* ((work-lst (pseudo-term-list-fix work-lst))
+       (var-term-alst (symbol-pseudo-term-list-alist-fix var-term-alst))
+       (term-var-alst (pseudo-term-symbol-list-alist-fix term-var-alst))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       ((unless (consp work-lst)) nil)
+       ((cons work-hd work-tl) work-lst)
+       (resolved-var (find-resolved-var work-hd fixinfo))
+       ((mv new-term-var-alst new-work-lst)
+        (update term-var-alst resolved-var work-tl)))
+    (cons work-hd
+          (order-hypo-lst new-work-lst var-term-alst
+                          new-term-var-alst fixinfo))))
+
+(defthm correctness-of-order-hypo-lst
+  (implies (and (pseudo-term-listp work-lst)
+                (symbol-pseudo-term-list-alistp var-term-alst)
+                (pseudo-term-symbol-list-alistp term-var-alst)
+                (smt-fixtype-info-p fixinfo)
+                (alistp a))
+           (implies (and (ev-smtcp (conjoin work-lst) a)
+                         (ev-smtcp (conjoin (strip-cars term-var-alst)) a))
+                    (ev-smtcp (conjoin
+                               (order-hypo-lst work-lst var-term-alst
+                                               term-var-alst fixinfo))
+                              a)))
+  :hints (("Goal"
+           :in-theory (e/d (order-hypo-lst) (pseudo-termp))
+           :induct (order-hypo-lst work-lst var-term-alst
+                                   term-var-alst fixinfo))))
+
+#|
+(order-hypo-lst '((integerp x) (rationalp y))
+                '((x (equal x0 (ifix x)))
+                  (y (equal x1 (rfix y)))
+                  (x0 (equal x2 (binary-+ x0 x1)))
+                  (x1 (equal x2 (binary-+ x0 x1))))
+                '(((equal x0 (ifix x)) x)
+                  ((equal x1 (rfix y)) y)
+                  ((equal x2 (binary-+ x0 x1)) x1 x0))
                 `((integerp . ,(make-info-pair :fn-type :recognizer))
                   (rationalp . ,(make-info-pair :fn-type :recognizer))))
 |#
 
-stop
-
-(defthm correctness-of-order-hypo-lst
-  (implies (and (pseudo-term-listp hypo-lst)
-                (smt-fixtype-info-p fixinfo)
-                (alistp a))
-           (equal (ev-smtcp-lst (order-hypo-lst hypo-lst fixinfo) a)
-                  (ev-smtcp-lst hypo-lst a)))
-  :hints (("Goal"
-           :in-theory (enable order-hypo-lst))))
-
-(defthm correctness-of-order-hypo-lst-corollary
-  (implies (and (pseudo-term-listp hypo-lst)
-                (alistp a))
-           (equal (ev-smtcp (conjoin (order-hypo-lst hypo-lst)) a)
-                  (ev-smtcp (conjoin hypo-lst) a)))
-  :hints (("Goal"
-           :in-theory (enable order-hypo-lst))))
+(defthm pseudo-term-list-of-strip-cars-of-pseudo-term-symbol-list-alist
+  (implies (pseudo-term-symbol-list-alistp x)
+           (pseudo-term-listp (strip-cars x))))
 
 (define reorder-hypotheses ((term pseudo-termp)
                             (hint smtlink-hint-p))
@@ -256,8 +437,31 @@ stop
        (hint (smtlink-hint-fix hint))
        ((smtlink-hint h) hint)
        ((mv hypo-lst new-term) (extractor term h.types-info))
-       (ordered-hypo (order-hypo-lst hypo-lst h.types-info)))
+       ((mv root-hypo rest-hypo) (filter-type-hypo hypo-lst h.types-info))
+       (var-term-alst (make-var-to-terms rest-hypo nil))
+       (term-var-alst (make-term-to-vars rest-hypo nil))
+       (ordered-hypo
+        (order-hypo-lst root-hypo var-term-alst term-var-alst h.types-info)))
     `(if ,(conjoin ordered-hypo) ,new-term 't)))
+
+#|
+(reorder-hypotheses '(if (if (if (integerp x)
+                                 (rationalp y)
+                               'nil)
+                             (if (equal x2 (binary-+ x0 x1))
+                                 (if (equal x0 (ifix x))
+                                     (equal x1 (rfix y))
+                                   'nil)
+                               'nil)
+                           'nil)
+                         (< x2 '0)
+                       't)
+                    (change-smtlink-hint
+                     (make-smtlink-hint)
+                     :types-info
+                     `((integerp . ,(make-info-pair :fn-type :recognizer))
+                       (rationalp . ,(make-info-pair :fn-type :recognizer)))))
+|#
 
 (defthm correctness-of-reorder-hypotheses
   (implies (and (pseudo-termp term)
@@ -267,6 +471,17 @@ stop
            (ev-smtcp term a))
   :hints (("Goal"
            :in-theory (e/d (reorder-hypotheses)
-                           (correctness-of-extractor))
+                           (correctness-of-extractor
+                            correctness-of-make-term-to-vars))
            :use ((:instance correctness-of-extractor
-                            (fixinfo (smtlink-hint->types-info hint)))))))
+                            (fixinfo (smtlink-hint->types-info hint)))
+                 (:instance correctness-of-make-term-to-vars
+                            (hypo-lst
+                             (mv-nth 1
+                                     (filter-type-hypo
+                                      (mv-nth 0
+                                              (extractor term
+                                                         (smtlink-hint->types-info
+                                                          hint)))
+                                      (smtlink-hint->types-info hint))))
+                            (alst nil))))))

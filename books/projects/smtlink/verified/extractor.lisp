@@ -23,14 +23,31 @@
   (b* ((term (pseudo-term-fix term)))
     (case-match term
       (('equal lhs &) (symbolp lhs))
-      (& nil))))
+      (& nil)))
+  ///
+  (more-returns
+   (ok (implies (and ok (pseudo-termp term))
+                (and (consp term)
+                     (symbolp (cadr term))))
+       :name implies-of-var-equal-p)))
 
-(define to-extract ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
+;; (deflist var-equal-list
+;;   :elt-type var-equal-p
+;;   :true-listp t
+;;   :pred var-equal-list-p)
+
+(define hypo-p ((term pseudo-termp) (fixinfo smt-fixtype-info-p))
   :returns (ok booleanp)
   (b* ((term (pseudo-term-fix term))
        (fixinfo (smt-fixtype-info-fix fixinfo)))
     (or (type-decl-p term fixinfo)
-        (var-equal-p term))))
+        (var-equal-p term)))
+  ///
+  (more-returns
+   (ok (implies (and ok (pseudo-termp term))
+                (and (consp term)
+                     (symbolp (cadr term))))
+       :name implies-of-hypo-p)))
 
 (defthm pseudo-term-listp-of-append-of-pseudo-term-listp
   (implies (and (pseudo-term-listp x) (pseudo-term-listp y))
@@ -106,7 +123,7 @@
                    (cond ((equal term0 ''nil) ''t)
                          ((equal term0 ''t)   ''nil)
                          (t `(not ,term0))))))
-            ((to-extract term fixinfo)
+            ((hypo-p term fixinfo)
              (mv (list term) ''t))
             (t (mv nil term)))))
   )
