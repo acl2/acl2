@@ -1980,10 +1980,9 @@
 
 (define atc-gen-fn-guard-deref-compustate ((guard pseudo-termp)
                                            (pointers symbol-listp)
-                                           (compst-var symbolp)
-                                           (wrld plist-worldp))
+                                           (compst-var symbolp))
   :returns (new-guard "A @(tsee pseudo-termp).")
-  :mode :program
+  :verify-guards nil
   :short "Transform a target function's guard
           to replace pointer arguments with dereferenced arrays
           in the heap of a computation state."
@@ -2017,12 +2016,11 @@
   (b* ((derefs (loop$ for pointer in pointers
                       collect `(deref ,pointer (compustate->heap ,compst-var))))
        (guard-subst (acl2::fsubcor-var pointers derefs guard))
-       (guard-subst (untranslate guard-subst nil wrld))
        (pointer-hyps (loop$ for pointer in pointers
                             append (list `(pointerp ,pointer)
                                          `(equal (pointer->reftype ,pointer)
                                                  (type-uchar))))))
-    `(and ,@pointer-hyps ,guard-subst)))
+    (acl2::conjoin (append pointer-hyps (list guard-subst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2188,7 +2186,13 @@
        (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
+       (hyps (acl2::conjoin (list `(compustatep ,compst-var)
+                                  hyps
+                                  `(equal ,fenv-var
+                                          (init-fun-env ,prog-const)))))
+       (hyps (acl2::flatten-ands-in-lit hyps))
+       (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
        (equalities
         `(b* (((mv ,result-var ,new-compst-var)
                (exec-fun ',(ident (symbol-name fn))
@@ -2222,10 +2226,7 @@
        ((mv local-event &)
         (evmac-generate-defthm
          name
-         :formula `(implies (and ,hyps
-                                 (compustatep ,compst-var)
-                                 (equal ,fenv-var (init-fun-env ,prog-const)))
-                            ,equalities)
+         :formula `(implies ,hyps ,equalities)
          :hints hints
          :enable nil)))
     (mv local-event name names-to-avoid)))
@@ -2278,7 +2279,14 @@
        (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
+       (hyps (acl2::conjoin (list `(compustatep ,compst-var)
+                                  hyps
+                                  `(equal ,fenv-var (init-fun-env ,prog-const))
+                                  `(integerp ,limit-var)
+                                  `(>= ,limit-var ,limit))))
+       (hyps (acl2::flatten-ands-in-lit hyps))
+       (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
        (equalities
         `(b* (((mv ,result-var ,new-compst-var)
                (exec-fun ',(ident (symbol-name fn))
@@ -2306,12 +2314,7 @@
        ((mv local-event &)
         (evmac-generate-defthm
          name
-         :formula `(implies (and ,hyps
-                                 (compustatep ,compst-var)
-                                 (equal ,fenv-var (init-fun-env ,prog-const))
-                                 (integerp ,limit-var)
-                                 (>= ,limit-var ,limit))
-                            ,equalities)
+         :formula `(implies ,hyps ,equalities)
          :hints hints
          :enable nil)))
     (mv local-event name names-to-avoid)))
@@ -2351,7 +2354,13 @@
        (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
        (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var))
+       (hyps (acl2::conjoin (list `(compustatep ,compst-var)
+                                  hyps
+                                  `(integerp ,limit-var)
+                                  `(>= ,limit-var ,limit))))
+       (hyps (acl2::flatten-ands-in-lit hyps))
+       (hyps `(and ,@(acl2::untranslate-lst hyps t wrld)))
        (equalities
         `(b* (((mv ,result-var ,new-compst-var)
                (exec-fun (ident ,(symbol-name fn))
@@ -2368,11 +2377,7 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          name
-         :formula `(implies (and ,hyps
-                                 (compustatep ,compst-var)
-                                 (integerp ,limit-var)
-                                 (>= ,limit-var ,limit))
-                            ,equalities)
+         :formula `(implies ,hyps ,equalities)
          :hints hints
          :enable nil)))
     (mv local-event exported-event name)))
