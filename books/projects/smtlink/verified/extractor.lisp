@@ -53,23 +53,20 @@
   (implies (and (pseudo-term-listp x) (pseudo-term-listp y))
            (pseudo-term-listp (append x y))))
 
-(local (in-theory (e/d (;; pseudo-termp
-                        ;;  pseudo-term-listp
-                        pseudo-term-fix
-                        ;; pseudo-term-list-fix
-                        )
-                   (consp-of-pseudo-lambdap
-                    symbol-listp
-                    pseudo-lambdap-of-fn-call-of-pseudo-termp
-                    lambda-of-pseudo-lambdap
-                    ACL2::TRUE-LISTP-OF-CAR-WHEN-TRUE-LIST-LISTP
-                    TRUE-LIST-LISTP
-                    PSEUDO-TERM-LISTP-OF-CDR-OF-PSEUDO-TERMP
-                    PSEUDO-TERM-LISTP-OF-CDR-PSEUDO-TERMP-IF))))
+(local (in-theory (e/d ()
+                       (consp-of-pseudo-lambdap
+                        symbol-listp
+                        pseudo-lambdap-of-fn-call-of-pseudo-termp
+                        lambda-of-pseudo-lambdap
+                        acl2::true-listp-of-car-when-true-list-listp
+                        true-list-listp
+                        pseudo-term-listp-of-cdr-of-pseudo-termp
+                        pseudo-term-listp-of-cdr-pseudo-termp-if))))
 
 (defines extract
   :parents (SMT-extract)
   :short "Functions for extracting type declarations from clause."
+  :hints (("Goal" :in-theory (enable pseudo-term-fix)))
   :flag-local nil
 
   (define extract-disjunct ((term pseudo-termp) (fixinfo smt-fixtype-info-p))

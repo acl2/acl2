@@ -17,7 +17,12 @@
       :name 'rfix
       :expansion-depth 0)))
 
+(defun types-info ()
+  `((integerp . ,(make-info-pair :fn-type :recognizer))
+    (rationalp . ,(make-info-pair :fn-type :recognizer))))
+
 (defun my-hint ()
   (make-smtlink-hint
    :functions (smt-fun)
+   :types-info (types-info)
    :wrld-fn-len 99))

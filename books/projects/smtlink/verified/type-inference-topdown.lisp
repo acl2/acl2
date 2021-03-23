@@ -41,7 +41,7 @@
                                (acc pseudo-termp)
                                (counter natp))
     :returns (mv (ctr natp)
-                 (judge (pseudo-termp judge)))
+                 (judge pseudo-termp))
     :measure (acl2-count (pseudo-term-fix judges))
     :verify-guards nil
     (b* ((judges (pseudo-term-fix judges))
@@ -55,8 +55,7 @@
          ((if (equal judges ''t)) (mv counter acc))
          ((if (and (type-predicate-of-term judges term supertype)
                    (zp counter)))
-          (mv (1+ counter)
-              `(if ,judges ,acc 'nil)))
+          (mv (1+ counter) `(if ,judges ,acc 'nil)))
          ((if (and (type-predicate-of-term judges term supertype)
                    (not (zp counter))))
           (mv counter acc))
@@ -64,15 +63,15 @@
           (mv counter `(if ,judges ,acc 'nil)))
          ((unless (is-conjunct? judges))
           (prog2$ (er hard? 'type-inference-topdown=>choose-judge-helper
-                      "Judges should be a conjunct: ~q0" judges)
+                      "Judges should be a consp: ~q0" judges)
                   (mv counter acc)))
          ((list & cond then &) judges)
          ((mv new-ctr new-acc)
           (choose-judge-helper cond term supertype acc counter)))
       (choose-judge-helper then term supertype new-acc new-ctr)))
-
-  (verify-guards choose-judge-helper)
   )
+
+(verify-guards choose-judge-helper)
 
 (defthm correctness-of-choose-judge-helper
   (implies (and (ev-smtcp-meta-extract-global-facts)

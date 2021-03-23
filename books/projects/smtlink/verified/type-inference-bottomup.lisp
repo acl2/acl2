@@ -23,58 +23,6 @@
 (include-book "../utils/fresh-vars")
 
 (set-state-ok t)
-;; ------------------------------------------------------------
-;; Return the topest judgement
-
-(define type-judgement-top ((judgements pseudo-termp)
-                            (term pseudo-termp)
-                            (options type-options-p))
-  :returns (judgement pseudo-termp)
-  (b* ((judgements (pseudo-term-fix judgements))
-       (options (type-options-fix options))
-       (supertype-alst (type-options->supertype options)))
-    (look-up-path-cond term judgements supertype-alst)))
-
-(defthm correctness-of-type-judgement-top
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp term)
-                (pseudo-termp judgements)
-                (alistp a)
-                (ev-smtcp judgements a))
-           (ev-smtcp (type-judgement-top judgements term options) a))
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (enable type-judgement-top))))
-
-(define type-judgement-top-list ((judgements-lst pseudo-termp)
-                                 (term-lst pseudo-term-listp)
-                                 (options type-options-p))
-  :returns (judgement-lst pseudo-termp)
-  :measure (acl2-count (pseudo-term-fix judgements-lst))
-  (b* ((judgements-lst (pseudo-term-fix judgements-lst))
-       (term-lst (pseudo-term-list-fix term-lst))
-       ((unless (is-conjunct? judgements-lst))
-        (prog2$
-         (er hard? 'type-inference-bottomup=>type-judgement-top-list
-             "The top of type judgement is not a conjunction of conditions: ~q0"
-             judgements-lst)
-         ''t))
-       ((if (or (equal judgements-lst ''t) (null term-lst))) ''t)
-       ((list & judgements-hd judgements-tl &) judgements-lst)
-       ((cons term-hd term-tl) term-lst))
-    `(if ,(type-judgement-top judgements-hd term-hd options)
-         ,(type-judgement-top-list judgements-tl term-tl options)
-       'nil)))
-
-(defthm correctness-of-type-judgement-top-list
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-term-listp term-lst)
-                (pseudo-termp judgements-lst)
-                (alistp a)
-                (ev-smtcp judgements-lst a))
-           (ev-smtcp (type-judgement-top-list judgements-lst term-lst options) a))
-  :hints (("Goal"
-           :in-theory (enable type-judgement-top-list))))
 
 ;;-------------------------------------------------------
 ;; quoted judgements
