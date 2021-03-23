@@ -178,7 +178,6 @@
                 (consp alist))
            (natp (cdr (car alist))))
   :rule-classes :type-prescription
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
 
 (defthmd consp-car-when-hit-count-alistp
@@ -186,7 +185,6 @@
                 (consp alist))
            (consp (car alist)))
   :rule-classes :type-prescription
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
 
 ;; The info should be uniquify-ed before calling this.

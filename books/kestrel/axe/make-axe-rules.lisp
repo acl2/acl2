@@ -536,7 +536,6 @@
 (defthm axe-rule-hyp-listp-of-mv-nth-0-of-make-axe-rule-hyps-for-hyp
   (implies (pseudo-termp hyp)
            (axe-rule-hyp-listp (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
-  :otf-flg t
   :hints (("Goal" :use (;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
                         ;;            (fn 'axe-bind-free)
                         ;;            (term hyp))
