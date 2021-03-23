@@ -2151,8 +2151,9 @@
      are needed to discharge some proof subgoal that arise.")
    (xdoc::p
     "Furthermore, we generate a @(':use') hint
-     to augment the theorem's formula with the guard theorem of @('fn'):
-     this is critical to ensure that the symbolic execution of the C operators
+     to augment the theorem's formula with the guard theorem of @('fn'),
+     with the pointer arguments replaced by the dereferenced arrays.
+     This is critical to ensure that the symbolic execution of the C operators
      does not split on the error cases:
      the fact that @('fn') is guard-verified
      ensures that @(tsee sint-add) and similar functions are always called
@@ -2199,13 +2200,15 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
+       (instantiation (atc-gen-instantiation-deref-compustate pointers 'compst))
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms
                                     ',exec-var-limit-correct-thms)
-                 :use (:guard-theorem ,fn)
+                 :use (:instance (:guard-theorem ,fn)
+                       :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
                           (:free (args compst fenv limit)
                            (exec-fun '(:ident (name . ,(symbol-name fn)))
@@ -2279,7 +2282,8 @@
                               (:executable-counterpart natp)
                               (:executable-counterpart tau-system)
                               ,fn-exec-const-limit-correct-thm)
-                 :use ((:instance ,fn-returns-value-thm ,@instantiation)
+                 :use ((:instance ,fn-returns-value-thm
+                        :extra-bindings-ok ,@instantiation)
                        (:instance errorp-of-error (info :limit))
                        (:instance exec-fun-limit
                         (limit ,limit)
