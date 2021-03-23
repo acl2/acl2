@@ -57,7 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "f.c")
+(c::atc |f| :output-file "int.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +65,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc -o f f.c f-test.c
+  gcc -o int int.c int-test.c
   ./f
 
 |#
