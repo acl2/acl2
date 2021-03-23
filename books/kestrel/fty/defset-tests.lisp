@@ -14,6 +14,7 @@
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,6 +25,19 @@
  (assert! (function-symbolp 'nat-set-p (w state)))
  (assert! (function-symbolp 'nat-set-fix (w state)))
  (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (fty::defset nat set 
+   :elt-type nat
+   :elementp-of-nil nil))
+
+(must-fail
+ (fty::defset nat-set
+   :elt-type nat
+   :elementp-of-nil nil
+   :cheap t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

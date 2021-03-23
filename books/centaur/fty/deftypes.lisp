@@ -1062,7 +1062,7 @@
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
-       (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (parse-flexset (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (member :count (cdr whole))
               x
             (change-flexset x :count nil)))
