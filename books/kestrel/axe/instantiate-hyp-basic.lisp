@@ -193,7 +193,7 @@
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (e/d (instantiate-hyp-basic instantiate-hyp-basic-lst) (myquotep)))))
 
-(verify-guards instantiate-hyp-basic :otf-flg t :hints (("Goal" :in-theory (enable pseudo-termp))))
+(verify-guards instantiate-hyp-basic :hints (("Goal" :in-theory (enable pseudo-termp))))
 
 (defthm consp-of-mv-nth-0-of-instantiate-hyp-basic
   (implies (consp term)

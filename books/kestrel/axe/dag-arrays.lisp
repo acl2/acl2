@@ -611,7 +611,6 @@
                 )
            (equal (equal 'quote (nth 0 (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
                   (consp (nth n (dargs (aref1 dag-array-name dag-array nodenum))))))
-  :otf-flg t
   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
                                                   ;;LIST::LEN-OF-CDR-BETTER
@@ -2121,7 +2120,6 @@
                 (<= nodenum bound)
                 (natp bound))
            (dargp-less-than (nth n (dargs (aref1 dag-array-name dag-array nodenum))) bound))
-  :otf-flg t
   :hints (("Goal" :use (:instance all-dargp-less-than-of-dargs-of-aref1
                                   (n nodenum)
                                   (m nodenum))

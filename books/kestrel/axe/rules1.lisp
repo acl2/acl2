@@ -529,7 +529,6 @@
                 )
            (equal (bvnth element-size index-size index data)
                   (bv-array-read element-size (expt 2 index-size) (bvchop index-size index) data)))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable bv-array-read bvnth ceiling-of-lg))))
 
 ;=== stuff to support array-reduction-when-top-bit-is-xored-in
@@ -608,7 +607,6 @@
             (NATP ELEM-SIZE))
            (EQUAL (BVCHOP ELEM-SIZE (NTH (EXPT 2 N) VALS))
                   (BVNOT ELEM-SIZE (NTH 0 VALS))))
-  :otf-flg t
   :hints (("Goal" :expand ((BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
                            (NTHCDR (EXPT 2 N) VALS))
            :in-theory (disable NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE)
@@ -626,7 +624,6 @@
                   (bvxor elem-size
                          (repeatbit elem-size (getbit 0 x))
                          (bv-array-read elem-size (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals)))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x)))
            :use (:instance gross-hack)
@@ -726,7 +723,6 @@
                                         (/ len 2)
                                         (bvchop (+ -1 (lg len)) index)
                                         (firstn (/ len 2) array)))))
-  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (power-of-2p expt-of-+ natp even-when-power-of-2-and-at-least-2 lg
                                         SUBRANGE ;prove an nthdr=subrange rule
@@ -752,7 +748,6 @@
             )
            (equal (bv-array-read 1 (expt 2 (+ 1 n)) (bvcat 1 x n y) vals)
                   (bv-array-read 1 (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x)))
            :in-theory (e/d (nth-sum-when-nthcdr-known bvcat-special-opener bv-array-read ceiling-of-lg subrange)
@@ -798,7 +793,6 @@
 (defthm array-reduction-1-0
   (equal (bv-array-read 1 2 index '(1 0))
          (bitnot (getbit 0 (ifix index))))
-;  :otf-flg t
   :hints (("Goal"
            :expand (NTH (GETBIT 0 INDEX) '(1 0))
            :in-theory (e/d (bitnot bv-array-read ;LIST::NTH-OF-CONS
@@ -1154,7 +1148,6 @@
            (if (equal 0 (getbit 0 b))
                (nth 2 vals)
              (nth 3 vals))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
                    (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
@@ -1434,7 +1427,6 @@
                 (natp index))
            (equal (nth index vals)
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ bvnth all-integerp-when-all-natp ceiling-of-lg)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
@@ -1559,7 +1551,6 @@
                 )
            (equal (bv-array-read element-size len index (subrange start end lst))
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                                    ;;BVPLUS-RECOLLAPSE
@@ -2315,7 +2306,6 @@
                     (if (< key 1)
                         (bvchop-list element-size (cdr (take len (true-list-fix lst))))
                       (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((and (< len 0)
                         (< key n))
@@ -3391,7 +3381,6 @@
           (BV-ARRAY-READ ELEMENT-SIZE (len lst) ;(+ 1 END)
                          (+ START INDEX)
                          LST)))
-  :OTF-FLG T
   :HINTS
   (("Goal"
     :IN-THEORY

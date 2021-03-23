@@ -480,7 +480,6 @@
   (implies (and (weak-dagp-aux dag)
                 (bounded-dag-exprp (+ 1 (top-nodenum dag)) expr))
            (weak-dagp-aux (mv-nth 1 (add-to-dag expr dag))))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable add-to-dag acons (:d weak-dagp-aux) BOUNDED-DAG-EXPRP DAG-EXPRP0))))
 
 (defthm pseudo-dagp-aux-of-mv-nth-1-of-add-to-dag
@@ -488,7 +487,6 @@
                 (bounded-dag-exprp (+ 1 (top-nodenum dag)) expr))
            (pseudo-dagp-aux (mv-nth 1 (add-to-dag expr dag))
                             (top-nodenum (mv-nth 1 (add-to-dag expr dag)))))
-  :otf-flg t
   :hints (("Goal" :expand ((PSEUDO-DAGP-AUX DAG (CAR (CAR DAG)))
                            (PSEUDO-DAGP-AUX DAG 0)
                            (PSEUDO-DAGP-AUX (ACONS (+ 1 (CAR (CAR DAG))) EXPR DAG)
@@ -1070,7 +1068,6 @@
            (equal (max-key dag-lst max-so-far)
                   (max (car (car dag-lst))
                        max-so-far)))
-;  :otf-flg t
   :hints (("Goal" ;:cases ()
            :do-not '(generalize)
            :in-theory (enable pseudo-dagp-aux max-key))))
