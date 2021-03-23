@@ -2049,7 +2049,7 @@
 
 (define atc-gen-instantiation-deref-compustate ((pointers symbol-listp)
                                                 (compst-var symbolp))
-  :returns (instantiation "A @(tsee acl2::doublet-listp).")
+  :returns (instantiation "A @('acl2::doublet-listp').")
   :short "Calculate an instantiation for lemmas instances,
           where pointer arguments are replaced with dereferenced arrays."
   (loop$ for pointer in pointers

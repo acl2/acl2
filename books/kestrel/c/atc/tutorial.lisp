@@ -1672,7 +1672,7 @@
    "The tests of the ACL2 @(tsee if)s that represent conditional expressions
     must return ACL2 booleans,
     in the same way as the @(tsee if)s that represent conditional statements.
-    As explained in @(see atc-tutorial-conditional-statement),
+    As explained in @(see atc-tutorial-conditional-statements),
     the function @(tsee sint-nonzerop) is used
     to convert C @('int')s to ACL2 booleans in the tests."))
 
