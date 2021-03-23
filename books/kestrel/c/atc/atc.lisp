@@ -2049,6 +2049,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-instantiation-deref-compustate ((pointers symbol-listp)
+                                                (compst-var symbolp))
+  :returns (instantiation "A @(tsee acl2::doublet-listp).")
+  :short "Calculate an instantiation for lemmas instances,
+          where pointer arguments are replaced with dereferenced arrays."
+  (loop$ for pointer in pointers
+         collect (list pointer
+                       `(deref ,pointer (compustate->heap ,compst-var)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fn-exec-const-limit-correct-thm
   ((fn symbolp)
    (pointers symbol-listp)
@@ -2262,17 +2273,13 @@
                                              limit)))
            (and (equal compst1 compst)
                 (equal result (,fn ,@args)))))
+       (instantiation (atc-gen-instantiation-deref-compustate pointers 'compst))
        (hints `(("Goal"
                  :in-theory '((:executable-counterpart ident)
                               (:executable-counterpart natp)
                               (:executable-counterpart tau-system)
                               ,fn-exec-const-limit-correct-thm)
-                 :use ((:instance ,fn-returns-value-thm
-                        ,@(loop$ for pointer in pointers
-                                 collect (list pointer
-                                               `(deref ,pointer
-                                                       (compustate->heap
-                                                        compst)))))
+                 :use ((:instance ,fn-returns-value-thm ,@instantiation)
                        (:instance errorp-of-error (info :limit))
                        (:instance exec-fun-limit
                         (limit ,limit)
