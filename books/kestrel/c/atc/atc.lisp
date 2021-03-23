@@ -2182,17 +2182,22 @@
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
-       (args (atc-gen-fn-args-deref-compustate formals pointers 'compst))
+       (compst-var (acl2::genvar 'atc "COMPST" nil formals))
+       (fenv-var (acl2::genvar 'atc "FENV" nil formals))
+       (result-var (acl2::genvar 'atc "RESULT" nil formals))
+       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
+       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers 'compst wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
        (equalities
-        `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
-                                             (list ,@formals)
-                                             compst
-                                             fenv
-                                             ,limit)))
-           (and (equal compst1 compst)
-                (equal result (,fn ,@args)))))
+        `(b* (((mv ,result-var ,new-compst-var)
+               (exec-fun ',(ident (symbol-name fn))
+                         (list ,@formals)
+                         ,compst-var
+                         ,fenv-var
+                         ,limit)))
+           (and (equal ,new-compst-var ,compst-var)
+                (equal ,result-var (,fn ,@args)))))
        (returns-value-thms
         (atc-symbol-fninfo-alist-to-returns-value-thms prec-fns))
        (exec-var-limit-correct-thms
@@ -2200,7 +2205,8 @@
        (type-prescriptions
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
-       (instantiation (atc-gen-instantiation-deref-compustate pointers 'compst))
+       (instantiation
+        (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
                                     '(,fn)
@@ -2210,15 +2216,15 @@
                  :use (:instance (:guard-theorem ,fn)
                        :extra-bindings-ok ,@instantiation)
                  :expand (:lambdas
-                          (:free (args compst fenv limit)
+                          (:free (args ,compst-var ,fenv-var limit)
                            (exec-fun '(:ident (name . ,(symbol-name fn)))
-                                     args compst fenv limit))))))
+                                     args ,compst-var ,fenv-var limit))))))
        ((mv local-event &)
         (evmac-generate-defthm
          name
          :formula `(implies (and ,hyps
-                                 (compustatep compst)
-                                 (equal fenv (init-fun-env ,prog-const)))
+                                 (compustatep ,compst-var)
+                                 (equal ,fenv-var (init-fun-env ,prog-const)))
                             ,equalities)
          :hints hints
          :enable nil)))
@@ -2265,18 +2271,25 @@
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
-       (args (atc-gen-fn-args-deref-compustate formals pointers 'compst))
+       (compst-var (acl2::genvar 'atc "COMPST" nil formals))
+       (fenv-var (acl2::genvar 'atc "FENV" nil formals))
+       (limit-var (acl2::genvar 'atc "LIMIT" nil formals))
+       (result-var (acl2::genvar 'atc "RESULT" nil formals))
+       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
+       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers 'compst wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
        (equalities
-        `(b* (((mv result compst1) (exec-fun ',(ident (symbol-name fn))
-                                             (list ,@formals)
-                                             compst
-                                             fenv
-                                             limit)))
-           (and (equal compst1 compst)
-                (equal result (,fn ,@args)))))
-       (instantiation (atc-gen-instantiation-deref-compustate pointers 'compst))
+        `(b* (((mv ,result-var ,new-compst-var)
+               (exec-fun ',(ident (symbol-name fn))
+                         (list ,@formals)
+                         ,compst-var
+                         ,fenv-var
+                         ,limit-var)))
+           (and (equal ,new-compst-var ,compst-var)
+                (equal ,result-var (,fn ,@args)))))
+       (instantiation
+        (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
                  :in-theory '((:executable-counterpart ident)
                               (:executable-counterpart natp)
@@ -2287,17 +2300,17 @@
                        (:instance errorp-of-error (info :limit))
                        (:instance exec-fun-limit
                         (limit ,limit)
-                        (limit1 limit)
+                        (limit1 ,limit-var)
                         (fun (ident ,(symbol-name fn)))
                         (args (list ,@formals)))))))
        ((mv local-event &)
         (evmac-generate-defthm
          name
          :formula `(implies (and ,hyps
-                                 (compustatep compst)
-                                 (equal fenv (init-fun-env ,prog-const))
-                                 (integerp limit)
-                                 (>= limit ,limit))
+                                 (compustatep ,compst-var)
+                                 (equal ,fenv-var (init-fun-env ,prog-const))
+                                 (integerp ,limit-var)
+                                 (>= ,limit-var ,limit))
                             ,equalities)
          :hints hints
          :enable nil)))
@@ -2332,17 +2345,22 @@
     "This theorem is not generated if @(':proofs') is @('nil')."))
   (b* ((name (cdr (assoc-eq fn fn-thms)))
        (formals (acl2::formals+ fn wrld))
-       (args (atc-gen-fn-args-deref-compustate formals pointers 'compst))
+       (compst-var (acl2::genvar 'atc "COMPST" nil formals))
+       (limit-var (acl2::genvar 'atc "LIMIT" nil formals))
+       (result-var (acl2::genvar 'atc "RESULT" nil formals))
+       (new-compst-var (acl2::genvar 'atc "NEW-COMPST" nil formals))
+       (args (atc-gen-fn-args-deref-compustate formals pointers compst-var))
        (guard (acl2::uguard fn wrld))
-       (hyps (atc-gen-fn-guard-deref-compustate guard pointers 'compst wrld))
+       (hyps (atc-gen-fn-guard-deref-compustate guard pointers compst-var wrld))
        (equalities
-        `(b* (((mv result compst1) (exec-fun (ident ,(symbol-name fn))
-                                             (list ,@formals)
-                                             compst
-                                             (init-fun-env ,prog-const)
-                                             limit)))
-           (and (equal compst1 compst)
-                (equal result (,fn ,@args)))))
+        `(b* (((mv ,result-var ,new-compst-var)
+               (exec-fun (ident ,(symbol-name fn))
+                         (list ,@formals)
+                         ,compst-var
+                         (init-fun-env ,prog-const)
+                         ,limit-var)))
+           (and (equal ,new-compst-var ,compst-var)
+                (equal ,result-var (,fn ,@args)))))
        (hints `(("Goal"
                  :in-theory '((:executable-counterpart ident))
                  :use (:instance ,fn-exec-var-limit-correct-thm
@@ -2351,9 +2369,9 @@
         (evmac-generate-defthm
          name
          :formula `(implies (and ,hyps
-                                 (compustatep compst)
-                                 (integerp limit)
-                                 (>= limit ,limit))
+                                 (compustatep ,compst-var)
+                                 (integerp ,limit-var)
+                                 (>= ,limit-var ,limit))
                             ,equalities)
          :hints hints
          :enable nil)))
