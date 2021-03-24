@@ -15,7 +15,7 @@
 
 (defxdoc axe
   :short "The Axe toolkit"
-  :parents (software-verification)
+  :parents (software-verification kestrel-books)
   :long
   (xdoc::topparas
    "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.
