@@ -21,22 +21,6 @@
 ;(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-;dup
-;rename
-(defthm bvcat-upper-bound-linear
-  (implies (and (natp lowsize)
-                (natp highsize))
-           (< (acl2::bvcat highsize highval lowsize lowval) (expt 2 (+ highsize lowsize))))
-  :rule-classes (:linear :rewrite)
-  :hints (("Goal" :use (:instance ACL2::UNSIGNED-BYTE-P-OF-BVCAT
-                                  (highsize highsize)
-                                  (lowsize lowsize)
-                                  (highval highval)
-                                  (lowval lowval)
-                                  (n (+ highsize lowsize)))
-           :in-theory (disable ACL2::UNSIGNED-BYTE-P-OF-BVCAT
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES))))
-
 ;; Turn large constants into more readable negative constants
 (defthm mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)

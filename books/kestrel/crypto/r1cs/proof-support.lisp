@@ -23,7 +23,7 @@
 (include-book "kestrel/bv/bitnot" :dir :system)
 (local (include-book "kestrel/bv/bitwise" :dir :system))
 (local (include-book "kestrel/bv/bvxor" :dir :system))
-(local (include-book "bv"))
+(local (include-book "kestrel/bv/rules9" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

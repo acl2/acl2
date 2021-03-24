@@ -9,19 +9,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "R1CS") ;todo: change to ACL2
+(in-package "ACL2")
 
-;; TODO: Move these to the BV library
-
-(include-book "kestrel/bv/rules" :dir :system) ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
-(include-book "kestrel/bv/bvplus" :dir :system)
-(include-book "kestrel/bv/leftrotate" :dir :system)
-(include-book "kestrel/bv/rightrotate" :dir :system)
-(include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/bitnot" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
-(include-book "kestrel/bv/bitxor" :dir :system)
-(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "rules") ; for ACL2::BITNOT-BECOMES-BITXOR-WITH-1 ?
+(include-book "bvplus")
+(include-book "leftrotate")
+(include-book "rightrotate")
+(include-book "bvcat")
+(include-book "bitnot")
+(include-book "bvxor")
+(include-book "bitxor")
+(include-book "rotate")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
