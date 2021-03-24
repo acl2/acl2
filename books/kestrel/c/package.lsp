@@ -20,6 +20,7 @@
                                 '(byte
                                   error
                                   pprint-indent
+                                  schar
                                   type
                                   typep
                                   value))
