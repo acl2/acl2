@@ -44,14 +44,12 @@
                                 (<= (c::sint->get |z|) 10))
                     :guard-hints (("Goal"
                                    :in-theory (enable sbyte32p
-                                                      sbyte32-fix
                                                       c::sintp
                                                       c::sint-add-okp
                                                       c::sint-sub-okp
                                                       c::sint-mul-okp
                                                       c::sint-add
-                                                      c::sint-sub
-                                                      c::sint->get)))))
+                                                      c::sint-sub)))))
     (c::sint-mul (c::sint-add |x| |y|)
                  (c::sint-sub |z| (c::sint-const 3)))))
 
