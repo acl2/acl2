@@ -2366,7 +2366,6 @@
                   :in-theory (e/d (all-myquotep-when-all-dargp) (,(pack$ simplify-trees-name '-return-type))))))
 
        (verify-guards ,relieve-free-var-hyp-and-all-others-name
-         :otf-flg t
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :do-not-induct t
                   ;; :use (:instance ,(pack$ SIMPLIFY-TREES-name '-return-type))
@@ -4358,7 +4357,6 @@
                     :in-theory (disable ,(pack$ 'prove-true-case-with- suffix '-prover-return-type)))))
 
        (verify-guards ,prove-true-case-name
-         :otf-flg t
          :hints (("Goal" :in-theory (e/d (rationalp-when-natp-for-axe
                                           <-of-+-of-1-strengthen-2
                                           integerp-when-natp-for-axe)

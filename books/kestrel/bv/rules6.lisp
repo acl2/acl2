@@ -1040,6 +1040,5 @@
                   (bvcat
                    HIGHSIZE HIGHVAL (+ 1 HIGHINDEX2 0)
                    (SLICE HIGHINDEX2 0 B))))
-  :otf-flg t
   :hints (("Goal" :use (:instance BVCAT-SLICE-SLICE-SAME (lowindex1 0) (highindex1 (+ -1 size1)))
            :in-theory (disable BVCAT-SLICE-SLICE-SAME))))

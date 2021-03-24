@@ -276,7 +276,6 @@
                                     (unsigned-byte-p (- n lowsize) (bvchop highsize highval)))
                                 t)
                             nil)))
-          :otf-flg t
           :hints (("Goal" :cases ((not (natp n))
                                   (and (natp n) (integerp lowval))
                                   (and (natp n) (not (integerp lowval))))
@@ -752,7 +751,6 @@
                 )
            (equal (slice high low x)
                   (slice (+ -1 n) low x)))
-  :otf-flg t
   :hints (("Goal" :cases ((equal 0 low)
                           (<= low n))
            :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice)))))
@@ -1055,7 +1053,6 @@
                                   j)
                           (logtail (- size size1) j))
                     (logtail size j))))
-  :otf-flg t
   :hints (("Goal" :use (:instance logtail-logapp (i (ifix i)))
            :in-theory (e/d (slice bvchop-of-logtail ;enable this?
                                   )
@@ -1069,7 +1066,6 @@
                 (natp lowsize))
            (equal (logtail n (bvcat highsize x lowsize y))
                   (logtail (- n lowsize) (bvchop highsize x))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((< (+ highsize lowsize) n)
                    (equal n lowsize)

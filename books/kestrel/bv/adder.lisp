@@ -271,7 +271,6 @@
                  (unsigned-byte-p 1 carry))
             (equal (+ carry x y) ;(bvplus (+ 1 n) carry (bvplus (+ 1 n) x y))
                    (ripple-carry-adder n x y carry)))
-   :otf-flg t
    :hints (("subgoal *1/2"
             :expand ((RIPPLE-CARRY-ADDER N X Y 0)
                      (RIPPLE-CARRY-ADDER N X Y 1)

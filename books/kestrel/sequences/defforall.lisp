@@ -209,7 +209,6 @@
                 (natp start) ;drop?
                 (< end (len x)))
            (generic-forall (subrange start end x)))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance generic-forall-of-take (n (+ (- START) 1 END))
                            (x (NTHCDR START X)))
@@ -414,7 +413,6 @@
                 (natp start) ;drop?
                 (< end (len x)))
            (generic-forall-p (subrange start end x)))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance generic-forall-p-of-take (n (+ (- START) 1 END))
                            (x (NTHCDR START X)))

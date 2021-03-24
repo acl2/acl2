@@ -490,7 +490,6 @@
                               (take (+ 1 end (- start)) vals)
                               (nthcdr (+ 1 end) lst))
                     lst)))
-  :otf-flg t
   :hints (("Goal" ;:induct (indf n lst v)
            :cases ((< end (len lst)))
            :do-not '(generalize eliminate-destructors)

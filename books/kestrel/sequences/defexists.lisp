@@ -132,7 +132,6 @@
                 (natp start) ;drop?
                 (< end (len x)))
            (generic-exists x))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance generic-exists-of-take (n (+ (- START) 1 END))
                            (x (NTHCDR START X)))
