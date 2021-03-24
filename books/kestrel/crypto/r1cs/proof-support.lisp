@@ -75,8 +75,8 @@
            (equal (add bit1 (add (neg (mul 2 bit2 p) p) extra p) p)
                   (add -2 ;; from 2 times the 1 in 1-bit2, which comes from negating bit2
                        (add (bvxor 2
-                                         2 ;== b10 because bit 1 is negated and bit 0 is not
-                                         (bvcat 1 bit2 1 bit1))
+                                   2 ;== b10 because bit 1 is negated and bit 0 is not
+                                   (bvcat 1 bit2 1 bit1))
                             extra
                             p)
                        p)))
@@ -89,7 +89,7 @@
                                    acl2::bitxor-of-1-becomes-bitnot-arg1
                                    acl2::bitxor-of-1-becomes-bitnot-arg2
                                    acl2::bitnot-becomes-subtract)
-                                  (;ACL2::BVCAT-OF-+-HIGH ;looped
+                                  ( ;ACL2::BVCAT-OF-+-HIGH ;looped
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1)))))
 
@@ -237,9 +237,9 @@
            (equal (add (bvxor n mask bv) (add (mul k bit p) extra p) p)
                   (add ;; no constant added since bit is not negated
                    (bvxor (+ 1 n)
-                                ;; should often get computed:
-                                (bvchop n mask) ; mask not extended by 0 since bit is not negated
-                                (bvcat 1 bit n bv))
+                          ;; should often get computed:
+                          (bvchop n mask) ; mask not extended by 0 since bit is not negated
+                          (bvcat 1 bit n bv))
                    extra p)))
   :hints (("Goal" :in-theory (e/d ( ;ACL2::BVXOR-BLAST
                                    bvcat
@@ -250,11 +250,11 @@
                                    acl2::bitnot-becomes-subtract
                                    acl2::bvxor-of-+-of-1-split
                                    mul)
-                                  (;ACL2::BVCAT-OF-+-HIGH
+                                  ( ;ACL2::BVCAT-OF-+-HIGH
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
-                                   ;ACL2::BVCAT-OF-*-LOW
-                                   ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
+                                   ;;ACL2::BVCAT-OF-*-LOW
+                                   ;;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
 ;; todo: these may allow us to first go to bvcats of bitnots before introducing xor masks:
@@ -362,9 +362,9 @@
                             p)
                        p)
                   (add (bvcat 1 bit2
-                                    (+ 1 n)
-                                    (bvcat 1 bit1
-                                                 n 0))
+                              (+ 1 n)
+                              (bvcat 1 bit1
+                                     n 0))
                        extra
                        p)))
   :hints (("Goal" ;:cases ((equal x 0))
