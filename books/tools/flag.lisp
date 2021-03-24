@@ -162,11 +162,11 @@ acl2::ruler-extenders) of the new flag function.</li>
 
 <li>@(':body') is @('nil') by default, specifying that the original definition
 is used when extracting the body of each function.  The most recent definition
-rule is used if @(':body') is @(':last').  Otherwise @(':body') should be an
-list with members of the form @('(fn1 fn2)'), indicating that instead the
-definition associated with a rule named @('fn2'), if there is one, should be
-used as the definition for @('fn1').  See the community book
-@('books/tools/flag-tests.lisp') for an example of using an alist value for
+rule is used if @(':body') is @(':last').  Otherwise @(':body') should be a
+list with members of the form @('(fn1 fn2)'), indicating that the definition
+associated with a rule named @('fn2'), if there is one, should be used as the
+definition for @('fn1').  See the community book
+@('books/tools/flag-tests.lisp') for an example of using such a alist for
 @(':body'), in particular for the purpose of using definitions installed with
 @(tsee acl2::install-not-normalized).</li>
 
@@ -593,9 +593,9 @@ one such form may affect what you might think of as the proof of another.</p>
           .
           ,(make-flag-body-aux flag-var fn-name formals alist alist last-body world))))
      (t (er hard 'make-flag
-            "The :BODY argument of ~x0 must be either ~x1, :LAST, or an alist ~
-             mapping symbols to symbols.  The value ~x2 for :LAST is ~
-             therefore illegal."
+            "The :BODY argument of ~x0 must be either ~x1, :LAST, or a list ~
+             whose members have the form (sym1 sym2) where sym1 and sym2 are ~
+             symbols.  The value ~x2 for :LAST is therefore illegal."
             'make-flag nil last-body)))))
 
 (defun extract-keyword-from-args (kwd args)
@@ -1107,7 +1107,38 @@ one such form may affect what you might think of as the proof of another.</p>
                             :induct
                             (,flag-fn-name ,flag-var . ,formals)
                             :in-theory
-                            '((:induction ,flag-fn-name))
+
+; Matt K. mod, March 2021: Formerly only the induction rune below was in the
+; theory, but now we include guard-holders, following a suggested approach from
+; Eric Smith.  A slight variant of his example is below.  Before adding
+; guard-holders to the theory here, the call of make-flag in that example
+; failed because of a disconnect between the body of evenlp, which has a call
+; of guard-holder THE-CHECK due to its xargs declaration, and the induction
+; scheme of the flag function, which (like all induction schemes) has had
+; guard-holders removed.  I considered going further and adding in (theory
+; 'minimal-theory), but the comment below suggested that this has already been
+; attempted and there were performance issues.  Here is the example promised
+; above.
+;
+;   (include-book "tools/flag" :dir :system)
+;   (mutual-recursion
+;    (defun evenlp (x)
+;      (declare (xargs :guard t :normalize nil))
+;      (if (consp x) (oddlp (cdr (the cons x))) t))
+;    (defun oddlp (x)
+;      (declare (xargs :guard t))
+;      (if (consp x) (evenlp (cdr x)) nil)))
+;   (make-flag evenlp)
+
+; However, existing comments just below suggest that such a change has been
+; considered previously.  I am incorporating the suggestions that they made and
+; preserving the comments, except that I am commenting out expand-all-hides
+; because I don't know whether it is currently beneficial here.
+
+                            (union-theories
+                             '((:induction ,flag-fn-name))
+                             ;; see remove-guard-holders1 and comment above
+                             '(return-last mv-list cons-with-hint the-check))
                             ;; (set-difference-theories
                             ;;  (union-theories (theory 'minimal-theory)
                             ;;                  '((:induction ,flag-fn-name)

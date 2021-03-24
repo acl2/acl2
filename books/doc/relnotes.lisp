@@ -1135,14 +1135,17 @@
      suitable for use within @(tsee make-event).")
 
    (xdoc::p
-    "There are two changes in the utility, @(tsee make-flag).  The value for
-     keyword argument @(':flag-mapping') may be a list of cons pairs @('(old
-     . new')) as before, for backward compatibility but the new, preferred form
-     for each list element is @('(old new)').  Also, the keyword argument,
+    "There are some changes in the utility @(tsee make-flag) (descibed in more
+     detail in its documentation).  (1) The value for keyword argument
+     @(':flag-mapping') may be a list of cons pairs @('(old . new')) as before,
+     for backward compatibility; but the new, preferred form for each list
+     element is a doublet, @('(old new)').  (2) The keyword argument,
      @(':last-body'), has been replaced by @(':body'), where: value @('nil')
-     has the same meaning as before; value @('t') for @(':last-body') is now
-     value @(':last') for @(':body'); and a new form is permitted to specify
-     which @(see definition) rules to use.  See @(see make-flag).")
+     has the same meaning as before; the value @('t') that was supplied to
+     @(':last-body') is supplied as @(':last') to the new keyword, @(':body');
+     and a new form, a list of doublets, is permitted for specifying which
+     @(see definition) rules to use.  (3) The tool is more robust when @(see
+     xargs) declaration @(':normalize nil') is involved.")
 
    ))
 

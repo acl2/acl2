@@ -12,22 +12,7 @@
 (in-package "ACL2")
 
 (include-book "memberp-def")
-
-;; TODO: move?
-;; Like remove1 but does not require L to be a true-list.
-(defun remove1$ (x l)
-  (declare (xargs :guard t))
-  (if (not (consp l))
-      nil
-    (if (equal x (first l))
-        (rest l)
-      (cons (first l)
-            (remove1$ x (rest l))))))
-
-;; TODO: move?
-(defthm remove1$-becomes-remove1-equal
-  (equal (remove1$ x l)
-         (remove1-equal x l)))
+(include-book "remove1-dollar-def")
 
 ;;;
 ;;; perm
