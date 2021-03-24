@@ -816,7 +816,7 @@
         (error (list :exec-iconst-unsigned ic)))
        ((unless (iconst-tysuffix-case ic.type :none))
         (error (list :exec-iconst-long/llong ic)))
-       ((unless (acl2::sbyte32p ic.value))
+       ((unless (sint-integerp ic.value))
         (error (list :exec-iconst-too-large ic))))
     (sint ic.value))
   :hooks (:fix))

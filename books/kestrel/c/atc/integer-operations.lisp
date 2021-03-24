@@ -11,40 +11,38 @@
 
 (in-package "C")
 
-(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "integer-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-signed-ints
-  :parents (atc-integers)
-  :short "A model of C (@('signed')) @('int')s for ATC."
+(defxdoc+ atc-integer-operations
+  :parents (atc-implementation)
+  :short "C integer operations for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a fixtype for values of the (@('signed')) @('int') type,
-     along with functions for operations on these values."))
+    "We define ACL2 functions that model C operations on integers.
+     For now we define operations for (signed) @('int') values only,
+     but we will cover the other integer values eventually.")
+   (xdoc::p
+    "When the exact result of an aritmetic operation on signed integers
+     is not representable in the signed integer type,
+     the behavior is undefined [C:6.5/5]:
+     our functions for signed integer operations
+     have guards requiring the results to be representable.
+     For division and remainder,
+     the guard also requires the divisor to be non-zero.
+     The bitwise operations assume a two's complement representation,
+     which is consistent with "
+    (xdoc::seetopic "atc-integer-values" "our model of integer values")
+    "; these operations depend on the representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod sint
-  :short "Fixtype of C (@('signed')) @('int') values [C:6.2.5/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we represent these as 32-bit two's complement integers.
-     This is consistent with macOS and with (at least some) Linux.
-     In the future, we will generalize this model."))
-  ((get acl2::sbyte32))
-  :tag :sint
-  :layout :list
-  :pred sintp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define sint-const ((x natp))
-  :guard (acl2::sbyte32p x)
+  :guard (sint-integerp x)
   :returns (result sintp)
   :short "Integer constant of type @('int') [C:6.4.4.1]."
   :long
@@ -109,7 +107,7 @@
   (xdoc::topstring
    (xdoc::p
     "We check if the exact result is representable in @('int')."))
-  (acl2::sbyte32p (- (sint->get x)))
+  (sint-integerp (- (sint->get x)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -129,9 +127,11 @@
   :short "Bitwise complement of @('int') values [C:6.5.3]."
   (sint (lognot (sint->get x)))
   :hooks (:fix)
-  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+  :guard-hints (("Goal" :in-theory (enable sint-integerp-alt-def
                                            sint->get
-                                           sintp))))
+                                           sintp
+                                           (:e sint-min)
+                                           (:e sint-max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,7 +152,7 @@
   (xdoc::topstring
    (xdoc::p
     "We check if the exact result is representable in @('int')."))
-  (acl2::sbyte32p (+ (sint->get x) (sint->get y)))
+  (sint-integerp (+ (sint->get x) (sint->get y)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +174,7 @@
   (xdoc::topstring
    (xdoc::p
     "We check if the exact result is representable in @('int')."))
-  (acl2::sbyte32p (- (sint->get x) (sint->get y)))
+  (sint-integerp (- (sint->get x) (sint->get y)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -196,7 +196,7 @@
   (xdoc::topstring
    (xdoc::p
     "We check if the exact result is representable in @('int')."))
-  (acl2::sbyte32p (* (sint->get x) (sint->get y)))
+  (sint-integerp (* (sint->get x) (sint->get y)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -220,7 +220,7 @@
     "We check if the exact result is representable in @('int').
      We also check if the divisor is not 0."))
   (and (not (equal (sint->get y) 0))
-       (acl2::sbyte32p (truncate (sint->get x) (sint->get y))))
+       (sint-integerp (truncate (sint->get x) (sint->get y))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -248,7 +248,7 @@
      consistently with [C:6.5.5/6].
      We also check if the divisor is not 0."))
   (and (not (equal (sint->get y) 0))
-       (acl2::sbyte32p (truncate (sint->get x) (sint->get y))))
+       (sint-integerp (truncate (sint->get x) (sint->get y))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -264,10 +264,10 @@
   (sint (rem (sint->get x) (sint->get y)))
   :hooks (:fix)
   :guard-hints (("Goal" :in-theory (enable sint-rem-okp
-                                           acl2::sbyte32p
+                                           sint-integerp
                                            sint->get
                                            sintp)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,16 +279,15 @@
    (xdoc::p
     "The right operand must be non-negative
      and below the bit size of the left operand
-     [C:6.5.7/3].
-     The bit size of @('int') is currently 32 in our model.")
+     [C:6.5.7/3].")
    (xdoc::p
     "Since the left operand is signed here,
      it must be non-negative,
      and its product with 2 raised to the right operand must fit @('int')
      [C:6.5.7/4]."))
-  (and (integer-range-p 0 32 (sint->get y))
+  (and (integer-range-p 0 (int-bits) (sint->get y))
        (>= (sint->get x) 0)
-       (acl2::sbyte32p (* (sint->get x)
+       (sint-integerp (* (sint->get x)
                           (expt 2 (sint->get y)))))
   :hooks (:fix))
 
@@ -317,12 +316,11 @@
    (xdoc::p
     "The right operand must be non-negative
      and below the bit size of the left operand
-     [C:6.5.7/3].
-     The bit size of @('int') is currently 32 in our model.")
+     [C:6.5.7/3].")
    (xdoc::p
     "Since the left operand is signed here,
      it must be non-negative [C:6.5.7/5]."))
-  (and (integer-range-p 0 32 (sint->get y))
+  (and (integer-range-p 0 (int-bits) (sint->get y))
        (>= (sint->get x) 0))
   :hooks (:fix))
 
@@ -340,7 +338,7 @@
                   (expt 2 (sint->get y))))
   :hooks (:fix)
   :guard-hints (("Goal" :in-theory (enable sint-shr-sint-okp
-                                           acl2::sbyte32p
+                                           sint-integerp
                                            sint->get
                                            sintp)))
   :prepwork
@@ -414,7 +412,7 @@
   :short "Bitwise conjunction on @('int') values."
   (sint (logand (sint->get x) (sint->get y)))
   :hooks (:fix)
-  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+  :guard-hints (("Goal" :in-theory (enable sint-integerp
                                            sintp
                                            sint->get)))
   :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
@@ -426,7 +424,7 @@
   :short "Bitwise exclusive disjunction on @('int') values."
   (sint (logxor (sint->get x) (sint->get y)))
   :hooks (:fix)
-  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+  :guard-hints (("Goal" :in-theory (enable sint-integerp
                                            sintp
                                            sint->get)))
   :prepwork
@@ -439,7 +437,7 @@
   :short "Bitwise inclusive disjunction on @('int') values."
   (sint (logior (sint->get x) (sint->get y)))
   :hooks (:fix)
-  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+  :guard-hints (("Goal" :in-theory (enable sint-integerp
                                            sintp
                                            sint->get)))
   :prepwork

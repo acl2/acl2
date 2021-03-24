@@ -34,8 +34,10 @@
                               ;; 0 <= a <= 100:
                               (<= 0 (c::sint->get |a|))
                               (<= (c::sint->get |a|) 100))
-                  :guard-hints (("Goal" :in-theory (enable c::sint-add-okp
-                                                           sbyte32p)))))
+                  :guard-hints (("Goal"
+                                 :in-theory
+                                 (enable c::sint-add-okp
+                                         c::sint-integerp-alt-def)))))
   (let ((|a| (c::sint-add |a| (c::sint-const 200))))
     (c::sint-lt |b| |a|)))
 

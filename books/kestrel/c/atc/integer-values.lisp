@@ -19,11 +19,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The material in this file will eventually replace
-; the material in unsigned-chars.lisp, signed-ints.lisp, and integers.lisp.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ atc-integer-values
   :parents (atc-implementation)
   :short "C integer values for ATC."
@@ -578,6 +573,15 @@
   :layout :list
   :pred ucharp)
 
+;;;;;;;;;;
+
+(fty::deflist uchar-list
+  :short "Fixtype of lists of C @('unsigned char') values."
+  :elt-type uchar
+  :true-listp t
+  :elementp-of-nil nil
+  :pred uchar-listp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod schar
@@ -586,6 +590,15 @@
   :tag :schar
   :layout :list
   :pred scharp)
+
+;;;;;;;;;;
+
+(fty::deflist schar-list
+  :short "Fixtype of lists of C @('signed char') values."
+  :elt-type schar
+  :true-listp t
+  :elementp-of-nil nil
+  :pred schar-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,6 +609,15 @@
   :layout :list
   :pred ushortp)
 
+;;;;;;;;;;
+
+(fty::deflist ushort-list
+  :short "Fixtype of lists of C @('unsigned short') values."
+  :elt-type ushort
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ushort-listp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sshort
@@ -604,6 +626,15 @@
   :tag :sshort
   :layout :list
   :pred sshortp)
+
+;;;;;;;;;;
+
+(fty::deflist sshort-list
+  :short "Fixtype of lists of C @('signed short') values."
+  :elt-type sshort
+  :true-listp t
+  :elementp-of-nil nil
+  :pred sshort-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,6 +645,15 @@
   :layout :list
   :pred uintp)
 
+;;;;;;;;;;
+
+(fty::deflist uint-list
+  :short "Fixtype of lists of C @('unsigned int') values."
+  :elt-type uint
+  :true-listp t
+  :elementp-of-nil nil
+  :pred uint-listp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sint
@@ -622,6 +662,15 @@
   :tag :sint
   :layout :list
   :pred sintp)
+
+;;;;;;;;;;
+
+(fty::deflist sint-list
+  :short "Fixtype of lists of C @('signed int') values."
+  :elt-type sint
+  :true-listp t
+  :elementp-of-nil nil
+  :pred sint-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,6 +681,15 @@
   :layout :list
   :pred ulongp)
 
+;;;;;;;;;;
+
+(fty::deflist ulong-list
+  :short "Fixtype of lists of C @('unsigned long') values."
+  :elt-type ulong
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ulong-listp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod slong
@@ -640,6 +698,15 @@
   :tag :slong
   :layout :list
   :pred slongp)
+
+;;;;;;;;;;
+
+(fty::deflist slong-list
+  :short "Fixtype of lists of C @('signed long') values."
+  :elt-type slong
+  :true-listp t
+  :elementp-of-nil nil
+  :pred slong-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -650,6 +717,15 @@
   :layout :list
   :pred ullongp)
 
+;;;;;;;;;;
+
+(fty::deflist ullong-list
+  :short "Fixtype of lists of C @('unsigned long long') values."
+  :elt-type ullong
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ullong-listp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sllong
@@ -658,3 +734,12 @@
   :tag :sllong
   :layout :list
   :pred sllongp)
+
+;;;;;;;;;;
+
+(fty::deflist sllong-list
+  :short "Fixtype of lists of C @('signed long long') values."
+  :elt-type sllong
+  :true-listp t
+  :elementp-of-nil nil
+  :pred sllong-listp)

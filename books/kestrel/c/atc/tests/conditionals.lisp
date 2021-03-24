@@ -46,8 +46,8 @@
                               (> (c::sint->get |x|) 0))
                   :guard-hints (("Goal"
                                  :in-theory (enable c::sint-sub-okp
-                                                    sbyte32p
-                                                    sbyte32-fix
+                                                    c::sint-integerp-alt-def
+                                                    c::sint-integer-fix
                                                     c::sint->get)))))
   (c::sint-sub |x|
                (if (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 18)))
@@ -59,13 +59,13 @@
 (defun |i| (|a| |b|)
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|))
-                  :guard-hints (("Goal" :in-theory (enable
-                                                    c::sint-nonzerop
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sint-nonzerop
+                                                    c::sint-integerp-alt-def
+                                                    c::sint-integer-fix
                                                     c::sint-gt
                                                     c::sint-sub-okp
-                                                    c::sint->get
-                                                    sbyte32p
-                                                    sbyte32-fix)))))
+                                                    c::sint->get)))))
   (if (c::sint-nonzerop (c::sint-gt |a| |b|))
       (c::sint-sub |a|
                    (if (c::sint-nonzerop (c::sint-eq |b| (c::sint-const 3)))
@@ -78,14 +78,14 @@
 (defun |j| (|x|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (>= (c::sint->get |x|) 0))
-                  :guard-hints (("Goal" :in-theory (enable
-                                                    c::sint-nonzerop
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sint-integerp
+                                                    c::sint-integer-fix
                                                     c::sint-lt
                                                     c::sint-sub-okp
                                                     c::sint-mul-okp
                                                     c::sint->get
-                                                    sbyte32p
-                                                    sbyte32-fix)))))
+                                                    (:e c::int-bits))))))
   (if (c::sint-nonzerop (c::sint-lt |x| (c::sint-const 1000)))
       (c::sint-mul |x| (c::sint-const 10))
     (c::sint-sub |x| (c::sint-const 1000000))))

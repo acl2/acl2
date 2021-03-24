@@ -43,7 +43,7 @@
                                 (<= -10 (c::sint->get |z|))
                                 (<= (c::sint->get |z|) 10))
                     :guard-hints (("Goal"
-                                   :in-theory (enable sbyte32p
+                                   :in-theory (enable c::sint-integerp-alt-def
                                                       c::sintp
                                                       c::sint-add-okp
                                                       c::sint-sub-okp

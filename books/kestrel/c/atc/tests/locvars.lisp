@@ -50,7 +50,7 @@
                                 (<= (c::sint->get |y|) 10))
                     :guard-hints (("Goal"
                                    :do-not-induct t
-                                   :in-theory (enable sbyte32p
+                                   :in-theory (enable c::sint-integerp-alt-def
                                                       c::sint
                                                       c::sint->get
                                                       c::sintp
