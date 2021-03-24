@@ -146,7 +146,6 @@
                         (if (< val (maxelem (take (nfix n) lst)))
                             (maxelem (take (nfix n) lst))
                           val))))))
-  :otf-flg t
   :hints (("Goal" :do-not-induct t
            :expand (MAXELEM (CDR LST))
            :in-theory (e/d (update-nth-rw;update-nth-rewrite nth-when-n-is-zp

@@ -167,7 +167,7 @@
 (defthm all-integerp-of-bv-array-clear-range
   (all-integerp (bv-array-clear-range esize len lowindex highindex data)))
 
-(verify-guards bv-array-clear-range :otf-flg t :hints (("Goal" :do-not-induct t)))
+(verify-guards bv-array-clear-range :hints (("Goal" :do-not-induct t)))
 
 (defthm bv-array-read-of-bvchop-helper
   (implies (and (<= m n)
@@ -1054,7 +1054,6 @@
                   (if (< key n)
                       (bvchop-list element-size (nthcdr n (take len (true-list-fix lst))))
                     (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((< key n))
            :in-theory (e/d (update-nth2 bv-array-write-opener)
@@ -1464,7 +1463,6 @@
 (defthm array-reduction-0-1
   (equal (bv-array-read 1 2 index '(0 1))
          (getbit 0 (ifix index)))
-;  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS
                             GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
@@ -1483,7 +1481,6 @@
                   (bv-array-read element-size len 0 data) ;
                   ;(bvchop element-size (car data))
                   ))
-;  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS
                                    )
@@ -1590,7 +1587,6 @@
                 (< 0 len))
            (equal (bv-array-write esize len index val data)
                   (bv-array-write esize len index val (bvchop-list esize data))))
-  :otf-flg t
   :hints
   (("Goal"
     :cases ((<= (len data) (bvchop isize index)))

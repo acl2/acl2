@@ -71,7 +71,6 @@
                 (< 0
                    (car (cadr (assoc-keyword :dimensions (cdr header))))))
            (array1p array-name (cons header array)))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (array1p-rewrite
                            )

@@ -155,7 +155,6 @@
                 (integerp y))
            (equal (acl2::logext 32 (* x (acl2::logext 32 y)))
                   (acl2::logext 32 (* x y))))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :cases ((evenp x))
            :in-theory (e/d (LOGEXT

@@ -88,7 +88,6 @@
                 )
            (equal (sbvrem size x y)
                   (bvuminus size (bvmod size (bvuminus size x) (bvuminus size y)))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
                                             sbvrem bvmod sbvlt
                                             logext logapp

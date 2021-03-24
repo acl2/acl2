@@ -284,7 +284,6 @@
                 (natp j)
                 (natp k))
            (equal (* k (floor j k)) i))
-  :otf-flg t
   :hints (("Goal" :use (:instance same-remainder-when-close (j (* k (floor j k))))
            :do-not '(generalize eliminate-destructors)
            :in-theory (disable same-remainder-when-close))))

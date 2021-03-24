@@ -226,7 +226,6 @@
                   (if (zp n)
                       t
                     (equal (nth (+ -1 n) (cdr lst)) (car lst)))))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable nth))))
 
@@ -596,7 +595,6 @@
                 (natp start)
                 )
            (memberp (nth n lst) (subrange start end lst)))
-  :otf-flg t
   :hints (("Goal" :use (:instance NTH-OF-SUBRANGE (n (- n start)))
            :do-not-induct t
            :in-theory (disable NTH-OF-SUBRANGE))))
@@ -608,7 +606,6 @@
                 (natp start)
                 )
            (memberp (nth n lst) (nthcdr start lst)))
-  :otf-flg t
   :hints (("Goal" :use (:instance memberp-nth-of-subrange (end (+ -1 (len lst)))
                                   (n n))
            :do-not-induct t
@@ -1124,7 +1121,6 @@
                 )
            (equal (equal (take n x) (take n y))
                   nil))
-  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (subrange TAKE-OF-NTHCDR)
                            (;LIST::EQUAL-APPEND-REDUCTION!
@@ -1165,7 +1161,6 @@
                 )
            (equal (subrange start end (update-subrange start end vals lst))
                   vals))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (subrange ;update-subrange FIRSTN
                                      ) (anti-subrange)))))
@@ -1183,7 +1178,6 @@
                       (append (take start lst)
                               (take (+ 1 end (- start)) vals))
                     lst)))
-; :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct t
            :in-theory (enable nth-when-n-is-zp
@@ -1276,7 +1270,6 @@
                           (nthcdr n l))
                   (append l
                           (repeat (- n (len l)) nil))))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
            :in-theory (enable))))
@@ -1293,7 +1286,6 @@
                 (natp n))
            (equal (EQUAL x y)
                   (EQUAL (nthcdr n x) (nthcdr n y))))
-  :otf-flg t
   :hints (("Goal" :use ((:instance APPEND-take-NTHCDR (l x))
                         (:instance APPEND-take-NTHCDR (l y))
                         )
@@ -1525,7 +1517,6 @@
                                     (subrange (+ 1 end2) end lst))
                           (subrange start end lst)
                           ))))))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
 ;          :expand (update-subrange start2 end2 vals lst)
@@ -1669,7 +1660,6 @@
            (EQUAL (SUBRANGE START end (UPDATE-NTH end VAL LST))
                   (append (SUBRANGE START (+ -1 end) LST)
                           (list val))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (SUBRANGE) (anti-subrange)))))
 
 (defthm subrange-of-update-nth-irrel-2
@@ -1822,7 +1812,6 @@
                                       (take (+ END2 (- START2) 1) vals))
                             (SUBRANGE (+ 1 END2) END LST))
                     (SUBRANGE START END LST)))))))
-  :OTF-FLG T
   :hints (("Goal" :use (:instance SUBRANGE-OF-UPDATE-SUBRANGE-ALL-CASES (vals (take (+ END2 (- START2) 1) vals)))
            :in-theory (e/d (TAKE-OF-CDR-BECOMES-SUBRANGE posp)
                            (SUBRANGE-OF-UPDATE-SUBRANGE-ALL-CASES)))))

@@ -267,7 +267,6 @@
                           (bvif n (equal 1 (getbit 0 x)) y 0)
                           (bvcat (+ -1 n) (bvmult (+ -1 n) (slice (+ -1 n) 1 x) y)
                                  1 0))))
-  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (bvmult bvif bvplus bvcat logapp slice logtail
                                    getbit
@@ -357,7 +356,6 @@
                                          (bvand 1 x y)))
                          1
                          (bitxor x y))))
-  :otf-flg t
   :hints (("Goal"
            :expand ((BVCHOP 1 X)
                     (BVCHOP 1 y))
@@ -677,7 +675,6 @@
   (implies (unsigned-byte-p 8 x)
            (equal (unsigned-byte-p 7 x)
                   (equal 0 (getbit 7 x))))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance bvcat-of-getbit-and-x-adjacent (n 7))
            :in-theory (e/d (getbit-too-high bvcat-of-0) (bvcat-of-getbit-and-x-adjacent bvcat-equal-rewrite BVCAT-EQUAL-REWRITE-ALT)))))
@@ -1728,7 +1725,6 @@
                                  (slice (+ -1 size) 1 y))
                          1
                          0)))
-  :otf-flg t
   :hints (("Goal"
            :expand ((:with UNSIGNED-BYTE-P (UNSIGNED-BYTE-P SIZE
                                                             (+ (- (EXPT 2 SIZE))
@@ -2300,7 +2296,6 @@
            (implies (equal (logext 32 (binary-+ k x)) x)
                     (equal 0 (bvchop 32 k))))
   :rule-classes nil
-  :otf-flg t
   :hints (("Goal"
            :cases ((SIGNED-BYTE-P 32 x))
            :in-theory (e/d ( ;logext BVCHOP-OF-SUM-CASES getbit slice
@@ -2320,7 +2315,7 @@
            (implies (equal 0 (bvchop 32 k))
                     (equal (logext 32 (binary-+ k x)) x)))
   :rule-classes nil
-  :otf-flg t
+
   :hints (("Goal"
            :use (:instance logext-of-+-of-bvchop)
            :in-theory (disable
@@ -2615,7 +2610,6 @@
                   (if (equal (bvchop n x) (expt 2 (+ -1 n)))
                       (+ -1 (expt 2 (+ -1 n)))
                     (+ -1 (logext n x)))))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT (n (+ -1 n)))
            :in-theory (e/d (logext logapp bvchop-of-sum-cases slice ;getbit
@@ -2654,7 +2648,6 @@
                   (if (equal (+ -1 (expt 2 n)) (bvchop n x))
                       (+ 1 (logtail n x))
                     (logtail n x))))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
            :in-theory (e/d (logtail bvchop FLOOR-OF-SUM)
