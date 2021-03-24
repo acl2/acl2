@@ -218,3 +218,48 @@
              0))
   :hints (("goal" :do-not-induct t
            :in-theory (enable abs-find-file-src frame-with-root))))
+
+(defthm
+  abs-find-file-src-of-remove-assoc-1
+  (implies
+   (and
+    (not (null x))
+    (no-duplicatesp-equal (strip-cars frame))
+    (or
+     (not (prefixp (frame-val->path (cdr (assoc-equal x frame)))
+                   (fat32-filename-list-fix path)))
+     (equal
+      (mv-nth 1
+              (abs-find-file-helper
+               (frame-val->dir (cdr (assoc-equal x frame)))
+               (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
+                       path)))
+      *enoent*)))
+   (equal (abs-find-file-src (remove-assoc-equal x frame)
+                             path)
+          (abs-find-file-src frame path)))
+  :hints (("goal" :in-theory (enable abs-find-file-src remove-assoc-equal
+                                     no-duplicatesp-equal strip-cars)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (and
+      (not (null x))
+      (no-duplicatesp-equal (strip-cars frame))
+      (or
+       (not (fat32-filename-list-prefixp
+             (frame-val->path (cdr (assoc-equal x frame)))
+             path))
+       (equal
+        (mv-nth 1
+                (abs-find-file-helper
+                 (frame-val->dir (cdr (assoc-equal x frame)))
+                 (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
+                         path)))
+        *enoent*)))
+     (equal (abs-find-file-src (remove-assoc-equal x frame)
+                               path)
+            (abs-find-file-src frame path)))
+    :hints (("Goal" :do-not-induct t
+             :in-theory (enable fat32-filename-list-prefixp-alt))))))

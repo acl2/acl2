@@ -9536,3 +9536,9 @@
                               (fd-table-p fd-table)
                               (file-table-p file-table))))
   (hifat-open path fd-table file-table))
+
+(defund
+  abs-close (fd fd-table file-table)
+  (declare (xargs :guard (and (fd-table-p fd-table)
+                              (file-table-p file-table))))
+  (hifat-close fd fd-table file-table))

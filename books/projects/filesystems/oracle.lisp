@@ -16,7 +16,6 @@
                             string-listp-when-fat32-filename-list-p)
                            (:rewrite true-listp-when-abs-file-alist-p)
                            (:rewrite true-list-fix-when-true-listp)
-                           (:rewrite abs-fs-p-correctness-1)
                            (:rewrite abs-fs-p-when-hifat-no-dups-p)
                            (:rewrite
                             m1-file-alist-p-of-cdr-when-m1-file-alist-p)
@@ -46,13 +45,6 @@
                             acl2-number-listp-of-cdr-when-acl2-number-listp)
                            (:rewrite
                             fat32-masked-entry-list-p-when-not-consp))))
-
-;; Move later.
-(defund
-  abs-close (fd fd-table file-table)
-  (declare (xargs :guard (and (fd-table-p fd-table)
-                              (file-table-p file-table))))
-  (hifat-close fd fd-table file-table))
 
 (defund
   abs-pwrit1
@@ -1180,22 +1172,6 @@
     :expand (len queues)))
   :rule-classes :type-prescription)
 
-;; Move later.
-(encapsulate
-  ()
-
-  (local
-   (defthm lemma
-     (equal (len (flatten (update-nth key val nil)))
-            (len val))
-     :hints (("goal" :in-theory (enable update-nth nth flatten)))))
-
-  (defthm len-of-flatten-of-update-nth
-    (equal (len (flatten (update-nth key val l)))
-           (- (+ (len (flatten l)) (len val))
-              (len (nth key l))))
-    :hints (("goal" :in-theory (enable update-nth nth flatten)))))
-
 (assert-event
  (equal (nonempty-queues (list nil (list 3) (list 4 5) nil))
         (list 1 2)))
@@ -2052,19 +2028,6 @@
            (not (equal (list n) x)))
   :hints (("goal" :in-theory (enable abs-complete abs-addrs))))
 
-;; Move later.
-(defthm abs-file-alist-p-of-abs-alloc
-  (and (abs-file-alist-p (mv-nth 0 (abs-alloc fs path new-index)))
-       (abs-file-alist-p (mv-nth 1 (abs-alloc fs path new-index))))
-  :hints (("goal" :in-theory (e/d (abs-alloc) nil))))
-
-(defthm hifat-no-dups-p-of-abs-alloc
-  (implies (and (hifat-no-dups-p fs)
-                (m1-file-alist-p fs))
-           (hifat-no-dups-p (mv-nth 0 (abs-alloc fs path new-index))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p abs-alloc
-                                     abs-fs-p-when-hifat-no-dups-p))))
-
 (defthm
   cp-without-subdirs-helper-correctness-lemma-18
   (ctx-app-ok (mv-nth '1 (abs-alloc fs 'nil n))
@@ -2072,51 +2035,6 @@
   :hints
   (("goal" :do-not-induct t
     :in-theory (enable ctx-app-ok abs-alloc addrs-at))))
-
-(defthm
-  abs-find-file-src-of-remove-assoc-1
-  (implies
-   (and
-    (not (null x))
-    (no-duplicatesp-equal (strip-cars frame))
-    (or
-     (not (prefixp (frame-val->path (cdr (assoc-equal x frame)))
-                   (fat32-filename-list-fix path)))
-     (equal
-      (mv-nth 1
-              (abs-find-file-helper
-               (frame-val->dir (cdr (assoc-equal x frame)))
-               (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                       path)))
-      *enoent*)))
-   (equal (abs-find-file-src (remove-assoc-equal x frame)
-                             path)
-          (abs-find-file-src frame path)))
-  :hints (("goal" :in-theory (enable abs-find-file-src remove-assoc-equal
-                                     no-duplicatesp-equal strip-cars)))
-  :rule-classes
-  ((:rewrite
-    :corollary
-    (implies
-     (and
-      (not (null x))
-      (no-duplicatesp-equal (strip-cars frame))
-      (or
-       (not (fat32-filename-list-prefixp
-             (frame-val->path (cdr (assoc-equal x frame)))
-             path))
-       (equal
-        (mv-nth 1
-                (abs-find-file-helper
-                 (frame-val->dir (cdr (assoc-equal x frame)))
-                 (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                         path)))
-        *enoent*)))
-     (equal (abs-find-file-src (remove-assoc-equal x frame)
-                               path)
-            (abs-find-file-src frame path)))
-    :hints (("Goal" :do-not-induct t
-             :in-theory (enable fat32-filename-list-prefixp-alt))))))
 
 (defthm
   abs-find-file-src-of-frame->frame-1
