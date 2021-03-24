@@ -844,7 +844,7 @@
   '( ;fffixme add more usb rules?
     unsigned-byte-p-of-bvchop
     unsigned-byte-p-of-bvcat-all-cases ;todo name
-    unsigned-byte-p-of-bvcat-gen2 ;todo drop?
+    unsigned-byte-p-of-bvcat ;todo drop?
     unsigned-byte-p-of-slice-gen
     unsigned-byte-p-of-getbit
     unsigned-byte-p-of-bvif-gen ;todo name
@@ -1391,7 +1391,6 @@
     leftrotate32alt ;this is what we rewrite to if we want to expand stuff
 ;    bvplus-of-bvminus
 ;    unsigned-byte-p-of-bvminus-gen-better
-;    unsigned-byte-p-of-bvcat-gen2
     bvchop-upper-bound-3-constant-version
     slice-bound-3-constant-version ;bozo make a dag version
 

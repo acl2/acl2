@@ -34,11 +34,8 @@
                                   (highval highval)
                                   (lowval lowval)
                                   (n (+ highsize lowsize)))
-           :in-theory (disable ACL2::UNSIGNED-BYTE-P-OF-BVCAT ;todo: get rid of some of these
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-GEN
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-GEN2
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT2))))
+           :in-theory (disable ACL2::UNSIGNED-BYTE-P-OF-BVCAT
+                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES))))
 
 ;; Turn large constants into more readable negative constants
 (defthm mul-normalize-constant-arg1
