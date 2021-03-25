@@ -165,7 +165,7 @@ is used when extracting the body of each function.  The most recent definition
 rule is used if @(':body') is @(':last').  Otherwise @(':body') should be a
 list with members of the form @('(fn1 fn2)'), indicating that the definition
 associated with a rule named @('fn2'), if there is one, should be used as the
-definition for @('fn1').  See the community book
+definition for the function symbol, @('fn1').  See the community book
 @('books/tools/flag-tests.lisp') for an example of using such a alist for
 @(':body'), in particular for the purpose of using definitions installed with
 @(tsee acl2::install-not-normalized).</li>
