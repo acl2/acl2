@@ -11,9 +11,11 @@
 
 (in-package "ACL2")
 
+(local (include-book "integer-length"))
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times"))
+(local (include-book "floor"))
 
 ;dup
 ;define in terms of lg?
@@ -39,6 +41,15 @@
 ;;            (natp x))
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
 ;;   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm power-of-2p-of-expt-2
+  (implies (integerp n)
+           (equal (power-of-2p (expt 2 n))
+                  (<= 0 n)))
+  :hints
+  (("Goal" :in-theory (e/d (power-of-2p expt)
+                           ()))))
+
 
 (defthm expt-2-of-+-of--1-and-integer-length-when-power-of-2p-cheap
   (implies (acl2::power-of-2p x)
@@ -93,3 +104,9 @@
                 (< 1 n))
            (not (power-of-2p n)))
   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm <-of-expt-2-and-one-less-than-integer-length
+  (implies (posp n)
+           (equal (< (expt 2 (+ -1 (integer-length n))) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (e/d (integer-length power-of-2p expt) (expt-hack floor)))))
