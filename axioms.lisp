@@ -3493,6 +3493,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (car alist))
         (t (assoc-eq-equal x y (cdr alist)))))
 
+(defun assoc-eq-cadr (x alist)
+  (declare (xargs :guard (and (symbolp x)
+                              (alistp alist)
+                              (alistp (strip-cdrs alist)))))
+  (cond ((endp alist) nil)
+        ((eq x (cadr (car alist))) (car alist))
+        (t (assoc-eq-cadr x (cdr alist)))))
+
+(defun assoc-equal-cadr (x alist)
+  (declare (xargs :guard (and (alistp alist)
+                              (alistp (strip-cdrs alist)))))
+  (cond ((endp alist) nil)
+        ((equal x (cadr (car alist))) (car alist))
+        (t (assoc-equal-cadr x (cdr alist)))))
+
 
 ;                             DATA TYPES
 

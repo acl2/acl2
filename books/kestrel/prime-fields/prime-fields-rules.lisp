@@ -1091,3 +1091,19 @@
            (equal (add x (- y) p)
                   (add x (neg y p) p)))
   :hints (("Goal" :in-theory (enable neg add))))
+
+(defthm add-subst-constant-arg1
+  (implies (and (syntaxp (not (quotep x))) ;prevent loops
+                (equal (mod x p) free)
+                (syntaxp (quotep free)) ; put in only constants
+                )
+           (equal (add x y p)
+                  (add free y p))))
+
+(defthm add-subst-constant-arg2
+  (implies (and (syntaxp (not (quotep y))) ;prevent loops
+                (equal (mod y p) free)
+                (syntaxp (quotep free)) ; put in only constants
+                )
+           (equal (add x y p)
+                  (add x free p))))

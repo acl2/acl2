@@ -302,8 +302,8 @@ tolerate non-bit digits after the number.</p>"
     (equal (consp (take-leading-bin-digit-chars x))
            (bin-digit-char-p (car x)))))
 
-(define bit-digit-string-p-aux
-  :parents (bit-digit-string-p)
+(define bin-digit-string-p-aux
+  :parents (bin-digit-string-p)
   ((x  stringp             :type string)
    (n  natp                :type unsigned-byte)
    (xl (eql xl (length x)) :type unsigned-byte))
@@ -320,14 +320,14 @@ tolerate non-bit digits after the number.</p>"
        (if (eql n xl)
            t
          (and (bin-digit-char-p (char x n))
-              (bit-digit-string-p-aux x
+              (bin-digit-string-p-aux x
                                       (the unsigned-byte (+ 1 n))
                                       xl))))
   ///
-  (verify-guards bit-digit-string-p-aux
+  (verify-guards bin-digit-string-p-aux
     :hints(("Goal" :in-theory (enable bin-digit-char-listp)))))
 
-(define bit-digit-string-p
+(define bin-digit-string-p
   :short "Recognizer for strings whose characters are all 0 or 1."
   ((x :type string))
   :returns bool
@@ -343,7 +343,7 @@ CCL:</p>
     ;; 0.53 seconds, no garbage
     (let ((x \"01001\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::bit-digit-string-p x))))
+                   (str::bin-digit-string-p x))))
 
     ;; 0.99 seconds, 800 MB allocated
     (let ((x \"01001\"))
@@ -353,9 +353,9 @@ CCL:</p>
   :inline t
   :enabled t
   (mbe :logic (bin-digit-char-listp (explode x))
-       :exec (bit-digit-string-p-aux x 0 (length x)))
+       :exec (bin-digit-string-p-aux x 0 (length x)))
   ///
-  (defcong istreqv equal (bit-digit-string-p x) 1))
+  (defcong istreqv equal (bin-digit-string-p x) 1))
 
 
 (define basic-natchars2
