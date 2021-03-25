@@ -790,6 +790,7 @@
   (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
                            (m1-file-hifat-file-alist-fix-normalisation)))))
 
+;; These are congruences, obviously we're going to keep them.
 (defthm
   abs-pwrite-correctness-lemma-11
   (implies

@@ -464,18 +464,12 @@
   (implies (>= (nfix n) (len l))
            (list-equiv (nthcdr n l) nil)))
 
-(defthmd
-  painful-debugging-lemma-14
-  (implies (not (zp cluster-size))
-           (and
-            (equal (ceiling cluster-size cluster-size) 1)
-            (equal (ceiling 0 cluster-size) 0))))
-
+;; These lemmas pertain to built-in functions but are not easily provable
+;; without the help of books.
 (defthm painful-debugging-lemma-15
   (implies (and (not (zp j)) (integerp i) (> i j))
            (> (floor i j) 0))
-  :rule-classes :linear)
-
+  :rule-classes (:linear :type-prescription))
 (defthmd painful-debugging-lemma-16
   (implies (and (<= i1 i2)
                 (integerp i1)
@@ -485,18 +479,8 @@
             (<= (floor i1 j) (floor i2 j))
             (<= (ceiling i1 j) (ceiling i2 j))))
   :rule-classes :linear)
-
-(defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
-
-(defthm painful-debugging-lemma-19
-  (implies (and (not (zp j)) (integerp i) (>= i 0))
-           (>= (ceiling i j) 0))
-  :rule-classes :linear)
-
-(defthm painful-debugging-lemma-20
-  (implies (and (not (zp j)) (integerp i) (> i 0))
-           (> (ceiling i j) 0))
-  :rule-classes :linear)
+(defthm painful-debugging-lemma-14 (equal (mod (* y (len x)) y) 0)
+  :rule-classes :type-prescription)
 
 (defthmd when-atom-of-remove-assoc
   (implies (and (not (null x))
