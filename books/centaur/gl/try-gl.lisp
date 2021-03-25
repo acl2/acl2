@@ -153,7 +153,7 @@
        (len (length str))
        ((unless (and (< 1 len)
                      (eql (char str 0) #\X)
-                     (str::digit-string-p-aux str 1 len)
+                     (str::dec-digit-string-p-aux str 1 len)
                      ;; not generally correct but there arent any XN symbols in
                      ;; ACL2's package imports
                      (equal (symbol-package-name sym) "ACL2")))
@@ -476,11 +476,11 @@
        (acl2::fmt-to-comment-window
         message
         (list (cons #\0 (acl2::prettyify-clause clause t (w state))))
-        5 
+        5
         #!acl2
         (term-evisc-tuple t state)
         #!acl2
-        (cons 
+        (cons
          (f-get-global 'print-base state)
          (f-get-global 'print-radix state)))))
 
@@ -669,8 +669,3 @@
 ;;                          (logbit 3 (loghead 8 b)))))
 ;;   :hints ((try-gl :subterms-types
 ;;                   #!acl2 (((loghead n b) (unsigned-byte-p n x))))))
-
-
-
-
-

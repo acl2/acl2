@@ -338,8 +338,8 @@ FX-8350.</p>
     (equal (consp (take-leading-oct-digit-chars x))
            (oct-digit-char-p (car x)))))
 
-(define octal-digit-string-p-aux
-  :parents (octal-digit-string-p)
+(define oct-digit-string-p-aux
+  :parents (oct-digit-string-p)
   ((x  stringp             :type string)
    (n  natp                :type unsigned-byte)
    (xl (eql xl (length x)) :type unsigned-byte))
@@ -356,14 +356,14 @@ FX-8350.</p>
        (if (eql n xl)
            t
          (and (oct-digit-char-p (char x n))
-              (octal-digit-string-p-aux x
+              (oct-digit-string-p-aux x
                                       (the unsigned-byte (+ 1 n))
                                       xl))))
   ///
-  (verify-guards octal-digit-string-p-aux
+  (verify-guards oct-digit-string-p-aux
     :hints(("Goal" :in-theory (enable oct-digit-char-listp)))))
 
-(define octal-digit-string-p
+(define oct-digit-string-p
   :short "Recognizer for strings whose characters are octal digits."
   ((x :type string))
   :returns bool
@@ -379,7 +379,7 @@ CCL:</p>
     ;; 0.13 seconds, no garbage
     (let ((x \"deadbeef\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::octal-digit-string-p x))))
+                   (str::oct-digit-string-p x))))
 
     ;; 1.36 seconds, 1.28 GB allocated
     (let ((x \"deadbeef\"))
@@ -389,9 +389,9 @@ CCL:</p>
   :inline t
   :enabled t
   (mbe :logic (oct-digit-char-listp (explode x))
-       :exec (octal-digit-string-p-aux x 0 (length x)))
+       :exec (oct-digit-string-p-aux x 0 (length x)))
   ///
-  (defcong istreqv equal (octal-digit-string-p x) 1))
+  (defcong istreqv equal (oct-digit-string-p x) 1))
 
 
 (define octal-digit-to-char ((n :type (unsigned-byte 3)))
