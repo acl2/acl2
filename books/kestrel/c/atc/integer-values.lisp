@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/defbyte" :dir :system)
 (include-book "kestrel/fty/sbyte8" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,12 +92,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The functions and theorems for each of short, int, long, and long long
-; are quite similar in structure.
-; Thus, we define and use a macro to introduce them.
-
-(defmacro atc-def-integer-values (type)
+(defmacro+ atc-def-integer-values (type)
   (declare (xargs :guard (member-eq type '(:short :int :long :llong))))
+  :short "Macro to generate the models of the C standard integer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The functions and theorems that form the model,
+     for each of (@('unsigned') and @('signed'))
+     @('short'), @('int'), @('long'), and @('long long'),
+     are quite similar in structure.
+     Thus, we define and use this macro to introduce them."))
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
