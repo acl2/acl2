@@ -12527,9 +12527,7 @@
 ; extension of the input ttree.
 
 ; We expand some calls of members of
-; *expandable-boot-strap-non-rec-fns* as we go.  The heuristic we use
-; is that the expansion not introduce splits on the guards of the
-; expanded fns.
+; *expandable-boot-strap-non-rec-fns* as we go.
 
 ; This function combines three more or less separate ideas: if
 ; normalization, expanding boot-strap non-rec fns, and simplifying
@@ -12730,8 +12728,6 @@
 ; There is no if at the top-level of term, and since all the args are
 ; normalized, we know there are no ifs at all.  We are thus at the
 ; bottom of the IF tree and type-alist has on it everything we know.
-; We now expand the expandable boot-strap non-rec fns if we can do it
-; without introducing their guards.
 
             (cond
              ((member-eq (ffn-symb term)

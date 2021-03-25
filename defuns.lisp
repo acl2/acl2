@@ -11262,6 +11262,10 @@
                                    reclassifyingp non-executablep pair ctx wrld
                                    state)
 
+; Warning: Before changing the cltl-cmd argument of the call below of
+; install-event, see the comment in cltl-def-from-name about how the
+; cltl-command is used in cltl-def-from-name.
+
 ; See defuns-fn.
 
   (install-event (cond ((null (cdr names)) (car names))
