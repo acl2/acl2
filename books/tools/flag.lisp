@@ -465,7 +465,16 @@ one such form may affect what you might think of as the proof of another.</p>
                       (car bodies))
                      ((let ((pair (assoc-eq fn last-body)))
                         (and pair
-                             (acl2::original-def-body1 (cadr pair) bodies))))
+                             (or (acl2::original-def-body1 (cadr pair) bodies)
+                                 (er hard 'get-body
+                                     "The symbol ~x0 is associated with ~
+                                      function symbol ~x1 in the :BODY ~
+                                      argument of a call of ~x2.  But ~x0 is ~
+                                      not the name of a :DEFINITION rule for ~
+                                      ~x1."
+                                     (cadr pair)
+                                     fn
+                                     'make-flag)))))
                      (t (car (last bodies))))))
     (if (access def-body body :hyp)
         (er hard 'get-body
@@ -578,7 +587,8 @@ one such form may affect what you might think of as the proof of another.</p>
      ((or (null last-body) ; optimization
           (eq last-body :last)
           (and (symbol-doublet-listp last-body)
-               (symbol-listp (acl2::strip-cadrs last-body))))
+               (symbol-listp (acl2::strip-cadrs last-body))
+               (subsetp-eq (strip-cars last-body) (strip-cars alist))))
       `(defun-nx ,fn-name (,flag-var . ,formals)
          (declare (xargs :verify-guards nil
                          :normalize nil
@@ -594,9 +604,19 @@ one such form may affect what you might think of as the proof of another.</p>
           ,(make-flag-body-aux flag-var fn-name formals alist alist last-body world))))
      (t (er hard 'make-flag
             "The :BODY argument of ~x0 must be either ~x1, :LAST, or a list ~
-             whose members have the form (sym1 sym2) where sym1 and sym2 are ~
-             symbols.  The value ~x2 for :LAST is therefore illegal."
-            'make-flag nil last-body)))))
+             whose members have the form (sym1 sym2) where sym1 is a function ~
+             symbol in the specified mutually recursive clique and sym2 is the ~
+             name of a definition rule for sym1.  The value ~x2 for :LAST is ~
+             therefore illegal~@3."
+            'make-flag nil last-body
+            (if (and (symbol-doublet-listp last-body)
+                     (symbol-listp (acl2::strip-cadrs last-body)))
+                (let ((clique (strip-cars alist)))
+                  (msg " because the symbol~#0~[ ~&0 is~/s ~&0 are~] not in ~
+                        the specified mutually recursive clique, ~x1."
+                       (set-difference-eq (strip-cars last-body) clique)
+                       clique))
+              ""))))))
 
 (defun extract-keyword-from-args (kwd args)
   (if (consp args)

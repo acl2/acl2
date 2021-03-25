@@ -158,7 +158,7 @@
       the names of the formal parameters of the corresponding C function,
       in the same order.
       Therefore, the formal parameters of each @('fni')
-      must have must have all distinct symbol names;
+      must have all distinct symbol names;
       even if they are in different packages,
       they must have distinct symbol names
       (the package names are ignored).")
@@ -175,7 +175,7 @@
      (xdoc::li
       "@('(sintp x)'), representing @('int').")
      (xdoc::li
-      "@('(uchar-arrayp)'), representing @('unsigned char *').
+      "@('(uchar-arrayp x)'), representing @('unsigned char *').
        Currently, this may be used only if @(':proofs') is @('nil');
        proof generation support for arrays will be added eventually."))
     (xdoc::p
@@ -428,7 +428,7 @@
       @('?:') expressions,
       @('&&') expressions, and
       @('||') expressions;
-      C's only non-strict construct is @(tsee if)
+      ACL2's only non-strict construct is @(tsee if)
       (which the macros @(tsee and) and @(tsee or) expand to, see above).
       Allowed pure non-boolean terms
       represent C expressions without side effects;
