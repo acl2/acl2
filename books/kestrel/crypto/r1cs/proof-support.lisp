@@ -23,7 +23,7 @@
 (include-book "kestrel/bv/bitnot" :dir :system)
 (local (include-book "kestrel/bv/bitwise" :dir :system))
 (local (include-book "kestrel/bv/bvxor" :dir :system))
-(local (include-book "bv"))
+(local (include-book "kestrel/bv/rules9" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -35,6 +35,12 @@
   (implies (and (acl2::bit-listp free)
                 (acl2::memberp x free))
            (acl2::bitp x)))
+
+(defthmd not-of-if-of-nil-arg3-when-booleans
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (not (if x y nil)) ;; "not and"
+                  (acl2::boolor (not x) (not y)))))
 
 ;; (defun gen-bit-listp-assumption (vars)
 ;;   (declare (xargs :guard (and (symbol-listp vars)
@@ -75,8 +81,8 @@
            (equal (add bit1 (add (neg (mul 2 bit2 p) p) extra p) p)
                   (add -2 ;; from 2 times the 1 in 1-bit2, which comes from negating bit2
                        (add (bvxor 2
-                                         2 ;== b10 because bit 1 is negated and bit 0 is not
-                                         (bvcat 1 bit2 1 bit1))
+                                   2 ;== b10 because bit 1 is negated and bit 0 is not
+                                   (bvcat 1 bit2 1 bit1))
                             extra
                             p)
                        p)))
@@ -89,103 +95,9 @@
                                    acl2::bitxor-of-1-becomes-bitnot-arg1
                                    acl2::bitxor-of-1-becomes-bitnot-arg2
                                    acl2::bitnot-becomes-subtract)
-                                  (;ACL2::BVCAT-OF-+-HIGH ;looped
+                                  ( ;ACL2::BVCAT-OF-+-HIGH ;looped
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1)))))
-
-(defthm bvxor-of-+-of-expt-of-one-less-arg2
-  (implies (and (integerp x)
-                (posp n))
-           (equal (bvxor n extra (+ (expt 2 (+ -1 n)) x))
-                  (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
-                         (- n 1)
-                         (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
-
-(defthm bvxor-of-+-of-expt-of-one-less-arg1
-  (implies (and (integerp x)
-                (posp n))
-           (equal (bvxor n (+ (expt 2 (+ -1 n)) x) extra)
-                  (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
-                         (- n 1)
-                         (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
-
-(defthm bvxor-of-+-of-expt-of-one-less-arg2-constant-version
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 (+ -1 n)))
-                (integerp x)
-                (posp n))
-           (equal (bvxor n extra (+ k x))
-                  (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
-                         (- n 1)
-                         (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
-
-(defthm bvxor-of-+-of-expt-of-one-less-arg1-constant-version
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 (+ -1 n)))
-                (integerp x)
-                (posp n))
-           (equal (bvxor n (+ k x) extra)
-                  (bvcat 1
-                         (acl2::bitnot (acl2::bitxor (acl2::getbit (- n 1) extra)
-                                                     (acl2::getbit (- n 1) x)))
-                         (- n 1)
-                         (bvxor (- n 1) extra x))))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-of-getbit-and-x-adjacent
-
-                                      bvcat-of-bitnot-high
-                                      ))))
-
-(defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1
-  (implies (and (bitp bit)
-                (integerp x)
-                (natp n))
-           (equal (acl2::getbit n (+ x (* (expt 2 n) bit)))
-                  (acl2::bitxor bit (acl2::getbit n x))))
-  :hints (("Goal" :cases ((equal bit 0))
-           :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot ACL2::BVCHOP-OF-SUM-CASES)
-                           (acl2::slice-becomes-getbit
-                            acl2::bvchop-1-becomes-getbit
-                            acl2::bvchop-of-logtail-becomes-slice)))))
-
-(defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
-  (implies (and (bitp bit)
-                (integerp x)
-                (natp n))
-           (equal (acl2::getbit n (+ x (* bit (expt 2 n))))
-                  (acl2::bitxor bit (acl2::getbit n x))))
-  :hints (("Goal" :use (getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1)
-           :in-theory (disable getbit-of-+-of-*-of-expt-when-bitp-arg2-arg1))))
-
-(defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-constant-version
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 n))
-                (bitp bit)
-                (integerp x)
-                (natp n))
-           (equal (acl2::getbit n (+ x (* k bit)))
-                  (acl2::bitxor bit (acl2::getbit n x))))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::bitnot)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
 
 ;;extend the mask and the BVXOR by 1 bit
 ;todo: gen the 2 and the 4
@@ -237,9 +149,9 @@
            (equal (add (bvxor n mask bv) (add (mul k bit p) extra p) p)
                   (add ;; no constant added since bit is not negated
                    (bvxor (+ 1 n)
-                                ;; should often get computed:
-                                (bvchop n mask) ; mask not extended by 0 since bit is not negated
-                                (bvcat 1 bit n bv))
+                          ;; should often get computed:
+                          (bvchop n mask) ; mask not extended by 0 since bit is not negated
+                          (bvcat 1 bit n bv))
                    extra p)))
   :hints (("Goal" :in-theory (e/d ( ;ACL2::BVXOR-BLAST
                                    bvcat
@@ -250,11 +162,11 @@
                                    acl2::bitnot-becomes-subtract
                                    acl2::bvxor-of-+-of-1-split
                                    mul)
-                                  (;ACL2::BVCAT-OF-+-HIGH
+                                  ( ;ACL2::BVCAT-OF-+-HIGH
                                    pfield::ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
-                                   ;ACL2::BVCAT-OF-*-LOW
-                                   ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
+                                   ;;ACL2::BVCAT-OF-*-LOW
+                                   ;;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
 ;; todo: these may allow us to first go to bvcats of bitnots before introducing xor masks:
@@ -362,9 +274,9 @@
                             p)
                        p)
                   (add (bvcat 1 bit2
-                                    (+ 1 n)
-                                    (bvcat 1 bit1
-                                                 n 0))
+                              (+ 1 n)
+                              (bvcat 1 bit1
+                                     n 0))
                        extra
                        p)))
   :hints (("Goal" ;:cases ((equal x 0))
@@ -486,12 +398,6 @@
                   (mod (bvcat highsize highval 1 lowval) p)))
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
-
-(defthmd not-of-if-of-nil-arg3-when-booleans
-  (implies (and (booleanp x)
-                (booleanp y))
-           (equal (not (if x y nil)) ;; "not and"
-                  (acl2::boolor (not x) (not y)))))
 
 ;; We negate the bit and add a constant on the outside to adjust
 (defthm neg-of-bvcat-of-0-when-bitp

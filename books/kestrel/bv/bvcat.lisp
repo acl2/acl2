@@ -30,22 +30,12 @@
 (local (include-book "../library-wrappers/ihs-logops-lemmas"))
 
 (defthm unsigned-byte-p-of-bvcat
-  (implies (and (equal n (+ lowsize highsize))
-                (natp lowsize)
-                (natp highsize))
-           (unsigned-byte-p n (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL)))
-  :hints (("Goal" :do-not '(preprocess generalize eliminate-destructors)
-           :cases ((integerp lowval))
-           :in-theory (enable bvcat))))
-
-(defthm unsigned-byte-p-of-bvcat-gen
   (implies (and (>= n (+ lowsize highsize))
-                (natp n)
+                (integerp n)
                 (natp lowsize)
                 (natp highsize))
            (unsigned-byte-p n (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat (n (+ lowsize highsize)))
-           :in-theory (disable unsigned-byte-p-of-bvcat))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvchop-of-bvcat-same
   (implies (and (equal n (+ n2 xsize))
@@ -201,17 +191,6 @@
 
 (theory-invariant (incompatible (:definition bvcat) (:rewrite bvcat-recombine)))
 
-(defthm unsigned-byte-p-of-bvcat2
-  (implies (and (equal n (+ lowsize highsize))
-                (natp lowsize)
-                (natp highsize))
-           (unsigned-byte-p n(bvcat highsize highval lowsize lowval)))
-  :hints
-  (("Goal"
-    :cases ((integerp lowval))
-    :do-not '(preprocess generalize eliminate-destructors)
-    :in-theory (e/d (bvcat) ()))))
-
 ;drop?
 (defthm bvcat-equal-0-rewrite
   (implies (and (integerp x)
@@ -304,17 +283,6 @@
                                       BVCAT-WHEN-LOWVAL-IS-NOT-AN-INTEGER)
             :cases ((integerp lowval))))))
 
-(defthm unsigned-byte-p-of-bvcat-gen2
-  (implies (and (>= n (+ lowsize highsize))
-                (natp n)
-                (natp lowsize)
-                (natp highsize))
-           (unsigned-byte-p n (bvcat highsize highval lowsize lowval)))
-  :hints
-  (("Goal" :use (:instance unsigned-byte-p-of-bvcat
-                           (n (+ lowsize highsize)))
-    :in-theory (disable unsigned-byte-p-of-bvcat))))
-
 (defthmd bvcat-numeric-bound2
   (implies (and (syntaxp (quotep k))
                 (syntaxp (quotep lowsize))
@@ -326,11 +294,8 @@
                   t))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
                                   (n (+ lowsize highsize)))
-           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat2
-                                              unsigned-byte-p-of-bvcat-all-cases
+           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat-all-cases
                                               unsigned-byte-p-of-bvcat
-                                              unsigned-byte-p-of-bvcat-gen
-                                              unsigned-byte-p-of-bvcat-gen2
                                               ;logapp-recollect-from-shift
                                               )))))
 (defthm bvcat-upper-bound-linear
@@ -873,11 +838,8 @@
                   t))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
                                   (n (+ lowsize highsize)))
-           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat2
-                                              unsigned-byte-p-of-bvcat-all-cases
-                                              unsigned-byte-p-of-bvcat
-                                              unsigned-byte-p-of-bvcat-gen
-                                              unsigned-byte-p-of-bvcat-gen2)))))
+           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat-all-cases
+                                              unsigned-byte-p-of-bvcat)))))
 
 ;kill the 64 version
 (defthm bvcat-numeric-bound
@@ -888,11 +850,8 @@
            (< (bvcat highsize highval lowsize lowval) k))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
                                   (n (+ lowsize highsize)))
-           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat2
-                                              unsigned-byte-p-of-bvcat
-                                              unsigned-byte-p-of-bvcat-all-cases
-                                              unsigned-byte-p-of-bvcat-gen
-                                              unsigned-byte-p-of-bvcat-gen2)))))
+           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat
+                                              unsigned-byte-p-of-bvcat-all-cases)))))
 
 ;this one requires bvcats (with the same sizes) on both sides and so is less aggressive
 (defthm bvcat-equal-bvcat
@@ -916,11 +875,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
                                   (n (+ lowsize highsize))
                                   )
-           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat2
-                                              unsigned-byte-p-of-bvcat
-                                              unsigned-byte-p-of-bvcat-all-cases
-                                              unsigned-byte-p-of-bvcat-gen
-                                              unsigned-byte-p-of-bvcat-gen2)))))
+           :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat-all-cases)))))
 
 ;fixme gen the 1
 (defthm bvcat-equal-0-rewrite2
