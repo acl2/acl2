@@ -741,38 +741,11 @@
 
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
-(defthm floor-of-expt-2
-  (implies (integerp n)
-           (equal (floor (expt 2 n) 2)
-                  (if (posp n)
-                      (expt 2 (+ -1 n))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (expt) (ACL2::EXPT-HACK)))))
-
-(defun sub1-induct (n)
-  (if (zp n)
-      n
-    (sub1-induct (+ -1 n))))
-
-(defthm acl2::integer-length-of-*-of-expt2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (integer-length (* x (expt 2 n)))
-                  (if (equal 0 x)
-                      0
-                    (+ n (integer-length x)))))
-  :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
-           :induct (sub1-induct n)
-           :in-theory (e/d (integer-length expt)
-                           (acl2::expt-hack
-                            ;ACL2::INTEGER-LENGTH-OF-FLOOR-BY-2
-                            ;;ACL2::EXPT-COLLECT-HACK
-                            )))))
-
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
-(defthm power-of-2p-when-equal-of-expt
-  (implies (and (equal x (expt 2 n))
+;drop? or is this needed for axe?
+(defthmd power-of-2p-when-equal-of-expt
+  (implies (and (equal x (expt 2 n)) ; n is a free var
                 (natp n))
            (acl2::power-of-2p x))
   :hints (("Goal" :in-theory (enable acl2::power-of-2p))))
