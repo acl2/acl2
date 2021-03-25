@@ -7111,7 +7111,7 @@
                                   (change pequivs-property prop
                                           :deep new
                                           :deep-pequiv-p t))
-                                 (t 
+                                 (t
                                   (change pequivs-property prop
                                           :deep new))))))))
                (parent-prop
@@ -10882,9 +10882,9 @@
        (cond
         (only-simple
          (warning$ ctx "Monitor"
-                   "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] simple ~
-                    abbreviation rule~#1~[~/s~].  Monitors can be installed ~
-                    on abbreviation rules, but will not fire during ~
+                   "The rune~#0~[~/s~] ~&0 name~#0~[s~/~] only~#1~[ a~/~] ~
+                    simple abbreviation rule~#1~[~/s~].  Monitors can be ~
+                    installed on abbreviation rules, but will not fire during ~
                     preprocessing, so you may want to supply the hint :DO-NOT ~
                     '(PREPROCESS); see :DOC hints.  For an explanation of ~
                     what a simple abbreviation rule is, see :DOC simple.  ~
