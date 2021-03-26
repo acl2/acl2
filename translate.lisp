@@ -4113,6 +4113,17 @@
                 (cons (car vars) non-exec-stobjs)
               non-exec-stobjs)))))
 
+(defun scan-to-event (wrld)
+
+; We roll back wrld to the first (list order traversal) event landmark
+; on it.
+
+  (cond ((null wrld) wrld)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value))
+         wrld)
+        (t (scan-to-event (cdr wrld)))))
+
 (defun logical-defun (fn wrld)
 
 ; Returns the defun form for fn that was submitted to ACL2,, if there is one;
@@ -4123,6 +4134,16 @@
          (case (car ev)
            (defun ev)
            (mutual-recursion (assoc-eq-cadr fn (cdr ev)))
+           ((defstobj defabsstobj)
+            (and (eq (cadr ev) ; expect true except for st itself
+                     (getpropc fn 'stobj-function nil wrld))
+                 (let* ((index (getpropc fn 'absolute-event-number nil wrld))
+                        (wrld2 (assert$
+                                index
+                                (lookup-world-index 'event index wrld)))
+                        (ev (get-event fn (scan-to-event (cdr wrld2)))))
+                   (and (eq (car ev) 'defun) ; always true?
+                        ev))))
            (verify-termination-boot-strap
 
 ; For some functions, like binary-append and apply$, we wind up in this case.
