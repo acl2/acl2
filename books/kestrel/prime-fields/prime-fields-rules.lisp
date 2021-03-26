@@ -12,6 +12,7 @@
 
 (include-book "prime-fields")
 (local (include-book "support"))
+(local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt"))
@@ -83,7 +84,7 @@
 ;;                   (mul a (pow a b))))
 ;;   :hints (("Goal" :in-theory (enable pow))))
 
-;move?
+;move or drop?
 (defthm divides-of-prime-means-0
   (implies (and (fep x p)
                 (posp p))

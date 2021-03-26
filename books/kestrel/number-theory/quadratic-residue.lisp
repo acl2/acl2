@@ -15,8 +15,7 @@
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 
-;; For the future: remove this dependency on prime-fields:
-(local (include-book "kestrel/prime-fields/top" :dir :system))
+(local (include-book "divides"))
 
 (include-book "euler2-support")
 
@@ -109,7 +108,7 @@
                       (equal 0 (mod (* y y) p))
                     nil))
            )
-  :hints (("Goal" :in-theory (e/d (residue-meaning-backwards mul) (residue-meaning
+  :hints (("Goal" :in-theory (e/d (residue-meaning-backwards) (residue-meaning
                                                                has-square-root?))
                   :use ((:instance rtl::not-res-no-root (acl2::p p) (acl2::m x)
   (acl2::j y)))))
