@@ -46,6 +46,8 @@
 (include-book "power-of-2p")
 (include-book "rem")
 (include-book "ash")
+(include-book "min")
+(include-book "max")
 
 (include-book "limit-expt")
 
