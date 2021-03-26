@@ -14,6 +14,7 @@
 ;; arbitrary prime where all operations are done modulo the prime.
 
 (include-book "support")
+(local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/mod"))
