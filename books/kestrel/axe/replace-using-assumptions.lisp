@@ -19,9 +19,6 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "numeric-lists"))
 
-;todo: deprecate:
-;x must be a nodenum or quotep:
-(defmacro isnodenum (x) `(not (consp ,x))) ;fixme would (atom be faster?)
 ;x must be a nodenum or quotep:
 ;(defmacro isconstant (x) `(consp ,x))
 
@@ -55,7 +52,7 @@
           *nil* ; TERM can be safely assumed false
         (if (not (and (call-of 'not expr-to-assume-false)
                       (= 1 (len (dargs expr-to-assume-false)))
-                      (isnodenum (darg1 expr-to-assume-false))))
+                      (atom (darg1 expr-to-assume-false))))
             (replace-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
           ;; EXPR-TO-ASSUME-FALSE is of the form (not <nodenum>):
           (let ((non-nil-expr (aref1 'dag-array dag-array (darg1 expr-to-assume-false))))
@@ -68,7 +65,7 @@
                 *t* ;since it's assumed non-nil and we only have to preserve iff, it's t
               (if (not (and (call-of 'equal non-nil-expr)
                             (= 2 (len (dargs non-nil-expr)))
-                            (isnodenum (darg2 non-nil-expr))))
+                            (atom (darg2 non-nil-expr))))
                   (replace-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
                 ;; this is consistent with what we've been doing all along (turning equalities around to bring the smaller term to the left)
                 (if (and (equal term (aref1 'dag-array dag-array (darg2 non-nil-expr))) ;fixme allow the equal to be weaker?
