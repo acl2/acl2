@@ -697,7 +697,7 @@
 
 (define atc-check-sint-const ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
-               (val acl2::sbyte32p))
+               (val sint-integerp))
   :short "Check if a term represents an @('int') constant."
   :long
   (xdoc::topstring
@@ -709,7 +709,7 @@
   (case-match term
     (('sint-const ('quote val))
      (if (and (natp val)
-              (acl2::sbyte32p val))
+              (sint-integerp val))
          (mv t val)
        (mv nil 0)))
     (& (mv nil 0)))

@@ -13,12 +13,12 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
+(include-book "integer-values")
 (include-book "types")
 (include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
-(include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,17 +327,15 @@
      to be decimal (not octal or hexadecimal),
      to be signed,
      and to have no type suffixes.
-     This means that the integer constant must have type @('int'),
-     and therefore that its numberic value must be in that type's range.
-     Given our current definition of @(tsee sintp),
-     the value must fit in 32 bits (with the sign bit being 0).")
+     We also require the numeric value to be representable as an @('int'),
+     which is therefore the type of the constant.")
    (xdoc::p
     "If all the constraints are satisfied, we return the type of the constant.
      This is always @('int') for now,
      but eventually this will be generalized."))
   (b* ((ic (iconst-fix ic))
        ((iconst ic) ic)
-       ((unless (acl2::sbyte32p ic.value))
+       ((unless (sint-integerp ic.value))
         (error (list :iconst-out-of-range ic)))
        ((unless (equal ic.base (iconst-base-dec)))
         (error (list :unsupported-iconst-base ic)))
