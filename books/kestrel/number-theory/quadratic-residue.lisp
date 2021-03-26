@@ -28,11 +28,14 @@
   ;; from being accepted.
   (local (include-book "arithmetic-3/top" :dir :system))
 
+  ;; This means "p is an odd prime and there is a number z such that z*z = a mod p"
   (defun has-square-root? (a p)
-    (declare (xargs :guard (and (natp a) (natp p) (< 2 p) (< a p) (oddp p))))
-      (or (= a 0)
-          (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
-                 1)))
+    (declare (xargs :guard (and (natp a) (natp p) (< 2 p) (< a p)
+                                (oddp p) (rtl::primep p))))
+    (and (rtl::primep p)
+         (or (= a 0)
+             (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
+                    1))))
   )
 
 
