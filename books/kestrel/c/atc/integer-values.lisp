@@ -139,7 +139,7 @@
        (define ,type-bits ()
          :returns (,type-bits posp :rule-classes :type-prescription)
          :short ,(concatenate 'string
-                              "Size of unsigned and signed @('"
+                              "Size of @('unsigned') and @('signed') @('"
                               type-string
                               "')s, in bits.")
          (* 8 (,type-bytes))
