@@ -2141,8 +2141,8 @@
                         (find-new-index (strip-cars frame))))
      src))
    *enoent*)
-  :hints (("goal" :in-theory (enable abs-mkdir-correctness-lemma-4 dirname
-                                     basename abs-find-file-helper abs-alloc)
+  :hints (("goal" :in-theory (enable dirname basename
+                                     abs-find-file-helper abs-alloc)
            :do-not-induct t)))
 
 (defthm cp-without-subdirs-helper-correctness-lemma-15
@@ -2391,7 +2391,6 @@
           (e/d (nth cp-spec-3 absfat-oracle-multi-step
                     absfat-oracle-single-step abs-find-file-src
                     abs-complete-when-atom-abs-addrs
-                    abs-mkdir-correctness-lemma-76
                     ;; Enabling the following causes ACL2 to get really slow.
                     ;; abs-mkdir-correctness-lemma-238
                     abs-find-file-src-correctness-2

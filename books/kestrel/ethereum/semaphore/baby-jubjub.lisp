@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ baby-jubjub
-  :parents (semaphore)
+  :parents (semaphore-specification)
   :short "The BabyJubjub complete twisted Edwards curve."
   :long
   (xdoc::topstring

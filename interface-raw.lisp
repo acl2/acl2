@@ -2801,8 +2801,10 @@
   (case called-sys-fn
         (rewrite
          (cond ((integerp bkptr)
-                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
-                                                   add-linear-lemma))
+                (cond ((member-eq calling-sys-fn
+                                  '(rewrite-with-lemma
+                                    rewrite-quoted-constant-with-lemma
+                                    add-linear-lemma))
                        (dmr-increment-indent)
                        (format nil " the atom of hypothesis ~s" bkptr))
                       ((eq calling-sys-fn 'simplify-clause)
@@ -2901,7 +2903,7 @@
               (format nil "; argument(s) ~s" (access gframe frame :bkptr)))
              (t
               (format nil "|~s" (access gframe frame :bkptr)))))
-      ((rewrite-with-lemma add-linear-lemma)
+      ((rewrite-with-lemma add-linear-lemma rewrite-quoted-constant-with-lemma)
        (format
         nil
         "~a~s. Applying ~s~%"
