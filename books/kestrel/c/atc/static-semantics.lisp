@@ -323,27 +323,54 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we require the integer constant
-     to be decimal (not octal or hexadecimal),
-     to be signed,
-     and to have no type suffixes.
-     We also require the numeric value to be representable as an @('int'),
-     which is therefore the type of the constant.")
-   (xdoc::p
-    "If all the constraints are satisfied, we return the type of the constant.
-     This is always @('int') for now,
-     but eventually this will be generalized."))
+    "This is according to [C:6.4.4.1/5]:
+     based on the suffixes, we find the first type
+     that suffices to represent the value,
+     in the lists indicated in the table.
+     If the value is too large, the integer constant is illegal."))
   (b* ((ic (iconst-fix ic))
-       ((iconst ic) ic)
-       ((unless (sint-integerp ic.value))
-        (error (list :iconst-out-of-range ic)))
-       ((unless (equal ic.base (iconst-base-dec)))
-        (error (list :unsupported-iconst-base ic)))
-       ((unless (not ic.unsignedp))
-        (error (list :unsupported-iconst-suffix ic)))
-       ((unless (equal ic.type (iconst-tysuffix-none)))
-        (error (list :unsupported-iconst-suffix ic))))
-    (type-sint))
+       ((iconst ic) ic))
+    (if ic.unsignedp
+        (iconst-tysuffix-case
+         ic.type
+         :none (cond ((uint-integerp ic.value) (type-uint))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :long (cond ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :llong (cond ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic)))))
+      (iconst-tysuffix-case
+       ic.type
+       :none (if (iconst-base-case ic.base :dec)
+                 (cond ((sint-integerp ic.value) (type-sint))
+                       ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((sint-integerp ic.value) (type-sint))
+                     ((uint-integerp ic.value) (type-uint))
+                     ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :long (if (iconst-base-case ic.base :dec)
+                 (cond ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :llong (if (iconst-base-case ic.base :dec)
+                  (cond ((sllong-integerp ic.value) (type-sllong))
+                        (t (error (list :iconst-out-of-range ic))))
+                (cond ((sllong-integerp ic.value) (type-sllong))
+                      ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic))))))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
