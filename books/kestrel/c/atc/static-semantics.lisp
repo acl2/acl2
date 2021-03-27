@@ -126,15 +126,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-var-table ()
-  :returns (vartab var-tablep)
-  :short "An irrelevant variable table, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (var-table-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-var-table))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define var-table-lookup ((var identp) (vartab var-tablep))
   :returns (type type-optionp)
   :short "Look up a variable in a variable table."
