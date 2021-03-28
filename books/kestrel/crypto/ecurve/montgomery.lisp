@@ -862,7 +862,10 @@
                     (equal point2
                            (montgomery-neg point1 curve))))
     :use lemma
-    :disable lemma))
+    :disable lemma)
+
+  (theory-invariant (incompatible (:rewrite montgomery-add-zero-left-is-neg)
+                                  (:rewrite montgomery-add-zero-right-is-neg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
