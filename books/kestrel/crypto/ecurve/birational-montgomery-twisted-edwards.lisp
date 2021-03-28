@@ -57,7 +57,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define montgomery-to-twisted-edwards ((mcurve montgomery-curvep))
-  :guard (montgomery-curve-primep mcurve)
   :returns (tecurve twisted-edwards-curvep)
   :short "Map a Montgomery curve to a twisted Edwards curve."
   :long
@@ -82,7 +81,6 @@
        (a (div (add mcurve.a 2 mcurve.p) mcurve.b mcurve.p))
        (d (div (sub mcurve.a 2 mcurve.p) mcurve.b mcurve.p)))
     (make-twisted-edwards-curve :p mcurve.p :a a :d d))
-  :guard-hints (("Goal" :in-theory (enable montgomery-curve-primep)))
   :hooks (:fix)
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
@@ -94,8 +92,13 @@
                      (equal p 4)))
      :prep-books ((include-book "arithmetic-3/top" :dir :system)))
    (defrulel verify-guards-lemma-2
-     (not (rtl::primep 4))
-     :enable rtl::primep)))
+     (not (equal (montgomery-curve->p curve) 4))
+     :use (:instance montgomery-curve-requirements (x curve))
+     :disable montgomery-curve-requirements
+     :prep-lemmas
+     ((defrule lemma
+        (not (rtl::primep 4))
+        :enable rtl::primep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,8 +162,7 @@
 
 (define montgomery-point-to-twisted-edwards-point ((point pointp)
                                                    (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point curve)
+  :guard (and (point-on-montgomery-p point curve)
               (not (eq (point-kind point) :infinite))
               (not (equal (point-finite->x point)
                           (neg 1 (montgomery-curve->p curve))))
