@@ -1281,7 +1281,12 @@
 
   (defrule montgomery-mul-of-zero
     (equal (montgomery-mul scalar (montgomery-zero) curve)
-           (montgomery-zero))))
+           (montgomery-zero)))
+
+  (defrule montgomery-mul-of-minus1
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-mul -1 point curve)
+                    (montgomery-neg point curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
