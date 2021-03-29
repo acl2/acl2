@@ -635,3 +635,95 @@ functions over natural numbers.
        `(with-output
          :stack :pop 
          (defconst ,',name ',form ,@(and ,doc '(,doc))))))))
+
+; Utilities to stage rules.
+
+(mutual-recursion
+ (defun find-first-call (fn term)
+ ; Find the first call of fn in term.
+  (cond ((acl2::variablep term) nil)
+        ((acl2::fquotep term) nil)
+        ((equal (acl2::ffn-symb term) fn)
+         term)
+        (t (find-first-call-lst fn (acl2::fargs term)))))
+
+ (defun find-first-call-lst (fn lst)
+ ; Find the first call of fn in a list of terms.
+  (cond ((endp lst) nil)
+        (t (or (find-first-call fn (car lst))
+               (find-first-call-lst fn (cdr lst)))))))
+
+(defun stage1 (fn max clause flg)
+; If the clause is stable under simplification and there is a call of
+; fn in it, expand it.  But don't do it more than max times.
+ (let ((temp (and flg
+                  (find-first-call-lst fn clause))))
+   (if temp
+       (if (zp max)
+           (cw "~%~%HINT PROBLEM:  The maximum repetition count of ~
+                your STAGE hint been reached without eliminating ~
+                all of the calls of ~x0.  You could supply a larger ~
+                count with the optional second argument to STAGE ~
+                (which defaults to 100).  But think about what is ~
+                happening! Is each stage permanently eliminating a ~
+                call of ~x0?~%~%"
+               fn)
+         `(:computed-hint-replacement
+            ((stage1 ',fn ,(- max 1)
+                     clause
+                     stable-under-simplificationp))
+           :expand (,temp)))
+     nil)))
+
+(defmacro stage (fn &optional (max '100))
+ `(stage1 ',fn ,max clause stable-under-simplificationp))
+
+; see custom.lisp where the stage hints have been added.
+
+(defun pair-tl (x y)
+  (if (or (endp x) (endp y))
+      nil
+    (cons (list (car x) (car y)) (pair-tl (cdr x) (cdr y)))))
+
+(defun stage-rule1 (fn def-rule vars max clause flg)
+; If the clause is stable under simplification and there is a call of
+; fn in it, expand it.  But don't do it more than max times.
+  (let ((temp (and flg
+                   (find-first-call-lst fn clause))))
+    (if temp
+        (if (zp max)
+            (cw "~%~%HINT PROBLEM:  The maximum repetition count of ~
+                your STAGE hint been reached without eliminating ~
+                all of the calls of ~x0.  You could supply a larger ~
+                count with the optional second argument to STAGE ~
+                (which defaults to 100).  But think about what is ~
+                happening! Is each stage permanently eliminating a ~
+                call of ~x0?~%~%"
+                fn)
+          `(:computed-hint-replacement
+            ((stage-rule1 ',fn
+                          ',def-rule
+                          ',vars
+                          ,(- max 1)
+                          clause
+                          stable-under-simplificationp))
+            :expand (:with ,def-rule ,temp)))
+      nil)))
+
+(defmacro stage-rule (fn def-rule &optional (max '100) vars)
+  `(stage-rule1 ',fn
+                ',def-rule
+                (or ,vars (formals ',fn (w state)))
+                ,max
+                clause
+                stable-under-simplificationp))
+
+#|
+ Here is an example of how this is used
+
+ (add-default-hints!
+  '((stage-rule cfix cfix-definition-rule))
+  :at-end t)
+
+|#
+
