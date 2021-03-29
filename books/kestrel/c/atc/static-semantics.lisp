@@ -384,6 +384,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define promote-type ((type typep))
+  :returns (promoted-type typep)
+  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the static counterpart of
+     the integer promotions that are applied to values:
+     statically, they are applied to types.")
+   (xdoc::p
+    "These only modify the character types
+     and the unsigned and signed @('short int') types;
+     all the other types are unchanged.
+     Both @('signed char') and @('short') are promoted to @('int'),
+     because these signed types are always in the obvious inclusion relation.
+     Since @('unsigned char') and @('char') both take one byte,
+     their values are all representable as @('int'),
+     and therefore they get promoted to @('int').
+     For @('unsigned short'), there are two cases:
+     either its values are all contained in @('int'),
+     in which case it is converted to @('int'),
+     or they are not, in which case they are contained in @('unsigned int'),
+     and the type is promoted to @('unsigned int')."))
+  (case (type-kind type)
+    ((:char :schar :uchar :sshort) (type-sint))
+    (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
+    (t (type-fix type)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-unary ((op unopp) (arg-expr exprp) (arg-type typep))
   :returns (type type-resultp)
   :short "Check the application of a unary operator to an expression."
