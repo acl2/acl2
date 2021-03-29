@@ -991,7 +991,19 @@
   (defrule montgomery-neg-of-zero
     (equal (montgomery-neg (montgomery-zero) curve)
            (montgomery-zero))
-    :enable montgomery-zero))
+    :enable montgomery-zero)
+
+  (defrule montgomery-neg-of-neg
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-neg (montgomery-neg point curve) curve)
+                    (point-fix point)))
+    :enable (point-on-montgomery-p
+             point-kind
+             pointp
+             point-finite
+             point-fix
+             point-finite->x
+             point-finite->y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
