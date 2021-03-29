@@ -107,6 +107,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  (and (member-eq (type-kind type)
+                  '(:schar :sshort :sint :slong :sllong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  (and (member-eq (type-kind type)
+                  '(:uchar :ushort :uint :ulong :ullong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type [C:6.2.5/17]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  (type-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalarp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  (or (type-arithmeticp type)
+      (type-case type :pointer))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-name-to-type ((tyname tynamep))
   :returns (type typep)
   :short "Turn a type name into a type."
