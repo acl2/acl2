@@ -425,14 +425,39 @@
      @('arg-expr') is used just for errors.
      We return the type of the unary expression.")
    (xdoc::p
-    "For now we require the argument to be an @('int').
-     The result is therefore an @('int').
-     This will be extended in the future."))
-  (if (type-equiv arg-type (type-sint))
-      (type-sint)
-    (error (list ::unary-mistype (unop-fix op) (expr-fix arg-expr)
-                 :required (type-sint)
-                 :supplied (type-fix arg-type))))
+    "For unary plus and minus,
+     the promoted operand must be arithmetic,
+     and the result has the same promoted type.")
+   (xdoc::p
+    "For bitwise negation,
+     the promoted operand must be integer,
+     and the result has the same promoted type.")
+   (xdoc::p
+    "For logical negation,
+     the operand must be scalar (it is not promoted)
+     and the result is @('int') -- 0 or 1."))
+  (case (unop-kind op)
+    ((:plus :minus) (b* ((type (promote-type arg-type)))
+                      (if (type-arithmeticp type)
+                          type
+                        (error (list :unary-mistype
+                                 (unop-fix op) (expr-fix arg-expr)
+                                 :required :arithmetic
+                                 :supplied (type-fix arg-type))))))
+    (:bitnot (b* ((type (promote-type arg-type)))
+               (if (type-integerp type)
+                   type
+                 (error (list :unary-mistype
+                          (unop-fix op) (expr-fix arg-expr)
+                          :required :integer
+                          :supplied (type-fix arg-type))))))
+    (:lognot (if (type-scalarp arg-type)
+                 (type-sint)
+               (error (list :unary-mistype
+                        (unop-fix op) (expr-fix arg-expr)
+                        :required :scalar
+                        :supplied (type-fix arg-type)))))
+    (t (error (impossible))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
