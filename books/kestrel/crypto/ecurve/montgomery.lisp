@@ -564,6 +564,298 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montgomery-add-commutativity
+  :short "Commutativity of Montgomery addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is easy when at least one of the points is the one at infinity.
+     When the two points are both finite,
+     there are two cases, according to the definition of addition:
+     either the points have the same @($x$) or not.
+     If they do, we know from theorem
+     @(tsee montgomery-points-with-same-x-have-same-or-neg-y)
+     that the @($y$) are either the same or inverses:
+     if they are inverses, they are still inverses if swapped,
+     and the result is the point at infinite in both cases,
+     so commutativity holds;
+     if they are the same, then the two points are the same
+     and commutativity clearly holds.")
+   (xdoc::p
+    "The more elaborate case is when the two points have different @($x$).
+     Looking at the formula to compute the addition,
+     first note that @($\\lambda$) does not change if the points are swapped,
+     because the swapping negates both dividend and divisor,
+     and the negations simplify away.
+     The @($x$) of the addition is obtained by combining @($\\lambda$)
+     with @($A$) and @($B$) and the two @($x$)s of the points:
+     the latter are both subtracted,
+     and if swapped the final result is the same.
+     So addition commutes at least for the @($x$) coordinate.")
+   (xdoc::p
+    "For the @($y$) of the addition, things are a bit more complex:
+     it is not immediately clear that
+     @($\\lambda (x_1 - x_3) - y_1 = \\lambda (x_2 - x_3) - y_2$),
+     where we write @($\\lambda$) for both because that part commutes,
+     as explained above.
+     If we distribute @($\\lambda$) over @($(x_1 - x_3)$) and @($(x_2 - x_3)$),
+     we see that @($\\lambda x_3$) is the same for both,
+     so we are left with showing
+     @($\\lambda x_1 - y_1 = \\lambda x_2 - y_2$).
+     Expanding @($\\lambda$)
+     and extending the fraction to @($y-1$) and @($y_2$),
+     things simplify and both reduce to the same
+     @($\\frac{x_1 y_2 - x_2 y_1}{x_2 - x_1}$),
+     thus ensuring commutativity.")
+   (xdoc::p
+    "To carry out the argument above for the case of different @($x$)s,
+     we introduce local functions that define
+     @($\\lambda$), @($x_3$), and @($y_2$),
+     show they commute,
+     show them equivalent to @(tsee montgomery-add) under suitable conditions,
+     and thus conclude the commutativity under those conditions,
+     which together with the commutativity theorems under other conditions,
+     allow us to conclude commutativity under all conditions."))
+
+  ;; commutativity of MONTGOMERY-ADD when some point is infinite:
+  (defruledl montgomery-add-commutative-when-infinite
+    (implies (or (equal (point-kind point1) :infinite)
+                 (equal (point-kind point2) :infinite))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add point-kind pointp point-fix))
+
+  ;; commutativity of MONTGOMERY-ADD
+  ;; when the points are finite and have the same x:
+  (defruledl montgomery-add-commutative-when-finite-and-same-x
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (equal (point-finite->x point1)
+                         (point-finite->x point2)))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :use (:instance montgomery-points-with-same-x-have-same-or-neg-y)
+    :enable (montgomery-add point-on-montgomery-p)
+    :prep-lemmas
+    ;; being each other's inverse is symmetric:
+    ((defrule lemma
+       (implies (and (rtl::primep p)
+                     (fep x p)
+                     (fep y p))
+                (equal (equal x (neg y p))
+                       (equal (neg x p) y))))))
+
+  ;; definition of lambda, consistent with MONTGOMERY-ADD:
+  (local
+   (defund l (x1 x2 y1 y2 p)
+     (b* ((y2-y1 (sub y2 y1 p))
+          (x2-x1 (sub x2 x1 p))
+          (l (div y2-y1 x2-x1 p)))
+       l)))
+
+  ;; commutativity of lambda:
+  (defrulel l-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (l x1 x2 y1 y2 p)
+                    (l x2 x1 y2 y1 p)))
+    :enable l
+    :disable (sub div-of-neg-and-neg)
+    :use (:instance div-of-neg-and-neg (a (sub y2 y1 p)) (b (sub x2 x1 p)))
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; definition of x3, consistent with MONTGOMERY-ADD:
+  (local
+   (defund x3 (x1 x2 y1 y2 a b p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (l^2 (mul l l p))
+          (b.l^2 (mul b l^2 p))
+          (b.l^2-a (sub b.l^2 a p))
+          (b.l^2-a-x1 (sub b.l^2-a x1 p))
+          (b.l^2-a-x1-x2 (sub b.l^2-a-x1 x2 p))
+          (x3 b.l^2-a-x1-x2))
+       x3)))
+
+  ;; commutativity of x3:
+  (defrulel x3-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (x3 x1 x2 y1 y2 a b p)
+                    (x3 x2 x1 y2 y1 a b p)))
+    :enable x3)
+
+  ;; definition of y3, consistent with MONTGOMERY-ADD:
+  (local
+   (defund y3 (x1 x2 y1 y2 a b p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (x3 (x3 x1 x2 y1 y2 a b p))
+          (x3-x1 (sub x3 x1 p))
+          (l.[x3-x1] (mul l x3-x1 p))
+          (y1+l.[x3-x1] (add y1 l.[x3-x1] p))
+          (y3 (neg y1+l.[x3-x1] p)))
+       y3)))
+
+  ;; definition of the rest of y3, after removing - lambda * x3:
+  (local
+   (defund y3-rest (x1 x2 y1 y2 p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (l.x1 (mul l x1 p))
+          (l.x1-y1 (sub l.x1 y1 p)))
+       l.x1-y1)))
+
+  ;; alternative definition of y3, as - lambda * x3 + y3-rest (see above):
+  (defruledl y3-alt-def
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3 x1 x2 y1 y2 a b p)
+                    (add (neg (mul (l x1 x2 y1 y2 p)
+                                   (x3 x1 x2 y1 y2 a b p)
+                                   p)
+                              p)
+                         (y3-rest x1 x2 y1 y2 p)
+                         p)))
+    :enable (y3 y3-rest))
+
+  ;; alternative definition of y3 that extends the fraction and simplifies:
+  (defruledl y3-rest-alt-def
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3-rest x1 x2 y1 y2 p)
+                    (div (sub (mul x1 y2 p)
+                              (mul x2 y1 p)
+                              p)
+                         (sub x2 x1 p)
+                         p)))
+    :enable (y3-rest l)
+    :use (:instance extend-fraction-to-sum
+          (a (sub y2 y1 p))
+          (b (sub x2 x1 p))
+          (c x1)
+          (d (neg y1 p)))
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; commutativity of y3-rest:
+  (defrulel y3-rest-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3-rest x1 x2 y1 y2 p)
+                    (y3-rest x2 x1 y2 y1 p)))
+    :enable (y3-rest-alt-def)
+    ;; we need the following to take the commuting of lambda into account:
+    :use (:instance div-of-neg-and-neg
+          (a (add (mul x1 y2 p)
+                  (neg (mul x2 y1 p) p)
+                  p))
+          (b (add (neg x1 p) x2 p)))
+    :disable div-of-neg-and-neg
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; commutativity of y3:
+  (defrulel y3-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3 x1 x2 y1 y2 a b p)
+                    (y3 x2 x1 y2 y1 a b p)))
+    :enable y3-alt-def)
+
+  ;; alternative definition of MONTGOMERY-ADD in terms of the functions above,
+  ;; under the assumptions that the two points are finite and have distinct x:
+  (defruledl montgomery-add-alt-def
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (not (equal (point-finite->x point1)
+                              (point-finite->x point2))))
+             (equal (montgomery-add point1 point2 curve)
+                    (point-finite (x3 (point-finite->x point1)
+                                      (point-finite->x point2)
+                                      (point-finite->y point1)
+                                      (point-finite->y point2)
+                                      (montgomery-curve->a curve)
+                                      (montgomery-curve->b curve)
+                                      (montgomery-curve->p curve))
+                                  (y3 (point-finite->x point1)
+                                      (point-finite->x point2)
+                                      (point-finite->y point1)
+                                      (point-finite->y point2)
+                                      (montgomery-curve->a curve)
+                                      (montgomery-curve->b curve)
+                                      (montgomery-curve->p curve)))))
+    :enable (montgomery-add x3 y3 l))
+
+  ;; commutativity of MONTGOMERY-ADD
+  ;; when the points are finite and have distinct x:
+  (defruledl montgomery-add-commutative-when-finite-and-distinct-x
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (not (equal (point-finite->x point1)
+                              (point-finite->x point2))))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add-alt-def point-on-montgomery-p))
+
+  ;; commutativity of MONTGOMERY-ADD when both points are finite:
+  (defruledl montgomery-add-commutative-when-finite
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :cases ((equal (point-finite->x point1)
+                   (point-finite->x point2)))
+    :enable (montgomery-add-commutative-when-finite-and-same-x
+             montgomery-add-commutative-when-finite-and-distinct-x))
+
+  ;; commutativity of MONTGOMERY-ADD (under all conditions):
+  (defruledl montgomery-add-commutative
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add-commutative-when-infinite
+             montgomery-add-commutative-when-finite)
+    :cases ((equal (point-kind point1) :infinite)
+            (equal (point-kind point2) :infinite)))
+
+  ;; exported theorem, without hints:
+  (defrule montgomery-add-commutative
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk montgomery-add-associativity ()
   :guard (montgomery-add-closure)
   :returns (yes/no booleanp)
