@@ -1073,13 +1073,12 @@
        (e/d
         (absfat-oracle-multi-step lofat-oracle-multi-step
                                   good-lofat-oracle-steps-p-helper
-                                  absfat-oracle-multi-step-refinement-lemma-2)
+                                  absfat-oracle-multi-step-refinement-lemma-2
+                                  take-as-append-and-nth)
         (hifat-mkdir hifat-pwrite
                      take append-of-take-and-cons))
        :induct (dec-induct n)
-       :do-not-induct t
-       :expand (:with take-as-append-and-nth
-                      (take n syscall-sym-list))))))
+       :do-not-induct t))))
 
   (defthm
     absfat-oracle-multi-step-refinement-1
