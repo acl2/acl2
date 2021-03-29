@@ -161,7 +161,8 @@
   (defthmd take-as-append-and-nth
     (equal (take n l) (if (zp n)
                           nil
-                        (append (take (- n 1) l) (list (nth (- n 1) l))))))
+                        (append (take (- n 1) l) (list (nth (- n 1) l)))))
+    :rule-classes :definition)
 
   (theory-invariant (incompatible (:rewrite take-as-append-and-nth) (:definition take)))
 
