@@ -1143,6 +1143,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montgomery-distributivity-of-neg-over-add
+  :short "Distributivity of negation over addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that @($-(P+Q) = (-P)+(-Q)$).
+     It is proved by showing that adding @($(P+Q)$) to @($(-P)+(-Q)$)
+     yields the zero point,
+     and then using @(see montgomery-add-inverse-uniqueness)
+     to show the desired equality.")
+   (xdoc::p
+    "This should be provable automatically via suitably normalizing
+     commutativity and associativity rules,
+     but since we do not have them at the moment,
+     we carry out a more manual, step-wise proof.
+     Those rules, and a general form of this theorem,
+     belong to a generic group library anyhow."))
+
+  (local
+   (acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+                    (montgomery-add (montgomery-neg point1 curve)
+                                    (montgomery-neg point2 curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:assoc (montgomery-add-associativity)))
+     (:assume (:point1 (point-on-montgomery-p point1 curve)))
+     (:assume (:point2 (point-on-montgomery-p point2 curve)))
+     (:derive
+      (:swap-point1-point2
+       (equal (montgomery-add (montgomery-add point1 point2 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-add (montgomery-add point2 point1 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)))
+      :from (:point1 :point2))
+     (:derive
+      (:assoc-right
+       (equal (montgomery-add (montgomery-add point2 point1 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-add point2
+                              (montgomery-add point1
+                                              (montgomery-add (montgomery-neg
+                                                               point1 curve)
+                                                              (montgomery-neg
+                                                               point2 curve)
+                                                              curve)
+                                              curve)
+                              curve)))
+      :from (:assoc :closure :point1 :point2)
+      :hints (("Goal" :in-theory (disable montgomery-add-commutative))))
+     (:derive
+      (:assoc-left
+       (equal (montgomery-add point2
+                              (montgomery-add point1
+                                              (montgomery-add (montgomery-neg
+                                                               point1 curve)
+                                                              (montgomery-neg
+                                                               point2 curve)
+                                                              curve)
+                                              curve)
+                              curve)
+              (montgomery-add point2
+                              (montgomery-add (montgomery-add point1
+                                                              (montgomery-neg
+                                                               point1 curve)
+                                                              curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)))
+      :from (:assoc :closure :point1 :point2)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:derive
+      (:simplify
+       (equal (montgomery-add point2
+                              (montgomery-add (montgomery-add point1
+                                                              (montgomery-neg
+                                                               point1 curve)
+                                                              curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-zero)))
+      :from (:point1 :point2))
+     (:derive
+      (:inverse
+       (equal (montgomery-add (montgomery-add point1 point2 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-zero)))
+      :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
+     (:derive
+      (:conclusion
+       (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+              (montgomery-add (montgomery-neg point1 curve)
+                              (montgomery-neg point2 curve)
+                              curve)))
+      :from (:inverse :closure :assoc :point1 :point2)
+      :hints (("Goal" :use (:instance montgomery-add-zero-right-is-neg
+                            (point1 (montgomery-add point1 point2 curve))
+                            (point2 (montgomery-add (montgomery-neg
+                                                     point1 curve)
+                                                    (montgomery-neg
+                                                     point2 curve)
+                                                    curve))))))
+     (:qed))))
+
+  (defrule montgmery-neg-of-add
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+                    (montgomery-add (montgomery-neg point1 curve)
+                                    (montgomery-neg point2 curve)
+                                    curve)))
+    :hints (("Goal" :by lemma))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled montgomery-points-with-same-x-are-same-or-neg-point
   :short "Theorem about points on the curve with the same abscissa
           being the same or opposite points."
