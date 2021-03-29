@@ -6,8 +6,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric McCarthy (mccarthy@kestrel.edu)
-;
-; NOTE: DRAFT
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,42 +73,41 @@
                   (has-square-root? m p)))
   :hints (("Goal" :in-theory (enable has-square-root? acl2::mod-expt-fast rtl::residue)
                   :use ((:instance rtl::euler-criterion-2a (acl2::p p) (acl2::m m))
-                        (:instance rtl::euler-criterion-2b (acl2::p p) (acl2::m
-                                                                       m))))))
+                        (:instance rtl::euler-criterion-2b (acl2::p p) (acl2::m m))))))
 
 (defthmd residue-meaning-backwards
   (implies (and (rtl::primep p)
                 (not (= p 2))
                 (oddp p)
                 (natp m) (< m p)
-                (not (equal 0 m))
-                ;(not (rtl::divides p m))
-                ) ; I would like a thm that fep implies this
+                (not (equal 0 m)))
            (equal (has-square-root? m p)
                   (rtl::residue m p))))
 
 (theory-invariant (incompatible (:rewrite residue-meaning) (:rewrite residue-meaning-backwards)))
 
 
-;; 3. Prove if some x doesn't have a square root, it means y*y is never
-;; equal to x.
-;; See rtl::not-res-no-root
+;; 3. Prove if some x doesn't have a square root
+;;    (more precisely, a modular square root in F_p),
+;;    it means y*y is never equal to x (mod p).
+;; See also rtl::not-res-no-root
 
 (defthm no-square-root-forall
-  (implies (and (not (has-square-root? x p)) ; conjunct ordering
+  (implies (and (not (has-square-root? x p))
                 (natp p)
-                (not (equal p 2))
+                (< 2 p)
                 (oddp p)
                 (natp x) (< x p)
                 (natp y) (< y p)
                 (rtl::primep p))
            (equal (equal x (mod (* y y) p))
+                  ;; A future improvement would be to remove this (equal x 0) check,
+                  ;; since has-square-root? is true if x = 0.
                   (if (equal x 0)
                       (equal 0 (mod (* y y) p))
-                    nil))
-           )
-  :hints (("Goal" :in-theory (e/d (residue-meaning-backwards) (residue-meaning
-                                                               has-square-root?))
-                  :use ((:instance rtl::not-res-no-root (acl2::p p) (acl2::m x)
-  (acl2::j y)))))
+                    nil)))
+  :hints (("Goal" :in-theory (e/d (residue-meaning-backwards)
+                                  (residue-meaning has-square-root?))
+                  :use ((:instance rtl::not-res-no-root
+                                   (acl2::p p) (acl2::m x) (acl2::j y)))))
   )
