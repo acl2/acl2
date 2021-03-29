@@ -157,12 +157,14 @@
              (no-duplicatesp-equal (take n l))))
 
   ;; Mihir M. mod: this lemma is useful in a few different places when
-  ;; reasoning about take, decrementing n but keeping l the same.
+  ;; reasoning about take, decrementing n but keeping l the same. Thanks are
+  ;; owed to Matt K. for suggesting the precise rule-classes that allow the
+  ;; new definition to be admitted without a new body.
   (defthmd take-as-append-and-nth
     (equal (take n l) (if (zp n)
                           nil
                         (append (take (- n 1) l) (list (nth (- n 1) l)))))
-    :rule-classes :definition)
+    :rule-classes ((:definition :install-body nil)))
 
   (theory-invariant (incompatible (:rewrite take-as-append-and-nth) (:definition take)))
 
