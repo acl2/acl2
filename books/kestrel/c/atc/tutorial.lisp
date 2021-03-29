@@ -357,7 +357,7 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the file @('[books]/kestrel/c/atc/integers.lisp').
+    is in the file @('[books]/kestrel/c/atc/signed-ints.lisp').
     This is automatically included when ATC is included,
     but one may want to include that file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
@@ -491,7 +491,7 @@
     but present concepts that apply more generally.
     However, this page only describes the basics of
     representing and generating C @('int') programs:
-    more advanced features are presented in upcoming tutorial pages.")
+    more advanced features are presented in subsequent tutorial pages.")
 
   (atc-tutorial-section "Simple Example")
 
@@ -563,7 +563,7 @@
 
   (xdoc::p
    "More details about the mapping from ACL2 names to C names
-    are given in an upcoming tutorial page.")
+    are given in @(see atc-tutorial-identifiers).")
 
   (atc-tutorial-section "Function Body")
 
@@ -726,15 +726,14 @@
    "                                (<= -10 (c::sint->get |z|))"
    "                                (<= (c::sint->get |z|) 10))"
    "                    :guard-hints ((\"Goal\""
-   "                                   :in-theory (enable sbyte32p"
-   "                                                      sbyte32-fix"
-   "                                                      c::sintp"
-   "                                                      c::sint-add-okp"
-   "                                                      c::sint-sub-okp"
-   "                                                      c::sint-mul-okp"
-   "                                                      c::sint-add"
-   "                                                      c::sint-sub"
-   "                                                      c::sint->get)))))"
+   "                                   :in-theory"
+   "                                   (enable c::sint-integerp-alt-def"
+   "                                           c::sintp"
+   "                                           c::sint-add-okp"
+   "                                           c::sint-sub-okp"
+   "                                           c::sint-mul-okp"
+   "                                           c::sint-add"
+   "                                           c::sint-sub)))))"
    "    (c::sint-mul (c::sint-add |x| |y|)"
    "                 (c::sint-sub |z| (c::sint-const 3)))))")
 
@@ -788,7 +787,7 @@
    "The above invocation of ATC generates the C file,
     as conveyed by a message printed on the screen.
     The invocation also prints certain event forms on the screen;
-    these will be described in an upcoming tutorial page,
+    these will be described in @(see atc-tutorial-events)
     and can be ignored for now.")
 
   (xdoc::p
@@ -1176,10 +1175,15 @@
     ATC generates a theorem of the form")
   (xdoc::codeblock
    "(defthm <constant>-<fn>-correct"
-   "  (implies <guard-of-fn>"
-   "           (equal (run-fun (ident \"<fn>\")"
-   "                           (list <x1> ... <xn>)"
-   "                           <constant>)"
+   "  (implies (and <guard-of-fn>"
+   "                (compustatep compst)"
+   "                (integerp limit)"
+   "                (>= limit <number>))"
+   "           (equal (exec-fun (ident \"<fn>\")"
+   "                            (list <x1> ... <xn>)"
+   "                            compst"
+   "                            (init-fun-env <constant>)"
+   "                            limit)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
    "This asserts that, under the guard of @('fn'),
@@ -1188,16 +1192,30 @@
     Here, @('<x1>'), ..., @('<xn>') are the formal parameters of @('fn').")
 
   (xdoc::p
-   "As explained in @(tsee atc-tutorial-identifiers),
-    the function @('fn') is translated to a C function
-    whose name is the @(tsee symbol-name) of @('fn'):
-    thus, @(tsee run-fun) is called on that string as first argument.
-    The second argument is the list of formals of @('fn').
-    The third argument is the program AST.
-    The call of @(tsee run-fun) executes the C code generated for @('fn')
-    according to the C dynamic semantics:
-    it looks up the definition of the function in the program,
-    runs its body, which may call other functions, etc.")
+   "The variable @('compst') represents the C computation state,
+    described in the "
+   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   ": the theorem applies to execution in every possible computation state.")
+
+  (xdoc::p
+   "The term @('(init-fun-env <constant>)') constructs the "
+   (xdoc::seetopic "atc-function-environments" "C function environment")
+   " of the generated translation unit.")
+
+  (xdoc::p
+   "The variable @('limit') and the @('<number>') that provides a lower bound
+    are motivated by the fact that the big-step execution functions
+    take a limit value, as explained in the "
+   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   ". The number is calculated by ATC as sufficient to execute the function.
+    The theorem asserts that, for any limit value at or above that limit,
+    execution terminates and yields the same result as @('fn').")
+
+  (xdoc::p
+   "We remark that the form of the theorem above is accurate
+    when none of the function's arguments are pointers.
+    When they are, the theorem has a slightly more general form,
+    which will be described in upcoming tutorial pages.")
 
   (xdoc::p
    "Note that, since @('fn') does not return error values,
@@ -1290,7 +1308,7 @@
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
    "  (let ((|z| (c::sint-lt |x| |y|)))"
-   "    (c::lognot |z|)))")
+   "    (c::sint-lognot |z|)))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1305,7 +1323,7 @@
     and from any other @(tsee let) variable in scope
     (the latter restriction is an over-approximation,
     that is adequate to this tutorial page
-    but will be refined in upcoming tutorial pages).
+    but is refined in subsequent tutorial pages).
     That is, it must be a new variable.
     Its name must satisfy the constraints
     described in @(tsee atc-tutorial-identifiers).
@@ -1324,15 +1342,15 @@
     "  (let ((|x_lt_y| (c::sint-lt |x| |y|)))"
     "    (let ((|x_eq_y| (c::sint-eq |x| |y|)))"
     "      (let ((|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "        (c::lognot |x_le_y|)))))")
+    "        (c::sint-lognot |x_le_y|)))))")
    (xdoc::p
     "represents the C function")
    (xdoc::codeblock
     "int g(int x, int y) {"
-    "    int x_less_than_y = x < y;"
-    "    int x_equal_to_y = x == y;"
-    "    int x_less_than_or_equal_to_y = x_less_than_y || x_equal_to_y;"
-    "    return !x_less_than_or_equal_to_y;"
+    "    int x_lt_y = x < y;"
+    "    int x_eq_y = x == y;"
+    "    int x_le_y = x_lt_y || x_eq_y;"
+    "    return !x_le_y;"
     "}")
 
    (xdoc::p
@@ -1343,7 +1361,7 @@
     "  (let* ((|x_lt_y| (c::sint-lt |x| |y|))"
     "         (|x_eq_y| (c::sint-eq |x| |y|))"
     "         (|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "    (c::lognot |x_le_y|)))")
+    "    (c::sint-lognot |x_le_y|)))")
    (xdoc::p
     "This form may be more readable:
      the variables are not indented,
@@ -1360,6 +1378,410 @@
     as C allows uninitialized local variables;
     for instance, these could be represented as @(tsee let) bindings
     that bind variables to terms that do not return C values."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page assignments
+
+  "ACL2 representation of C assignments"
+
+  (xdoc::p
+   "In @(see atc-tutorial-local-variables) it was described
+    how to represent C local variable declarations
+    and use the variables in C expressions.
+    This tutorial page explains how to represent
+    assignments to these variables in ACL2.")
+
+  (xdoc::p
+   "In C, assignments are expressions that may occur at any level,
+    i.e. assignments may be sub-expressions of other expressions at any depth.
+    ATC only supports assignments that are full expressions [C:6.8/4],
+    i.e. expressions at the top level, not sub-expressions of other expressions.
+    Specifically, ATC supports expression statements [C:6.8.3]
+    whose expression is an assignment:
+    this way, assignments are treated as if they were statements,
+    keeping most expressions pure (i.e. side-effect-free)
+    and thus simplifying the formal model of C and generated proofs.")
+
+  (xdoc::p
+   "A C local variable assignment is represented by an ACL2 @(tsee let)
+    that binds a variable already bound in the same scope.
+    For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|))))"
+   "  (let* ((|a| (c::sint-bitand |x| |y|))"
+   "         (|a| (c::sint-bitnot |a|)))"
+   "    (c::sint-gt |a| (c::sint-const 0))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int f(int x, int y) {"
+   "    int a = x & y;"
+   "    a = ~a;"
+   "    return a > 0;"
+   "}")
+
+  (xdoc::p
+   "Recall that the @(tsee let*) expands to two nested @(tsee let)s.
+    The first one, as explained in @(see atc-tutorial-local-variables),
+    represents the local variable declaration with initializer;
+    the second one represents the assignment,
+    which in this case mentions the variable in the right sub-expression,
+    but of course it may contain any expression.
+    The point is that the second @(tsee let) binds an ACL2 variable symbol
+    that is the same as the one bound by the first @(tsee let).
+    These are two homonymous but different variables in ACL2:
+    the second one shadows the first one.
+    However, we use the homonymy of the two ACL2 variables
+    to represent them as the same variable in C,
+    i.e. to regard the second @(tsee let) as an assignment
+    rather than a declaration.
+    After all, the C scoping rules differ from the ACL2 scoping rules:
+    C disallows a variable declaration with the same name as
+    another variable in the same scope
+    (but it allows shadowing in an inner scope).")
+
+  (xdoc::p
+   "In ATC, we can also represent assignments to C function parameters
+    via @(tsee let) that bind variables
+    with the same names as the ACL2 function parameters.
+    For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |g| (|a| |b|)"
+   "  (declare (xargs :guard (and (c::sintp |a|)"
+   "                              (c::sintp |b|)"
+   "                              ;; 0 <= a <= 100:"
+   "                              (<= 0 (c::sint->get |a|))"
+   "                              (<= (c::sint->get |a|) 100))"
+   "                  :guard-hints ((\"Goal\""
+   "                                 :in-theory"
+   "                                 (enable c::sint-add-okp"
+   "                                         c::sint-integerp-alt-def)))))"
+   "  (let ((|a| (c::sint-add |a| (c::sint-const 200))))"
+   "    (c::sint-lt |b| |a|)))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int g(int a, int b) {"
+   "    a = a + 200;"
+   "    return b < a;"
+   "}")
+
+  (xdoc::p
+   "Even though the @(tsee let) in the function above
+    is not nested under another @(tsee let),
+    the fact remains that it binds an ACL2 variable
+    with the same symbol as a variable in the same scope.
+    (An ACL2 function parameter is, in a way, implicitly bound.)
+    Thus, ATC treats that as an assignment instead of a variable declaration.")
+
+  (xdoc::p
+   "In general, ATC treats a @(tsee let) as
+    either a local variable declaration or a local variable assignment
+    based on whether the variable is already in the same scope or not.
+    This description is still an over-approximation,
+    which will be refined in upcoming tutorial pages."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page conditional-statements
+
+  "ACL2 representation of C conditional statements"
+
+  (xdoc::p
+   "Previous tutorial pages have shown how to represent C functions
+    whose bodies consists of return statements
+    and possibly local variable declarations and assignments
+    (including assignments to the function parameters).
+    This tutorial page explains how to represent C functions whose bodies
+    are (possibly nested) conditional statements.")
+
+  (xdoc::p
+   "If the body of an ACL2 function is an @(tsee if),
+    the body of the corresponding C function is an @('if-else') statement,
+    whose test is derived from the @(tsee if)'s first argument
+    and whose branches are derived from
+    the @(tsee if)'s second and third arguments.
+    If any of the second or third arguments is also an @(tsee if),
+    the corresponding branch is a nested @('if-else') statement.")
+
+  (xdoc::p
+   "However, note that @(tsee if) tests in ACL2 are (generalized) booleans,
+    i.e. they must return non-@('nil') for true and @('nil') for false,
+    while @('if') tests in C are scalars (e.g. integers),
+    i.e. they must return non-zero for true and zero for false.
+    Since @('nil') is different from the ACL2 model of any C scalar zero,
+    and also @('t') is different from the ACL2 model of any C scalar non-zero,
+    ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
+    The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
+    mentioned in @(see atc-tutorial-int-representation),
+    provides a function @(tsee sint-nonzerop)
+    the converts (the ACL2 representation of) a C @('int')
+    into an ACL2 boolean:
+    it returns @('t') if the @('int') is not 0;
+    it returns @('nil') if the @('int') is 0.
+    This @(tsee sint-nonzerop) must be used as the test of an ACL2 @(tsee if),
+    applied to an ACL2 term representing an @('int') expression:
+    it represents a C @('if') test consisting of the argument expression.")
+
+  (xdoc::p
+   "For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              (c::sintp |z|))))"
+   "  (if (c::sint-nonzerop |x|)"
+   "      |y|"
+   "    |z|))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int f(int x, int y, int z) {"
+   "    if (x) {"
+   "        return y;"
+   "    } else {"
+   "        return z;"
+   "    }"
+   "}")
+
+  (xdoc::p
+   "As another example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |g| (|e|)"
+   "  (declare (xargs :guard (c::sintp |e|)))"
+   "  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))"
+   "      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))"
+   "          (c::sint-const 1)"
+   "        (c::sint-const 2))"
+   "    (c::sint-const 3)))"
+   "   )")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int g(int e) {"
+   "    if (e >= 0) {"
+   "        if (e < 1000) {"
+   "            return 1;"
+   "        } else {"
+   "            return 2;"
+   "        }"
+   "    } else {"
+   "        return 3;"
+   "    }"
+   "}")
+
+  (xdoc::p
+   "The arguments of @(tsee sint-nonzerop) in @(tsee if) tests
+    may be the same ones used to describe the expressions
+    returned by @('int')-valued functions.
+    The @(tsee sint-nonzerop) just serves
+    to turn C @('int')s into ACL2 booleans;
+    it is not explicitly represented in the C code,
+    as shown in the examples above."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page conditional-expressions
+
+  "ACL2 representation of C conditional expressions"
+
+  (xdoc::p
+   "C has both conditional statements and conditional expressions.
+    Conditional expressions are ternary expressions of the form @('a ? b : c').
+    While @(see atc-tutorial-conditional-statements) explains
+    how to represent conditional statements in ACL2,
+    this tutorial page explains how to represent conditional expressions.")
+
+  (xdoc::p
+   "C conditional expressions are represented by ACL2 @(tsee if)s,
+    which also represent C conditional statements:
+    the difference is where the terms occur, in the function body.
+    If they occur in places like
+    the top level of the function,
+    or recursively at the top level of the branches,
+    they represent @('if-then') statements,
+    as explained in @(see atc-tutorial-conditional-statements);
+    On the other hand, if they occur in places where they represent
+    sub-expressions of other expressions,
+    or initializers of local variable declarations,
+    then they represent conditional expressions.")
+
+  (xdoc::p
+   "For example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |h| (|x| |y|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              ;; x > 0:"
+   "                              (> (c::sint->get |x|) 0))"
+   "                  :guard-hints ((\"Goal\""
+   "                                 :in-theory (enable c::sint-sub-okp"
+   "                                                    c::sint-integerp-alt-def"
+   "                                                    c::sint-integer-fix"
+   "                                                    c::sint->get)))))"
+   "  (c::sint-sub |x|"
+   "               (if (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 18)))"
+   "                   (c::sint 0)"
+   "                 (c::sint 1))))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int h(int x, int y) {"
+   "    return x - (y >= 18 ? 0 : 1);"
+   "}")
+
+  (xdoc::p
+   "As another example, the ACL2 function")
+  (xdoc::codeblock
+   "(defun |i| (|a| |b|)"
+   "  (declare (xargs :guard (and (c::sintp |a|)"
+   "                              (c::sintp |b|))"
+   "                  :guard-hints ((\"Goal\""
+   "                                 :in-theory (enable c::sint-nonzerop"
+   "                                                    c::sint-integerp-alt-def"
+   "                                                    c::sint-integer-fix"
+   "                                                    c::sint-gt"
+   "                                                    c::sint-sub-okp"
+   "                                                    c::sint->get)))))"
+   "  (if (c::sint-nonzerop (c::sint-gt |a| |b|))"
+   "      (c::sint-sub |a|"
+   "                   (if (c::sint-nonzerop"
+   "                        (c::sint-eq |b| (c::sint-const 3)))"
+   "                       (c::sint-const 0)"
+   "                     (c::sint-const 1)))"
+   "    |b|))")
+  (xdoc::p
+   "represents the C function")
+  (xdoc::codeblock
+   "int i(int a, int b) {"
+   "    if (a > b) {"
+   "        return a - (b == 3 ? 0 : 1);"
+   "    } else {"
+   "        return b;"
+   "    }"
+   "}")
+  (xdoc::p
+   "Note that the two ACL2 @(tsee if)s are treated differently
+    because of the place in which they occur:
+    the outer one represents a conditional statement,
+    the inner one represents a conditional expression.")
+
+  (xdoc::p
+   "The tests of the ACL2 @(tsee if)s that represent conditional expressions
+    must return ACL2 booleans,
+    in the same way as the @(tsee if)s that represent conditional statements.
+    As explained in @(see atc-tutorial-conditional-statements),
+    the function @(tsee sint-nonzerop) is used
+    to convert C @('int')s to ACL2 booleans in the tests."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page conditionals-with-mbt
+
+  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)."
+
+  (xdoc::p
+   "After describing how ACL2 conditionals
+    represent C conditional statements and expressions
+    (in @(see atc-tutorial-conditional-statements)
+    and @(see atc-tutorial-conditional-expressions)),
+    this tutorial page describes how certain ACL2 conditionals
+    do not actually represent C conditional statements and expressions.")
+
+  (xdoc::p
+   "These are ACL2 conditionals whose tests are
+    calls of @(tsee mbt) or @(tsee mbt$):
+    only their `then' branches represent (and are translated to) C code;
+    tests and `else' branches are ignored.")
+
+  (xdoc::p
+   "The argument of the built-in macro @(tsee mbt)
+    must be provably equal to @('t') for guard verification to succeed.
+    Similarly, the argument of the library macro @(tsee mbt$)
+    must be provably different from @('nil') for guard verification to succeed.
+    In fact, their execution is effectively skipped in guard-verified ACL2 code.
+    In particular, when they appear in an @(tsee if) test,
+    the `then' branch is always executed and the `else' branch is ignored.")
+
+  (xdoc::p
+   "As explained in @(see atc-tutorial-int-programs),
+    ATC requires the target ACL2 functions to be guard-verified.
+    Accordingly, as explained in @(see atc-tutorial-events),
+    the functional correctness theorems generated by ATC
+    include the target functions' guards as hypotheses.
+    In other words, ATC generates C code that matches the ACL2 code
+    under the guards, which must be verified for ATC to generate code.
+    Thus, the behavior of the ACL2 functions or of the C code outside the guards
+    is irrelevant in some precise sense:
+    so long as the ATC-generated code is called
+    on values that satisfy the guards,
+    the behavior is provably equivalent to the ACL2 counterpart.
+    (Upcoming tutorial pages will describe more precisely
+    this contract between ATC-generated code and external code.)")
+
+  (xdoc::p
+   "Given the above, it should be clear why ATC ignores
+    (i.e. does not generate any C code for)
+    @(tsee mbt) or @(tsee mbt$) tests of @(tsee if)s
+    and corresponding `else' branches,
+    treating this kind of conditionals
+    as if they were just their `then' branches.")
+
+  (xdoc::p
+   "Conditionals with @(tsee mbt) or @(tsee mbt$) tests
+    are sometimes used in recursive ACL2 functions
+    to ensure that termination can be proved.
+    Recall that termination proofs ignore guards,
+    which are extra-logical in ACL2
+    (i.e. not part of the logic itself,
+    although they give rise to proof obligations
+    expressed in the logic).")
+
+  (xdoc::p
+   "Another circumstance in which @(tsee mbt) or @(tsee mbt$) may arise
+    is via certain APT transformations.
+    For instance, the @(tsee apt::restrict) transformation
+    generates a new function whose body has the form
+    @('(if (mbt$ <test>) <then> <else>)').
+    As explained in @(see atc-tutorial-approach),
+    ATC is meant to be used in conjunction with APT,
+    namely by using APT to refine a specification into
+    forms that represent C code as recognized by ATC.
+    It is therefore quite possible that these APT transformations
+    produce @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
+    which make their way to ATC.")
+
+  (xdoc::p
+   "For example, both the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x|)"
+   "  (declare (xargs :guard (c::sintp |x|)))"
+   "  (if (mbt (c::sintp |x|))"
+   "      (c::sint-lt |x| (c::sint-const 100))"
+   "    (list :this-is-not-translated-to-c)))")
+  (xdoc::p
+   "and the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x|)"
+   "  (declare (xargs :guard (c::sintp |x|)))"
+   "  (if (mbt$ (c::sintp |x|))"
+   "      (c::sint-lt |x| (c::sint-const 100))"
+   "    (list :this-is-not-translated-to-c)))")
+  (xdoc::p
+   "represent the C function")
+  (xdoc::codeblock
+   "int f(int x) {"
+   "    return x < 100;"
+   "}")
+  (xdoc::p
+   "which is, in fact, also equally represented by the ACL2 function")
+  (xdoc::codeblock
+   "(defun |f| (|x|)"
+   "  (declare (xargs :guard (c::sintp |x|)))"
+   "  (c::sint-lt |x| (c::sint-const 100)))"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

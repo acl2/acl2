@@ -365,3 +365,41 @@
                 (integerp size))
            (equal (bvxor size k x)
                   (bvxor size (bvchop size k) x))))
+
+(defthm bvxor-of-+-of-expt-2-same-arg2
+  (implies (and (integerp x)
+                (natp n))
+           (equal (bvxor n (+ (expt 2 n) x) y)
+                  (bvxor n x y))))
+
+(defthm bvxor-of-+-of-expt-2-same-arg3
+  (implies (and (integerp x)
+                (natp n))
+           (equal (bvxor n y (+ (expt 2 n) x))
+                  (bvxor n y x))))
+
+(defthm bvxor-of-+-of-times-of-expt-same-arg3-arg2-arg1
+  (implies (and ;(integerp x)
+                (integerp y)
+                (integerp z)
+                (posp n))
+           (equal (bvxor n x (+ y (* (expt 2 n) z)))
+                  (bvxor n x y))))
+
+(defthm bvxor-of-+-of-times-of-expt-same-arg3-arg2-arg2
+  (implies (and ;(integerp x)
+                (integerp y)
+                (integerp z)
+                (posp n))
+           (equal (bvxor n x (+ y (* z (expt 2 n))))
+                  (bvxor n x y))))
+
+(defthm bvxor-of-+-of-times-of-expt-same-arg3-arg2-arg1-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (expt 2 n))
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp n))
+           (equal (bvxor n x (+ y (* k z)))
+                  (bvxor n x y))))

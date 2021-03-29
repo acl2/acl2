@@ -31,7 +31,6 @@
            (equal (bv-array-read width len index (map-packbv itemcount itemsize items-lst))
                   ;fixme use bv-array-read in the conclusion? wrong type?
                   (bvchop width (packbv itemcount itemsize (nth index items-lst)))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS ;LIST::NTH-WITH-LARGE-INDEX
                                    ceiling-of-lg
                                      ) (;UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT ;looped

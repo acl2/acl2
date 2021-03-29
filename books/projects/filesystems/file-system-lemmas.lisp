@@ -1780,9 +1780,6 @@
              (take n x)
              (append x (take (- n (len x)) y))))
   :hints (("goal" :induct (take n x))))
-(defthm take-under-iff
-  (iff (take n xs)
-       (not (zp n))))
 
 (encapsulate () (local (in-theory (disable subseq string-append)))
 
@@ -1974,10 +1971,27 @@
                   (<= y x)))
     :hints (("Goal" :in-theory (enable min))))
 
-  (defthm painful-debugging-lemma-25
+  (defthm painful-debugging-lemma-17
     (zp (+ (- x) (min x y)))
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
+
+(defthmd
+  painful-debugging-lemma-8
+  (implies (not (zp cluster-size))
+           (and
+            (equal (ceiling cluster-size cluster-size) 1)
+            (equal (ceiling 0 cluster-size) 0))))
+
+(defthm painful-debugging-lemma-9
+  (implies (and (not (zp j)) (integerp i) (>= i 0))
+           (>= (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
+
+(defthm painful-debugging-lemma-10
+  (implies (and (not (zp j)) (integerp i) (> i 0))
+           (> (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
 
 (defthm member-of-nth-when-not-intersectp
   (implies (and (not (intersectp-equal l x))
@@ -2014,3 +2028,17 @@
   (implies (nat-listp l) (<= 0 (nth n l)))
   :hints (("goal" :in-theory (enable nth nat-listp)))
   :rule-classes :linear)
+
+(defthm acl2-number-listp-when-rational-listp
+  (implies (rational-listp l)
+           (acl2-number-listp l)))
+
+(defthm rational-listp-when-integer-listp
+  (implies (integer-listp l)
+           (rational-listp l)))
+
+(defthm integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l)))
+
+(defthm consp-of-strip-cars (equal (consp (strip-cars x)) (consp x)))

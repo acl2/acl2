@@ -125,3 +125,14 @@
   (equal (bvuminus size (bvchop size x))
          (bvuminus size x))
   :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+
+(defthm bvplus-of-bvuminus-same
+  (equal (bvplus size (bvuminus size x) x)
+         0)
+  :hints (("Goal" :in-theory (enable bvplus bvminus bvuminus))))
+
+(defthm bvplus-of-bvuminus-same-alt
+  (equal (bvplus size x (bvuminus size x))
+         0)
+  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
+           :in-theory (disable bvplus-of-bvuminus-same))))

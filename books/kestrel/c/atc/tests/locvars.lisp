@@ -19,11 +19,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun |f| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
+  (let ((|z| (c::sint-lt |x| |y|)))
+    (c::sint-lognot |z|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |g| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
+  (let* ((|x_lt_y| (c::sint-lt |x| |y|))
+         (|x_eq_y| (c::sint-eq |x| |y|))
+         (|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))
+    (c::sint-lognot |x_le_y|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (defun |f| (|x| |y|)
+  (defun |h| (|x| |y|)
     (declare (xargs :guard (and (c::sintp |x|)
                                 (c::sintp |y|)
                                 ;; -10 <= x <= 10:
@@ -34,7 +50,7 @@
                                 (<= (c::sint->get |y|) 10))
                     :guard-hints (("Goal"
                                    :do-not-induct t
-                                   :in-theory (enable sbyte32p
+                                   :in-theory (enable c::sint-integerp-alt-def
                                                       c::sint
                                                       c::sint->get
                                                       c::sintp
@@ -52,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "locvars.c")
+(c::atc |f| |g| |h| :output-file "locvars.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

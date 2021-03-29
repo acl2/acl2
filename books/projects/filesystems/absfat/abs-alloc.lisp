@@ -474,7 +474,6 @@
                                (:rewrite intersectp-equal-of-atom-left)
                                (:rewrite intersectp-equal-of-atom-right)
                                (:rewrite intersectp-is-commutative)
-                               (:rewrite list-equiv-when-true-listp)
                                (:rewrite member-of-cons)
                                (:rewrite member-when-atom)
                                (:rewrite set-difference$-when-not-intersectp)
@@ -487,3 +486,10 @@
                                (:type-prescription abs-fs-fix)
                                (:type-prescription set-difference-equal)))
            :induct (abs-alloc fs path new-index))))
+
+(defthmd hifat-no-dups-p-of-abs-alloc
+  (implies (and (hifat-no-dups-p fs)
+                (m1-file-alist-p fs))
+           (hifat-no-dups-p (mv-nth 0 (abs-alloc fs path new-index))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p abs-alloc
+                                     abs-fs-p-when-hifat-no-dups-p))))

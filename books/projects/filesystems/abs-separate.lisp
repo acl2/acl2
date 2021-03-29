@@ -4513,36 +4513,6 @@
                             (n (len relpath)))))))
 
 (defthm
-  dist-names-of-ctx-app-lemma-1
-  (implies
-   (and
-    (equal (fat32-filename-list-fix x-path)
-           (nthcdr (len relpath)
-                   (frame-val->path (cdr (car frame)))))
-    (not (intersectp-equal
-          (remove-equal nil
-                        (strip-cars (frame-val->dir (cdr (car frame)))))
-          (names-at abs-file-alist2
-                    (nthcdr (+ (len relpath) (len x-path))
-                            (frame-val->path (cdr (car frame))))))))
-   (not (intersectp-equal
-         (remove-equal nil
-                       (strip-cars (abs-fs-fix abs-file-alist2)))
-         (remove-equal nil
-                       (strip-cars (frame-val->dir (cdr (car frame))))))))
-  :hints
-  (("goal" :in-theory (e/d (names-at)
-                           ((:rewrite nthcdr-of-nthcdr)
-                            (:rewrite nthcdr-when->=-n-len-l)))
-    :use ((:instance (:rewrite nthcdr-when->=-n-len-l)
-                     (l (fat32-filename-list-fix x-path))
-                     (n (len (fat32-filename-list-fix x-path))))
-          (:instance (:rewrite nthcdr-of-nthcdr)
-                     (x (frame-val->path (cdr (car frame))))
-                     (b (len relpath))
-                     (a (len (fat32-filename-list-fix x-path))))))))
-
-(defthm
   dist-names-of-ctx-app
   (implies (and (abs-fs-p (ctx-app abs-file-alist1
                                    abs-file-alist2 x x-path))
@@ -5406,7 +5376,10 @@
   :hints (("goal" :in-theory (enable frame-addrs-root)))
   :rule-classes
   ((:rewrite :corollary (implies (subsetp-equal x (frame-addrs-root frame))
-                                 (subsetp-equal x (strip-cars frame))))))
+                                 (subsetp-equal x (strip-cars frame))))
+   (:rewrite :corollary (implies (subsetp-equal (strip-cars frame) y)
+                                 (subsetp-equal (frame-addrs-root frame)
+                                                y)))))
 
 (defthm
   frame-addrs-root-of-frame->frame-of-collapse-this-lemma-1

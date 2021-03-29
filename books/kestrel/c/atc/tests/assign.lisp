@@ -28,7 +28,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |g| (|x| |y| |z|)
+(defun |g| (|a| |b|)
+  (declare (xargs :guard (and (c::sintp |a|)
+                              (c::sintp |b|)
+                              ;; 0 <= a <= 100:
+                              (<= 0 (c::sint->get |a|))
+                              (<= (c::sint->get |a|) 100))
+                  :guard-hints (("Goal"
+                                 :in-theory
+                                 (enable c::sint-add-okp
+                                         c::sint-integerp-alt-def)))))
+  (let ((|a| (c::sint-add |a| (c::sint-const 200))))
+    (c::sint-lt |b| |a|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |h| (|x| |y| |z|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|)
                               (c::sintp |z|))))
@@ -40,7 +55,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| :output-file "assign.c")
+(c::atc |f| |g| |h| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

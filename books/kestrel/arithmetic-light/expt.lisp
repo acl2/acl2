@@ -138,3 +138,11 @@
   (implies (integerp n)
            (equal (< 1 (expt 2 n))
                   (< 0 n))))
+
+(defthm floor-of-expt-2-and-2
+  (implies (integerp n)
+           (equal (floor (expt 2 n) 2)
+                  (if (posp n)
+                      (expt 2 (+ -1 n))
+                    0)))
+  :hints (("Goal" :in-theory (e/d (expt) ()))))

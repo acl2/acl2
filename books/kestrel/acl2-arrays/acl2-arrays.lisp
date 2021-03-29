@@ -898,7 +898,6 @@
                 )
            (equal (aref1 array-name (aset1 array-name2 array index val) index)
                   val))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (aref1
                                    array1p-rewrite
                                    compress1
@@ -1424,7 +1423,6 @@
                 (< read-index (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name (aset1 array-name array index val1) index val2) read-index)
                   (aref1 array-name (aset1 array-name array index val2) read-index)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (aref1
                                    array1p-rewrite
                                    compress1
@@ -1450,7 +1448,6 @@
                 (< read-index (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name (aset1 array-name array index1 val1) index2 val2) read-index)
                   (aref1 array-name (aset1 array-name (aset1 array-name array index2 val2) index1 val1) read-index)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (aref1
                                    array1p-rewrite
                                    compress1

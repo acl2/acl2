@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "unsigned-chars")
-(include-book "signed-ints")
+(include-book "integer-values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,7 +51,7 @@
     "According to [C:6.3.1.3/1], the value is unchanged.
      Thus, we simply unwrap and rewrap the underlying ACL2 integer."))
   (sint (uchar->get x))
-  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+  :guard-hints (("Goal" :in-theory (enable sint-integerp-alt-def
                                            acl2::ubyte8p
                                            ucharp
                                            uchar->get)))

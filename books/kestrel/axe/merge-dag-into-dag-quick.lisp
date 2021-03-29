@@ -95,7 +95,6 @@
                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
            (dargp-less-than (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2))
                             (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick PSEUDO-DAGP
                                      wf-dagp ;todo
                                      ))))
@@ -182,7 +181,6 @@
                 (not (quotep (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
            (pseudo-dagp (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
-  :otf-flg t
   :hints (("Goal" :use pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (pseudo-dagp merge-dag-into-dag-quick)

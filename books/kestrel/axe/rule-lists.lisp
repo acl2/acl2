@@ -844,7 +844,7 @@
   '( ;fffixme add more usb rules?
     unsigned-byte-p-of-bvchop
     unsigned-byte-p-of-bvcat-all-cases ;todo name
-    unsigned-byte-p-of-bvcat-gen2 ;todo drop?
+    unsigned-byte-p-of-bvcat ;todo drop?
     unsigned-byte-p-of-slice-gen
     unsigned-byte-p-of-getbit
     unsigned-byte-p-of-bvif-gen ;todo name
@@ -1132,7 +1132,11 @@
   (append (bit-blast-rules-basic)
           '(blast-bvmult-into-bvplus-constant-version-arg1 ;
             blast-bvmult-into-bvplus-constant-version-arg2 ;
-            bvplus-becomes-ripple-carry-adder)))
+            bvplus-becomes-ripple-carry-adder
+            ripple-carry-adder-recursive
+            ripple-carry-adder-base
+            full-adder-sum
+            full-adder-carry)))
 
 ;fixme do i ever see logtail?
 (defun more-rules-yuck ()
@@ -1387,7 +1391,6 @@
     leftrotate32alt ;this is what we rewrite to if we want to expand stuff
 ;    bvplus-of-bvminus
 ;    unsigned-byte-p-of-bvminus-gen-better
-;    unsigned-byte-p-of-bvcat-gen2
     bvchop-upper-bound-3-constant-version
     slice-bound-3-constant-version ;bozo make a dag version
 
@@ -1415,12 +1418,6 @@
 
     bvif-equal-0-usb1-2
     bvif-equal-0-usb1
-
-    ;; these are for bit-blasting?
-    ripple-carry-adder-recursive
-    ripple-carry-adder-base
-    full-adder-sum
-    full-adder-carry
 
     myif-of-bvif-becomes-bvif-arg2
     myif-of-bvif-becomes-bvif-arg1

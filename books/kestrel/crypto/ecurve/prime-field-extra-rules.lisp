@@ -250,3 +250,54 @@
      :rule-classes nil
      :enable (div pfield::minus1)
      :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled inv-of-neg
+  (implies (and (rtl::primep p)
+                (fep a p)
+                (not (equal a 0)))
+           (equal (inv (neg a p) p)
+                  (neg (inv a p) p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule div-of-neg-and-neg
+  (implies (and (rtl::primep p)
+                (fep a p)
+                (fep b p)
+                (not (equal b 0)))
+           (equal (div (neg a p) (neg b p) p)
+                  (div a b p)))
+  :enable (div inv-of-neg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule neg-of-sub
+  (implies (and (posp p)
+                (fep a p)
+                (fep b p))
+           (equal (neg (sub a b p) p)
+                  (sub b a p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (a / b) * c + d = (a * c + b * d) / b
+(defruled extend-fraction-to-sum
+  (implies (and (rtl::primep p)
+                (fep a p)
+                (fep b p)
+                (fep c p)
+                (fep d p)
+                (not (equal b 0)))
+           (equal (add (mul (div a b p)
+                            c
+                            p)
+                       d
+                       p)
+                  (div (add (mul a c p)
+                            (mul b d p)
+                            p)
+                       b
+                       p)))
+  :enable div)

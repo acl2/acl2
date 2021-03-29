@@ -255,15 +255,6 @@
 
 (defresult scope "scopes")
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled scopep-when-scope-resultp-ok
-  (implies (and (scope-resultp scope)
-                (scope-result-case scope :ok))
-           (scopep scope))
-  :enable (scope-resultp
-           scope-result-kind))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult scope-list "lists of scopes")
@@ -333,6 +324,38 @@
   :key-type address
   :val-type uchar-array
   :pred heapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult uchar-array "@('unsigned char') arrays")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deref ((ptr pointerp) (heap heapp))
+  :returns (array uchar-array-resultp)
+  :short "Dereference a pointer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the pointer is null, we return an error:
+     a null pointer cannot be dereferenced.
+     Otherwise, we check whether the heap has an array at the pointer's address,
+     which we return if it does (otherwise we return an error).
+     We also ensure that the pointer's type is @('unsigned char'),
+     because for now the heap only contains @('unsigned char') arrays."))
+  (b* (((unless (equal (pointer->reftype ptr) (type-uchar)))
+        (error (list :mistype-pointer-dereference
+                     :required (type-uchar)
+                     :supplied (pointer->reftype ptr))))
+       (address (pointer->address? ptr)))
+    (if address
+        (b* ((pair (omap::in address (heap-fix heap))))
+          (if pair
+              (cdr pair)
+            (error (list :address-not-found address
+                         :heap (heap-fix heap)))))
+      (error :null-pointer-dereference)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -622,23 +645,17 @@
   ///
 
   (defret compustate-frames-number-of-create-var
-    (implies (compustate-result-case result :ok)
-             (equal (compustate-frames-number
-                     (compustate-result-ok->get result))
+    (implies (compustatep result)
+             (equal (compustate-frames-number result)
                     (compustate-frames-number compst)))
-    :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-result-kind
-                                       compustate-result-ok->get))))
+    :hyp (> (compustate-frames-number compst) 0))
 
   (defret compustate-scopes-numbers-of-create-var
-    (implies (compustate-result-case result :ok)
-             (equal (compustate-scopes-numbers
-                     (compustate-result-ok->get result))
+    (implies (compustatep result)
+             (equal (compustate-scopes-numbers result)
                     (compustate-scopes-numbers compst)))
     :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-result-kind
-                                       compustate-result-ok->get
-                                       top-frame
+    :hints (("Goal" :in-theory (enable top-frame
                                        push-frame
                                        pop-frame
                                        compustate-scopes-numbers
@@ -723,7 +740,12 @@
 
   :prepwork
   ((define write-var-aux ((var identp) (val valuep) (scopes scope-listp))
-     :returns (new-scopes scope-list-resultp)
+     :returns (new-scopes
+               scope-list-resultp
+               :hints (("Goal"
+                        :in-theory
+                        (enable
+                         scope-listp-when-scope-list-resultp-and-not-errorp))))
      (b* (((when (endp scopes))
            (error (list :write-var-not-found (ident-fix var))))
           (scope (scope-fix (car scopes)))
@@ -794,7 +816,7 @@
         (error (list :exec-iconst-unsigned ic)))
        ((unless (iconst-tysuffix-case ic.type :none))
         (error (list :exec-iconst-long/llong ic)))
-       ((unless (acl2::sbyte32p ic.value))
+       ((unless (sint-integerp ic.value))
         (error (list :exec-iconst-too-large ic))))
     (sint ic.value))
   :hooks (:fix))
@@ -1048,6 +1070,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-arrsub ((arr value-resultp) (sub value-resultp) (heap heapp))
+  :returns (result value-resultp)
+  :short "Execute an array subscripting expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first operand must be a pointer that can be derefenced
+     (this means that it must be a non-null pointer to @('unsigned char');
+     see @(tsee deref)),
+     obtaining an array.
+     The second operand must be an @('int'),
+     which is a bit more restrictive than [C18],
+     which allows any integer;
+     we will relax this at some point.
+     The resulting index must be in range for the array,
+     and the indexed element is returned as result."))
+  (b* ((arr (value-result-fix arr))
+       (sub (value-result-fix sub))
+       ((when (errorp arr)) arr)
+       ((when (errorp sub)) sub)
+       ((unless (pointerp arr)) (error (list :mistype-array :array
+                                             :required :pointer
+                                             :supplied (type-of-value arr))))
+       ((unless (sintp sub)) (error (list :mistype-array :index
+                                          :required (type-sint)
+                                          :supplied (type-of-value sub))))
+       (array (deref arr heap))
+       ((when (errorp array))
+        (error (list :array-not-found arr (heap-fix heap))))
+       ((unless (uchar-array-sint-index-okp array sub))
+        (error (list :array-index-out-of-range
+                     :pointer arr
+                     :array array
+                     :index sub))))
+    (uchar-array-read-sint array sub))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
@@ -1083,7 +1144,9 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
-     :arrsub (error (list :exec-arrsub-todo e))
+     :arrsub (b* ((arr (exec-expr-pure e.arr compst))
+                  (sub (exec-expr-pure e.sub compst)))
+               (exec-arrsub arr sub (compustate->heap compst)))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
@@ -1118,7 +1181,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr-pure-list ((es expr-listp) (compst compustatep))
-  :returns (result value-list-resultp)
+  :returns (result
+            value-list-resultp
+            :hints (("Goal"
+                     :in-theory
+                     (enable
+                      valuep-when-value-resultp-and-not-errorp
+                      value-listp-when-value-list-resultp-and-not-errorp))))
   :short "Execute a list of pure expression."
   :long
   (xdoc::topstring
@@ -1140,7 +1209,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-scope ((formals param-declon-listp) (actuals value-listp))
-  :returns (result scope-resultp)
+  :returns (result scope-resultp
+                   :hints (("Goal"
+                            :in-theory
+                            (enable scopep-when-scope-resultp-and-not-errorp))))
   :short "Initialize the variable scope for a function call."
   :long
   (xdoc::topstring
@@ -1180,7 +1252,6 @@
       (omap::update name actual scope)))
   :hooks (:fix)
   :measure (len formals)
-  :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))
   :verify-guards nil ; done below
   ///
   (verify-guards init-scope))
@@ -1213,11 +1284,9 @@
       (if (expr-case e :call)
           (b* ((e.args (expr-call->args e))
                (e.fun (expr-call->fun e))
-               (args (exec-expr-pure-list e.args compst)))
-            (value-list-result-case
-             args
-             :err (mv args.get (compustate-fix compst))
-             :ok (exec-fun e.fun args.get compst fenv (1- limit))))
+               (args (exec-expr-pure-list e.args compst))
+               ((when (errorp args)) (mv args (compustate-fix compst))))
+            (exec-fun e.fun args compst fenv (1- limit)))
         (mv (exec-expr-pure e compst)
             (compustate-fix compst))))
     :measure (nfix limit))
@@ -1256,11 +1325,9 @@
           (error (list :expr-asg-left-not-var left)))
          (var (expr-ident->get left))
          ((mv val compst)
-          (exec-expr-call-or-pure right compst fenv (1- limit))))
-      (value-result-case
-       val
-       :err val.get
-       :ok (write-var var val.get compst)))
+          (exec-expr-call-or-pure right compst fenv (1- limit)))
+         ((when (errorp val)) val))
+      (write-var var val compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1290,31 +1357,25 @@
           (mv (error (list :function-undefined (ident-fix fun)))
               (compustate-fix compst)))
          ((fun-info info) info)
-         (scope (init-scope info.params args)))
-      (scope-result-case
-       scope
-       :err (mv scope.get (compustate-fix compst))
-       :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
-                (compst (push-frame frame compst))
-                ((mv val-opt compst)
-                 (exec-stmt info.body compst fenv (1- limit)))
-                (compst (pop-frame compst)))
-             (value-option-result-case
-              val-opt
-              :err (mv val-opt.get compst)
-              :ok (if val-opt.get
-                      (if (equal (type-of-value val-opt.get)
-                                 (type-name-to-type
-                                  (make-tyname :specs info.result
-                                               :pointerp nil)))
-                          (mv val-opt.get compst)
-                        (mv (error (list :return-value-mistype
-                                         :required info.result
-                                         :supplied (type-of-value
-                                                    val-opt.get)))
-                            compst))
-                    (mv (error (list :no-return-value (ident-fix fun)))
-                        compst))))))
+         (scope (init-scope info.params args))
+         ((when (errorp scope)) (mv scope (compustate-fix compst)))
+         (frame (make-frame :function fun :scopes (list scope)))
+         (compst (push-frame frame compst))
+         ((mv val-opt compst) (exec-stmt info.body compst fenv (1- limit)))
+         (compst (pop-frame compst))
+         ((when (errorp val-opt)) (mv val-opt compst)))
+      (if val-opt
+          (if (equal (type-of-value val-opt)
+                     (type-name-to-type
+                      (make-tyname :specs info.result
+                                   :pointerp nil)))
+              (mv val-opt compst)
+            (mv (error (list :return-value-mistype
+                             :required info.result
+                             :supplied (type-of-value val-opt)))
+                compst))
+        (mv (error (list :no-return-value (ident-fix fun)))
+            compst)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1353,38 +1414,34 @@
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :if (b* ((test (exec-expr-pure s.test compst)))
-             (value-result-case
-              test
-              :ok (cond ((pointerp test.get)
-                         (mv (error (list :exec-if-pointer-todo s))
-                             (compustate-fix compst)))
-                        ((ucharp test.get)
-                         (mv (error (list :exec-if-uchar-todo s))
-                             (compustate-fix compst)))
-                        ((sintp test.get)
-                         (if (sint-nonzerop test.get)
-                             (exec-stmt s.then compst fenv (1- limit))
-                           (mv nil (compustate-fix compst))))
-                        (t (mv (error (impossible))
-                               (compustate-fix compst))))
-              :err (mv test.get (compustate-fix compst))))
-       :ifelse (b* ((test (exec-expr-pure s.test compst)))
-                 (value-result-case
-                  test
-                  :ok (cond ((pointerp test.get)
-                             (mv (error (list :exec-if-pointer-todo s))
-                                 (compustate-fix compst)))
-                            ((ucharp test.get)
-                             (mv (error (list :exec-if-uchar-todo s))
-                                 (compustate-fix compst)))
-                            ((sintp test.get)
-                             (if (sint-nonzerop test.get)
-                                 (exec-stmt s.then compst fenv (1- limit))
-                               (exec-stmt s.else compst fenv (1- limit))))
-                            (t (mv (error (impossible))
-                                   (compustate-fix compst))))
-                  :err (mv test.get (compustate-fix compst))))
+       :if (b* ((test (exec-expr-pure s.test compst))
+                ((when (errorp test)) (mv test (compustate-fix compst))))
+             (cond ((pointerp test)
+                    (mv (error (list :exec-if-pointer-todo s))
+                        (compustate-fix compst)))
+                   ((ucharp test)
+                    (mv (error (list :exec-if-uchar-todo s))
+                        (compustate-fix compst)))
+                   ((sintp test)
+                    (if (sint-nonzerop test)
+                        (exec-stmt s.then compst fenv (1- limit))
+                      (mv nil (compustate-fix compst))))
+                   (t (mv (error (impossible))
+                          (compustate-fix compst)))))
+       :ifelse (b* ((test (exec-expr-pure s.test compst))
+                    ((when (errorp test)) (mv test (compustate-fix compst))))
+                 (cond ((pointerp test)
+                        (mv (error (list :exec-if-pointer-todo s))
+                            (compustate-fix compst)))
+                       ((ucharp test)
+                        (mv (error (list :exec-if-uchar-todo s))
+                            (compustate-fix compst)))
+                       ((sintp test)
+                        (if (sint-nonzerop test)
+                            (exec-stmt s.then compst fenv (1- limit))
+                          (exec-stmt s.else compst fenv (1- limit))))
+                       (t (mv (error (impossible))
+                              (compustate-fix compst)))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1393,15 +1450,7 @@
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (b* (((mv retval compst)
-                         (exec-expr-call-or-pure s.value
-                                                 compst
-                                                 fenv
-                                                 (1- limit))))
-                     (value-result-case
-                      retval
-                      :err (mv retval.get compst)
-                      :ok (mv retval.get compst)))
+                   (exec-expr-call-or-pure s.value compst fenv (1- limit))
                  (mv nil (compustate-fix compst)))))
     :measure (nfix limit))
 
@@ -1449,11 +1498,9 @@
                                       :required type
                                       :supplied (type-of-value init)))
                          compst))
-                    (new-compst (create-var var init compst)))
-                 (compustate-result-case
-                  new-compst
-                  :ok (mv (value-option-result-ok nil) new-compst.get)
-                  :err (mv new-compst.get compst)))
+                    (new-compst (create-var var init compst))
+                    ((when (errorp new-compst)) (mv new-compst compst)))
+                 (mv nil new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1476,10 +1523,18 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          ((when (endp items)) (mv nil (compustate-fix compst)))
          ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
-         ((when (value-option-result-case val? :err)) (mv val? compst))
+         ((when (errorp val?)) (mv val? compst))
          ((when (valuep val?)) (mv val? compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local
+              (in-theory
+               (enable
+                value-optionp-when-value-option-resultp-and-not-errorp
+                compustatep-when-compustate-resultp-and-not-errorp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1518,6 +1573,8 @@
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+                             (exec-expr-asg e compst fenv limit)
+                             (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
@@ -1557,6 +1614,8 @@
                 (> (compustate-top-frame-scopes-number compst) 1))
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
+                             (exec-expr-asg e compst fenv limit)
+                             (exec-fun fun args compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
@@ -1568,61 +1627,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual exec))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define init-fun-env ((tunit transunitp))
-  :returns (result fun-env-resultp)
-  :short "Initialize the function environment for a translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go though the external declarations that form the translation unit
-     and we build the function environment for the function definitions,
-     starting from the empty environment.
-     If an external declaration that is not a function definition is found,
-     we defensively return an error."))
-  (init-fun-env-aux (transunit->declons tunit) nil)
-  :hooks (:fix)
-
-  :prepwork
-  ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))
-     :returns (result fun-env-resultp)
-     :parents nil
-     (b* (((when (endp declons)) (fun-env-fix fenv))
-          (declon (car declons)))
-       (ext-declon-case
-        declon
-        :declon (error :external-declaration-is-not-a-function)
-        :fundef (b* ((fenv (fun-env-extend declon.get fenv)))
-                  (fun-env-result-case
-                   fenv
-                   :err (error fenv.get)
-                   :ok (init-fun-env-aux (cdr declons) fenv.get)))))
-     :hooks (:fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define run-fun ((fun identp) (args value-listp) (tunit transunitp))
-  :returns (result value-resultp)
-  :short "Execute a function call."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We initialize the function environment from the translation unit.
-     We create an initial computation state.
-     We call the function.")
-   (xdoc::p
-    "For now we just pass a large number as the recursive limit,
-     which should suffice for our current programs of interest.
-     Eventually, this should be a parameter of this ACL2 function,
-     and proofs about programs should take the liimt value into account."))
-  (b* ((fenv (init-fun-env tunit)))
-    (fun-env-result-case
-     fenv
-     :err (error fenv.get)
-     :ok (b* ((compst (make-compustate :frames nil :heap nil))
-              ((mv result  &)
-               (exec-fun fun args compst fenv.get 1000000000))) ; 10^9
-           result)))
-  :hooks (:fix))

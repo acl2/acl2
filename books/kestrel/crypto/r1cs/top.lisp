@@ -12,4 +12,4 @@
 
 (include-book "sparse/top")
 (include-book "gadgets/top")
-(include-book "tools/top") ;brings in skip-proofs
+(include-book "tools/top")

@@ -13,12 +13,12 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
+(include-book "integer-values")
 (include-book "types")
 (include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
-(include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,15 +123,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult var-table "variable tables")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-var-table ()
-  :returns (vartab var-tablep)
-  :short "An irrelevant variable table, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (var-table-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-var-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,29 +314,54 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we require the integer constant
-     to be decimal (not octal or hexadecimal),
-     to be signed,
-     and to have no type suffixes.
-     This means that the integer constant must have type @('int'),
-     and therefore that its numberic value must be in that type's range.
-     Given our current definition of @(tsee sintp),
-     the value must fit in 32 bits (with the sign bit being 0).")
-   (xdoc::p
-    "If all the constraints are satisfied, we return the type of the constant.
-     This is always @('int') for now,
-     but eventually this will be generalized."))
+    "This is according to [C:6.4.4.1/5]:
+     based on the suffixes, we find the first type
+     that suffices to represent the value,
+     in the lists indicated in the table.
+     If the value is too large, the integer constant is illegal."))
   (b* ((ic (iconst-fix ic))
-       ((iconst ic) ic)
-       ((unless (acl2::sbyte32p ic.value))
-        (error (list :iconst-out-of-range ic)))
-       ((unless (equal ic.base (iconst-base-dec)))
-        (error (list :unsupported-iconst-base ic)))
-       ((unless (not ic.unsignedp))
-        (error (list :unsupported-iconst-suffix ic)))
-       ((unless (equal ic.type (iconst-tysuffix-none)))
-        (error (list :unsupported-iconst-suffix ic))))
-    (type-sint))
+       ((iconst ic) ic))
+    (if ic.unsignedp
+        (iconst-tysuffix-case
+         ic.type
+         :none (cond ((uint-integerp ic.value) (type-uint))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :long (cond ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :llong (cond ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic)))))
+      (iconst-tysuffix-case
+       ic.type
+       :none (if (iconst-base-case ic.base :dec)
+                 (cond ((sint-integerp ic.value) (type-sint))
+                       ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((sint-integerp ic.value) (type-sint))
+                     ((uint-integerp ic.value) (type-uint))
+                     ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :long (if (iconst-base-case ic.base :dec)
+                 (cond ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :llong (if (iconst-base-case ic.base :dec)
+                  (cond ((sllong-integerp ic.value) (type-sllong))
+                        (t (error (list :iconst-out-of-range ic))))
+                (cond ((sllong-integerp ic.value) (type-sllong))
+                      ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic))))))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,7 +541,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
-  :returns (types type-list-resultp)
+  :returns (types type-list-resultp
+                  :hints (("Goal"
+                           :in-theory
+                           (enable
+                            typep-when-type-resultp-and-not-errorp
+                            type-listp-when-type-list-resultp-and-not-errorp))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring

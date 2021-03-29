@@ -15,10 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This is a simple artificial example.
-; A function with three inputs,
-; whose values are in small ranges,
-; and are combined with some arithmetic operations.
+; An example with integer operations.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,21 +43,19 @@
                                 (<= -10 (c::sint->get |z|))
                                 (<= (c::sint->get |z|) 10))
                     :guard-hints (("Goal"
-                                   :in-theory (enable sbyte32p
-                                                      sbyte32-fix
+                                   :in-theory (enable c::sint-integerp-alt-def
                                                       c::sintp
                                                       c::sint-add-okp
                                                       c::sint-sub-okp
                                                       c::sint-mul-okp
                                                       c::sint-add
-                                                      c::sint-sub
-                                                      c::sint->get)))))
+                                                      c::sint-sub)))))
     (c::sint-mul (c::sint-add |x| |y|)
                  (c::sint-sub |z| (c::sint-const 3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "f.c")
+(c::atc |f| :output-file "int.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,7 +63,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc -o f f.c f-test.c
+  gcc -o int int.c int-test.c
   ./f
 
 |#

@@ -174,7 +174,6 @@
                   (if (<= n size)
                       (expt 2 (- size n))
                     0)))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable logtail expt-of-+
                                      floor-when-multiple))))
 

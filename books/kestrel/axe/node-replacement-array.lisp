@@ -18,6 +18,8 @@
 (include-book "dargp-less-than")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/min" :dir :system))
+(local (include-book "kestrel/arithmetic-light/max" :dir :system))
 
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
@@ -141,24 +143,12 @@
               2147483646))
   :hints (("Goal" :in-theory (enable max-key))))
 
-(defthmd max-when-<=
-  (implies (<= x y)
-           (equal (max x y)
-                  y)))
-
 (defthm <-of-max-key-when-all-<-of-STRIP-CARS
   (implies (and (ALL-< (STRIP-CARS alist) '2147483646)
                 (all-natp (STRIP-CARS alist)) ;drop?
                 )
            (< (MAX-KEY alist '0) '2147483646))
-  :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=) (max)))))
-
-(local
- (defthm <-of-min
-  (equal (< x (min y z))
-         (and (< x y)
-              (< x z)))
-  :hints (("Goal" :in-theory (enable min)))))
+  :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=-1) (max)))))
 
 ;;;
 ;;; end of library stuff

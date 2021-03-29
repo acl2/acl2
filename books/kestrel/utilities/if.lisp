@@ -48,3 +48,8 @@
 (defthm if-of-t-and-nil-under-iff
   (iff (if test t nil)
        test))
+
+(defthmd if-of-t-and-nil-when-booleanp
+  (implies (booleanp x)
+           (equal (if x t nil)
+                  x)))

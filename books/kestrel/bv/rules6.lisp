@@ -61,7 +61,7 @@
            (equal (logapp lowsize lowval (bvif size test a b))
                   (BVCAT SIZE (BVIF SIZE TEST A B)
                          LOWSIZE LOWVAL)))
-  :hints (("Goal" :in-theory (e/d (bvcat bvif) (BVCAT-RECOMBINE)))))
+  :hints (("Goal" :in-theory (e/d (bvcat bvif) ()))))
 
 ;; (thm
 ;;  (implies (natp n)
@@ -136,7 +136,7 @@
                   (bvand size1 x (bvcat (- size1 lowsize) z lowsize y))))
   :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
                                          BVCHOP-OF-LOGAPP-BIGGER)
-                                  (bvcat-recombine )))))
+                                  ( )))))
 
 (defthm bvcat-of-bvxor-tighten-2
   (implies (and (< size1 size2)
@@ -147,7 +147,7 @@
                 (integerp y))
            (equal (bvcat size1 (bvxor size2 z y) lowsize x)
                   (bvcat size1 (bvxor size1 z y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 (defthm bvxor-of-slice-tighten
   (implies (and (<= size (- high low))
@@ -503,7 +503,7 @@
                 )
            (equal (bvcat highsize (logext size2 highval) lowsize lowval)
                   (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) (bvcat-recombine)))))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 ;mixes theories?
 (defthmd logtail-of-bvxor
@@ -577,7 +577,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) (bvcat-recombine bvchop-of-* ;fixme
+           :in-theory (e/d (bvcat) (bvchop-of-* ;fixme
                                     logtail-of-bvchop-becomes-slice)))))
 
 ;(bvmult 4 (bvxor 4 12 10) 6)
@@ -1040,6 +1040,5 @@
                   (bvcat
                    HIGHSIZE HIGHVAL (+ 1 HIGHINDEX2 0)
                    (SLICE HIGHINDEX2 0 B))))
-  :otf-flg t
   :hints (("Goal" :use (:instance BVCAT-SLICE-SLICE-SAME (lowindex1 0) (highindex1 (+ -1 size1)))
            :in-theory (disable BVCAT-SLICE-SLICE-SAME))))

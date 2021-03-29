@@ -227,7 +227,6 @@
 (defthm g-iff-gen
   (iff (g a r)
        (set::in a (rkeys r)))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance g-iff-ifrp)
     ;           :induct t

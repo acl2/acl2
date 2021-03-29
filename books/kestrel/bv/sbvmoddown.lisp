@@ -77,7 +77,6 @@
                 (posp size))
            (equal (sbvmoddown size x y)
                   (sbvrem size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvrem sbvmoddown logext logapp bvmod sbvlt bvplus bvuminus bvminus
                                           bvchop-of-sum-cases
                                           BVCHOP-WHEN-TOP-BIT-NOT-1 BVCHOP-WHEN-TOP-BIT-1 ;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
@@ -88,7 +87,6 @@
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;sbvrem-rewrite
-                                   BVCAT-RECOMBINE
                                    ;;anti-bvplus
                                    )))))
 
@@ -110,7 +108,6 @@
                 (posp size))
            (equal (sbvmoddown size x y)
                   (sbvrem size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvmoddown
                                    sbvrem
                                    LOGEXT-NEGATIVE
@@ -135,7 +132,6 @@
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    sbvrem-rewrite
                                    ;mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;;SBVREM-BECOMES-BVMOD
@@ -175,7 +171,6 @@
                 (posp size))
            (equal (sbvmoddown size x y)
                   (bvplus size Y (sbvrem size x y))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvmoddown-rewrite-case-5-helper
                                    sbvrem
                                    sbvmoddown
@@ -202,7 +197,6 @@
                                    ;sbvrem-rewrite
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
 ;SBVREM-BECOMES-BVMOD
@@ -230,7 +224,6 @@
                             (sbvrem size x y)
                           ;;sbvrem rounded up, and we want to round down
                           (bvplus size Y (sbvrem size x y))))))))
-  :otf-flg t
   :hints (("Goal" :cases ((SBVLT SIZE Y 0))
            :in-theory (enable sbvmoddown-rewrite-case-1
                               sbvmoddown-rewrite-case-2

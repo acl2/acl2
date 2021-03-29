@@ -60,8 +60,7 @@
                          (slice n low y)
                          (slice n low x))))
   :hints (("Goal" :use ((:instance bvcat-bvxor-neighbors-hack3 (high2 n) (low2 n) (k 1)))
-           :in-theory (disable bvcat-bvxor-neighbors-hack3)))
-  :otf-flg t)
+           :in-theory (disable bvcat-bvxor-neighbors-hack3))))
 
 ;; Used in CLAIM!
 (DEFTHMd BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-non-const

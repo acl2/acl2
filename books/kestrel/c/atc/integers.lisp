@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "unsigned-chars")
-(include-book "signed-ints")
+(include-book "integer-operations")
 (include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,17 +35,5 @@
      and may be replaced by a more comprehensive model
      that we will be developing as part of the "
     (xdoc::seetopic "language" "language formalization")
-    ".")
-   (xdoc::p
-    "We define fixtypes for various C integer values
-     and functions for various C integer operations.
-     When the exact result of an aritmetic operation on signed integers
-     is not representable in the signed integer type,
-     the behavior is undefined [C:6.5/5]:
-     our functions for signed integer operations
-     have guards requiring the results to be representable.
-     For division and remainder,
-     the guard also requires the divisor to be non-zero.
-     The bitwise operations assume a two's complement representation;
-     these operations depend on the representation of integers [C:6.5/4]."))
+    "."))
   :order-subtopics t)
