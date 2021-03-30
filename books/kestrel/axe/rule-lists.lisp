@@ -130,7 +130,7 @@
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
             not-of-not ;BOZO what do we do with the resulting bool-fix?
-            bool-fix-does-nothing
+            bool-fix-when-booleanp
             equal-same
             not-<-same
             turn-equal-around-axe
@@ -2282,7 +2282,7 @@
      not-of-not
      equal-nil-of-not
      not-of-bool-fix
-     bool-fix-does-nothing
+     bool-fix-when-booleanp
      equal-same
      not-<-same
      if-of-t
