@@ -43,6 +43,7 @@
 ;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
+(include-book "dag-size2")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -1469,7 +1470,15 @@
                               (all-< literal-nodenums dag-len))))
   (if (endp literal-nodenums)
       nil
-    (progn$ (print-negated-literal (first literal-nodenums) dag-array-name dag-array dag-len)
+    (progn$ (let* ((nodenum (first literal-nodenums))
+                   (term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+              (if (< term-size 10000)
+                  (let ((term (dag-to-term-aux-array dag-array-name dag-array nodenum)))
+                    (if (and (call-of 'not term)
+                             (consp (cdr term)))
+                        (cw "~x0~%" (farg1 term))
+                      (cw "~x0~%" `(not ,term))))
+                (print-negated-literal nodenum dag-array-name dag-array dag-len)))
             (cw "~%")
             (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
 
