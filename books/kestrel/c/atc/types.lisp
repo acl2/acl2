@@ -137,10 +137,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-realp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real type [C:6.2.5/18]."
+  (type-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-arithmeticp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is an arithmetic type [C:6.2.5/18]."
-  (type-integerp type)
+  (type-realp type)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
