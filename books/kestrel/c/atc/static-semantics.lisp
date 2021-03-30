@@ -426,31 +426,29 @@
      We return the type of the unary expression.")
    (xdoc::p
     "For unary plus and minus,
-     the promoted operand must be arithmetic,
-     and the result has the same promoted type.")
+     the operand must be arithmetic,
+     and the result has the promoted type.")
    (xdoc::p
     "For bitwise negation,
-     the promoted operand must be integer,
-     and the result has the same promoted type.")
+     the operand must be integer,
+     and the result has the promoted type.")
    (xdoc::p
     "For logical negation,
-     the operand must be scalar (it is not promoted)
+     the operand must be scalar
      and the result is @('int') -- 0 or 1."))
   (case (unop-kind op)
-    ((:plus :minus) (b* ((type (promote-type arg-type)))
-                      (if (type-arithmeticp type)
-                          type
-                        (error (list :unary-mistype
-                                 (unop-fix op) (expr-fix arg-expr)
-                                 :required :arithmetic
-                                 :supplied (type-fix arg-type))))))
-    (:bitnot (b* ((type (promote-type arg-type)))
-               (if (type-integerp type)
-                   type
-                 (error (list :unary-mistype
-                          (unop-fix op) (expr-fix arg-expr)
-                          :required :integer
-                          :supplied (type-fix arg-type))))))
+    ((:plus :minus) (if (type-arithmeticp arg-type)
+                        (promote-type arg-type)
+                      (error (list :unary-mistype
+                               (unop-fix op) (expr-fix arg-expr)
+                               :required :arithmetic
+                               :supplied (type-fix arg-type)))))
+    (:bitnot (if (type-integerp arg-type)
+                 (promote-type arg-type)
+               (error (list :unary-mistype
+                        (unop-fix op) (expr-fix arg-expr)
+                        :required :integer
+                        :supplied (type-fix arg-type)))))
     (:lognot (if (type-scalarp arg-type)
                  (type-sint)
                (error (list :unary-mistype
