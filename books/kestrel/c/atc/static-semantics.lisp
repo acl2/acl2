@@ -827,7 +827,9 @@
      we check the argument expressions,
      which must be pure (because we restrict them to be so).
      We retrieve the function type from the function table
-     and we compare the input types with the argument types.
+     and we compare the input types with the argument types;
+     this is more restrictive than allowed in [C],
+     but it is adequate for now.
      We return the output type.")
    (xdoc::p
     "If the expression is not a function call,
