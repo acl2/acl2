@@ -537,6 +537,7 @@
                (t (error (impossible)))))
       (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp
                                            type-integerp
                                            type-signed-integerp
                                            type-unsigned-integerp
@@ -551,6 +552,7 @@
              (equal (uaconvert-types type1 type2)
                     (promote-type type1)))
     :enable (type-arithmeticp
+             type-realp
              type-integerp
              type-signed-integerp
              type-unsigned-integerp
@@ -562,6 +564,7 @@
              (equal (uaconvert-types type1 type2)
                     (uaconvert-types type2 type1)))
     :enable (type-arithmeticp
+             type-realp
              type-integerp
              type-signed-integerp
              type-unsigned-integerp
@@ -582,17 +585,89 @@
      @('arg1-expr') and @('arg2-expr') are used just for errors.
      We return the type of the binary expression.")
    (xdoc::p
-    "For now we require the arguments to be @('int')s.
-     The result is therefore an @('int').
-     This will be extended in the future."))
-  (if (and (type-equiv arg1-type (type-sint))
-           (type-equiv arg2-type (type-sint)))
-      (type-sint)
-    (error (list
-            :binary-mistype
-            (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-            :required (type-sint) (type-sint)
-            :supplied (type-fix arg1-type) (type-fix arg2-type))))
+    "For multiplication, division, and reminder,
+     the operands must be arithmetic,
+     and the result has the type of the usual arithmetic conversions.")
+   (xdoc::p
+    "For addition and subtraction,
+     for now we require the operands to be arithmetic,
+     and the result has the type of the usual arithmetic conversions.
+     We do not yet support arithmetic involving pointers.")
+   (xdoc::p
+    "For left and right shifts,
+     the operands must be integers,
+     and the result has the type of the promoted first operand.")
+   (xdoc::p
+    "For the relational operators,
+     for now we require the operands to be real,
+     and the result has type @('int').
+     We do not yet support comparisons between pointers.")
+   (xdoc::p
+    "For the equality operators,
+     for now we require the operands to be arithmetic,
+     and the result has type @('int').
+     We do not yet support equalities between pointers.")
+   (xdoc::p
+    "For the bitwise logical operators,
+     the operands must be integers,
+     and the result has the type of the usual arithmetic conversions.")
+   (xdoc::p
+    "For the conditional logical operators,
+     the operands must be scalar,
+     and the result is @('int')."))
+  (case (binop-kind op)
+    ((:mul :div :rem :add :sub)
+     (if (and (type-arithmeticp arg1-type)
+              (type-arithmeticp arg2-type))
+         (uaconvert-types arg1-type arg2-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :arithmetic :arithmetic
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:shl :shr)
+     (if (and (type-integerp arg1-type)
+              (type-integerp arg2-type))
+         (promote-type arg1-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:lt :gt :le :ge)
+     (if (and (type-realp arg1-type)
+              (type-realp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :real :real
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:eq :ne)
+     (if (and (type-arithmeticp arg1-type)
+              (type-arithmeticp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :arithmetic :arithmetic
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:bitand :bitxor :bitior)
+     (if (and (type-integerp arg1-type)
+              (type-integerp arg2-type))
+         (uaconvert-types arg1-type arg2-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:logand :logor)
+     (if (and (type-scalarp arg1-type)
+              (type-scalarp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp
+                                           binop-purep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
