@@ -710,9 +710,7 @@
     "An identifier must be in the variable table.
      Its type is looked up there.")
    (xdoc::p
-    "A cast is allowed between any of the C types
-     that we currently model in the abstract syntax,
-     which are all scalar.
+    "A cast is allowed between scalar types, in our model.
      The result has the type indicated in the cast.
      See [C:6.5.4].")
    (xdoc::p
@@ -746,8 +744,17 @@
               (check-unary e.op e.arg arg-type))
      :cast (b* ((arg-type (check-expr-pure e.arg vartab))
                 ((when (errorp arg-type))
-                 (error (list :cast-error arg-type))))
-             (type-name-to-type e.type))
+                 (error (list :cast-error arg-type)))
+                ((unless (type-scalarp arg-type))
+                 (error (list :cast-mistype-operand e
+                              :required :scalar
+                              :supplied arg-type)))
+                (type (type-name-to-type e.type))
+                ((unless (type-scalarp type))
+                 (error (list :cast-mistype-type e
+                              :required :scalar
+                              :supplied type))))
+             type)
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
                   (arg1-type (check-expr-pure e.arg1 vartab))
