@@ -710,9 +710,10 @@
     "An identifier must be in the variable table.
      Its type is looked up there.")
    (xdoc::p
-    "A cast is allowed between scalar types, in our model.
+    "A cast is allowed between scalar types.
      The result has the type indicated in the cast.
-     See [C:6.5.4].")
+     See [C:6.5.4]; note that the additional requirements on the type
+     do not apply to our currently simplified model of C types.")
    (xdoc::p
     "Since all the C types that we currently model are scalar,
      we allow any type as the test of a conditional expression.
