@@ -20,20 +20,20 @@
 
 ;; Load the R1CS:
 ;; (depends-on "json/mimcsponge-5-1-0k.json")
-(local (acl2::load-circom-json "json/mimcsponge-5-1-0k.json" *bn-254-group-prime*))
+(local (acl2::load-circom-json "json/mimcsponge-5-1-0k.json" *baby-jubjub-prime*))
 
 ;;;
 ;;; The spec
 ;;;
 
-;; TODO: Add guard
 (defun mimcsponge-5-1-spec (in0 in1 in2 in3 in4 out)
-  (declare (xargs :guard (and (fep in0 PRIMES::*BN-254-GROUP-PRIME*)
-                              (fep in1 PRIMES::*BN-254-GROUP-PRIME*)
-                              (fep in2 PRIMES::*BN-254-GROUP-PRIME*)
-                              (fep in3 PRIMES::*BN-254-GROUP-PRIME*)
-                              (fep in4 PRIMES::*BN-254-GROUP-PRIME*)
-                              (fep out PRIMES::*BN-254-GROUP-PRIME*))))
+  (declare (xargs :guard (and (fep in0 (baby-jubjub-prime))
+                              (fep in1 (baby-jubjub-prime))
+                              (fep in2 (baby-jubjub-prime))
+                              (fep in3 (baby-jubjub-prime))
+                              (fep in4 (baby-jubjub-prime))
+                              (fep out (baby-jubjub-prime)))
+                  :guard-hints (("Goal" :in-theory (enable (:e baby-jubjub-prime))))))
   (equal out (car (mimc::mimcsponge-semaphore 5 1 (list in0 in1 in2 in3 in4)))))
 
 ;;;

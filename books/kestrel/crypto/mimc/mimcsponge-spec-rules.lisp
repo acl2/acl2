@@ -53,6 +53,7 @@
             pfield::mul-of-ifix-arg2
             acl2::integerp-of-ifix
             acl2::ifix-does-nothing
-            primes::bn-254-group-prime
+            primes::bn-254-group-prime ;remove
+            baby-jubjub-prime
             mimc::mimc-feistel-220-constants)
           (pfield::prime-field-proof-rules)))
