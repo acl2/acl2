@@ -362,12 +362,10 @@ I don't need this?
                     (property-varsp (car prop-rest))
                     (cons :vars (car prop-rest))))
        (vars? (or vars? ivars?))
-       (- (cw? debug? "~%**Vars? is: ~x0~%" vars?))
+       (- (cw? debug? "~%**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
        (hyps? (assoc :hyps kwd-alist))
        (body? (assoc :body kwd-alist))
-       ((unless (or (consp prop-rest) body?))
-        (ecw "~|**ERROR: Empty properties are not allowed."))
        (check-contracts? (defdata::get1 :check-contracts? kwd-alist))
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
@@ -389,32 +387,52 @@ I don't need this?
        (user-vars (evens user-var-list))
        (user-types (odds user-var-list))
        (user-types (map-intern-types user-types pkg))
+       (- (cw? debug? "~%**user-types is: ~x0~%" user-types))
        (user-preds (map-preds user-types tbl atbl))
+       (- (cw? debug? "~%**user-preds is: ~x0~%" user-preds))
        (type-list1 (make-input-contract user-vars user-preds))
        (type-list (hyps-list-from-hyps type-list1))
        (type-hyps-list (append type-list hyps-list))
+       (- (cw? debug? "~%**type-hyps-list is: ~x0~%" type-hyps-list))
        (prop (cond ((endp type-hyps-list) body)
                    ((endp (cdr type-hyps-list))
                     `(implies ,(car type-hyps-list) ,body))
                    (t `(implies (and ,@type-hyps-list) ,body))))
-       ((mv ?erp trans-prop)
+       ((mv erp trans-prop)
         (acl2::pseudo-translate prop nil wrld))
        (all-vars (acl2::all-vars trans-prop))
        (vars (if vars? user-vars all-vars))
+       (- (cw? debug? "~%**vars is: ~x0~%" vars))
+       (- (cw? debug? "~%**all-vars is: ~x0~%" all-vars))
        (var-diff (sym-diff vars all-vars))
-       (- (cw? debug? "~%**Prop is: ~x0~%" prop))
+       (- (cw? debug? "~%**prop is: ~x0~%" prop))
+       (- (cw? debug? "~%**trans-prop is: ~x0~%" trans-prop))
+       (parsed (list name? name prop kwd-alist))
+       ((when erp)
+        (ecw "~|**ERROR: The translation of prop: ~
+              ~x0 ~
+              resulted in an error."
+             prop
+             parsed))
+       ((unless (or (consp prop-rest) body?))
+        (ecw "~|**ERROR: Empty properties are not allowed."
+             parsed))
        ((when var-diff)
-        (er soft ctx
-            "~|**ERROR: The :vars provided do not match the actual variables ~
+        (ecw "~|**ERROR: The :vars provided do not match the actual variables ~
                 appearing in the property. An example is ~x0."
-            (car var-diff)))
-       (gprop (sublis-fn-simple '((implies . impliez)) prop))
+             (car var-diff)
+             parsed))
+       (gprop (sublis-fn-simple '((implies . impliez)) trans-prop))
+       (- (cw? debug? "~%**gprop is: ~x0~%" gprop))
        ((mv erp val)
         (if check-contracts?
             (guard-obligation gprop nil nil t ctx state)
           (guard-obligation t nil nil t ctx state)))
        ((when erp)
-        (ecw "~|**ERROR During Contract Completion.**"))
+        (ecw "~|**ERROR During Contract Completion.** ~
+              ~%**val is: ~x0"
+             val
+             parsed))
        ((list* & CL &) val)
        (guards (acl2::prettyify-clause-set CL nil wrld))
        (- (cw? debug? "~|**The Contract Completion Proof Obligation is: ~x0~%" guards))
@@ -438,11 +456,12 @@ I don't need this?
               (thm-no-test ,guards))))
           ctx state t)))
        ((list* & thm-erp &) val)
-       (- (cw? debug? "~|**trans-eval-thm-erp is: ~x0~%" te-thm-erp))
+       (- (cw? debug? "~|**te-thm-erp is: ~x0~%" te-thm-erp))
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
-        (ecw "~|**ERROR During Contract Checking.**"))
+        (ecw "~|**ERROR During Contract Checking.**"
+             parsed))
        (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)
         (if thm-erp
@@ -459,19 +478,21 @@ I don't need this?
                          ctx state t))
           (mv nil nil state)))
        ((list* & test-erp &) val)
-       (- (cw? debug? "~|**trans-eval-test-erp is: ~x0~%" te-test-erp))
+       (- (cw? debug? "~|**te-test-erp is: ~x0~%" te-test-erp))
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**test-erp is: ~x0~%" test-erp))
        ((when test-erp)
         (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0.~
 ~%The counterexample above shows that this is not the case."
-            guards))
+             guards
+             parsed))
        ((when thm-erp)
         (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0."
-            guards)))
-    (value (list name? name prop kwd-alist))))
+             guards
+             parsed)))
+    (value parsed)))
 
 #|
 (defmacro ctest? (form &rest kwd-val-lst)
@@ -645,12 +666,15 @@ I don't need this?
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((mv erp parsed state)
         (parse-property args state))
+       ((list - - - kwd-alist) parsed)
+       (debug? (defdata::get1 :debug? kwd-alist))
+       (debug-hint
+        (if debug?
+            ""
+          " To debug, add \":debug? t\" at the end of your property.~%"))
        ((when erp)
-        (b* ((- (cw "~%~|******** PROPERTY FAILED ********~% ~
-                To debug, add \":debug? t\" at the end of your property.~%")))
-          (mv t nil state))))
+        (ecw "~%~|******** PROPERTY FAILED ********~% ~@0" debug-hint nil)))
     (value `(make-event ',(property-core parsed)))))
-
 
 (defmacro property (&rest args)
   (b* ((debug? (let ((lst (member :debug? args)))

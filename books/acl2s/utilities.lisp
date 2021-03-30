@@ -734,8 +734,8 @@ functions over natural numbers.
      nil))
 
 (defmacro ecw (&rest rst)
-  `(prog2$ (cw ,@rst)
-           (mv t nil state)))
+  `(prog2$ (cw ,@(butlast rst 1))
+           (mv t ,(car (last rst)) state)))
 
 (defmacro ecw? (verbose-flag &rest rst)
   `(if ,verbose-flag
