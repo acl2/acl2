@@ -228,7 +228,10 @@
                   (acl2::bvplus 34 x y)))
   :hints (("Goal" :in-theory (enable add ACL2::BVPLUS))))
 
-(defthm add-becomes-bvplus-33-extra
+;todo: uncomment:
+;(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34 1) ;try this late
+
+(defthmd add-becomes-bvplus-33-extra
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
                 (posp p)
@@ -237,8 +240,41 @@
                   (add (acl2::bvplus 33 x y) extra p)))
   :hints (("Goal" :in-theory (enable add acl2::bvplus))))
 
+(defthmd add-becomes-bvplus-34-extra
+  (implies (and (unsigned-byte-p 33 x)
+                (unsigned-byte-p 33 y)
+                (posp p)
+                (< 17179869184 p))
+           (equal (add x (add y extra p) p)
+                  (add (acl2::bvplus 34 x y) extra p)))
+  :hints (("Goal" :in-theory (enable add acl2::bvplus))))
+
+(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34-extra 1) ;try this late
+
+(defthmd add-becomes-bvplus-35
+  (implies (and (unsigned-byte-p 34 x)
+                (unsigned-byte-p 34 y)
+                (posp p)
+                (< (expt 2 35) p))
+           (equal (add x y p)
+                  (acl2::bvplus 35 x y)))
+  :hints (("Goal" :in-theory (enable add acl2::bvplus))))
+
+(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-35 2) ;try this late
+
+(defthmd add-becomes-bvplus-36
+  (implies (and (unsigned-byte-p 35 x)
+                (unsigned-byte-p 35 y)
+                (posp p)
+                (< (expt 2 36) p))
+           (equal (add x y p)
+                  (acl2::bvplus 36 x y)))
+  :hints (("Goal" :in-theory (enable add acl2::bvplus))))
+
+(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-36 3) ;try this late
+
 ;; requires the first addend to be a bvplus33, so we don't use this when we could go to a 33 bit sum
-(DEFTHM ADD-BECOMES-BVPLUS-34-special
+(DEFTHMd ADD-BECOMES-BVPLUS-34-special
   (IMPLIES (AND (UNSIGNED-BYTE-P 33 Y)
                 (POSP P)
                 (< 17179869184 P))
