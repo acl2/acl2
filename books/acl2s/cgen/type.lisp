@@ -8,7 +8,7 @@
 )
 
 (include-book "basis")
-(include-book "../defdata/defdata-util")
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 (include-book "utilities")
 
 ;;; For use by testing hints

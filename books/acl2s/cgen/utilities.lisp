@@ -12,7 +12,7 @@
 
 (set-verify-guards-eagerness 2)
 (include-book "std/util/bstar" :dir :system)
-(include-book "../utilities")
+(include-book "acl2s/utilities" :dir :system)
 ;(include-book "basis")
 
 ;; PETE: add the global cgen::cgen-guard-checking to control how
@@ -57,7 +57,6 @@
     nil
     (cons (modify-symbol prefix (car syms) postfix)
           (modify-symbol-lst prefix (cdr syms) postfix))))
-
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))
