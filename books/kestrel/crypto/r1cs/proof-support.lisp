@@ -16,16 +16,6 @@
 
 ;; TODO: Organize this material
 
-(defthm bitp-when-bit-listp-and-memberp
-  (implies (and (bit-listp free)
-                (memberp x free))
-           (bitp x)))
-
-;; (defun gen-bit-listp-assumption (vars)
-;;   (declare (xargs :guard (and (symbol-listp vars)
-;;                               (consp vars))))
-;;   `(bit-listp ,(make-append-with-key-nest vars)))
-
 (defun make-bitp-claims-aux (terms acc)
   (declare (xargs :guard (true-listp terms)))
   (if (endp terms)
