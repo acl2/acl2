@@ -936,6 +936,12 @@
 
 (defresult stmt-type "statement types")
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-stmt-typep-of-error
+  (not (stmt-typep (error x)))
+  :enable (error stmt-typep))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-stmt
@@ -1116,7 +1122,31 @@
   ///
   (verify-guards check-stmt)
 
-  (fty::deffixequiv-mutual check-stmt))
+  (fty::deffixequiv-mutual check-stmt)
+
+  (local
+   (defthm-check-stmt-flag
+     (defthm check-stmt-var-table
+       (b* ((result (check-stmt s funtab vartab)))
+         (implies (stmt-typep result)
+                  (equal (stmt-type->variables result)
+                         (var-table-fix vartab))))
+       :flag check-stmt)
+     (defthm check-block-item-var-table
+       t
+       :rule-classes nil
+       :flag check-block-item)
+     (defthm check-block-item-list-var-table
+       t
+       :rule-classes nil
+       :flag check-block-item-list)
+     :hints (("Goal" :expand ((check-stmt s funtab vartab))))))
+
+  (defrule check-stmt-var-table-no-change
+    (b* ((result (check-stmt s funtab vartab)))
+      (implies (stmt-typep result)
+               (equal (stmt-type->variables result)
+                      (var-table-fix vartab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
