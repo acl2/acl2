@@ -109,6 +109,16 @@
                             (b y)))
            :in-theory (enable mul rtl::divides acl2::equal-of-0-and-mod))))
 
+(defthm equal-of-0-and-mul-gen
+  (implies (primep p)
+           (equal (equal 0 (mul x y p))
+                  (or (equal (mod (ifix x) p) 0)
+                      (equal (mod (ifix y) p) 0))))
+  :hints (("Goal" :use (:instance equal-of-0-and-mul
+                                  (x (mod (ifix x) p))
+                                  (y (mod (ifix y) p)))
+           :in-theory (disable equal-of-0-and-mul))))
+
 ;; Cherry-pick Fermat's Little Theorem
 (encapsulate ()
   (local (include-book "../../projects/quadratic-reciprocity/fermat"))
@@ -656,16 +666,6 @@
   (equal (div 0 y p)
          0)
   :hints (("Goal" :in-theory (enable div))))
-
-(defthm mul-of-mod-arg1
-  (equal (mul (mod x p) y p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthm mul-of-mod-arg2
-  (equal (mul x (mod y p) p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
 
 ;; x=y/z becomes xz=y.
 (defthmd equal-of-div

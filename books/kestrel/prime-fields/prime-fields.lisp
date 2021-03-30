@@ -577,6 +577,17 @@
          (mul x (mul y z p) p))
   :hints (("Goal" :in-theory (enable mul))))
 
+
+(defthm mul-of-mod-arg1
+  (equal (mul (mod x p) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-mod-arg2
+  (equal (mul x (mod y p) p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
 ;;;
 ;;; pow
 ;;;
