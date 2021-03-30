@@ -15,6 +15,7 @@
 (include-book "base-points-for-pedersen-hash")
 (include-book "pedersen-hash")
 (include-book "prime-field-abbreviations")
+(include-book "printing")
 
 (include-book "json-to-r1cs/top")
 
