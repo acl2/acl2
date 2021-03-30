@@ -670,7 +670,7 @@
                                         (and (member-eq rule-symbol monitored-symbols)
                                              (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                      (cw "Reason: Rewrote to:~%")
-                                                     (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len)
+                                                     (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
                                                      (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%" alist refined-assumption-alist )
                                                      ;;print these better?:
                                                      ;;(cw "(node-replacement-array: ~x0)~%" node-replacement-array)
