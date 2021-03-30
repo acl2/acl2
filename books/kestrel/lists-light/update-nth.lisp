@@ -118,3 +118,12 @@
                   (and (< n (len x))
                        (equal val (nth n x)))))
   :hints (("Goal" :in-theory (enable update-nth))))
+
+;rename to nth-of-update-nth-safe
+(defthmd nth-update-nth-safe
+  (implies (and (syntaxp (quotep m))
+                (syntaxp (quotep n)))
+           (equal (nth m (update-nth n val l))
+                  (if (equal (nfix m) (nfix n))
+                      val (nth m l))))
+  :hints (("Goal" :in-theory (enable nth))))

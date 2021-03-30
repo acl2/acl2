@@ -1442,15 +1442,6 @@
   :hints (("Goal" :in-theory (e/d (SUBRANGE CDR-OF-NTHCDR EQUAL-CONS-CASES2)
                                   (anti-subrange)))))
 
-;this was a dag rule.  do we have a non-dag version?
-(defthmd nth-update-nth-safe
-  (implies (and (syntaxp (quotep m))
-                (syntaxp (quotep n)))
-           (equal (nth m (update-nth n val l))
-                  (if (equal (nfix m) (nfix n))
-                      val (nth m l))))
-  :hints (("Goal" :in-theory (enable nth))))
-
 (defthm subrange-of-UPDATE-SUBRANGE-irrel
   (implies (and (< k m1)
                 (<= m2 (len lst))
