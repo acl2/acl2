@@ -1594,6 +1594,7 @@
                                    (y z)))
            :in-theory (disable bvplus-of-bvchop-arg1
                                EQUAL-OF-BITXOR-AND-BITXOR-SAME-6
+                               EQUAL-OF-BITXOR-AND-BITXOR-SAME-ALT
                                bvchop-1-becomes-getbit))))
 
 (defthm bvplus-1-of-bvplus-trim-arg2

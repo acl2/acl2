@@ -4963,44 +4963,6 @@
   :hints (("Goal" :use (:instance equal-of-getbit-and-bitxor-same)
            :in-theory (disable equal-of-getbit-and-bitxor-same))))
 
-
-
-(defthm equal-of-bitxor-and-bitxor-same-2
-  (equal (equal (bitxor x w) (bitxor y (bitxor x z)))
-         (equal (getbit 0 w) (bitxor y z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
-                                  (bvxor-1-becomes-bitxor)))))
-
-(defthm equal-of-bitxor-and-bitxor-same-3
-  (equal (equal (bitxor w (bitxor x z)) (bitxor x y))
-         (equal (bitxor w z) (getbit 0 y)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
-                                  (bvxor-1-becomes-bitxor)))))
-
-(defthm equal-of-bitxor-and-bitxor-same-4
-  (equal (equal (bitxor y x) (bitxor x z))
-         (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
-                                  (bvxor-1-becomes-bitxor)))))
-
-
-(defthm equal-of-bitxor-and-bitxor-same-5
-  (equal (equal (bitxor x y) (bitxor z x))
-         (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
-                                  (bvxor-1-becomes-bitxor)))))
-
-
-
-(defthm equal-of-bitxor-and-bitxor-same-6
-  (equal (equal (bitxor y x) (bitxor z x))
-         (equal (getbit 0 y) (getbit 0 z)))
-  :hints (("Goal" :in-theory (e/d (bitxor)
-                                  (bvxor-1-becomes-bitxor)))))
-
-;;;
-
-
 (defthm equal-of-bvxor-and-bvxor-same-7
   (equal (equal (bvxor size zw (bvxor size x z)) (bvxor size y (bvxor size x zu)))
          (equal (bvxor size zw z) (bvxor size y zu)))
