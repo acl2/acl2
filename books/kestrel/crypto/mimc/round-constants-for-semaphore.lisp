@@ -23,6 +23,8 @@
 ;; (primes::bn-254-group-prime).
 ;; We load the former because it has xdoc.
 
+;; We need the executable counterpart enabled for this file.
+(local (in-theory (enable (:e ZKSEMAPHORE::BABY-JUBJUB-PRIME))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,7 +253,7 @@
 
 ;; Make sure all the constants are field elements
 (assert-event
- (acl2::integer-range-listp 0 (primes::bn-254-group-prime) *mimc-feistel-220-constants*))
+ (acl2::integer-range-listp 0 (zksemaphore::baby-jubjub-prime) *mimc-feistel-220-constants*))
 
 ;; Add a function wrapper for the constant.
 (defund mimc-feistel-220-constants ()
@@ -260,7 +262,7 @@
 
 ;; Make a theorem available that they are all field elements.
 (defthm mimc-feistel-220-constants-are-bn-254-field-elements
-  (pfield::fe-listp (mimc-feistel-220-constants) (primes::bn-254-group-prime)))
+  (pfield::fe-listp (mimc-feistel-220-constants) (zksemaphore::baby-jubjub-prime)))
 
 
 ;; From the spec semaphore-proposal.pdf (as of 2020-04-30)
@@ -273,22 +275,22 @@
 ;; the first nonzero round constant is Keccak256("mimcsponge") or the next one.
 ;; By inspection, the first nonzero round constant is the next one:
 ;; Keccak256(Keccak256("mimcsponge")).
-;; Also, this does not mention that each constant is taken modulo (primes::bn-254-group-prime),
+;; Also, this does not mention that each constant is taken modulo (zksemaphore::baby-jubjub-prime),
 ;; so that they are field elements.
 
 (defconst *pre-first-mimc-constant*
   (keccak::keccak-256-string-to-bytes "mimcsponge"))
 
 
-;; Returns a list of N elements in the field (primes::bn-254-group-prime),
+;; Returns a list of N elements in the field (zksemaphore::baby-jubjub-prime),
 ;; resulting from repeated calls to keccak-256-bytes.
-;; The first nat is (mod (bendian=>nat 256 (keccak-256 seed)) (primes::bn-254-group-prime)),
-;; the second is (mod (bendian=>nat 256 (keccak-256 (keccak-256 seed))) (primes::bn-254-group-prime)),
+;; The first nat is (mod (bendian=>nat 256 (keccak-256 seed)) (zksemaphore::baby-jubjub-prime)),
+;; the second is (mod (bendian=>nat 256 (keccak-256 (keccak-256 seed))) (zksemaphore::baby-jubjub-prime)),
 ;; and so on.
 (defun repeated-keccak-256-nats (seed N)
   (if (zp N) '()
     (let ((next-seed (keccak::keccak-256-bytes seed)))
-      (cons (mod (bendian=>nat 256 next-seed) (primes::bn-254-group-prime))
+      (cons (mod (bendian=>nat 256 next-seed) (zksemaphore::baby-jubjub-prime))
             (repeated-keccak-256-nats next-seed (- N 1))))))
 
 ;; Verify that the round constants were computed as stated.
