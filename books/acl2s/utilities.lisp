@@ -727,3 +727,19 @@ functions over natural numbers.
 
 |#
 
+; utility fn to print if verbose flag is true
+(defmacro cw? (verbose-flag &rest rst)
+  `(if ,verbose-flag
+     (cw ,@rst)
+     nil))
+
+(defmacro ecw (&rest rst)
+  `(prog2$ (cw ,@rst)
+           (mv t nil state)))
+
+(defmacro ecw? (verbose-flag &rest rst)
+  `(if ,verbose-flag
+       (ecw ,@rst)
+     nil))
+
+

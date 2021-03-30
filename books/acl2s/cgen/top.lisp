@@ -44,7 +44,7 @@
 
 (include-book "acl2s-parameter")
 (include-book "prove-cgen" :ttags :all)
-(include-book "../defdata/top" :ttags :all)
+(include-book "acl2s/defdata/top" :dir :system :ttags :all)
 
 
 (defun defdata-testing-enabled-ev (D kwd-alist wrld)

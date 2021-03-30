@@ -44,7 +44,7 @@ downloaded from the webpage.
 
 (in-package "CGEN")
 
-(include-book "../utilities")
+(include-book "acl2s/utilities" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/satlink/top" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all) ;missing in the Manual
@@ -67,12 +67,7 @@ downloaded from the webpage.
 ; Turn on the AIG mode
 ;(local (gl::gl-satlink-mode))
 
-(include-book "../defdata/defdata-util")
-
-(defmacro cw? (verbose-flag &rest rst)
-  `(if ,verbose-flag
-     (cw ,@rst)
-     nil))
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 
 (defun collect-vars (term)
   (reverse (acl2::all-vars term)))

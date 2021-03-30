@@ -367,7 +367,7 @@ I don't need this?
        (hyps? (assoc :hyps kwd-alist))
        (body? (assoc :body kwd-alist))
        ((unless (or (consp prop-rest) body?))
-        (er soft ctx "~|**ERROR: Empty properties are not allowed."))
+        (ecw "~|**ERROR: Empty properties are not allowed."))
        (check-contracts? (defdata::get1 :check-contracts? kwd-alist))
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
@@ -414,7 +414,7 @@ I don't need this?
             (guard-obligation gprop nil nil t ctx state)
           (guard-obligation t nil nil t ctx state)))
        ((when erp)
-        (er soft ctx "~|**ERROR During Contract Completion.**"))
+        (ecw "~|**ERROR During Contract Completion.**"))
        ((list* & CL &) val)
        (guards (acl2::prettyify-clause-set CL nil wrld))
        (- (cw? debug? "~|**The Contract Completion Proof Obligation is: ~x0~%" guards))
@@ -428,13 +428,13 @@ I don't need this?
           `(with-output
             ,@(if debug?
                   '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (error summary) :summary (time) :gag-mode nil ))
+                '(:off :all :on (summary) :summary (time) :gag-mode nil ))
             (encapsulate
              nil
              (with-output
               ,@(if debug?
                     '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                  '(:off :all :on (error)))
+                  '(:off :all))
               (thm-no-test ,guards))))
           ctx state t)))
        ((list* & thm-erp &) val)
@@ -442,7 +442,7 @@ I don't need this?
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**thm-erp is: ~x0~%" thm-erp))
        ((when thm-erp)
-        (er soft ctx "~|**ERROR During Contract Checking.**"))
+        (ecw "~|**ERROR During Contract Checking.**"))
        (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)
         (if thm-erp
@@ -463,12 +463,12 @@ I don't need this?
        (- (cw? debug? "~|**val is: ~x0~%" val))
        (- (cw? debug? "~|**test-erp is: ~x0~%" test-erp))
        ((when test-erp)
-        (er soft ctx "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0.~
 ~%The counterexample above shows that this is not the case."
             guards))
        ((when thm-erp)
-        (er soft ctx "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0."
             guards)))
     (value (list name? name prop kwd-alist))))
@@ -490,7 +490,8 @@ I don't need this?
        (- (cw? t "~%**Property is: ~x0~%" prop))
        (gprop (sublis-fn-simple '((implies . impliez)) prop))
        ((mv erp val) (guard-obligation gprop nil nil t ctx state))
-       ((when erp) (er soft ctx "~|**ERROR During Contract Checking.**"))
+       ((when erp)
+        (er soft ctx "~|**ERROR During Contract Checking.**"))
        ((list* & CL &) val) (guards (acl2::prettyify-clause-set CL nil wrld))
        (- (cw? t "~|**The Contract Completion Proof Obligation is: ~x0~%" guards))
        (- (cw? t "~%Form:  ( CONTRACT-CHECKING PROPERTY ...)~%"))
@@ -645,7 +646,8 @@ I don't need this?
   (b* (((mv erp parsed state)
         (parse-property args state))
        ((when erp)
-        (b* ((- (cw "~%~|******** PROPERTY FAILED ********~%")))
+        (b* ((- (cw "~%~|******** PROPERTY FAILED ********~% ~
+                To debug, add \":debug? t\" at the end of your property.~%")))
           (mv t nil state))))
     (value `(make-event ',(property-core parsed)))))
 

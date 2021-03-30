@@ -23,6 +23,9 @@
      rquote-listp
      unrquote-lst
      def-const
+     cw?
+     ecw
+     ecw?
      _ ;range
      )
    (union-eq *acl2-exports*
@@ -42,6 +45,9 @@
      rquote-listp
      unrquote-lst
      def-const
+     cw?
+     ecw
+     ecw?
      => ;sig
      _ ;range
      )
