@@ -972,7 +972,7 @@
      we return the original variable table.")
    (xdoc::p
     "For a conditional statement with both branches,
-     after ensuring that the test expression has type @('int'),
+     after ensuring that the test expression has scalar type,
      we check the two branches, and take the union of their return types.
      We return the initial variable table, unchanged;
      any change in the branches is local to the branches.")
@@ -1029,9 +1029,9 @@
      :null (error :unsupported-null-stmt)
      :if (b* ((type (check-expr-pure s.test vartab))
               ((when (errorp type)) (error (list :if-test-error type)))
-              ((unless (equal type (type-sint)))
+              ((unless (type-scalarp type))
                (error (list :if-test-mistype s.test s.then :noelse
-                            :required (type-sint)
+                            :required :scalar
                             :supplied type)))
               (stype-then (check-stmt s.then funtab vartab))
               ((when (errorp stype-then))
@@ -1042,9 +1042,9 @@
             :variables vartab))
      :ifelse (b* ((type (check-expr-pure s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
-                  ((unless (equal type (type-sint)))
+                  ((unless (type-scalarp type))
                    (error (list :if-test-mistype s.test s.then s.else
-                                :required (type-sint)
+                                :required :scalar
                                 :supplied type)))
                   (stype-then (check-stmt s.then funtab vartab))
                   ((when (errorp stype-then))
