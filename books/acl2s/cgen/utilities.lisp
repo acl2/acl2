@@ -59,16 +59,6 @@
           (modify-symbol-lst prefix (cdr syms) postfix))))
 
 
-
-; utility fn to print if verbose flag is true
-(defmacro cw? (verbose-flag &rest rst)
-  `(if ,verbose-flag
-     (cw ,@rst)
-     nil))
-
-
-
-
 (defmacro   debug-flag  (vl)
   `(> ,vl 3))
 
@@ -80,7 +70,6 @@
 
 (defmacro   verbose-flag ( vl)
   `(> ,vl 1))
-
 
 (defmacro   inhibit-output-flag ( vl)
   `(<= ,vl 0))
