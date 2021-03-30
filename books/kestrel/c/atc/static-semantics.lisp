@@ -462,6 +462,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uaconvert-types ((type1 typep) (type2 typep))
+  :guard (and (type-arithmeticp type1)
+              (type-arithmeticp type2))
+  :returns (type type-resultp)
+  :short "Apply the usual arithmetic conversions to two arithmetic types
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These determine a common type from the two types,
+     which is also the type of the result of
+     a binary operator applied to operands of the two types."))
+  (b* ((type1 (promote-type type1))
+       (type2 (promote-type type2)))
+    (case (type-kind type1)
+      (:sllong (case (type-kind type2)
+                 (:sllong (type-sllong))
+                 (:slong (type-sllong))
+                 (:sint (type-sllong))
+                 (:ullong (type-ullong))
+                 (:ulong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                 (:uint (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+                 (t (error (impossible)))))
+      (:slong (case (type-kind type2)
+                (:sllong (type-sllong))
+                (:slong (type-slong))
+                (:sint (type-slong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+                (t (error (impossible)))))
+      (:sint (case (type-kind type2)
+               (:sllong (type-sllong))
+               (:slong (type-slong))
+               (:sint (type-sint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (error (impossible)))))
+      (:ullong (case (type-kind type2)
+                 (:sllong (type-ullong))
+                 (:slong (type-ullong))
+                 (:sint (type-ullong))
+                 (:ullong (type-ullong))
+                 (:ulong (type-ullong))
+                 (:uint (type-ullong))
+                 (t (error (impossible)))))
+      (:ulong (case (type-kind type2)
+                (:sllong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                (:slong (type-ulong))
+                (:sint (type-ulong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (type-ulong))
+                (t (error (impossible)))))
+      (:uint (case (type-kind type2)
+               (:sllong (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+               (:slong (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+               (:sint (type-uint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (error (impossible)))))
+      (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp
+                                           promote-type)))
+  :hooks (:fix)
+  ///
+
+  (defruled uaconvert-types-when-same
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2)
+                  (type-equiv type1 type2))
+             (equal (uaconvert-types type1 type2)
+                    (promote-type type1)))
+    :enable (type-arithmeticp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type))
+
+  (defruled uaconvert-types-symmetry
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (uaconvert-types type1 type2)
+                    (uaconvert-types type2 type1)))
+    :enable (type-arithmeticp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-binary-pure ((op binopp)
                            (arg1-expr exprp) (arg1-type typep)
                            (arg2-expr exprp) (arg2-type typep))
