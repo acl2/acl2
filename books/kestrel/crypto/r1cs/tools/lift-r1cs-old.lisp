@@ -29,7 +29,7 @@
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
 ;; Returns (mv erp event state).
-(defun lift-r1cs-fn (base-name extra-rules remove-rules rules monitor memoizep count-hitsp produce-function function-type vars produce-theorem prime whole-form state)
+(defun lift-r1cs-old-fn (base-name extra-rules remove-rules rules monitor memoizep count-hitsp produce-function function-type vars produce-theorem prime whole-form state)
   (declare (xargs :guard (and (symbolp base-name)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -93,7 +93,7 @@
 
 ;; Expects the functions <BASE-NAME>-constraints and <BASE-NAME>-vars to
 ;; exist.  Creates a constant DAG named *<BASE-NAME>-holdsp*.
-(defmacro lift-r1cs (&whole whole-form
+(defmacro lift-r1cs-old (&whole whole-form
                             base-name
                             &key
                             (extra-rules 'nil)
@@ -107,7 +107,7 @@
                             (function-type ':auto)
                             (prime '21888242871839275222246405745257275088548364400416034343698204186575808495617) ;todo: think about this
                             )
-  `(acl2::make-event-quiet (lift-r1cs-fn ',base-name
+  `(acl2::make-event-quiet (lift-r1cs-old-fn ',base-name
                                          ,extra-rules
                                          ,remove-rules
                                          ,rules
