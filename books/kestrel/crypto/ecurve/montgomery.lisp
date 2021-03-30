@@ -112,7 +112,19 @@
 
   (defrule montgomery-curve->p-lower-bound
     (> (montgomery-curve->p curve) 2)
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defrule natp-of-montgomery-curve->a
+    (natp (montgomery-curve->a curve))
+    :rule-classes :type-prescription
+    :use (:instance montgomery-curve-requirements (x curve))
+    :disable montgomery-curve-requirements)
+
+  (defrule posp-of-montgomery-curve->b
+    (posp (montgomery-curve->b curve))
+    :rule-classes :type-prescription
+    :use (:instance montgomery-curve-requirements (x curve))
+    :disable montgomery-curve-requirements))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
