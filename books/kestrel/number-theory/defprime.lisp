@@ -64,8 +64,8 @@
                  number))
        ((when (not (natp number)))
         (er hard? 'defprime "Bad value for existing prime: ~x0." number))
-       (defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '*))
-       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '-pratt-cert*))
+       (defconst-name (acl2::pack-in-package-of-symbol name '* name '*))
+       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol name '* name '-pratt-cert*))
        (parents (if (eq :auto parents)
                     (list 'acl2::number-theory) ;todo: use something better here, perhaps acl2::primes?
                   parents))
@@ -122,10 +122,10 @@
 
        ;; Primality theorem for the constant.
        ;; Since primep may often be disabled and this cannot be efficiently executed.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name '-constant)
+       (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)
          (rtl::primep ,defconst-name)
          ,@(if existing-prime-name
-               `(:hints (("Goal" :use (:instance ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- existing-prime-name '-constant))
+               `(:hints (("Goal" :use (:instance ,(acl2::pack-in-package-of-symbol existing-prime-name 'primep-of- existing-prime-name '-constant))
                           :in-theory nil)))
              `(:hints (("Goal" :in-theory (enable (:e rtl::certify-prime))
                         :use (:instance rtl::certification-theorem
@@ -133,17 +133,17 @@
                                         (c ,pratt-cert-defconst-name)))))))
 
        ;; Primality theorem for the 0-ary function.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name)
+       (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name)
          (rtl::primep (,name))
          :hints (("Goal" :in-theory '(,name)
-                  :use (:instance ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name '-constant)))))
+                  :use (:instance ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)))))
 
        ;; To allow the :linear rule to be created.
        (local (in-theory (disable (:e ,name))))
 
        ;; A fairly strong linear rule.  Should allow ACL2 to prove that a call
        ;; of the 0-ary function is greater than 2, etc.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime name '-linear)
+       (defthm ,(acl2::pack-in-package-of-symbol name name '-linear)
          (= (,name) ,defconst-name)
          :rule-classes :linear
          :hints (("Goal" :in-theory (enable (:e ,name)))))

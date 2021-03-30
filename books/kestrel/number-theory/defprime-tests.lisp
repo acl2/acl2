@@ -91,6 +91,8 @@
 
 (defprime-alias my97-prime-alias2 my97-prime) ;second alias of same prime
 (defprime-alias my97-prime-alias2 my97-prime-alias) ;alias of alias
+(defprime-alias acl2::new-name my97-prime) ;new name in different package
+(defprime-alias xdoc::new-name my97-prime) ;new name in different package
 
 ;; A test with :doc
 (defprime my97-prime ;; name to use for the prime

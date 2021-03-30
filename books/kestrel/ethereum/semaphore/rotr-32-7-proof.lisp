@@ -18,7 +18,7 @@
 
 ;; Load the R1CS:
 ;; (depends-on "json/rotr-32-7.json")
-(local (acl2::load-circom-json "json/rotr-32-7.json" primes::*baby-jubjub-prime*))
+(local (acl2::load-circom-json "json/rotr-32-7.json" *baby-jubjub-prime*))
 
 ;; Print some common numbers more clearly:
 ;; TODO: Put in a more central place?  Use #. ?
