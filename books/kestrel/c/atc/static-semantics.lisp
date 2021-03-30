@@ -682,15 +682,14 @@
     "We check @('arr-type') and @('sub-type');
      @('arr-expr') and @('sub-expr') are just used for errors.
      The first expression must have a pointer type [C:6.5.2.1/1].
-     The second expression must have an integer type [C:6.5.2.1/1];
-     for now we more restrictively require it to be @('int').
+     The second expression must have an integer type [C:6.5.2.1/1].
      The type of the array subscripting expression
      is the type referenced by the pointer."))
   (b* (((unless (type-case arr-type :pointer))
         (error (list :array-mistype (expr-fix arr-expr)
                      :required :pointer
                      :supplied (type-fix arr-type))))
-       ((unless (type-case sub-type :sint))
+       ((unless (type-integerp sub-type))
         (error (list :subscript-mistype (expr-fix sub-expr)
                      :required (type-sint)
                      :supplied (type-fix sub-type)))))
