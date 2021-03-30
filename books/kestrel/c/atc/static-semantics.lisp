@@ -715,11 +715,10 @@
      See [C:6.5.4]; note that the additional requirements on the type
      do not apply to our currently simplified model of C types.")
    (xdoc::p
-    "Since all the C types that we currently model are scalar,
-     we allow any type as the test of a conditional expression.
-     We require the two branches to have the same type for now,
-     which is more restrictive than [C:6.5.15/3],
-     but adequate to our current purposes."))
+    "The test of a conditional expression must be scalar.
+     For now we require the two branches to have arithmetic types;
+     the result has the type resulting from the usual arithmetic conversions.
+     See [C:6.5.15/3]."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -768,17 +767,25 @@
      :cond (b* ((test-type (check-expr-pure e.test vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
+                ((unless (type-scalarp test-type))
+                 (error (list :cond-mistype-test e.test e.then e.else
+                              :required :scalar
+                              :supplied test-type)))
                 (then-type (check-expr-pure e.then vartab))
                 ((when (errorp then-type))
                  (error (list :cond-then-error then-type)))
+                ((unless (type-arithmeticp then-type))
+                 (error (list :cond-mistype-then e.test e.then e.else
+                              :required :arithmetic
+                              :supplied then-type)))
                 (else-type (check-expr-pure e.else vartab))
                 ((when (errorp else-type))
                  (error (list :cond-else-error else-type)))
-                ((unless (equal then-type else-type))
-                 (error (list :cond-mistype e.test e.then e.else
-                              :required :same-then-else-types
-                              :supplied then-type else-type))))
-             then-type)))
+                ((unless (type-arithmeticp else-type))
+                 (error (list :cond-mistype-else e.test e.then e.else
+                              :required :arithmetic
+                              :supplied else-type))))
+             (uaconvert-types then-type else-type))))
   :measure (expr-count e)
   :verify-guards :after-returns
   :hooks (:fix))
