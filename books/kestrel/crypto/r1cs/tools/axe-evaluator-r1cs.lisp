@@ -22,6 +22,7 @@
   (append acl2::*axe-evaluator-basic-fns-and-aliases* ;remove some?
           '((add add-unguarded)
             (neg neg-unguarded)
+            (sub sub-unguarded)
             (mul mul-unguarded)
             (inv inv-unguarded)
             (div div-unguarded)
