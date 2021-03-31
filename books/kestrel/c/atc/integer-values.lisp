@@ -107,7 +107,6 @@
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bytes (acl2::packn-pos (list type "-BYTES") 'atc))
        (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (type-bits-bound (case type
                           (:short 16)
@@ -134,38 +133,6 @@
        (stype-max-bound (1- (expt 2 (1- type-bits-bound)))))
 
     `(progn
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,type-bits ()
-         :returns (,type-bits posp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Size of @('unsigned') and @('signed') @('"
-                              type-string
-                              "')s, in bits.")
-         (* 8 (,type-bytes))
-         ///
-
-         (in-theory (disable (:e ,type-bits)))
-
-         (defret ,(add-suffix type-bits "-BOUND")
-           (>= ,type-bits ,type-bits-bound)
-           :rule-classes :linear)
-
-         ,@(case type
-             (:short nil)
-             (:int '((defrule int-bits->=-short-bits
-                       (>= (int-bits) (short-bits))
-                       :rule-classes :linear
-                       :enable short-bits)))
-             (:long '((defrule long-bits->=-int-bits
-                        (>= (long-bits) (int-bits))
-                        :rule-classes :linear
-                        :enable int-bits)))
-             (:llong '((defrule llong-bits->=-long-bits
-                         (>= (llong-bits) (long-bits))
-                         :rule-classes :linear
-                         :enable long-bits)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
