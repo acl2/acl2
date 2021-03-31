@@ -123,9 +123,9 @@
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bits (acl2::packn-pos (list (symbol-name type) "-BITS") 'atc))
-       (stype (acl2::packn-pos (list "S" (symbol-name type)) 'atc))
-       (utype (acl2::packn-pos (list "U" (symbol-name type)) 'atc))
+       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
+       (stype (acl2::packn-pos (list "S" type) 'atc))
+       (utype (acl2::packn-pos (list "U" type) 'atc))
        (stype-min (add-suffix stype "-MIN"))
        (stype-max (add-suffix stype "-MAX"))
        (utype-max (add-suffix utype "-MAX"))

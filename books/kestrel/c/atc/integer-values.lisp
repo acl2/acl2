@@ -106,15 +106,15 @@
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bytes (acl2::packn-pos (list (symbol-name type) "-BYTES") 'atc))
-       (type-bits (acl2::packn-pos (list (symbol-name type) "-BITS") 'atc))
+       (type-bytes (acl2::packn-pos (list type "-BYTES") 'atc))
+       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (type-bits-bound (case type
                           (:short 16)
                           (:int 16)
                           (:long 32)
                           (:llong 64)))
-       (utype (acl2::packn-pos (list "U" (symbol-name type)) 'atc))
-       (stype (acl2::packn-pos (list "S" (symbol-name type)) 'atc))
+       (utype (acl2::packn-pos (list "U" type) 'atc))
+       (stype (acl2::packn-pos (list "S" type) 'atc))
        (utypep (add-suffix utype "P"))
        (stypep (add-suffix stype "P"))
        (utype-list (add-suffix utype "-LIST"))
