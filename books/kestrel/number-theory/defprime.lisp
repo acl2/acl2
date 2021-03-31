@@ -145,7 +145,9 @@
        ;; of the 0-ary function is greater than 2, etc.
        (defthm ,(acl2::pack-in-package-of-symbol name name '-linear)
          (= (,name) ,defconst-name)
-         :rule-classes :linear
+         ;; The :trigger-terms here allow the rule to be included in worlds
+         ;; where (:e ,name) is enabled.
+         :rule-classes ((:linear :trigger-terms ((,name))))
          :hints (("Goal" :in-theory (enable (:e ,name)))))
 
        ;; Avoid expensive calls of primep by building in the fact that it is
