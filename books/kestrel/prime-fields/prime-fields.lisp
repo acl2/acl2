@@ -84,6 +84,16 @@
            (fep 1 p))
   :hints (("Goal" :in-theory (enable fep))))
 
+;; For when X is constant but P is not.  P may often be a constrained function
+;; (e.g., a large prime) about which we have a strong :linear rule.
+(defthm fep-when-constant
+  (implies (and (syntaxp (quotep x))
+                (< x p))
+           (equal (fep x p)
+                  ;; Gets evaluated:
+                  (natp x)))
+  :hints (("Goal" :in-theory (enable fep))))
+
 ;; This breaks the abstraction a bit, but mod can appear when add, sub, or neg
 ;; is applied to constant arguments, or when we don't know that things are
 ;; field elements.
