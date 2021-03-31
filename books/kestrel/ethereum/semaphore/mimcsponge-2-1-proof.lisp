@@ -41,7 +41,7 @@
  (lift-semaphore-r1cs-new *mimcsponge-2-1-0k-r1cs-lifted*
                           (acl2::mimcsponge-2-1-0k-vars)
                           (acl2::mimcsponge-2-1-0k-constraints)
-                          ;; :extra-rules '(primes::primep-of-bn-254-group-prime-constant)
+                          ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
                           ))
 
 ;;;

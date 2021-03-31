@@ -21,7 +21,7 @@
 
 ;; Load the R1CS:
 ;; (depends-on "json/uint32add-3.json")
-(local (acl2::load-circom-json "json/uint32add-3.json" *BN-254-GROUP-PRIME*))
+(local (acl2::load-circom-json "json/uint32add-3.json" *BABY-JUBJUB-PRIME*))
 
 ;; Print some common numbers more clearly:
 ;; TODO: Put in a more central place?  Use #. ?
@@ -230,7 +230,7 @@
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?
                  ;;misc rules:
-                 primes::primep-of-bn-254-group-prime-constant
+                 primep-of-baby-jubjub-prime-constant
                  acl2::equal-same
                  pfield::add-of-0-arg1
                  pfield::neg-of-0

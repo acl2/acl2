@@ -26,12 +26,12 @@
 
 ;; Load the R1CS:
 ;; (depends-on "json/binsum-32-2.json")
-(local (acl2::load-circom-json "json/binsum-32-2.json" *bn-254-group-prime*))
+(local (acl2::load-circom-json "json/binsum-32-2.json" *baby-jubjub-prime*))
 
 (local (lift-semaphore-r1cs-new *binsum-32-2-r1cs-lifted*
                                 (acl2::binsum-32-2-vars)
                                 (acl2::binsum-32-2-constraints)
-                                :extra-rules '(primes::primep-of-bn-254-group-prime)
+                                :extra-rules '(primep-of-baby-jubjub-prime)
                                 :remove-rules '(pfield::add-commutative-2-axe
                                                 pfield::add-commutative-axe)))
 
@@ -190,7 +190,7 @@
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?
                  ;;misc rules:
-                 PRIMES::PRIMEP-OF-BN-254-GROUP-PRIME-constant
+                 PRIMEP-OF-BABY-JUBJUB-PRIME-constant
                  acl2::equal-same
                  pfield::add-of-0-arg1
                  pfield::neg-of-0
