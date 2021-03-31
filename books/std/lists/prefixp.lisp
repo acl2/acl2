@@ -135,7 +135,7 @@ the list @('y')."
                   (atom x))))
 
   (defthm prefixp-of-append-when-same-length
-    (implies (equal (len x) (len y))
+    (implies (<= (len x) (len y))
              (equal (prefixp x (append y z))
                     (prefixp x y)))
     :hints(("Goal"
@@ -143,7 +143,7 @@ the list @('y')."
             :in-theory (enable prefixp list-equiv))))
 
   (defthm prefixp-when-equal-lengths
-    (implies (equal (len x) (len y))
+    (implies (>= (len x) (len y))
              (equal (prefixp x y)
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
