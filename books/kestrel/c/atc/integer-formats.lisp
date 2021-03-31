@@ -24,7 +24,7 @@
   (xdoc::topstring
    (xdoc::p
     "[C] provides constraints on the formats of
-     the standard integer types [C:6.2.5/7],
+     the (non-extended) integer types [C:6.2.5],
      but not a complete definition of the formats (unlike Java).
      A general formalization of C should be parameterized over these formats.
      Here, for the current purposes of ATC,
