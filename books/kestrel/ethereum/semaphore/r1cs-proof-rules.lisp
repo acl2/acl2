@@ -1815,3 +1815,21 @@
          (if test
              (bvchop size x)
            (bvchop size y))))
+
+;move
+;; The bvplus 1 in the LHS can then be turned into a bitxor
+(defthm bitxor-of-bvplus-tighten-arg1
+  (implies (and (< 1 size)
+                (integerp size))
+           (equal (bitxor (bvplus size x y) z)
+                  (bitxor (bvplus 1 x y) z)))
+  :hints (("Goal" :in-theory (e/d (bitxor BVXOR) (ACL2::BVXOR-1-BECOMES-BITXOR)))))
+
+;move
+;; The bvplus 1 in the LHS can then be turned into a bitxor
+(defthm bitxor-of-bvplus-tighten-arg2
+  (implies (and (< 1 size)
+                (integerp size))
+           (equal (bitxor z (bvplus size x y))
+                  (bitxor z (bvplus 1 x y))))
+  :hints (("Goal" :in-theory (e/d (bitxor BVXOR) (ACL2::BVXOR-1-BECOMES-BITXOR)))))
