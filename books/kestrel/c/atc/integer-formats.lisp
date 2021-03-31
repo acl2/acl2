@@ -81,7 +81,7 @@
 
   (in-theory (disable (:e short-bytes)))
 
-  (defret short-bytes-lower-bound
+  (defret short-bytes-bound
     (>= short-bytes 2)
     :rule-classes :linear))
 
@@ -95,7 +95,7 @@
 
   (in-theory (disable (:e int-bytes)))
 
-  (defret int-bytes-lower-bound
+  (defret int-bytes-bound
     (>= int-bytes 2)
     :rule-classes :linear)
 
@@ -114,7 +114,7 @@
 
   (in-theory (disable (:e long-bytes)))
 
-  (defret long-bytes-lower-bound
+  (defret long-bytes-bound
     (>= long-bytes 4)
     :rule-classes :linear)
 
@@ -133,7 +133,7 @@
 
   (in-theory (disable (:e llong-bytes)))
 
-  (defret llong-bytes-lower-bound
+  (defret llong-bytes-bound
     (>= llong-bytes 8)
     :rule-classes :linear)
 
