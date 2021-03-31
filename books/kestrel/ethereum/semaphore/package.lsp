@@ -60,7 +60,6 @@
             ecurve::twisted-edwards-curve-completep
             ecurve::twisted-edwards-curve-primep
             primes::*bn-254-group-prime*
-            r1cs::lift-r1cs
             ) ; added symbols
           (set-difference-eq
            *acl2-exports*
