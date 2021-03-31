@@ -8504,6 +8504,13 @@
 
                                :INITIALIZED))))
 
+     (setq *saved-build-date-lst*
+
+; The call of eval below should avoid a warning in cmucl version 18d.  Note
+; that saved-build-date-string is defined in interface-raw.lisp.
+
+           (list (eval '(saved-build-date-string))))
+
 ; If you want the final image to have infixp = t (and have feature :acl2-infix
 ; set), then put the following form here:
 ;    (f-put-global 'infixp t *the-live-state*)
@@ -8866,6 +8873,11 @@
 
   (when args
     (error "LP takes no arguments."))
+
+  (when (not *acl2-default-restart-complete*)
+    (acl2-default-restart t)
+    #+gcl
+    (save-acl2-in-akcl nil nil nil t))
 
   (with-more-warnings-suppressed
 
