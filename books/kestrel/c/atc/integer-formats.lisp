@@ -72,7 +72,9 @@
      @('int') is at least 16 bits,
      @('long') is at least 32 bits, and
      @('long long') is at least 64 bits.
-     Furthermore, the ranges are increasing [C:6.2.5/8]."))
+     Furthermore, the ranges are increasing [C:6.2.5/8].")
+   (xdoc::p
+    "We do not include any extended integer types."))
   :order-subtopics t
   :default-parent t)
 
