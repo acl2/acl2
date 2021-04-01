@@ -4558,7 +4558,7 @@
                 integerp-of-4vec-bitxor))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule$ t t
     binary-+-to-4vec-plus
     (implies (and (integerp x)
                   (integerp y))
@@ -4619,7 +4619,8 @@
                  (natp index))
             (sv::4vec-p (nth index lst)))
    :hints (("Goal"
-            :in-theory (e/d (4vec-p) ()))))
+            :in-theory (e/d (4vec-p)
+                            ()))))
 
 
 (def-rp-rule sv::4vec-xdet-opener

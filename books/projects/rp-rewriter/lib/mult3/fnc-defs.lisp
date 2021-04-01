@@ -396,6 +396,17 @@
   (+ (ifix x)
      (ifix y)))
 
+
+(define adder-mux ((select bitp)
+                   (i0 bitp)
+                   (i1 bitp))
+  :returns (res bitp)
+  (if (equal (bit-fix select) 0)
+      (bit-fix i0)
+    (bit-fix i1))
+  ///
+  (add-rp-rule bitp-of-adder-mux))
+
 (defmacro adder-sum (&rest rst)
   (cond ((null rst) 0)
         ((null (cdr rst))
