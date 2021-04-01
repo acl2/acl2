@@ -24,7 +24,7 @@
     "We define ACL2 functions that model C operations on integers.
      For now we define operations for (signed) integers only,
      but we will cover the unsigned integers soon as well.
-     We only cover standard (not extended) integers.")
+     We only cover standard unsigned and signed integers (except @('_Bool').")
    (xdoc::p
     "As explained below, it suffices to introduce operations
      on integers of rank equal to or higher than @('int').")

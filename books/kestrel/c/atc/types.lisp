@@ -39,11 +39,11 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only model the plain @('char') type and
-     the standard signed and unsigned integer types,
+     the standard signed and unsigned integer types (except @('_Bool'),
      as well as pointer types.
      The referenced type of a pointer type may be any type (that we model),
      including a pointer type.
-     The recursion bottoms out at the @('char') and standard integer types.")
+     The recursion bottoms out at the integer types.")
    (xdoc::p
     "This semantic model is more general
      than its syntactic counterpart @(tsee tyname):
