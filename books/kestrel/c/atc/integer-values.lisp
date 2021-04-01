@@ -14,7 +14,6 @@
 (include-book "integer-formats")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
-(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +128,16 @@
            :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule ushort-max->=-uchar-max
+                         (>= (ushort-max) (uchar-max))
+                         :rule-classes :linear
+                         :enable uchar-max
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2))
+                         :prep-books
+                         ((include-book "arithmetic-3/top" :dir :system)))))
              (:int '((defrule uint-max->=-ushort-max
                        (>= (uint-max) (ushort-max))
                        :rule-classes :linear
@@ -180,7 +188,16 @@
            :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule sshort-min-<=-schar-min
+                         (<= (sshort-min) (schar-min))
+                         :rule-classes :linear
+                         :enable schar-min
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2))
+                         :prep-books
+                         ((include-book "arithmetic-3/top" :dir :system)))))
              (:int '((defrule sint-min-<=-sshort-min
                        (<= (sint-min) (sshort-min))
                        :rule-classes :linear
@@ -231,7 +248,16 @@
            :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule sshort-max->=-schar-max
+                         (>= (sshort-max) (schar-max))
+                         :rule-classes :linear
+                         :enable schar-max
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2))
+                         :prep-books
+                         ((include-book "arithmetic-3/top" :dir :system)))))
              (:int '((defrule sint-max->=-sshort-max
                        (>= (sint-max) (sshort-max))
                        :rule-classes :linear

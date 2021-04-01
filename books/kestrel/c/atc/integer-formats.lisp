@@ -108,7 +108,12 @@
 
   (defret short-bits-bound
     (>= short-bits 16)
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defrule short-bits->=-char-bits
+    (>= (short-bits) (char-bits))
+    :rule-classes :linear
+    :enable char-bits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
