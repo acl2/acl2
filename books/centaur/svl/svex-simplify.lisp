@@ -977,7 +977,7 @@ simplified term ~%"
                        (only-local 'nil)
                        )
   :parents (acl2::svl rp::rp-rewriter/applications)
-  :short "Try to simplify an sv::svex structure with rp::RP-Rewriter using
+  :short "Try to simplify an sv::svex structure with @(see rp::rp-rewriter) using
                            regular rewrite rules about 4vec functions."
   :long "
 

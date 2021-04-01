@@ -56,7 +56,7 @@
 
 
 (xdoc::defxdoc
- acl2::svl
+ svl
  :parents (acl2::hardware-verification)
  :short "A framework to simulate Verilog designs with retained design hiearchy"
  :long "
@@ -77,7 +77,3 @@ that rule can be applied when rewriting the main module. See @(see
 rp::multiplier-verification) for a use case. </p> 
 "
  )
-
-(xdoc::defxdoc
- svl
- :long "See @(see acl2::svl)")
