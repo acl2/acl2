@@ -80,7 +80,9 @@
        (stype-max (add-suffix stype "-MAX"))
        (stype-max-bound (1- (expt 2 (1- type-bits-bound)))))
 
-    `(progn
+    `(encapsulate ()
+
+       (local (include-book "arithmetic-3/top" :dir :system))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,8 +126,7 @@
            :rule-classes :linear
            :enable ,utype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,type-bits-bound) (n (,type-bits)) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,type-bits-bound) (n (,type-bits)) (x 2)))
 
          ,@(case type
              (:char nil)
@@ -135,36 +136,28 @@
                          :enable uchar-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule uint-max->=-ushort-max
                        (>= (uint-max) (ushort-max))
                        :rule-classes :linear
                        :enable ushort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule ulong-max->=-uint-max
                         (>= (ulong-max) (uint-max))
                         :rule-classes :linear
                         :enable uint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule ullong-max->=-ulong-max
                          (>= (ullong-max) (ulong-max))
                          :rule-classes :linear
                          :enable ulong-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,8 +177,7 @@
            :rule-classes :linear
            :enable ,stype-min
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
 
          ,@(case type
              (:char nil)
@@ -195,36 +187,28 @@
                          :enable schar-min
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule sint-min-<=-sshort-min
                        (<= (sint-min) (sshort-min))
                        :rule-classes :linear
                        :enable sshort-min
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule slong-min-<=-sint-min
                         (<= (slong-min) (sint-min))
                         :rule-classes :linear
                         :enable sint-min
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule sllong-min-<=-slong-min
                          (<= (sllong-min) (slong-min))
                          :rule-classes :linear
                          :enable slong-min
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -244,8 +228,7 @@
            :rule-classes :linear
            :enable ,stype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
 
          ,@(case type
              (:char nil)
@@ -255,36 +238,28 @@
                          :enable schar-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule sint-max->=-sshort-max
                        (>= (sint-max) (sshort-max))
                        :rule-classes :linear
                        :enable sshort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule slong-max->=-sint-max
                         (>= (slong-max) (sint-max))
                         :rule-classes :linear
                         :enable sint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule sllong-max->=-slong-max
                          (>= (sllong-max) (slong-max))
                          :rule-classes :linear
                          :enable slong-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,8 +273,7 @@
                 (and (integerp x)
                      (<= 0 x)
                      (<= x (,utype-max))))
-         :enable (,utype-integerp ,utype-max)
-         :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+         :enable (,utype-integerp ,utype-max))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -313,8 +287,7 @@
                 (and (integerp x)
                      (<= (,stype-min) x)
                      (<= x (,stype-max))))
-         :enable (,stype-integerp ,stype-min ,stype-max)
-         :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+         :enable (,stype-integerp ,stype-min ,stype-max))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
