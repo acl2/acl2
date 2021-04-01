@@ -15,6 +15,32 @@
 (local (include-book "prime-fields-rules"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
+;; For N down through STOP, add constants and evisc tuples for (2^n).  For
+;; sufficiently large primes, these really don't have much to do with the
+;; prime.
+(defun add-evisc-tuples-for-powers-of-2 (n stop prime)
+  (declare (xargs :guard (and (natp n)
+                              (natp stop)
+                              (natp prime)
+                              (< (expt 2 n) prime))))
+  (if (or (zp n)
+          (< n stop))
+      nil
+    (let* ((fep-val (mod (expt 2 n) prime))
+           ;; (neg-val (- fep-val prime))
+           (base-name (concatenate 'string "2^" (acl2::nat-to-string n)))
+           (fep-defconst-name (acl2::pack$ '* base-name '*))
+           ;;(neg-defconst-name (acl2::pack$ '* base-name '-neg*))
+           )
+      (append `((defconst ,fep-defconst-name ',fep-val)
+                ;;(defconst ,neg-defconst-name ',neg-val)
+                (table acl2::evisc-table ,fep-val ,(concatenate 'string "#.acl2::" (symbol-name fep-defconst-name)))
+                ;; also handle equivalent negative numbers:
+                ;; (table acl2::evisc-table ,neg-val ,(concatenate 'string "#.acl2::" (symbol-name neg-defconst-name)))
+                )
+              (add-evisc-tuples-for-powers-of-2 (+ -1 n) stop prime)))))
+
+
 ;; For n down to 1, add constants and evisc tuples for -(2^n) mod the prime.
 ;; This covers both equivalent forms of each value that might arise (the
 ;; positive one that is a field element, and the negative one obtained by
