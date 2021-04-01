@@ -201,9 +201,9 @@
 
   (flag::make-flag flag-mod-vcd-paths
                    mod-vcd-paths
-                   :flag-mapping ((mod-vcd-paths . mod)
-                                  (occ-vcd-paths . occ)
-                                  (occs-vcd-paths . occs)))
+                   :flag-mapping ((mod-vcd-paths mod)
+                                  (occ-vcd-paths occ)
+                                  (occs-vcd-paths occs)))
 
   (local (defthm symbol-path-list-p-of-extend-internal-paths
            (implies (and (symbolp a)

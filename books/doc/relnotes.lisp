@@ -1141,15 +1141,16 @@
    (xdoc::p
     "There are some changes in the utility @(tsee make-flag) (descibed in more
      detail in its documentation).  (1) The value for keyword argument
-     @(':flag-mapping') may be a list of cons pairs @('(old . new')) as before,
-     for backward compatibility; but the new, preferred form for each list
-     element is a doublet, @('(old new)').  (2) The keyword argument,
-     @(':last-body'), has been replaced by @(':body'), where: value @('nil')
-     has the same meaning as before; the value @('t') that was supplied to
-     @(':last-body') is supplied as @(':last') to the new keyword, @(':body');
-     and a new form, a list of doublets, is permitted for specifying which
-     @(see definition) rules to use.  (3) The tool is more robust when @(see
-     xargs) declaration @(':normalize nil') is involved.")
+     @(':flag-mapping') is now expected to be a list of doublets, @('(old
+     new)').  The use of a list of cons pairs @('(old . new')) is still
+     permitted for now, but is deprecated and will likely be unsupported with a
+     future ACL2 release.  (2) The keyword argument, @(':last-body'), has been
+     replaced by @(':body'), where: value @('nil') has the same meaning as
+     before; the value @('t') that was supplied to @(':last-body') is supplied
+     as @(':last') to the new keyword, @(':body'); and a new form, a list of
+     doublets, is permitted for specifying which @(see definition) rules to
+     use.  (3) The tool is more robust when @(see xargs) declaration
+     @(':normalize nil') is involved.")
 
    ))
 

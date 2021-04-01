@@ -239,8 +239,8 @@
 
 (include-book "tools/flag" :dir :system)
 (flag::make-flag collect-eval-bdd-vals-flag collect-eval-bdd-vals
-                 :flag-mapping ((collect-eval-bdd-vals . term)
-                                (collect-eval-bdd-vals-list . list)))
+                 :flag-mapping ((collect-eval-bdd-vals term)
+                                (collect-eval-bdd-vals-list list)))
 
 (defthm pseudo-term-listp-union-equal
   (implies (and (pseudo-term-listp x) (pseudo-term-listp y))

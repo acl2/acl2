@@ -38,6 +38,8 @@
 ; Matt Kaufmann modified the syntax for :flag-mapping to be a list of doublets,
 ; as requested by Alessandro Coglio and Eric Smith; but after considering an
 ; email from Sol Swords, we also allow dotted pairs for backward compatibility,
+; He also modified the syntax for undocumented feature :formals-subst to be a
+; list of doublets.
 
 #||  for interactive development, you'll need to ld the package first:
 
@@ -144,7 +146,8 @@ in the theorems you prove.  The argument, if supplied and non-@('nil'), should
 be a list that specifies a short name for every function in the clique.  Each
 member of that list should be of the form @('(old new)') where (of course)
 @('old') and @('new') are symbols, except that for backward compatibility the
-form @('(old . new)') is also allowed.</li>
+form @('(old . new)') is allowed (but deprecated after March, 2021, ultimately
+to be eliminated).</li>
 
 <li>@(':defthm-macro-name') lets you name the new macro that will be generated
 for proving theorems by inducting with the flag function.  By default it is
@@ -1051,8 +1054,17 @@ one such form may affect what you might think of as the proof of another.</p>
   (b* (((when (atom formals))
         nil)
        (look (assoc (car formals) subst))
+       ((when (and look
+                   (not (and (true-listp look)
+                             (= (length look) 2)
+                             (symbolp (cadr look))))))
+        (er hard 'make-flag
+            "The :formals-subst argument of a call of ~x0 must be a list ~
+             whose members each have the form (name1 name2), where name1 and ~
+             name2 are symbols.  That list has the illegal element ~x1."
+            'make-flag look))
        ((when look)
-        (cons (cdr look) (apply-formals-subst (cdr formals) subst))))
+        (cons (cadr look) (apply-formals-subst (cdr formals) subst))))
     (cons (car formals) (apply-formals-subst (cdr formals) subst))))
 
 (defun thm-macro-name (flag-fn-name)
@@ -1071,10 +1083,9 @@ one such form may affect what you might think of as the proof of another.</p>
    flag-fn-name))
 
 (defun convert-flag-mapping (x x-original)
-  (let ((str "The :flag-mapping argument of make-flag must be a true-list, ~
-              each of whose members is ideally of the forms (name1 name2) but ~
-              can also be of the form (name1 . name2), where both names must ~
-              be symbols.  The value ~x0 is thus illegal."))
+  (let ((str "The :flag-mapping argument of make-flag should be a true-list, ~
+              each of whose members is ideally of the forms (name1 name2).  ~
+              The value ~x0 is thus illegal."))
     (cond ((null x) nil)
           ((atom x) (er hard 'make-flag str x-original))
           (t (b* ((old (car x))
