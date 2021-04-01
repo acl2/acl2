@@ -14,8 +14,6 @@
 (include-book "integer-formats")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
-(include-book "kestrel/fty/sbyte8" :dir :system)
-(include-book "kestrel/fty/ubyte8" :dir :system)
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,20 +31,14 @@
     ". As mentioned there, the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "We also define @('unsigned char') and @('signed char') values,
-     which do not depend on format definitions,
-     because we hardwire them to be 8 bits.")
-   (xdoc::p
-    "Then, for each of @('short'), @('int'), @('long'), and @('long long'),
-     we define a size in bits (i.e. the size in bytes multiplied by 8),
-     prove some linear rules about them,
-     define ACL2 unsigned and signed integers for them
+    "For each of @('char'), @('short'), @('int'), @('long'), and @('long long'),
+     we define ACL2 unsigned and signed integers for them
      (via @(tsee fty::defbyte)), and
-     define C values by wrapping those unsigned and signed integers.
+     we define C values by wrapping those unsigned and signed integers.
      We also define maximum and (for signed) minimum integers,
      prove some linear rules about them,
      and prove rules that provide alternative definitions
-     of the unsigned and signed integers in terms of minima and maxima.
+     of the unsigned and signed ACL2 integers in terms of minima and maxima.
      This way we have the ability to view the integer ranges
      as ACL2's @(tsee unsigned-byte-p) and @(tsee signed-byte-p) values,
      which is useful for bitwise operations,
@@ -57,58 +49,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uchar
-  :short "Fixtype of C @('unsigned char') values [C:6.2.5/6]."
-  ((get acl2::ubyte8))
-  :tag :uchar
-  :layout :list
-  :pred ucharp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist uchar-list
-  :short "Fixtype of lists of C @('unsigned char') values."
-  :elt-type uchar
-  :true-listp t
-  :elementp-of-nil nil
-  :pred uchar-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod schar
-  :short "Fixtype of C @('signed char') values [C:6.2.5/5]."
-  ((get acl2::sbyte8))
-  :tag :schar
-  :layout :list
-  :pred scharp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist schar-list
-  :short "Fixtype of lists of C @('signed char') values."
-  :elt-type schar
-  :true-listp t
-  :elementp-of-nil nil
-  :pred schar-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defmacro+ atc-def-integer-values (type)
-  (declare (xargs :guard (member-eq type '(:short :int :long :llong))))
-  :short "Macro to generate the models of the C standard integer values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The functions and theorems that form the model,
-     for each of (@('unsigned') and @('signed'))
-     @('short'), @('int'), @('long'), and @('long long'),
-     are quite similar in structure.
-     Thus, we define and use this macro to introduce them."))
+  (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
+  :short "Macro to generate the models of the C integer values."
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
        (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (type-bits-bound (case type
+                          (:char 8)
                           (:short 16)
                           (:int 16)
                           (:long 32)
@@ -390,6 +339,8 @@
          :pred ,stype-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(atc-def-integer-values :char)
 
 (atc-def-integer-values :short)
 

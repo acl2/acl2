@@ -52,9 +52,13 @@
      Thus, we simply unwrap and rewrap the underlying ACL2 integer."))
   (sint (uchar->get x))
   :guard-hints (("Goal" :in-theory (enable sint-integerp-alt-def
-                                           acl2::ubyte8p
+                                           uchar-integerp-alt-def
                                            ucharp
-                                           uchar->get)))
+                                           uchar->get
+                                           uchar-max
+                                           char-bits
+                                           sint-max
+                                           int-bits)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,7 +76,7 @@
      This repeated addition or subtraction
      is equivalent to taking the initial value modulo 256."))
   (uchar (mod (sint->get x) 256))
-  :guard-hints (("Goal" :in-theory (enable acl2::ubyte8p)))
+  :guard-hints (("Goal" :in-theory (enable uchar-integerp char-bits)))
   :hooks (:fix)
   :prepwork
   ((local (include-book "kestrel/arithmetic-light/mod" :dir :system))))
