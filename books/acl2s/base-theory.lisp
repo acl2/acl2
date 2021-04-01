@@ -34,6 +34,7 @@
   :load-compiled-file nil)
 (include-book "base-arithmetic" :ttags :all)
 (include-book "base-lists" :ttags :all)
+(include-book "acl2s/cgen/base-cgen-rules" :dir :system)
 
 (set-termination-method :ccg)
 

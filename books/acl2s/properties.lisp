@@ -692,6 +692,8 @@ I don't need this?
         (make-event (property-fn ',args state)))
        (value-triple (cw "~|Form:  ( PROPERTY CHECKING SUCCESSFUL )~%"))))))
 
+(defmacro property-fail (&rest args)
+  `(must-fail (property ,@args)))
 
 #|
 
@@ -776,4 +778,3 @@ Properties are just tested with a short timeout.
 (modeling-admit-defs)
 (modeling-admit-all)
 |#
-
