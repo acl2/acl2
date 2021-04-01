@@ -1061,7 +1061,10 @@
                  (t (error (impossible)))))
           ((type-case type :sint)
            (cond ((sintp arg) arg)
-                 ((ucharp arg) (sint-from-uchar arg))
+                 ((ucharp arg) (if (sint-from-uchar-okp arg)
+                                   (sint-from-uchar arg)
+                                 (error (list :cast-not-representable
+                                              :from arg :to type))))
                  ((pointerp arg) (error (list :cast-pointer-not-supported
                                               :from arg :to type)))
                  (t (error (impossible)))))

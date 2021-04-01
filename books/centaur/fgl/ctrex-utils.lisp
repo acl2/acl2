@@ -68,7 +68,7 @@
                          (non-exec (mv env$ env$))))))
 
 
-                   
+
 
 (define eval-bdd-fast ((x acl2::ubddp) (level natp) bitarr)
   :guard (<= (+ level (max-depth x)) (bits-length bitarr))
@@ -188,7 +188,7 @@
 ;;   We consider a few different types of rules for computing variable values
 ;;   from bit-level counterexamples.  Note that none of these require proof;
 ;;   all of this is a purely heuristic process.
-;;  
+;;
 ;;  - Elimination rules.  These are basically destructor elimination rules, of the form
 ;;      (implies (pred x) (equiv (ctor (acc1 x) ... (accn x)) x))
 ;;    These produce edges (acci x) -> x as well as (pred x) -> x in the cgraph.
@@ -493,7 +493,7 @@ compute a value for @('x').</p>
          (fn 'fgl-unify-term/gobj-fn))
      `(flag::make-flag ,(flag::flag-fn-name fn wrld) ,fn
                        :defthm-macro-name ,(flag::flag-defthm-macro fn wrld)
-                       :flag-mapping ,(flag::flag-alist fn wrld)
+                       :flag-mapping ,(acl2::alist-to-doublets (flag::flag-alist fn wrld))
                        :local t
                        :hints ((and stable-under-simplificationp
                                     '(:expand ((pseudo-term-count pat)
@@ -530,7 +530,7 @@ compute a value for @('x').</p>
            :rule-classes :linear))
 
 
-  
+
   (std::defret-mutual-generate fgl-object-count-of-<fn>
     :rules
     ((t (:add-hyp (and flag
@@ -727,7 +727,7 @@ compute a value for @('x').</p>
     (implies (and (not (member v (cgraph-edge-bfrlist x)))
                   (not (member v (cgraph-edge-bfrlist y))))
              (not (member v (cgraph-edge-bfrlist new-edge))))))
-  
+
 (define add-cgraph-edge-join ((edge cgraph-edge-p)
                               (edges cgraph-edgelist-p))
   :returns (mv foundp
@@ -746,9 +746,9 @@ compute a value for @('x').</p>
              (not (member v (cgraph-edgelist-bfrlist new-edges))))
     :hints(("Goal" :in-theory (e/d (cgraph-edgelist-bfrlist)
                                    (cgraph-edge-bfrlist))))))
-                     
-  
-                  
+
+
+
 
 (define add-cgraph-edge ((matchvar pseudo-var-p)
                          (subst fgl-object-bindings-p)
@@ -770,7 +770,7 @@ compute a value for @('x').</p>
              (not (member v (cgraph-bfrlist new-cgraph))))
     :hints(("Goal" :in-theory (e/d (cgraph-bfrlist
                                     cgraph-edgelist-bfrlist))))))
-       
+
 (local (defthm equal-const-of-plus-const
          (implies (and (syntaxp (and (quotep a) (quotep c)))
                        (acl2-numberp a) (acl2-numberp c))
@@ -808,14 +808,14 @@ compute a value for @('x').</p>
                              (and (eql n 0) (atom x))
                            (and (consp x)
                                 (len-is (cdr x) (1- n))))))))
-                         
+
 
 (local (defthm equal-len-hyp
          (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
                                     (acl2::rewriting-negative-literal-fn `(equal ,n (len ,x)) mfc state))
                                 (quotep n)))
                   (equal (equal (len x) n)
-                         (len-is x n)))))                  
+                         (len-is x n)))))
 
 (defines fgl-object-add-to-cgraph
   (define fgl-object-add-to-cgraph ((x fgl-object-p)
@@ -1051,7 +1051,7 @@ compute a value for @('x').</p>
                                     (base-bvar bvar-db))
                                bvar-db cgraph memo ruletable bfrstate wrld))
   ///
-  
+
   (defret cgraph-bfrlist-of-<fn>
     (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
                   (bfr-listp (cgraph-bfrlist cgraph)))
@@ -1274,7 +1274,7 @@ compute a value for @('x').</p>
 ;;   ///
 ;;   (local (in-theory (disable cgraph-tarjan-sccs-edges
 ;;                              cgraph-tarjan-sccs)))
-                             
+
 ;;   (defret-mutual cgraph-tarjan-sccs-stack-size-correct
 ;;     (defret <fn>-stack-size-correct
 ;;       (and (<= (len (cgraph-alist-fix stk)) (len new-stk))
@@ -1324,7 +1324,7 @@ compute a value for @('x').</p>
 ;;       :hints ('(:expand (<call>)))
 ;;       :fn cgraph-tarjan-sccs-edges))
 
-  
+
 ;;   (local (defthm subsetp-alist-keys-implies-hons-assoc-equal
 ;;            (implies (and (subsetp (alist-keys a) (alist-keys b))
 ;;                          (hons-assoc-equal k a))
@@ -1443,7 +1443,7 @@ compute a value for @('x').</p>
 ;;        ;; (preorder-next (mbe :logic (len preorder) :exec preorder-next))
 ;;        ;; (stack-size (mbe :logic (len stk) :exec stack-size))
 ;;        (sccs-acc (fgl-objectlistlist-fix sccs-acc))
-       
+
 ;;        ((when (atom x))
 ;;         ;; (mv preorder
 ;;         ;;     preorder-next
@@ -1467,7 +1467,7 @@ compute a value for @('x').</p>
 ;; (define cgraph-tarjan-sccs-top ((cgraph cgraph-p))
 ;;   :returns (sccs fgl-objectlistlist-p)
 ;;   (cgraph-tarjan-sccs-iter cgraph cgraph nil 0 nil 0 nil))
- 
+
 
 ;; ;; This is very similar to fgl-objectlistlist-p...
 ;; (fty::defmap cgraph-scc-map :key-type fgl-object :val-type fgl-objectlist :true-listp t)
@@ -1545,7 +1545,7 @@ compute a value for @('x').</p>
 ;;      (scc-to-scc-cgraph (car sccs) (car sccs) cgraph scc-cgraph))))
 
 
-    
+
 
 
 
@@ -1807,7 +1807,7 @@ compute a value for @('x').</p>
 
 
 
- 
+
 
 
 (fty::defprod cgraph-derivstate
@@ -2066,7 +2066,7 @@ compute a value for @('x').</p>
              (< (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
                 (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
     :rule-classes :linear))
-    
+
 
 
 (define cgraph-summarize-errors-and-assign ((x fgl-object-p)
@@ -2296,7 +2296,7 @@ compute a value for @('x').</p>
                    x.rule.assign x.rule.name)))
             ;; (cw "~@0~%" msg)
             (mv msg cands assigns sts))))
-      (mv nil 
+      (mv nil
           (cons (make-candidate-assign :edge x :val val) cands)
           assigns sts)))
 
@@ -2343,8 +2343,8 @@ compute a value for @('x').</p>
               (cons (cons var (cdr pair)) rest-subst)
             rest-subst)
           assigns sts)))
-    
-               
+
+
   (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
                                              (rule ctrex-rule-p)
                                              (subst fgl-object-bindings-p)
@@ -2562,7 +2562,7 @@ compute a value for @('x').</p>
                vals)))
     (cgraph-derive-assignments-for-vars
      (cdr x) vals assigns sts env$ cgraph replimit)))
-      
+
 (define cgraph-derivstates-summarize-errors ((x cgraph-derivstates-p))
   :returns (errmsg-or-nil)
   (b* (((when (atom x)) nil)
@@ -2578,7 +2578,7 @@ compute a value for @('x').</p>
       rest))
   ///
   (local (in-theory (enable cgraph-derivstates-fix))))
-       
+
 
 (define ctrex-summarize-errors ((vars pseudo-var-list-p)
                                 (vals obj-alist-p)
@@ -2618,14 +2618,14 @@ compute a value for @('x').</p>
          (implies (fgl-object-bindings-p x)
                   (fgl-objectlist-p (alist-vals x)))
          :hints(("Goal" :in-theory (enable alist-vals)))))
-         
+
 (local (defthm fgl-objectlist-bfrlist-alist-vals-of-fgl-object-bindings
          (implies (fgl-object-bindings-p x)
                   (equal (fgl-objectlist-bfrlist (alist-vals x))
                          (fgl-object-bindings-bfrlist x)))
          :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist
                                            alist-vals)))))
-                
+
 (local (defthm symbol-listp-keys-of-fgl-object-bindings
          (implies (fgl-object-bindings-p x)
                   (symbol-listp (alist-keys x)))
@@ -2718,7 +2718,7 @@ compute a value for @('x').</p>
   :layout :tree)
 
 (fty::deflist bvar-db-consistency-errorlist :elt-type bvar-db-consistency-error :true-listp t)
-               
+
 
 (define bvar-db-check-ctrex-consistency ((n natp)
                                          bvar-db logicman env$ state
@@ -2729,7 +2729,7 @@ compute a value for @('x').</p>
               (lbfr-listp (bvar-db-bfrlist bvar-db))
               (bfr-env$-p env$ (logicman->bfrstate)))
   :guard-hints (("goal" :in-theory (enable bfr-varname-p)))
-  
+
   :returns (errs bvar-db-consistency-errorlist-p)
   :measure (nfix (- (next-bvar bvar-db) (nfix n)))
   (b* ((acc (bvar-db-consistency-errorlist-fix acc))
@@ -2747,8 +2747,8 @@ compute a value for @('x').</p>
                          acc))
                   (t acc))))
     (bvar-db-check-ctrex-consistency (1+ (lnfix n)) bvar-db logicman env$ state acc)))
-       
-  
+
+
 (define interp-st-check-bvar-db-ctrex-consistency ((interp-st interp-st-bfrs-ok)
                                                    (state))
   :returns (new-interp-st)

@@ -1354,9 +1354,9 @@
 
 ;kill some others?
 (DEFTHMd BVCAT-EQual-rewrite-constant
-  (IMPLIES (AND (syntaxp (quotep x))
-                (syntaxp (quotep highsize))
-                (syntaxp (quotep lowsize))
+  (IMPLIES (AND (syntaxp (and (quotep x)
+                              (quotep highsize)
+                              (quotep lowsize)))
                 (NATP LOWSIZE)
                 (NATP HIGHSIZE))
            (EQUAL (EQUAL X

@@ -168,8 +168,8 @@
 
 
 (flag::make-flag gobj-flag gobj-ind
-                 :flag-mapping ((gobj-ind . gobj)
-                                (gobj-list-ind . list)))
+                 :flag-mapping ((gobj-ind gobj)
+                                (gobj-list-ind list)))
 
 (in-theory (disable gobj-ind gobj-list-ind))
 
@@ -195,7 +195,7 @@
 
             ;; Boolean
             ((g-boolean bool) (bfr-eval bool (car env)))
-            
+
             ;; Integer
             ((g-integer bits) (ec-call (bfr-list->s bits (car env))))
 

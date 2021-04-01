@@ -202,9 +202,9 @@
    (module-ind (gpl :op occ))))
 
 (flag::make-flag mod-flag module-ind
-                 :flag-mapping ((module-ind . mod)
-                                (occ-ind . occ)
-                                (occs-ind . occs)))
+                 :flag-mapping ((module-ind mod)
+                                (occ-ind occ)
+                                (occs-ind occs)))
 
 (mutual-recursion
  (defun module1-ind (mod)
@@ -223,9 +223,9 @@
    (module1-ind (gpl :op occ))))
 
 (flag::make-flag mod1-flag module1-ind
-                 :flag-mapping ((module1-ind . mod)
-                                (occ1-ind . occ)
-                                (occs1-ind . occs)))
+                 :flag-mapping ((module1-ind mod)
+                                (occ1-ind occ)
+                                (occs1-ind occs)))
 
 
 (defsection occmap
@@ -550,9 +550,9 @@
 
 (make-flag flag-bad-esim-modulep
            bad-esim-modulep
-           :flag-mapping ((bad-esim-modulep . mod)
-                          (bad-esim-occp . occ)
-                          (bad-esim-occsp . occs)))
+           :flag-mapping ((bad-esim-modulep mod)
+                          (bad-esim-occp occ)
+                          (bad-esim-occsp occs)))
 
 (defthm-flag-bad-esim-modulep
   (defthm bad-esim-modulep-to-good-esim-modulep

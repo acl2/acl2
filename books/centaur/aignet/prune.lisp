@@ -224,7 +224,7 @@
              (equal (lit-eval (lit-copy lit copy)
                               invals regvals aignet2)
                     (lit-eval lit invals regvals aignet)))
-    :hints (("Goal" 
+    :hints (("Goal"
              :in-theory (enable lit-copy lit-eval)
              :do-not-induct t)))
 
@@ -669,7 +669,7 @@
 (defsection aignet-copy-dfs
 
   (local (in-theory (disable acl2::resize-list-when-atom)))
-  
+
 
   (defund aignet-copy-dfs-setup (aignet mark copy aignet2)
     (declare (xargs :stobjs (aignet mark copy aignet2)))
@@ -1813,7 +1813,7 @@
         (equal (nxst-eval n invals regvals aignet2)
                (nxst-eval n invals regvals aignet))))
 
-    
+
 
     (defthm stype-counts-of-aignet-prune-comb
       (implies (member stype (list (po-stype)
@@ -2393,7 +2393,7 @@
                              lookup-id-out-of-bounds
                              fanin-count-of-atom
                              nth-copy-preserved-by-aignet-copy-marked-iter)))
-                             
+
   (defun-sk aignet-copy-marked-gen-invar (n aignet mark copy aignet2)
     (forall (id invals regvals)
             (implies (and (equal (nth id mark) 1)
@@ -3331,8 +3331,8 @@
        val)))
 
   (flag::make-flag prune-seq-flg prune-seq-eval-case
-                   :flag-mapping ((prune-seq-eval-case . eval)
-                                  (prune-seq-frame-case . frame))
+                   :flag-mapping ((prune-seq-eval-case eval)
+                                  (prune-seq-frame-case frame))
                    :ruler-extenders :all)
 
   (local (in-theory (disable aignet-prune-seq-aux

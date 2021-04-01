@@ -14,9 +14,6 @@
 (include-book "integer-formats")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
-(include-book "kestrel/fty/sbyte8" :dir :system)
-(include-book "kestrel/fty/ubyte8" :dir :system)
-(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,26 +23,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a model of the C standard signed and unsigned integer values,
+    "We define a model of the C standard signed and unsigned integer values
+     (except @('_Bool') for now),
      based on their "
     (xdoc::seetopic "atc-integer-formats" "format definitions")
     ". As mentioned there, the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "We also define @('unsigned char') and @('signed char') values,
-     which do not depend on format definitions,
-     because we hardwire them to be 8 bits.")
-   (xdoc::p
-    "Then, for each of @('short'), @('int'), @('long'), and @('long long'),
-     we define a size in bits (i.e. the size in bytes multiplied by 8),
-     prove some linear rules about them,
-     define ACL2 unsigned and signed integers for them
+    "For each of @('char'), @('short'), @('int'), @('long'), and @('long long'),
+     we define ACL2 unsigned and signed integers for them
      (via @(tsee fty::defbyte)), and
-     define C values by wrapping those unsigned and signed integers.
+     we define C values by wrapping those unsigned and signed integers.
      We also define maximum and (for signed) minimum integers,
      prove some linear rules about them,
      and prove rules that provide alternative definitions
-     of the unsigned and signed integers in terms of minima and maxima.
+     of the unsigned and signed ACL2 integers in terms of minima and maxima.
      This way we have the ability to view the integer ranges
      as ACL2's @(tsee unsigned-byte-p) and @(tsee signed-byte-p) values,
      which is useful for bitwise operations,
@@ -56,65 +48,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uchar
-  :short "Fixtype of C @('unsigned char') values [C:6.2.5/6]."
-  ((get acl2::ubyte8))
-  :tag :uchar
-  :layout :list
-  :pred ucharp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist uchar-list
-  :short "Fixtype of lists of C @('unsigned char') values."
-  :elt-type uchar
-  :true-listp t
-  :elementp-of-nil nil
-  :pred uchar-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod schar
-  :short "Fixtype of C @('signed char') values [C:6.2.5/5]."
-  ((get acl2::sbyte8))
-  :tag :schar
-  :layout :list
-  :pred scharp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist schar-list
-  :short "Fixtype of lists of C @('signed char') values."
-  :elt-type schar
-  :true-listp t
-  :elementp-of-nil nil
-  :pred schar-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defmacro+ atc-def-integer-values (type)
-  (declare (xargs :guard (member-eq type '(:short :int :long :llong))))
-  :short "Macro to generate the models of the C standard integer values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The functions and theorems that form the model,
-     for each of (@('unsigned') and @('signed'))
-     @('short'), @('int'), @('long'), and @('long long'),
-     are quite similar in structure.
-     Thus, we define and use this macro to introduce them."))
+  (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
+  :short "Macro to generate the models of the C integer values."
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bytes (acl2::packn-pos (list (symbol-name type) "-BYTES") 'atc))
-       (type-bits (acl2::packn-pos (list (symbol-name type) "-BITS") 'atc))
+       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (type-bits-bound (case type
+                          (:char 8)
                           (:short 16)
                           (:int 16)
                           (:long 32)
                           (:llong 64)))
-       (utype (acl2::packn-pos (list "U" (symbol-name type)) 'atc))
-       (stype (acl2::packn-pos (list "S" (symbol-name type)) 'atc))
+       (utype (acl2::packn-pos (list "U" type) 'atc))
+       (stype (acl2::packn-pos (list "S" type) 'atc))
        (utypep (add-suffix utype "P"))
        (stypep (add-suffix stype "P"))
        (utype-list (add-suffix utype "-LIST"))
@@ -132,39 +80,9 @@
        (stype-max (add-suffix stype "-MAX"))
        (stype-max-bound (1- (expt 2 (1- type-bits-bound)))))
 
-    `(progn
+    `(encapsulate ()
 
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,type-bits ()
-         :returns (,type-bits posp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Size of @('unsigned') and @('signed') @('"
-                              type-string
-                              "')s, in bits.")
-         (* 8 (,type-bytes))
-         ///
-
-         (in-theory (disable (:e ,type-bits)))
-
-         (defret ,(add-suffix type-bits "-BOUND")
-           (>= ,type-bits ,type-bits-bound)
-           :rule-classes :linear)
-
-         ,@(case type
-             (:short nil)
-             (:int '((defrule int-bits->=-short-bits
-                       (>= (int-bits) (short-bits))
-                       :rule-classes :linear
-                       :enable short-bits)))
-             (:long '((defrule long-bits->=-int-bits
-                        (>= (long-bits) (int-bits))
-                        :rule-classes :linear
-                        :enable int-bits)))
-             (:llong '((defrule llong-bits->=-long-bits
-                         (>= (llong-bits) (long-bits))
-                         :rule-classes :linear
-                         :enable long-bits)))))
+       (local (include-book "arithmetic-3/top" :dir :system))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -208,38 +126,38 @@
            :rule-classes :linear
            :enable ,utype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,type-bits-bound) (n (,type-bits)) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,type-bits-bound) (n (,type-bits)) (x 2)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule ushort-max->=-uchar-max
+                         (>= (ushort-max) (uchar-max))
+                         :rule-classes :linear
+                         :enable uchar-max
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule uint-max->=-ushort-max
                        (>= (uint-max) (ushort-max))
                        :rule-classes :linear
                        :enable ushort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule ulong-max->=-uint-max
                         (>= (ulong-max) (uint-max))
                         :rule-classes :linear
                         :enable uint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule ullong-max->=-ulong-max
                          (>= (ullong-max) (ulong-max))
                          :rule-classes :linear
                          :enable ulong-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,38 +177,38 @@
            :rule-classes :linear
            :enable ,stype-min
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule sshort-min-<=-schar-min
+                         (<= (sshort-min) (schar-min))
+                         :rule-classes :linear
+                         :enable schar-min
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule sint-min-<=-sshort-min
                        (<= (sint-min) (sshort-min))
                        :rule-classes :linear
                        :enable sshort-min
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule slong-min-<=-sint-min
                         (<= (slong-min) (sint-min))
                         :rule-classes :linear
                         :enable sint-min
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule sllong-min-<=-slong-min
                          (<= (sllong-min) (slong-min))
                          :rule-classes :linear
                          :enable slong-min
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,38 +228,38 @@
            :rule-classes :linear
            :enable ,stype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))
-           :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
 
          ,@(case type
-             (:short nil)
+             (:char nil)
+             (:short '((defrule sshort-max->=-schar-max
+                         (>= (sshort-max) (schar-max))
+                         :rule-classes :linear
+                         :enable schar-max
+                         :use (:instance
+                               acl2::expt-is-weakly-increasing-for-base->-1
+                               (m (char-bits)) (n (short-bits)) (x 2)))))
              (:int '((defrule sint-max->=-sshort-max
                        (>= (sint-max) (sshort-max))
                        :rule-classes :linear
                        :enable sshort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2))
-                       :prep-books
-                       ((include-book "arithmetic-3/top" :dir :system)))))
+                             (m (short-bits)) (n (int-bits)) (x 2)))))
              (:long '((defrule slong-max->=-sint-max
                         (>= (slong-max) (sint-max))
                         :rule-classes :linear
                         :enable sint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2))
-                        :prep-books
-                        ((include-book "arithmetic-3/top" :dir :system)))))
+                              (m (int-bits)) (n (long-bits)) (x 2)))))
              (:llong '((defrule sllong-max->=-slong-max
                          (>= (sllong-max) (slong-max))
                          :rule-classes :linear
                          :enable slong-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2))
-                         :prep-books
-                         ((include-book "arithmetic-3/top" :dir :system)))))))
+                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -355,8 +273,7 @@
                 (and (integerp x)
                      (<= 0 x)
                      (<= x (,utype-max))))
-         :enable (,utype-integerp ,utype-max)
-         :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+         :enable (,utype-integerp ,utype-max))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,8 +287,7 @@
                 (and (integerp x)
                      (<= (,stype-min) x)
                      (<= x (,stype-max))))
-         :enable (,stype-integerp ,stype-min ,stype-max)
-         :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+         :enable (,stype-integerp ,stype-min ,stype-max))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,6 +338,8 @@
          :pred ,stype-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(atc-def-integer-values :char)
 
 (atc-def-integer-values :short)
 

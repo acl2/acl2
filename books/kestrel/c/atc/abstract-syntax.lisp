@@ -329,7 +329,7 @@
    (xdoc::p
     "For now we only capture type specifier sequences for
      the plain @('char') type and
-     the standard signed and unsigned integer types.
+     the standard signed and unsigned integer types (except @('_Bool')).
      We only capture one sequence for each, implicitly."))
   (:char ())
   (:schar ())

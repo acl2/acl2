@@ -896,11 +896,20 @@
 (encapsulate
   ()
 
-  ;; This was the (less general) lemma in books/std/lists/prefixp.lisp.
+  ;; These were the (less general) lemmas in books/std/lists/prefixp.lisp.
   (local
    (defthm when-prefixp-append-same
      (iff (prefixp (append x y) x) (atom y))
      :hints (("goal" :in-theory (enable prefixp)))))
+  (local
+   (defthm prefixp-of-append-when-same-length
+     (implies (<= (len x) (len y))
+              (implies (equal (len x) (len y))
+                       (equal (prefixp x (append y z))
+                              (prefixp x y))))
+     :hints(("Goal"
+             :induct (prefixp x y)
+             :in-theory (enable prefixp list-equiv)))))
 
   (defthm
     no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-1

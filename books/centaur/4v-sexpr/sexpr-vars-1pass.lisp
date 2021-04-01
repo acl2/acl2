@@ -110,8 +110,8 @@ This stupid twist makes the proof ridiculously harder!</p>"
 
 (local (flag::make-flag flag-4v-sexpr-vars-1pass-exec
                         4v-sexpr-vars-1pass-exec
-                        :flag-mapping ((4v-sexpr-vars-1pass-exec . sexpr)
-                                       (4v-sexpr-vars-1pass-list-exec . list))))
+                        :flag-mapping ((4v-sexpr-vars-1pass-exec sexpr)
+                                       (4v-sexpr-vars-1pass-list-exec list))))
 
 (local (in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
                        (alist-keys-member-hons-assoc-equal))))

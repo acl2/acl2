@@ -24,7 +24,7 @@
     "We define ACL2 functions that model C operations on integers.
      For now we define operations for (signed) integers only,
      but we will cover the unsigned integers soon as well.
-     We only cover standard (not extended) integers.")
+     We only cover standard unsigned and signed integers (except @('_Bool').")
    (xdoc::p
     "As explained below, it suffices to introduce operations
      on integers of rank equal to or higher than @('int').")
@@ -123,9 +123,9 @@
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bits (acl2::packn-pos (list (symbol-name type) "-BITS") 'atc))
-       (stype (acl2::packn-pos (list "S" (symbol-name type)) 'atc))
-       (utype (acl2::packn-pos (list "U" (symbol-name type)) 'atc))
+       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
+       (stype (acl2::packn-pos (list "S" type) 'atc))
+       (utype (acl2::packn-pos (list "U" type) 'atc))
        (stype-min (add-suffix stype "-MIN"))
        (stype-max (add-suffix stype "-MAX"))
        (utype-max (add-suffix utype "-MAX"))
