@@ -164,10 +164,10 @@
                 (< (expt 2 32) p)
                 (fep y p) ;drop?
                 )
-           (equal (add (mul acl2::*-1/2^32* x p) y p)
-                  (mul acl2::*-1/2^32* (add x (mul (pfield::inv acl2::*-1/2^32* p) y p) p) p)))
+           (equal (add (mul *-1/2^32* x p) y p)
+                  (mul *-1/2^32* (add x (mul (pfield::inv *-1/2^32* p) y p) p) p)))
   :hints (("Goal" :use (:instance add-of-mul-normalize-coeffs
-                                  (k acl2::*-1/2^32*))
+                                  (k *-1/2^32*))
            :in-theory (disable ;R1CS::MUL-NORMALIZE-CONSTANT-ARG1 ;looped
                                ))))
 
@@ -177,8 +177,8 @@
   (implies (and (equal p PRIMES::*BN-254-GROUP-PRIME*) ; (primep p)
                 (fep y p)
                 (< (expt 2 32) p))
-           (equal (bitp (add (mul acl2::*-1/2^32* x p) y p))
-                  (bitp (mul acl2::*-1/2^32* (add x (mul (pfield::inv acl2::*-1/2^32* p) y p) p) p))))
+           (equal (bitp (add (mul *-1/2^32* x p) y p))
+                  (bitp (mul *-1/2^32* (add x (mul (pfield::inv *-1/2^32* p) y p) p) p))))
   :hints (("Goal" :use (:instance add-of-mul-normalize-coeffs-2)
            :in-theory (disable ;r1cs::mul-normalize-constant-arg1 ;looped
                                ))))
@@ -267,12 +267,12 @@
                 (integerp y1)
                 (integerp y2)
                 (integerp p))
-           (equal (bitp (add y1 (add (mul acl2::*-1/2^32* x p) y2 p) p))
-                  (bitp (mul acl2::*-1/2^32*
-                             (add (mul (pfield::inv acl2::*-1/2^32* p)
+           (equal (bitp (add y1 (add (mul *-1/2^32* x p) y2 p) p))
+                  (bitp (mul *-1/2^32*
+                             (add (mul (pfield::inv *-1/2^32* p)
                                        y1 p)
                                   (add x
-                                       (mul (pfield::inv acl2::*-1/2^32* p)
+                                       (mul (pfield::inv *-1/2^32* p)
                                             y2 p)
                                        p)
                                   p)
@@ -287,10 +287,10 @@
   (implies (and (equal p *bn-254-group-prime*)
                 (fep y p)
                 (< (expt 2 32) p))
-           (equal (bitp (add y (mul acl2::*-1/2^32* x p) p))
-                  (bitp (mul acl2::*-1/2^32*
+           (equal (bitp (add y (mul *-1/2^32* x p) p))
+                  (bitp (mul *-1/2^32*
                              (add x
-                                  (mul (pfield::inv acl2::*-1/2^32* p)
+                                  (mul (pfield::inv *-1/2^32* p)
                                        y p)
                                   p)
                              p))))
@@ -301,16 +301,16 @@
 
 (defthm mul-of-add-constant-special
   (implies (posp p)
-           (equal (mul acl2::*-2^32* (add x y p) p)
-                  (add (mul acl2::*-2^32* x p)
-                       (mul acl2::*-2^32* y p)
+           (equal (mul *-2^32* (add x y p) p)
+                  (add (mul *-2^32* x p)
+                       (mul *-2^32* y p)
                        p))))
 
 (defthm mul-of-add-constant-special-alt
   (implies (posp p)
-           (equal (mul acl2::*-2^32-neg* (add x y p) p)
-                  (add (mul acl2::*-2^32-neg* x p)
-                       (mul acl2::*-2^32-neg* y p)
+           (equal (mul *-2^32-neg* (add x y p) p)
+                  (add (mul *-2^32-neg* x p)
+                       (mul *-2^32-neg* y p)
                        p))))
 
 (table acl2::axe-rule-priorities-table 'mul-of-add-constant-special-alt 1) ;try this late
@@ -793,7 +793,7 @@
             (fep x p)
             ;(< (expt 2 33) p) ;needed?
             )
-           (equal (bitp (mul acl2::*1/2^32* x p))
+           (equal (bitp (mul *1/2^32* x p))
                   (or (equal x 0)
                       (equal x (expt 2 32)))))
   :hints (("Goal" :in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P))))
@@ -847,7 +847,7 @@
                 (unsigned-byte-p 33 bv33)
                 ;;(< (expt 2 33) p) ;needed?
                 )
-           (equal (bitp (mul acl2::*1/2^32* (add bv33 (neg bv32 p) p) p))
+           (equal (bitp (mul *1/2^32* (add bv33 (neg bv32 p) p) p))
                   (equal (bvchop 32 bv33) bv32)))
   :hints (("Goal" :expand ((UNSIGNED-BYTE-P 32
                                             (ADD -4294967296
@@ -902,7 +902,7 @@
                 (integerp big)
 ;                (unsigned-byte-p 253 big) ;less than the prime
                 )
-           (equal (bitp (mul acl2::*1/2^32* (add (neg bv32 p) big p) p))
+           (equal (bitp (mul *1/2^32* (add (neg bv32 p) big p) p))
                   (and (equal (bvchop 32 (mod big *bn-254-group-prime*)) bv32)
                        ;; everything but the carry and the low bits is 0:
                        (unsigned-byte-p 33 (mod big *bn-254-group-prime*)))))
@@ -947,11 +947,11 @@
 
 (defthm add-of-mul-of-neg-shifted-carry-and-bvplus-34
   (implies (and (equal p *bn-254-group-prime*)
-                (unsigned-byte-p free (add (mul acl2::*-2^33* bit p) (bvplus '34 x y) p)) ;avoid loop
+                (unsigned-byte-p free (add (mul *-2^33* bit p) (bvplus '34 x y) p)) ;avoid loop
                 (equal free 33)
                 (bitp bit)
                 (posp p))
-           (equal (add (mul acl2::*-2^33* bit p) (bvplus '34 x y) p)
+           (equal (add (mul *-2^33* bit p) (bvplus '34 x y) p)
                   (bvplus 33 x y)))
   :hints (("Goal"
            :use (:instance acl2::split-bv (y (BVPLUS 34 X Y))
@@ -1114,23 +1114,23 @@
   (implies (and ;(syntaxp (quotep k))
             (equal p *bn-254-group-prime*)
             (posp p))
-           (equal (add x (mul acl2::*1/2^32* y p) p)
-                  (mul acl2::*1/2^32* (add (mul (expt 2 32) x p) y p) p))))
+           (equal (add x (mul *1/2^32* y p) p)
+                  (mul *1/2^32* (add (mul (expt 2 32) x p) y p) p))))
 
 (defthmd pull-out-inverse-coeff-32-alt
   (implies (and ;(syntaxp (quotep k))
             (equal p *bn-254-group-prime*)
             (posp p))
-           (equal (add (mul acl2::*1/2^32* y p) x p)
-                  (mul acl2::*1/2^32* (add y (mul (expt 2 32) x p) p) p))))
+           (equal (add (mul *1/2^32* y p) x p)
+                  (mul *1/2^32* (add y (mul (expt 2 32) x p) p) p))))
 
 ;;todo: oneify goes out to lunch trying to execute pow unless we disable the executable counterparts below
 (defthmd pull-out-inverse-coeff-32-extra
   (implies (and ;(syntaxp (quotep k))
             (equal p *bn-254-group-prime*)
             (posp p))
-           (equal (add x (add (mul acl2::*1/2^32* y p) extra p) p)
-                  (add (mul acl2::*1/2^32* (add (mul (expt 2 32) x p) y p) p) extra p)))
+           (equal (add x (add (mul *1/2^32* y p) extra p) p)
+                  (add (mul *1/2^32* (add (mul (expt 2 32) x p) y p) p) extra p)))
   :hints (("Goal" :use (:instance pull-out-inverse-coeff-32)
            :in-theory (disable (:e pfield::pow)        ;todo
                                (:e pfield::inv)        ;todo
@@ -1256,7 +1256,7 @@
                 (unsigned-byte-p 40 big1) ;gen?
                 (unsigned-byte-p 40 big2) ;gen?
                 )
-           (equal (bitp (mul acl2::*1/2^32* (add big1 (add (neg bv32 p) big2 p) p) p))
+           (equal (bitp (mul *1/2^32* (add big1 (add (neg bv32 p) big2 p) p) p))
                   (and (equal (bvchop 32 (bvplus 33 big1 big2))
                               bv32)
                        ;; everything but the carry and the low bits is 0:
@@ -1278,7 +1278,7 @@
                 (integerp big2)
     ;                (unsigned-byte-p 253 big) ;less than the prime
                 )
-           (equal (bitp (mul acl2::*1/2^32* (add big1 (add (neg bv32 p) big2 p) p) p))
+           (equal (bitp (mul *1/2^32* (add big1 (add (neg bv32 p) big2 p) p) p))
                   (and (equal (bvchop 32 (add big1 big2 *bn-254-group-prime*))
                               bv32)
                        ;; everything but the carry and the low bits is 0:
@@ -1344,42 +1344,42 @@
                 (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
                 (unsigned-byte-p 32 rot))
-           (equal (BITP (MUL acl2::*1/2^32*
+           (equal (BITP (MUL *1/2^32*
                              (ADD (MUL '4294967296 (NEG bita p) p)
                                   (ADD (NEG bv32 p)
                                        (ADD inv0
                                             (ADD inv4
                                                  (ADD x
                                                       (ADD y
-                                                           (ADD (MUL acl2::*-2^33* bitb p)
+                                                           (ADD (MUL *-2^33* bitb p)
                                                                 (ADD rot
-                                                                     (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p) p) p))
+                                                                     (MUL *-2^33* bitc p) p) p) p) p) p) p) p) p) p))
                   (and (equal (bvchop 32 (ADD (MUL '4294967296 (NEG bita p) p)
                                               (ADD inv0
                                                    (ADD inv4
                                                         (ADD x
                                                              (ADD y
-                                                                  (ADD (MUL acl2::*-2^33* bitb p)
+                                                                  (ADD (MUL *-2^33* bitb p)
                                                                        (ADD rot
-                                                                            (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p))
+                                                                            (MUL *-2^33* bitc p) p) p) p) p) p) p) p))
                               bv32)
                        (unsigned-byte-p 33 (ADD (MUL '4294967296 (NEG bita p) p)
                                                 (ADD inv0
                                                      (ADD inv4
                                                           (ADD x
                                                                (ADD y
-                                                                    (ADD (MUL acl2::*-2^33* bitb p)
+                                                                    (ADD (MUL *-2^33* bitb p)
                                                                          (ADD rot
-                                                                              (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p)))))
+                                                                              (MUL *-2^33* bitc p) p) p) p) p) p) p) p)))))
   :hints (("Goal" :use (:instance bitp-of-mul-of-1/2^32-and-add-of-neg-32
                                   (big (ADD (MUL '4294967296 (NEG bita p) p)
                                             (ADD inv0
                                                  (ADD inv4
                                                       (ADD x
                                                            (ADD y
-                                                                (ADD (MUL acl2::*-2^33* bitb p)
+                                                                (ADD (MUL *-2^33* bitb p)
                                                                      (ADD rot
-                                                                          (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p)))
+                                                                          (MUL *-2^33* bitc p) p) p) p) p) p) p) p)))
            :in-theory (disable ACL2::BVCAT-EQUAL-REWRITE
                                ACL2::BVCAT-EQUAL-REWRITE-ALT))))
 
@@ -1399,9 +1399,9 @@
 (defthmd add-helper-bv35
   (implies (and (equal p *bn-254-group-prime*)
                 ;; free var avoid loop?
-                (unsigned-byte-p free (add (mul acl2::*-2^33* bitc p)
-                                           (add (mul acl2::*-2^33* bitb p)
-                                                (add (mul acl2::*-2^32* bita p)
+                (unsigned-byte-p free (add (mul *-2^33* bitc p)
+                                           (add (mul *-2^33* bitb p)
+                                                (add (mul *-2^32* bita p)
                                                      bv35 p)
                                                 p)
                                            p))
@@ -1418,13 +1418,13 @@
                 ;; (equal 0 bitb) ;drop!
                 ;; (equal 1 bitc) ;drop!
                 (posp p))
-           (equal (add (mul acl2::*-2^33* bitc p)
-                       (add (mul acl2::*-2^33* bitb p)
-                            (add (mul acl2::*-2^32* bita p)
+           (equal (add (mul *-2^33* bitc p)
+                       (add (mul *-2^33* bitb p)
+                            (add (mul *-2^32* bita p)
                                  bv35 p)
                             p)
                        p)
-                  ;; was (bvchop 33 (add (mul acl2::*-2^32* bita p) bv35 p))
+                  ;; was (bvchop 33 (add (mul *-2^32* bita p) bv35 p))
                   (if (equal 1 bita)
                       (bvchop 33 (+ (- (expt 2 32)) bv35))
                     (bvchop 33 bv35))))
@@ -1476,9 +1476,9 @@
                                                 (ADD inv4
                                                      (ADD x
                                                           (ADD y
-                                                               (ADD (MUL acl2::*-2^33* bitb p)
+                                                               (ADD (MUL *-2^33* bitb p)
                                                                     (ADD rot
-                                                                         (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p))
+                                                                         (MUL *-2^33* bitc p) p) p) p) p) p) p) p))
                 (equal free 33)
                 (equal p *bn-254-group-prime*)
                 (bitp bita)
@@ -1494,9 +1494,9 @@
                             (ADD inv4
                                  (ADD x
                                       (ADD y
-                                           (ADD (MUL acl2::*-2^33* bitb p)
+                                           (ADD (MUL *-2^33* bitb p)
                                                 (ADD rot
-                                                     (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p)
+                                                     (MUL *-2^33* bitc p) p) p) p) p) p) p) p)
                   (if (equal 1 bita)
                       (bvchop 33 (+ (- (expt 2 32))
                                     (ADD inv0
@@ -1522,9 +1522,9 @@
   (implies (and (unsigned-byte-p free (ADD (MUL '4294967296 (NEG bita p) p)
                                            (ADD inv0
                                                 (ADD bv34
-                                                     (ADD (MUL acl2::*-2^33* bitb p)
+                                                     (ADD (MUL *-2^33* bitb p)
                                                           (ADD rot
-                                                               (MUL acl2::*-2^33* bitc p) p) p) p) p) p))
+                                                               (MUL *-2^33* bitc p) p) p) p) p) p))
                 (equal free 33)
                 (equal p *bn-254-group-prime*)
                 (< bv34 12884901888)
@@ -1537,9 +1537,9 @@
            (equal (ADD (MUL '4294967296 (NEG bita p) p)
                        (ADD inv0
                             (ADD bv34
-                                 (ADD (MUL acl2::*-2^33* bitb p)
+                                 (ADD (MUL *-2^33* bitb p)
                                       (ADD rot
-                                           (MUL acl2::*-2^33* bitc p) p)
+                                           (MUL *-2^33* bitc p) p)
                                       p) p) p) p)
                   (if (equal 1 bita)
                       (bvchop 33 (+ (- (expt 2 32))
@@ -1590,14 +1590,14 @@
                                      acl2::mod-sum-cases))))
 
 (defthm add-helper-bv35-for-use-special-1
-  (implies (and (unsigned-byte-p free (ADD acl2::*-2^32*
+  (implies (and (unsigned-byte-p free (ADD *-2^32*
                                            (ADD inv0
                                                 (ADD inv4
                                                      (ADD x
                                                           (ADD y
-                                                               (ADD (MUL acl2::*-2^33* bitb p)
+                                                               (ADD (MUL *-2^33* bitb p)
                                                                     (ADD rot
-                                                                         (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p))
+                                                                         (MUL *-2^33* bitc p) p) p) p) p) p) p) p))
                 (equal free 33)
                 (equal p *bn-254-group-prime*)
                 (bitp bitb)
@@ -1607,14 +1607,14 @@
                 (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
                 (unsigned-byte-p 32 rot))
-           (equal (ADD acl2::*-2^32*
+           (equal (ADD *-2^32*
                        (ADD inv0
                             (ADD inv4
                                  (ADD x
                                       (ADD y
-                                           (ADD (MUL acl2::*-2^33* bitb p)
+                                           (ADD (MUL *-2^33* bitb p)
                                                 (ADD rot
-                                                     (MUL acl2::*-2^33* bitc p) p) p) p) p) p) p) p)
+                                                     (MUL *-2^33* bitc p) p) p) p) p) p) p) p)
                   (bvchop 33 (+ (- (expt 2 32))
                                 (ADD inv0
                                      (ADD inv4
@@ -1737,7 +1737,7 @@
                 ;(< (expt 2 41) p)
                 ;(integerp p)
                 )
-           (equal (add bv34 (mul acl2::*-2^1* sum p) p)
+           (equal (add bv34 (mul *-2^1* sum p) p)
                   (getbit 0 bv34)))
   :hints (("Goal" :in-theory (e/d (add R1CS::MUL-NORMALIZE-CONSTANT-ARG1-gen
                                        )
@@ -1756,7 +1756,7 @@
                ;(< (expt 2 41) p)
                ;(integerp p)
                )
-          (equal (add (bvplus 34 inv0 (bvplus 33 inv4 x)) (mul acl2::*-2^1* sum p) p)
+          (equal (add (bvplus 34 inv0 (bvplus 33 inv4 x)) (mul *-2^1* sum p) p)
                  (getbit 0 (bvplus 34 inv0 (bvplus 33 inv4 x)))))
  :hints (("Goal" :use (:instance add-of-mul-of--2-helper (bv34 (bvplus 34 inv0 (bvplus 33 inv4 x))))
           :in-theory (disable add-of-mul-of--2-helper))))
@@ -1770,7 +1770,7 @@
                ;(< (expt 2 41) p)
                ;(integerp p)
                )
-          (equal (add (bvplus 34 inv0 y) (mul acl2::*-2^1* sum p) p)
+          (equal (add (bvplus 34 inv0 y) (mul *-2^1* sum p) p)
                  (getbit 0 (bvplus 34 inv0 y))))
  :hints (("Goal" :use (:instance add-of-mul-of--2-helper (bv34 (bvplus 34 inv0 y)))
           :in-theory (disable add-of-mul-of--2-helper))))
@@ -1784,7 +1784,7 @@
                ;(< (expt 2 41) p)
                ;(integerp p)
                )
-          (equal (add (bvplus 33 inv0 y) (mul acl2::*-2^1* sum p) p)
+          (equal (add (bvplus 33 inv0 y) (mul *-2^1* sum p) p)
                  (getbit 0 (bvplus 33 inv0 y))))
  :hints (("Goal" :use (:instance add-of-mul-of--2-helper (bv34 (bvplus 33 inv0 y)))
           :in-theory (disable add-of-mul-of--2-helper))))
@@ -1795,7 +1795,7 @@
   (implies (and (equal x (slice 33 1 free))
                 (equal p *bn-254-group-prime*) ;gen
                 )
-           (equal (mul acl2::*-2^1* x p)
+           (equal (mul *-2^1* x p)
                   ;;(neg (bvcat 33 (slice 33 1 free) 1 0) p)
                   ;;(mod (acl2::bvminus 34 (GETBIT 0 FREE) (BVCHOP 34 FREE)) p)
                   (add (GETBIT 0 FREE) (neg (BVCHOP 34 FREE) p) p)

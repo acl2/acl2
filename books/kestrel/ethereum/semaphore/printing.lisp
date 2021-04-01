@@ -15,13 +15,13 @@
 (include-book "baby-jubjub-prime")
 
 ;; Refrains from handling 256 and below:
-(make-event `(progn ,@(pfield::add-evisc-tuples-for-powers-of-2 35 9 *baby-jubjub-prime*)))
+(make-event `(progn ,@(pfield::add-evisc-tuples-for-powers-of-2 35 9 *baby-jubjub-prime* "ZKSEMAPHORE")))
 
-(make-event `(progn ,@(pfield::add-evisc-tuples-for-negated-powers-of-2 33 *baby-jubjub-prime*)))
+(make-event `(progn ,@(pfield::add-evisc-tuples-for-negated-powers-of-2 33 *baby-jubjub-prime* "ZKSEMAPHORE")))
 
-(make-event `(progn ,@(pfield::add-evisc-tuples-for-inverse-powers-of-2 33 *baby-jubjub-prime*)))
+(make-event `(progn ,@(pfield::add-evisc-tuples-for-inverse-powers-of-2 33 *baby-jubjub-prime* "ZKSEMAPHORE")))
 
-(make-event `(progn ,@(pfield::add-evisc-tuples-for-negated-inverse-powers-of-2 32 *baby-jubjub-prime*)))
+(make-event `(progn ,@(pfield::add-evisc-tuples-for-negated-inverse-powers-of-2 32 *baby-jubjub-prime* "ZKSEMAPHORE")))
 
 
 
