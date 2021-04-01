@@ -2218,6 +2218,21 @@
                     hyps (cdr max-terms) final-term name ctx ens wrld
                     state)))))
 
+(defun no-linear-msg (name concl extra ens wrld state)
+  (msg
+   "No :LINEAR rule can be generated from ~x0.  See :DOC linear.~@1~@2"
+   name
+   (mv-let (flg x ttree)
+     (eval-ground-subexpressions concl ens wrld state nil)
+     (declare (ignore flg ttree))
+     (if (quotep x)
+         (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+              (untranslate concl t wrld)
+              (untranslate x t wrld))
+       ""))
+   extra))
+
 (defun chk-acceptable-linear-rule2 (name match-free trigger-terms hyps concl
                                          ctx ens wrld state)
 
@@ -2234,21 +2249,13 @@
 ; term that is a legal (if possibly silly) trigger for each rule.
 
   (let* ((xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state)))
-    (cond ((null lst)
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state))))
+    (cond ((and (null trigger-terms)
+                (null lst))
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
-                linear.~@1"
-               name
-               (mv-let (flg x ttree)
-                 (eval-ground-subexpressions concl ens wrld state nil)
-                 (declare (ignore flg ttree))
-                 (if (quotep x)
-                     (msg "  Note that after ground evaluation, the ~
-                           conclusion, ~x0, was treated as the constant, ~x1."
-                          (untranslate concl t wrld)
-                          (untranslate x t wrld))
-                   ""))))
+               "~@0"
+               (no-linear-msg name concl "" ens wrld state)))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -2262,7 +2269,8 @@
                   (potential-free-vars
                    (free-vars-in-hyps-considering-bind-free hyps nil wrld))
                   (all-vars-in-poly-lst
-                   (all-vars-in-poly-lst (car lst)))
+                   (and (null trigger-terms) ; optimization
+                        (all-vars-in-poly-lst (car lst))))
                   (max-terms
                    (or trigger-terms
                        (maximal-terms all-vars-in-poly-lst
@@ -2284,7 +2292,8 @@
              (cond
               ((null max-terms)
                (cond
-                ((null all-vars-in-poly-lst)
+                ((and (null trigger-terms)
+                      (null all-vars-in-poly-lst))
                  (er soft ctx
                      "No :LINEAR rule can be generated from ~x0 because there ~
                       are no ``maximal terms'' in the inequality produced ~
@@ -2470,7 +2479,8 @@
                               backchain-limit-lst match-free ens wrld state)
   (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state))
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (all-vars-in-hyps hyps))
          (max-terms
@@ -2478,8 +2488,22 @@
               (maximal-terms (all-vars-in-poly-lst (car lst))
                              all-vars-hyps
                              (all-vars concl)))))
-    (add-linear-rule3 rune nume hyps xconcl max-terms backchain-limit-lst
-                      match-free nil wrld)))
+    (cond ((and (null trigger-terms)
+                (null lst))
+           (er hard 'add-linear-rule2
+               "~@0"
+               (no-linear-msg (base-symbol rune)
+                              concl
+                              (msg "  This can happen during ~x0 or the ~
+                                    second pass of a call of ~x1, when the ~
+                                    current-theory is different than when the ~
+                                    rule was originally checked.  You can ~
+                                    avoid this error by supplying ~
+                                    :trigger-terms in your :linear rule-class."
+                                   'include-book 'encapsulate)
+                              ens wrld state)))
+          (t (add-linear-rule3 rune nume hyps xconcl max-terms
+                               backchain-limit-lst match-free nil wrld)))))
 
 (defun add-linear-rule1 (rune nume trigger-terms lst
                               backchain-limit-lst match-free ens wrld state)

@@ -39,8 +39,9 @@
             unless
             when
             pfield::add
-            pfield::mul
             pfield::neg
+            pfield::sub
+            pfield::mul
             pfield::inv
             pfield::div
             pfield::fep

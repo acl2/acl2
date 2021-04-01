@@ -22,13 +22,15 @@
   (append acl2::*axe-evaluator-basic-fns-and-aliases* ;remove some?
           '((add add-unguarded)
             (neg neg-unguarded)
+            (sub sub-unguarded)
             (mul mul-unguarded)
             (inv inv-unguarded)
             (div div-unguarded)
             (pow pow-unguarded)
             pos-fix
             (fep fep-unguarded)
-            (acl2::floor acl2::floor-unguarded))))
+            (acl2::floor acl2::floor-unguarded)
+            (acl2::slice acl2::slice-unguarded))))
 
 ;; Make the evaluator:
 (acl2::make-evaluator-simple axe-evaluator-r1cs *axe-evaluator-r1cs-fns-and-aliases*)

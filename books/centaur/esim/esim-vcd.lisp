@@ -455,9 +455,9 @@
 
   (flag::make-flag flag-vcd-vectors-for-mod
                    vcd-vectors-for-mod
-                   :flag-mapping ((vcd-vectors-for-mod . mod)
-                                  (vcd-vectors-for-occs . occs)
-                                  (vcd-vectors-for-occ . occ)))
+                   :flag-mapping ((vcd-vectors-for-mod mod)
+                                  (vcd-vectors-for-occs occs)
+                                  (vcd-vectors-for-occ occ)))
 
   (defthm-flag-vcd-vectors-for-mod
 

@@ -184,3 +184,24 @@
   :hints (("Goal" :in-theory (enable width-of-widest-int-unguarded
                                      width-of-widest-int
                                      integer-length))))
+
+(defund logtail-unguarded (size i)
+  (declare (xargs :guard t))
+  (logtail (nfix size) (ifix i)))
+
+(defthm logtail-unguarded-correct
+  (equal (logtail-unguarded size i)
+         (logtail size i))
+  :hints (("Goal" :in-theory (enable logtail-unguarded))))
+
+(defund slice-unguarded (high low val)
+  (declare (xargs :guard t))
+  (let ((low (ifix low))
+        (high (ifix high)))
+       (bvchop-unguarded (+ 1 high (- low))
+                         (logtail-unguarded low val))))
+
+(defthm slice-unguarded-correct
+  (equal (slice-unguarded high low val)
+         (slice high low val))
+  :hints (("Goal" :in-theory (enable slice slice-unguarded))))

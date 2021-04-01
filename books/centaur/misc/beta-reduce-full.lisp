@@ -62,8 +62,8 @@
            (beta-reduce-full-rec-list (cdr x) alist)))))
 
 (flag::make-flag beta-reduce-flg beta-reduce-full-rec
-                 :flag-mapping ((beta-reduce-full-rec . term)
-                                (beta-reduce-full-rec-list . list)))
+                 :flag-mapping ((beta-reduce-full-rec term)
+                                (beta-reduce-full-rec-list list)))
 
 (defthm len-of-beta-reduce-full-rec-list
   (equal (len (beta-reduce-full-rec-list x alist))

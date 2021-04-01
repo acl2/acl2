@@ -218,31 +218,31 @@
   (flag::make-flag glcp-generic-interp-flg
                    glcp-generic-interp-term
                    :flag-mapping
-                   ((glcp-generic-interp-test . test)
-                    (glcp-generic-interp-term-equivs . equivs)
-                    (glcp-generic-interp-term . term)
-                    ;; (glcp-generic-interp-fncall-ifs . fncall-ifs)
-                    ;; (glcp-generic-maybe-interp-fncall-ifs . maybe-fncall-ifs)
-                    (glcp-generic-interp-fncall . fncall)
-                    (glcp-generic-interp-if/or . if/or)
-                    (glcp-generic-maybe-interp . maybe)
-                    (glcp-generic-interp-or . or)
-                    (glcp-generic-interp-if . if)
-                    (glcp-generic-merge-branches . merge)
-                    (glcp-generic-merge-branch-subterms . merge-sub)
-                    (glcp-generic-merge-branch-subterm-lists . merge-list)
-                    (glcp-generic-maybe-simplify-if-test . maybe-test-simp)
-                    (glcp-generic-simplify-if-test . test-simp)
-                    (glcp-generic-simplify-if-test-fncall . test-simp-fncall)
-                    (glcp-generic-add-bvar-constraints . constraints)
-                    (glcp-generic-add-bvar-constraint-substs . constraint-substs)
-                    (glcp-generic-rewrite . rewrite)
-                    (glcp-generic-rewrite-apply-rules . rules)
-                    (glcp-generic-rewrite-apply-rule . rule)
-                    (glcp-generic-relieve-hyps . hyps)
-                    (glcp-generic-relieve-hyp . hyp)
-                    (glcp-generic-interp-list . list))
-                   :formals-subst ((state . st))
+                   ((glcp-generic-interp-test test)
+                    (glcp-generic-interp-term-equivs equivs)
+                    (glcp-generic-interp-term term)
+                    ;; (glcp-generic-interp-fncall-ifs fncall-ifs)
+                    ;; (glcp-generic-maybe-interp-fncall-ifs maybe-fncall-ifs)
+                    (glcp-generic-interp-fncall fncall)
+                    (glcp-generic-interp-if/or if/or)
+                    (glcp-generic-maybe-interp maybe)
+                    (glcp-generic-interp-or or)
+                    (glcp-generic-interp-if if)
+                    (glcp-generic-merge-branches merge)
+                    (glcp-generic-merge-branch-subterms merge-sub)
+                    (glcp-generic-merge-branch-subterm-lists merge-list)
+                    (glcp-generic-maybe-simplify-if-test maybe-test-simp)
+                    (glcp-generic-simplify-if-test test-simp)
+                    (glcp-generic-simplify-if-test-fncall test-simp-fncall)
+                    (glcp-generic-add-bvar-constraints constraints)
+                    (glcp-generic-add-bvar-constraint-substs constraint-substs)
+                    (glcp-generic-rewrite rewrite)
+                    (glcp-generic-rewrite-apply-rules rules)
+                    (glcp-generic-rewrite-apply-rule rule)
+                    (glcp-generic-relieve-hyps hyps)
+                    (glcp-generic-relieve-hyp hyp)
+                    (glcp-generic-interp-list list))
+                   :formals-subst ((state st))
                    :hints (("goal" :in-theory
                             (e/d (acl2-count
                                   acl2-count-of-car-g-apply->args
@@ -1374,19 +1374,19 @@
    ;; (def-glcp-interp-thm glcp-generic-interp-base-bvar-preserved
    ;;   :body (equal (base-bvar$a bvar-db1) (base-bvar$a bvar-db))
    ;;   :expand-calls t)
- 
+
    ;; (def-glcp-interp-thm glcp-generic-interp-next-bvar-incr
    ;;   :body (>= (next-bvar$a bvar-db1) (next-bvar$a bvar-db))
    ;;   :rule-classes :linear
    ;;   :expand-calls t)
- 
+
    ;; (def-glcp-interp-thm glcp-generic-interp-get-bvar->term-preserved
    ;;   :body (implies (and (<= (base-bvar$a bvar-db) (nfix n))
    ;;                       (< (nfix n) (next-bvar$a bvar-db)))
    ;;                  (equal (get-bvar->term$a n bvar-db1)
    ;;                         (get-bvar->term$a n bvar-db)))
    ;;   :expand-calls t)
- 
+
    ;; (def-glcp-interp-thm glcp-generic-interp-get-term->bvar-preserved
    ;;   :body (implies (get-term->bvar$a n bvar-db)
    ;;                  (equal (get-term->bvar$a n bvar-db1)
@@ -3330,7 +3330,7 @@
   :hints (("goal" :expand ((bvar-db-fix-env n min bvar-db p
                                             (bfr-param-env p env)
                                             var-env)))))
-  
+
 
 
 ;; (defthm bfr-list->s-of-set-non-dep-bounded
@@ -4838,7 +4838,7 @@
                                            interp-st (init-bvar-db next-bvar bvar-db1) state))
                                 env))))
     :hints(("Goal" :in-theory (enable glcp-vacuity-check-unsat-implies))))
-    
+
 
   (local (defthm bdd-mode-or-p-true-of-bfr-unparam-env-rev-special
            (implies (bfr-eval p (bfr-unparam-env p env))

@@ -107,8 +107,8 @@ seen.  This is just an aid to proving things about the faster, memoized version.
      (max depth1 depth2))))
 
 (flag::make-flag fg-depth-stack-flag fg-depth-stack
-                 :flag-mapping ((fg-depth-stack . node)
-                                (fg-depth-stack-list . list)))
+                 :flag-mapping ((fg-depth-stack node)
+                                (fg-depth-stack-list list)))
 
 (in-theory (disable fg-depth-stack
                     fg-depth-stack-list))
@@ -162,8 +162,8 @@ seen.  This is just an aid to proving things about the faster, memoized version.
            (fg-depth-dual-stack-list-ind (cdr x) stack stack2)))))
 
 (flag::make-flag fg-depth-dual-stack-flag fg-depth-dual-stack-ind
-                 :flag-mapping ((fg-depth-dual-stack-ind . node)
-                                (fg-depth-dual-stack-list-ind . list)))
+                 :flag-mapping ((fg-depth-dual-stack-ind node)
+                                (fg-depth-dual-stack-list-ind list)))
 
 
 ;; (defthm increment-not-equal-fg-loop
@@ -439,8 +439,8 @@ seen.  This is just an aid to proving things about the faster, memoized version.
 
 
 (flag::make-flag fg-depth-memo-flag fg-depth-memo
-                 :flag-mapping ((fg-depth-memo . node)
-                                (fg-depth-memo-list . list)))
+                 :flag-mapping ((fg-depth-memo node)
+                                (fg-depth-memo-list list)))
 
 
 (in-theory (disable fg-depth-memo fg-depth-memo-list))

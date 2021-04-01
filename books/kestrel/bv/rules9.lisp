@@ -363,9 +363,9 @@
 
 ;only needed for axe
 (defthmd acl2::bvcat-equal-rewrite-constant-alt
-  (implies (and (syntaxp (quotep acl2::x))
-                (syntaxp (quotep acl2::highsize))
-                (syntaxp (quotep acl2::lowsize))
+  (implies (and (syntaxp (and (quotep acl2::x)
+                              (quotep acl2::highsize)
+                              (quotep acl2::lowsize)))
                 (natp acl2::lowsize)
                 (natp acl2::highsize))
            (equal (equal (bvcat acl2::highsize acl2::highval
