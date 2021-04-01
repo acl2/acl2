@@ -47,8 +47,8 @@
 (FLAG::make-flag flag-pseudo-termp
                  pseudo-termp
                  :flag-var flag
-                 :flag-mapping ((pseudo-termp . term)
-                                (pseudo-term-listp . list))
+                 :flag-mapping ((pseudo-termp term)
+                                (pseudo-term-listp list))
                  ;; :hints {for the measure theorem}
                  :defthm-macro-name defthm-pseudo-termp
                  )
@@ -60,7 +60,6 @@
   (set-enforce-redundancy t) ;; implicitly local
   (FLAG::make-flag pseudo-termp
                    :flag-var flag
-                   ;; Matt K. mod: Use new syntax
                    :flag-mapping ((pseudo-termp term)
                                   (pseudo-term-listp list))
                    ;; :hints {for the measure theorem}
@@ -217,7 +216,6 @@
 
 (flag::make-flag flag-my-evenp
                  my-evenp
-                 ;; Matt K. mod: Mix old and new syntax
                  :flag-mapping ((my-evenp :even)
                                 (my-oddp  :odd)))
 

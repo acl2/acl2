@@ -227,8 +227,8 @@
    (make-flag flag-sublis-expr+
               sublis-expr+ ; any member of the clique
               ;; optional arguments:
-              :flag-mapping ((sublis-expr+     . term)
-                             (sublis-expr+-lst . list))
+              :flag-mapping ((sublis-expr+     term)
+                             (sublis-expr+-lst list))
               :defthm-macro-name defthm-sublis-expr+
               :flag-var flag)
 

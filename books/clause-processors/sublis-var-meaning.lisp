@@ -149,8 +149,8 @@
            (termlist-subst (cdr x) alist)))))
 
 (make-flag term-subst-flg term-subst
-           :flag-mapping ((term-subst . term)
-                          (termlist-subst . list)))
+           :flag-mapping ((term-subst term)
+                          (termlist-subst list)))
 
 ;; (defthm-term-subst-flg
 ;;   (defthm term-subst-when-unchanged

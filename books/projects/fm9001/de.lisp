@@ -1302,8 +1302,8 @@
 (make-flag flag-de ; flag function name
            de      ; any member of the clique
            ;; optional arguments:
-           :flag-mapping ((de      . term)
-                          (de-occ  . list))
+           :flag-mapping ((de      term)
+                          (de-occ  list))
            :defthm-macro-name defthm-de
            :flag-var flag)
 

@@ -304,8 +304,8 @@
   ;; Kind of bulky, but this way we don't have to export flag-pseudo-termp.
   (local (flag::make-flag flag-pseudo-termp
                           pseudo-termp
-                          :flag-mapping ((pseudo-termp . term)
-                                         (pseudo-term-listp . list))))
+                          :flag-mapping ((pseudo-termp term)
+                                         (pseudo-term-listp list))))
 
   (local (defthm-flag-pseudo-termp lemma
            (term (implies (and (pseudo-termp x)

@@ -130,18 +130,6 @@ the list @('y')."
                     (prefixp (nthcdr (len y) x) z))))
     :hints (("goal" :in-theory (enable prefixp nthcdr))))
 
-  (local (defthm equal-len-0
-           (equal (equal (len x) 0)
-                  (atom x))))
-
-  (defthm prefixp-of-append-when-same-length
-    (implies (<= (len x) (len y))
-             (equal (prefixp x (append y z))
-                    (prefixp x y)))
-    :hints(("Goal"
-            :induct (prefixp x y)
-            :in-theory (enable prefixp list-equiv))))
-
   (defthm prefixp-when-equal-lengths
     (implies (>= (len x) (len y))
              (equal (prefixp x y)
