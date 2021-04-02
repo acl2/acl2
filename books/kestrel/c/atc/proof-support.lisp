@@ -474,18 +474,6 @@
              (not (pointerp x)))
     :enable (sintp pointerp))
 
-  (defruled value-kind-when-sintp
-    (implies (sintp x)
-             (equal (value-kind x)
-                    :sint))
-    :enable value-kind)
-
-  (defruled value-kind-when-ucharp
-    (implies (ucharp x)
-             (equal (value-kind x)
-                    :uchar))
-    :enable value-kind)
-
   (defruled len-of-cons
     (equal (len (cons x y))
            (1+ (len y)))
@@ -602,8 +590,6 @@
     sint-nonzerop-of-1
     sint-lognot-of-0
     sint-lognot-of-1
-    value-kind-when-sintp
-    value-kind-when-ucharp
     value-result-fix-when-valuep
     value-result-fix-of-if
     errorp-of-if
