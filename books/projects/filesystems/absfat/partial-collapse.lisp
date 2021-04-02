@@ -3281,35 +3281,8 @@
   :hints (("goal" :in-theory (disable valid-seqp-after-collapse-this-lemma-5)
            :use valid-seqp-after-collapse-this-lemma-5)))
 
-(local
- (defthm
-   valid-seqp-after-collapse-this-lemma-7
-   (implies
-    (equal (nth (+ -1 n)
-                (seq-this (collapse-this frame x)))
-           (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
-    (not
-     (member-equal
-      (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame))))
-      (frame-addrs-before-seq
-       frame
-       (frame-val->src$inline
-        (cdr
-         (assoc-equal
-          (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame))))
-          (frame->frame frame))))
-       (take (binary-+ -1 n)
-             (seq-this (collapse-this frame x)))))))
-   :hints
-   (("goal"
-     :in-theory (disable (:rewrite member-equal-nth-take-when-no-duplicatesp))
-     :use (:instance (:rewrite member-equal-nth-take-when-no-duplicatesp)
-                     (l (seq-this (collapse-this frame x)))
-                     (n (+ -1 n))
-                     (x (nth (+ -1 n) (seq-this (collapse-this frame x)))))))))
-
 (defthm
-  valid-seqp-after-collapse-this-lemma-8
+  valid-seqp-after-collapse-this-lemma-7
   (implies (not (member-equal x seq))
            (and
             (equal (frame-val->path
@@ -5155,7 +5128,7 @@
        :in-theory (e/d (member-of-take)
                        ((:rewrite binary-append-take-nthcdr)
                         (:rewrite subsetp-append1)
-                        valid-seqp-after-collapse-this-lemma-8))
+                        valid-seqp-after-collapse-this-lemma-7))
        :use
        ((:instance
          (:rewrite binary-append-take-nthcdr)
@@ -7003,8 +6976,8 @@
    :hints
    (("goal"
      :do-not-induct t
-     :in-theory (disable (:rewrite valid-seqp-after-collapse-this-lemma-8))
-     :use (:instance (:rewrite valid-seqp-after-collapse-this-lemma-8)
+     :in-theory (disable (:rewrite valid-seqp-after-collapse-this-lemma-7))
+     :use (:instance (:rewrite valid-seqp-after-collapse-this-lemma-7)
                      (seq (seq-this (collapse-this frame x)))
                      (frame (collapse-this frame x))
                      (x (nth (+ -1 n) (seq-this frame))))))))
