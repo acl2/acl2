@@ -454,11 +454,6 @@
              (not (errorp x)))
     :enable (errorp uchar-arrayp))
 
-  (defruled not-sintp-when-pointerp
-    (implies (pointerp x)
-             (not (sintp x)))
-    :enable (pointerp sintp))
-
   (defruled not-ucharp-when-pointerp
     (implies (pointerp x)
              (not (ucharp x)))
@@ -582,7 +577,6 @@
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
     not-errorp-when-uchar-arrayp
-    not-sintp-when-pointerp
     not-ucharp-when-pointerp
     not-ucharp-when-sintp
     not-pointerp-when-sintp
