@@ -1,7 +1,7 @@
 ; Support for worklist algorithms on DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; a book about arrays used in worklist algorithms to track whether nodes are
-;; handled (needed for termination).  SEE WORKLIST-ARRAYS.LISP FOR A MORE
+;; handled (needed for termination).  SEE WORKLIST-ARRAY.LISP FOR A MORE
 ;; MODERN APPROACH
 
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
@@ -23,7 +23,7 @@
 ;;;
 
 ;; for the measure
-;; the number of handled nodes (indicated by non-nil array values in the range [0,n].
+;; the number of handled nodes (indicated by non-nil array values) in the range [0,n].
 (defun num-handled-nodes-aux (n array-name array)
   (declare (xargs :measure (nfix (+ 1 n))
                   :guard (and (integerp n)
