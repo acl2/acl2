@@ -36,6 +36,15 @@
                     1))))
   )
 
+;; rtl::residue considers 0 not to be a quadratic residue,
+;; but 0*0 = 0 so we consider it a square root.
+;; This theorem helps prove things with case splits.
+;;
+(defthm has-square-root-of-0?
+  (implies (rtl::primep p)
+           (has-square-root? 0 p)))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +72,7 @@
 
 (defthm residue-meaning
   (implies (and (rtl::primep p)
-                (not (= p 2))
+                (not (equal p 2))
                 (oddp p)
                 (natp m) (< m p)
                 (not (equal 0 m)) ; This is needed because rtl::residue
@@ -77,7 +86,7 @@
 
 (defthmd residue-meaning-backwards
   (implies (and (rtl::primep p)
-                (not (= p 2))
+                (not (equal p 2))
                 (oddp p)
                 (natp m) (< m p)
                 (not (equal 0 m)))
@@ -85,6 +94,7 @@
                   (rtl::residue m p))))
 
 (theory-invariant (incompatible (:rewrite residue-meaning) (:rewrite residue-meaning-backwards)))
+
 
 
 ;; 3. Prove if some x doesn't have a square root
@@ -100,14 +110,11 @@
                 (natp x) (< x p)
                 (natp y) (< y p)
                 (rtl::primep p))
-           (equal (equal x (mod (* y y) p))
-                  ;; A future improvement would be to remove this (equal x 0) check,
-                  ;; since has-square-root? is true if x = 0.
-                  (if (equal x 0)
-                      (equal 0 (mod (* y y) p))
-                    nil)))
+           (not (equal x (mod (* y y) p)))
+           )
   :hints (("Goal" :in-theory (e/d (residue-meaning-backwards)
                                   (residue-meaning has-square-root?))
+                  :cases ((equal x 0))
                   :use ((:instance rtl::not-res-no-root
                                    (acl2::p p) (acl2::m x) (acl2::j y)))))
   )
