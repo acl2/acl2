@@ -170,12 +170,13 @@
   (:pointer pointer)
   :pred valuep)
 
-(defruled sintp-when-valuep-and-not-ucharp/pointerp
-  (implies (and (valuep x)
-                (not (ucharp x))
-                (not (pointerp x)))
-           (sintp x))
-  :enable valuep)
+(defrule valuep-possibilities
+  (implies (valuep x)
+           (or (ucharp x)
+               (sintp x)
+               (pointerp x)))
+  :enable valuep
+  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,6 +188,13 @@
   (implies (and (value-resultp x)
                 (not (valuep x)))
            (errorp x)))
+
+(defrule value-resultp-possibilities
+  (implies (value-resultp x)
+           (or (valuep x)
+               (errorp x)))
+  :enable value-resultp
+  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1177,9 +1185,13 @@
   :hooks (:fix)
   :verify-guards nil ; done below
   ///
-  (verify-guards exec-expr-pure
-    :hints
-    (("Goal" :in-theory (enable errorp-when-value-resultp-and-not-valuep)))))
+
+  (defret value-resultp-of-exec-expr-pure-forward
+    (value-resultp result)
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((exec-expr-pure e compst)))))
+
+  (verify-guards exec-expr-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
