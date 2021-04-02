@@ -1,7 +1,7 @@
 ; Substituting for a variable in the Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -30,6 +30,20 @@
    (equal (equal (len (remove-equal a x)) (len x))
           (not (member-equal a x)))))
 
+(defthm nat-listp-of-remove-equal
+  (implies (nat-listp x)
+           (nat-listp (remove-equal a x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+(local (in-theory (disable REMOVE-EQUAL))) ;prevent inductions
+
+;move
+(defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
+                (natp n))
+           (iff (consp (dargs (aref1 dag-array-name dag-array n)))
+                (dargs (aref1 dag-array-name dag-array n)))))
+
 ;decides whether we should substitute (is it the nodenum of a var, and is it equated to a term that doesn't include itself?)
 ;returns (mv substp var nodenum-of-var)
 ;equated-thing is a quotep or nodenum
@@ -48,12 +62,16 @@
                  ;; TODO: Consider using a version of supporters-of-node that uses a worklist instead of walking over every node <= to the node of interest. See vars-that-support-dag-node.
                  ;; Also, we really only need supporting vars, not all suporters
                  (if (member nodenum-or-quotep (supporters-of-node equated-thing 'dag-array dag-array 'tag-array-for-supporters))
-                     (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;fixme print the terms involved?
+                     (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;; todo: print the terms involved?
                              nil)
                    t))
             (mv t expr nodenum-or-quotep)
           (mv nil nil nil)))
     (mv nil nil nil)))
+
+;;;
+;;; find-var-and-expr-to-subst
+;;;
 
 ;; Returns (mv foundp var nodenum-of-var equated-thing) where equated-thing will always be a nodenum.
 ;the awkwardness here is to avoid doing the aref more than once..
@@ -105,19 +123,9 @@
               dag-len))
   :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst NODENUM-OF-VAR-TO-SUBSTP))))
 
-(defthm nat-listp-of-remove-equal
-  (implies (nat-listp x)
-           (nat-listp (remove-equal a x)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
-
-(local (in-theory (disable REMOVE-EQUAL))) ;prevent inductions
-
-;move
-(defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                (natp n))
-           (iff (consp (dargs (aref1 dag-array-name dag-array n)))
-                (dargs (aref1 dag-array-name dag-array n)))))
+;;;
+;;; check-for-var-subst-literal
+;;;
 
 ;; Returns (mv foundp var nodenum-of-var nodenum-or-quotep-to-put-in).
 ;; nodenum-or-quotep-to-put-in may now always be a nodenum?
@@ -139,6 +147,10 @@
             (mv nil nil nil nil) ;fail
           (find-var-and-expr-to-subst (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
           )))))
+
+;;;
+;;; substitute-a-var
+;;;
 
 ;; Searches through literal-nodenums for a (negated) equality involving a variable (recall that a literal can be safely assumed false when rewriting other literals).
 ;; Requires that the variable is equated to some term not involving itself (to prevent loops).
@@ -208,8 +220,8 @@
               (len all-literal-nodenums)))
   :hints (("Goal" :in-theory (enable substitute-a-var))))
 
-(local (in-theory (enable check-for-var-subst-literal
-                          CONSP-OF-CDR))) ;for the def-dag-builder-theorems just below
+;;for the def-dag-builder-theorems just below (todo: should not be needed?):
+(local (in-theory (enable check-for-var-subst-literal consp-of-cdr)))
 
 (def-dag-builder-theorems
   (substitute-a-var literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
@@ -217,7 +229,11 @@
   :hyps ((nat-listp literal-nodenums)
          (all-< literal-nodenums dag-len)
          (nat-listp all-literal-nodenums)
-         (all-< all-literal-nodenums dag-len)))
+         (all-< all-literal-nodenums dag-len))
+  ;; TODO: Why doesn't this work without the in-theory event above?
+  ;; :hints (("Goal" :in-theory (enable substitute-a-var
+  ;;                                    check-for-var-subst-literal)))
+  )
 
 ;; (defthm <=-of-mv-nth-4-of-substitute-a-var
 ;;   (implies (and (mv-nth 1 (substitute-a-var literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
