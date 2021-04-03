@@ -224,7 +224,7 @@
       1st-complete-under-path-of-frame->frame-of-partial-collapse)))))
 
 ;; In some circumstances, this is more general than
-;; valid-seqp-after-collapse-this-lemma-8.
+;; valid-seqp-after-collapse-this-lemma-7.
 (defthm
   path-clear-partial-collapse-when-zp-src-lemma-5
   (implies (and (frame-p frame)
@@ -1817,7 +1817,7 @@
            :in-theory (e/d
                        ((:linear
                          path-clear-partial-collapse-when-zp-src-lemma-6))
-                       (prefixp-when-prefixp)))))
+                       (prefixp-when-prefixp len-when-prefixp)))))
 
 (local
  (defthmd

@@ -739,9 +739,9 @@
 ;; time. I expect this to exacerbate any bad decisions I make now, which is why
 ;; I'm hoping to get this right before I go too far.
 ;;
-;; Having written this question down and received advice from Dr Moore, Dr
-;; Swords and an acknowledgement from Dr Ray, I ultimately chose to make the
-;; predicate. Let's see how it pans out.
+;; Having written this question down and received advice from Dr Moore, advice
+;; from Dr Swords, and an acknowledgement from Dr Ray, I ultimately chose to
+;; make the predicate. Let's see how it pans out.
 (defthm
   absfat-oracle-single-step-refinement
   (implies

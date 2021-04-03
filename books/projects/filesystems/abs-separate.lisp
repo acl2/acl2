@@ -1093,7 +1093,7 @@
                  :define t
                  :forward t)
 
-;; This is a hack...
+;; This is a hack, but a long-lived one.
 (defthm
   no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
   (implies (abs-file-alist-p abs-file-alist)
@@ -1131,7 +1131,14 @@
                                       x))
                (not
                 (intersectp-equal (abs-addrs (abs-fs-fix abs-file-alist))
-                                  x)))))))
+                                  x)))))
+   (:rewrite
+    :corollary
+    (implies
+     (and (abs-file-alist-p abs-file-alist)
+          (atom
+           (abs-addrs abs-file-alist)))
+     (not (consp (abs-addrs (abs-fs-fix abs-file-alist))))))))
 
 ;; The abs-file-alist-p hypothesis is required because otherwise the fixing
 ;; could introduce a lot of (duplicate) zeros.
@@ -2608,16 +2615,6 @@
   :hints (("goal" :use ((:instance 1st-complete-of-true-list-fix
                                    (frame frame-equiv))
                         1st-complete-of-true-list-fix))))
-
-(defthm
-  1st-complete-correctness-2
-  (implies (and (frame-p frame)
-                (atom (assoc-equal 0 frame))
-                (consp (assoc-equal x frame))
-                (abs-complete (frame-val->dir (cdr (assoc-equal x frame)))))
-           (< 0 (1st-complete frame)))
-  :hints (("goal" :in-theory (enable 1st-complete)))
-  :rule-classes :linear)
 
 (defthm frame-val-p-of-cdr-of-assoc-equal-when-frame-p
   (implies (frame-p x)
@@ -6194,6 +6191,34 @@
 (defthm nat-listp-of-frame-addrs-before
   (nat-listp (frame-addrs-before frame x n))
   :hints (("goal" :in-theory (enable frame-addrs-before))))
+
+(defthm
+  1st-complete-correctness-2
+  (implies (and (frame-p frame)
+                (atom (assoc-equal 0 frame))
+                (equal 0 (1st-complete frame)))
+           (equal (abs-complete (frame-val->dir (cdr (assoc-equal x frame))))
+                  (not (consp (assoc-equal x frame)))))
+  :hints (("goal" :in-theory (enable 1st-complete)))
+  :rule-classes
+  ((:linear
+    :corollary
+    (implies (and (frame-p frame)
+                  (atom (assoc-equal 0 frame))
+                  (consp (assoc-equal x frame))
+                  (abs-complete (frame-val->dir (cdr (assoc-equal x frame)))))
+             (< 0 (1st-complete frame))))
+   :rewrite
+   (:rewrite
+    :corollary
+    (implies
+     (and (frame-p frame)
+          (atom (assoc-equal 0 frame))
+          (equal 0 (1st-complete frame)))
+     (equal (consp (abs-addrs (frame-val->dir (cdr (assoc-equal x frame)))))
+            (consp (assoc-equal x frame))))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable abs-complete))))))
 
 (defthm member-of-frame-addrs-before-lemma-2
   (implies (and (atom (assoc-equal y (frame->frame frame)))

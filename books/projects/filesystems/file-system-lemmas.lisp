@@ -971,8 +971,9 @@
                       (+ 1 (len alist))))))
 
 (defthm remove-assoc-when-absent-1
-  (implies (and (not (null x))
-                (atom (assoc-equal x alist)))
+  (implies (and
+            (atom (assoc-equal x alist))
+            (case-split (not (null x))))
            (equal (remove-assoc-equal x alist)
                   (true-list-fix alist))))
 
