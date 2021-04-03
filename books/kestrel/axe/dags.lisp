@@ -33,6 +33,7 @@
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -119,10 +120,10 @@
   :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0 dargs))))
 
 (defthm all-dargp-less-than-of-dargs-of-lookup-equal
-  (implies (and (natp nodenum)
+  (implies (and (weak-dagp-aux dag)
+                (natp nodenum)
                 (natp nodenum2)
                 (<= nodenum nodenum2)
-                (weak-dagp-aux dag)
                 (consp (lookup-equal nodenum dag))
                 (not (equal (car (lookup-equal nodenum dag))
                             'quote)))
@@ -146,17 +147,34 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable weak-dagp-aux strip-cars))))
 
+(defthm weak-dagp-aux-of-append
+  (equal (weak-dagp-aux (append x y))
+         (and (weak-dagp-aux (true-list-fix x))
+              (weak-dagp-aux y)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthm weak-dagp-aux-of-reverse-list
+  (equal (weak-dagp-aux (reverse-list dag))
+         (weak-dagp-aux (true-list-fix dag)))
+  :hints (("Goal" :in-theory (enable reverse-list))))
+
 ;this does enforce that children are less than the parents
 ;does not enforce that all the nodes come in order!
 ;does not enforce that child nodes exist!
 ;does not enforce that each node appears only once
 ;does not enforce that there are no gaps in the node numbering
 ;does not enforce that function calls in dag exprs have the right arity
-(defun weak-dagp (dag)
+(defund weak-dagp (dag)
   (declare (xargs :guard t))
   (and ;(true-listp dag)
        (consp dag) ;a dag can't be empty (but often we have items that are either dags or quoted constants)
        (weak-dagp-aux dag)))
+
+(defthm weak-dagp-of-cdr
+  (implies (weak-dagp dag)
+           (equal (weak-dagp (cdr dag))
+                  (consp (cdr dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
 
 ;keeping this disabled for now, since it could be expensive.
 (defthmd alistp-when-weak-dagp
@@ -167,6 +185,46 @@
   (implies (weak-dagp dag)
            (alistp dag))
   :rule-classes :forward-chaining)
+
+(defthm weak-dagp-forward-to-natp-of-car-of-car
+  (implies (weak-dagp dag)
+           (natp (car (car dag))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable weak-dagp))))
+
+(defthm weak-dagp-of-reverse-list
+  (equal (weak-dagp (reverse-list dag))
+         (weak-dagp (true-list-fix dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
+
+(defthm integerp-of-car-of-car-when-weak-dagp-cheap
+  (implies (and (weak-dagp dag)
+                (consp dag))
+           (integerp (car (car dag))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
+
+(defthm true-listp-of-dargs-of-lookup-equal-when-weak-dagp-cheap
+  (implies (weak-dagp dag)
+           (true-listp (dargs (lookup-equal nodenum dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
+
+(defthm all-dargp-less-than-of-dargs-of-lookup-equal-when-weak-dagp
+  (implies (and (weak-dagp dag)
+                (natp nodenum)
+                (natp nodenum2)
+                (<= nodenum nodenum2)
+                (consp (lookup-equal nodenum dag))
+                (not (equal (car (lookup-equal nodenum dag))
+                            'quote)))
+           (all-dargp-less-than (dargs (lookup-equal nodenum dag)) nodenum2))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
+
+(defthm dag-exprp0-of-lookup-equal-when-weak-dagp
+  (implies (and (weak-dagp dag)
+                (lookup-equal n dag))
+           (dag-exprp0 (lookup-equal n dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
 
 ;;
 ;; pseudo-dagp
@@ -302,13 +360,13 @@
   (implies (and (pseudo-dagp-aux dag nodenum)
                 (natp nodenum))
            (weak-dagp dag))
-  :hints (("Goal" :in-theory (enable PSEUDO-DAGP-AUX WEAK-DAGP-AUX))))
+  :hints (("Goal" :in-theory (enable weak-dagp pseudo-dagp-aux weak-dagp-aux))))
 
 ;; Pseudo-dagp is a stronger check
 (defthm weak-dagp-when-pseudo-dagp
   (implies (pseudo-dagp x)
            (weak-dagp x))
-  :hints (("Goal" :in-theory (enable PSEUDO-DAGP))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defun pseudo-dag-or-quotep (obj)
   (declare (xargs :guard t))
@@ -556,7 +614,7 @@
   (implies (and (symbol-listp acc)
                 (weak-dagp dag))
            (symbol-listp (dag-vars-aux dag acc)))
-  :hints (("Goal" :in-theory (enable dag-exprp0))))
+  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
 
 (defund dag-vars (dag)
   (declare (xargs :guard (or (quotep dag)
@@ -602,7 +660,7 @@
   (implies (and (symbol-listp acc)
                 (weak-dagp dag))
            (symbol-listp (dag-fns-aux dag acc)))
-  :hints (("Goal" :in-theory (enable dag-exprp0))))
+  :hints (("Goal" :in-theory (enable weak-dagp dag-exprp0))))
 
 ;dag is a dag-lst or quotep
 (defund dag-fns (dag)
@@ -858,14 +916,20 @@
   (declare (xargs :guard (alistp dag)))
   (dag-constants-aux dag nil))
 
-
-
 (defthm symbolp-of-car-of-lookup-equal
   (implies (and (weak-dagp-aux dag)
 ;                (<= nodenum-or-quotep (car (car dag)))
                 ;(natp nodenum-or-quotep)
                 )
            (symbolp (car (lookup-equal nodenum-or-quotep dag)))))
+
+(defthm symbolp-of-car-of-lookup-equal-when-weak-dagp
+  (implies (and (weak-dagp dag)
+;                (<= nodenum-or-quotep (car (car dag)))
+                ;(natp nodenum-or-quotep)
+                )
+           (symbolp (car (lookup-equal nodenum-or-quotep dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
 
 ;; ;; good-dag-at-nodenump is what we need to justify processing a dag by
 ;; ;; repeatedly looking up child nodes.  Does check that children are less than
@@ -984,16 +1048,7 @@
            (nat-listp (append-atoms args acc)))
   :hints (("Goal" :in-theory (enable append-atoms nat-listp))))
 
-(defthm weak-dagp-aux-of-append
-  (equal (weak-dagp-aux (append x y))
-         (and (weak-dagp-aux (true-list-fix x))
-              (weak-dagp-aux y)))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-(defthm weak-dagp-aux-of-reverse-list
-  (equal (weak-dagp-aux (reverse-list dag))
-         (weak-dagp-aux (true-list-fix dag)))
-  :hints (("Goal" :in-theory (enable reverse-list))))
 
 
 ;kill
@@ -1431,7 +1486,8 @@
 
 (defthm dag-exprp0-of-cdr-of-car-when-weak-dagp
   (implies (weak-dagp dag)
-           (dag-exprp0 (cdr (car dag)))))
+           (dag-exprp0 (cdr (car dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp))))
 
 (defthm pseudo-dagp-forward-to-consp-of-car
   (implies (pseudo-dagp dag)
