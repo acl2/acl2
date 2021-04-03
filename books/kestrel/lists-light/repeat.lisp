@@ -152,3 +152,10 @@
              nil
            (list x)))
   :hints (("Goal" :in-theory (enable repeat))))
+
+;; The use of IFF here is to match STD
+(defthm nat-listp-of-repeat
+  (iff (nat-listp (repeat n x))
+       (or (natp x)
+           (zp n)))
+  :hints (("Goal" :in-theory (enable nat-listp repeat))))
