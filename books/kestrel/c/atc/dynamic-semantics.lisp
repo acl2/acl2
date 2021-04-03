@@ -193,34 +193,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-
-  (defrulel disjoint
-    (implies (errorp x)
-             (not (valuep x)))
-    :enable (errorp valuep ucharp sintp pointerp))
-
-  (fty::defflexsum value-result
-    :short "Fixtype of values and errors."
-    (:ok :fields ((get :type value :acc-body acl2::x))
-     :ctor-body get
-     :cond (valuep acl2::x))
-    (:err :fields ((get :type error :acc-body acl2::x))
-     :ctor-body get)
-    :pred value-resultp
-    :fix value-result-fix
-    :equiv value-result-equiv
-    ///
-
-    (defrule value-resultp-when-valuep
-      (implies (valuep x)
-               (value-resultp x))
-      :enable value-resultp)
-
-    (defrule value-resultp-when-errorp
-      (implies (errorp acl2::x)
-               (value-resultp acl2::x))
-      :enable value-resultp)))
+(defresult value "values"
+  :enable (errorp valuep ucharp sintp pointerp))
 
 (defruled valuep-when-value-resultp-and-not-errorp
   (implies (and (value-resultp x)
@@ -262,9 +236,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable valuep ucharp sintp pointerp)))
-  (defresult value-option "optional values"))
+(defresult value-option "optional values"
+  :enable (errorp value-optionp valuep ucharp sintp pointerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
