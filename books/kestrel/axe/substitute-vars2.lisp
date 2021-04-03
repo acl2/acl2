@@ -13,14 +13,22 @@
 (in-package "ACL2")
 
 (include-book "substitute-vars")
-(include-book "rebuild-nodes2") ;just for remove-duplicates-from-sorted-list (todo: move that!)
+(include-book "remove-duplicates-from-sorted-list")
+(include-book "rebuild-nodes2") ;reduce
 (include-book "../acl2-arrays/typed-acl2-arrays")
+(local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable natp strip-cars dargp)))
+
+(defthm nat-listp-of-true-list-fix
+  (implies (nat-listp x)
+           (nat-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
 
 ;move
 (defthm not-consp-of-mv-nth-3-of-find-var-and-expr-to-subst
