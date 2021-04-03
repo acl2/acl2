@@ -24,18 +24,22 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 
+;; See also substitute-vars2.lisp
+
 ;move
+(defthm not-<-of-+-1-of-maxelem
+ (implies (and (all-< x y)
+               (integerp y)
+               (all-integerp x)
+               (consp x))
+          (not (< y (+ 1 (maxelem x)))))
+ :hints (("Goal" :in-theory (enable all-< maxelem))))
+
 (local
- (defthm equal-of-len-of-remove-equal-same
-   (equal (equal (len (remove-equal a x)) (len x))
-          (not (member-equal a x)))))
-
-(defthm nat-listp-of-remove-equal
-  (implies (nat-listp x)
-           (nat-listp (remove-equal a x)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
-
-(local (in-theory (disable REMOVE-EQUAL))) ;prevent inductions
+ ;; disabled by default
+ (defthmd rationalp-when-natp
+   (implies (natp x)
+            (rationalp x))))
 
 ;move
 (defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
@@ -155,7 +159,7 @@
 ;; Searches through literal-nodenums for a (negated) equality involving a variable (recall that a literal can be safely assumed false when rewriting other literals).
 ;; Requires that the variable is equated to some term not involving itself (to prevent loops).
 ;; If such a (negated) equality is found, it is used to substitute in all the other literals.  The literal representing the equality is then dropped, eliminating that variable from the DAG.
-;; Returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;; Returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;fixme could this ever transform a literal into a constant?
 ;; TODO: Consider substituting multiple variables at once.
 ;; Doesn't change any existing nodes in the dag (just builds new ones).
@@ -269,24 +273,6 @@
                   (mv-nth 4 (substitute-a-var literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
   :hints (("Goal" :in-theory (enable substitute-a-var))))
 
-;move
-(defthm not-<-of-+-1-of-maxelem
- (implies (and (all-< x y)
-               (integerp y)
-               (all-integerp x)
-               (consp x))
-          (not (< y (+ 1 (maxelem x)))))
- :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-(local
- (defthm all-integerp-when-nat-listp
-  (implies (nat-listp x)
-           (all-integerp x))))
-
-(local
- (DEFTHM RATIONALP-WHEN-natp
-   (IMPLIES (natp X) (RATIONALP X))))
-
 ;; Repeatedly get rid of vars by substitution.
 ;; Returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;; Doesn't change any nodes if prover-depth > 0.
@@ -299,7 +285,8 @@
                               (natp prover-depth)
                               (posp initial-dag-len)
                               (booleanp changep-acc))
-                  :measure (len literal-nodenums)))
+                  :measure (len literal-nodenums)
+                  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))))
   (b* (;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
        ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (substitute-a-var literal-nodenums literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))

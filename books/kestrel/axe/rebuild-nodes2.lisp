@@ -441,7 +441,7 @@
        ((when erp) (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((mv changed-literal-nodenums
             unchanged-literal-nodenums)
-        (maybe-translate-nodes literal-nodenums
+        (maybe-translate-literals literal-nodenums
                                translation-array
                                ;; Initialize accumulator to include all uneffected nodes
                                nil nil)))

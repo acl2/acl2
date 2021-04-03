@@ -768,7 +768,7 @@
        ;; Look up the possibly-new nodes that represent the literals:
        ((mv changed-literal-nodenums
             unchanged-literal-nodenums)
-        (translate-nodes literal-nodenums ;; could use sorted-literal-nodenums instead
+        (translate-literals literal-nodenums ;; could use sorted-literal-nodenums instead
                          translation-array
                          nil nil)))
     (mv (erp-nil)
