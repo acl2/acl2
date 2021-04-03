@@ -55,6 +55,10 @@
   :rule-classes ((:linear :trigger-terms ((len (remove-equal x l)))))
   :hints (("Goal" :in-theory (enable remove-equal))))
 
+(defthm equal-of-len-of-remove-equal-and-len-same
+   (equal (equal (len (remove-equal a x)) (len x))
+          (not (member-equal a x))))
+
 ;; ACL2 puts in a loop-stopper.
 (defthm remove-equal-of-remove-equal
   (equal (remove-equal x (remove-equal y l))
@@ -69,3 +73,8 @@
   (implies (not (equal x y))
            (iff (member-equal x (remove-equal y l))
                 (member-equal x l))))
+
+(defthm nat-listp-of-remove-equal
+  (implies (nat-listp x)
+           (nat-listp (remove-equal a x)))
+  :hints (("Goal" :in-theory (enable remove-equal nat-listp))))
