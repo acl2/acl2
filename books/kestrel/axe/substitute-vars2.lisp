@@ -25,11 +25,6 @@
 
 (local (in-theory (disable natp strip-cars dargp)))
 
-(defthm nat-listp-of-true-list-fix
-  (implies (nat-listp x)
-           (nat-listp (true-list-fix x)))
-  :hints (("Goal" :in-theory (enable nat-listp))))
-
 ;move
 (defthm not-consp-of-mv-nth-3-of-find-var-and-expr-to-subst
   (implies (and (mv-nth 0 (find-var-and-expr-to-subst lhs rhs dag-array dag-len))

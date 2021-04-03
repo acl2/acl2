@@ -15,6 +15,7 @@
 (include-book "rebuild-nodes") ;todo: reduce
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/all-less-rules" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system)) ;needed for reasoning about sort
@@ -27,6 +28,104 @@
  (defthmd acl2-numberp-when-integerp
    (implies (integerp x)
             (acl2-numberp x))))
+
+
+;;;
+;;; translate-literals
+;;;
+
+;; This throws an error if a node translates to a constant (or to nothing).
+;; Returns (mv changed-nodes unchanged-nodes), where the union of CHANGED-NODES
+;; and UNCHANGED-NODES should be (a permutation of) the translation of the
+;; NODENUMS.  TODO: Compare to the renaming-array stuff.
+(defund translate-literals (nodenums translation-array changed-acc unchanged-acc)
+  (declare (xargs :guard (and (true-listp nodenums)
+                              (array1p 'translation-array translation-array)
+                              (all-natp nodenums)
+                              (all-< nodenums (alen1 'translation-array translation-array))
+                              (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                              (true-listp changed-acc)
+                              (true-listp unchanged-acc))))
+  (if (endp nodenums)
+      (mv changed-acc unchanged-acc)
+    (let* ((nodenum (first nodenums))
+           (res (aref1 'translation-array translation-array nodenum)))
+      (if res                  ;; decide which accumulator to extend
+          (if (not (natp res)) ;todo: can't happen
+              (prog2$ (er hard? 'translate-literals "A literal, node ~x0, translated to a non-natp, ~x1." nodenum res)
+                      ;; for ease of reasoning:
+                      (mv (append (repeat (len nodenums) 0) changed-acc)
+                          unchanged-acc))
+            ;; this literal was changed:
+            (progn$ ;; (cw "~x0 became ~x1.~%" nodenum res)
+             (translate-literals (rest nodenums) translation-array (cons res changed-acc) unchanged-acc)))
+        ;; no change:
+        (translate-literals (rest nodenums) translation-array changed-acc (cons nodenum unchanged-acc))))))
+
+;rename
+(defthm len-of-translate-literals
+  (equal (+ (len (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc)))
+            (len (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+         (+ (len nodenums)
+            (len changed-acc)
+            (len unchanged-acc)))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm nat-listp-of-mv-nth-0-of-translate-literals
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc))
+           (nat-listp (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm nat-listp-of-mv-nth-1-of-translate-literals
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc))
+           (nat-listp (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm true-listp-of-mv-nth-0-of-translate-literals
+  (implies (true-listp changed-acc)
+           (true-listp (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm true-listp-of-mv-nth-1-of-translate-literals
+  (implies (true-listp unchanged-acc)
+           (true-listp (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm all-<-of-mv-nth-0-of-translate-literals
+  (implies (and (posp bound)
+                (all-< changed-acc bound)
+                ;(all-< unchanged-acc bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm all-<-of-mv-nth-1-of-translate-literals
+  (implies (and (posp bound)
+                (all-< nodenums bound)
+                (all-< unchanged-acc bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("subgoal *1/3"
+           :use (:instance <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX
+                           (nodenum (car nodenums))
+                           (bound2 bound)
+                           (nodenum2 (+ -1
+                                        (ALEN1 'TRANSLATION-ARRAY
+                                               TRANSLATION-ARRAY))))
+           :in-theory (disable <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX))
+          ("Goal" :in-theory (enable translate-literals))))
 
 ;;;
 ;;; rebuild-nodes-with-var-subst-aux

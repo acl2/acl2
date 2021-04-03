@@ -19,7 +19,7 @@
 (include-book "make-var-names")
 (include-book "dag-array-printing")
 (include-book "supporting-vars")
-(include-book "rebuild-nodes")
+(include-book "rebuild-literals")
 (include-book "merge-term-into-dag-array-basic")
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
