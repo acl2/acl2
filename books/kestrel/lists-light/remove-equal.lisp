@@ -59,6 +59,10 @@
    (equal (equal (len (remove-equal a x)) (len x))
           (not (member-equal a x))))
 
+(defthm <-of-len-of-remove-equal-and-len-same-iff
+  (iff (< (len (remove-equal a x)) (len x))
+       (member-equal a x)))
+
 ;; ACL2 puts in a loop-stopper.
 (defthm remove-equal-of-remove-equal
   (equal (remove-equal x (remove-equal y l))
