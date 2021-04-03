@@ -1609,7 +1609,8 @@
                                                                            quoted-val ;the quoted constant they are all equal to
                                                                            memoization))
                                             info tries limits node-replacement-array))
-                                    ;;Otherwise, simplify the non-lambda FN applied to the simplified args:
+                                    ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
+                                    ;; TODO: Perhaps pass in the original expr for use by cons-with-hint:
                                     (,simplify-fun-call-and-add-to-dag-name fn args
                                                                             (cons tree trees-equal-to-tree) ;the thing we are rewriting is equal to tree
                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
