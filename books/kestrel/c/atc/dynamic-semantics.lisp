@@ -168,7 +168,20 @@
   (:uchar uchar)
   (:sint sint)
   (:pointer pointer)
-  :pred valuep)
+  :pred valuep
+  :prepwork
+  ((defrulel disjoint1
+     (implies (pointerp x)
+              (not (ucharp x)))
+     :enable (pointerp ucharp))
+   (defrule disjoint2
+     (implies (pointerp x)
+              (not (sintp x)))
+     :enable (pointerp sintp))
+   (defrule disjoint3
+     (implies (sintp x)
+              (not (ucharp x)))
+     :enable (sintp ucharp))))
 
 (defrule valuep-possibilities
   (implies (valuep x)
@@ -181,8 +194,39 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable ucharp sintp pointerp value-kind)))
-  (defresult value "values"))
+
+  (defrulel disjoint
+    (implies (errorp x)
+             (not (valuep x)))
+    :enable (errorp valuep ucharp sintp pointerp))
+
+  (fty::defflexsum value-result
+    :short "Fixtype of values and errors."
+    (:ok :fields ((get :type value :acc-body acl2::x))
+     :ctor-body get
+     :cond (valuep acl2::x))
+    (:err :fields ((get :type error :acc-body acl2::x))
+     :ctor-body get)
+    :pred value-resultp
+    :fix value-result-fix
+    :equiv value-result-equiv
+    ///
+
+    (defrule value-resultp-when-valuep
+      (implies (valuep x)
+               (value-resultp x))
+      :enable value-resultp)
+
+    (defrule value-resultp-when-errorp
+      (implies (errorp acl2::x)
+               (value-resultp acl2::x))
+      :enable value-resultp)))
+
+(defruled valuep-when-value-resultp-and-not-errorp
+  (implies (and (value-resultp x)
+                (not (errorp x)))
+           (valuep x))
+  :enable value-resultp)
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
