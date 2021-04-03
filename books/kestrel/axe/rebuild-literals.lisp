@@ -34,9 +34,10 @@
 ;;;
 
 ;; This throws an error if a node translates to a constant (or to nothing).
-;; Returns (mv changed-nodes unchanged-nodes), where the union of CHANGED-NODES
-;; and UNCHANGED-NODES should be (a permutation of) the translation of the
-;; NODENUMS.
+;; Returns (mv provedp changed-nodes unchanged-nodes), where PROVEDP is t iff
+;; some literal became a non-nil constant.  Otherwise,the union of
+;; CHANGED-NODES and UNCHANGED-NODES should be (a permutation of) the
+;; translated LITERAL-NODENUMS, excluding any nils.
 (defund translate-literals (literal-nodenums translation-array changed-acc unchanged-acc)
   (declare (xargs :guard (and (true-listp literal-nodenums)
                               (array1p 'translation-array translation-array)
@@ -46,55 +47,64 @@
                               (true-listp changed-acc)
                               (true-listp unchanged-acc))))
   (if (endp literal-nodenums)
-      (mv changed-acc unchanged-acc)
-    (let* ((nodenum (first literal-nodenums))
-           (res (aref1 'translation-array translation-array nodenum)))
-      (if res                  ;; decide which accumulator to extend
-          (if (not (natp res)) ;todo: can't happen
-              (prog2$ (er hard? 'translate-literals "A literal, node ~x0, translated to a non-natp, ~x1." nodenum res)
-                      ;; for ease of reasoning:
-                      (mv (append (repeat (len literal-nodenums) 0) changed-acc)
-                          unchanged-acc))
-            ;; this literal was changed:
-            (progn$ ;; (cw "~x0 became ~x1.~%" nodenum res)
-             (translate-literals (rest literal-nodenums) translation-array (cons res changed-acc) unchanged-acc)))
-        ;; no change:
-        (translate-literals (rest literal-nodenums) translation-array changed-acc (cons nodenum unchanged-acc))))))
+      (mv nil ; didn't prove the whole clause
+          changed-acc unchanged-acc)
+    (let* ((literal-nodenum (first literal-nodenums))
+           (res (aref1 'translation-array translation-array literal-nodenum)))
+      (if (not res)
+          ;; no change to this literal:
+          (translate-literals (rest literal-nodenums) translation-array changed-acc (cons literal-nodenum unchanged-acc))
+        ;; The literal was changed:
+        (if (consp res) ; must be a quotep, so the literal became a constant
+            (if (unquote res)
+                (mv t ;proved the clause
+                    nil nil)
+              ;; the literal became nil, so drop it:
+              (translate-literals (rest literal-nodenums) translation-array changed-acc unchanged-acc))
+          ;; this literal became a new nodenum:
+          (translate-literals (rest literal-nodenums) translation-array (cons res changed-acc) unchanged-acc))))))
 
 ;rename
 (defthm len-of-translate-literals
-  (equal (+ (len (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)))
-            (len (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
-         (+ (len literal-nodenums)
-            (len changed-acc)
-            (len unchanged-acc)))
-  :hints (("Goal" :in-theory (enable translate-literals))))
-
-(defthm nat-listp-of-mv-nth-0-of-translate-literals
-  (implies (and (nat-listp literal-nodenums)
-                (nat-listp changed-acc)
-                (nat-listp unchanged-acc))
-           (nat-listp (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
+  (<= (+ (len (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)))
+         (len (mv-nth 2 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
+      (+ (len literal-nodenums)
+         (len changed-acc)
+         (len unchanged-acc)))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm nat-listp-of-mv-nth-1-of-translate-literals
-  (implies (and (nat-listp literal-nodenums)
+  (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (array1p 'translation-array translation-array)
+                (all-< literal-nodenums (alen1 'translation-array translation-array))
+                (nat-listp literal-nodenums)
                 (nat-listp changed-acc)
                 (nat-listp unchanged-acc))
            (nat-listp (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
-  :hints (("Goal" :in-theory (enable translate-literals))))
+  :hints (("Goal" :in-theory (e/d (translate-literals <-of-+-of-1-when-integers) (natp)))))
 
-(defthm true-listp-of-mv-nth-0-of-translate-literals
-  (implies (true-listp changed-acc)
-           (true-listp (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
-  :hints (("Goal" :in-theory (enable translate-literals))))
+(defthm nat-listp-of-mv-nth-2-of-translate-literals
+  (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (array1p 'translation-array translation-array)
+                (all-< literal-nodenums (alen1 'translation-array translation-array))
+                (nat-listp literal-nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc))
+           (nat-listp (mv-nth 2 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (e/d (translate-literals <-of-+-of-1-when-integers) (natp)))))
 
 (defthm true-listp-of-mv-nth-1-of-translate-literals
-  (implies (true-listp unchanged-acc)
+  (implies (true-listp changed-acc)
            (true-listp (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
-(defthm all-<-of-mv-nth-0-of-translate-literals
+(defthm true-listp-of-mv-nth-2-of-translate-literals
+  (implies (true-listp unchanged-acc)
+           (true-listp (mv-nth 2 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-literals))))
+
+(defthm all-<-of-mv-nth-1-of-translate-literals
   (implies (and (posp bound)
                 (all-< changed-acc bound)
                 ;(all-< unchanged-acc bound)
@@ -103,10 +113,10 @@
                 (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
-           (all-< (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
+           (all-< (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
-(defthm all-<-of-mv-nth-1-of-translate-literals
+(defthm all-<-of-mv-nth-2-of-translate-literals
   (implies (and (posp bound)
                 (all-< literal-nodenums bound)
                 (all-< unchanged-acc bound)
@@ -115,7 +125,7 @@
                 (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
-           (all-< (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
+           (all-< (mv-nth 2 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
   :hints (("subgoal *1/3"
            :use (:instance <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX
                            (nodenum (car literal-nodenums))
@@ -389,8 +399,7 @@
 ;;; rebuild-literals-with-substitution
 ;;;
 
-;; Returns (mv erp literal-nodenums dag-array dag-len dag-parent-array
-;; dag-constant-alist dag-variable-alist), where the literal-nodenums are in
+;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist), where the literal-nodenums are in
 ;; arbitrary order.
 ;; Smashes 'translation-array and 'worklist-array.
 ;ffixme can the literal-nodenums returned ever contain a quotep?
@@ -401,55 +410,63 @@
 (defund rebuild-literals-with-substitution (literal-nodenums
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                             nodenum-to-replace ; must be the nodenum of a var
-                                            new-nodenum ;fixme allow this to be a quotep?
-                                            )
+                                            new-nodenum-or-quotep)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
                               (natp nodenum-to-replace)
                               (< nodenum-to-replace dag-len)
-                              (natp new-nodenum)
-                              (< new-nodenum dag-len))
+                              (dargp-less-than new-nodenum-or-quotep dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (all-integerp-when-all-natp all-rationalp-when-all-natp)
                                                         (myquotep dargp dargp-less-than))))))
   (b* (((when (not (consp literal-nodenums))) ;must check since we take the max below
         (mv (erp-nil) ;or perhaps this is an error.  can it happen?
+            nil       ;provedp
             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        (sorted-literal-nodenums (merge-sort-< literal-nodenums)) ;; todo: somehow avoid doing this sorting over and over?  keep the list sorted?
        (max-literal-nodenum (car (last sorted-literal-nodenums)))
        ((when (< max-literal-nodenum nodenum-to-replace)) ;; may only happen when substituting for a var that doesn't appear in any other literal
         ;;No change, since nodenum-to-replace does not appear in any literal:
         (mv (erp-nil)
+            nil ;provedp
             literal-nodenums ;; the original literal-nodenums (so that the order is the same)
             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
        ;; Mark nodenum-to-replace to be replaced by new-nodenum:
-       (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum))
+       (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum-or-quotep))
        ;; Rebuild all the literals, and their supporters, with the substitution applied:
        ((mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (rebuild-nodes-with-var-subst sorted-literal-nodenums ;; initial worklist
                                       translation-array
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       ((when erp) (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+       ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ;; Look up the possibly-new nodes that represent the literals:
-       ((mv changed-literal-nodenums
+       ((mv provedp
+            changed-literal-nodenums
             unchanged-literal-nodenums)
         (translate-literals literal-nodenums ;; could use sorted-literal-nodenums instead
-                         translation-array
-                         nil nil)))
-    (mv (erp-nil)
-        ;; We put the changed nodes first, in the hope that we will use them to
-        ;; substitute next, creating a slightly larger term, and so on.  The
-        ;; unchanged-literal-nodenums here got reversed wrt the input, so if
-        ;; we had a bad ordering last time, we may have a good ordering this
-        ;; time:
-        (append changed-literal-nodenums unchanged-literal-nodenums)
-        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                            translation-array
+                            nil nil)))
+    (if provedp
+        (mv (erp-nil)
+            t ; provedp
+            literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+      (mv (erp-nil)
+          nil ; provedp
+          ;; We put the changed nodes first, in the hope that we will use them to
+          ;; substitute next, creating a slightly larger term, and so on.  The
+          ;; unchanged-literal-nodenums here got reversed wrt the input, so if
+          ;; we had a bad ordering last time, we may have a good ordering this
+          ;; time:
+          (append changed-literal-nodenums unchanged-literal-nodenums)
+          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
 
-(defthm len-of-mv-nth-1-of-rebuild-literals-with-substitution
-  (implies (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-           (equal (len (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-                  (len literal-nodenums)))
+;rename
+(defthm len-of-mv-nth-2-of-rebuild-literals-with-substitution
+  (implies (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
+           (<= (len (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
+               (len literal-nodenums)))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable rebuild-literals-with-substitution))))
 
 (local (in-theory (enable all-integerp-when-all-natp
@@ -457,50 +474,47 @@
                           natp-of-+-of-1-alt))) ;for the call of def-dag-builder-theorems just below
 
 (def-dag-builder-theorems
-  (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)
-  (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+  (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)
+  (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :recursivep nil
   :hyps ((nat-listp literal-nodenums)
          (all-< literal-nodenums dag-len)
          (natp nodenum-to-replace)
          (< nodenum-to-replace dag-len)
-         (natp new-nodenum)
-         (< new-nodenum dag-len)))
+         (dargp-less-than new-nodenum-or-quotep dag-len)))
 
 ;gen?
-(defthm nat-listp-of-mv-nth-1-of-rebuild-literals-with-substitution
+(defthm nat-listp-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
                 (nat-listp acc)
-                (natp new-nodenum)
-                (< new-nodenum dag-len)
-                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
+                (dargp-less-than new-nodenum-or-quotep dag-len)
+                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 )
-           (nat-listp (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
+           (nat-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
   :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
                                                                                                      natp)))))
 
-(defthm true-listp-of-mv-nth-1-of-rebuild-literals-with-substitution
+(defthm true-listp-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (true-listp literal-nodenums)
-           (true-listp (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
+           (true-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
   :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
                                                                                                      natp)))))
 
-(defthm all-<-of-mv-nth-1-of-rebuild-literals-with-substitution
+(defthm all-<-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
                 (< nodenum-to-replace dag-len)
                 (nat-listp acc)
-                (natp new-nodenum)
-                (< new-nodenum dag-len)
-                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
+                (dargp-less-than new-nodenum-or-quotep dag-len)
+                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 (all-< acc dag-len)
                 )
-           (all-< (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))
-                  (mv-nth 3 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
+           (all-< (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))
+                  (mv-nth 4 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
   :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
                                                                                                      natp)))))

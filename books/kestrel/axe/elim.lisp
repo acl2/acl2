@@ -1,7 +1,7 @@
 ; Support for the Axe Prover tuple elimination
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -353,13 +353,16 @@
                          ;; TODO: Prove this can't happen and drop this check
                          ((when (consp cons-nest-nodenum)) ;check for a quoted constant
                           (mv :unexpected-result nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                         ((mv erp literal-nodenums ;fixme could these ever be quoteps? if so, call handle-constant-disjuncts and return provedp?
+                         ((mv erp provedp literal-nodenums ;fixme could these ever be quoteps? if so, call handle-constant-disjuncts and return provedp?
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                           ;; ;this puts in the cons nest for the var everywhere it appears (fixme i guess nth of cons will then fire a lot..)
                           ;; this used to be accomplished by rewriting - yuck
                           (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                               nodenum-of-var cons-nest-nodenum))
                          ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ((when provedp)
+                          (er hard? 'eliminate-a-tuple "Tuple elimination proved the goal, which is not yet supported.")
+                          (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                          (- (cw ")~%")))
                       (mv (erp-nil)
                           t ;; changep is true
@@ -382,7 +385,7 @@
                       (and (booleanp changep)
                            (all-natp new-literal-nodenums)
                            (true-listp new-literal-nodenums)
-                           (equal (len new-literal-nodenums) (len literal-nodenums))
+                           (<= (len new-literal-nodenums) (len literal-nodenums))
                            ;; (consp new-literal-nodenums)
                            (all-< new-literal-nodenums new-dag-len)
                            (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)

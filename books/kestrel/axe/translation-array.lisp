@@ -126,6 +126,23 @@
                            (consp (aref1 'translation-array translation-array nodenum))))))
   :hints (("Goal" :in-theory (enable translation-arrayp-aux))))
 
+(defthm cdr-of-aref1-when-translation-arrayp-aux-iff
+  (implies (and (translation-arrayp-aux nodenum translation-array)
+                (natp nodenum))
+           (iff (cdr (aref1 'translation-array translation-array nodenum))
+                (consp (aref1 'translation-array translation-array nodenum))))
+  :hints (("Goal" :in-theory (enable translation-arrayp-aux))))
+
+(defthm len-of-aref1-when-translation-arrayp-aux
+  (implies (and (translation-arrayp-aux nodenum translation-array)
+                (natp nodenum))
+           (equal (len (aref1 'translation-array translation-array nodenum))
+                  (if (consp (aref1 'translation-array translation-array nodenum))
+                      2
+                    0)))
+  :hints (("Goal" :expand (translation-arrayp-aux 0 translation-array)
+           :in-theory (enable translation-arrayp-aux))))
+
 (defthm acl2-numberp-of-aref1-when-translation-arrayp-aux
   (implies (and (translation-arrayp-aux nodenum translation-array)
                 (natp nodenum))

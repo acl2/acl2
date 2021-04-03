@@ -3243,7 +3243,7 @@
                    (b* ((- (and print (cw "(Substituting:~%")))
                         (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
                         (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
-                        ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                        ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                          (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
                                           (if (posp dag-len) ;todo: should always be true
                                               dag-len
@@ -3251,6 +3251,8 @@
                                           nil))
                         ((when erp)
                          (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                        ((when provedp)
+                         (mv (erp-nil) t nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                         ;;todo: think about this:
                         ;; ((when (not (consp literal-nodenums)))
                         ;;  (and print (cw "NOTE: No literals left after substitution!~%")) ;can happen if the only lit when we subst is a (negated) var equality
