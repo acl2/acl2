@@ -121,10 +121,6 @@
                                    mul-of-neg-arg1
                                    mul-of-neg-arg2)))))
 
-(defthmd acl2::acl2-numberp-when-integerp
-  (implies (integerp x)
-           (acl2-numberp x)))
-
 ;; ;not used
 ;; (defthm fix-of-mod
 ;;   (equal (fix (mod x y))
