@@ -1,7 +1,7 @@
 ; A lightweight book about mod and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -114,6 +114,24 @@
                            (y (expt 2 (+ -1 n))))
            :in-theory (e/d (equal-of-0-and-mod expt-of-+)
                            (integerp-of-*)))))
+
+(defthm mod-of-expt-of-mod
+  (implies (and (natp i)
+                (integerp x)
+                (posp y))
+           (equal (mod (expt (mod x y) i) y)
+                  (mod (expt x i) y)))
+  :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
+
+(defthm mod-of-*-of-expt-of-mod
+  (implies (and (natp i)
+                (integerp x1)
+                (integerp x2)
+                (posp y))
+           (equal (mod (* x1 (expt (mod x2 y) i)) y)
+                  (mod (* x1 (expt x2 i)) y)))
+  :hints (("Goal" :in-theory (e/d (mod-of-*-subst-arg2) (mod-of-expt-of-mod))
+           :use (:instance mod-of-expt-of-mod (x x2)))))
 
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
 
