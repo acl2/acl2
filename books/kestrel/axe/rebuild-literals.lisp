@@ -29,7 +29,6 @@
    (implies (integerp x)
             (acl2-numberp x))))
 
-
 ;;;
 ;;; translate-literals
 ;;;
@@ -37,62 +36,62 @@
 ;; This throws an error if a node translates to a constant (or to nothing).
 ;; Returns (mv changed-nodes unchanged-nodes), where the union of CHANGED-NODES
 ;; and UNCHANGED-NODES should be (a permutation of) the translation of the
-;; NODENUMS.  TODO: Compare to the renaming-array stuff.
-(defund translate-literals (nodenums translation-array changed-acc unchanged-acc)
-  (declare (xargs :guard (and (true-listp nodenums)
+;; NODENUMS.
+(defund translate-literals (literal-nodenums translation-array changed-acc unchanged-acc)
+  (declare (xargs :guard (and (true-listp literal-nodenums)
                               (array1p 'translation-array translation-array)
-                              (all-natp nodenums)
-                              (all-< nodenums (alen1 'translation-array translation-array))
+                              (all-natp literal-nodenums)
+                              (all-< literal-nodenums (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                               (true-listp changed-acc)
                               (true-listp unchanged-acc))))
-  (if (endp nodenums)
+  (if (endp literal-nodenums)
       (mv changed-acc unchanged-acc)
-    (let* ((nodenum (first nodenums))
+    (let* ((nodenum (first literal-nodenums))
            (res (aref1 'translation-array translation-array nodenum)))
       (if res                  ;; decide which accumulator to extend
           (if (not (natp res)) ;todo: can't happen
               (prog2$ (er hard? 'translate-literals "A literal, node ~x0, translated to a non-natp, ~x1." nodenum res)
                       ;; for ease of reasoning:
-                      (mv (append (repeat (len nodenums) 0) changed-acc)
+                      (mv (append (repeat (len literal-nodenums) 0) changed-acc)
                           unchanged-acc))
             ;; this literal was changed:
             (progn$ ;; (cw "~x0 became ~x1.~%" nodenum res)
-             (translate-literals (rest nodenums) translation-array (cons res changed-acc) unchanged-acc)))
+             (translate-literals (rest literal-nodenums) translation-array (cons res changed-acc) unchanged-acc)))
         ;; no change:
-        (translate-literals (rest nodenums) translation-array changed-acc (cons nodenum unchanged-acc))))))
+        (translate-literals (rest literal-nodenums) translation-array changed-acc (cons nodenum unchanged-acc))))))
 
 ;rename
 (defthm len-of-translate-literals
-  (equal (+ (len (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc)))
-            (len (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
-         (+ (len nodenums)
+  (equal (+ (len (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)))
+            (len (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
+         (+ (len literal-nodenums)
             (len changed-acc)
             (len unchanged-acc)))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm nat-listp-of-mv-nth-0-of-translate-literals
-  (implies (and (nat-listp nodenums)
+  (implies (and (nat-listp literal-nodenums)
                 (nat-listp changed-acc)
                 (nat-listp unchanged-acc))
-           (nat-listp (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+           (nat-listp (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm nat-listp-of-mv-nth-1-of-translate-literals
-  (implies (and (nat-listp nodenums)
+  (implies (and (nat-listp literal-nodenums)
                 (nat-listp changed-acc)
                 (nat-listp unchanged-acc))
-           (nat-listp (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+           (nat-listp (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm true-listp-of-mv-nth-0-of-translate-literals
   (implies (true-listp changed-acc)
-           (true-listp (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+           (true-listp (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm true-listp-of-mv-nth-1-of-translate-literals
   (implies (true-listp unchanged-acc)
-           (true-listp (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc))))
+           (true-listp (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc))))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm all-<-of-mv-nth-0-of-translate-literals
@@ -100,26 +99,26 @@
                 (all-< changed-acc bound)
                 ;(all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)
-                (all-natp nodenums)
-                (all-< nodenums (alen1 'translation-array translation-array))
+                (all-natp literal-nodenums)
+                (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
-           (all-< (mv-nth 0 (translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+           (all-< (mv-nth 0 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm all-<-of-mv-nth-1-of-translate-literals
   (implies (and (posp bound)
-                (all-< nodenums bound)
+                (all-< literal-nodenums bound)
                 (all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)
-                (all-natp nodenums)
-                (all-< nodenums (alen1 'translation-array translation-array))
+                (all-natp literal-nodenums)
+                (all-< literal-nodenums (alen1 'translation-array translation-array))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
-           (all-< (mv-nth 1 (translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+           (all-< (mv-nth 1 (translate-literals literal-nodenums translation-array changed-acc unchanged-acc)) bound))
   :hints (("subgoal *1/3"
            :use (:instance <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX
-                           (nodenum (car nodenums))
+                           (nodenum (car literal-nodenums))
                            (bound2 bound)
                            (nodenum2 (+ -1
                                         (ALEN1 'TRANSLATION-ARRAY
