@@ -454,10 +454,15 @@
              (not (errorp x)))
     :enable (errorp uchar-arrayp))
 
-  (defruled not-ucharp-when-pointerp
-    (implies (pointerp x)
-             (not (ucharp x)))
-    :enable (pointerp ucharp))
+  (defruled not-sintp-when-ucharp
+    (implies (ucharp x)
+             (not (sintp x)))
+    :enable (ucharp sintp))
+
+  (defruled not-pointerp-when-ucharp
+    (implies (ucharp x)
+             (not (pointerp x)))
+    :enable (ucharp pointerp))
 
   (defruled not-ucharp-when-sintp
     (implies (sintp x)
@@ -468,6 +473,16 @@
     (implies (sintp x)
              (not (pointerp x)))
     :enable (sintp pointerp))
+
+  (defruled not-ucharp-when-pointerp
+    (implies (pointerp x)
+             (not (ucharp x)))
+    :enable (pointerp ucharp))
+
+  (defruled not-sintp-when-pointerp
+    (implies (pointerp x)
+             (not (sintp x)))
+    :enable (pointerp sintp))
 
   (defruled len-of-cons
     (equal (len (cons x y))
@@ -577,9 +592,12 @@
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
     not-errorp-when-uchar-arrayp
-    not-ucharp-when-pointerp
+    not-sintp-when-ucharp
+    not-pointerp-when-ucharp
     not-ucharp-when-sintp
     not-pointerp-when-sintp
+    not-ucharp-when-pointerp
+    not-sintp-when-pointerp
     sint-nonzerop-of-0
     sint-nonzerop-of-1
     sint-lognot-of-0
