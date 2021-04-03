@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "rebuild-nodes")
+(include-book "rebuild-literals")
 (include-book "supporting-nodes")
 (include-book "crunch-dag2")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of

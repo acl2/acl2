@@ -37,7 +37,7 @@
 (include-book "crunch-dag2")
 (include-book "worklists")
 (include-book "equivs")
-(include-book "rebuild-nodes")
+(include-book "rebuild-literals")
 (include-book "dag-array-printing")
 ;(include-book "splitting")
 ;(include-book "elim")
