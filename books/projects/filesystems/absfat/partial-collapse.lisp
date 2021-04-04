@@ -5217,10 +5217,12 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (set-equiv member-of-take)
-                    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20))
+                    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
+                     subsetp-when-subsetp))
     :use
-    ((:instance 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
-                (n (position-equal x seq)))
+    ((:instance
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
+      (n (position-equal x seq)))
      (:instance
       1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
       (n (len (frame-addrs-before frame
@@ -6038,37 +6040,39 @@
      (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
      (frame-addrs-before frame x (collapse-1st-index frame x)))
     nil))
-  :instructions
-  (:promote
-   (:claim
-    (equal
-     nil
-     (abs-addrs
-      (mv-nth
-       0
-       (ctx-app-list
-        (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-        frame
-        (frame-addrs-before frame
-                            x (collapse-1st-index frame x))))))
-    :hints (("goal" :do-not-induct t
-             :in-theory (e/d nil
-                             (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24))
-             :use 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)))
-   :bash))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :cases
+    ((not
+      (equal
+       nil
+       (abs-addrs
+        (mv-nth
+         0
+         (ctx-app-list
+          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
+          (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
+          frame
+          (frame-addrs-before frame
+                              x (collapse-1st-index frame x)))))))))
+   ("subgoal 1"
+    :in-theory
+    (disable
+     1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)
+    :use
+    1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)))
 
 ;; This could be kinda important, although for now we're keeping it disabled to
 ;; avoid weird stuff coming in from nowhere.
 (defthmd
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-39
   (implies
-   (and
-    (abs-separate (frame->frame frame))
-    (frame-p (frame->frame frame))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame))))
+   (and (abs-separate (frame->frame frame))
+        (frame-p (frame->frame frame))
+        (mv-nth 1 (collapse frame))
+        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+        (consp (assoc-equal x (frame->frame frame))))
    (set-equiv
     (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (frame-addrs-before frame x (collapse-1st-index frame x))))
@@ -6077,8 +6081,11 @@
     :do-not-induct t
     :in-theory
     (e/d
-     (set-equiv 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-4)
-     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38 (:rewrite abs-addrs-of-ctx-app-list)))
+     (set-equiv
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-4)
+     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38
+      (:rewrite abs-addrs-of-ctx-app-list)
+      subsetp-when-subsetp))
     :use
     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38
      (:instance
@@ -6093,6 +6100,7 @@
       (fs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
       (l (frame-addrs-before frame
                              x (collapse-1st-index frame x))))))))
+
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-40
@@ -6287,7 +6295,8 @@
        (:rewrite len-when-prefixp)
        (:rewrite nthcdr-when->=-n-len-l)
        (:rewrite abs-addrs-when-m1-file-alist-p)
-       (:definition remove-equal)))))))
+       (:definition remove-equal)
+       (:rewrite subsetp-when-subsetp)))))))
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-46
@@ -7043,22 +7052,26 @@
  (defthm
    1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-67
    (implies
-    (and
-     (abs-separate frame)
-     (frame-p frame)
-     (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-     (mv-nth 1 (collapse frame))
-     (consp (assoc-equal x (frame->frame frame)))
-     (abs-complete
-      (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
+    (and (abs-separate frame)
+         (frame-p frame)
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+         (mv-nth 1 (collapse frame))
+         (consp (assoc-equal x (frame->frame frame)))
+         (abs-complete
+          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
     (set-equiv (cons x (seq-this (collapse-this frame x)))
                (strip-cars (frame->frame frame))))
-   :hints (("goal" :do-not-induct t
-            :in-theory (e/d (set-equiv subsetp-equal)
-                            (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66))
-            :use (:instance 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
-                            (n (len (seq-this frame))))))))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (e/d (set-equiv subsetp-equal)
+                     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
+                      subsetp-when-subsetp))
+     :use
+     (:instance
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
+      (n (len (seq-this frame))))))))
 
 (local
  (defthm

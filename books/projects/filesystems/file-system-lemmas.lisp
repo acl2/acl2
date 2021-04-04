@@ -1532,7 +1532,7 @@
        (remove-equal (car l2)
                      (set-difference-equal l1 (cdr l2)))))
     :hints (("goal" :use (lemma-1 lemma-2)))
-    :rule-classes :definition))
+    :rule-classes ((:definition :install-body nil))))
 
 (defthm len-of-remove-when-member-1
   (implies (member-equal x l)

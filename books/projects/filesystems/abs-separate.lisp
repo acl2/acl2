@@ -3877,7 +3877,8 @@
            (set-equiv (abs-addrs (abs-fs-fix x))
                       (abs-addrs (abs-fs-fix y))))
   :hints (("goal" :in-theory (e/d (absfat-equiv set-equiv abs-fs-p)
-                                  (abs-addrs-when-absfat-equiv-lemma-1))
+                                  (abs-addrs-when-absfat-equiv-lemma-1
+                                   subsetp-when-subsetp))
            :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
                             (abs-file-alist1 (abs-fs-fix x))
                             (abs-file-alist2 (abs-fs-fix y)))
@@ -4130,7 +4131,8 @@
   :hints
   (("goal"
     :in-theory (e/d (absfat-equiv set-equiv)
-                    (absfat-equiv-implies-set-equiv-names-at-1-lemma-6))
+                    (absfat-equiv-implies-set-equiv-names-at-1-lemma-6
+                     subsetp-when-subsetp))
     :use
     ((:instance absfat-equiv-implies-set-equiv-names-at-1-lemma-6
                 (abs-file-alist1 (abs-fs-fix fs))
@@ -4193,7 +4195,8 @@
   :hints
   (("goal"
     :in-theory (e/d (absfat-equiv set-equiv)
-                    (absfat-equiv-implies-set-equiv-addrs-at-1-lemma-3))
+                    (absfat-equiv-implies-set-equiv-addrs-at-1-lemma-3
+                     subsetp-when-subsetp))
     :use
     ((:instance absfat-equiv-implies-set-equiv-addrs-at-1-lemma-3
                 (fs (abs-fs-fix fs)) (fs-equiv (abs-fs-fix fs-equiv)))
@@ -4347,7 +4350,6 @@
                (:rewrite abs-file-alist-p-correctness-1)
                (:rewrite abs-addrs-when-m1-file-alist-p)
                (:definition no-duplicatesp-equal)
-               (:rewrite absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
                (:rewrite m1-file-contents-p-correctness-1)
                nthcdr-of-cdr)))
    ("subgoal *1/4" :cases ((null (fat32-filename-fix (car relpath)))))))
