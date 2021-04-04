@@ -39,12 +39,16 @@
 
 (include-book "cj-to-acl2")
 
+;; Since we are not currently proving anything about this conversion code,
+;; speed it up by putting it in program mode.
+(program)
 
-(local
- (defthm stringp-of-car-of-last
-   (implies (and (string-listp x)
-                 (consp x))
-            (stringp (car (last x))))))
+; If we switch to logic mode, we may need this or something like it.
+;(local
+; (defthm stringp-of-car-of-last
+;   (implies (and (string-listp x)
+;                 (consp x))
+;            (stringp (car (last x))))))
 
 ;; ".../multimux1-2.json" --> MULTIMUX-1-2-CONSTRAINTS
 (defun file-name-to-defun-constraints-name (filename)
