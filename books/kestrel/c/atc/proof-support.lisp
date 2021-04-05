@@ -454,36 +454,6 @@
              (not (errorp x)))
     :enable (errorp uchar-arrayp))
 
-  (defruled not-sintp-when-ucharp
-    (implies (ucharp x)
-             (not (sintp x)))
-    :enable (ucharp sintp))
-
-  (defruled not-pointerp-when-ucharp
-    (implies (ucharp x)
-             (not (pointerp x)))
-    :enable (ucharp pointerp))
-
-  (defruled not-ucharp-when-sintp
-    (implies (sintp x)
-             (not (ucharp x)))
-    :enable (sintp ucharp))
-
-  (defruled not-pointerp-when-sintp
-    (implies (sintp x)
-             (not (pointerp x)))
-    :enable (sintp pointerp))
-
-  (defruled not-ucharp-when-pointerp
-    (implies (pointerp x)
-             (not (ucharp x)))
-    :enable (pointerp ucharp))
-
-  (defruled not-sintp-when-pointerp
-    (implies (pointerp x)
-             (not (sintp x)))
-    :enable (pointerp sintp))
-
   (defruled len-of-cons
     (equal (len (cons x y))
            (1+ (len y)))
@@ -556,7 +526,7 @@
      and include not only the rules defined in @(see atc-rewrite-rules),
      but also other existing rewrite rules.
      Note that some of them serve to
-     simplify fixtype deconstructs applied to constructors.")
+     simplify fixtype deconstructors applied to constructors.")
    (xdoc::p
     "We take the opportunity here to discuss the general shape
      of the computation state terms during the symbolic execution.
@@ -584,92 +554,95 @@
      rules like @('omap::in-of-update'),
      which serves to simplify, during symbolic execution,
      the finding of a variable in a scope."))
-  '(;; introduced in this file (see ATC-REWRITE-RULES):
-    len-of-cons
-    1+len-greater-than-0
-    not-errorp-when-scopep
-    not-errorp-when-valuep
-    not-errorp-when-value-listp
-    not-errorp-when-scope-listp
-    not-errorp-when-uchar-arrayp
-    not-sintp-when-ucharp
-    not-pointerp-when-ucharp
-    not-ucharp-when-sintp
-    not-pointerp-when-sintp
-    not-ucharp-when-pointerp
-    not-sintp-when-pointerp
-    sint-nonzerop-of-0
-    sint-nonzerop-of-1
-    sint-lognot-of-0
-    sint-lognot-of-1
-    value-result-fix-when-valuep
-    value-result-fix-of-if
-    errorp-of-if
-    valuep-of-if
-    ucharp-of-if
-    sintp-of-if
-    pointerp-of-if
-    car-of-if
-    1+nat-greater-than-0
-    natp-of-1+
-    natp-of-len
-    ;; introduced elsewhere:
-    car-cons
-    cdr-cons
-    compustate-of-fields
-    compustate->frames-of-compustate
-    compustate->heap-of-compustate
-    compustate-fix-when-compustatep
-    compustatep-of-compustate
-    frame->function-of-frame
-    frame->scopes-of-frame
-    frame-fix-when-framep
-    frame-list-fix-of-cons
-    frame-list-fix-when-frame-listp
-    frame-listp-of-compustate->frames
-    framep-of-frame
-    heap-fix-when-heapp
-    heapp-of-compustate->heap
-    not-errorp-when-compustatep
-    omap::in-of-update
-    pop-frame-of-push-frame
-    scope-fix-when-scopep
-    scope-list-fix-of-cons
-    scope-listp-of-cons
-    scopep-of-update
-    sint-fix-when-sintp
-    sintp-of-sint
-    sintp-of-sint-plus
-    sintp-of-sint-minus
-    sintp-of-sint-bitnot
-    sintp-of-sint-lognot
-    sintp-of-sint-add
-    sintp-of-sint-sub
-    sintp-of-sint-mul
-    sintp-of-sint-div
-    sintp-of-sint-rem
-    sintp-of-sint-shl-sint
-    sintp-of-sint-shr-sint
-    sintp-of-sint-lt
-    sintp-of-sint-gt
-    sintp-of-sint-le
-    sintp-of-sint-ge
-    sintp-of-sint-eq
-    sintp-of-sint-ne
-    sintp-of-sint-bitand
-    sintp-of-sint-bitxor
-    sintp-of-sint-bitior
-    sintp-of-sint-from-uchar
-    ucharp-of-uchar-array-read-sint
-    ucharp-of-uchar-from-sint
-    top-frame-of-push-frame
-    valuep-when-pointerp
-    valuep-when-sintp
-    valuep-when-ucharp
-    value-fix-when-valuep
-    value-listp-of-cons
-    value-list-fix-of-cons
-    value-optionp-when-valuep))
+  (append
+   '(;; introduced in this file (see ATC-REWRITE-RULES):
+     len-of-cons
+     1+len-greater-than-0
+     not-errorp-when-scopep
+     not-errorp-when-valuep
+     not-errorp-when-value-listp
+     not-errorp-when-scope-listp
+     not-errorp-when-uchar-arrayp
+     not-sintp-when-ucharp
+     not-pointerp-when-ucharp
+     not-ucharp-when-sintp
+     not-pointerp-when-sintp
+     not-ucharp-when-pointerp
+     not-sintp-when-pointerp
+     sint-nonzerop-of-0
+     sint-nonzerop-of-1
+     sint-lognot-of-0
+     sint-lognot-of-1
+     value-result-fix-when-valuep
+     value-result-fix-of-if
+     errorp-of-if
+     valuep-of-if
+     ucharp-of-if
+     sintp-of-if
+     pointerp-of-if
+     car-of-if
+     1+nat-greater-than-0
+     natp-of-1+
+     natp-of-len
+     ;; introduced elsewhere:
+     car-cons
+     cdr-cons
+     compustate-of-fields
+     compustate->frames-of-compustate
+     compustate->heap-of-compustate
+     compustate-fix-when-compustatep
+     compustatep-of-compustate
+     frame->function-of-frame
+     frame->scopes-of-frame
+     frame-fix-when-framep
+     frame-list-fix-of-cons
+     frame-list-fix-when-frame-listp
+     frame-listp-of-compustate->frames
+     framep-of-frame
+     heap-fix-when-heapp
+     heapp-of-compustate->heap
+     not-errorp-when-compustatep
+     omap::in-of-update
+     pop-frame-of-push-frame
+     scope-fix-when-scopep
+     scope-list-fix-of-cons
+     scope-listp-of-cons
+     scopep-of-update
+     sint-fix-when-sintp
+     sintp-of-sint
+     sintp-of-sint-plus
+     sintp-of-sint-minus
+     sintp-of-sint-bitnot
+     sintp-of-sint-lognot
+     sintp-of-sint-add
+     sintp-of-sint-sub
+     sintp-of-sint-mul
+     sintp-of-sint-div
+     sintp-of-sint-rem
+     sintp-of-sint-shl-sint
+     sintp-of-sint-shr-sint
+     sintp-of-sint-lt
+     sintp-of-sint-gt
+     sintp-of-sint-le
+     sintp-of-sint-ge
+     sintp-of-sint-eq
+     sintp-of-sint-ne
+     sintp-of-sint-bitand
+     sintp-of-sint-bitxor
+     sintp-of-sint-bitior
+     sintp-of-sint-from-uchar
+     ucharp-of-uchar-array-read-sint
+     ucharp-of-uchar-from-sint
+     top-frame-of-push-frame
+     valuep-when-pointerp
+     valuep-when-sintp
+     valuep-when-ucharp
+     value-fix-when-valuep
+     value-listp-of-cons
+     value-list-fix-of-cons
+     value-optionp-when-valuep)
+   ;; also introduced elsewhere:
+   *value-disjoint-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

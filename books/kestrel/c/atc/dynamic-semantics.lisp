@@ -17,6 +17,8 @@
 (include-book "function-environments")
 (include-book "types")
 
+(include-book "defthm-disjoint")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-dynamic-semantics
@@ -169,19 +171,7 @@
   (:sint sint)
   (:pointer pointer)
   :pred valuep
-  :prepwork
-  ((defrulel disjoint1
-     (implies (pointerp x)
-              (not (ucharp x)))
-     :enable (pointerp ucharp))
-   (defrule disjoint2
-     (implies (pointerp x)
-              (not (sintp x)))
-     :enable (pointerp sintp))
-   (defrule disjoint3
-     (implies (sintp x)
-              (not (ucharp x)))
-     :enable (sintp ucharp))))
+  :prepwork ((defthm-disjoint *value-disjoint-rules* ucharp sintp pointerp)))
 
 (defrule valuep-possibilities
   (implies (valuep x)
@@ -195,12 +185,6 @@
 
 (defresult value "values"
   :enable (errorp valuep ucharp sintp pointerp))
-
-(defruled valuep-when-value-resultp-and-not-errorp
-  (implies (and (value-resultp x)
-                (not (errorp x)))
-           (valuep x))
-  :enable value-resultp)
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
