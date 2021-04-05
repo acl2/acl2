@@ -17,6 +17,7 @@
 (include-book "kestrel/axe/evaluator-basic" :dir :system)
 (include-book "kestrel/prime-fields/unguarded-defuns" :dir :system)
 
+;; TODO: Consider adding primep (now that we have add-io-pairs), but we'd have to ensure it's only called on known primes.
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-r1cs-fns-and-aliases*
   (append acl2::*axe-evaluator-basic-fns-and-aliases* ;remove some?
