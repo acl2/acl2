@@ -14,7 +14,8 @@
 
 ;; Similar to my-sublis-var-and-eval-basic, but this one also has a free-vars flag.
 
-;; TODO: Create a tool to generate this, given an evaluator.
+;; This tool uses the basic evaluator.  TODO: Create a tool to generate
+;; variants of this tool, each for a given evaluator.
 
 (include-book "dags")
 (include-book "evaluator-basic")
@@ -33,13 +34,13 @@
 ;;                            all-consp-when-not-consp
 ;;                            use-all-consp-for-car)))ee
 
-;move
-(defthm pseudo-lambdap-of-car
-  (implies (pseudo-termp form)
-           (equal (pseudo-lambdap (car form))
-                  (not (symbolp (car form)))))
-  :hints (("Goal" :expand ((pseudo-termp form))
-           :in-theory (enable pseudo-termp pseudo-lambdap))))
+;; ;move
+;; (defthm pseudo-lambdap-of-car
+;;   (implies (pseudo-termp form)
+;;            (equal (pseudo-lambdap (car form))
+;;                   (not (symbolp (car form)))))
+;;   :hints (("Goal" :expand ((pseudo-termp form))
+;;            :in-theory (enable pseudo-termp pseudo-lambdap))))
 
 ;dup
 (defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
@@ -59,15 +60,16 @@
   (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
                 (assoc-equal form alist))
            (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))
-  :hints (("Goal" :in-theory (enable ASSOC-EQUAL strip-cdrs))))
+  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
 ;;;
 ;;; instantiate-hyp-basic
 ;;;
 
-;TERM is a tree (from the hyp of a rule) with quoteps and vars at the leaves
+;TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
 ;ALIST binds vars to quoteps and/or nodenums
 ;this one does *not* wrap remaining free vars in :free
+;; Returns (mv instantiated-hyp free-vars-flg).
 (mutual-recursion
  ;; Returns (mv term free-vars-flg) where TERM has been instantiated with ALIST and FREE-VARS-FLG indicates whether any variables remain in TERM.
  (defund instantiate-hyp-basic (term alist interpreted-function-alist)
@@ -93,8 +95,9 @@
                (mv-let (erp res)
                  (apply-axe-evaluator-basic-to-quoted-args fn args interpreted-function-alist)
                  (if erp ;; May be :unknown-function
-                     ;; If this message is printed a lot, we could suppress it:
-                     (progn$ ;; (cw "(Note: Failed to apply ~x0 to constant args.  Consider adding it to the evaluator or adding a constant-opener rule.)~%" fn)
+                     (progn$
+                      ;; If this message is printed a lot, we could suppress it:
+                      (cw "(Note: In instantiate-hyp-basic: Failed to apply ~x0 to constant args.  Consider adding it to the evaluator, adding it to the interpreted-function-alist, or adding a constant-opener rule.)~%" fn)
                       (mv (cons fn args) ;; Return the ground term unevaluated
                           nil ; no free vars since it's a ground term (even though we couldn't evaluate it)
                           ))
@@ -102,6 +105,7 @@
                        nil ; no free vars
                        )))
              ;; The term has free vars iff the args did:
+             ;; TODO: Consider cons-with-hint here:
              (mv (cons fn args) free-vars-in-args-flg)))))))
 
  ;; Returns (mv all-quotep args free-vars-flg).
@@ -123,24 +127,18 @@
 (make-flag instantiate-hyp-basic)
 
 (defthm-flag-instantiate-hyp-basic
-  (defthm theorem-for-instantiate-hyp-basic
-    t
-    :rule-classes nil
-    :flag instantiate-hyp-basic)
   (defthm true-listp-of-mv-nth-1-of-instantiate-hyp-basic-lst
     (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
     :flag instantiate-hyp-basic-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
 (defthm-flag-instantiate-hyp-basic
-  (defthm theorem-for-instantiate-hyp-basic3
-    t
-    :rule-classes nil
-    :flag instantiate-hyp-basic)
   (defthm len-of-mv-nth-1-of-instantiate-hyp-basic-lst
     (equal (len (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
            (len terms))
     :flag instantiate-hyp-basic-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
 (defthm-flag-instantiate-hyp-basic
@@ -181,16 +179,13 @@
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
 (defthm-flag-instantiate-hyp-basic
-  (defthm theorem-for-instantiate-hyp-basic4
-    t
-    :rule-classes nil
-    :flag instantiate-hyp-basic)
   (defthm all-myquotep-of-mv-nth-1-of-instantiate-hyp-basic-lst
     (implies (and (mv-nth 0 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))
                   (pseudo-term-listp terms)
                   (all-dargp (strip-cdrs alist)))
              (all-myquotep (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))))
     :flag instantiate-hyp-basic-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (e/d (instantiate-hyp-basic instantiate-hyp-basic-lst) (myquotep)))))
 
 (verify-guards instantiate-hyp-basic :hints (("Goal" :in-theory (enable pseudo-termp))))
@@ -206,9 +201,7 @@
                   (consp term))
              (true-listp (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))))
     :flag instantiate-hyp-basic)
-  (defthm true-listp-of-mv-nth-1-of-instantiate-hyp-basic-lst-2 ;todo clash
-    (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
-    :flag instantiate-hyp-basic-lst)
+  :skip-others t
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
 (defthm not-equal-of-quote-and-car-of-mv-nth-0-of-instantiate-hyp-basic
