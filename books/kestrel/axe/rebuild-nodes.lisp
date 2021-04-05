@@ -267,9 +267,7 @@
                          ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                       (if changep
                           ;; TODO: It would be nice to evaluate ground terms here,
-                          ;; but that could cause translation-array to map nodes to
-                          ;; things other than nodenums (which the callers would
-                          ;; need to handle -- e.g., if a literal maps to a quotep).
+                          ;; but that would require an evaluator or interpreted-function-alist.
                           (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (add-function-call-expr-to-dag-array (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (if erp
