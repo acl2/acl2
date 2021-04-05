@@ -19,6 +19,7 @@
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
                                   error
+                                  pi
                                   pprint-indent
                                   schar
                                   type
