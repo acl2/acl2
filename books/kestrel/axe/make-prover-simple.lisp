@@ -693,9 +693,9 @@
 
        (mutual-recursion
 
-        ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-        ;; Look through the nodenums-to-assume-false-to-walk-down, trying to find a known fact that can be used to
-        ;; instantiate the free vars in HYP.  If found, extend the alist to bind those free vars and then try to use
+        ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+        ;; Looks through the nodenums-to-assume-false-to-walk-down, trying to find a known fact that can be used to
+        ;; instantiate the free vars in HYP.  If found, extends the alist to bind those free vars and then tries to
         ;; relieve all the OTHER-HYPS.
         (defund ,relieve-free-var-hyp-and-all-others-name (nodenums-to-assume-false-to-walk-down
                                                            hyp ;partly instantiated
@@ -749,6 +749,7 @@
                   nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down))
                  ((mv matchp alist-for-free-vars)
+                  ;; TODO: Make 2 versions of this, according to whether HYP is a call of NOT:
                   (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
                   ))
               (if matchp
@@ -884,9 +885,10 @@
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
                     ;; HYP is not a call to axe-syntaxp or axe-bind-free.
                     ;; First, we substitute in for all the vars in HYP that are bound in ALIST
-                    ;; fixme precompute the list of vars in the hyp?
+                    ;; TODO: We could optimize by precomputing things about the hyp, like whether it has free vars, and which var occurences require checks in the alist vs adding new bindings to the alist.
                     (mv-let
                       (instantiated-hyp free-vars-flg)
+                      ;; TODO: If the HYP has free vars, which we can determine ahead of time, we may be able to avoid instantiating it (just do the matching):
                       (instantiate-hyp-basic hyp alist interpreted-function-alist)
                       ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars.
                       (if free-vars-flg ;can't be a work-hard since there are free vars?
@@ -902,7 +904,7 @@
                         ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
                         (b* ((old-try-count tries)
                              ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                              ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare:
+                              ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare):
                               (,simplify-tree-name instantiated-hyp
                                                    'iff
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
