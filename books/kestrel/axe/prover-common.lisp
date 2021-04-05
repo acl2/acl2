@@ -1010,13 +1010,13 @@
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
            (ignore dag-len) ;todo
            )
-  (if (and (call-of 'not hyp) ;; TODO: Avoid checking this over and over.  Also, do we know that hyp is always a cons?
+  (if (and (eq 'not (ffn-symb hyp)) ;; TODO: Avoid checking this over and over for each nodenum-to-assume-false
            (consp (fargs hyp)) ; for the guard proof, should always be true if arities are right.
            )
       ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
       ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
       (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)
-    ;;otherwise we require the expr assumed false to be a call of NOT
+    ;;otherwise we require the expr assumed false to be a call of NOT, and we try to match HYP with the argument of the NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
                (consp (dargs expr-to-assume-false)) ; for the guard proof, should always be true if arities are right.
