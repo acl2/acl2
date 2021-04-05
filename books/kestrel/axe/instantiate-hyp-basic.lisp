@@ -17,50 +17,12 @@
 ;; This tool uses the basic evaluator.  TODO: Create a tool to generate
 ;; variants of this tool, each for a given evaluator.
 
-(include-book "dags")
 (include-book "evaluator-basic")
 (include-book "axe-trees")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
-
-;(local (in-theory (disable memberp-of-cons)))
-
-;; some of these are bad rules that come in via deflist:
-;; (local (in-theory (disable member-of-cons ;todo
-;;                            subsetp-car-member
-;;                            subsetp-cons-2 ;also bad?
-;;                            all-consp-when-not-consp
-;;                            use-all-consp-for-car)))ee
-
-;; ;move
-;; (defthm pseudo-lambdap-of-car
-;;   (implies (pseudo-termp form)
-;;            (equal (pseudo-lambdap (car form))
-;;                   (not (symbolp (car form)))))
-;;   :hints (("Goal" :expand ((pseudo-termp form))
-;;            :in-theory (enable pseudo-termp pseudo-lambdap))))
-
-;dup
-(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs alist))
-                (assoc-equal form alist))
-           (axe-treep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
-
-(defthm bounded-axe-treep-when-dargp-less-than-cheap
-  (implies (dargp-less-than item bound)
-           (bounded-axe-treep item bound))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
-
-(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
-                (assoc-equal form alist))
-           (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))
-  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
 ;;;
 ;;; instantiate-hyp-basic
