@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-conversions
-  :parents (atc-integers)
+  :parents (atc-dynamic-semantics)
   :short "C integer conversions for ATC."
   :long
   (xdoc::topstring

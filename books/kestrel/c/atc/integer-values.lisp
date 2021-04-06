@@ -17,9 +17,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integer-values
-  :parents (atc-integers)
-  :short "C integer values for ATC."
+(defxdoc+ atc-integers
+  :parents (atc-dynamic-semantics)
+  :short "A model of C integers for ATC."
   :long
   (xdoc::topstring
    (xdoc::p

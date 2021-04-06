@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-operations
-  :parents (atc-integers)
+  :parents (atc-dynamic-semantics)
   :short "C integer operations for ATC."
   :long
   (xdoc::topstring
