@@ -22,6 +22,7 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 
 ;; See also substitute-vars2.lisp
@@ -34,12 +35,6 @@
                (consp x))
           (not (< y (+ 1 (maxelem x)))))
  :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-(local
- ;; disabled by default
- (defthmd rationalp-when-natp
-   (implies (natp x)
-            (rationalp x))))
 
 ;move
 (defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
