@@ -218,7 +218,6 @@
 ;; Requires that the variable is equated to some term not involving itself (to prevent loops).
 ;; If such a (negated) equality is found, it is used to substitute in all the other literals.  The literal representing the equality is then dropped, eliminating that variable from the DAG.
 ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;fixme could this ever transform a literal into a constant?
 ;; TODO: Consider substituting multiple variables at once.
 ;; Doesn't change any existing nodes in the dag (just builds new ones).
 (defund substitute-a-var (literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
