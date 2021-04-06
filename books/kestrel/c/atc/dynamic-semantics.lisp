@@ -163,20 +163,48 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support @('unsigned char') and @('int') values,
-     as well as pointer values of any referenced type.
+    "For now we only support the standard unsigned and signed integer values
+     (except @('_Bool') values),
+     as well as pointer values with any referenced type.
      (However, only some pointer values can be generated and used
      in our current dynamic semantics of C.)"))
   (:uchar uchar)
+  (:schar schar)
+  (:ushort ushort)
+  (:sshort sshort)
+  (:uint uint)
   (:sint sint)
+  (:ulong ulong)
+  (:slong slong)
+  (:ullong ullong)
+  (:sllong sllong)
   (:pointer pointer)
   :pred valuep
-  :prepwork ((defthm-disjoint *value-disjoint-rules* ucharp sintp pointerp)))
+  :prepwork ((defthm-disjoint *value-disjoint-rules*
+               ucharp
+               scharp
+               ushortp
+               sshortp
+               uintp
+               sintp
+               ulongp
+               slongp
+               ullongp
+               sllongp
+               pointerp)))
 
 (defrule valuep-possibilities
   (implies (valuep x)
            (or (ucharp x)
+               (scharp x)
+               (ushortp x)
+               (sshortp x)
+               (uintp x)
                (sintp x)
+               (ulongp x)
+               (slongp x)
+               (ullongp x)
+               (sllongp x)
                (pointerp x)))
   :enable valuep
   :rule-classes :forward-chaining)
@@ -184,7 +212,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult value "values"
-  :enable (errorp valuep ucharp sintp pointerp))
+  :enable (errorp
+           valuep
+           ucharp
+           scharp
+           ushortp
+           sshortp
+           uintp
+           sintp
+           ulongp
+           slongp
+           ullongp
+           sllongp
+           pointerp))
 
 (defruled errorp-when-value-resultp-and-not-valuep
   (implies (and (value-resultp x)
@@ -221,7 +261,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult value-option "optional values"
-  :enable (errorp value-optionp valuep ucharp sintp pointerp))
+  :enable (errorp
+           value-optionp
+           valuep
+           ucharp
+           scharp
+           ushortp
+           sshortp
+           uintp
+           sintp
+           ulongp
+           slongp
+           ullongp
+           sllongp
+           pointerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,7 +283,15 @@
   :short "Type of a value."
   (b* ((val (value-fix val)))
     (cond ((ucharp val) (type-uchar))
+          ((scharp val) (type-schar))
+          ((ushortp val) (type-ushort))
+          ((sshortp val) (type-sshort))
+          ((uintp val) (type-uint))
           ((sintp val) (type-sint))
+          ((ulongp val) (type-ulong))
+          ((slongp val) (type-slong))
+          ((ullongp val) (type-ullong))
+          ((sllongp val) (type-sllong))
           ((pointerp val) (type-pointer (pointer->reftype val)))
           (t (prog2$ (impossible) (irr-type)))))
   :hooks (:fix))
@@ -873,15 +934,16 @@
     "These unary operators are all pure,
      so we just return a value as result (if there is no error).")
    (xdoc::p
-    "We temporarily disallow @('unsigned char') values,
-     by returning an error when we encounter them
-     (this rejects valid programs, but does not accept invalid ones).
-     We will add support for @('unsigned char') values later."))
+    "For now we only support @('int')s,
+     but we plan to add support for more types of values."))
   (b* ((op (unop-fix op))
        (arg (value-result-fix arg)))
     (cond ((errorp arg) arg)
-          ((pointerp arg) (error (list :exec-unary-pointer op arg)))
           ((ucharp arg) (error (list :exec-unary-uchar-todo op arg)))
+          ((scharp arg) (error (list :exec-unary-schar-todo op arg)))
+          ((ushortp arg) (error (list :exec-unary-ushort-todo op arg)))
+          ((sshortp arg) (error (list :exec-unary-sshort-todo op arg)))
+          ((uintp arg) (error (list :exec-unary-uint-todo op arg)))
           ((sintp arg) (unop-case
                         op
                         :plus (sint-plus arg)
@@ -890,6 +952,11 @@
                                  (error (list :exec-unary op arg)))
                         :bitnot (sint-bitnot arg)
                         :lognot (sint-lognot arg)))
+          ((ulongp arg) (error (list :exec-unary-ulong-todo op arg)))
+          ((slongp arg) (error (list :exec-unary-slong-todo op arg)))
+          ((ullongp arg) (error (list :exec-unary-ullong-todo op arg)))
+          ((sllongp arg) (error (list :exec-unary-sllong-todo op arg)))
+          ((pointerp arg) (error (list :exec-unary-pointer op arg)))
           (t (error (impossible)))))
   :hooks (:fix))
 
@@ -921,10 +988,16 @@
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
           ((errorp arg2) arg2)
-          ((pointerp arg1) (error (list :exec-binary-pointer op arg1)))
-          ((pointerp arg2) (error (list :exec-binary-pointer op arg2)))
           ((ucharp arg1) (error (list :exec-binary-uchar-todo op arg1)))
           ((ucharp arg2) (error (list :exec-binary-uchar-todo op arg2)))
+          ((scharp arg1) (error (list :exec-binary-schar-todo op arg1)))
+          ((scharp arg2) (error (list :exec-binary-schar-todo op arg2)))
+          ((ushortp arg1) (error (list :exec-binary-ushort-todo op arg1)))
+          ((ushortp arg2) (error (list :exec-binary-ushort-todo op arg2)))
+          ((sshortp arg1) (error (list :exec-binary-sshort-todo op arg1)))
+          ((sshortp arg2) (error (list :exec-binary-sshort-todo op arg2)))
+          ((uintp arg1) (error (list :exec-binary-uint-todo op arg1)))
+          ((uintp arg2) (error (list :exec-binary-uint-todo op arg2)))
           ((and (sintp arg1) (sintp arg2))
            (case (binop-kind op)
              (:mul (if (sint-mul-okp arg1 arg2)
@@ -958,6 +1031,16 @@
              (:bitxor (sint-bitxor arg1 arg2))
              (:bitior (sint-bitior arg1 arg2))
              (t (error (impossible)))))
+          ((ulongp arg1) (error (list :exec-binary-ulong-todo op arg1)))
+          ((ulongp arg2) (error (list :exec-binary-ulong-todo op arg2)))
+          ((slongp arg1) (error (list :exec-binary-slong-todo op arg1)))
+          ((slongp arg2) (error (list :exec-binary-slong-todo op arg2)))
+          ((ullongp arg1) (error (list :exec-binary-ullong-todo op arg1)))
+          ((ullongp arg2) (error (list :exec-binary-ullong-todo op arg2)))
+          ((sllongp arg1) (error (list :exec-binary-sllong-todo op arg1)))
+          ((sllongp arg2) (error (list :exec-binary-sllong-todo op arg2)))
+          ((pointerp arg1) (error (list :exec-binary-pointer op arg1)))
+          ((pointerp arg2) (error (list :exec-binary-pointer op arg2)))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
@@ -983,15 +1066,31 @@
   (b* ((arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
-          ((pointerp arg1) (error (list :exec-logand-pointer arg1)))
           ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
+          ((scharp arg1) (error (list :exec-logand-schar-todo arg1)))
+          ((ushortp arg1) (error (list :exec-logand-ushort-todo arg1)))
+          ((sshortp arg1) (error (list :exec-logand-sshort-todo arg1)))
+          ((uintp arg1) (error (list :exec-logand-uint-todo arg1)))
           ((sintp arg1)
            (cond ((not (sint-nonzerop arg1)) (sint 0))
                  ((errorp arg2) arg2)
-                 ((pointerp arg2) (error (list :exec-logand-pointer arg2)))
                  ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+                 ((scharp arg2) (error (list :exec-logand-schar-todo arg2)))
+                 ((ushortp arg2) (error (list :exec-logand-ushort-todo arg2)))
+                 ((sshortp arg2) (error (list :exec-logand-sshort-todo arg2)))
+                 ((uintp arg2) (error (list :exec-logand-uint-todo arg2)))
                  ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+                 ((ulongp arg2) (error (list :exec-logand-ulong-todo arg2)))
+                 ((slongp arg2) (error (list :exec-logand-slong-todo arg2)))
+                 ((ullongp arg2) (error (list :exec-logand-ullong-todo arg2)))
+                 ((sllongp arg2) (error (list :exec-logand-sllong-todo arg2)))
+                 ((pointerp arg2) (error (list :exec-logand-pointer-todo arg2)))
                  (t (error (impossible)))))
+          ((ulongp arg1) (error (list :exec-logand-ulong-todo arg1)))
+          ((slongp arg1) (error (list :exec-logand-slong-todo arg1)))
+          ((ullongp arg1) (error (list :exec-logand-ullong-todo arg1)))
+          ((sllongp arg1) (error (list :exec-logand-sllong-todo arg1)))
+          ((pointerp arg1) (error (list :exec-logand-pointer-todo arg1)))
           (t (error (impossible)))))
   :hooks (:fix))
 
@@ -1016,15 +1115,31 @@
   (b* ((arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
     (cond ((errorp arg1) arg1)
-          ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
-          ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
+          ((ucharp arg1) (error (list :exec-logor-uchar-todo arg1)))
+          ((scharp arg1) (error (list :exec-logor-schar-todo arg1)))
+          ((ushortp arg1) (error (list :exec-logor-ushort-todo arg1)))
+          ((sshortp arg1) (error (list :exec-logor-sshort-todo arg1)))
+          ((uintp arg1) (error (list :exec-logor-uint-todo arg1)))
           ((sintp arg1)
            (cond ((sint-nonzerop arg1) (sint 1))
                  ((errorp arg2) arg2)
-                 ((pointerp arg2) (error (list :exec-logor-pointer arg2)))
-                 ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
+                 ((ucharp arg2) (error (list :exec-logor-uchar-todo arg2)))
+                 ((scharp arg2) (error (list :exec-logor-schar-todo arg2)))
+                 ((ushortp arg2) (error (list :exec-logor-ushort-todo arg2)))
+                 ((sshortp arg2) (error (list :exec-logor-sshort-todo arg2)))
+                 ((uintp arg2) (error (list :exec-logor-uint-todo arg2)))
                  ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+                 ((ulongp arg2) (error (list :exec-logor-ulong-todo arg2)))
+                 ((slongp arg2) (error (list :exec-logor-slong-todo arg2)))
+                 ((ullongp arg2) (error (list :exec-logor-ullong-todo arg2)))
+                 ((sllongp arg2) (error (list :exec-logor-sllong-todo arg2)))
+                 ((pointerp arg2) (error (list :exec-logor-pointer-todo arg2)))
                  (t (error (impossible)))))
+          ((ulongp arg1) (error (list :exec-logor-ulong-todo arg1)))
+          ((slongp arg1) (error (list :exec-logor-slong-todo arg1)))
+          ((ullongp arg1) (error (list :exec-logor-ullong-todo arg1)))
+          ((sllongp arg1) (error (list :exec-logor-sllong-todo arg1)))
+          ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
           (t (error (impossible)))))
   :hooks (:fix))
 
@@ -1038,8 +1153,7 @@
   (xdoc::topstring
    (xdoc::p
     "Here we only define the execution of pure binary operators.
-     Assignments will be handled as part of statement execution;
-     see the discussion in @(tsee exec-expr-pure)."))
+     Assignments is handled in @(tsee exec-expr-asg)."))
   (if (binop-strictp op)
       (exec-binary-strict-pure op arg1 arg2)
     (case (binop-kind op)
@@ -1063,10 +1177,26 @@
        ((when (errorp arg)) arg)
        (type (type-name-to-type tyname)))
     (cond ((type-case type :uchar)
-           (cond ((sintp arg) (uchar-from-sint arg))
-                 ((ucharp arg) arg)
-                 ((pointerp arg) (error (list :cast-not-supported
-                                              :from arg :to type)))
+           (cond ((ucharp arg) arg)
+                 ((scharp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((ushortp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((sshortp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((uintp arg) (error
+                               (list :cast-not-supported :from arg :to type)))
+                 ((sintp arg) (uchar-from-sint arg))
+                 ((ulongp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((slongp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((ullongp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((sllongp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((pointerp arg) (error
+                                  (list :cast-not-supported :from arg :to type)))
                  (t (error (impossible)))))
           ((type-case type :sint)
            (cond ((sintp arg) arg)
@@ -1074,8 +1204,27 @@
                                    (sint-from-uchar arg)
                                  (error (list :cast-not-representable
                                               :from arg :to type))))
-                 ((pointerp arg) (error (list :cast-pointer-not-supported
-                                              :from arg :to type)))
+                 ((scharp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((ushortp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((sshortp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((uintp arg) (error
+                               (list :cast-not-supported :from arg :to type)))
+                 ((sintp arg) (error
+                               (list :cast-not-supported :from arg :to type)))
+                 ((ulongp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((slongp arg) (error
+                                (list :cast-not-supported :from arg :to type)))
+                 ((ullongp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((sllongp arg) (error
+                                 (list :cast-not-supported :from arg :to type)))
+                 ((pointerp arg) (error
+                                  (list :cast-pointer-not-supported
+                                        :from arg :to type)))
                  (t (error (impossible)))))
           (t (error (list :cast-not-supported :from arg :to type)))))
   :hooks (:fix))
@@ -1140,7 +1289,7 @@
      but eventually we will support them, since they are pure.")
    (xdoc::p
     "For now we reject tests of conditionals
-     that are @('unsigned char') values.
+     that are non-@('int') values.
      We will add support for them later.")
    (xdoc::p
     "Recall that our C abstract syntax does not cover
@@ -1174,10 +1323,26 @@
                (exec-binary-pure e.op arg1 arg2))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
-                ((when (pointerp test)) (error
-                                         (list :exec-cond-pointer-todo e)))
                 ((when (ucharp test)) (error
                                        (list :exec-cond-uchar-todo e)))
+                ((when (scharp test)) (error
+                                       (list :exec-cond-schar-todo e)))
+                ((when (ushortp test)) (error
+                                       (list :exec-cond-ushort-todo e)))
+                ((when (sshortp test)) (error
+                                        (list :exec-cond-sshort-todo e)))
+                ((when (uintp test)) (error
+                                      (list :exec-cond-uint-todo e)))
+                ((when (ulongp test)) (error
+                                       (list :exec-cond-ulong-todo e)))
+                ((when (slongp test)) (error
+                                        (list :exec-cond-slong-todo e)))
+                ((when (ullongp test)) (error
+                                       (list :exec-cond-ullong-todo e)))
+                ((when (sllongp test)) (error
+                                        (list :exec-cond-sllong-todo e)))
+                ((when (pointerp test)) (error
+                                         (list :exec-cond-pointer-todo e)))
                 ((unless (mbt (sintp test))) (error (impossible))))
              (if (sint-nonzerop test)
                  (exec-expr-pure e.then compst)
@@ -1432,32 +1597,20 @@
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst))))
-             (cond ((pointerp test)
-                    (mv (error (list :exec-if-pointer-todo s))
-                        (compustate-fix compst)))
-                   ((ucharp test)
-                    (mv (error (list :exec-if-uchar-todo s))
-                        (compustate-fix compst)))
-                   ((sintp test)
-                    (if (sint-nonzerop test)
-                        (exec-stmt s.then compst fenv (1- limit))
-                      (mv nil (compustate-fix compst))))
-                   (t (mv (error (impossible))
-                          (compustate-fix compst)))))
+             (if (sintp test)
+                 (if (sint-nonzerop test)
+                     (exec-stmt s.then compst fenv (1- limit))
+                   (mv nil (compustate-fix compst)))
+               (mv (error (list :exec-if-non-sint-todo s))
+                   (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr-pure s.test compst))
                     ((when (errorp test)) (mv test (compustate-fix compst))))
-                 (cond ((pointerp test)
-                        (mv (error (list :exec-if-pointer-todo s))
-                            (compustate-fix compst)))
-                       ((ucharp test)
-                        (mv (error (list :exec-if-uchar-todo s))
-                            (compustate-fix compst)))
-                       ((sintp test)
-                        (if (sint-nonzerop test)
-                            (exec-stmt s.then compst fenv (1- limit))
-                          (exec-stmt s.else compst fenv (1- limit))))
-                       (t (mv (error (impossible))
-                              (compustate-fix compst)))))
+                 (if (sintp test)
+                     (if (sint-nonzerop test)
+                         (exec-stmt s.then compst fenv (1- limit))
+                       (exec-stmt s.else compst fenv (1- limit)))
+                   (mv (error (list :exec-ifelse-non-sint-todo s))
+                       (compustate-fix compst))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))

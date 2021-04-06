@@ -437,7 +437,19 @@
   (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :enable (errorp valuep sintp ucharp pointerp))
+    :enable (errorp
+             valuep
+             ucharp
+             scharp
+             ushortp
+             sshortp
+             uintp
+             sintp
+             ulongp
+             slongp
+             ullongp
+             sllongp
+             pointerp))
 
   (defruled not-errorp-when-value-listp
     (implies (value-listp x)
