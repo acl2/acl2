@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -60,6 +60,12 @@
               (all-axe-treep y)))
   :hints (("Goal" :induct (append x y)
            :in-theory (enable all-axe-treep append))))
+
+(defthm axe-treep-when-symbolp-cheap
+  (implies (symbolp tree)
+           (axe-treep tree))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 ;; Pseudo-terms are axe-trees.
 (defthm-flag-axe-treep
