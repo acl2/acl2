@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-values
-  :parents (atc-implementation)
+  :parents (atc-integers)
   :short "C integer values for ATC."
   :long
   (xdoc::topstring
