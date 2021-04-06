@@ -16,9 +16,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ types
+(defxdoc+ atc-types
   :parents (atc-implementation)
-  :short "C types."
+  :short "A model of C types for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
