@@ -26,6 +26,7 @@
 (local (in-theory (disable natp strip-cars dargp)))
 
 ;; a triple of the form (<nodenum-of-var> <equated-nodenum> <literal-nodenum>).
+;; TODO: Generalize <equated-nodenum> to allow a constant.
 (defun subst-candidatep (cand)
   (declare (xargs :guard t))
   (and (nat-listp cand)
@@ -40,8 +41,9 @@
 
 ;; TODO: What if we have the equality of two vars?  Should we consider both?
 
-;; Returns a subst-candidate-listp.  Looks through the literals for ones that
-;; equate vars with other nodes.
+;; Returns a subst-candidate-listp representing all the substitution candidates
+;; for the LITERAL-NODENUMS.  Looks through the literals for ones that equate
+;; vars with other nodes.
 (defund subst-candidates (literal-nodenums dag-array dag-len acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literal-nodenums)
@@ -102,10 +104,10 @@
            (all-natp (strip-cars subst-candidates)))
   :hints (("Goal" :in-theory (enable subst-candidate-listp strip-cars))))
 
-;; Maps each node of a candidate var to the nodes of the candidates on which it
-;; depends.  We can a candidate var X depends on another candidate var Y when
-;; the expression equal to X (according to information from a literal) mentions
-;; Y.
+;; Maps each node of a candidate var to the sorted lis of the nodenums of the
+;; candidates on which it depends.  We say a candidate var X depends on another
+;; candidate var Y when the expression to be put in for to X (according to a
+;; literal that equates it to X) mentions Y.
 (def-typed-acl2-array2 candidate-deps-arrayp
   (and (nat-listp val)
        (no-duplicatesp-equal val)
@@ -118,6 +120,8 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable maxelem strip-cars))))
 
+;; Marks the npdenum of each (candidate) var as depending on itselt.  This
+;; initializes the dependency calculation.
 (defund mark-all-candidates (subst-candidates candidate-deps-array)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -149,7 +153,7 @@
           ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-candidates STRIP-CARS))))
 
 ;; Merges the deps for all the ARGS into ACC
-(defun merge-values-for-args (args candidate-deps-array
+(defund merge-values-for-args (args candidate-deps-array
                                    acc ; should be sorted
                                    )
   (declare (xargs :guard (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -171,7 +175,8 @@
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc))
-           (nat-listp (merge-values-for-args args candidate-deps-array acc))))
+           (nat-listp (merge-values-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-values-for-args))))
 
 (defthm true-listp-of-merge-values-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -179,7 +184,8 @@
                 (true-listp args)
                 (nat-listp acc))
            (true-listp (merge-values-for-args args candidate-deps-array acc)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable merge-values-for-args))))
 
 (defthm sortedp-<=-of-merge-values-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -187,10 +193,12 @@
                 (true-listp args)
                 (nat-listp acc)
                 (sortedp-<= acc))
-           (sortedp-<= (merge-values-for-args args candidate-deps-array acc))))
+           (sortedp-<= (merge-values-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-values-for-args))))
 
-;; returns the candidate-deps-array
-(defun populate-candidate-deps-array-aux (n max candidate-deps-array dag-array dag-array-len)
+;; Helps compute the set of candidate vars on which every node in the DAG depends.
+;; Returns the candidate-deps-array
+(defund populate-candidate-deps-array-aux (n max candidate-deps-array dag-array dag-array-len)
   (declare (xargs :guard (and (natp n)
                               (natp max)
                               (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -204,16 +212,28 @@
           (< max n))
       candidate-deps-array
     (let* ((expr (aref1 'dag-array dag-array n)))
-      (if (or (variablep expr) ;; variable nodes that are candidates are already marked
+      (if (or (variablep expr) ;; variable nodes that are candidates are already marked, other vars are unmarked
               (fquotep expr))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-array-len)
-        ;; it's a function call
-        (let* ((candiates-node-depends-on (remove-duplicates-from-sorted-list (merge-values-for-args (dargs expr) candidate-deps-array nil) nil))
-               (candidate-deps-array (aset1 'candidate-deps-array candidate-deps-array n candiates-node-depends-on)))
+        ;; it's a function call, so compute the set of vars on which the args depend
+        ;; TODO: Optimize the compositition of merging and the duplicate removal:
+        (let* ((candidates-node-depends-on (remove-duplicates-from-sorted-list (merge-values-for-args (dargs expr) candidate-deps-array nil) nil))
+               (candidate-deps-array (aset1 'candidate-deps-array candidate-deps-array n candidates-node-depends-on)))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-array-len))))))
 
-;; returns the candidate-deps-array
-(defun populate-candidate-deps-array (subst-candidates dag-array dag-array-len)
+(defthm candidate-deps-arrayp-of-populate-candidate-deps-array-aux
+  (implies (and (natp n)
+                (natp max)
+                (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                (< max (alen1 'candidate-deps-array candidate-deps-array))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-array-len)
+                (< max dag-array-len))
+           (candidate-deps-arrayp 'candidate-deps-array (populate-candidate-deps-array-aux n max candidate-deps-array dag-array dag-array-len)))
+  :hints (("Goal" :in-theory (enable populate-candidate-deps-array-aux))))
+
+;; Ccompute, for each node in the DAG, the set of candidate vars (actually their nodenums) on which the node depends.
+;; Returns the candidate-deps-array.
+(defund populate-candidate-deps-array (subst-candidates dag-array dag-array-len)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (consp subst-candidates)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-array-len)
@@ -224,3 +244,13 @@
          (candidate-deps-array (make-empty-array 'candidate-deps-array (+ 1 max-candidate-nodenum)))
          (candidate-deps-array (mark-all-candidates subst-candidates candidate-deps-array)))
     (populate-candidate-deps-array-aux 0 max-candidate-nodenum candidate-deps-array dag-array dag-array-len)))
+
+(defthm candidate-deps-arrayp-of-populate-candidate-deps-array
+  (implies (and (subst-candidate-listp subst-candidates)
+                (consp subst-candidates)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-array-len)
+                (or (endp subst-candidates)
+                    (<= (maxelem (strip-cars subst-candidates))
+                        (+ -1 dag-array-len))))
+           (candidate-deps-arrayp 'candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-array-len)))
+  :hints (("Goal" :in-theory (enable populate-candidate-deps-array))))
