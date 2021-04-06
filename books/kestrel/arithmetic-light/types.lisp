@@ -42,3 +42,9 @@
 (defthmd integerp-when-natp
   (implies (natp x)
            (integerp x)))
+
+;;; These establish >=0
+
+(defthmd <=-of-0-when-0-natp
+  (implies (natp x)
+           (<= 0 x)))
