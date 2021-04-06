@@ -319,7 +319,9 @@
      we find the first type that suffices to represent the value,
      in the lists indicated in the table,
      and we return that type.
-     If the value is too large, the integer constant is illegal."))
+     If the value is too large, the integer constant is illegal.")
+   (xdoc::p
+    "This is the static counterpart of @(tsee exec-iconst)."))
   (b* ((ic (iconst-fix ic))
        ((iconst ic) ic))
     (if ic.unsignedp
