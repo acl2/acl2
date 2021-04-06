@@ -13,7 +13,7 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
-(include-book "integer-values")
+(include-book "integers")
 (include-book "types")
 (include-book "errors")
 

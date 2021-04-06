@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "integer-values")
+(include-book "integers")
 (include-book "pointers")
 
 (include-book "defthm-disjoint")

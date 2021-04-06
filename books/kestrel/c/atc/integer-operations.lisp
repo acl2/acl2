@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "integer-values")
+(include-book "integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +102,7 @@
    (xdoc::p
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
-    (xdoc::seetopic "atc-integer-values" "our model of integer values")
+    (xdoc::seetopic "atc-integers" "our model of integer values")
     "; these operations depend on the representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
