@@ -32,6 +32,10 @@
      which should support the generation of proofs
      for the initial version of ATC.")
    (xdoc::p
+    "This model also provides a target for APT derivations.
+     ATC recognizes some of the ACL2 functions in this model
+     and translates them to the corresponding C constructs.")
+   (xdoc::p
     "This preliminary dynamic semantics may be extended in the future,
      and may be replaced by a more comprehensive model
      that we will be developing as part of the "
