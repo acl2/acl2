@@ -315,9 +315,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to [C:6.4.4.1/5]:
-     based on the suffixes, we find the first type
-     that suffices to represent the value,
-     in the lists indicated in the table.
+     based on the suffixes and the base,
+     we find the first type that suffices to represent the value,
+     in the lists indicated in the table,
+     and we return that type.
      If the value is too large, the integer constant is illegal."))
   (b* ((ic (iconst-fix ic))
        ((iconst ic) ic))
