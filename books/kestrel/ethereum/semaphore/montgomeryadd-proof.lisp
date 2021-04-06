@@ -123,7 +123,6 @@
                            (cons :|main.out[0]| x3)
                            (cons :|main.out[1]| y3)
                            (cons :|main.lamda| lambda)))
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (precond auxp r1cs::r1cs-valuationp)
                                         ((:e baby-jubjub-prime))))))
 
