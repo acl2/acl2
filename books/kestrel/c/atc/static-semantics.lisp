@@ -918,7 +918,9 @@
       but instead transfer control to the next statement (if any).
       It may be appropriate to use the C type @('void') instead of @('nil')
       to describe this situation,
-      but for now our model of @(see types) does not include @('void').")
+      but for now our model of "
+     (xdoc::seetopic "atc-types" "types")
+     " does not include @('void').")
     (xdoc::li
      "A possibly updated variable table.
       This is updated by block items that are declarations.

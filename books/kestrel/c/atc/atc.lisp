@@ -1442,7 +1442,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(see types),
+    "As discussed in @(see atc-types),
      now types and type specifier sequences are isomorphic in our model,
      but they are not in C.
      When generating C code,
