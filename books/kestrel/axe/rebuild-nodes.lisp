@@ -64,20 +64,6 @@
           (not  (< (car (last x)) -1)))
   :hints (("Goal" :in-theory (enable last))))
 
-(encapsulate ()
-  (local (include-book "kestrel/lists-light/memberp" :dir :system))
-;move
-  (defcong perm iff (member-equal x y) 2
-    :hints (("Goal" :in-theory (enable member-equal perm)))))
-
-;move
-(defcong perm equal (subsetp-equal x y) 2
-  :hints (("Goal" :in-theory (enable subsetp-equal))))
-
-(defthm subsetp-equal-of-merge-sort-<
-  (equal (subsetp-equal x (merge-sort-< x))
-         (subsetp-equal x x)))
-
 ;disble?
 (defthm natp-of-car-when-nat-listp-type
   (implies (and (nat-listp x)
@@ -109,22 +95,6 @@
            (< (car items) x))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable all-<))))
-
-(defthm all-<-of-+-of-1
-  (implies (and (syntaxp (not (quotep y)))
-                (all-integerp x)
-                (integerp y))
-           (equal (all-< x (+ 1 y))
-                  (all-<= x y)))
-  :hints (("Goal" :in-theory (enable all-<= all-<))))
-
-(defthm all-<=-of-car-of-last-when-sortedp-<=-2
-  (implies (and (sortedp-<= x)
-                (subsetp-equal y x))
-           (all-<= y (car (last x))))
-  :hints (("Goal" :in-theory (enable ALL-<=
-                                     SUBSETP-EQUAL
-                                     sortedp-<=))))
 
 ;;move to rational-lists.lisp
 (defthm all-<=-of-maxelem
