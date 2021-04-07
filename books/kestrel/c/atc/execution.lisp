@@ -221,19 +221,14 @@
         (error (list :mistype-minus
                      :required :arithmetic
                      :supplied arg)))
-       (val (promote-value arg)))
+       (val (promote-value arg))
+       (err (error (list :undefined-minus arg))))
     (cond ((uintp val) (uint-minus val))
-          ((sintp val) (if (sint-minus-okp val)
-                           (sint-minus val)
-                         (error (list :undefined-minus arg))))
+          ((sintp val) (if (sint-minus-okp val) (sint-minus val) err))
           ((ulongp val) (ulong-minus val))
-          ((slongp val) (if (slong-minus-okp val)
-                            (slong-minus val)
-                          (error (list :undefined-minus arg))))
+          ((slongp val) (if (slong-minus-okp val) (slong-minus val) err))
           ((ullongp val) (ullong-minus val))
-          ((sllongp val) (if (sllong-minus-okp val)
-                             (sllong-minus val)
-                           (error (list :undefined-minus arg))))
+          ((sllongp val) (if (sllong-minus-okp val) (sllong-minus val) err))
           (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable promote-value
                                            value-arithmeticp
