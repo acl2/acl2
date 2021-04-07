@@ -364,6 +364,7 @@
     exec-binary-pure
     exec-cast
     exec-arrsub
+    promote-value
     mv-nth
     pop-frame
     push-frame
@@ -374,6 +375,11 @@
     sint-logor
     top-frame
     type-of-value
+    value-unsigned-integerp
+    value-signed-integerp
+    value-integerp
+    value-realp
+    value-arithmeticp
     write-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

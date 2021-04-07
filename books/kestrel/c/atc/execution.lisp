@@ -187,11 +187,27 @@
 
 (define exec-plus ((arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute unary plus."
-  (b* ((arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
-          ((sintp arg) (sint-plus arg))
-          (t (error (list :exec-plus-todo arg)))))
+  :short "Execute unary plus [C:6.5.3.3/1-2]."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-arithmeticp arg))
+        (error (list :mistype-plus
+                     :required :arithmetic
+                     :supplied arg)))
+       (val (promote-value arg)))
+    (cond ((uintp val) (uint-plus val))
+          ((sintp val) (sint-plus val))
+          ((ulongp val) (ulong-plus val))
+          ((slongp val) (slong-plus val))
+          ((ullongp val) (ullong-plus val))
+          ((sllongp val) (sllong-plus val))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable promote-value
+                                           value-arithmeticp
+                                           value-realp
+                                           value-integerp
+                                           value-unsigned-integerp
+                                           value-signed-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
