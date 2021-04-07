@@ -219,12 +219,13 @@
           ((ullongp val) (ullong-plus val))
           ((sllongp val) (sllong-plus val))
           (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable promote-value
-                                           value-arithmeticp
-                                           value-realp
-                                           value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -247,12 +248,13 @@
           ((ullongp val) (ullong-minus val))
           ((sllongp val) (if (sllong-minus-okp val) (sllong-minus val) err))
           (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable promote-value
-                                           value-arithmeticp
-                                           value-realp
-                                           value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -274,10 +276,13 @@
           ((ullongp val) (ullong-bitnot val))
           ((sllongp val) (sllong-bitnot val))
           (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable promote-value
-                                           value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -303,13 +308,14 @@
           ((sllongp arg) (sllong-lognot arg))
           ((pointerp arg) (sint01 (pointer-nullp arg)))
           (t (error (impossible)))))
-  :guard-hints (("Goal" :in-theory (enable promote-value
-                                           value-scalarp
-                                           value-arithmeticp
-                                           value-realp
-                                           value-integerp
-                                           value-unsigned-integerp
-                                           value-signed-integerp)))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-scalarp
+                                    value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
