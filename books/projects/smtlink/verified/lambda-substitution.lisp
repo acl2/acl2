@@ -24,8 +24,10 @@
 (include-book "hint-interface")
 (include-book "evaluator")
 
+(local
 (defthm alistp-of-pairlis$
   (alistp (acl2::pairlis$ a b)))
+)
 
 (encapsulate ()
 

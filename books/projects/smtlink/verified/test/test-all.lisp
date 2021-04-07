@@ -1,7 +1,7 @@
 (in-package "SMT")
-(ld "../expand-cp.lisp")
-(ld "../type-inference-bottomup.lisp")
-(ld "../reorder-hypotheses.lisp")
+(include-book "../expand-cp")
+(include-book "../type-inference-bottomup")
+(include-book "../reorder-hypotheses")
 (ld "test-smtlink-hint.lisp")
 (ld "test-type-options.lisp")
 

@@ -1,5 +1,5 @@
 (in-package "SMT")
-(ld "../expand-cp.lisp")
+(include-book "../expand-cp")
 (ld "test-smtlink-hint.lisp")
 
 (set-guard-checking :none)

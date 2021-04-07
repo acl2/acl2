@@ -21,6 +21,11 @@
 
 (set-state-ok t)
 
+(local
+ (defthm alistp-of-pairlis$
+   (alistp (acl2::pairlis$ a b)))
+ )
+
 ;;-------------------------------------------------------
 ;; Returns judgements
 
