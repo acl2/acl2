@@ -32,7 +32,7 @@
 ;(verify-termination strip-caddrs) ;todo: have matt fix the termination
 
 ;dup
-(defun my-strip-caddrs (x)
+(defund my-strip-caddrs (x)
   (declare (xargs :guard (all->=-len x 3)))
   (cond ((endp x) nil)
 	(t (cons (caddr (car x))
@@ -43,9 +43,32 @@
          (consp x))
   :hints (("Goal" :in-theory (enable my-strip-caddrs))))
 
+;can expose the cdr to other rules
+(defthm my-strip-caddrs-of-cdr
+  (equal (my-strip-caddrs (cdr x))
+         (cdr (my-strip-caddrs x)))
+  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+
+(defthm my-strip-caddrs-of-cons
+  (equal (my-strip-caddrs (cons x y))
+         (cons (caddr x)
+               (my-strip-caddrs y)))
+  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+
+(defthmd <-of-car-of-car-when-all-<-of-strip-cars
+  (implies (and (all-< (strip-cars x) bound)
+                (consp x))
+           (< (car (car x)) bound))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+(local (in-theory (enable <-of-car-of-car-when-all-<-of-strip-cars)))
+
 (local (in-theory (disable set-difference-equal strip-cars strip-cadrs))) ;prevent inductions
 
-(local (in-theory (disable natp  dargp)))
+(local (in-theory (disable natp dargp
+                           default-car
+                           max
+                           )))
 
 ;;todo: NO-ATOMS, all-consp, and all-myquotep are the same for lists of dargs
 
@@ -77,7 +100,7 @@
 
 ;; a triple of the form (<nodenum-of-var> <equated-nodenum-or-constant> <literal-nodenum>).
 ;; TODO: Save a cons by making the literal-nodenum the final cdr?
-(defun subst-candidatep (cand)
+(defund subst-candidatep (cand)
   (declare (xargs :guard t))
   (and (true-listp cand)
        (equal 3 (len cand))
@@ -87,31 +110,37 @@
 
 (defthmd natp-of-car-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (natp (car cand))))
+           (natp (car cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd consp-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (consp cand)))
+           (consp cand))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd consp-of-cdr-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (consp (cdr cand))))
+           (consp (cdr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd len-of-cadr-when-subst-candidatep
   (implies (subst-candidatep cand)
            (equal (len (cadr cand))
                   (if (consp (cadr cand))
                       2
-                    0))))
+                    0)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd dargp-of-cadr-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (dargp (cadr cand))))
+           (dargp (cadr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd natp-of-cadr-when-subst-candidatep
   (implies (and (subst-candidatep cand)
                 (not (consp (cadr cand))))
-           (natp (cadr cand))))
+           (natp (cadr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defund subst-candidate-listp (cands)
   (declare (xargs :guard t))
@@ -133,16 +162,18 @@
   :hints (("Goal" :in-theory (enable subst-candidate-listp))))
 
 ;;so we can call strip-cadrs
-(defthmd ALL->=-LEN-of-2-when-SUBST-CANDIDATE-LISTP
-  (IMPLIES (SUBST-CANDIDATE-LISTP SUBST-CANDIDATES)
-           (ALL->=-LEN SUBST-CANDIDATES 2))
-  :hints (("Goal" :in-theory (enable SUBST-CANDIDATE-LISTP))))
+(defthmd all->=-len-of-2-when-subst-candidate-listp
+  (implies (subst-candidate-listp subst-candidates)
+           (all->=-len subst-candidates 2))
+  :hints (("Goal" :in-theory (enable subst-candidatep
+                                     subst-candidate-listp))))
 
 ;;so we can call strip-caddrs
-(defthmd ALL->=-LEN-of-3-when-SUBST-CANDIDATE-LISTP
-  (IMPLIES (SUBST-CANDIDATE-LISTP SUBST-CANDIDATES)
-           (ALL->=-LEN SUBST-CANDIDATES 3))
-  :hints (("Goal" :in-theory (enable SUBST-CANDIDATE-LISTP))))
+(defthmd all->=-len-of-3-when-subst-candidate-listp
+  (implies (subst-candidate-listp subst-candidates)
+           (all->=-len subst-candidates 3))
+  :hints (("Goal" :in-theory (enable subst-candidatep
+                                     subst-candidate-listp))))
 
 (defthm subst-candidate-listp-of-cdr
   (implies (subst-candidate-listp subst-candidates)
@@ -181,13 +212,168 @@
 (defthm all-dargp-of-strip-cadrs-when-subst-candidate-listp
   (implies (subst-candidate-listp subst-candidates)
            (all-dargp (strip-cadrs subst-candidates)))
-  :hints (("Goal" :in-theory (enable subst-candidate-listp strip-cadrs))))
+  :hints (("Goal" :in-theory (enable subst-candidatep subst-candidate-listp strip-cadrs))))
 
 ;; TODO: What if we have the equality of two vars?  Should we consider both?
 
+
+;decides whether we should substitute (is it the nodenum of a var, and is it equated to a term that doesn't include itself?)
+;; Returns (mv substp var).
+;; Does not check whether the var depends on itself.
+(defund ensure-substitutable-var2 (nodenum-or-quotep dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (dargp-less-than nodenum-or-quotep dag-len))
+                  :guard-hints (("Goal" :in-theory (disable myquotep))))
+           (ignore dag-len))
+  (if (atom nodenum-or-quotep)
+      (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+        (if (symbolp expr)
+            (mv t expr)
+          (mv nil nil)))
+    (mv nil nil)))
+
+;;;
+;;; find-var-and-expr-to-subst
+;;;
+
+;; Returns (mv foundp var nodenum-of-var equated-thing) where equated-thing will always be a nodenum or quotep.
+;the awkwardness here is to avoid doing the aref more than once..
+;; TODO: what if we have (equal var1 var2)?  is there a way to tell which would be better to eliminate? maybe it doesn't matter
+;; Does not check whether the var depends on itself.
+(defund find-var-and-expr-to-subst2 (lhs rhs dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (dargp-less-than lhs dag-len)
+                              (dargp-less-than rhs dag-len))))
+  (mv-let (substp var)
+    (ensure-substitutable-var2 lhs dag-array dag-len)
+    (if substp
+        (mv t var lhs rhs)
+      (mv-let (substp var)
+        (ensure-substitutable-var2 rhs dag-array dag-len)
+        (if substp
+            (mv t var rhs lhs)
+          (mv nil nil nil nil))))))
+
+(defthm natp-of-mv-nth-2-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (dargp rhs)
+                (dargp lhs))
+           (natp (mv-nth 2 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm <-of-mv-nth-2-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (dargp-less-than lhs dag-len)
+                (dargp-less-than rhs dag-len))
+           (< (mv-nth 2 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+              dag-len))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm dargp-of-mv-nth-3-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (dargp rhs)
+                (dargp lhs)
+                (not (consp (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len)))))
+           (dargp (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (dargp-less-than lhs dag-len)
+                (dargp-less-than rhs dag-len))
+           (dargp-less-than (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                            dag-len))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+;;;
+;;; check-for-var-subst-literal
+;;;
+
+;; Checks whether LITERAL-NODENUM represents a (negated) equality we can use to substitute.
+;; Returns (mv foundp var nodenum-of-var nodenum-or-quotep-to-put-in).
+;; Does not check whether the var depends on itself.
+(defund check-for-var-subst-literal2 (literal-nodenum dag-array dag-len)
+  (declare (xargs :guard (and (natp literal-nodenum)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (< literal-nodenum dag-len))
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr
+                                                           NATP-OF-+-OF-1)))))
+  (let ((expr (aref1 'dag-array dag-array literal-nodenum)))
+    ;; we seek an expr of the form (not <nodenum>)
+    (if (not (and (call-of 'not expr)
+                  (consp (dargs expr))
+                  (integerp (darg1 expr))))
+        (mv nil nil nil nil) ;fail
+      (let ((non-nil-expr (aref1 'dag-array dag-array (darg1 expr)))) ;;we seek a NON-NIL-EXPR of the form (equal <nodenum-of-var> <thing>) or vice-versa
+        (if (not (and (call-of 'equal non-nil-expr)
+                      (consp (cdr (dargs non-nil-expr)))))
+            (mv nil nil nil nil) ;fail
+          (find-var-and-expr-to-subst2 (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
+          )))))
+
+(defthm natp-of-mv-nth-2-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (natp (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm <-mv-nth-2-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (< (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+              dag-len))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (dargp-less-than (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                            dag-len))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len)
+                (<= dag-len bound))
+           (dargp-less-than (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                            bound))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2))))
+
+(defthm dargp-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (dargp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+                               dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen))))
+
+(defthm natp-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (equal (natp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len)))
+                  (not (consp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+                               dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen))))
+
 ;; Returns a subst-candidate-listp representing all the substitution candidates
 ;; for the LITERAL-NODENUMS.  Looks through the literals for ones that equate
-;; vars with other nodes.
+;; vars with other nodes.  Does not check whether the var depends on itself.
 (defund subst-candidates (literal-nodenums dag-array dag-len acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literal-nodenums)
@@ -200,7 +386,7 @@
               nodenum-of-var
               nodenum-or-quotep-to-put-in)
           ;;  TTODO: Use a version of this that doesn't check supporters (make sure, elsewhere, that we avoid self-supporting vars):
-          (check-for-var-subst-literal literal-nodenum dag-array dag-len)))
+          (check-for-var-subst-literal2 literal-nodenum dag-array dag-len)))
       (subst-candidates (rest literal-nodenums)
                         dag-array
                         dag-len
@@ -221,7 +407,7 @@
                 (all-< literal-nodenums dag-len)
                 (subst-candidate-listp acc))
            (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len acc)))
-  :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidate-listp)
+  :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidatep subst-candidate-listp)
                                   ()))))
 
 (defthm all-<-of-strip-cars-of-subst-candidates
@@ -237,7 +423,7 @@
 (defthmd subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper
   (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len acc))
                  (append literal-nodenums (my-strip-caddrs acc)))
-  :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL)))))
+  :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL2)))))
 
 (local
  (defthm subsetp-equal-of-my-strip-caddrs-of-subst-candidates
@@ -256,8 +442,8 @@
               dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs
                                      largest-non-quotep ;expensive
-                                     check-for-var-subst-literal
-                                     find-var-and-expr-to-subst))))
+                                     check-for-var-subst-literal2
+                                     find-var-and-expr-to-subst2))))
 
 ;similar to the above
 (defthm all-dargp-less-than-of-strip-cadrs-of-subst-candidates
@@ -267,8 +453,8 @@
                 (all-dargp-less-than (strip-cadrs acc) dag-len))
            (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len acc))
                                dag-len))
-  :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal
-                                     find-var-and-expr-to-subst
+  :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal2
+                                     find-var-and-expr-to-subst2
                                      NATP-OF-+-OF-1))))
 
 
@@ -494,8 +680,7 @@
           (cdr (strip-cadrs x)))
    :hints (("Goal" :in-theory (enable strip-cadrs)))))
 
-;; Returns a list of subst-candidates suitable for simultaneous checking.
-;; TODO: Exclude any that depend on themselves, then drop that check from when we form the candidates (it should be faster to do it here)
+;; Returns a list of subst-candidates suitable for simultaneous checking (no var in the set depends on any other vars in the set, or on itself).
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
                                             subst-candidates-acc ; candidates we have already decided to added to the set
@@ -531,6 +716,8 @@
                                              nil
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
+           ;; Makes sure the var doesn't depend on itself:
+           (not (member this-var-nodenum nodenums-this-var-depends-on))
            ;; Makes sure no already-selected candidate depends on this var:
            ;; todo: optimize by using sortedness
            (not (member this-var-nodenum nodenums-of-vars-to-avoid))
@@ -645,7 +832,9 @@
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (array1p 'translation-array translation-array)
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                              (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))))
+                              (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
+                  :guard-hints (("Goal" :in-theory (enable dargp-of-cadr-when-subst-candidatep)))
+                  ))
   (if (endp subst-candidates)
       translation-array
     (let* ((subst-candidate (first subst-candidates))
@@ -660,7 +849,7 @@
                 ;(translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (array1p 'translation-array (mark-replacements subst-candidates translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements))))
+  :hints (("Goal" :in-theory (enable mark-replacements natp-of-car-when-subst-candidatep))))
 
 (defthm alen1-of-mark-replacements
   (implies (and (subst-candidate-listp subst-candidates)
@@ -669,7 +858,9 @@
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (equal (alen1 'translation-array (mark-replacements subst-candidates translation-array))
                   (alen1 'translation-array translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements))))
+  :hints (("Goal" :in-theory (enable mark-replacements
+                                     natp-of-car-when-subst-candidatep
+                                     dargp-of-cadr-when-subst-candidatep))))
 
 (defthm translation-arrayp-aux-of-mark-replacements
   (implies (and (subst-candidate-listp subst-candidates)
@@ -677,7 +868,9 @@
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) (mark-replacements subst-candidates translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements dargp-of-cadr-when-subst-candidatep))))
+  :hints (("Goal" :in-theory (enable mark-replacements
+                                     dargp-of-cadr-when-subst-candidatep
+                                     ))))
 
 (defthm translation-arrayp-aux-of-mark-replacements-gen
   (implies (and (<= TOP-NODENUM-TO-CHECK (+ -1 (alen1 'translation-array translation-array)))
@@ -744,9 +937,9 @@
                   ;; clean up:
                   :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
                                                          <-of-nth-when-all-<
-                                                         ;;check-for-var-subst-literal
-                                                         find-var-and-expr-to-subst
-                                                         ensure-substitutable-var
+                                                         ;;check-for-var-subst-literal2
+                                                         find-var-and-expr-to-subst2
+                                                         ensure-substitutable-var2
                                                          consp-of-cdr
                                                          integerp-when-dargp
                                                          <=-of-0-when-dargp
@@ -853,13 +1046,13 @@
                                      intersection-equal-when-subsetp-equal-iff))))
 
 ;;for the def-dag-builder-theorems just below (todo: should not be needed?):
-(local (in-theory (enable check-for-var-subst-literal consp-of-cdr
+(local (in-theory (enable check-for-var-subst-literal2 consp-of-cdr
                           ALL-<-OF-+-OF-1
                           ;;car-becomes-nth-of-0
                           <-of-nth-when-all-<
-                          ;;check-for-var-subst-literal
-                          find-var-and-expr-to-subst
-                          ensure-substitutable-var
+                          ;;check-for-var-subst-literal2
+                          find-var-and-expr-to-subst2
+                          ensure-substitutable-var2
                           consp-of-cdr
                           integerp-when-dargp
                           <=-of-0-when-dargp
@@ -878,7 +1071,7 @@
   :recursivep nil
   ;; TODO: Why doesn't this work without the in-theory event above?
   ;; :hints (("Goal" :in-theory (enable substitute-var-set
-  ;;                                    check-for-var-subst-literal)))
+  ;;                                    check-for-var-subst-literal2)))
   )
 
 ;; (defthm <=-of-mv-nth-5-of-substitute-var-set

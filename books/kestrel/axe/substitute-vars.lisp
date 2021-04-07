@@ -27,6 +27,13 @@
 
 ;; See also substitute-vars2.lisp
 
+
+;move
+(defthmd len-of-0-and-len
+  (equal (< 0 (len x))
+         (consp x))
+  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR)))))
+
 ;move
 (defthm not-<-of-+-1-of-maxelem
  (implies (and (all-< x y)
@@ -126,13 +133,13 @@
 ;;; check-for-var-subst-literal
 ;;;
 
+;; Checks whether LITERAL-NODENUM represents a (negated) equality we can use to substitute.
 ;; Returns (mv foundp var nodenum-of-var nodenum-or-quotep-to-put-in).
 (defund check-for-var-subst-literal (literal-nodenum dag-array dag-len)
   (declare (xargs :guard (and (natp literal-nodenum)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (< literal-nodenum dag-len))
-                  :guard-hints (("Goal" :in-theory (enable CONSP-OF-CDR)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
   (let ((expr (aref1 'dag-array dag-array literal-nodenum)))
     ;; we seek an expr of the form (not <nodenum>)
     (if (not (and (call-of 'not expr)
@@ -145,12 +152,6 @@
             (mv nil nil nil nil) ;fail
           (find-var-and-expr-to-subst (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
           )))))
-
-;move
-(defthmd len-of-0-and-len
-  (equal (< 0 (len x))
-         (consp x))
-  :hints (("Goal" :in-theory (e/d (len) (LEN-OF-CDR)))))
 
 (defthm natp-of-mv-nth-2-of-check-for-var-subst-literal
   (implies (and (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len))
