@@ -13,8 +13,7 @@
 (include-book "std/lists/sets" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 ;; To be compatible with Arithmetic books
-(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir
-              :system)
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 

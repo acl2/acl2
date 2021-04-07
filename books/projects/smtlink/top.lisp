@@ -27,13 +27,13 @@
 ;; (include-book "verified/uninterpreted-fn-cp")
 ;; (include-book "verified/fixtypes")
 
-;; trusted
-(include-book "trusted/prove")
-(include-book "trusted/run")
-(include-book "trusted/trusted-cp")
-(include-book "trusted/write")
+;; ;; trusted
+;; (include-book "trusted/prove")
+;; (include-book "trusted/run")
+;; (include-book "trusted/trusted-cp")
+;; (include-book "trusted/write")
 
-;; trusted/z3-py
-(include-book "trusted/z3-py/header")
-(include-book "trusted/z3-py/names")
-(include-book "trusted/z3-py/translator")
+;; ;; trusted/z3-py
+;; (include-book "trusted/z3-py/header")
+;; (include-book "trusted/z3-py/names")
+;; (include-book "trusted/z3-py/translator")
