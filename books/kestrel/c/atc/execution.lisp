@@ -187,7 +187,7 @@
 
 (define exec-plus ((arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute unary plus [C:6.5.3.3/1-2]."
+  :short "Execute unary plus [C:6.5.3.3/1] [C:6.5.3.3/2]."
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
        ((unless (value-arithmeticp arg))
@@ -214,13 +214,33 @@
 
 (define exec-minus ((arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute unary minus."
-  (b* ((arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
-          ((sintp arg) (if (sint-minus-okp arg)
-                           (sint-minus arg)
-                         (error (list :exec-minus arg))))
-          (t (error (list :exec-minus-todo arg)))))
+  :short "Execute unary minus [C:6.5.3.3/1] [C:6.5.3.3/3]."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-arithmeticp arg))
+        (error (list :mistype-minus
+                     :required :arithmetic
+                     :supplied arg)))
+       (val (promote-value arg)))
+    (cond ((uintp val) (uint-minus val))
+          ((sintp val) (if (sint-minus-okp val)
+                           (sint-minus val)
+                         (error (list :undefined-minus arg))))
+          ((ulongp val) (ulong-minus val))
+          ((slongp val) (if (slong-minus-okp val)
+                            (slong-minus val)
+                          (error (list :undefined-minus arg))))
+          ((ullongp val) (ullong-minus val))
+          ((sllongp val) (if (sllong-minus-okp val)
+                             (sllong-minus val)
+                           (error (list :undefined-minus arg))))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable promote-value
+                                           value-arithmeticp
+                                           value-realp
+                                           value-integerp
+                                           value-unsigned-integerp
+                                           value-signed-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
