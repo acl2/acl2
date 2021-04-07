@@ -252,7 +252,7 @@
        (val (promote-value arg)))
     (cond ((uintp val) (uint-bitnot val))
           ((sintp val) (sint-bitnot val))
-          ((ulongp val) (ulong-minus val))
+          ((ulongp val) (ulong-bitnot val))
           ((slongp val) (slong-bitnot val))
           ((ullongp val) (ullong-bitnot val))
           ((sllongp val) (sllong-bitnot val))
@@ -267,11 +267,32 @@
 
 (define exec-lognot ((arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute unary lognot."
-  (b* ((arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
+  :short "Execute unary lognot [C:6.5.3.3/1] [C:6.5.3.3/5]."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-scalarp arg))
+        (error (list :mistype-lognot
+                     :required :scalar
+                     :supplied arg))))
+    (cond ((ucharp arg) (uchar-lognot arg))
+          ((scharp arg) (schar-lognot arg))
+          ((ushortp arg) (ushort-lognot arg))
+          ((sshortp arg) (sshort-lognot arg))
+          ((uintp arg) (uint-lognot arg))
           ((sintp arg) (sint-lognot arg))
-          (t (error (list :exec-lognot-todo arg)))))
+          ((ulongp arg) (ulong-lognot arg))
+          ((slongp arg) (slong-lognot arg))
+          ((ullongp arg) (ullong-lognot arg))
+          ((sllongp arg) (sllong-lognot arg))
+          ((pointerp arg) (sint01 (pointer-nullp arg)))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable promote-value
+                                           value-scalarp
+                                           value-arithmeticp
+                                           value-realp
+                                           value-integerp
+                                           value-unsigned-integerp
+                                           value-signed-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

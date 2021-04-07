@@ -380,6 +380,7 @@
     value-integerp
     value-realp
     value-arithmeticp
+    value-scalarp
     write-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
