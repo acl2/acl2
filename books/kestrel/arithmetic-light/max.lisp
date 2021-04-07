@@ -33,3 +33,18 @@
   (equal (< z (max x y))
          (or (< z x)
              (< z y))))
+
+(defthm acl2-numberp-of-max
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (acl2-numberp (max x y))))
+
+(defthm acl2-numberp-of-max-when-<-of-0
+  (implies (and (acl2-numberp x)
+                (< 0 x))
+           (acl2-numberp (max x y))))
+
+(defthm integerp-of-max
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (max x y))))
