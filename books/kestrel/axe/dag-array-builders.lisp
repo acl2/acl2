@@ -357,7 +357,7 @@
                   :split-types t
                   :guard-hints (("Goal" :do-not-induct t
                                  :in-theory (enable <-of-+-of-minus1-arith-hack)))))
-  (if (no-atoms args) ;; A function call all of whose children are quoteps is the "constant" case.  includes calls of 0-ary functions
+  (if (all-consp args) ;; A function call all of whose children are quoteps is the "constant" case.  includes calls of 0-ary functions
       (let* ((expr (cons fn args)) ;todo: avoid this cons?
              (possible-index (lookup-equal expr dag-constant-alist))) ;fixme use hashing or something?
         (if possible-index

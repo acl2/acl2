@@ -52,7 +52,7 @@
 (defthm <-of--1-and-largest-non-quotep
   (implies (all-dargp x)
            (equal (< -1 (largest-non-quotep x))
-                  (not (no-atoms x)))))
+                  (not (all-consp x)))))
 
 ;dup
 (defthm <-of-if-arg2
@@ -419,7 +419,7 @@
 ;; todo: avoid doing this if all equated things are constants?
 (defund populate-candidate-deps-array (subst-candidates dag-array dag-len)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
-                              (not (no-atoms (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
+                              (not (all-consp (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
                               (consp subst-candidates)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (or (endp subst-candidates)
@@ -438,7 +438,7 @@
 (defthm candidate-deps-arrayp-of-populate-candidate-deps-array
   (implies (and (subst-candidate-listp subst-candidates)
                 (consp subst-candidates)
-                (not (no-atoms (strip-cadrs subst-candidates)))
+                (not (all-consp (strip-cadrs subst-candidates)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (or (endp subst-candidates)
                     (<= (maxelem (strip-cars subst-candidates))
@@ -449,23 +449,16 @@
   :hints (("Goal" :in-theory (enable populate-candidate-deps-array))))
 
 (local
- (defthm all-myquotep-becomes-no-atoms-when-and-all-dargp
+ (defthm all-myquotep-becomes-all-consp-when-all-dargp
    (implies (all-dargp items)
             (equal (all-myquotep items)
-                   (no-atoms items)))
-   :hints (("Goal" :in-theory (enable all-myquotep no-atoms all-dargp)))))
-
-(local
- (defthm no-atoms-becomes-all-consp-when-and-all-dargp
-   (implies (all-dargp items)
-            (equal (no-atoms items)
                    (all-consp items)))
-   :hints (("Goal" :in-theory (enable all-myquotep no-atoms all-dargp)))))
+   :hints (("Goal" :in-theory (enable all-myquotep all-consp all-dargp)))))
 
 (defthm alen1-of-populate-candidate-deps-array
   (implies (and (subst-candidate-listp subst-candidates)
                 (consp subst-candidates)
-                (not (no-atoms (strip-cadrs subst-candidates)))
+                (not (all-consp (strip-cadrs subst-candidates)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (or (endp subst-candidates)
                     (<= (maxelem (strip-cars subst-candidates))

@@ -78,7 +78,8 @@
 
 (local (in-theory (disable use-all-<-for-car
                            all-dargp-less-than-when-<-of-largest-non-quotep
-                           all-dargp-less-than-when-no-atoms)))
+                           ;all-dargp-less-than-when-all-consp
+                           )))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)

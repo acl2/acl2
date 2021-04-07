@@ -769,7 +769,7 @@
 ;;                 (if (not dont-add-permanently)
 ;;                     (acons expr dag-len dag-variable-alist)
 ;;                   dag-variable-alist))))
-;;       (if (no-atoms (fargs expr)) ;; "constant" case
+;;       (if (all-consp (fargs expr)) ;; "constant" case
 ;;           (let ((possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
 ;;             (if possible-index
 ;;                 ;; if it's already present...
