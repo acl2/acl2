@@ -247,11 +247,25 @@
 
 (define exec-bitnot ((arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute bitwise complement."
-  (b* ((arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
-          ((sintp arg) (sint-bitnot arg))
-          (t (error (list :exec-bitnot-todo arg)))))
+  :short "Execute bitwise complement [C:6.5.3.3/1] [C:6.5.3.3/4]."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-integerp arg))
+        (error (list :mistype-bitnot
+                     :required :integer
+                     :supplied arg)))
+       (val (promote-value arg)))
+    (cond ((uintp val) (uint-bitnot val))
+          ((sintp val) (sint-bitnot val))
+          ((ulongp val) (ulong-minus val))
+          ((slongp val) (slong-bitnot val))
+          ((ullongp val) (ullong-bitnot val))
+          ((sllongp val) (sllong-bitnot val))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable promote-value
+                                           value-integerp
+                                           value-unsigned-integerp
+                                           value-signed-integerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
