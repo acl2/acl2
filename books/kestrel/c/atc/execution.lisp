@@ -141,6 +141,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define promote-value ((val valuep))
+  :returns (promoted-val valuep)
+  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee promote-type).
+     See the documentation of that function for details.
+     Here we actually convert values;
+     we do not merely compute a promoted type."))
+  (b* ((val (value-fix val)))
+    (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
+                            (sint-from-uchar val)
+                          (uint-from-uchar val)))
+          ((scharp val) (sint-from-schar val))
+          ((ushortp val) (if (<= (ushort-max) (sint-max))
+                             (sint-from-ushort val)
+                           (uint-from-ushort val)))
+          ((sshortp val) (sint-from-sshort val))
+          (t val)))
+  :guard-hints (("Goal" :in-theory (enable
+                                    sint-from-uchar-okp
+                                    sint-from-schar-okp
+                                    sint-from-ushort-okp
+                                    sint-from-sshort-okp
+                                    ucharp
+                                    scharp
+                                    ushortp
+                                    sshortp
+                                    uchar->get
+                                    schar->get
+                                    ushort->get
+                                    sshort->get
+                                    uchar-integerp-alt-def
+                                    schar-integerp-alt-def
+                                    ushort-integerp-alt-def
+                                    sshort-integerp-alt-def
+                                    sint-integerp-alt-def
+                                    )
+                 :do-not-induct t))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-unary ((op unopp) (arg value-resultp))
   :returns (result value-resultp)
   :short "Execute a unary expression."
