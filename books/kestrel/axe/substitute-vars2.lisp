@@ -324,9 +324,9 @@
           ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-relevant-vars STRIP-CARS))))
 
 ;; Merges the deps for all the ARGS into ACC
-(defund merge-values-for-args (args candidate-deps-array
-                                   acc ; should be sorted
-                                   )
+(defund merge-deps-for-args (args candidate-deps-array
+                                  acc ; should be sorted
+                                  )
   (declare (xargs :guard (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                               (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                               (true-listp args)
@@ -335,37 +335,37 @@
       acc
     (let ((arg (first args)))
       (if (consp arg) ;check for quotep
-          (merge-values-for-args (rest args) candidate-deps-array acc)
+          (merge-deps-for-args (rest args) candidate-deps-array acc)
         (let ((candidates-arg-depends-on (aref1 'candidate-deps-array candidate-deps-array arg)))
-          (merge-values-for-args (rest args)
-                                 candidate-deps-array
-                                 (merge-< candidates-arg-depends-on acc nil)))))))
+          (merge-deps-for-args (rest args)
+                               candidate-deps-array
+                               (merge-< candidates-arg-depends-on acc nil)))))))
 
-(defthm nat-listp-of-merge-values-for-args
+(defthm nat-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc))
-           (nat-listp (merge-values-for-args args candidate-deps-array acc)))
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+           (nat-listp (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
-(defthm true-listp-of-merge-values-for-args
+(defthm true-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc))
-           (true-listp (merge-values-for-args args candidate-deps-array acc)))
+           (true-listp (merge-deps-for-args args candidate-deps-array acc)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
-(defthm sortedp-<=-of-merge-values-for-args
+(defthm sortedp-<=-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc)
                 (sortedp-<= acc))
-           (sortedp-<= (merge-values-for-args args candidate-deps-array acc)))
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+           (sortedp-<= (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
 ;; Helps compute the set of candidate vars on which every node in the DAG depends.
 ;; Returns the candidate-deps-array
@@ -389,7 +389,7 @@
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len)
         ;; it's a function call, so compute the set of vars on which the args depend
         ;; TODO: Optimize the compositition of merging and the duplicate removal:
-        (let* ((candidates-node-depends-on (remove-duplicates-from-sorted-list (merge-values-for-args (dargs expr) candidate-deps-array nil) nil))
+        (let* ((candidates-node-depends-on (remove-duplicates-from-sorted-list (merge-deps-for-args (dargs expr) candidate-deps-array nil) nil))
                (candidate-deps-array (aset1 'candidate-deps-array candidate-deps-array n candidates-node-depends-on)))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len))))))
 
