@@ -181,7 +181,24 @@
                                     sint-integerp-alt-def
                                     )
                  :do-not-induct t))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled values-of-promote-value
+    (implies (value-arithmeticp val)
+             (b* ((pval (promote-value val)))
+               (or (uintp pval)
+                   (sintp pval)
+                   (ulongp pval)
+                   (slongp pval)
+                   (ullongp pval)
+                   (sllongp pval))))
+    :enable (promote-value
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-unsigned-integerp
+             value-signed-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -306,6 +323,118 @@
              :bitnot (exec-bitnot arg)
              :lognot (exec-lognot arg))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uaconvert-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (mv (new-val1 valuep)
+               (new-val2 valuep))
+  :short "Apply the usual arithmetic conversions to two arithmetic values
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee uaconvert-types).
+     See the documentation of that function for details.
+     Here we actually convert the values;
+     we do not merely compute the common type."))
+  (b* ((val1 (promote-value val1))
+       (val2 (promote-value val2)))
+    (cond ((sllongp val1)
+           (cond ((sllongp val2) (mv val1 val2))
+                 ((slongp val2) (mv val1 (sllong-from-slong val2)))
+                 ((sintp val2) (mv val1 (sllong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-sllong val1) val2))
+                 ((ulongp val2) (if (>= (sllong-max) (ulong-max))
+                                    (mv val1 (sllong-from-ulong val2))
+                                  (mv (ullong-from-sllong val1)
+                                      (ullong-from-ulong val2))))
+                 ((uintp val2) (if (>= (sllong-max) (uint-max))
+                                   (mv val1 (sllong-from-uint val2))
+                                 (mv (ullong-from-sllong val1)
+                                     (ullong-from-uint val2))))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((slongp val1)
+           (cond ((sllongp val2) (mv (sllong-from-slong val1) val2))
+                 ((slongp val2) (mv val1 val2))
+                 ((sintp val2) (mv val1 (slong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-slong val1) val2))
+                 ((ulongp val2) (mv (ulong-from-slong val1) val2))
+                 ((uintp val2) (if (>= (sllong-max) (uint-max))
+                                   (mv val1 (sllong-from-uint val2))
+                                 (mv (ulong-from-slong val1)
+                                     (ulong-from-uint val2))))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((sintp val1)
+           (cond ((sllongp val2) (mv (sllong-from-sint val1) val2))
+                 ((slongp val2) (mv (slong-from-sint val1) val2))
+                 ((sintp val2) (mv val1 val2))
+                 ((ullongp val2) (mv (ullong-from-sint val1) val2))
+                 ((ulongp val2) (mv (ulong-from-sint val1) val2))
+                 ((uintp val2) (mv (uint-from-sint val1) val2))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((ullongp val1)
+           (cond ((sllongp val2) (mv val1 (ullong-from-sllong val2)))
+                 ((slongp val2) (mv val1 (ullong-from-slong val2)))
+                 ((sintp val2) (mv val1 (ullong-from-sint val2)))
+                 ((ullongp val2) (mv val1 val2))
+                 ((ulongp val2) (mv val1 (ullong-from-ulong val2)))
+                 ((uintp val2) (mv val1 (ullong-from-uint val2)))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((ulongp val1)
+           (cond ((sllongp val2) (if (>= (sllong-max) (ulong-max))
+                                     (mv (sllong-from-ulong val1) val2)
+                                   (mv (ullong-from-ulong val1)
+                                       (ullong-from-sllong val2))))
+                 ((slongp val2) (mv val1 (ulong-from-slong val2)))
+                 ((sintp val2) (mv val1 (ulong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-ulong val1) val2))
+                 ((ulongp val2) (mv val1 val2))
+                 ((uintp val2) (mv val1 (ulong-from-uint val2)))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((uintp val1)
+           (cond ((sllongp val2) (if (>= (sllong-max) (uint-max))
+                                     (mv (sllong-from-uint val1) val2)
+                                   (mv (ullong-from-uint val1)
+                                       (ullong-from-sllong val2))))
+                 ((slongp val2) (if (>= (slong-max) (uint-max))
+                                    (mv (slong-from-uint val1) val2)
+                                  (mv (ulong-from-uint val1)
+                                      (ulong-from-slong val2))))
+                 ((sintp val2) (mv val1 (uint-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-uint val1) val2))
+                 ((ulongp val2) (mv (ulong-from-uint val1) val2))
+                 ((uintp val2) (mv val1 val2))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          (t (prog2$ (impossible) (mv val1 val2)))))
+  :guard-hints (("Goal"
+                 :do-not '(preprocess) ; just for speed
+                 :in-theory (enable slong-from-sint-okp
+                                    slong-from-uint-okp
+                                    sllong-from-sint-okp
+                                    sllong-from-slong-okp
+                                    sllong-from-uint-okp
+                                    sllong-from-ulong-okp
+                                    sintp
+                                    slongp
+                                    sllongp
+                                    uintp
+                                    ulongp
+                                    ullongp
+                                    sint->get
+                                    slong->get
+                                    uint->get
+                                    ulong->get
+                                    sint-integerp-alt-def
+                                    slong-integerp-alt-def
+                                    sllong-integerp-alt-def
+                                    uint-integerp-alt-def
+                                    ulong-integerp-alt-def
+                                    ullong-integerp-alt-def)
+                 :use ((:instance values-of-promote-value (val val1))
+                       (:instance values-of-promote-value (val val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
