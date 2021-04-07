@@ -350,16 +350,20 @@
     endp
     enter-scope
     exit-scope
-    exec-arrsub
+    exec-iconst
+    exec-const
+    exec-ident
+    exec-plus
+    exec-minus
+    exec-bitnot
+    exec-lognot
+    exec-unary
+    exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
-    exec-binary-strict-pure
     exec-cast
-    exec-const
-    exec-iconst
-    exec-ident
-    exec-unary
+    exec-arrsub
     mv-nth
     pop-frame
     push-frame

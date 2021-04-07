@@ -185,43 +185,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-plus ((arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute unary plus."
+  (b* ((arg (value-result-fix arg)))
+    (cond ((errorp arg) arg)
+          ((sintp arg) (sint-plus arg))
+          (t (error (list :exec-plus-todo arg)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-minus ((arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute unary minus."
+  (b* ((arg (value-result-fix arg)))
+    (cond ((errorp arg) arg)
+          ((sintp arg) (if (sint-minus-okp arg)
+                           (sint-minus arg)
+                         (error (list :exec-minus arg))))
+          (t (error (list :exec-minus-todo arg)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitnot ((arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute bitwise complement."
+  (b* ((arg (value-result-fix arg)))
+    (cond ((errorp arg) arg)
+          ((sintp arg) (sint-bitnot arg))
+          (t (error (list :exec-bitnot-todo arg)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-lognot ((arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute unary lognot."
+  (b* ((arg (value-result-fix arg)))
+    (cond ((errorp arg) arg)
+          ((sintp arg) (sint-lognot arg))
+          (t (error (list :exec-lognot-todo arg)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-unary ((op unopp) (arg value-resultp))
   :returns (result value-resultp)
-  :short "Execute a unary expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The argument is the result of
-     recursively executing the operand expression.
-     For now we only support some unary operators.")
-   (xdoc::p
-    "These unary operators are all pure,
-     so we just return a value as result (if there is no error).")
-   (xdoc::p
-    "For now we only support @('int')s,
-     but we plan to add support for more types of values."))
-  (b* ((op (unop-fix op))
-       (arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
-          ((ucharp arg) (error (list :exec-unary-uchar-todo op arg)))
-          ((scharp arg) (error (list :exec-unary-schar-todo op arg)))
-          ((ushortp arg) (error (list :exec-unary-ushort-todo op arg)))
-          ((sshortp arg) (error (list :exec-unary-sshort-todo op arg)))
-          ((uintp arg) (error (list :exec-unary-uint-todo op arg)))
-          ((sintp arg) (unop-case
-                        op
-                        :plus (sint-plus arg)
-                        :minus (if (sint-minus-okp arg)
-                                   (sint-minus arg)
-                                 (error (list :exec-unary op arg)))
-                        :bitnot (sint-bitnot arg)
-                        :lognot (sint-lognot arg)))
-          ((ulongp arg) (error (list :exec-unary-ulong-todo op arg)))
-          ((slongp arg) (error (list :exec-unary-slong-todo op arg)))
-          ((ullongp arg) (error (list :exec-unary-ullong-todo op arg)))
-          ((sllongp arg) (error (list :exec-unary-sllong-todo op arg)))
-          ((pointerp arg) (error (list :exec-unary-pointer op arg)))
-          (t (error (impossible)))))
+  :short "Execute a unary operation."
+  (unop-case op
+             :plus (exec-plus arg)
+             :minus (exec-minus arg)
+             :bitnot (exec-bitnot arg)
+             :lognot (exec-lognot arg))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
