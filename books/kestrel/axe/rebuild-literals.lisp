@@ -105,7 +105,7 @@
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm all-<-of-mv-nth-1-of-translate-literals
-  (implies (and (posp bound)
+  (implies (and (natp bound)
                 (all-< changed-acc bound)
                 ;(all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)
@@ -117,7 +117,7 @@
   :hints (("Goal" :in-theory (enable translate-literals))))
 
 (defthm all-<-of-mv-nth-2-of-translate-literals
-  (implies (and (posp bound)
+  (implies (and (natp bound)
                 (all-< literal-nodenums bound)
                 (all-< unchanged-acc bound)
                 (array1p 'translation-array translation-array)

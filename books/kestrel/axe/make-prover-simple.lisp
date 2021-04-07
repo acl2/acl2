@@ -3258,6 +3258,7 @@
                         (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
                         (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
                         ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                         ;; todo: try substitute-vars2
                          (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
                                           (if (posp dag-len) ;todo: should always be true
                                               dag-len

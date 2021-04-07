@@ -439,22 +439,6 @@
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
 
-(encapsulate
-  ()
-
-  (local (include-book "std/lists/intersection" :dir :system))
-
-  (defthm
-    intersection$-when-subsetp
-    (implies (subsetp-equal x y)
-             (equal (intersection-equal x y)
-                    (true-list-fix x)))
-    :hints (("goal" :in-theory (enable subsetp-equal)))
-    :rule-classes
-    (:rewrite (:rewrite :corollary (implies (subsetp-equal x y)
-                                            (set-equiv (intersection-equal y x)
-                                                       x))))))
-
 (defthm list-equiv-when-atom
   (implies (not (consp path))
            (list-equiv path nil))
@@ -489,6 +473,74 @@
            (list-equiv alist
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
+
+;; This should probably stay here, because it does have the annoying property
+;; of introducing a non-built-in function to replace a built-in one. It's
+;; annoying when rules like make-list-ac-removal do that in my books, so I
+;; probably shouldn't inflict it on the books of others.
+(defthm subsetp-when-subsetp
+  (implies (subsetp-equal x y)
+           (equal (subsetp-equal y x)
+                  (set-equiv x y)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable set-equiv))))
+
+(theory-invariant (not (and (active-runep '(:rewrite subsetp-when-subsetp))
+                            (active-runep '(:definition set-equiv)))))
+
+(defthm
+  append-of-set-difference$-when-subsetp-lemma-1
+  (set-equiv (cons a (set-difference-equal (remove a x) y))
+             (if (member-equal a (set-difference-equal x y))
+                 (set-difference-equal x y)
+                 (cons a (set-difference-equal x y))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable remove-of-set-difference-equal)
+           :use remove-of-set-difference-equal))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary
+             (set-equiv (cons a
+                              (append z
+                                      (set-difference-equal (remove a x) y)))
+                        (if (member-equal a (set-difference-equal x y))
+                            (append z (set-difference-equal x y))
+                            (append z
+                                    (cons a (set-difference-equal x y))))))))
+
+;; Look, we can't very easily move this theorem to STD - nor the next one -
+;; unless we're willing to start including the specific books for these set
+;; functions.
+(defthm
+  append-of-set-difference$-when-subsetp
+  (implies (subsetp-equal x y)
+           (set-equiv (append (set-difference-equal y x) x)
+                      y))
+  :hints
+  (("goal" :in-theory (e/d (set-difference$-redefinition subsetp-equal append)
+                           (set-difference-equal))
+    :induct (subsetp-equal x y)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary (implies (subsetp-equal x y)
+                        (set-equiv (append x (set-difference-equal y x))
+                                   y)))))
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/intersection" :dir :system))
+
+  (defthm
+    intersection$-when-subsetp
+    (implies (subsetp-equal x y)
+             (equal (intersection-equal x y)
+                    (true-list-fix x)))
+    :hints (("goal" :in-theory (enable subsetp-equal)))
+    :rule-classes
+    (:rewrite (:rewrite :corollary (implies (subsetp-equal x y)
+                                            (set-equiv (intersection-equal y x)
+                                                       x))))))
 
 (defund d-e-p (x)
   (declare (xargs :guard t))

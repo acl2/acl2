@@ -3161,8 +3161,6 @@
           (:rewrite 1st-complete-correctness-1)
           (:rewrite abs-addrs-when-m1-file-contents-p)
           (:rewrite
-           absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
-          (:rewrite
            abs-fs-fix-of-put-assoc-equal-lemma-2)
           (:rewrite abs-fs-p-of-ctx-app)
           (:type-prescription
@@ -9454,52 +9452,6 @@
                       abs-place-file-helper-of-ctx-app-1))))
 
   (defthm
-    collapse-hifat-place-file-lemma-19
-    (implies (subsetp-equal x y)
-             (set-equiv (append (set-difference-equal y x) x)
-                        y))
-    :hints
-    (("goal" :in-theory (enable set-difference$-redefinition
-                                subsetp-equal append)
-      :induct (subsetp-equal x y)
-      :expand (:with set-difference$-redefinition
-                     (set-difference-equal y x)))
-     ("subgoal *1/2'''"
-      :instructions
-      (:promote
-       (:dive 2)
-       (:= (append (list (car x))
-                   (cdr x)
-                   (set-difference-equal (remove-equal (car x) y)
-                                         (cdr x))))
-       :top
-       (:= (append (list (car x))
-                   (cdr x)
-                   (set-difference-equal (remove-equal (car x) y)
-                                         (cdr x)))
-           (append (cdr x)
-                   (list (car x))
-                   (set-difference-equal (remove-equal (car x) y)
-                                         (cdr x)))
-           :equiv set-equiv)
-       (:= (set-difference-equal (remove-equal (car x) y)
-                                 (cdr x))
-           (remove-equal (car x)
-                         (set-difference-equal y (cdr x))))
-       (:dive 2 2)
-       :expand
-       (:= (cons (car (list (car x)))
-                 (append (cdr (list (car x)))
-                         (remove-equal (car x)
-                                       (set-difference-equal y (cdr x))))))
-       (:= (car (list (car x))) (car x))
-       (:dive 2)
-       (:= (remove-equal (car x)
-                         (set-difference-equal y (cdr x))))
-       :up (:rewrite cons-of-remove-under-set-equiv-1)
-       :top :bash))))
-
-  (defthm
     collapse-hifat-place-file-lemma-20
     (implies
      (and (no-duplicatesp-equal (abs-addrs (abs-fs-fix fs)))
@@ -9586,7 +9538,7 @@
           (abs-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
                                                 (abs-fs-fix fs)))))
          (abs-addrs (abs-fs-fix fs))))
-       (:rewrite collapse-hifat-place-file-lemma-19)
+       (:rewrite append-of-set-difference$-when-subsetp)
        :top :bash))))
 
   (defthm
@@ -9707,14 +9659,6 @@
      (equal (1st-complete (put-assoc-equal x val frame))
             (1st-complete frame)))
     :hints (("goal" :in-theory (enable 1st-complete))))
-
-  ;; Move later, but keep in filesystem books.
-  (defthm subsetp-when-subsetp
-    (implies (subsetp-equal x y)
-             (equal (subsetp-equal y x)
-                    (set-equiv x y)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable set-equiv))))
 
   (defthm
     collapse-hifat-place-file-lemma-21
@@ -10072,12 +10016,6 @@
                        (frame-val->path (cdr (assoc-equal x frame))))
              (names-at (frame-val->dir (cdr (assoc-equal x frame)))
                        nil)))))))
-
-  (defthm
-    prefixp-when-equal-lengths-alt
-    (implies (>= (len x) (len y))
-             (equal (prefixp x y) (list-equiv x y)))
-    :hints (("goal" :in-theory (enable prefixp list-equiv))))
 
   (defthm
     collapse-hifat-place-file-lemma-32

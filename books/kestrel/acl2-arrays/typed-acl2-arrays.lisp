@@ -262,25 +262,19 @@
 
        ,@(and default-satisfies-predp
               `((defthm ,(pack$ fn '-of-make-empty-array-with-default)
-                  (implies (and (posp len)
-                                (symbolp array-name)
-                                (<= len 2147483646))
-                           (,fn array-name
-                                (make-empty-array-with-default array-name len ,default)
-                                len
-                                ,@extra-vars))
+                  (implies (symbolp array-name)
+                           (equal (,fn array-name (make-empty-array-with-default array-name len ,default) len ,@extra-vars)
+                                  (and (posp len)
+                                       (<= len 2147483646))))
                   :hints (("Goal" :in-theory (enable ,fn))))))
 
        ,@(and default-satisfies-predp
               (equal default nil)
               `((defthm ,(pack$ fn '-of-make-empty-array)
-                  (implies (and (posp len)
-                                (symbolp array-name)
-                                (<= len 2147483646))
-                           (,fn array-name
-                                (make-empty-array array-name len)
-                                len
-                                ,@extra-vars))
+                  (implies (symbolp array-name)
+                           (equal (,fn array-name (make-empty-array array-name len) len ,@extra-vars)
+                                  (and (posp len)
+                                       (<= len 2147483646))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
        ,@(and (equal default nil) ;since make-empty-array puts in nil
@@ -475,12 +469,10 @@
 
        ,@(and default-satisfies-predp ;todo: think
               `((defthm ,(pack$ fn '-of-make-empty-array-with-default)
-                  (implies (and (posp len)
-                                (symbolp array-name)
-                                (<= len 2147483646))
-                           (,fn array-name
-                                (make-empty-array-with-default array-name len ,default)
-                                ,@extra-vars))
+                  (implies (symbolp array-name)
+                           (equal (,fn array-name (make-empty-array-with-default array-name len ,default) ,@extra-vars)
+                                  (and (posp len)
+                                       (<= len 2147483646))))
                   :hints (("Goal" :in-theory (enable ,fn))))
 
                 (defthm ,(pack$ fn '-of-expand-array)
@@ -503,12 +495,10 @@
        ,@(and default-satisfies-predp ;todo: think
               (equal default nil)
               `((defthm ,(pack$ fn '-of-make-empty-array)
-                  (implies (and (posp len)
-                                (symbolp array-name)
-                                (<= len 2147483646))
-                           (,fn array-name
-                                (make-empty-array array-name len)
-                                ,@extra-vars))
+                  (implies (symbolp array-name)
+                           (equal (,fn array-name (make-empty-array array-name len) ,@extra-vars)
+                                  (and (posp len)
+                                       (<= len 2147483646))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
        ;; ;; true even if the default does not satisfy the pred, because the 0
