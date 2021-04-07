@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; August 2020
+;; April 2021
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -220,8 +220,8 @@
                                             (1+ i) n
                                             pkg-name))))
                 (if (zp i)
-                    ;; Haven't reached the first binding of "key" yet.  "pair"
-                    ;; remains unchanged.
+                    ;; Haven't reached the first binding of "key" yet.
+                    ;; "pair" remains unchanged.
                     (cons pair
                           (rename-key-in-alist key (cdr alist) i n pkg-name))
                   (cons
@@ -271,6 +271,98 @@
         (t (union$ (collect-bound-vars (car x))
                    (collect-bound-vars (cdr x))))))
 
+(defund rename-key-in-bindings (key alist i n pkg-name)
+  ;; Rename "key" in the binding list "alist" under an IF/IF1 statement
+
+  ;; "i" is the current index.
+
+  ;; "n" is the number of bindings of the given "key".
+  (cond ((endp alist) nil)
+        ((<= n i)
+         (let ((old-key (strings-to-symbol
+                         pkg-name
+                         (symbol-name key)
+                         "--"
+                         (str::natstr (1- i)))))
+           (replace-all-except-bound-vars key old-key alist)))
+        (t (let* ((pair (car alist))
+                  (old-key (if (posp i)
+                               (strings-to-symbol
+                                pkg-name
+                                (symbol-name key)
+                                "--"
+                                (str::natstr (1- i)))
+                             key))
+                  (renamed-key (strings-to-symbol
+                                pkg-name
+                                (symbol-name key)
+                                "--"
+                                (str::natstr i))))
+             (if (equal key (car pair))
+                 (cons
+                  (cons renamed-key
+                        (replace-all-except-bound-vars
+                         key old-key (cdr pair)))
+                  (rename-key-in-bindings
+                   key (cdr alist) (1+ i) n pkg-name))
+               (if (zp i)
+                   ;; Haven't reached the first binding of "key" yet.
+                   ;; "pair" remains unchanged.
+                   (cons pair
+                         (rename-key-in-bindings
+                          key (cdr alist) i n pkg-name))
+                 (cons
+                  (cons (car pair)
+                        (replace-all-except-bound-vars
+                         key old-key (cdr pair)))
+                  (rename-key-in-bindings
+                   key (cdr alist) i n pkg-name))))))))
+
+(defund rename-keys-in-bindings (distinct-keys keys alist pkg-name)
+  ;; Rename "distinct-keys" in the binding list "alist" under an IF/IF1
+  ;; statement
+  (if (atom distinct-keys)
+      alist
+    (rename-keys-in-bindings
+     (cdr distinct-keys)
+     keys
+     (rename-key-in-bindings (car distinct-keys)
+                             alist
+                             0
+                             (count (car distinct-keys) keys)
+                             pkg-name)
+     pkg-name)))
+
+(defund rename-keys-in-body (distinct-keys keys body pkg-name)
+  ;; Rename "distinct-keys" in "body" under an IF/IF1 statement
+  (if (atom distinct-keys)
+      body
+    (let* ((key (car distinct-keys))
+           (renamed-key (strings-to-symbol
+                         pkg-name
+                         (symbol-name key)
+                         "--"
+                         (str::natstr (1- (count key keys))))))
+      (rename-keys-in-body
+       (cdr distinct-keys)
+       keys
+       (replace-all-except-bound-vars key renamed-key body)
+       pkg-name))))
+
+(defund rename-keys-in-if-statement (x pkg-name)
+  (cond ((atom x) x)
+        ((member-equal (car x) '(let let* b*))
+         (let* ((alist (cadr x))
+                (body (caddr x))
+                (vars (strip-cars alist))
+                (distinct-vars (remove-duplicates vars))
+                (renamed-alist (rename-keys-in-bindings
+                                distinct-vars vars alist pkg-name))
+                (renamed-body (rename-keys-in-body
+                               distinct-vars vars body pkg-name)))
+           (list (car x) renamed-alist renamed-body)))
+        (t x)))
+
 (defund rename-with-count (x replaced-vars mv-let-vars pkg-name)
   (cond ((null x) nil)
         ((atom x)
@@ -294,11 +386,19 @@
   (cond
    ((atom x) x)
    ((member-equal (car x) '(mv-let mv?-let))
-    (b* ((vars (cadr x))
-         (term (caddr x))
-         (body (cdddr x))
-         (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
-         (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
+    (let* ((vars (cadr x))
+           (term (caddr x))
+           (term (if (member-equal (car term)
+                                   (list (intern$ "IF" "RTL")
+                                         (intern$ "IF1" "RTL")))
+                     (list (car term)
+                           (cadr term)
+                           (rename-keys-in-if-statement (caddr term) pkg-name)
+                           (cadddr term))
+                   term))
+           (body (cdddr x))
+           (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
+           (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
       (cons (car x)
             (cons renamed-vars
                   (cons (rename-mv-let-vars
@@ -419,8 +519,10 @@
           ;; Extract a unary binding
           ((and (= (len (cadr pair)) 1)
                 (symbolp (caadr pair)))
-           (let ((updated-pair
-                  (cons (car pair) (cadr pair))))
+           (let* ((subst (cdr (assoc-equal (caadr pair) unary-bindings)))
+                  (updated-pair
+                   (cons (car pair)
+                         (if subst subst (cadr pair)))))
              (elim-bindings-extract
               (cdr alist)
               const-bindings

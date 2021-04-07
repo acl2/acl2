@@ -318,7 +318,6 @@
              (:rewrite consp-of-assoc-of-abs-fs-fix)
              (:rewrite abs-file->contents-when-m1-file-p)
              (:rewrite remove-when-absent)
-             (:rewrite absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
              (:definition remove-equal)
              (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
              (:rewrite abs-file-alist-p-when-m1-file-alist-p)

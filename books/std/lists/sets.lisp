@@ -694,19 +694,31 @@ about set equivalence.</p>"
               (equal (remove-equal x l)
                      (true-list-fix l)))))
 
+  (defthm commutativity-2-of-append-under-set-equiv-corollary-1
+    (implies
+     (set-equiv y (cons w z))
+     (set-equiv (cons w (cons x z))
+                (cons x y)))
+    :hints(("Goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
+            :use (:instance commutativity-2-of-append-under-set-equiv
+                            (x (list w))
+                            (y (list x))))))
+
+  (defthm commutativity-2-of-append-under-set-equiv-corollary-2
+    (implies
+     (consp y)
+     (set-equiv (cons (car y) (cons x (cdr y)))
+                (cons x y)))
+    :hints(("Goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
+            :use (:instance commutativity-2-of-append-under-set-equiv
+                            (x (list (car y)))
+                            (y (list x))
+                            (z (cdr y))))))
+
   (defthm
     cons-of-remove-under-set-equiv-1
     (set-equiv (cons x (remove-equal x l))
-               (if (member-equal x l) l (cons x l)))
-    :hints
-    (("goal"
-      :induct (remove-equal x l)
-      :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
-     ("subgoal *1/3"
-      :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
-                      (z (remove-equal x (cdr l)))
-                      (y (list (car l)))
-                      (x (list x)))))))
+               (if (member-equal x l) l (cons x l)))))
 
 (defthm subsetp-of-remove1
   (equal (subsetp x (remove a y))

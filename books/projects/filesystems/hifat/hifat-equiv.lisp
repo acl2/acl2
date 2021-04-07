@@ -408,7 +408,8 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (hifat-equiv set-equiv)
-                    (hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2))
+                    (hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2
+                     subsetp-when-subsetp))
     :use ((:instance hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2
                      (fs1 (hifat-file-alist-fix fs1))
                      (fs2 (hifat-file-alist-fix fs2)))
