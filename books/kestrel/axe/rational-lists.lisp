@@ -135,6 +135,11 @@
            (all-rationalp acc))
   :hints (("Goal" :in-theory (enable all-natp))))
 
+(defthmd all-rationalp-when-nat-listp
+  (implies (nat-listp acc)
+           (all-rationalp acc))
+  :hints (("Goal" :in-theory (enable all-natp))))
+
 (defthm natp-of-maxelem
   (implies (and (all-natp items)
                 (consp items))
