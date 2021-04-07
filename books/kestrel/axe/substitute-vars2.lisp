@@ -23,11 +23,120 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
+
+;; ACC contains the smallest items, in decreasing order.
+(defund merge-<-and-remove-dups-aux (l1 l2 acc)
+  (declare (xargs :measure (+ (len l1) (len l2))
+
+                  :guard (and (all-rationalp l1)
+                              (all-rationalp l2)
+                              (true-listp acc))))
+  (cond ((atom l1) (revappend acc l2))
+        ((atom l2) (revappend acc l1))
+        ((equal (car l1) (car l2)) ;drop one copy:
+         (merge-<-and-remove-dups-aux (cdr l1) l2 acc))
+        ((< (car l1) (car l2))
+         (merge-<-and-remove-dups-aux (cdr l1)
+                                      l2 (cons (car l1) acc)))
+        (t (merge-<-and-remove-dups-aux l1 (cdr l2)
+                                        (cons (car l2) acc)))))
+
+(defthm nat-listp-of-merge-<-and-remove-dups-aux
+  (implies (and (nat-listp l1)
+                (nat-listp l2)
+                (nat-listp acc))
+           (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+
+(defthm sortedp-<=-of-merge-<-and-remove-dups-aux
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (sortedp-<= (reverse-list acc))
+                (all-<=-all acc l1)
+                (all-<=-all acc l2))
+           (sortedp-<= (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
+                                     revappend-lemma))))
+
+(defthmd not-intersection-equal-when-all-<-of-car-and-sortedp-<=
+  (implies (and (all-< acc (car l2))
+                (sortedp-<= l2))
+           (not (intersection-equal l2 acc)))
+  :hints (("Goal" :in-theory (enable all-< sortedp-<= intersection-equal))))
+
+(defthmd <=-of-car-and-cadr-when-sortedp-<=
+  (implies (and (sortedp-<= x)
+                (consp (cdr x)))
+           (<= (car x) (cadr x)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthmd <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal
+  (implies (and (sortedp-<= x)
+                (no-duplicatesp-equal x)
+                (consp (cdr x))
+                (all-rationalp x))
+           (< (car x) (cadr x)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable sortedp-<= no-duplicatesp-equal))))
+
+(defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (sortedp-<= (reverse-list acc))
+                (implies (consp l1) (all-< acc (first l1)))
+                (implies (consp l2) (all-< acc (first l2)))
+                (no-duplicatesp-equal l1)
+                (no-duplicatesp-equal l2)
+                (no-duplicatesp-equal acc)
+                (all-rationalp l1)
+                (all-rationalp l2))
+           (no-duplicatesp-equal (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
+                                     revappend-lemma
+                                     not-intersection-equal-when-all-<-of-car-and-sortedp-<=
+                                     <=-of-car-and-cadr-when-sortedp-<=
+                                     <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal))))
+
+;; Merge L1 and L2 into a sorted list representing their union, except avoid
+;; duplication that arises when an item is in both L1 and L2.  L1 and L2 should
+;; each be sorted and duplicate-free.  If either L1 or L2 is empty, this should
+;; be very fast.
+(defund merge-<-and-remove-dups (l1 l2)
+  (declare (xargs :guard (and (all-rationalp l1)
+                              (all-rationalp l2))))
+  (merge-<-and-remove-dups-aux l1 l2 nil))
+
+;(merge-<-and-remove-dups '(1 2 2 3 5 5 5 6 6 8) '(1 2 3 4 5 6 7 7))
+
+(defthm nat-listp-of-merge-<-and-remove-dups
+  (implies (and (nat-listp l1)
+                (nat-listp l2))
+           (nat-listp (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm sortedp-<=-of-merge-<-and-remove-dups
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2))
+           (sortedp-<= (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm no-duplicatesp-equal-of-merge-<-and-remove-dups
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (no-duplicatesp-equal l1)
+                (no-duplicatesp-equal l2)
+                (all-rationalp l1)
+                (all-rationalp l2))
+           (no-duplicatesp-equal (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 ;(verify-termination strip-caddrs) ;todo: have matt fix the termination
 
@@ -509,7 +618,7 @@
   :hints ( ;("subgoal *1/4" :cases ((consp (CDR SUBST-CANDIDATES))))
           ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-relevant-vars STRIP-CARS))))
 
-;; Merges the deps for all the ARGS into ACC
+;; Merges the deps for all the ARGS into ACC, avoiding duplicates.
 (defund merge-deps-for-args (args candidate-deps-array
                                   acc ; should be sorted
                                   )
@@ -525,7 +634,7 @@
         (let ((candidates-arg-depends-on (aref1 'candidate-deps-array candidate-deps-array arg)))
           (merge-deps-for-args (rest args)
                                candidate-deps-array
-                               (merge-< candidates-arg-depends-on acc nil)))))))
+                               (merge-<-and-remove-dups candidates-arg-depends-on acc)))))))
 
 (defthm nat-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
@@ -553,6 +662,17 @@
            (sortedp-<= (merge-deps-for-args args candidate-deps-array acc)))
   :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
+(defthm no-duplicatesp-equal-of-merge-deps-for-args
+  (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
+                (true-listp args)
+                (nat-listp acc)
+                (sortedp-<= acc)
+                (no-duplicatesp-equal acc))
+           (no-duplicatesp-equal (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args
+                                     all-rationalp-when-nat-listp))))
+
 ;; Helps compute the set of candidate vars on which every node in the DAG depends.
 ;; Returns the candidate-deps-array
 (defund populate-candidate-deps-array-aux (n max candidate-deps-array dag-array dag-len)
@@ -574,8 +694,7 @@
               (fquotep expr))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len)
         ;; it's a function call, so compute the set of vars on which the args depend
-        ;; TODO: Optimize the compositition of merging and the duplicate removal:
-        (let* ((candidates-node-depends-on (remove-duplicates-from-sorted-list (merge-deps-for-args (dargs expr) candidate-deps-array nil) nil))
+        (let* ((candidates-node-depends-on (merge-deps-for-args (dargs expr) candidate-deps-array nil))
                (candidate-deps-array (aset1 'candidate-deps-array candidate-deps-array n candidates-node-depends-on)))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len))))))
 
@@ -680,6 +799,43 @@
           (cdr (strip-cadrs x)))
    :hints (("Goal" :in-theory (enable strip-cadrs)))))
 
+(defun memberp-assuming-sorted-<= (a x)
+  (declare (xargs :guard (and (rationalp a)
+                              (rational-listp x)
+                              (sortedp-<= x))))
+  (if (atom x)
+      nil
+    (let ((x0 (car x)))
+      (if (= a x0)
+          t
+        (if (< a x0)
+            ;; since x is sorted, a cannot appear in it
+            nil
+          ;; we know that a>x0.
+          ;; keep looking:
+          (memberp-assuming-sorted-<= a (rest x)))))))
+
+(defun disjointp-assuming-sorted-<= (x y)
+  (declare (xargs :guard (and (rational-listp x)
+                              (sortedp-<= x)
+                              (rational-listp y)
+                              (sortedp-<= y))
+                  :measure (+ (len x)
+                              (len y))))
+  (if (or (atom x)
+          (atom y))
+      t
+    (let ((x0 (car x))
+          (y0 (car y)))
+      (if (= x0 y0)
+          nil ;not disjoint
+        (if (< x0 y0)
+            ;; since y is sorted, (car x) cannot be in y, so we skip it:
+            (disjointp-assuming-sorted-<= (rest x) y)
+          ;; We know (car y) < (car x).
+          ;; since x is sorted, (car y) cannot be in x, so we skip it:
+          (disjointp-assuming-sorted-<= x (rest y)))))))
+
 ;; Returns a list of subst-candidates suitable for simultaneous checking (no var in the set depends on any other vars in the set, or on itself).
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
@@ -704,7 +860,8 @@
                                                   consp-of-cdr-when-subst-candidatep
                                                   natp-of-cadr-when-subst-candidatep
                                                   <=-of-0-when-0-natp
-                                                  ALL-RATIONALP-WHEN-ALL-NATP)
+                                                  rational-listp-when-nat-listp
+                                                  all-rationalp-when-all-natp)
                                                  (natp))))))
   (if (endp subst-candidates)
       subst-candidates-acc
@@ -717,28 +874,19 @@
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
            ;; Makes sure the var doesn't depend on itself:
-           (not (member this-var-nodenum nodenums-this-var-depends-on))
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-this-var-depends-on))
            ;; Makes sure no already-selected candidate depends on this var:
-           ;; todo: optimize by using sortedness
-           (not (member this-var-nodenum nodenums-of-vars-to-avoid))
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
-           ;; TTODO: Make use of sortedness to optimize this:
-           (not (intersection-equal ;use a faster intersection?
-                 nodenums-this-var-depends-on nodenums-of-vars-already-added)))
+           (disjointp-assuming-sorted-<= nodenums-this-var-depends-on nodenums-of-vars-already-added))
           ;; Add this candidate:
           (find-simultaneous-subst-candidates (rest subst-candidates)
                                               candidate-deps-array
                                               (cons subst-candidate subst-candidates-acc)
                                               ;; todo: optimize:  todo: can dups even occur? maybe if a var is equated to 2 things?
-                                              (remove-duplicates-from-sorted-list (merge-< (list this-var-nodenum)
-                                                                                           nodenums-of-vars-already-added
-                                                                                           nil)
-                                                                                  nil)
+                                              (merge-<-and-remove-dups (list this-var-nodenum) nodenums-of-vars-already-added)
                                               ;; todo: optimize:
-                                              (remove-duplicates-from-sorted-list (merge-< nodenums-this-var-depends-on
-                                                                                           nodenums-of-vars-to-avoid
-                                                                                           nil)
-                                                                                  nil))
+                                              (merge-<-and-remove-dups nodenums-this-var-depends-on nodenums-of-vars-to-avoid))
         ;; Don't add this candidate:
         (find-simultaneous-subst-candidates (rest subst-candidates)
                                             candidate-deps-array
