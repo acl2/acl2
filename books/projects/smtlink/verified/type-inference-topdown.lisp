@@ -108,147 +108,6 @@
                            ()))))
 
 ;;----------------------------------------------------------------
-(define unify-variable ((tterm t)
-                        (expected pseudo-termp)
-                        (options type-options-p))
-  :guard (and (good-typed-term-p tterm options)
-              (equal (typed-term->kind tterm) 'variablep))
-  :returns (new-tt (good-typed-term-p new-tt options)
-                   :hints (("Goal"
-                            :in-theory (enable good-typed-variable-p))))
-  (b* (((unless (mbt (and (pseudo-termp expected)
-                          (equal (typed-term->kind tterm) 'variablep)
-                          (good-typed-term-p tterm options))))
-        (make-typed-term))
-       ((typed-term tt) tterm)
-       ((type-options to) options)
-       ((unless (is-judgements? expected tt.term to.supertype))
-        (prog2$
-         (er hard? 'type-inference-topdown=>unify-variable
-             "Expected ~p0 is not a conjunct list.~%" expected)
-         tterm))
-       ((if (equal expected ''t))
-        (make-typed-term :term tt.term
-                         :path-cond tt.path-cond
-                         :judgements expected)))
-    (make-typed-term :term tt.term
-                     :path-cond tt.path-cond
-                     :judgements (choose-judge tt.judgements tt.term
-                                               to.supertype)))
-  ///
-  (more-returns
-   (new-tt (implies (and (pseudo-termp expected)
-                         (type-options-p options)
-                         (equal (typed-term->kind tterm) 'variablep)
-                         (good-typed-term-p tterm options))
-                    (equal (typed-term->path-cond new-tt)
-                           (typed-term->path-cond tterm)))
-           :name unify-variable-maintains-path-cond))
-  (defthm correctness-of-unify-variable
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (type-options-p options)
-                  (equal (typed-term->kind tterm) 'variablep)
-                  (good-typed-term-p tterm options)
-                  (pseudo-termp expected)
-                  (alistp a)
-                  (ev-smtcp (correct-typed-term tterm) a))
-             (ev-smtcp (correct-typed-term
-                        (unify-variable tterm expected options))
-                       a))
-    :hints (("Goal"
-             :in-theory (enable correct-typed-term)))))
-
-(define unify-quote ((tterm typed-term-p)
-                     (expected pseudo-termp)
-                     (options type-options-p))
-  :guard (and (good-typed-term-p tterm options)
-              (equal (typed-term->kind tterm) 'quotep))
-  :returns (new-tt (good-typed-term-p new-tt options)
-                   :hints (("Goal"
-                            :in-theory (enable good-typed-quote-p))))
-  (b* (((unless (mbt (and (typed-term-p tterm)
-                          (pseudo-termp expected)
-                          (equal (typed-term->kind tterm) 'quotep)
-                          (good-typed-term-p tterm options))))
-        (make-typed-term))
-       ((typed-term tt) tterm)
-       ((type-options to) options)
-       ((unless (is-judgements? expected tt.term to.supertype))
-        (prog2$
-         (er hard? 'type-inference-topdown=>unify-variable
-             "Expected ~p0 is not a conjunct list.~%" expected)
-         tterm))
-       ((if (equal expected ''t))
-        (make-typed-term :term tt.term
-                         :path-cond tt.path-cond
-                         :judgements expected)))
-    (make-typed-term :term tt.term
-                     :path-cond tt.path-cond
-                     :judgements (choose-judge tt.judgements tt.term
-                                               to.supertype)))
-  ///
-  (more-returns
-   (new-tt (implies (and (pseudo-termp expected)
-                         (equal (typed-term->kind tterm) 'quotep)
-                         (good-typed-term-p tterm options))
-                    (equal (typed-term->path-cond new-tt)
-                           (typed-term->path-cond tterm)))
-           :name unify-quote-maintains-path-cond))
-  (defthm correctness-of-unify-quote
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (type-options-p options)
-                  (typed-term-p tterm)
-                  (pseudo-termp expected)
-                  (equal (typed-term->kind tterm) 'quotep)
-                  (good-typed-term-p tterm options)
-                  (alistp a)
-                  (ev-smtcp (correct-typed-term tterm) a))
-             (ev-smtcp (correct-typed-term
-                        (unify-quote tterm expected options))
-                       a))
-    :hints (("Goal"
-             :in-theory (enable correct-typed-term)))))
-
-(define unify-if-top ((judge pseudo-termp)
-                      (term pseudo-termp)
-                      (filter-judge pseudo-termp)
-                      (filter-term pseudo-termp)
-                      (names symbol-listp)
-                      (options type-options-p))
-  :returns (new-judge pseudo-termp)
-  (b* ((judge (pseudo-term-fix judge))
-       (term (pseudo-term-fix term))
-       (filter-judge (pseudo-term-fix filter-judge))
-       (filter-term (pseudo-term-fix filter-term))
-       (names (symbol-list-fix names))
-       (options (type-options-fix options))
-       (supertype-alst (type-options->supertype options))
-       (new-var (new-fresh-var names))
-       ((mv filter-fast &)
-        (make-fast-judgements filter-judge filter-term
-                              new-var supertype-alst nil 0))
-       (ind-lst
-        (map-judgements judge term new-var supertype-alst filter-fast))
-       ((mv judge-common &)
-        (construct-judge-by-list judge term supertype-alst ind-lst ''t)))
-    judge-common))
-
-(defthm correctness-of-unify-if-top
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge)
-                (pseudo-termp term)
-                (pseudo-termp filter-judge)
-                (pseudo-termp filter-term)
-                (alistp a)
-                (ev-smtcp judge a)
-                (ev-smtcp filter-judge a))
-           (ev-smtcp (unify-if-top judge term filter-judge filter-term
-                                   names options)
-                     a))
-  :hints (("Goal"
-           :in-theory (e/d (unify-if-top)
-                           ()))))
-
 (define unify-expected ((judge pseudo-termp)
                         (term pseudo-termp)
                         (expected pseudo-termp)
@@ -291,6 +150,135 @@
                             (path-cond (typed-term->judgements tterm))
                             (expr expected)
                             (a a))))))
+
+(define unify-variable ((tterm t)
+                        (expected pseudo-termp)
+                        (options type-options-p))
+  :guard (and (good-typed-term-p tterm options)
+              (equal (typed-term->kind tterm) 'variablep))
+  :returns (new-tt (good-typed-term-p new-tt options)
+                   :hints (("Goal"
+                            :in-theory (enable good-typed-variable-p))))
+  (b* (((unless (mbt (and (pseudo-termp expected)
+                          (equal (typed-term->kind tterm) 'variablep)
+                          (good-typed-term-p tterm options))))
+        (make-typed-term))
+       ((typed-term tt) tterm)
+       ((type-options to) options)
+       ((unless (is-judgements? expected tt.term to.supertype))
+        (prog2$
+         (er hard? 'type-inference-topdown=>unify-variable
+             "Expected ~p0 is not a conjunct list.~%" expected)
+         tterm)))
+    (make-typed-term :term tt.term
+                     :path-cond tt.path-cond
+                     :judgements (unify-expected tt.judgements tt.term expected
+                                                 to.supertype)))
+  ///
+  (more-returns
+   (new-tt (implies (and (pseudo-termp expected)
+                         (type-options-p options)
+                         (equal (typed-term->kind tterm) 'variablep)
+                         (good-typed-term-p tterm options))
+                    (equal (typed-term->path-cond new-tt)
+                           (typed-term->path-cond tterm)))
+           :name unify-variable-maintains-path-cond))
+  (defthm correctness-of-unify-variable
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (type-options-p options)
+                  (equal (typed-term->kind tterm) 'variablep)
+                  (good-typed-term-p tterm options)
+                  (pseudo-termp expected)
+                  (alistp a)
+                  (ev-smtcp (correct-typed-term tterm) a))
+             (ev-smtcp (correct-typed-term
+                        (unify-variable tterm expected options))
+                       a))))
+
+(define unify-quote ((tterm typed-term-p)
+                     (expected pseudo-termp)
+                     (options type-options-p))
+  :guard (and (good-typed-term-p tterm options)
+              (equal (typed-term->kind tterm) 'quotep))
+  :returns (new-tt (good-typed-term-p new-tt options)
+                   :hints (("Goal"
+                            :in-theory (enable good-typed-quote-p))))
+  (b* (((unless (mbt (and (typed-term-p tterm)
+                          (pseudo-termp expected)
+                          (equal (typed-term->kind tterm) 'quotep)
+                          (good-typed-term-p tterm options))))
+        (make-typed-term))
+       ((typed-term tt) tterm)
+       ((type-options to) options)
+       ((unless (is-judgements? expected tt.term to.supertype))
+        (prog2$
+         (er hard? 'type-inference-topdown=>unify-variable
+             "Expected ~p0 is not a conjunct list.~%" expected)
+         tterm)))
+    (make-typed-term :term tt.term
+                     :path-cond tt.path-cond
+                     :judgements (unify-expected tt.judgements tt.term expected
+                                                 to.supertype)))
+  ///
+  (more-returns
+   (new-tt (implies (and (pseudo-termp expected)
+                         (equal (typed-term->kind tterm) 'quotep)
+                         (good-typed-term-p tterm options))
+                    (equal (typed-term->path-cond new-tt)
+                           (typed-term->path-cond tterm)))
+           :name unify-quote-maintains-path-cond))
+  (defthm correctness-of-unify-quote
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (type-options-p options)
+                  (typed-term-p tterm)
+                  (pseudo-termp expected)
+                  (equal (typed-term->kind tterm) 'quotep)
+                  (good-typed-term-p tterm options)
+                  (alistp a)
+                  (ev-smtcp (correct-typed-term tterm) a))
+             (ev-smtcp (correct-typed-term
+                        (unify-quote tterm expected options))
+                       a))))
+
+(define unify-if-top ((judge pseudo-termp)
+                      (term pseudo-termp)
+                      (filter-judge pseudo-termp)
+                      (filter-term pseudo-termp)
+                      (names symbol-listp)
+                      (options type-options-p))
+  :returns (new-judge pseudo-termp)
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
+       (filter-judge (pseudo-term-fix filter-judge))
+       (filter-term (pseudo-term-fix filter-term))
+       (names (symbol-list-fix names))
+       (options (type-options-fix options))
+       (supertype-alst (type-options->supertype options))
+       (new-var (new-fresh-var names))
+       ((mv filter-fast &)
+        (make-fast-judgements filter-judge filter-term
+                              new-var supertype-alst nil 0))
+       (ind-lst
+        (map-judgements judge term new-var supertype-alst filter-fast))
+       ((mv judge-common &)
+        (construct-judge-by-list judge term supertype-alst ind-lst ''t)))
+    judge-common))
+
+(defthm correctness-of-unify-if-top
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp term)
+                (pseudo-termp filter-judge)
+                (pseudo-termp filter-term)
+                (alistp a)
+                (ev-smtcp judge a)
+                (ev-smtcp filter-judge a))
+           (ev-smtcp (unify-if-top judge term filter-judge filter-term
+                                   names options)
+                     a))
+  :hints (("Goal"
+           :in-theory (e/d (unify-if-top)
+                           ()))))
 
 (local
  (defthm crock

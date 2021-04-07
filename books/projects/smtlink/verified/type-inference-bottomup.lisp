@@ -277,7 +277,9 @@
          ((if (equal return-judgement ''t))
           (prog2$ (er hard? 'type-inference-bottomup=>type-judgement-fn
                       "Failed to find type judgements for return of function ~
-                       call ~p0~%" term)
+                       call ~p0~%Current path-cond: ~p1~%Actuals-judgements: ~
+                       ~p2~%"
+                      term path-cond actuals-judgements-top)
                   ''t))
          (return-judgement-extended
           (extend-judgements return-judgement path-cond options state)))

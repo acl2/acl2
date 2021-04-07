@@ -165,6 +165,16 @@
                 (rational-integer-alistp z))
            (rational-integer-alistp (acons x y z))))
 
+(defthm return-of-ifix
+  (integerp (ifix x)))
+
+(defthm return-of-rfix
+  (rationalp (rfix x)))
+
+(defthm return-of-equal-integer
+  (implies (and (integerp x) (integerp y))
+           (booleanp (equal x y))))
+
 (defun rational-list-car (x)
   (if (consp x) (car x) (rfix x)))
 
@@ -241,7 +251,16 @@
                     :returns-thm 'return-of-rationalp)))
     (integerp . (,(make-return-spec
                    :formals '(x)
-                   :returns-thm 'return-of-integerp)))))
+                   :returns-thm 'return-of-integerp)))
+    (ifix . (,(make-return-spec
+               :formals '(x)
+               :returns-thm 'return-of-ifix)))
+    (rfix . (,(make-return-spec
+               :formals '(x)
+               :returns-thm 'return-of-rfix)))
+    (equal . (,(make-return-spec
+                :formals '(x y)
+                :returns-thm 'return-of-equal-integer)))))
 
 (defun symbol-nil () nil)
 (defun boolean-nil () nil)
