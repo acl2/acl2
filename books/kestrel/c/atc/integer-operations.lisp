@@ -22,12 +22,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define ACL2 functions that model C operations on integers.
-     For now we define operations for (signed) integers only,
-     but we will cover the unsigned integers soon as well.
-     We only cover standard unsigned and signed integers (except @('_Bool').")
-   (xdoc::p
-    "As explained below, it suffices to introduce operations
-     on integers of rank equal to or higher than @('int').")
+     We only cover standard unsigned and signed integers (except @('_Bool')).")
    (xdoc::p
     "We introduce functions @('<type>-const')
      to construct integer constants.
@@ -38,28 +33,41 @@
      which the guard further constrains to be representable in the type.")
    (xdoc::p
     "We introduce functions @('<type>-nonzerop')
-     to turn integers into ACL2 booleans,
+     to turn C integers into ACL2 booleans,
      i.e. to test whether the integers are not zero.
      These are used to represent shallowly embedded tests.
-     Note that promoting [C:6.3.1.1/2] the integer arguments
-     does not affect the result,
-     so there is no need to define functions for
-     types of rank lower than @('int').")
+     We introduce a function for each integer type,
+     because there is no integer promotion on values used in tests.")
    (xdoc::p
-    "We introduce one function @(tsee sint01)
+    "We introduce functions @('<type>-integer-value')
+     to turn C integers into ACL2 integers.
+     These are used as operands of certain C operations
+     whose result does not depend on the C type of the operand,
+     but rather just on its (mathematical) integer value.
+     Since these operands are not always subjected to the integer promotions,
+     we define one function for each integer type
+     (not just of rank of @('int') or higher).
+     Even though these functions are essentially synonyms of
+     the deconstructors of the fixtypes of the integer values,
+     having a separate function provides more abstraction,
+     should the fixtype representation be changed in the future.")
+   (xdoc::p
+    "We introduce a single function @(tsee sint01)
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
      This function is used in the ACL2 representation of
      non-strict C conjunctions @('&&') and disjunctions @('||'),
-     which always return @('int') 0 or 1 [C:6.5.13/3] [C:6.5.14/3].")
+     which always return @('int') 0 or 1 [C:6.5.13/3] [C:6.5.14/3].
+     We do not need similar functions for other types,
+     because the 0 or 1 are always @('int')
+     for operations like @('&&') and @('||').")
    (xdoc::p
     "We introduce functions for the unary and binary operators.
      For all the unary integer operators except @('!'),
      C promotes the operands [C:6.3.1.1/2] to types
-     whose rank is that of @('int') or higher.
-     Although C does not promote the operand of @('!'),
-     note that performing an explicit promotion does not affect the result;
-     thus, there is no need to define funtions for this operator
-     for types of rank lower than @('int').
+     whose rank is that of @('int') or higher:
+     thus, we only define the operations for types of those ranks.
+     Since C does not promote the operand of @('!'),
+     we define a function for each type.
      For all the binary integer operators
      except @('<<'), @('>>'), @('&&'), and @('||'),
      C subjects the operands to the usual arithmetic conversions [C:6.3.1.8],
@@ -87,7 +95,7 @@
     "The right operand of a signed shift operator
      must be non-negative and below the bit size of the left operand
      [C:6.5.7/3].
-     The left operand, whens signed, must be non-negative.")
+     The left operand, when signed, must be non-negative.")
    (xdoc::p
     "For division and remainder,
      the guard also requires the divisor to be non-zero.")
@@ -98,12 +106,12 @@
    (xdoc::p
     "The logical conjunction and disjunction operators defined here
      are strict versions, because they take two values as inputs.
-     Non-strict versions are represented differently.")
+     Non-strict versions are represented differently in ACL2.")
    (xdoc::p
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
     (xdoc::seetopic "atc-integers" "our model of integer values")
-    "; these operations depend on the representation of integers [C:6.5/4]."))
+    "; these operations depend on the C representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
