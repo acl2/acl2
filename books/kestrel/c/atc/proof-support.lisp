@@ -367,6 +367,7 @@
     exec-shr
     exec-lt
     exec-gt
+    exec-le
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor

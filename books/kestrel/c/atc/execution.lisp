@@ -799,6 +799,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-le ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute less-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-realp arg1))
+        (error (list :mistype-le
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-realp arg2))
+        (error (list :mistype-le
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-le val1 val2))
+     ((sintp val1) (sint-le val1 val2))
+     ((ulongp val1) (ulong-le val1 val2))
+     ((slongp val1) (slong-le val1 val2))
+     ((ullongp val1) (ullong-le val1 val2))
+     ((sllongp val1) (sllong-le val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -834,9 +868,7 @@
       (:shr (exec-shr arg1 arg2))
       (:lt (exec-lt arg1 arg2))
       (:gt (exec-gt arg1 arg2))
-      (:le (if (and (sintp arg1) (sintp arg2))
-               (sint-le arg1 arg2)
-             (error :todo)))
+      (:le (exec-le arg1 arg2))
       (:ge (if (and (sintp arg1) (sintp arg2))
                (sint-ge arg1 arg2)
              (error :todo)))
