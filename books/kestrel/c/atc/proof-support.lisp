@@ -365,6 +365,7 @@
     exec-sub
     exec-shl
     exec-shr
+    exec-lt
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
