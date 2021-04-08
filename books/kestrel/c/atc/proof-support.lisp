@@ -360,6 +360,7 @@
     exec-unary
     exec-mul
     exec-div
+    exec-rem
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
