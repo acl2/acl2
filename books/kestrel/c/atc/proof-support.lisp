@@ -364,6 +364,7 @@
     exec-add
     exec-sub
     exec-shl
+    exec-shr
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor

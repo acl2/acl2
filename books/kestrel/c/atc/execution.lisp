@@ -670,6 +670,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-shr ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute right shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support operands with the same promoted type."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-shr
+                     :required :integer
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-shr
+                     :required :integer
+                     :supplied arg2)))
+       (err (error (list :undefined-shr arg1 arg2)))
+       (val1 (promote-value arg1))
+       (val2 (promote-value arg2)))
+    (cond
+     ((uintp val1) (if (uintp val2)
+                       (if (uint-shr-uint-okp val1 val2)
+                           (uint-shr-uint val1 val2)
+                         err)
+                     (error :todo)))
+     ((sintp val1) (if (sintp val2)
+                       (if (sint-shr-sint-okp val1 val2)
+                           (sint-shr-sint val1 val2)
+                         err)
+                     (error :todo)))
+     ((ulongp val1) (if (ulongp val2)
+                        (if (ulong-shr-ulong-okp val1 val2)
+                            (ulong-shr-ulong val1 val2)
+                          err)
+                      (error :todo)))
+     ((slongp val1) (if (slongp val2)
+                        (if (slong-shr-slong-okp val1 val2)
+                            (slong-shr-slong val1 val2)
+                          err)
+                      (error :todo)))
+     ((ullongp val1) (if (ullongp val2)
+                         (if (ullong-shr-ullong-okp val1 val2)
+                             (ullong-shr-ullong val1 val2)
+                           err)
+                       (error :todo)))
+     ((sllongp val1) (if (sllongp val2)
+                         (if (sllong-shr-sllong-okp val1 val2)
+                             (sllong-shr-sllong val1 val2)
+                           err)
+                       (error :todo)))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use ((:instance values-of-promote-value (val arg1))
+                       (:instance values-of-promote-value (val arg2)))
+                 :in-theory (enable value-arithmeticp
+                                    value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -702,11 +763,7 @@
       (:add (exec-add arg1 arg2))
       (:sub (exec-sub arg1 arg2))
       (:shl (exec-shl arg1 arg2))
-      (:shr (if (and (sintp arg1) (sintp arg2))
-                (if (sint-shr-sint-okp arg1 arg2)
-                    (sint-shr-sint arg1 arg2)
-                  (error (list :exec-shr arg1 arg2)))
-              (error :todo)))
+      (:shr (exec-shr arg1 arg2))
       (:lt (if (and (sintp arg1) (sintp arg2))
                (sint-lt arg1 arg2)
              (error :todo)))
