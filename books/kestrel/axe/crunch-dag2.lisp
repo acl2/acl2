@@ -24,6 +24,7 @@
 (include-book "wf-dagp")
 ;(include-book "def-dag-builder-theorems")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;move
 ;make local to axe?
@@ -462,3 +463,32 @@
                     (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                     (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable wf-dagp crunch-dag-array2-with-indices))))
+
+;;;
+;;; maybe-crunch-dag-array2
+;;;
+
+;; Leave enabled, or prove rules about it.
+;; Returns (mv erp nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+(defun maybe-crunch-dag-array2 (crunchp nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (booleanp crunchp)
+                              (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                              (nat-listp nodenums)
+                              (implies crunchp (consp nodenums))
+                              (all-< nodenums dag-len))
+                  :guard-hints (("Goal" :in-theory (enable RATIONALP-WHEN-NATP)))))
+  (if (not crunchp)
+      ;; We've been told not to crunch (we test this here simply to simplify what the caller has to do):
+      (mv (erp-nil) nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+    (b* ((- (cw " (Crunching: ...")) ;; matching paren printed below
+         ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums)
+          (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array nodenums))
+         ;; TODO: Prove that this can't happen.  Need to know that
+         ;; build-reduced-nodes maps all of the nodenums to
+         ;; nodenums (not constants -- currently)
+         ((when (not (and (rational-listp nodenums) ;todo: using nat-listp here didn't work
+                          (all-< nodenums dag-len))))
+          (er hard? 'maybe-crunch-dag-array2 "Bad nodenum after crunching.")
+          (mv :error-in-crunching nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+         (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
+      (mv (erp-nil) nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))

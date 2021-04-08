@@ -3043,7 +3043,9 @@
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))
-                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))  :do-not-induct t))))
+                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe)
+                                                               (natp))
+                                        :do-not-induct t))))
          (b* ( ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
               ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                (get-disjuncts-from-nodes literal-nodenums
@@ -3090,24 +3092,11 @@
              (b* ((- (and print (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))))
                   ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
                   ;; TODO: Do we want to do this if changep is nil (perhaps yes, since nodes may have been created when relieving hyps even if no dag node was changed by a successful rule)?
-                  ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums) ;todo: reorder these
-                   (if (or (not (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
-                           (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
-                           )
-                       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                     (b* ((- (cw " (Crunching: ...")) ;; matching paren printed below
-                          ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                           (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
-                          ;; TODO: Prove that this can't happen.  Need to know that
-                          ;; build-reduced-nodes maps all of the literal-nodenums to
-                          ;; nodenums (not constants -- currently)
-                          ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
-                                           (all-< literal-nodenums dag-len))))
-                           (er hard? ',rewrite-clause-name "Bad nodenum after crunching.")
-                           (mv :error-in-crunching
-                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))
-                          (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
-                       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
+                  (crunchp (and (= prover-depth 0) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
+                                (consp literal-nodenums) ;;can't crunch if no nodenums (can this happen?)
+                                ))
+                  ((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                   (maybe-crunch-dag-array2 crunchp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                   ((when erp)
                    (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                (mv (erp-nil)
