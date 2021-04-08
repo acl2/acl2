@@ -200,11 +200,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-plus ((arg value-resultp))
+(define exec-plus ((arg valuep))
   :returns (result value-resultp)
   :short "Execute unary plus [C:6.5.3.3/1] [C:6.5.3.3/2]."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
+  (b* ((arg (value-fix arg))
        ((unless (value-arithmeticp arg))
         (error (list :mistype-plus
                      :required :arithmetic
@@ -228,11 +227,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-minus ((arg value-resultp))
+(define exec-minus ((arg valuep))
   :returns (result value-resultp)
   :short "Execute unary minus [C:6.5.3.3/1] [C:6.5.3.3/3]."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
+  (b* ((arg (value-fix arg))
        ((unless (value-arithmeticp arg))
         (error (list :mistype-minus
                      :required :arithmetic
@@ -257,11 +255,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-bitnot ((arg value-resultp))
+(define exec-bitnot ((arg valuep))
   :returns (result value-resultp)
   :short "Execute bitwise complement [C:6.5.3.3/1] [C:6.5.3.3/4]."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
+  (b* ((arg (value-fix arg))
        ((unless (value-integerp arg))
         (error (list :mistype-bitnot
                      :required :integer
@@ -285,11 +282,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-lognot ((arg value-resultp))
+(define exec-lognot ((arg valuep))
   :returns (result value-resultp)
   :short "Execute unary lognot [C:6.5.3.3/1] [C:6.5.3.3/5]."
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
+  (b* ((arg (value-fix arg))
        ((unless (value-scalarp arg))
         (error (list :mistype-lognot
                      :required :scalar
@@ -321,11 +317,13 @@
 (define exec-unary ((op unopp) (arg value-resultp))
   :returns (result value-resultp)
   :short "Execute a unary operation."
-  (unop-case op
-             :plus (exec-plus arg)
-             :minus (exec-minus arg)
-             :bitnot (exec-bitnot arg)
-             :lognot (exec-lognot arg))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg))
+    (unop-case op
+               :plus (exec-plus arg)
+               :minus (exec-minus arg)
+               :bitnot (exec-bitnot arg)
+               :lognot (exec-lognot arg)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
