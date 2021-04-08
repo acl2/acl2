@@ -363,6 +363,7 @@
     exec-rem
     exec-add
     exec-sub
+    exec-shl
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor

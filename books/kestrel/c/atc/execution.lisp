@@ -439,7 +439,7 @@
                        (:instance values-of-promote-value (val val2)))))
   ///
 
-  (defrule values-of-uaconvert-value
+  (defrule values-of-uaconvert-values
     (implies (and (value-arithmeticp val1)
                   (value-arithmeticp val2))
              (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
@@ -477,7 +477,7 @@
      ((ullongp val1) (ullong-mul val1 val2))
      ((sllongp val1) (if (sllong-mul-okp val1 val2) (sllong-mul val1 val2) err))
      (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
   :hooks (:fix))
 
@@ -506,7 +506,7 @@
      ((ullongp val1) (if (ullong-div-okp val1 val2) (ullong-div val1 val2) err))
      ((sllongp val1) (if (sllong-div-okp val1 val2) (sllong-div val1 val2) err))
      (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
   :hooks (:fix))
 
@@ -519,11 +519,11 @@
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-rem
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg1)))
        ((unless (value-integerp arg2))
         (error (list :mistype-rem
-                     :required :arithmetic
+                     :required :integer
                      :supplied arg2)))
        (err (error (list :undefined-rem arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
@@ -536,7 +536,7 @@
      ((sllongp val1) (if (sllong-rem-okp val1 val2) (sllong-rem val1 val2) err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-value
+                 :use (:instance values-of-uaconvert-values
                        (val1 arg1) (val2 arg2))
                  :in-theory (enable value-arithmeticp value-realp)))
   :hooks (:fix))
@@ -570,7 +570,7 @@
      ((ullongp val1) (ullong-add val1 val2))
      ((sllongp val1) (if (sllong-add-okp val1 val2) (sllong-add val1 val2) err))
      (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
   :hooks (:fix))
 
@@ -603,8 +603,69 @@
      ((ullongp val1) (ullong-sub val1 val2))
      ((sllongp val1) (if (sllong-sub-okp val1 val2) (sllong-sub val1 val2) err))
      (t (error (impossible)))))
-  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-shl ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute left shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support operands with the same promoted type."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-shl
+                     :required :integer
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-shl
+                     :required :integer
+                     :supplied arg2)))
+       (err (error (list :undefined-shl arg1 arg2)))
+       (val1 (promote-value arg1))
+       (val2 (promote-value arg2)))
+    (cond
+     ((uintp val1) (if (uintp val2)
+                       (if (uint-shl-uint-okp val1 val2)
+                           (uint-shl-uint val1 val2)
+                         err)
+                     (error :todo)))
+     ((sintp val1) (if (sintp val2)
+                       (if (sint-shl-sint-okp val1 val2)
+                           (sint-shl-sint val1 val2)
+                         err)
+                     (error :todo)))
+     ((ulongp val1) (if (ulongp val2)
+                        (if (ulong-shl-ulong-okp val1 val2)
+                            (ulong-shl-ulong val1 val2)
+                          err)
+                      (error :todo)))
+     ((slongp val1) (if (slongp val2)
+                        (if (slong-shl-slong-okp val1 val2)
+                            (slong-shl-slong val1 val2)
+                          err)
+                      (error :todo)))
+     ((ullongp val1) (if (ullongp val2)
+                         (if (ullong-shl-ullong-okp val1 val2)
+                             (ullong-shl-ullong val1 val2)
+                           err)
+                       (error :todo)))
+     ((sllongp val1) (if (sllongp val2)
+                         (if (sllong-shl-sllong-okp val1 val2)
+                             (sllong-shl-sllong val1 val2)
+                           err)
+                       (error :todo)))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use ((:instance values-of-promote-value (val arg1))
+                       (:instance values-of-promote-value (val arg2)))
+                 :in-theory (enable value-arithmeticp
+                                    value-realp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -640,11 +701,7 @@
       (:rem (exec-rem arg1 arg2))
       (:add (exec-add arg1 arg2))
       (:sub (exec-sub arg1 arg2))
-      (:shl (if (and (sintp arg1) (sintp arg2))
-                (if (sint-shl-sint-okp arg1 arg2)
-                    (sint-shl-sint arg1 arg2)
-                  (error (list :exec-shl arg1 arg2)))
-              (error :todo)))
+      (:shl (exec-shl arg1 arg2))
       (:shr (if (and (sintp arg1) (sintp arg2))
                 (if (sint-shr-sint-okp arg1 arg2)
                     (sint-shr-sint arg1 arg2)
