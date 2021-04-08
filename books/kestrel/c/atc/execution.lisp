@@ -931,6 +931,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-bitand ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.10]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitand
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitand
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitand val1 val2))
+     ((sintp val1) (sint-bitand val1 val2))
+     ((ulongp val1) (ulong-bitand val1 val2))
+     ((slongp val1) (slong-bitand val1 val2))
+     ((ullongp val1) (ullong-bitand val1 val2))
+     ((sllongp val1) (sllong-bitand val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitxor ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.11]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitxor
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitxor
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitxor val1 val2))
+     ((sintp val1) (sint-bitxor val1 val2))
+     ((ulongp val1) (ulong-bitxor val1 val2))
+     ((slongp val1) (slong-bitxor val1 val2))
+     ((ullongp val1) (ullong-bitxor val1 val2))
+     ((sllongp val1) (sllong-bitxor val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitior ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.12]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitior
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitior
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitior val1 val2))
+     ((sintp val1) (sint-bitior val1 val2))
+     ((ulongp val1) (ulong-bitior val1 val2))
+     ((slongp val1) (slong-bitior val1 val2))
+     ((ullongp val1) (ullong-bitior val1 val2))
+     ((sllongp val1) (sllong-bitior val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -970,15 +1060,9 @@
       (:ge (exec-ge arg1 arg2))
       (:eq (exec-eq arg1 arg2))
       (:ne (exec-ne arg1 arg2))
-      (:bitand (if (and (sintp arg1) (sintp arg2))
-                   (sint-bitand arg1 arg2)
-                 (error :todo)))
-      (:bitxor (if (and (sintp arg1) (sintp arg2))
-                   (sint-bitxor arg1 arg2)
-                 (error :todo)))
-      (:bitior (if (and (sintp arg1) (sintp arg2))
-                   (sint-bitior arg1 arg2)
-                 (error :todo)))
+      (:bitand (exec-bitand arg1 arg2))
+      (:bitxor (exec-bitxor arg1 arg2))
+      (:bitior (exec-bitior arg1 arg2))
       (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))

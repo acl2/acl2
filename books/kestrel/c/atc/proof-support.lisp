@@ -371,6 +371,9 @@
     exec-ge
     exec-eq
     exec-ne
+    exec-bitand
+    exec-bitxor
+    exec-bitior
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
