@@ -42,6 +42,9 @@
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))
 
 (local
+ (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
+
+(local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
 (define adder-and (x y)
@@ -344,6 +347,7 @@
      adder-mux
      adder-or
      f2
+     m2
      adder-and
      adder-b+
      bitp
@@ -631,7 +635,9 @@
                                   :in-theory (e/d (is-rp) ()))))
                dont-rw
                (success booleanp))
-  (b* (((mv i0-is-f2 i0-arg1 i0-arg2)
+  (b* (;;(i0 (ex-from-rp i0))
+       ;;(i1 (ex-from-rp i1))
+       ((mv i0-is-f2 i0-arg1 i0-arg2)
         (case-match i0
           (('f2 ('adder-b+ arg1 arg2))
            (mv  t arg1 arg2))
@@ -645,12 +651,16 @@
                 i0-is-f2
                 (or (is-bit-of i0-arg1)
                     (is-rp-bitp i0-arg1))
+                (or (is-bit-of i1-arg1)
+                    (is-rp-bitp i1-arg1))
                 (or (is-bit-of i0-arg2)
                     (is-rp-bitp i0-arg2))
-                (or (and (equal i1-arg1 i0-arg1)
-                         (equal i1-arg2 i0-arg2))
-                    (and (equal i1-arg1 i0-arg2)
-                         (equal i1-arg2 i0-arg1))))
+                (or (is-bit-of i1-arg2)
+                    (is-rp-bitp i1-arg2))
+                (or (and (rp-equal i1-arg1 i0-arg1)
+                         (rp-equal i1-arg2 i0-arg2))
+                    (and (rp-equal i1-arg1 i0-arg2)
+                         (rp-equal i1-arg2 i0-arg1))))
            (mv `(rp 'bitp
                     (f2 (merge-adder-b+
                          ,s (merge-adder-b+ ,i0-arg1 ,i0-arg2))))
@@ -727,11 +737,14 @@
   (case-match term
     (('adder-mux s i0 i1)
      (b* (((unless (and (or (is-rp-bitp s)
-                            (is-bit-of s))
+                            (is-bit-of s)
+                            (m2-p s))
                         (or (is-rp-bitp i0)
-                            (is-bit-of i0))
+                            (is-bit-of i0)
+                            (m2-p i0))
                         (or (is-rp-bitp i1)
-                            (is-bit-of i1))))
+                            (is-bit-of i1)
+                            (m2-p i1))))
            (mv term nil))
           ((mv res-term dont-rw success)
            (adder-mux-meta-aux s i0 i1)))
@@ -794,6 +807,7 @@
    (create-regular-eval-lemma rp 2 adder-rule-formula-checks)
    (create-regular-eval-lemma bit-of 2 adder-rule-formula-checks)
    (create-regular-eval-lemma f2 1 adder-rule-formula-checks)
+   (create-regular-eval-lemma m2 1 adder-rule-formula-checks)
    (create-regular-eval-lemma adder-mux 3 adder-rule-formula-checks)
    (create-regular-eval-lemma merge-adder-b+ 2 adder-rule-formula-checks)
    (create-regular-eval-lemma ADDER-B+ 2 adder-rule-formula-checks)
@@ -1099,6 +1113,28 @@
                              ;;rp-trans
                              ;;rp-term-listp
                              rp-termp)))))
+
+
+(local
+ (encapsulate
+   nil
+   (local
+    (include-book "lemmas"))
+   
+   (defthm m2-p-implies-bitp
+     (implies (and (adder-rule-formula-checks state)
+                   (rp-evl-meta-extract-global-facts :state state)
+                   (m2-p term))
+              (bitp (rp-evlt term a)))
+     :hints (("Goal"
+              :in-theory (e/d* (regular-eval-lemmas
+                                regular-eval-lemmas-with-ex-from-rp)
+                               (bitp)))))
+
+   (defthm bit-m2-local
+     (bitp (m2 x)))
+   
+   ))
 
 (defret adder-mux-meta-returns-valid-sc
   (implies (and (valid-sc term a)

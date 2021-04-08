@@ -1118,6 +1118,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Plus to 2vec-adder
 
+
+
+
+
+(add-rp-rule ACL2::LOGHEAD-TYPE)
+
+(def-rp-rule integerp-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (+ x y))))
+
 (encapsulate
   nil
 
@@ -1270,3 +1281,18 @@
 (add-rp-rule loghead-of-+-is-2vec-adder-without-carry)
 (add-rp-rule loghead-of-+-is-2vec-adder)
 
+(def-rp-rule$ t nil
+  insert-loghead-to-binary-+
+  (implies (and (syntaxp (or (and (consp (ex-from-rp x))
+                                  (equal (car (ex-from-rp x)) 'binary-+))
+                             (and (consp (ex-from-rp x))
+                                  (equal (car (ex-from-rp x)) 'binary-*))
+                             (and (consp (ex-from-rp y))
+                                  (equal (car (ex-from-rp y)) 'binary-+))
+                             (and (consp (ex-from-rp y))
+                                  (equal (car (ex-from-rp y)) 'binary-*))))
+                (integerp x)
+                (integerp y))
+           (equal (loghead size (+ x y))
+                  (loghead size (+ (loghead size x)
+                                   (loghead size y))))))

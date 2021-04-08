@@ -1107,6 +1107,32 @@
   (rp-attach-sc build-f2-from-ors
                 build-f2-from-ors-side-cond))
 
+
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (def-rp-rule$ t t
+    m2-of-1
+    (equal (m2 (adder-b+ 1 x))
+           (binary-not (m2 x)))
+    :hints (("Goal"
+             :in-theory (e/d (m2
+                              binary-not
+                              adder-sum)
+                             ()))))
+
+  (def-rp-rule$ t t
+    f2-of-1
+    (implies (and (bitp x)
+                  (bitp y))
+             (equal (f2 (adder-sum 1 x y))
+                    (adder-or x y)))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ())))))
+
 (progn
   (defconst *adder-rules*
     '(bits-is-bit-of
@@ -1214,6 +1240,9 @@
 
       m2-of-f2-for-adder
       m2-of-ifix
+
+      f2-of-1
+      m2-of-1
 
       ))
 
