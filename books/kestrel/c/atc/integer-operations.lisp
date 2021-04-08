@@ -147,6 +147,8 @@
        (utype-const (add-suffix utype "-CONST"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
+       (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
+       (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
        (stype-plus (add-suffix stype "-PLUS"))
        (utype-plus (add-suffix utype "-PLUS"))
        (stype-minus (add-suffix stype "-MINUS"))
@@ -206,7 +208,7 @@
 
     `(progn
 
-       ;; The following operations are defined for all types.
+       ;; The following operations are defined for all the types.
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,6 +230,28 @@
                               type-string
                               "') value is not 0.")
          (/= (,utype->get x) 0)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,stype-integer-value ((x ,stypep))
+         :returns (ival integerp)
+         :short ,(concatenate 'string
+                              "Integer value of a @('signed "
+                              type-string
+                              "').")
+         (,stype->get x)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,utype-integer-value ((x ,utypep))
+         :returns (ival integerp)
+         :short ,(concatenate 'string
+                              "Integer value of an @('unsigned "
+                              type-string
+                              "').")
+         (,utype->get x)
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
