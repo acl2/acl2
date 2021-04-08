@@ -1132,46 +1132,69 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The arguments are the results of
-     recursively executing the operand expressions.
-     However, since this operator is non-strict,
-     we ignore the result of the second operand
-     if the result of the first operand is non-0,
-     and return 1 in this case.
-     Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0.")
+    "We test the first operand;
+     if it yields @('t'),
+     we return the @('int') 1 and ignore the second operand.
+     Otherwise, the test the second operand,
+     and we return the @('int') 0 or 1 accordingly.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
   (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2)))
-    (cond ((errorp arg1) arg1)
-          ((ucharp arg1) (error (list :exec-logor-uchar-todo arg1)))
-          ((scharp arg1) (error (list :exec-logor-schar-todo arg1)))
-          ((ushortp arg1) (error (list :exec-logor-ushort-todo arg1)))
-          ((sshortp arg1) (error (list :exec-logor-sshort-todo arg1)))
-          ((uintp arg1) (error (list :exec-logor-uint-todo arg1)))
-          ((sintp arg1)
-           (cond ((sint-nonzerop arg1) (sint 1))
-                 ((errorp arg2) arg2)
-                 ((ucharp arg2) (error (list :exec-logor-uchar-todo arg2)))
-                 ((scharp arg2) (error (list :exec-logor-schar-todo arg2)))
-                 ((ushortp arg2) (error (list :exec-logor-ushort-todo arg2)))
-                 ((sshortp arg2) (error (list :exec-logor-sshort-todo arg2)))
-                 ((uintp arg2) (error (list :exec-logor-uint-todo arg2)))
-                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
-                 ((ulongp arg2) (error (list :exec-logor-ulong-todo arg2)))
-                 ((slongp arg2) (error (list :exec-logor-slong-todo arg2)))
-                 ((ullongp arg2) (error (list :exec-logor-ullong-todo arg2)))
-                 ((sllongp arg2) (error (list :exec-logor-sllong-todo arg2)))
-                 ((pointerp arg2) (error (list :exec-logor-pointer-todo arg2)))
-                 (t (error (impossible)))))
-          ((ulongp arg1) (error (list :exec-logor-ulong-todo arg1)))
-          ((slongp arg1) (error (list :exec-logor-slong-todo arg1)))
-          ((ullongp arg1) (error (list :exec-logor-ullong-todo arg1)))
-          ((sllongp arg1) (error (list :exec-logor-sllong-todo arg1)))
-          ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
-          (t (error (impossible)))))
+       (arg2 (value-result-fix arg2))
+       (test1 (exec-test arg1))
+       ((when (errorp test1)) test1)
+       ((when test1) (sint 1))
+       (test2 (exec-test arg2))
+       ((when (errorp test2)) test2))
+    (if test2 (sint 1) (sint 0)))
   :hooks (:fix))
+
+;; (define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
+;;   :returns (result value-resultp)
+;;   :short "Execute a binary logical disjunction expression."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "The arguments are the results of
+;;      recursively executing the operand expressions.
+;;      However, since this operator is non-strict,
+;;      we ignore the result of the second operand
+;;      if the result of the first operand is non-0,
+;;      and return 1 in this case.
+;;      Otherwise, we look at the result of the second operand,
+;;      and return 0 or 1 depending on whether it is 0 or non-0.")
+;;    (xdoc::p
+;;     "Note that this binary operator is non-strict but pure."))
+;;   (b* ((arg1 (value-result-fix arg1))
+;;        (arg2 (value-result-fix arg2)))
+;;     (cond ((errorp arg1) arg1)
+;;           ((ucharp arg1) (error (list :exec-logor-uchar-todo arg1)))
+;;           ((scharp arg1) (error (list :exec-logor-schar-todo arg1)))
+;;           ((ushortp arg1) (error (list :exec-logor-ushort-todo arg1)))
+;;           ((sshortp arg1) (error (list :exec-logor-sshort-todo arg1)))
+;;           ((uintp arg1) (error (list :exec-logor-uint-todo arg1)))
+;;           ((sintp arg1)
+;;            (cond ((sint-nonzerop arg1) (sint 1))
+;;                  ((errorp arg2) arg2)
+;;                  ((ucharp arg2) (error (list :exec-logor-uchar-todo arg2)))
+;;                  ((scharp arg2) (error (list :exec-logor-schar-todo arg2)))
+;;                  ((ushortp arg2) (error (list :exec-logor-ushort-todo arg2)))
+;;                  ((sshortp arg2) (error (list :exec-logor-sshort-todo arg2)))
+;;                  ((uintp arg2) (error (list :exec-logor-uint-todo arg2)))
+;;                  ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+;;                  ((ulongp arg2) (error (list :exec-logor-ulong-todo arg2)))
+;;                  ((slongp arg2) (error (list :exec-logor-slong-todo arg2)))
+;;                  ((ullongp arg2) (error (list :exec-logor-ullong-todo arg2)))
+;;                  ((sllongp arg2) (error (list :exec-logor-sllong-todo arg2)))
+;;                  ((pointerp arg2) (error (list :exec-logor-pointer-todo arg2)))
+;;                  (t (error (impossible)))))
+;;           ((ulongp arg1) (error (list :exec-logor-ulong-todo arg1)))
+;;           ((slongp arg1) (error (list :exec-logor-slong-todo arg1)))
+;;           ((ullongp arg1) (error (list :exec-logor-ullong-todo arg1)))
+;;           ((sllongp arg1) (error (list :exec-logor-sllong-todo arg1)))
+;;           ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
+;;           (t (error (impossible)))))
+;;   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
