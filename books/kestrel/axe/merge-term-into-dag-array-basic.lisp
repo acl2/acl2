@@ -19,7 +19,7 @@
 ;(include-book "supporting-nodes")
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))

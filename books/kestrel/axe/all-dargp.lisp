@@ -14,7 +14,7 @@
 
 (include-book "dargp")
 (include-book "kestrel/sequences/defforall" :dir :system)
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 
 ;;;
 ;;; all-dargp
