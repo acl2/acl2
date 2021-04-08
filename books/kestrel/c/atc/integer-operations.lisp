@@ -340,9 +340,11 @@
                                    "') values [C:6.5.3].")
               (,utype (mod (- (,utype->get x))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,9 +372,11 @@
                                    "') values [C:6.5.3].")
               (,utype (mod (lognot (,utype->get x))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,9 +412,11 @@
                                    "') values [C:6.5.6].")
               (,utype (mod (+ (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,9 +452,11 @@
                                    "') values [C:6.5.6].")
               (,utype (mod (- (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,9 +492,11 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (* (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,10 +546,12 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (truncate (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-div-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-div-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -568,7 +580,8 @@
                                                        ,stype->get
                                                        ,stypep)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,10 +606,12 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (rem (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-rem-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-rem-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,10 +673,12 @@
               (,utype (mod (* (,utype->get x)
                               (expt 2 (,utype->get y)))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shl-utype-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-shl-utype-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,8 +713,10 @@
                                                        ,stypep)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-               (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
+              ((local
+                (include-book "kestrel/arithmetic-light/expt" :dir :system))
+               (local
+                (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,10 +745,12 @@
               (,utype (mod (truncate (,utype->get x)
                                      (expt 2 (,utype->get y)))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shr-utype-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-shr-utype-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,10 +808,11 @@
 
             (define ,stype-le ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than-or-equal-to relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Less-than-or-equal-to relation of @('signed "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (<= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -800,10 +822,11 @@
 
             (define ,utype-le ((x ,utypep) (y ,utypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than-or-equal-to relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Less-than-or-equal-to relation of @('unsigned "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (<= (,utype->get x) (,utype->get y))
                   (sint 1)
                 (sint 0))
@@ -813,10 +836,11 @@
 
             (define ,stype-ge ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than-or-equal-to relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Greater-than-or-equal-to relation of @('signed "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (>= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -826,10 +850,11 @@
 
             (define ,utype-ge ((x ,utypep) (y ,utypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than-or-equal-to relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Greater-than-or-equal-to relation of @('unsigned "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (>= (,utype->get x) (,utype->get y))
                   (sint 1)
                 (sint 0))
@@ -839,10 +864,11 @@
 
             (define ,stype-eq ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Equality of @('signed "
-                                   type-string
-                                   "') values [C:6.5.9].")
+              :short ,(concatenate
+                       'string
+                       "Equality of @('signed "
+                       type-string
+                       "') values [C:6.5.9].")
               (if (= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -900,7 +926,8 @@
                                                        ,stypep
                                                        ,stype->get)))
               :hooks (:fix)
-              :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
+              :prepwork
+              ((local (include-book "ihs/logops-lemmas" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -915,7 +942,8 @@
                                                        ,utypep
                                                        ,utype->get)))
               :hooks (:fix)
-              :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
+              :prepwork
+              ((local (include-book "ihs/logops-lemmas" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -931,23 +959,26 @@
                                                        ,stype->get)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             (define ,utype-bitxor ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise exclusive disjunction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.10].")
+              :short ,(concatenate
+                       'string
+                       "Bitwise exclusive disjunction of @('unsigned "
+                       type-string
+                       "') values [C:6.5.10].")
               (,utype (logxor (,utype->get x) (,utype->get y)))
               :guard-hints (("Goal" :in-theory (enable ,utype-integerp
                                                        ,utypep
                                                        ,utype->get)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,23 +994,26 @@
                                                        ,stypep
                                                        ,stype->get)))
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             (define ,utype-bitior ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise inclusive disjunction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.12].")
+              :short ,(concatenate
+                       'string
+                       "Bitwise inclusive disjunction of @('unsigned "
+                       type-string
+                       "') values [C:6.5.12].")
               (,utype (logior (,utype->get x) (,utype->get y)))
               :hooks (:fix)
               :guard-hints (("Goal" :in-theory (enable ,utype-integerp
                                                        ,utypep
                                                        ,utype->get)))
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
