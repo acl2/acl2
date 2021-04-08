@@ -483,6 +483,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-div ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute division [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-div
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-div
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-div arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (if (uint-div-okp val1 val2) (uint-div val1 val2) err))
+     ((sintp val1) (if (sint-div-okp val1 val2) (sint-div val1 val2) err))
+     ((ulongp val1) (if (ulong-div-okp val1 val2) (ulong-div val1 val2) err))
+     ((slongp val1) (if (slong-div-okp val1 val2) (slong-div val1 val2) err))
+     ((ullongp val1) (if (ullong-div-okp val1 val2) (ullong-div val1 val2) err))
+     ((sllongp val1) (if (sllong-div-okp val1 val2) (sllong-div val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -510,11 +539,7 @@
        ((when (errorp arg2)) arg2))
     (case (binop-kind op)
       (:mul (exec-mul arg1 arg2))
-      (:div (if (and (sintp arg1) (sintp arg2))
-                (if (sint-div-okp arg1 arg2)
-                    (sint-div arg1 arg2)
-                  (error (list :exec-div arg1 arg2)))
-              (error :todo)))
+      (:div (exec-div arg1 arg2))
       (:rem (if (and (sintp arg1) (sintp arg2))
                 (if (sint-rem-okp arg1 arg2)
                     (sint-rem arg1 arg2)

@@ -359,6 +359,7 @@
     exec-lognot
     exec-unary
     exec-mul
+    exec-div
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
