@@ -66,46 +66,6 @@
 (local (in-theory (disable member-equal)))
 (local (std::add-default-post-define-hook :fix))
 
-(defxdoc svtv-data
-  :parents (svtv)
-  :short "A stobj encapsulating an SVTV and the steps used in creating it, from
-the initial SV design to (potentially) a pipelined symbolic run."
-  :long "
-
-<p>An svtv-data stobj holds an SV design and several other pieces of data, such
-as finite-state machine and symbolic pipeline objects, tied to that design.
-These data objects are constrained by the abstract stobj invariant to have
-certain relationships among each other and to the design.  For example, one
-invariant states that if the @('base-fsm-validp') field is true, then the
-@('base-values'), @('base-nextstate'), @('moddb'), and @('aliases') fields all
-equal certain functions of the original design, namely, they are outputs of
-@('svtv-design-to-fsm').  These relationships can be used to show that facts
-proved about the pipelines imply facts about the FSM, which imply facts about
-the original design.</p>
-
-<p>The stobj contains data members that trace the following steps:</p>
-
-<ul>
-
-<li>The initial SV design is processed into an FSM (the \"base FSM\"),
-producing as well a @('moddb') and @('aliases') table.</li>
-
-<li>The user may attach names to certain signals, which are processed into a
-@('namemap').</li>
-
-<li>The user may define a <em>cycle</em> as a composition of one or
-more (usually two) phases of the base FSM into a new FSM.</li>
-
-<li>The user may define a <em>pipeline</em> as a run of several cycles of the
-cycle FSM in which certain inputs are given symbolic or concrete values at
-particular times and certain outputs are read at particular times.</li>
-
-</ul>
-
-
-
-
-")
 
 
 

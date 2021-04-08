@@ -156,14 +156,17 @@
 
 (define svtv-cycle-step-phase-exprs ((prev-st svex-alist-p)
                                      (phase svtv-cyclephase-p)
-                                     (x base-fsm-p))
+                                     (x base-fsm-p)
+                                     (simp svex-simpconfig-p))
   :guard (and (equal (svex-alist-keys prev-st) (svex-alist-keys (base-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (base-fsm->nextstate x)))))
   :returns (mv (outs svex-alist-p)
                (nextsts svex-alist-p))
   (b* (((svtv-cyclephase phase))
-       (subst (base-fsm-step-subst (svex-env-to-subst phase.constants)
-                                   prev-st x))
+       (subst (make-svex-substconfig
+               :simp simp
+               :alist (base-fsm-step-subst (svex-env-to-subst phase.constants)
+                                           prev-st x)))
        ((base-fsm x))
        (outs (and phase.outputs-captured
                   (if phase.inputs-free
@@ -282,7 +285,8 @@
 
 (define svtv-cycle-compile ((prev-st svex-alist-p)
                             (phases svtv-cyclephaselist-p)
-                            (x base-fsm-p))
+                            (x base-fsm-p)
+                            (simp svex-simpconfig-p))
   :guard (and (equal (svex-alist-keys prev-st) (svex-alist-keys (base-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (base-fsm->nextstate x)))))
   :returns (mv (outs svex-alist-p)
@@ -294,8 +298,8 @@
         (mv nil
             (mbe :logic (svex-alist-extract (svex-alist-keys (base-fsm->nextstate x)) prev-st)
                  :exec prev-st)))
-       ((mv outs1 nextst) (svtv-cycle-step-phase-exprs prev-st (car phases) x))
-       ((mv rest-outs final-st) (svtv-cycle-compile nextst (cdr phases) x)))
+       ((mv outs1 nextst) (svtv-cycle-step-phase-exprs prev-st (car phases) x simp))
+       ((mv rest-outs final-st) (svtv-cycle-compile nextst (cdr phases) x simp)))
     (mv (if (svtv-cyclephase->outputs-captured (car phases))
             outs1
           rest-outs)
@@ -374,7 +378,8 @@
 
 
 (define base-fsm-to-cycle ((phases svtv-cyclephaselist-p)
-                           (x base-fsm-p))
+                           (x base-fsm-p)
+                           (simp svex-simpconfig-p))
   :returns (cycle base-fsm-p)
   :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate x))))
   (b* (((base-fsm x))
@@ -382,7 +387,7 @@
        (prev-st (svex-identity-subst statevars))
        ((mv outs nextst)
         (with-fast-alist prev-st
-          (svtv-cycle-compile prev-st phases x))))
+          (svtv-cycle-compile prev-st phases x simp))))
     (change-base-fsm x :values outs :nextstate nextst))
   ///
 
@@ -613,14 +618,14 @@
 
 
   (defthm base-fsm-step-of-cycle-in-terms-of-fsm
-    (b* ((cycle-fsm (base-fsm-to-cycle phases x)))
+    (b* ((cycle-fsm (base-fsm-to-cycle phases x simp)))
       (equal (base-fsm-step ins initst cycle-fsm)
              (base-fsm-final-state (svtv-cycle-fsm-inputs ins phases) initst x)))
     :hints(("Goal" :in-theory (enable base-fsm-to-cycle base-fsm-step base-fsm-step-env
                                       svtv-cycle-eval-nextst-is-fsm-final-state-of-fsm-inputs))))
 
   (defthm base-fsm-step-outs-of-cycle-in-terms-of-fsm
-    (b* ((cycle-fsm (base-fsm-to-cycle phases x)))
+    (b* ((cycle-fsm (base-fsm-to-cycle phases x simp)))
       (equal (base-fsm-step-outs ins initst cycle-fsm)
              (let ((output-phase (svtv-cycle-output-phase phases)))
                (and output-phase
@@ -637,7 +642,7 @@
                    phases x))))
 
   (defthm base-fsm-final-state-of-cycle-in-terms-of-fsm
-    (b* ((cycle-fsm (base-fsm-to-cycle phases x)))
+    (b* ((cycle-fsm (base-fsm-to-cycle phases x simp)))
       (equal (base-fsm-final-state ins initst cycle-fsm)
              (base-fsm-final-state (svtv-cycle-run-fsm-inputs ins phases) initst x)))
     :hints (("goal" :induct (ind1 ins initst phases x)
@@ -673,7 +678,7 @@
            :rule-classes :linear))
 
   (defthm base-fsm-eval-of-cycle-in-terms-of-fsm
-    (b* ((cycle-fsm (base-fsm-to-cycle phases x)))
+    (b* ((cycle-fsm (base-fsm-to-cycle phases x simp)))
       (equal (nth n (base-fsm-eval ins initst cycle-fsm))
              (let ((output-phase (svtv-cycle-output-phase phases)))
                (and output-phase
