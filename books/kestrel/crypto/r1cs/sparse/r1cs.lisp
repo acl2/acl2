@@ -100,13 +100,13 @@
   :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable sparse-vectorp))))
 
-;; Check that each pseudo-var is an element of ALLOWED-PSEUDO-VARS.  Also
+;; Check that each pseudo-var is either 1 or an element of ALLOWED-VARS.  Also
 ;; checks that no pseudo-var appears in more than one entry in VEC.
 ;; Previously, this checked that coefficients are field elements, but we
 ;; decided to relax that check to allow coefficients like -1.
-(defund good-sparse-vectorp-aux (vec allowed-pseudo-vars seen-pseudo-vars)
+(defund good-sparse-vectorp-aux (vec allowed-vars seen-pseudo-vars)
   (declare (xargs :guard (and (sparse-vectorp vec)
-                              (pseudo-var-listp allowed-pseudo-vars)
+                              (symbol-listp allowed-vars)
                               (pseudo-var-listp seen-pseudo-vars))
                   :guard-hints (("Goal" :in-theory (enable sparse-vectorp)))))
   (if (atom vec)
@@ -114,56 +114,57 @@
     (let* ((item (first vec))
            ;; (coeff (first item))
            (pseudo-var (second item)))
-      (and (member pseudo-var allowed-pseudo-vars)
-           (not (member pseudo-var seen-pseudo-vars)) ;prevent duplicate vars
+      (and (or (eql 1 pseudo-var)
+               (member-eq pseudo-var allowed-vars))
+           (not (member pseudo-var seen-pseudo-vars)) ;prevent duplicate pseudo-vars
            (good-sparse-vectorp-aux (rest vec)
-                                    allowed-pseudo-vars
+                                    allowed-vars
                                     (cons pseudo-var seen-pseudo-vars))))))
 
 (defthm good-sparse-vectorp-aux-of-nil
-  (good-sparse-vectorp-aux nil allowed-pseudo-vars seen-pseudo-vars)
+  (good-sparse-vectorp-aux nil allowed-vars seen-pseudo-vars)
   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
 (defthm good-sparse-vectorp-aux-when-good-sparse-vectorp-aux-and-subsetp-equal-arg1
-  (implies (and (good-sparse-vectorp-aux vec allowed-pseudo-vars2 seen-pseudo-vars)
-                (subsetp-equal allowed-pseudo-vars2 allowed-pseudo-vars))
-           (good-sparse-vectorp-aux vec allowed-pseudo-vars seen-pseudo-vars))
+  (implies (and (good-sparse-vectorp-aux vec allowed-vars2 seen-pseudo-vars)
+                (subsetp-equal allowed-vars2 allowed-vars))
+           (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars))
   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
 (defthm good-sparse-vectorp-aux-when-good-sparse-vectorp-aux-and-subsetp-equal-arg2
-  (implies (and (good-sparse-vectorp-aux vec allowed-pseudo-vars seen-pseudo-vars2)
+  (implies (and (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars2)
                 (subsetp-equal seen-pseudo-vars seen-pseudo-vars2))
-           (good-sparse-vectorp-aux vec allowed-pseudo-vars seen-pseudo-vars))
+           (good-sparse-vectorp-aux vec allowed-vars seen-pseudo-vars))
   :hints (("Goal" :in-theory (enable good-sparse-vectorp-aux))))
 
-(defund good-sparse-vectorp (vec allowed-pseudo-vars)
+(defund good-sparse-vectorp (vec allowed-vars)
   (declare (xargs :guard (and (sparse-vectorp vec)
-                              (pseudo-var-listp allowed-pseudo-vars))))
-  (good-sparse-vectorp-aux vec allowed-pseudo-vars nil))
+                              (symbol-listp allowed-vars))))
+  (good-sparse-vectorp-aux vec allowed-vars nil))
 
 (defthm good-sparse-vectorp-when-good-sparse-vectorp-and-subsetp-equal
-  (implies (and (good-sparse-vectorp vec allowed-pseudo-vars1)
-                (subsetp-equal allowed-pseudo-vars1 allowed-pseudo-vars2))
-           (good-sparse-vectorp vec allowed-pseudo-vars2))
+  (implies (and (good-sparse-vectorp vec allowed-vars1)
+                (subsetp-equal allowed-vars1 allowed-vars2))
+           (good-sparse-vectorp vec allowed-vars2))
   :hints (("Goal" :in-theory (enable good-sparse-vectorp))))
 
 (defthm good-sparse-vectorp-of-cdr
-  (implies (good-sparse-vectorp vec allowed-pseudo-vars)
-           (good-sparse-vectorp (cdr vec) allowed-pseudo-vars))
-  :hints (("Goal" :expand (good-sparse-vectorp-aux vec allowed-pseudo-vars nil)
+  (implies (good-sparse-vectorp vec allowed-vars)
+           (good-sparse-vectorp (cdr vec) allowed-vars))
+  :hints (("Goal" :expand (good-sparse-vectorp-aux vec allowed-vars nil)
            :in-theory (enable good-sparse-vectorp))))
 
 (defthm good-sparse-vectorp-of-nil
-  (good-sparse-vectorp nil allowed-pseudo-vars)
+  (good-sparse-vectorp nil allowed-vars)
   :hints (("Goal" :in-theory (enable good-sparse-vectorp))))
 
 (defthm good-sparse-vectorp-of-cdr
-  (implies (good-sparse-vectorp vec allowed-pseudo-vars)
-           (good-sparse-vectorp (cdr vec) allowed-pseudo-vars))
+  (implies (good-sparse-vectorp vec allowed-vars)
+           (good-sparse-vectorp (cdr vec) allowed-vars))
   :hints (("Goal" :in-theory (enable good-sparse-vectorp))))
 
 (defthm member-equal-of-cadr-of-car-when-good-sparse-vectorp
-  (implies (and (good-sparse-vectorp vec (cons 1 vars))
+  (implies (and (good-sparse-vectorp vec vars)
                 (consp vec)
                 (not (equal 1 (cadr (car vec)))))
            (member-equal (car (cdr (car vec))) vars))
@@ -189,10 +190,9 @@
 (defun good-r1cs-constraintp (constraint allowed-vars)
   (declare (xargs :guard (and (r1cs-constraintp constraint)
                               (var-listp allowed-vars))))
-  (let ((allowed-pseudo-vars (cons 1 allowed-vars)))
-    (and (good-sparse-vectorp (r1cs-constraint->a constraint) allowed-pseudo-vars)
-         (good-sparse-vectorp (r1cs-constraint->b constraint) allowed-pseudo-vars)
-         (good-sparse-vectorp (r1cs-constraint->c constraint) allowed-pseudo-vars))))
+  (and (good-sparse-vectorp (r1cs-constraint->a constraint) allowed-vars)
+       (good-sparse-vectorp (r1cs-constraint->b constraint) allowed-vars)
+       (good-sparse-vectorp (r1cs-constraint->c constraint) allowed-vars)))
 
 (defthm good-r1cs-constraintp-monotone
   (implies (and (subsetp-equal allowed-vars1 allowed-vars2)
@@ -238,7 +238,7 @@
   (declare (xargs :guard (and (sparse-vectorp vec)
                               (rtl::primep prime)
                               (r1cs-valuationp valuation prime)
-                              (good-sparse-vectorp vec (cons 1 (strip-cars valuation))))
+                              (good-sparse-vectorp vec (strip-cars valuation)))
                   :verify-guards nil ;done below
                   ))
   (if (endp vec)
@@ -258,10 +258,10 @@
   (implies (and (sparse-vectorp vec)
                 (rtl::primep prime)
                 (r1cs-valuationp valuation prime)
-                (good-sparse-vectorp vec (cons 1 (strip-cars valuation))) ;drop?
+                (good-sparse-vectorp vec (strip-cars valuation)) ;drop?
                 )
            (fep (dot-product vec valuation prime) prime))
-  :hints (("Goal" :expand (good-sparse-vectorp vec (cons 1 (strip-cars valuation)))
+  :hints (("Goal" :expand (good-sparse-vectorp vec (strip-cars valuation))
            :in-theory (e/d (dot-product r1cs-valuationp sparse-vectorp valuation-bindsp)
                            (acl2::remove-equal-of-cons)))))
 

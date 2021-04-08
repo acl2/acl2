@@ -28,6 +28,8 @@
 ;
 ; Original authors: Sol Swords and Jared Davis
 ;                   {sswords,jared}@centtech.com
+;
+; Additional tests added as indicated by Matt Kaufmann.
 
 #||
 ;; For interactive testing:
@@ -45,8 +47,8 @@
 (FLAG::make-flag flag-pseudo-termp
                  pseudo-termp
                  :flag-var flag
-                 :flag-mapping ((pseudo-termp . term)
-                                (pseudo-term-listp . list))
+                 :flag-mapping ((pseudo-termp term)
+                                (pseudo-term-listp list))
                  ;; :hints {for the measure theorem}
                  :defthm-macro-name defthm-pseudo-termp
                  )
@@ -58,8 +60,8 @@
   (set-enforce-redundancy t) ;; implicitly local
   (FLAG::make-flag pseudo-termp
                    :flag-var flag
-                   :flag-mapping ((pseudo-termp . term)
-                                  (pseudo-term-listp . list))
+                   :flag-mapping ((pseudo-termp term)
+                                  (pseudo-term-listp list))
                    ;; :hints {for the measure theorem}
                    :defthm-macro-name defthm-pseudo-termp
                    ))
@@ -214,8 +216,8 @@
 
 (flag::make-flag flag-my-evenp
                  my-evenp
-                 :flag-mapping ((my-evenp . :even)
-                                (my-oddp  . :odd)))
+                 :flag-mapping ((my-evenp :even)
+                                (my-oddp  :odd)))
 
 (encapsulate
   ()
@@ -361,3 +363,90 @@
      :rule-classes :congruence
      :hints (("goal" :induct (sum-pairs-list-double x y))))))
 
+;;;;;;;;;;
+;;; Tests of :body argument (by Matt Kaufmann).
+;;;;;;;;;;
+
+(include-book "misc/install-not-normalized" :dir :system)
+
+(mutual-recursion ; adapted from :doc mutual-recursion
+ (defun evenlp (x)
+   (if (atom x) t (oddlp (cdr x))))
+ (defun oddlp (x)
+   (if (atom x) nil (evenlp (cdr x)))))
+
+(install-not-normalized evenlp)
+
+; Use the new body:
+(make-flag evenlp :body :last)
+(assert-event
+ (equal (body 'flag-evenlp nil (w state))
+        '(RETURN-LAST 'PROGN
+                      (THROW-NONEXEC-ERROR 'FLAG-EVENLP
+                                           (CONS FLAG (CONS X 'NIL)))
+                      (IF (EQUAL FLAG 'EVENLP)
+                          (IF (ATOM X)
+                              'T
+                              (FLAG-EVENLP 'ODDLP (CDR X)))
+                          (IF (ATOM X)
+                              'NIL
+                              (FLAG-EVENLP 'EVENLP (CDR X)))))))
+
+; Use the original body:
+(make-flag flag2-evenlp evenlp)
+(assert-event
+ (equal (body 'flag2-evenlp nil (w state))
+        '(RETURN-LAST 'PROGN
+                      (THROW-NONEXEC-ERROR 'FLAG2-EVENLP
+                                           (CONS FLAG (CONS X 'NIL)))
+                      (IF (EQUAL FLAG 'EVENLP)
+                          (IF (CONSP X)
+                              (FLAG2-EVENLP 'ODDLP (CDR X))
+                              'T)
+                          (IF (CONSP X)
+                              (FLAG2-EVENLP 'EVENLP (CDR X))
+                              'NIL)))))
+
+; Install the original body of evenlp:
+(DEFTHM EVENLP$re-NORMALIZED
+  (EQUAL (EVENLP X)
+         (IF (CONSP X) (ODDLP (CDR X)) 'T))
+  :RULE-CLASSES
+  ((:DEFINITION :INSTALL-BODY T
+                :CLIQUE (EVENLP ODDLP)
+                :CONTROLLER-ALIST ((EVENLP T) (ODDLP T)))))
+
+; Use the latest bodies.
+(make-flag flag3-evenlp evenlp :body :last)
+(assert-event
+ (equal (body 'flag3-evenlp nil (w state))
+        '(RETURN-LAST 'PROGN
+                      (THROW-NONEXEC-ERROR 'FLAG3-EVENLP
+                                           (CONS FLAG (CONS X 'NIL)))
+                      (IF (EQUAL FLAG 'EVENLP)
+                          (IF (CONSP X)
+                              (FLAG3-EVENLP 'ODDLP (CDR X))
+                              'T)
+                          (IF (ATOM X)
+                              'NIL
+                              (FLAG3-EVENLP 'EVENLP (CDR X)))))))
+
+; Go back to the normalized bodies, where for evenlp the normalized body is
+; first and last among the def-bodies of evenlp.
+(make-event
+ `(make-flag flag4-evenlp evenlp
+             :body
+             ((evenlp ,(install-not-normalized-name 'evenlp))
+              (oddlp ,(install-not-normalized-name 'oddlp)))))
+(assert-event
+ (equal (body 'flag4-evenlp nil (w state))
+        '(RETURN-LAST 'PROGN
+                      (THROW-NONEXEC-ERROR 'FLAG4-EVENLP
+                                           (CONS FLAG (CONS X 'NIL)))
+                      (IF (EQUAL FLAG 'EVENLP)
+                          (IF (ATOM X)
+                              'T
+                              (FLAG4-EVENLP 'ODDLP (CDR X)))
+                          (IF (ATOM X)
+                              'NIL
+                              (FLAG4-EVENLP 'EVENLP (CDR X)))))))

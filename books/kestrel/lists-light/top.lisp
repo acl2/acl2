@@ -32,6 +32,7 @@
 (include-book "butlast")
 (include-book "append")
 (include-book "revappend")
+(include-book "remove-duplicates-equal")
 (include-book "remove-equal")
 (include-book "remove1-equal")
 (include-book "union-equal")

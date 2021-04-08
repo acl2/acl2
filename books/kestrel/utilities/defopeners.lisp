@@ -1,6 +1,6 @@
 ; A utility to build "opener" rules
 ;
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -415,12 +415,12 @@
            (claim (clean-up-hyps-in-claim claim)))
       (cons `(,(if disable 'defthmd 'defthm)
               ,(if (> totalnum 1)
-                   (intern-in-package-of-symbol (symbol-name (pack$ defthmnameprefix '- (nat-to-string num))) defthmnameprefix)
+                   (add-suffix defthmnameprefix (concatenate 'string "-" (nat-to-string num)))
                  defthmnameprefix)
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(intern-in-package-of-symbol (symbol-name (pack$ fn '$not-normalized)) fn))
+                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
             (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
 
@@ -437,12 +437,12 @@
            (claim (clean-up-hyps-in-claim claim)))
       (cons `(,(if disable 'defthmd 'defthm)
               ,(if (> totalnum 1)
-                   (intern-in-package-of-symbol (symbol-name (pack$ defthmnameprefix '- (nat-to-string num))) defthmnameprefix)
+                   (add-suffix defthmnameprefix (concatenate 'string "-" (nat-to-string num)))
                  defthmnameprefix)
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(intern-in-package-of-symbol (symbol-name (pack$ fn '$not-normalized)) fn))
+                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
             (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
 
@@ -512,7 +512,7 @@
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals))
       (b* ((base-claims (add-hyps-to-claims hyps base-claims))
            (unroll-claims (add-hyps-to-claims hyps unroll-claims))
-           (base-theorems-name-root (pack$ fn '-base))
+           (base-theorems-name-root (pack$ fn '-base)) ;todo: use add-suffix to get this in the same package as fn?  also below...
            (base-theorems-name-root (if suffix
                                         (pack$ base-theorems-name-root suffix)
                                       base-theorems-name-root))

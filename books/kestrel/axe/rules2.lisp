@@ -1747,7 +1747,7 @@
 ;;                 )
 ;;            (equal (bvcat highsize highval lowsize lowval)
 ;;                   (bvcat highsize (bvchop highsize highval) lowsize lowval)))
-;;   :hints (("Goal" :in-theory (e/d (bvcat) (BVCAT-RECOMBINE)))))
+;;   :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 1 x)
@@ -1783,7 +1783,7 @@
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
 ;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) (BVCAT-RECOMBINE)))))
+;;                                    ) ()))))
 
 ;; (defthm bvxor-convert-arg2-to-unsigned-better
 ;;   (implies (and (syntaxp; (and (not (quotep y))
@@ -1798,7 +1798,7 @@
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size x (bvchop size y))))
 ;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) (BVCAT-RECOMBINE)))))
+;;                                    ) ()))))
 
 (local (in-theory (disable ;BVCHOP-LEQ
                    ;LOGTAIL-LEQ
@@ -1899,7 +1899,7 @@
 ;;            (equal (BVXOR size Z (bvcat SIZE2 Y size X))
 ;;                   (BVXOR size Z X)))
 ;;   :hints (("Goal" :cases ((integerp x))
-;;            :in-theory (e/d (bvcat bvxor BVCHOP-LOGAPP) (BVCAT-RECOMBINE LOGXOR-BVCHOP-BVCHOP)))))
+;;            :in-theory (e/d (bvcat bvxor BVCHOP-LOGAPP) (LOGXOR-BVCHOP-BVCHOP)))))
 
 ;; (defthmd add-bvchop-to-bvcat-2
 ;;   (implies (and (syntaxp (and (not (quotep highval))
@@ -2715,7 +2715,6 @@
                 )
            (equal (SUBRANGE start1 end1 (UPDATE-SUBRANGE start2 end2 vals lst))
                   (SUBRANGE (- start1 start2) (- end1 start2) vals)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (SUBRANGE) (;anti-subrange
                                               )))))
 
@@ -2743,7 +2742,6 @@
            (equal (subrange start end (update-subrange (+ 1 start) end vals lst))
                   (cons (nth start lst)
                         (subrange 0 (+ end -1 (- start)) vals))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (update-subrange-rewrite
                                    ;EQUAL-CONS-CASES2
                                    SUBRANGE-OF-CONS
@@ -3032,7 +3030,6 @@
                   (if (< 2 i)
                       (< y (MAXELEM (SUBRANGE 2 (+ -1 i) x)))
                     (< y (nth 2 x)))))
-  :otf-flg t
   :hints (("Goal" :use (:instance subrange-split-top (low 2))
            :in-theory (disable subrange-split-top
                                ))))
@@ -3407,7 +3404,6 @@
                   (append (take start lst)
                           (take (+ 1 end (- start)) vals)
                           (nthcdr (+ 1 end) lst))))
-  :otf-flg t
   :hints (("Goal" :use (:instance update-subrange-rewrite
                                   (lst (true-list-fix lst))
                                   (vals (take (+ 1 end (- start)) vals)))

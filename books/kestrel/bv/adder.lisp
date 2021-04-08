@@ -18,16 +18,15 @@
 (include-book "unsigned-byte-p")
 (include-book "bvplus")
 (include-book "rules") ; for GETBIT-OF-PLUS
+(include-book "rules0") ; for bvplus-1-becomes-bitxor
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "arith")) ;for PLUS-OF-EXPT-AND-MINUS-OF-EXPT-ONE-LESS
-
-(local (in-theory (disable BVCAT-RECOMBINE))) ;todo
+;(local (include-book "arith")) ;for PLUS-OF-EXPT-AND-MINUS-OF-EXPT-ONE-LESS
 
 (local (in-theory (disable DEFAULT-+-2 DEFAULT-*-2
                            )))
@@ -272,7 +271,6 @@
                  (unsigned-byte-p 1 carry))
             (equal (+ carry x y) ;(bvplus (+ 1 n) carry (bvplus (+ 1 n) x y))
                    (ripple-carry-adder n x y carry)))
-   :otf-flg t
    :hints (("subgoal *1/2"
             :expand ((RIPPLE-CARRY-ADDER N X Y 0)
                      (RIPPLE-CARRY-ADDER N X Y 1)

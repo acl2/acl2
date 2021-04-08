@@ -36,6 +36,7 @@
 (include-book "fty-alist")
 (include-book "fty-list")
 (include-book "fty-transsum")
+(include-book "kestrel/fty/fty-set" :dir :system)
 (include-book "fty-sugar")
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
@@ -153,6 +154,7 @@
             (defmap      (let ((al (parse-flexalist (cdar x) xvar
                                                     our-fixtypes fixtypes state)))
                            (change-flexalist al :strategy :drop-keys)))
+            (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -296,6 +298,7 @@
                    `(defines ,(intern-in-package-of-symbol (cat (symbol-name x.name) "-FIX")
                                                            x.name)
                       :flag ,flag-name
+                      :bogus-ok t       ; Allows non-recursive fix function (e.g. for defset)
                       :progn t
                       ,@(and sum-kind-calls
                              `(:hints ((and stable-under-simplificationp
@@ -1053,3 +1056,24 @@
 (defmacro defprod (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defprod-fn ',form state)))
+
+
+(defun defset-fn (whole state)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexset (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexset x :count nil)))
+       ((flexset x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist (flextypes-kwd-alist-from-specialized-kwd-alist x.kwd-alist)
+                                  :recp x.recp)))
+    (deftypes-events flextypes state)))
+
+(defmacro defset (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (defset-fn ',form state)))

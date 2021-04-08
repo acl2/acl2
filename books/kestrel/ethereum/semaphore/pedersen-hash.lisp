@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pedersen-hash
-  :parents (semaphore)
+  :parents (semaphore-specification)
   :short "The Pedersen hash for the Ethereum Semaphore."
   :long
   (xdoc::topstring

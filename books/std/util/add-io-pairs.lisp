@@ -1239,11 +1239,14 @@
                      ,lookup-result)
                  lookup-result)
             (,fn ,@formals))))
-      (defthm ,thm-name
-        (equal (,fn ,@formals)
-               (,new-fn ,@formals))
-        ,@(and hints `(:hints ,hints))
-        :rule-classes nil)
+      (encapsulate
+        ()
+        (local (in-theory (enable assoc (:e assoc))))
+        (defthm ,thm-name
+          (equal (,fn ,@formals)
+                 (,new-fn ,@formals))
+          ,@(and hints `(:hints ,hints))
+          :rule-classes nil))
       (unmemoize ',fn)
       (memoize ',fn :invoke ',new-fn))))
 

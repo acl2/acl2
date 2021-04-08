@@ -18,3 +18,4 @@
 ;; (include-book "equal-of-add-rules") ;incompatible with the bind-free rules
 (include-book "doc")
 (include-book "rule-lists")
+(include-book "printing")

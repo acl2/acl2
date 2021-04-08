@@ -199,8 +199,8 @@
              (expev-termlist/alist-ind (cdr x) al)))))
 
   (make-flag expev-term/alist-flag expev-term/alist-ind
-             :flag-mapping ((expev-term/alist-ind . term)
-                            (expev-termlist/alist-ind . list))))
+             :flag-mapping ((expev-term/alist-ind term)
+                            (expev-termlist/alist-ind list))))
 
 
 
@@ -748,8 +748,8 @@
 ;;            (termlist-apply-expansions (cdr x) hints lambdasp)))))
 
 ;; (make-flag term-apply-expansions-flg term-apply-expansions
-;;            :flag-mapping ((term-apply-expansions . term)
-;;                           (termlist-apply-expansions . list)))
+;;            :flag-mapping ((term-apply-expansions term)
+;;                           (termlist-apply-expansions list)))
 
 ;; (defthm len-of-termlist-apply-expansions
 ;;   (equal (len (termlist-apply-expansions x hints lambdasp))
@@ -794,8 +794,8 @@
 ;;            (termlist-apply-expansions-correct-ind (cdr x) hints a lambdasp)))))
 
 ;; (make-flag term-apply-expansions-correct-flg term-apply-expansions-correct-ind
-;;            :flag-mapping ((term-apply-expansions-correct-ind . term)
-;;                           (termlist-apply-expansions-correct-ind . list)))
+;;            :flag-mapping ((term-apply-expansions-correct-ind term)
+;;                           (termlist-apply-expansions-correct-ind list)))
 
 
 

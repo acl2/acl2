@@ -13,11 +13,13 @@
 (in-package "ACL2")
 
 (include-book "rebuild-nodes") ;todo: reduce
+(include-book "remove-duplicates-from-sorted-list")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -25,25 +27,17 @@
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/all-less-rules" :dir :system))
 
 ;; Utilities to rebuild nodes (e.g., for substitution) that starts at the
 ;; target node and moves upward, handling its parents, their parents, etc.
 
 (local (in-theory (disable no-duplicatesp-equal)))
 
-;move
-(defthm member-equal-of-remove-duplicates-equal-iff
-  (iff (member-equal a (remove-duplicates-equal x))
-       (member-equal a x)))
-
-;move
-(defthm NO-DUPLICATESP-EQUAL-of-REMOVE-DUPLICATES-EQUAL
-  (NO-DUPLICATESP-EQUAL (REMOVE-DUPLICATES-EQUAL x))
-  :hints (("Goal" :in-theory (enable NO-DUPLICATESP-EQUAL))))
-
 (defthm nat-listp-of-remove-duplicates-equal
   (implies (nat-listp x)
-           (nat-listp (remove-duplicates-equal x))))
+           (nat-listp (remove-duplicates-equal x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal))))
 
 (local
  (defthm acl2-numberp-when-natp
@@ -62,65 +56,6 @@
                    (car l1)
                  (car l2))))))
   :hints (("Goal" :in-theory (enable merge-<))))
-
-
-;; todo: this must exist somewhere?
-;; Leaves one member of each run of consecutive duplicates
-(defund remove-duplicates-from-sorted-list (list acc)
-  (declare (xargs :guard (and (all-natp list)
-                              (true-listp list)
-                              (all-natp acc)
-                              (true-listp acc))))
-  (if (endp list)
-      (reverse-list acc)
-    (let ((first (first list)))
-      (if (endp (rest list))
-          (reverse-list (cons first acc))
-        (if (equal first (second list))
-            ;; Drop the first element:
-            (remove-duplicates-from-sorted-list (rest list) acc)
-          (remove-duplicates-from-sorted-list (rest list) (cons first acc)))))))
-
-(defthm car-of-remove-duplicates-from-sorted-list
-  (equal (car (remove-duplicates-from-sorted-list list acc))
-         (if (consp acc)
-             (nth (+ -1 (len acc)) acc)
-           (car list)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-from-sorted-list))))
-
-(defthm consp-of-remove-duplicates-from-sorted-list
-  (equal (consp (remove-duplicates-from-sorted-list list acc))
-         (or (consp list)
-             (consp acc)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-from-sorted-list))))
-
-(defthm all-<-of-remove-duplicates-from-sorted-list
-  (equal (all-< (remove-duplicates-from-sorted-list list acc) bound)
-         (and (all-< list bound)
-              (all-< acc bound)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-from-sorted-list))))
-
-(defthm all-<=-of-car-when-all-<=-of-all
-  (implies (and (all-<=-all acc list)
-                (consp list))
-           (all-<= acc (car list))))
-
-(defthmd not-<-of-car-when-<=-all
-  (implies (and (<=-all x y)
-                (consp y))
-           (not (< (car y) x)))
-  :hints (("Goal" :in-theory (enable <=-all))))
-
-(defthm sortedp-<=-of-remove-duplicates-from-sorted-list
-  (equal (sortedp-<= (remove-duplicates-from-sorted-list list acc))
-         (and (sortedp-<= list)
-              (sortedp-<= (reverse-list acc))
-              (all-<=-all acc list)))
-  :hints (("Goal" ;:do-not '(generalize eliminate-destructors)
-           :in-theory (enable sortedp-<=
-                              remove-duplicates-from-sorted-list
-                              not-<-of-car-when-<=-all
-                              <=-of-first-and-second-when-sortedp))))
 
 (defthm sortedp-<=-of-singleton
   (sortedp-<= (list x))
@@ -151,7 +86,9 @@
                               remove-duplicates-from-sorted-list
                               not-<-of-car-when-<=-all
                               <=-of-first-and-second-when-sortedp
-                              <=-of-cadr-and-car-when-sortedp-<=))))
+                              <=-of-cadr-and-car-when-sortedp-<=
+                              ))))
+
 
 (defthm nat-listp-of-remove-duplicates-from-sorted-list
   (equal (nat-listp (remove-duplicates-from-sorted-list list acc))
@@ -221,7 +158,6 @@
                 (consp y))
            (< x (car y)))
   :hints (("Goal" :in-theory (enable <-all))))
-
 
 (defthm <-all-of-append
   (equal (<-all a (append x y))
@@ -296,6 +232,115 @@
   :hints (("Goal" :use (:instance all->-of-aref1-when-dag-parent-arrayp)
            :in-theory (e/d (all->-becomes-<-all)
                            (all->-of-aref1-when-dag-parent-arrayp)))))
+
+
+
+;;;
+;;; maybe-translate-literals
+;;;
+
+;; This throws an error if a node translates to a constant.
+;; Returns (mv changed-nodes unchanged-nodes).
+;; TODO: Compare to the renaming-array stuff.
+;; TODO: Compare to translate-args?
+;; TODO: basically the same as translate nodes?
+(defund maybe-translate-literals (nodenums translation-array changed-acc unchanged-acc)
+  (declare (xargs :guard (and (true-listp nodenums)
+                              (array1p 'translation-array translation-array)
+                              (all-natp nodenums)
+                              (all-< nodenums (alen1 'translation-array translation-array))
+                              (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                              (true-listp changed-acc)
+                              (true-listp unchanged-acc))))
+  (if (endp nodenums)
+      (mv changed-acc unchanged-acc)
+    (b* ((nodenum (first nodenums))
+         (res (aref1 'translation-array translation-array nodenum)))
+      (if (not res)
+          ;; this node remains the same:
+          (maybe-translate-literals (rest nodenums) translation-array changed-acc (cons nodenum unchanged-acc))
+        (if (consp res) ;can't happen?
+            ;; for guard proof:
+            (prog2$ (er hard? 'maybe-translate-literals "A literal translated to a non-natp.")
+                    ;; for ease of reasoning:
+                    (mv (append (repeat (len nodenums) 0) changed-acc)
+                        unchanged-acc))
+          (progn$
+           ;; (cw "~x0 became ~x1.~%" nodenum res)
+           (maybe-translate-literals (rest nodenums) translation-array (cons res changed-acc) unchanged-acc)))))))
+
+;rename
+(defthm len-of-maybe-translate-literals
+  (equal (+ (len (mv-nth 0 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc)))
+            (len (mv-nth 1 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc))))
+         (+ (len nodenums)
+            (len changed-acc)
+            (len unchanged-acc)))
+  :hints (("Goal" :in-theory (enable maybe-translate-literals))))
+
+(defthm nat-listp-of-mv-nth-0-of-maybe-translate-literals
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (array1p 'translation-array translation-array))
+           (nat-listp (mv-nth 0 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (e/d (maybe-translate-literals) (natp)))))
+
+(defthm nat-listp-of-mv-nth-1-of-maybe-translate-literals
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (array1p 'translation-array translation-array))
+           (nat-listp (mv-nth 1 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable maybe-translate-literals))))
+
+(defthm true-listp-of-mv-nth-0-of-maybe-translate-literals
+  (implies (true-listp changed-acc)
+           (true-listp (mv-nth 0 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable maybe-translate-literals))))
+
+(defthm true-listp-of-mv-nth-1-of-maybe-translate-literals
+  (implies (true-listp unchanged-acc)
+           (true-listp (mv-nth 1 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable maybe-translate-literals))))
+
+(defthm all-<-of-mv-nth-0-of-maybe-translate-literals
+  (implies (and (posp bound)
+                (all-< changed-acc bound)
+                ;(all-< unchanged-acc bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 0 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("Goal" :in-theory (enable maybe-translate-literals))))
+
+(defthm all-<-of-mv-nth-1-of-maybe-translate-literals
+  (implies (and (posp bound)
+                ;;(all-< changed-acc bound)
+                (all-< unchanged-acc bound)
+                (all-< nodenums bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 1 (maybe-translate-literals nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("subgoal *1/3"
+           :use (:instance <-of-aref1-when-bounded-translation-arrayp-aux
+                           (nodenum (car nodenums))
+                           (bound2 bound)
+                           (nodenum2 (+ -1
+                                        (alen1 'translation-array
+                                               translation-array))))
+           :in-theory (disable <-of-aref1-when-bounded-translation-arrayp-aux))
+          ("Goal" :in-theory (enable maybe-translate-literals))))
+
 
 
 
@@ -504,7 +549,7 @@
        ((when erp) (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((mv changed-literal-nodenums
             unchanged-literal-nodenums)
-        (maybe-translate-nodes literal-nodenums
+        (maybe-translate-literals literal-nodenums
                                translation-array
                                ;; Initialize accumulator to include all uneffected nodes
                                nil nil)))

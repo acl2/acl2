@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ prime-field-abbreviations
-  :parents (semaphore)
+  :parents (semaphore-specification)
   :short "Abbreviations for the prime field functions for Semaphore."
   :long
   (xdoc::topstring

@@ -159,7 +159,7 @@
       (implies (equal (tag x) :g-apply)
                (not (shape-specp x)))
       :rule-classes ((:rewrite :backchain-limit-lst 0))))
-                    
+
   (define shape-spec-listp (x)
     :measure (acl2-count x)
     (if (atom x)
@@ -201,8 +201,8 @@
 
 
 (flag::make-flag shape-spec-flag shape-spec-ind
-                 :flag-mapping ((shape-spec-ind . ss)
-                                (shape-spec-list-ind . list)))
+                 :flag-mapping ((shape-spec-ind ss)
+                                (shape-spec-list-ind list)))
 
 
 

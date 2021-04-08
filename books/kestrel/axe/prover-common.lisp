@@ -37,12 +37,13 @@
 (include-book "crunch-dag2")
 (include-book "worklists")
 (include-book "equivs")
-(include-book "rebuild-nodes")
+(include-book "rebuild-literals")
 (include-book "dag-array-printing")
 ;(include-book "splitting")
 ;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
+(include-book "dag-size2")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -1009,13 +1010,13 @@
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
            (ignore dag-len) ;todo
            )
-  (if (and (call-of 'not hyp) ;; TODO: Avoid checking this over and over.  Also, do we know that hyp is always a cons?
+  (if (and (eq 'not (ffn-symb hyp)) ;; TODO: Avoid checking this over and over for each nodenum-to-assume-false
            (consp (fargs hyp)) ; for the guard proof, should always be true if arities are right.
            )
       ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
       ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
       (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)
-    ;;otherwise we require the expr assumed false to be a call of NOT
+    ;;otherwise we require the expr assumed false to be a call of NOT, and we try to match HYP with the argument of the NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
                (consp (dargs expr-to-assume-false)) ; for the guard proof, should always be true if arities are right.
@@ -1469,7 +1470,15 @@
                               (all-< literal-nodenums dag-len))))
   (if (endp literal-nodenums)
       nil
-    (progn$ (print-negated-literal (first literal-nodenums) dag-array-name dag-array dag-len)
+    (progn$ (let* ((nodenum (first literal-nodenums))
+                   (term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+              (if (< term-size 10000)
+                  (let ((term (dag-to-term-aux-array dag-array-name dag-array nodenum)))
+                    (if (and (call-of 'not term)
+                             (consp (cdr term)))
+                        (cw "~x0~%" (farg1 term))
+                      (cw "~x0~%" `(not ,term))))
+                (print-negated-literal nodenum dag-array-name dag-array dag-len)))
             (cw "~%")
             (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
 

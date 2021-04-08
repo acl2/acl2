@@ -57,17 +57,6 @@
                   (bvchop size x)))
     :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm bvplus-of-bvuminus-same
-  (equal (bvplus size (bvuminus size x) x)
-         0)
-  :hints (("Goal" :in-theory (enable bvplus bvminus bvuminus))))
-
-(defthm bvplus-of-bvuminus-same-alt
-  (equal (bvplus size x (bvuminus size x))
-         0)
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
-           :in-theory (disable bvplus-of-bvuminus-same))))
-
 ;bozo, more generally, bvmult-1 just becomes and? huh?
 (defthm bvmult-1-becomes-bitand
   (equal (bvmult 1 x y)
@@ -117,13 +106,12 @@
 
 ;bozo gen
 ;strength reduction from bvmult to shift, so i guess this is a win? unless we are in an arithmetic context?
-(defthm bvmult-of-2
+(defthmd bvmult-of-2
   (implies (natp n)
            (equal (bvmult n 2 x)
                   (bvcat (+ -1 n) x 1 0)))
   :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
-                                  (bvcat-recombine
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
@@ -136,27 +124,6 @@
   :hints (("Goal" :in-theory (enable expt-collect-hack natp power-of-2p))))
 
 ;need more bitxor cancel rules?
-
-(defthmd bvchop-of-floor-of-expt-of-2
-  (implies (and (integerp x) ;would like to drop this..
-                (integerp n)
-                (natp m))
-           (equal (bvchop n (floor x (expt 2 m)))
-                  (slice (+ m -1 n) m x)))
-  :hints (("Goal" :in-theory (e/d (slice logtail) (;anti-slice
-                                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                                   )))))
-
-(defthmd bvchop-of-floor-of-expt-of-2-constant-version
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep n)))
-                (integerp x)
-                (integerp n)
-                (power-of-2p k))
-           (equal (bvchop n (floor x k))
-                  (slice (+ (lg k) -1 n) (lg k) x)))
-  :hints (("Goal" :use (:instance bvchop-of-floor-of-expt-of-2 (m (lg k)))
-           :in-theory (e/d (power-of-2p) (bvchop-of-floor-of-expt-of-2)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2) (:definition slice)))
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2-constant-version) (:definition slice)))

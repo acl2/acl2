@@ -1620,11 +1620,11 @@ the existing update functions without modification."
   :features (:old-probe))
 
 (flag::make-flag esim-sexpr-flag esim-sexpr-out
-                 :flag-mapping ((esim-sexpr-out . esim)
-                                (esim-sexpr-general-out . general)
-                                (esim-sexpr-fixpoint-out . fixpoint)
-                                (esim-sexpr-occs-out . occs)
-                                (esim-sexpr-occ-out . occ)))
+                 :flag-mapping ((esim-sexpr-out esim)
+                                (esim-sexpr-general-out general)
+                                (esim-sexpr-fixpoint-out fixpoint)
+                                (esim-sexpr-occs-out occs)
+                                (esim-sexpr-occ-out occ)))
 
 
 

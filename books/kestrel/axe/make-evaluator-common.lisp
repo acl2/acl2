@@ -29,6 +29,14 @@
             (SYMBOL-LISTP (SECOND X))
             (PSEUDO-TERMP (THIRD X)))))
 
+;; ;move
+;; (defthm pseudo-lambdap-of-car
+;;   (implies (pseudo-termp form)
+;;            (equal (pseudo-lambdap (car form))
+;;                   (not (symbolp (car form)))))
+;;   :hints (("Goal" :expand ((pseudo-termp form))
+;;            :in-theory (enable pseudo-termp pseudo-lambdap))))
+
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
 ;do the fns get tested in reverse order??
 ;the alist should have no duplicates

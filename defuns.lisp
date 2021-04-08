@@ -6954,66 +6954,6 @@
          (cddar wrld))
         (t (scan-to-cltl-command (cdr wrld)))))
 
-(defconst *xargs-keywords*
-
-; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
-; modifying memoize-partial-declare accordingly.
-
-  '(:guard :guard-hints :guard-debug :guard-simplify
-           :hints :measure :measure-debug
-           :ruler-extenders :mode :non-executable :normalize
-           :otf-flg #+:non-standard-analysis :std-hints
-           :stobjs :verify-guards :well-founded-relation
-           :split-types :loop$-recursion))
-
-(defun plausible-dclsp1 (lst)
-
-; We determine whether lst is a plausible cdr for a DECLARE form.  Ignoring the
-; order of presentation and the number of occurrences of each element
-; (including 0), we ensure that lst is of the form (... (TYPE ...) ... (IGNORE
-; ...) ... (IGNORABLE ...) ... (IRRELEVANT ...) ... (XARGS ... :key val ...)
-; ...)  where the :keys are our xarg keys (members of *xargs-keywords*).
-
-  (declare (xargs :guard t))
-  (cond ((atom lst) (null lst))
-        ((and (consp (car lst))
-              (true-listp (car lst))
-              (or (member-eq (caar lst) '(type ignore ignorable irrelevant))
-                  (and (eq (caar lst) 'xargs)
-                       (keyword-value-listp (cdar lst))
-                       (subsetp-eq (evens (cdar lst)) *xargs-keywords*))))
-         (plausible-dclsp1 (cdr lst)))
-        (t nil)))
-
-(defun plausible-dclsp (lst)
-
-; We determine whether lst is a plausible thing to include between the formals
-; and the body in a defun, e.g., a list of doc strings and DECLARE forms.  We
-; do not insist that the DECLARE forms are "perfectly legal" -- for example, we
-; would approve (DECLARE (XARGS :measure m1 :measure m2)) -- but they are
-; well-enough formed to permit us to walk through them with the fetch-from-dcls
-; functions below.
-
-; Note: This predicate is not actually used by defuns but is used by
-; verify-termination in order to guard its exploration of the proposed dcls to
-; merge them with the existing ones.  After we define the predicate we define
-; the exploration functions, which assume this fn as their guard.  The
-; exploration functions below are used in defuns, in particular, in the
-; determination of whether a proposed defun is redundant.
-
-  (declare (xargs :guard t))
-  (cond ((atom lst) (null lst))
-        ((stringp (car lst)) (plausible-dclsp (cdr lst)))
-        ((and (consp (car lst))
-              (eq (caar lst) 'declare)
-              (plausible-dclsp1 (cdar lst)))
-         (plausible-dclsp (cdr lst)))
-        (t nil)))
-
-; The above function, plausible-dclsp, is the guard and the role model for the
-; following functions which explore plausible-dcls and either collect all the
-; "fields" used or delete certain fields.
-
 (defun dcl-fields1 (lst)
   (declare (xargs :guard (plausible-dclsp1 lst)))
   (cond ((endp lst) nil)
@@ -7035,103 +6975,6 @@
          (add-to-set-eq 'comment (dcl-fields (cdr lst))))
         (t (union-eq (dcl-fields1 (cdar lst))
                      (dcl-fields (cdr lst))))))
-
-(defun strip-keyword-list (fields lst)
-
-; Lst is a keyword-value-listp, i.e., (:key1 val1 ...).  We remove any key/val
-; pair whose key is in fields.
-
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (keyword-value-listp lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (car lst) fields)
-         (strip-keyword-list fields (cddr lst)))
-        (t (cons (car lst)
-                 (cons (cadr lst)
-                       (strip-keyword-list fields (cddr lst)))))))
-
-(defun strip-dcls1 (fields lst)
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (plausible-dclsp1 lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
-         (cond ((member-eq (caar lst) fields) (strip-dcls1 fields (cdr lst)))
-               (t (cons (car lst) (strip-dcls1 fields (cdr lst))))))
-        (t
-         (let ((temp (strip-keyword-list fields (cdar lst))))
-           (cond ((null temp) (strip-dcls1 fields (cdr lst)))
-                 (t (cons (cons 'xargs temp)
-                          (strip-dcls1 fields (cdr lst)))))))))
-
-(defun strip-dcls (fields lst)
-
-; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the union of the values of '(comment type ignore ignorable
-; irrelevant) and *xargs-keywords*.  We copy lst deleting any part of it that
-; specifies a value for one of the fields named, where 'comment denotes a
-; string.  The result satisfies plausible-dclsp.
-
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (plausible-dclsp lst))))
-  (cond ((endp lst) nil)
-        ((stringp (car lst))
-         (cond ((member-eq 'comment fields) (strip-dcls fields (cdr lst)))
-               (t (cons (car lst) (strip-dcls fields (cdr lst))))))
-        (t (let ((temp (strip-dcls1 fields (cdar lst))))
-             (cond ((null temp) (strip-dcls fields (cdr lst)))
-                   (t (cons (cons 'declare temp)
-                            (strip-dcls fields (cdr lst)))))))))
-
-(defun fetch-dcl-fields2 (field-names kwd-list acc)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (keyword-value-listp kwd-list))))
-  (cond ((endp kwd-list)
-         acc)
-        (t (let ((acc (fetch-dcl-fields2 field-names (cddr kwd-list) acc)))
-             (if (member-eq (car kwd-list) field-names)
-                 (cons (cadr kwd-list) acc)
-               acc)))))
-
-(defun fetch-dcl-fields1 (field-names lst)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (plausible-dclsp1 lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
-         (if (member-eq (caar lst) field-names)
-             (cons (cdar lst) (fetch-dcl-fields1 field-names (cdr lst)))
-           (fetch-dcl-fields1 field-names (cdr lst))))
-        (t (fetch-dcl-fields2 field-names (cdar lst)
-                             (fetch-dcl-fields1 field-names (cdr lst))))))
-
-(defun fetch-dcl-fields (field-names lst)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (plausible-dclsp lst))))
-  (cond ((endp lst) nil)
-        ((stringp (car lst))
-         (if (member-eq 'comment field-names)
-             (cons (car lst) (fetch-dcl-fields field-names (cdr lst)))
-           (fetch-dcl-fields field-names (cdr lst))))
-        (t (append (fetch-dcl-fields1 field-names (cdar lst))
-                   (fetch-dcl-fields field-names (cdr lst))))))
-
-(defun fetch-dcl-field (field-name lst)
-
-; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is either in the
-; list (comment type ignore ignorable irrelevant) or is one of the symbols in
-; the list *xargs-keywords*.  We return the list of the contents of all fields
-; with that name.  We assume we will find at most one specification per XARGS
-; entry for a given keyword.
-
-; For example, if field-name is :GUARD and there are two XARGS among the
-; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
-; (g1 g2).  Similarly, if field-name is TYPE and lst contains (DECLARE (TYPE
-; INTEGER X Y)) then our output will be (... (INTEGER X Y) ...) where the ...
-; are the other TYPE entries.
-
-  (declare (xargs :guard (and (symbolp field-name)
-                              (plausible-dclsp lst))))
-  (fetch-dcl-fields (list field-name) lst))
 
 (defun set-equalp-eq (lst1 lst2)
   (declare (xargs :guard (and (true-listp lst1)
@@ -11261,6 +11104,10 @@
 (defun install-event-defuns (names event-form def-lst0 symbol-class
                                    reclassifyingp non-executablep pair ctx wrld
                                    state)
+
+; Warning: Before changing the cltl-cmd argument of the call below of
+; install-event, see the comment in cltl-def-from-name about how the
+; cltl-command is used in cltl-def-from-name.
 
 ; See defuns-fn.
 

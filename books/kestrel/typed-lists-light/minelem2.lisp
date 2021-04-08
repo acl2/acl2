@@ -64,7 +64,6 @@
                   (if (equal i end) ;unusual case
                       (< (nth i lst) k)
                     (< (minelem (subrange (+ 1 i) end lst)) k))))
-  :otf-flg t
   :hints (("Goal" :use (:instance subrange-opener (start i))
            :in-theory (e/d (;LIST::NTH-0-BECOMES-CAR
                             subrange
@@ -85,7 +84,6 @@
                 (natp n)
                 (<= k (minelem (subrange (+ 1 n) end lst))))
            (<= k (minelem (subrange n end lst))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (subrange minelem)
                                   (;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                    ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE

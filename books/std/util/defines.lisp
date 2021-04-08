@@ -473,7 +473,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
 (defun collect-flag-mapping (gutslist)
   (if (atom gutslist)
       nil
-    (cons (cons (defguts->name-fn (car gutslist))
+    (cons (list (defguts->name-fn (car gutslist))
                 (guts->flag (car gutslist)))
           (collect-flag-mapping (cdr gutslist)))))
 
@@ -784,7 +784,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                               (gutslist-find-hints gutslist)))
        (flag-mapping      (collect-flag-mapping gutslist))
 
-       ((unless (no-duplicatesp-eq (strip-cdrs flag-mapping)))
+       ((unless (no-duplicatesp-eq (strip-cadrs flag-mapping)))
         (raise "Error: duplicated flag names!"))
 
        (returns-induct    (and flag-name
@@ -986,7 +986,7 @@ lemma for the overall mutually recursive proof, and doesn't export it.</p>
         (raise "~x0: The function name must be specified (with :fn)." ctx))
        (fnguts (defgutslist-find fn guts.gutslist))
        ((defguts fnguts))
-       (flag (cdr (assoc fnguts.name-fn guts.flag-mapping)))
+       (flag (cadr (assoc fnguts.name-fn guts.flag-mapping)))
        ((unless flag)
         (raise "~x0: Invalid function name ~x1 (no flag mapping)." ctx fn))
        (fnguts (defgutslist-find fn guts.gutslist))

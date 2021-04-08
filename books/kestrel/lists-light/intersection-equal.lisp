@@ -79,3 +79,8 @@
            (intersection-equal x y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthmd intersection-equal-when-subsetp-equal-iff
+  (implies (subsetp-equal y x)
+           (iff (intersection-equal x y)
+                (consp y))))

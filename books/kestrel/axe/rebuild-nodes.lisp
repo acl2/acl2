@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying node translations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "worklist-array")
-(include-book "dag-arrays")
 (include-book "translation-array")
 (include-book "dag-array-builders")
 (include-book "def-dag-builder-theorems")
@@ -65,20 +64,6 @@
           (not  (< (car (last x)) -1)))
   :hints (("Goal" :in-theory (enable last))))
 
-(encapsulate ()
-  (local (include-book "kestrel/lists-light/memberp" :dir :system))
-;move
-  (defcong perm iff (member-equal x y) 2
-    :hints (("Goal" :in-theory (enable member-equal perm)))))
-
-;move
-(defcong perm equal (subsetp-equal x y) 2
-  :hints (("Goal" :in-theory (enable subsetp-equal))))
-
-(defthm subsetp-equal-of-merge-sort-<
-  (equal (subsetp-equal x (merge-sort-< x))
-         (subsetp-equal x x)))
-
 ;disble?
 (defthm natp-of-car-when-nat-listp-type
   (implies (and (nat-listp x)
@@ -110,22 +95,6 @@
            (< (car items) x))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable all-<))))
-
-(defthm all-<-of-+-of-1
-  (implies (and (syntaxp (not (quotep y)))
-                (all-integerp x)
-                (integerp y))
-           (equal (all-< x (+ 1 y))
-                  (all-<= x y)))
-  :hints (("Goal" :in-theory (enable all-<= all-<))))
-
-(defthm all-<=-of-car-of-last-when-sortedp-<=-2
-  (implies (and (sortedp-<= x)
-                (subsetp-equal y x))
-           (all-<= y (car (last x))))
-  :hints (("Goal" :in-theory (enable ALL-<=
-                                     SUBSETP-EQUAL
-                                     sortedp-<=))))
 
 ;;move to rational-lists.lisp
 (defthm all-<=-of-maxelem
@@ -189,13 +158,19 @@
                             all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
                             ;;all-dargp-less-than-of-args-when-bounded-dag-exprp
                             )))))
+;dup
+(defthm all-<=-when-all-<
+  (implies (all-< x bound)
+           (all-<= x bound))
+  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 ;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing the substitution indicated by TRANSLATION-ARRAY.
 ;; Returns (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; This doesn't change any existing nodes in the dag (just builds new ones).
 ;; TODO: this could compute ground terms - but the caller would need to check for quoteps in the result
 ;; TODO: We could stop once we hit a node smaller than any node which is changed in the translation-array?  track the smallest node with a pending change.  no smaller node needs to be changed?
-(defund rebuild-nodes-aux (worklist ;should be sorted
+;; TODO: Instead of mapping unchanged nodes to themselves, could simply leave them mapped to nil?
+(defund rebuild-nodes-aux (worklist ;nodenums, should be sorted
                            translation-array ;maps each nodenum to nil (unhandled) or a nodenum (maybe the nodenum itself) [or a quotep - no, not currently]
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            worklist-array)
@@ -220,17 +195,19 @@
                   :verify-guards nil ; done below
                   ))
   (if (or (endp worklist)
+          ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
                     (mbt (all-natp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))
       (mv (erp-nil) translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let ((nodenum (first worklist)))
-      (if (aref1 'translation-array translation-array nodenum)
-          ;;This nodenum is being replaced, so we don't need to build any new
-          ;;nodes (and it is already bound in translation-array):
+      (if (aref1 'translation-array translation-array nodenum) ;todo: can we do this less often if we know we are replacing only vars?
+          ;;This nodenum is being replaced (todo: what if it's being replaced by
+          ;;itself?), so we don't need to build any new nodes (and it is
+          ;;already bound in translation-array):
           (rebuild-nodes-aux (rest worklist) translation-array
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                             ;; We mark the node as "examined" so it doesn't get added again:
+                             ;; We mark the node as "examined" so it doesn't get added again (TODO: Can we avoid this, instead doing it for initial nodes in the caller?):
                              (aset1 'worklist-array worklist-array nodenum :examined))
         (let ((expr (aref1 'dag-array dag-array nodenum)))
           (if (atom expr)
@@ -260,9 +237,7 @@
                          ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                       (if changep
                           ;; TODO: It would be nice to evaluate ground terms here,
-                          ;; but that could cause translation-array to map nodes to
-                          ;; things other than nodenums (which the callers would
-                          ;; need to handle -- e.g., if a literal maps to a quotep).
+                          ;; but that would require an evaluator or interpreted-function-alist.
                           (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (add-function-call-expr-to-dag-array (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (if erp
@@ -273,7 +248,7 @@
                                                  worklist-array)))
                         ;; No change, so the node maps to itself:
                         (rebuild-nodes-aux (rest worklist)
-                                           (aset1 'translation-array translation-array nodenum nodenum)
+                                           (aset1 'translation-array translation-array nodenum nodenum) ; can we avoid this (using the lack of a mapping for the node to mean no change)?
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            worklist-array)))
                   ;; We expand the node. This node's children have not
@@ -281,17 +256,12 @@
                   ;; they've been fully processed.
                   (let* ((unexamined-args (get-unexamined-nodenum-args (dargs expr) worklist-array nil))
                          ;; TODO: Optimze the case where unexamined-args is nil?
+                         ;; TODO: Maybe combine the sorting with get-unexamined-nodenum-args?  usually the number of nodenum args will be very small
                          (sorted-unexamined-args (merge-sort-< unexamined-args)))
-                    (rebuild-nodes-aux (append sorted-unexamined-args worklist)
+                    (rebuild-nodes-aux (append sorted-unexamined-args worklist) ; we could perhaps save this append by making the worklist a list of lists, or we could combine this append with the merge-sort-<
                                        translation-array
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        (aset1 'worklist-array worklist-array nodenum :examined))))))))))))
-
-;dup
-(defthm all-<=-when-all-<
-  (implies (all-< x bound)
-           (all-<= x bound))
-  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 (verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-< dargp-of-car-when-all-natp
                                                                                       all-<=-when-all-<)
@@ -365,9 +335,19 @@
                                            (mv-nth 3 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
   :hints (("Goal" :in-theory (e/d (rebuild-nodes-aux) (dargp)))))
 
-;; Returns (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;;;
+;;; rebuild-nodes
+;;;
+
+;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing
+;; the substitution indicated by TRANSLATION-ARRAY.
+;; Returns (mv erp translation-array dag-array dag-len dag-parent-array
+;; dag-constant-alist dag-variable-alist), where the result of rebuilding a
+;; given node can be found by looking it up in the translation-array returned.
+;; This doesn't change any existing nodes in the dag (just builds new ones).
+;; Smashes 'worklist-array.
 (defund rebuild-nodes (worklist ;should be sorted
-                       translation-array ;maps each nodenum to nil (unhandled) or a nodenum (maybe the nodenum itself) [or a quotep - no, not currently]
+                       translation-array ;maps each nodenum to nil (no replacement, unless a child is to be replaced) or a nodenum (maybe the nodenum itself?) [or a quotep - no, not currently]
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp worklist)
@@ -447,115 +427,3 @@
                                            (mv-nth 1 (rebuild-nodes worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                            (mv-nth 3 (rebuild-nodes worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable rebuild-nodes))))
-
-;; Returns (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;smashes 'translation-array (and 'tag-array ?)
-;ffixme can the literal-nodenums returned ever contain a quotep?
-;this could compute ground terms - but the caller would need to check for quoteps in the result
-;doesn't change any existing nodes in the dag (just builds new ones)
-;; TODO: Consider making a version of this for prover depth 0 which rebuilds
-;; the array from scratch (since we can change existing nodes when at depth 0).
-(defund rebuild-literals-with-substitution (literal-nodenums
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            nodenum-to-replace
-                                            new-nodenum ;fixme allow this to be a quotep?
-                                            )
-  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                              (nat-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len)
-                              (natp nodenum-to-replace)
-                              (< nodenum-to-replace dag-len)
-                              (natp new-nodenum)
-                              (< new-nodenum dag-len))
-                  :guard-hints (("Goal" :in-theory (e/d (all-integerp-when-all-natp all-rationalp-when-all-natp)
-                                                        (myquotep dargp dargp-less-than))))))
-  (b* (((when (not (consp literal-nodenums))) ;must check since we take the max below
-        (mv (erp-nil) ;or perhaps this is an error.  can it happen?
-            literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       (sorted-literal-nodenums (merge-sort-< literal-nodenums)) ;; todo: somehow avoid doing this sorting over and over?  keep the list sorted?
-       (max-literal-nodenum (car (last sorted-literal-nodenums)))
-       ((when (< max-literal-nodenum nodenum-to-replace)) ;; may only happen when substituting for a var that doesn't appear in any other literal
-        ;;No change, since nodenum-to-replace does not appear in any literal:
-        (mv (erp-nil)
-            literal-nodenums ;; the original literal-nodenums (so that the order is the same)
-            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
-       ;; ensure that nodenum-to-replace gets replaced with new-nodenum:
-       (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum))
-       ((mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (rebuild-nodes sorted-literal-nodenums ;; initial worklist
-                       translation-array
-                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       ((when erp) (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       ((mv changed-literal-nodenums
-            unchanged-literal-nodenums)
-        (translate-nodes literal-nodenums ;; could use sorted-literal-nodenums instead
-                         translation-array
-                         ;; Initialize accumulator to include all uneffected nodes
-                         nil nil)))
-    (mv (erp-nil)
-        ;; We put the changed nodes first, in the hope that we will use them to
-        ;; substitute next, creating a slightly larger term, and so on.  The
-        ;; unchanged-literal-nodenums here got reversed wrt the input, so if
-        ;; we had a bad ordering last time, we may have a good ordering this
-        ;; time:
-        (append changed-literal-nodenums unchanged-literal-nodenums)
-        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-
-(defthm len-of-mv-nth-1-of-rebuild-literals-with-substitution
-  (implies (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-           (equal (len (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-                  (len literal-nodenums)))
-  :hints (("Goal" :in-theory (enable rebuild-literals-with-substitution))))
-
-(local (in-theory (enable all-integerp-when-all-natp
-                          natp-of-+-of-1-alt))) ;for the call of def-dag-builder-theorems just below
-
-(def-dag-builder-theorems
-  (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)
-  (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-  :recursivep nil
-  :hyps ((nat-listp literal-nodenums)
-         (all-< literal-nodenums dag-len)
-         (natp nodenum-to-replace)
-         (< nodenum-to-replace dag-len)
-         (natp new-nodenum)
-         (< new-nodenum dag-len)))
-
-;gen?
-(defthm nat-listp-of-mv-nth-1-of-rebuild-literals-with-substitution
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp literal-nodenums)
-                (all-< literal-nodenums dag-len)
-                (natp nodenum-to-replace)
-                (nat-listp acc)
-                (natp new-nodenum)
-                (< new-nodenum dag-len)
-                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-                )
-           (nat-listp (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
-
-(defthm true-listp-of-mv-nth-1-of-rebuild-literals-with-substitution
-  (implies (true-listp literal-nodenums)
-           (true-listp (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
-
-(defthm all-<-of-mv-nth-1-of-rebuild-literals-with-substitution
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp literal-nodenums)
-                (all-< literal-nodenums dag-len)
-                (natp nodenum-to-replace)
-                (< nodenum-to-replace dag-len)
-                (nat-listp acc)
-                (natp new-nodenum)
-                (< new-nodenum dag-len)
-                ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum)))
-                (all-< acc dag-len)
-                )
-           (all-< (mv-nth 1 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))
-                  (mv-nth 3 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))

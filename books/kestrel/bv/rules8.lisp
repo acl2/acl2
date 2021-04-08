@@ -20,13 +20,16 @@
 (include-book "logext")
 (include-book "unsigned-byte-p-forced")
 (include-book "bv-syntax") ; for bind-var-to-unsigned-term-size
-(local (include-book "rules3")) ;for bvchop-32-split-hack
+(local (include-book "rules")) ;for logtail-of-minus
+(local (include-book "bvcat")) ;for bvchop-32-split-hack
 (local (include-book "logtail"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "arithmetic/equalities" :dir :system)) ;for reciprocal-minus
 
 ;drop or move hyps?
@@ -103,9 +106,10 @@
                       (+ (- (expt 2 size)) (- (logext size x)))
                     (- (logext size x)))))
   :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
-                                  (anti-slice
-                                   bvchop-1-becomes-getbit slice-becomes-getbit bvplus-recollapse
-                                              bvchop-of-logtail)))))
+                                  (;anti-slice
+                                   bvchop-1-becomes-getbit slice-becomes-getbit
+                                                           ;bvplus-recollapse
+                                                           bvchop-of-logtail)))))
 
 ;i think we may need this to split into cases - but maybe delay that?
 (defthm bvuminus-when-smaller-bind-free

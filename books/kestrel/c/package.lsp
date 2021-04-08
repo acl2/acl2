@@ -19,7 +19,9 @@
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
                                   error
+                                  pi
                                   pprint-indent
+                                  schar
                                   type
                                   typep
                                   value))
@@ -55,5 +57,6 @@
                pseudo-event-form-listp
                pseudo-event-formp
                run-when
+               symbol-symbol-alistp
                tuple
                std::defret-mutual)))

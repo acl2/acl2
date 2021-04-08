@@ -124,7 +124,7 @@ vl-pgenstr->val).</p>"
     (and (< (+ 1 plen) slen)
          (str::strprefixp prefix str)
          (eql (char str plen) #\_)
-         (str::digit-string-p-aux str (+ 1 plen) slen)))
+         (str::dec-digit-string-p-aux str (+ 1 plen) slen)))
 
   ///
 

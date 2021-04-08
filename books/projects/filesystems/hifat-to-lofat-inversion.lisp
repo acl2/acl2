@@ -3594,7 +3594,8 @@
    (fat-length fat32$c))
   :hints (("goal" :in-theory (e/d (nth)
                                   ((:rewrite nfix-when-natp)
-                                   (:rewrite length-when-stringp))))))
+                                   (:rewrite length-when-stringp)
+                                   integer-listp-when-nat-listp)))))
 
 (local
  (defthm
@@ -7716,7 +7717,7 @@
     :hints
     (("goal"
       :in-theory
-      (e/d (painful-debugging-lemma-14) (lofat-fs-p-correctness-1))
+      (e/d (painful-debugging-lemma-8) (lofat-fs-p-correctness-1))
       :use
       (lofat-fs-p-correctness-1
        (:instance
@@ -8009,7 +8010,7 @@
   :hints
   (("goal"
     :in-theory (enable len-of-make-clusters hifat-cluster-count
-                       painful-debugging-lemma-14))))
+                       painful-debugging-lemma-8))))
 
 (defthm
   hifat-to-lofat-helper-correctness-5-lemma-1

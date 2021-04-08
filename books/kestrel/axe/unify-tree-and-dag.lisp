@@ -82,7 +82,7 @@
                      (unify-trees-with-dag-nodes (fargs tree) (dargs expr) dag-array alist-acc)
                    (mv nil nil))))))
        ;;tree must be a nodenum:
-       (mv (equal tree nodenum-or-quotep) ; TODO: Use eql or = here?
+       (mv (eql tree nodenum-or-quotep)
            alist-acc))))
 
  ;; rename unify-trees-with-dag-nodes

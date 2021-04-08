@@ -923,7 +923,6 @@
                 )
            (equal (car (nth n (dargs (aref1 dag-array-name dag-array nodenum))))
                   'quote))
-  :otf-flg t
   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
                                                   ;;LIST::LEN-OF-CDR-BETTER

@@ -1,7 +1,7 @@
-; Worklist for processing DAGs
+; Support for worklist algorithms on DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,15 +12,13 @@
 
 (in-package "ACL2")
 
-;; TODO: Compare to worklists.lisp
+;; The worklist-array maps nodenums to :examined or nil (meaning unexamined).
 
 ;; TODO: Consider just using t and nil as the elements in this array.
 
 ;; TODO: Rename this to the examined-array?
 
 ;; See size-array-for-nodes-aux in dag-size2.lisp for an example of how to use the worklist-array.
-
-;; The worklist array maps nodenums to either :examined, or nil.
 
 (include-book "merge-sort-less-than")
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
@@ -69,6 +67,12 @@
                     (+ 1 (num-examined-nodes n array-name array)))))
   :hints (("Goal" :expand ((num-examined-nodes 0 array-name (aset1 array-name array 0 :examined))))))
 
+;;;
+;;; get-unexamined-nodenum-args
+;;;
+
+;; Filter the ARGS, keeping only the ones that are nodenums not mapped to
+;; :examined in the WORKLIST-ARRAY.  The result comes in reverse order.
 (defund get-unexamined-nodenum-args (args worklist-array acc)
   (declare (xargs :guard (and (array1p 'worklist-array worklist-array)
                               (true-listp args)

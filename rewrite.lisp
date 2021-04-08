@@ -8224,17 +8224,6 @@
 ; Start support for find-rules-of-rune, in support of
 ; backchain-limit-enforcers.
 
-(defun scan-to-event (wrld)
-
-; We roll back wrld to the first (list order traversal) event landmark
-; on it.
-
-  (cond ((null wrld) wrld)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         wrld)
-        (t (scan-to-event (cdr wrld)))))
-
 (defun decode-logical-name (name wrld)
 
 ; Given a logical name, i.e., a symbol with an 'absolute-event-number property

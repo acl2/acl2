@@ -2320,7 +2320,6 @@
                             (:rewrite abs-addrs-when-m1-file-alist-p)
                             (:linear position-when-member)
                             (:linear position-equal-ac-when-member)
-                            (:rewrite list-equiv-when-true-listp)
                             (:rewrite ctx-app-ok-when-not-natp)
                             (:type-prescription assoc-equal-when-frame-p)
                             (:definition assoc-equal)
@@ -2416,7 +2415,7 @@
       nil))
     :hints
     (("goal"
-      :in-theory (e/d (take-of-nthcdr))
+      :in-theory (e/d (take-of-nthcdr list-equiv))
       :use
       (:instance
        (:rewrite ctx-app-list-when-set-equiv-lemma-2)
@@ -2578,8 +2577,8 @@
                (frame-val->path (cdr (assoc-equal (car l)
                                                   (frame->frame frame))))))))
     :hints
-    (("goal"
-      :in-theory (e/d (take-of-nthcdr)
+    (("goal" :do-not-induct t
+      :in-theory (e/d (take-of-nthcdr list-equiv)
                       ())
       :use
       (:instance
@@ -2938,7 +2937,6 @@
                             (:definition member-equal)
                             (:linear position-when-member)
                             (:linear position-equal-ac-when-member)
-                            (:rewrite list-equiv-when-true-listp)
                             (:rewrite ctx-app-ok-when-not-natp)
                             (:definition assoc-equal)
                             (:rewrite abs-file-alist-p-correctness-1)
@@ -3283,35 +3281,8 @@
   :hints (("goal" :in-theory (disable valid-seqp-after-collapse-this-lemma-5)
            :use valid-seqp-after-collapse-this-lemma-5)))
 
-(local
- (defthm
-   valid-seqp-after-collapse-this-lemma-7
-   (implies
-    (equal (nth (+ -1 n)
-                (seq-this (collapse-this frame x)))
-           (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
-    (not
-     (member-equal
-      (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame))))
-      (frame-addrs-before-seq
-       frame
-       (frame-val->src$inline
-        (cdr
-         (assoc-equal
-          (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame))))
-          (frame->frame frame))))
-       (take (binary-+ -1 n)
-             (seq-this (collapse-this frame x)))))))
-   :hints
-   (("goal"
-     :in-theory (disable (:rewrite member-equal-nth-take-when-no-duplicatesp))
-     :use (:instance (:rewrite member-equal-nth-take-when-no-duplicatesp)
-                     (l (seq-this (collapse-this frame x)))
-                     (n (+ -1 n))
-                     (x (nth (+ -1 n) (seq-this (collapse-this frame x)))))))))
-
 (defthm
-  valid-seqp-after-collapse-this-lemma-8
+  valid-seqp-after-collapse-this-lemma-7
   (implies (not (member-equal x seq))
            (and
             (equal (frame-val->path
@@ -5157,7 +5128,7 @@
        :in-theory (e/d (member-of-take)
                        ((:rewrite binary-append-take-nthcdr)
                         (:rewrite subsetp-append1)
-                        valid-seqp-after-collapse-this-lemma-8))
+                        valid-seqp-after-collapse-this-lemma-7))
        :use
        ((:instance
          (:rewrite binary-append-take-nthcdr)
@@ -5246,10 +5217,12 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (set-equiv member-of-take)
-                    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20))
+                    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
+                     subsetp-when-subsetp))
     :use
-    ((:instance 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
-                (n (position-equal x seq)))
+    ((:instance
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
+      (n (position-equal x seq)))
      (:instance
       1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-20
       (n (len (frame-addrs-before frame
@@ -6067,37 +6040,39 @@
      (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
      (frame-addrs-before frame x (collapse-1st-index frame x)))
     nil))
-  :instructions
-  (:promote
-   (:claim
-    (equal
-     nil
-     (abs-addrs
-      (mv-nth
-       0
-       (ctx-app-list
-        (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-        frame
-        (frame-addrs-before frame
-                            x (collapse-1st-index frame x))))))
-    :hints (("goal" :do-not-induct t
-             :in-theory (e/d nil
-                             (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24))
-             :use 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)))
-   :bash))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :cases
+    ((not
+      (equal
+       nil
+       (abs-addrs
+        (mv-nth
+         0
+         (ctx-app-list
+          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
+          (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
+          frame
+          (frame-addrs-before frame
+                              x (collapse-1st-index frame x)))))))))
+   ("subgoal 1"
+    :in-theory
+    (disable
+     1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)
+    :use
+    1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-24)))
 
 ;; This could be kinda important, although for now we're keeping it disabled to
 ;; avoid weird stuff coming in from nowhere.
 (defthmd
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-39
   (implies
-   (and
-    (abs-separate (frame->frame frame))
-    (frame-p (frame->frame frame))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame))))
+   (and (abs-separate (frame->frame frame))
+        (frame-p (frame->frame frame))
+        (mv-nth 1 (collapse frame))
+        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+        (consp (assoc-equal x (frame->frame frame))))
    (set-equiv
     (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (frame-addrs-before frame x (collapse-1st-index frame x))))
@@ -6106,8 +6081,11 @@
     :do-not-induct t
     :in-theory
     (e/d
-     (set-equiv 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-4)
-     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38 (:rewrite abs-addrs-of-ctx-app-list)))
+     (set-equiv
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-4)
+     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38
+      (:rewrite abs-addrs-of-ctx-app-list)
+      subsetp-when-subsetp))
     :use
     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-38
      (:instance
@@ -6122,6 +6100,7 @@
       (fs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
       (l (frame-addrs-before frame
                              x (collapse-1st-index frame x))))))))
+
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-40
@@ -6316,7 +6295,8 @@
        (:rewrite len-when-prefixp)
        (:rewrite nthcdr-when->=-n-len-l)
        (:rewrite abs-addrs-when-m1-file-alist-p)
-       (:definition remove-equal)))))))
+       (:definition remove-equal)
+       (:rewrite subsetp-when-subsetp)))))))
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-46
@@ -7005,8 +6985,8 @@
    :hints
    (("goal"
      :do-not-induct t
-     :in-theory (disable (:rewrite valid-seqp-after-collapse-this-lemma-8))
-     :use (:instance (:rewrite valid-seqp-after-collapse-this-lemma-8)
+     :in-theory (disable (:rewrite valid-seqp-after-collapse-this-lemma-7))
+     :use (:instance (:rewrite valid-seqp-after-collapse-this-lemma-7)
                      (seq (seq-this (collapse-this frame x)))
                      (frame (collapse-this frame x))
                      (x (nth (+ -1 n) (seq-this frame))))))))
@@ -7072,22 +7052,26 @@
  (defthm
    1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-67
    (implies
-    (and
-     (abs-separate frame)
-     (frame-p frame)
-     (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-     (mv-nth 1 (collapse frame))
-     (consp (assoc-equal x (frame->frame frame)))
-     (abs-complete
-      (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
+    (and (abs-separate frame)
+         (frame-p frame)
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+         (mv-nth 1 (collapse frame))
+         (consp (assoc-equal x (frame->frame frame)))
+         (abs-complete
+          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
     (set-equiv (cons x (seq-this (collapse-this frame x)))
                (strip-cars (frame->frame frame))))
-   :hints (("goal" :do-not-induct t
-            :in-theory (e/d (set-equiv subsetp-equal)
-                            (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66))
-            :use (:instance 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
-                            (n (len (seq-this frame))))))))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (e/d (set-equiv subsetp-equal)
+                     (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
+                      subsetp-when-subsetp))
+     :use
+     (:instance
+      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-66
+      (n (len (seq-this frame))))))))
 
 (local
  (defthm
@@ -8208,7 +8192,6 @@
           (:rewrite len-when-prefixp)
           (:rewrite m1-file-contents-p-correctness-1)
           nthcdr-when->=-n-len-l
-          list-equiv-when-true-listp
           abs-separate-of-frame->frame-of-collapse-this-lemma-8
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-15)
           (:rewrite different-from-own-src-1)))

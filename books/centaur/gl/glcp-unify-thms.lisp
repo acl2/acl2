@@ -230,8 +230,8 @@
                             glcp-unify-term/gobj-list)))
 
   (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj
-                   :flag-mapping ((glcp-unify-term/gobj . term)
-                                  (glcp-unify-term/gobj-list . list)))
+                   :flag-mapping ((glcp-unify-term/gobj term)
+                                  (glcp-unify-term/gobj-list list)))
 
   (local (in-theory (disable glcp-unify-term/gobj
                              glcp-unify-term/gobj-list)))

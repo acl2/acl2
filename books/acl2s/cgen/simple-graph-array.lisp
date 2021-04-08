@@ -422,9 +422,6 @@ post times."
         (strongly-connected-components alst debug-flag)))
     fin-vs))
 
-
-
-
 #|
 
 ;example:

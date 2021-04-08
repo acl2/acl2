@@ -30,11 +30,15 @@
 
 (include-book "items-have-len")
 
+(include-book "bit-listp")
+(include-book "bit-listp-rules")
+
 (include-book "maxelem")
 (include-book "maxelem2")
 (include-book "minelem")
 (include-book "minelem2")
 
 (include-book "all-less")
+(include-book "all-less-rules")
 
 (include-book "doc")

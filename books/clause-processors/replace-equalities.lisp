@@ -101,8 +101,8 @@
   (local (in-theory (enable subst-subterms subst-subterms-list)))
 
   (flag::make-flag subst-subterms-flag subst-subterms
-                   :flag-mapping ((subst-subterms . term)
-                                  (subst-subterms-list . list)))
+                   :flag-mapping ((subst-subterms term)
+                                  (subst-subterms-list list)))
 
   (defthm len-subst-subterms-list
     (equal (len (subst-subterms-list x alist))

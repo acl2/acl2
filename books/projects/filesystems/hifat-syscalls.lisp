@@ -250,6 +250,9 @@
                        (natp (mv-nth 3
                                      (hifat-open path fd-table file-table))))))
 
+(defcong fat32-filename-list-equiv equal (hifat-open path fd-table file-table) 1
+  :hints (("Goal" :do-not-induct t :in-theory (enable hifat-open))))
+
 ;; Per the man page pread(2), this should not change the offset of the file
 ;; descriptor in the file table. Thus, there's no need for the file table to be
 ;; an argument.

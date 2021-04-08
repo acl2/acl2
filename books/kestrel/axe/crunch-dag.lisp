@@ -1,7 +1,7 @@
 ; Crunching a DAG (i.e., dropping irrelevant nodes from a dag-array in place)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,22 @@
 
 (include-book "supporting-nodes") ;reduce? but we need tag-supporters-of-nodes
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+(local
+ (defthm all-<-of-+-of-1-and-maxelem-alt
+   (implies (and (all-natp nodenums)
+                 (consp nodenums))
+            (all-< nodenums (+ 1 (maxelem nodenums))))
+   :hints (("Goal" :in-theory (enable all-natp)))))
+
+(local
+ (defthm not-<-of-+-of-1-and-maxelem-when-all-<
+   (implies (and (all-< nodenums dag-len)
+                 (all-natp nodenums)
+                 (consp nodenums)
+                 (integerp dag-len))
+            (not (< dag-len (+ 1 (maxelem nodenums)))))
+   :hints (("Goal" :in-theory (enable all-natp)))))
 
 ;; TODO: The resulting array may still have irrelevant nodes above the new
 ;; dag-len, which might slow things down.
@@ -102,22 +118,6 @@
                                       dag-len
                                       tag-array
                                       (aset1 'translation-array translation-array nodenum next-open-spot))))))))))
-
-(local
- (defthm all-<-of-+-of-1-and-maxelem-alt
-   (implies (and (all-natp nodenums)
-                 (consp nodenums))
-            (all-< nodenums (+ 1 (maxelem nodenums))))
-   :hints (("Goal" :in-theory (enable all-natp)))))
-
-(local
- (defthm not-<-of-+-of-1-and-maxelem-when-all-<
-   (implies (and (all-< nodenums dag-len)
-                 (all-natp nodenums)
-                 (consp nodenums)
-                 (integerp dag-len))
-            (not (< dag-len (+ 1 (maxelem nodenums)))))
-   :hints (("Goal" :in-theory (enable all-natp)))))
 
 ;; Remove nodes that do not support NODENUMS and renumber the remaining nodes.
 ;; Returns (mv dag-len dag-array translation-array).

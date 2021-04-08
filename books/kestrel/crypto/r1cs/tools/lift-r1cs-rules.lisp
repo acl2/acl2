@@ -21,25 +21,6 @@
 ;(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
-;dup
-;rename
-(defthm bvcat-upper-bound-linear
-  (implies (and (natp lowsize)
-                (natp highsize))
-           (< (acl2::bvcat highsize highval lowsize lowval) (expt 2 (+ highsize lowsize))))
-  :rule-classes (:linear :rewrite)
-  :hints (("Goal" :use (:instance ACL2::UNSIGNED-BYTE-P-OF-BVCAT
-                                  (highsize highsize)
-                                  (lowsize lowsize)
-                                  (highval highval)
-                                  (lowval lowval)
-                                  (n (+ highsize lowsize)))
-           :in-theory (disable ACL2::UNSIGNED-BYTE-P-OF-BVCAT ;todo: get rid of some of these
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-GEN
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-GEN2
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES
-                               ACL2::UNSIGNED-BYTE-P-OF-BVCAT2))))
-
 ;; Turn large constants into more readable negative constants
 (defthm mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)
@@ -452,9 +433,6 @@
 (defthmd bitp-of-0
   (bitp 0))
 
-;move
-(acl2::add-known-boolean bitp)
-
 ;improve the other
 (defthm pfield::mul-of--1-becomes-neg-gen
   (implies (and ;(integerp pfield::x)
@@ -763,38 +741,11 @@
 
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
-(defthm floor-of-expt-2
-  (implies (integerp n)
-           (equal (floor (expt 2 n) 2)
-                  (if (posp n)
-                      (expt 2 (+ -1 n))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (expt) (ACL2::EXPT-HACK)))))
-
-(defun sub1-induct (n)
-  (if (zp n)
-      n
-    (sub1-induct (+ -1 n))))
-
-(defthm acl2::integer-length-of-*-of-expt2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (integer-length (* x (expt 2 n)))
-                  (if (equal 0 x)
-                      0
-                    (+ n (integer-length x)))))
-  :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
-           :induct (sub1-induct n)
-           :in-theory (e/d (integer-length expt)
-                           (acl2::expt-hack
-                            ;ACL2::INTEGER-LENGTH-OF-FLOOR-BY-2
-                            ;;ACL2::EXPT-COLLECT-HACK
-                            )))))
-
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
-(defthm power-of-2p-when-equal-of-expt
-  (implies (and (equal x (expt 2 n))
+;drop? or is this needed for axe?
+(defthmd power-of-2p-when-equal-of-expt
+  (implies (and (equal x (expt 2 n)) ; n is a free var
                 (natp n))
            (acl2::power-of-2p x))
   :hints (("Goal" :in-theory (enable acl2::power-of-2p))))

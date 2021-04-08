@@ -92,7 +92,6 @@
                 (posp size))
            (equal (sbvdivdown size x y)
                   (sbvdiv size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvdiv
                                    sbvdivdown
                                    LOGEXT-NEGATIVE
@@ -128,7 +127,6 @@
                 (posp size))
            (equal (sbvdivdown size x y)
                   (bvplus size -1 (sbvdiv size x y))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvdiv
                                    sbvdivdown
                                    LOGEXT-NEGATIVE
@@ -182,7 +180,6 @@
                             (sbvdiv size x y)
                           ;;sbvdiv rounded up, and we want to round down, so subtract 1
                           (bvplus size -1 (sbvdiv size x y))))))))
-  :otf-flg t
   :hints (("Goal" :cases ((and (SBVLT SIZE X '0) (SBVLT SIZE Y 0))
                           (and (not (SBVLT SIZE X '0)) (SBVLT SIZE Y 0)))
            :in-theory (e/d (sbvlt

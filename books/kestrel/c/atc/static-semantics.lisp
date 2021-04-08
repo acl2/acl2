@@ -13,12 +13,12 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
+(include-book "integers")
 (include-book "types")
 (include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/defunit" :dir :system)
-(include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,15 +123,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult var-table "variable tables")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-var-table ()
-  :returns (vartab var-tablep)
-  :short "An irrelevant variable table, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (var-table-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-var-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,29 +314,57 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we require the integer constant
-     to be decimal (not octal or hexadecimal),
-     to be signed,
-     and to have no type suffixes.
-     This means that the integer constant must have type @('int'),
-     and therefore that its numberic value must be in that type's range.
-     Given our current definition of @(tsee sintp),
-     the value must fit in 32 bits (with the sign bit being 0).")
+    "This is according to [C:6.4.4.1/5]:
+     based on the suffixes and the base,
+     we find the first type that suffices to represent the value,
+     in the lists indicated in the table,
+     and we return that type.
+     If the value is too large, the integer constant is illegal.")
    (xdoc::p
-    "If all the constraints are satisfied, we return the type of the constant.
-     This is always @('int') for now,
-     but eventually this will be generalized."))
+    "This is the static counterpart of @(tsee exec-iconst)."))
   (b* ((ic (iconst-fix ic))
-       ((iconst ic) ic)
-       ((unless (acl2::sbyte32p ic.value))
-        (error (list :iconst-out-of-range ic)))
-       ((unless (equal ic.base (iconst-base-dec)))
-        (error (list :unsupported-iconst-base ic)))
-       ((unless (not ic.unsignedp))
-        (error (list :unsupported-iconst-suffix ic)))
-       ((unless (equal ic.type (iconst-tysuffix-none)))
-        (error (list :unsupported-iconst-suffix ic))))
-    (type-sint))
+       ((iconst ic) ic))
+    (if ic.unsignedp
+        (iconst-tysuffix-case
+         ic.type
+         :none (cond ((uint-integerp ic.value) (type-uint))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :long (cond ((ulong-integerp ic.value) (type-ulong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic))))
+         :llong (cond ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic)))))
+      (iconst-tysuffix-case
+       ic.type
+       :none (if (iconst-base-case ic.base :dec)
+                 (cond ((sint-integerp ic.value) (type-sint))
+                       ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((sint-integerp ic.value) (type-sint))
+                     ((uint-integerp ic.value) (type-uint))
+                     ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :long (if (iconst-base-case ic.base :dec)
+                 (cond ((slong-integerp ic.value) (type-slong))
+                       ((sllong-integerp ic.value) (type-sllong))
+                       (t (error (list :iconst-out-of-range ic))))
+               (cond ((slong-integerp ic.value) (type-slong))
+                     ((ulong-integerp ic.value) (type-ulong))
+                     ((sllong-integerp ic.value) (type-sllong))
+                     ((ullong-integerp ic.value) (type-ullong))
+                     (t (error (list :iconst-out-of-range ic)))))
+       :llong (if (iconst-base-case ic.base :dec)
+                  (cond ((sllong-integerp ic.value) (type-sllong))
+                        (t (error (list :iconst-out-of-range ic))))
+                (cond ((sllong-integerp ic.value) (type-sllong))
+                      ((ullong-integerp ic.value) (type-ullong))
+                      (t (error (list :iconst-out-of-range ic))))))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -368,6 +387,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define promote-type ((type typep))
+  :returns (promoted-type typep)
+  :short "Apply the integer promotions to a type [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the static counterpart of
+     the integer promotions that are applied to values:
+     statically, they are applied to types.")
+   (xdoc::p
+    "These only modify the character types
+     and the unsigned and signed @('short int') types;
+     all the other types are unchanged.
+     Both @('signed char') and @('short') are promoted to @('int'),
+     because these signed types are always in the obvious inclusion relation.
+     Since @('unsigned char') and @('char') both take one byte,
+     their values are all representable as @('int'),
+     and therefore they get promoted to @('int').
+     For @('unsigned short'), there are two cases:
+     either its values are all contained in @('int'),
+     in which case it is converted to @('int'),
+     or they are not, in which case they are contained in @('unsigned int'),
+     and the type is promoted to @('unsigned int')."))
+  (case (type-kind type)
+    ((:char :schar :uchar :sshort) (type-sint))
+    (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
+    (t (type-fix type)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-unary ((op unopp) (arg-expr exprp) (arg-type typep))
   :returns (type type-resultp)
   :short "Check the application of a unary operator to an expression."
@@ -378,15 +428,150 @@
      @('arg-expr') is used just for errors.
      We return the type of the unary expression.")
    (xdoc::p
-    "For now we require the argument to be an @('int').
-     The result is therefore an @('int').
-     This will be extended in the future."))
-  (if (type-equiv arg-type (type-sint))
-      (type-sint)
-    (error (list ::unary-mistype (unop-fix op) (expr-fix arg-expr)
-                 :required (type-sint)
-                 :supplied (type-fix arg-type))))
+    "For unary plus and minus,
+     the operand must be arithmetic,
+     and the result has the promoted type.")
+   (xdoc::p
+    "For bitwise negation,
+     the operand must be integer,
+     and the result has the promoted type.")
+   (xdoc::p
+    "For logical negation,
+     the operand must be scalar
+     and the result is @('int') -- 0 or 1."))
+  (case (unop-kind op)
+    ((:plus :minus) (if (type-arithmeticp arg-type)
+                        (promote-type arg-type)
+                      (error (list :unary-mistype
+                               (unop-fix op) (expr-fix arg-expr)
+                               :required :arithmetic
+                               :supplied (type-fix arg-type)))))
+    (:bitnot (if (type-integerp arg-type)
+                 (promote-type arg-type)
+               (error (list :unary-mistype
+                        (unop-fix op) (expr-fix arg-expr)
+                        :required :integer
+                        :supplied (type-fix arg-type)))))
+    (:lognot (if (type-scalarp arg-type)
+                 (type-sint)
+               (error (list :unary-mistype
+                        (unop-fix op) (expr-fix arg-expr)
+                        :required :scalar
+                        :supplied (type-fix arg-type)))))
+    (t (error (impossible))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uaconvert-types ((type1 typep) (type2 typep))
+  :guard (and (type-arithmeticp type1)
+              (type-arithmeticp type2))
+  :returns (type type-resultp)
+  :short "Apply the usual arithmetic conversions to two arithmetic types
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These determine a common type from the two types,
+     which is also the type of the result of
+     a binary operator applied to operands of the two types."))
+  (b* ((type1 (promote-type type1))
+       (type2 (promote-type type2)))
+    (case (type-kind type1)
+      (:sllong (case (type-kind type2)
+                 (:sllong (type-sllong))
+                 (:slong (type-sllong))
+                 (:sint (type-sllong))
+                 (:ullong (type-ullong))
+                 (:ulong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                 (:uint (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+                 (t (error (impossible)))))
+      (:slong (case (type-kind type2)
+                (:sllong (type-sllong))
+                (:slong (type-slong))
+                (:sint (type-slong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+                (t (error (impossible)))))
+      (:sint (case (type-kind type2)
+               (:sllong (type-sllong))
+               (:slong (type-slong))
+               (:sint (type-sint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (error (impossible)))))
+      (:ullong (case (type-kind type2)
+                 (:sllong (type-ullong))
+                 (:slong (type-ullong))
+                 (:sint (type-ullong))
+                 (:ullong (type-ullong))
+                 (:ulong (type-ullong))
+                 (:uint (type-ullong))
+                 (t (error (impossible)))))
+      (:ulong (case (type-kind type2)
+                (:sllong (if (>= (sllong-max) (ulong-max))
+                             (type-sllong)
+                           (type-ullong)))
+                (:slong (type-ulong))
+                (:sint (type-ulong))
+                (:ullong (type-ullong))
+                (:ulong (type-ulong))
+                (:uint (type-ulong))
+                (t (error (impossible)))))
+      (:uint (case (type-kind type2)
+               (:sllong (if (>= (sllong-max) (uint-max))
+                            (type-sllong)
+                          (type-ullong)))
+               (:slong (if (>= (slong-max) (uint-max))
+                           (type-slong)
+                         (type-ulong)))
+               (:sint (type-uint))
+               (:ullong (type-ullong))
+               (:ulong (type-ulong))
+               (:uint (type-uint))
+               (t (error (impossible)))))
+      (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp
+                                           type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp
+                                           promote-type)))
+  :hooks (:fix)
+  ///
+
+  (defruled uaconvert-types-when-same
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2)
+                  (type-equiv type1 type2))
+             (equal (uaconvert-types type1 type2)
+                    (promote-type type1)))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type))
+
+  (defruled uaconvert-types-symmetry
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (uaconvert-types type1 type2)
+                    (uaconvert-types type2 type1)))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-signed-integerp
+             type-unsigned-integerp
+             promote-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,17 +588,89 @@
      @('arg1-expr') and @('arg2-expr') are used just for errors.
      We return the type of the binary expression.")
    (xdoc::p
-    "For now we require the arguments to be @('int')s.
-     The result is therefore an @('int').
-     This will be extended in the future."))
-  (if (and (type-equiv arg1-type (type-sint))
-           (type-equiv arg2-type (type-sint)))
-      (type-sint)
-    (error (list
-            :binary-mistype
-            (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-            :required (type-sint) (type-sint)
-            :supplied (type-fix arg1-type) (type-fix arg2-type))))
+    "For multiplication, division, and reminder,
+     the operands must be arithmetic,
+     and the result has the type of the usual arithmetic conversions.")
+   (xdoc::p
+    "For addition and subtraction,
+     for now we require the operands to be arithmetic,
+     and the result has the type of the usual arithmetic conversions.
+     We do not yet support arithmetic involving pointers.")
+   (xdoc::p
+    "For left and right shifts,
+     the operands must be integers,
+     and the result has the type of the promoted first operand.")
+   (xdoc::p
+    "For the relational operators,
+     for now we require the operands to be real,
+     and the result has type @('int').
+     We do not yet support comparisons between pointers.")
+   (xdoc::p
+    "For the equality operators,
+     for now we require the operands to be arithmetic,
+     and the result has type @('int').
+     We do not yet support equalities between pointers.")
+   (xdoc::p
+    "For the bitwise logical operators,
+     the operands must be integers,
+     and the result has the type of the usual arithmetic conversions.")
+   (xdoc::p
+    "For the conditional logical operators,
+     the operands must be scalar,
+     and the result is @('int')."))
+  (case (binop-kind op)
+    ((:mul :div :rem :add :sub)
+     (if (and (type-arithmeticp arg1-type)
+              (type-arithmeticp arg2-type))
+         (uaconvert-types arg1-type arg2-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :arithmetic :arithmetic
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:shl :shr)
+     (if (and (type-integerp arg1-type)
+              (type-integerp arg2-type))
+         (promote-type arg1-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:lt :gt :le :ge)
+     (if (and (type-realp arg1-type)
+              (type-realp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :real :real
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:eq :ne)
+     (if (and (type-arithmeticp arg1-type)
+              (type-arithmeticp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :arithmetic :arithmetic
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:bitand :bitxor :bitior)
+     (if (and (type-integerp arg1-type)
+              (type-integerp arg2-type))
+         (uaconvert-types arg1-type arg2-type)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    ((:logand :logor)
+     (if (and (type-scalarp arg1-type)
+              (type-scalarp arg2-type))
+         (type-sint)
+       (error (list :binary-mistype
+                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                :required :integer :integer
+                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+    (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp
+                                           binop-purep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,15 +685,14 @@
     "We check @('arr-type') and @('sub-type');
      @('arr-expr') and @('sub-expr') are just used for errors.
      The first expression must have a pointer type [C:6.5.2.1/1].
-     The second expression must have an integer type [C:6.5.2.1/1];
-     for now we more restrictively require it to be @('int').
+     The second expression must have an integer type [C:6.5.2.1/1].
      The type of the array subscripting expression
      is the type referenced by the pointer."))
   (b* (((unless (type-case arr-type :pointer))
         (error (list :array-mistype (expr-fix arr-expr)
                      :required :pointer
                      :supplied (type-fix arr-type))))
-       ((unless (type-case sub-type :sint))
+       ((unless (type-integerp sub-type))
         (error (list :subscript-mistype (expr-fix sub-expr)
                      :required (type-sint)
                      :supplied (type-fix sub-type)))))
@@ -457,17 +713,15 @@
     "An identifier must be in the variable table.
      Its type is looked up there.")
    (xdoc::p
-    "A cast is allowed between any of the C types
-     that we currently model in the abstract syntax,
-     which are all scalar.
+    "A cast is allowed between scalar types.
      The result has the type indicated in the cast.
-     See [C:6.5.4].")
+     See [C:6.5.4]; note that the additional requirements on the type
+     do not apply to our currently simplified model of C types.")
    (xdoc::p
-    "Since all the C types that we currently model are scalar,
-     we allow any type as the test of a conditional expression.
-     We require the two branches to have the same type for now,
-     which is more restrictive than [C:6.5.15/3],
-     but adequate to our current purposes."))
+    "The test of a conditional expression must be scalar.
+     For now we require the two branches to have arithmetic types;
+     the result has the type resulting from the usual arithmetic conversions.
+     See [C:6.5.15/3]."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -493,8 +747,17 @@
               (check-unary e.op e.arg arg-type))
      :cast (b* ((arg-type (check-expr-pure e.arg vartab))
                 ((when (errorp arg-type))
-                 (error (list :cast-error arg-type))))
-             (type-name-to-type e.type))
+                 (error (list :cast-error arg-type)))
+                ((unless (type-scalarp arg-type))
+                 (error (list :cast-mistype-operand e
+                              :required :scalar
+                              :supplied arg-type)))
+                (type (type-name-to-type e.type))
+                ((unless (type-scalarp type))
+                 (error (list :cast-mistype-type e
+                              :required :scalar
+                              :supplied type))))
+             type)
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
                   (arg1-type (check-expr-pure e.arg1 vartab))
@@ -507,17 +770,25 @@
      :cond (b* ((test-type (check-expr-pure e.test vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
+                ((unless (type-scalarp test-type))
+                 (error (list :cond-mistype-test e.test e.then e.else
+                              :required :scalar
+                              :supplied test-type)))
                 (then-type (check-expr-pure e.then vartab))
                 ((when (errorp then-type))
                  (error (list :cond-then-error then-type)))
+                ((unless (type-arithmeticp then-type))
+                 (error (list :cond-mistype-then e.test e.then e.else
+                              :required :arithmetic
+                              :supplied then-type)))
                 (else-type (check-expr-pure e.else vartab))
                 ((when (errorp else-type))
                  (error (list :cond-else-error else-type)))
-                ((unless (equal then-type else-type))
-                 (error (list :cond-mistype e.test e.then e.else
-                              :required :same-then-else-types
-                              :supplied then-type else-type))))
-             then-type)))
+                ((unless (type-arithmeticp else-type))
+                 (error (list :cond-mistype-else e.test e.then e.else
+                              :required :arithmetic
+                              :supplied else-type))))
+             (uaconvert-types then-type else-type))))
   :measure (expr-count e)
   :verify-guards :after-returns
   :hooks (:fix))
@@ -525,7 +796,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
-  :returns (types type-list-resultp)
+  :returns (types type-list-resultp
+                  :hints (("Goal"
+                           :in-theory
+                           (enable
+                            typep-when-type-resultp-and-not-errorp
+                            type-listp-when-type-list-resultp-and-not-errorp))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -554,7 +830,9 @@
      we check the argument expressions,
      which must be pure (because we restrict them to be so).
      We retrieve the function type from the function table
-     and we compare the input types with the argument types.
+     and we compare the input types with the argument types;
+     this is more restrictive than allowed in [C],
+     but it is adequate for now.
      We return the output type.")
    (xdoc::p
     "If the expression is not a function call,
@@ -640,7 +918,9 @@
       but instead transfer control to the next statement (if any).
       It may be appropriate to use the C type @('void') instead of @('nil')
       to describe this situation,
-      but for now our model of @(see types) does not include @('void').")
+      but for now our model of "
+     (xdoc::seetopic "atc-types" "types")
+     " does not include @('void').")
     (xdoc::li
      "A possibly updated variable table.
       This is updated by block items that are declarations.
@@ -660,6 +940,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult stmt-type "statement types")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-stmt-typep-of-error
+  (not (stmt-typep (error x)))
+  :enable (error stmt-typep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -691,7 +977,7 @@
      we return the original variable table.")
    (xdoc::p
     "For a conditional statement with both branches,
-     after ensuring that the test expression has type @('int'),
+     after ensuring that the test expression has scalar type,
      we check the two branches, and take the union of their return types.
      We return the initial variable table, unchanged;
      any change in the branches is local to the branches.")
@@ -748,9 +1034,9 @@
      :null (error :unsupported-null-stmt)
      :if (b* ((type (check-expr-pure s.test vartab))
               ((when (errorp type)) (error (list :if-test-error type)))
-              ((unless (equal type (type-sint)))
+              ((unless (type-scalarp type))
                (error (list :if-test-mistype s.test s.then :noelse
-                            :required (type-sint)
+                            :required :scalar
                             :supplied type)))
               (stype-then (check-stmt s.then funtab vartab))
               ((when (errorp stype-then))
@@ -761,9 +1047,9 @@
             :variables vartab))
      :ifelse (b* ((type (check-expr-pure s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
-                  ((unless (equal type (type-sint)))
+                  ((unless (type-scalarp type))
                    (error (list :if-test-mistype s.test s.then s.else
-                                :required (type-sint)
+                                :required :scalar
                                 :supplied type)))
                   (stype-then (check-stmt s.then funtab vartab))
                   ((when (errorp stype-then))
@@ -841,7 +1127,31 @@
   ///
   (verify-guards check-stmt)
 
-  (fty::deffixequiv-mutual check-stmt))
+  (fty::deffixequiv-mutual check-stmt)
+
+  (local
+   (defthm-check-stmt-flag
+     (defthm check-stmt-var-table
+       (b* ((result (check-stmt s funtab vartab)))
+         (implies (stmt-typep result)
+                  (equal (stmt-type->variables result)
+                         (var-table-fix vartab))))
+       :flag check-stmt)
+     (defthm check-block-item-var-table
+       t
+       :rule-classes nil
+       :flag check-block-item)
+     (defthm check-block-item-list-var-table
+       t
+       :rule-classes nil
+       :flag check-block-item-list)
+     :hints (("Goal" :expand ((check-stmt s funtab vartab))))))
+
+  (defrule check-stmt-var-table-no-change
+    (b* ((result (check-stmt s funtab vartab)))
+      (implies (stmt-typep result)
+               (equal (stmt-type->variables result)
+                      (var-table-fix vartab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,7 +1,7 @@
 ; Arrays for renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,12 +14,14 @@
 
 (include-book "dag-arrays")
 
-;; See also translation-array.lisp.
+;; A renaming-array maps all nodes, up to a given node, to nodenums or
+;; myquoteps.  NOTE: No node in that range can map to nil, but see
+;; translation-array.lisp.
 
 ;; TODO: Can we define this using def-typed-acl2-array?
 
 ;;;
-;;; the renaming-array
+;;; renaming-arrayp-aux
 ;;;
 
 ;; Checks that, for all indices from top-nodenum-to-check down to 0, the array
@@ -32,10 +34,11 @@
   (if (not (natp top-nodenum-to-check))
       t
     (let ((val (aref1 array-name array top-nodenum-to-check)))
-      (and (or (myquotep val)
+      (and (or (myquotep val) ;could call dargp here
                (natp val))
            (renaming-arrayp-aux array-name array (+ -1 top-nodenum-to-check))))))
 
+;; -1 means no nodes to check
 (defthm renaming-arrayp-aux-of--1
   (renaming-arrayp-aux array-name array -1)
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
@@ -85,38 +88,6 @@
                            (renaming-arrayp-aux renaming-array-name (aset1 renaming-array-name renaming-array 0 val) 0))
            :cases ((equal index 0))
            :in-theory (e/d () (myquotep)))))
-
-;;;
-;;; renaming-arrayp
-;;;
-
-(defund renaming-arrayp (array-name array array-len)
-  (declare (xargs :guard t))
-  (and (array1p array-name array)
-       (natp array-len)
-       (<= array-len (alen1 array-name array))
-       (renaming-arrayp-aux array-name array (+ -1 array-len))))
-
-(defthm renaming-arrayp-of-0
-  (equal (renaming-arrayp array-name array 0)
-         (array1p array-name array))
-  :hints (("Goal" :in-theory (enable renaming-arrayp))))
-
-;; Rename any of the ARGS that are nodenums according to the RENAMING-ARRAY.
-(defund rename-args (args renaming-array-name renaming-array)
-  (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (true-listp args)
-                              (all-dargp-less-than args (alen1 renaming-array-name renaming-array))
-                              (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args)))))
-  (if (endp args)
-      nil
-    (let* ((arg (first args)))
-      (cons (if (consp arg)
-                ;;quoted constant, do nothing:
-                arg
-              ;;nodenum to fixup:
-              (aref1 renaming-array-name renaming-array arg))
-            (rename-args (rest args) renaming-array-name renaming-array)))))
 
 ;normalize to whether it is a consp
 (defthm integerp-of-aref1-when-renaming-arrayp-aux
@@ -196,14 +167,6 @@
                 (consp (aref1 renaming-array-name renaming-array nodenum))))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-(defthm all-dargp-of-rename-args
-  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args))
-                (all-dargp args))
-           (all-dargp (rename-args args renaming-array-name renaming-array)))
-  :hints (("Goal" :in-theory (e/d (rename-args all-dargp) (myquotep))
-           :expand (all-dargp args)
-           :do-not '(generalize eliminate-destructors))))
-
 (defthm consp-of-cdr-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check)
                 (integerp top-nodenum-to-check)
@@ -212,6 +175,58 @@
            (equal (consp (cdr (aref1 renaming-array-name renaming-array nodenum)))
                   (consp (aref1 renaming-array-name renaming-array nodenum))))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
+
+;;;
+;;; renaming-arrayp
+;;;
+
+;; Checks that ARRAY is a valid array, with name ARRAY-NAME, and length at
+;; least NUM-NODES-TO-CHECK, that maps each index from NUM-NODES-TO-CHECK down to
+;; 0 to either a myquotep or a nodenum.
+(defund renaming-arrayp (array-name array num-nodes-to-check)
+  (declare (xargs :guard t))
+  (and (array1p array-name array)
+       (natp num-nodes-to-check)
+       (<= num-nodes-to-check (alen1 array-name array))
+       (renaming-arrayp-aux array-name array (+ -1 num-nodes-to-check))))
+
+;; 0 means no nodes to check
+(defthm renaming-arrayp-of-0
+  (equal (renaming-arrayp array-name array 0)
+         (array1p array-name array))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
+;;;
+;;; rename-args
+;;;
+
+;; Renames any of the ARGS that are nodenums according to the RENAMING-ARRAY.
+(defund rename-args (args renaming-array-name renaming-array)
+  (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
+                              (true-listp args)
+                              (all-dargp-less-than args (alen1 renaming-array-name renaming-array))
+                              (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args)))))
+  (if (endp args)
+      nil
+    (let* ((arg (first args)))
+      (cons (if (consp arg)
+                ;;quoted constant, do nothing:
+                arg
+              ;;nodenum to fixup:
+              (aref1 renaming-array-name renaming-array arg))
+            (rename-args (rest args) renaming-array-name renaming-array)))))
+
+(defthm all-dargp-of-rename-args
+  (implies (and (renaming-arrayp-aux renaming-array-name renaming-array (largest-non-quotep args))
+                (all-dargp args))
+           (all-dargp (rename-args args renaming-array-name renaming-array)))
+  :hints (("Goal" :in-theory (e/d (rename-args all-dargp) (myquotep))
+           :expand (all-dargp args)
+           :do-not '(generalize eliminate-destructors))))
+
+;;;
+;;; bounded-renaming-entriesp
+;;;
 
 ;; Check that all elements from n down to 0 are less than limit, assuming they are not conses (quoteps)
 (defund bounded-renaming-entriesp (n renaming-array-name renaming-array limit)
@@ -351,7 +366,11 @@
            (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
+;;;
+;;; rename-var-or-fn-call-expr
+;;;
 
+;; only used once, in old rewriter
 (defun rename-var-or-fn-call-expr (expr renaming-array highest-node-in-renaming)
   (declare (xargs :guard (and (or (symbolp expr)
                                   (dag-function-call-exprp expr))
