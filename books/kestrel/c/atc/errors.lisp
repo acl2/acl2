@@ -110,3 +110,7 @@
 
   (defmacro defresult (type desc &key enable)
     `(make-event (defresult-fn ',type ',desc ',enable (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult bool "booleans") ; move

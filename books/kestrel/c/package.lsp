@@ -27,6 +27,7 @@
                                   value))
              '(any
                bool
+               bool-resultp
                cw-event
                define-sk
                defmacro+
