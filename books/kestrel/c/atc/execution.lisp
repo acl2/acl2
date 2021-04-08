@@ -454,6 +454,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-mul ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-mul
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-mul
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-mul arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-mul val1 val2))
+     ((sintp val1) (if (sint-mul-okp val1 val2) (sint-mul val1 val2) err))
+     ((ulongp val1) (ulong-mul val1 val2))
+     ((slongp val1) (if (slong-mul-okp val1 val2) (slong-mul val1 val2) err))
+     ((ullongp val1) (ullong-mul val1 val2))
+     ((sllongp val1) (if (sllong-mul-okp val1 val2) (sllong-mul val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -480,11 +509,7 @@
        ((when (errorp arg1)) arg1)
        ((when (errorp arg2)) arg2))
     (case (binop-kind op)
-      (:mul (if (and (sintp arg1) (sintp arg2))
-                (if (sint-mul-okp arg1 arg2)
-                    (sint-mul arg1 arg2)
-                  (error (list :exec-mul arg1 arg2)))
-              (error :todo)))
+      (:mul (exec-mul arg1 arg2))
       (:div (if (and (sintp arg1) (sintp arg2))
                 (if (sint-div-okp arg1 arg2)
                     (sint-div arg1 arg2)

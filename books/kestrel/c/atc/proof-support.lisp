@@ -358,6 +358,7 @@
     exec-bitnot
     exec-lognot
     exec-unary
+    exec-mul
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor
@@ -375,6 +376,7 @@
     sint-logor
     top-frame
     type-of-value
+    uaconvert-values
     value-unsigned-integerp
     value-signed-integerp
     value-integerp
