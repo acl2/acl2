@@ -95,12 +95,22 @@ particular times and certain outputs are read at particular times.</li>
 <p>@('defsvtv$') provides a drop-in replacement for the old @(see defsvtv)
 utility. However, it drops support for the @(':state-machine'),
 @(':keep-final-states'), and @(':keep-all-states') options because these are
-geared toward using a pipeline-style SVTV as a cycle FSM which is now
-deprecated.</p>
+geared toward using a pipeline-style SVTV as a cycle FSM, which is now
+deprecated since we have such FSMs as separate structures.  Similarly,
+@('defsvtv$-phasewise') is a drop-in replacement for @(see defsvtv-phasewise),
+also producing an SVTV structure but using a different user input syntax to
+supply the pipeline steps.</p>
 
 <p>@('defcycle') produces a cycle FSM from a design, given a name mapping and
 phase specification.  This is intended to replace the use of @('defsvtv') with
 the @(':state-machine') option.</p>
+
+<p>A nice thing about these two tools is that they don't need to repeat work
+whose results have already been stored in the svtv-data stobj.  For example, to
+create two SVTV objects representing pipelines built on the same module with
+the same clock cycle phases, only the pipeline composition needs to be
+repeated, not the flattening, phase-FSM composition, or clock-cycle
+composition.</p>
 
 <h3>Lower-level tools</h3>
 
@@ -118,7 +128,7 @@ invalidates the @('flatten') and @('namemap') fields.</p>
 
 <p>@('svtv-data-maybe-compute-flatten') computes the @('flatten') field from
 the current design, unless that field is already valid.  It invalidates
-all the other derived fields since.</p>
+all the other derived fields since they all depend on the flatten field.</p>
 
 <p>@('svtv-data-maybe-compute-flatnorm') computes the @('flatnorm') field,
 requiring that @('flatten') is valid.</p>
@@ -156,7 +166,7 @@ produces a function which imports that object back into an svtv-data object,
 recomputing the parts (the @('moddb') and @('aliases') sub-stobjs) that
 couldn't be saved.</p>
 
-<h3>VCD dumping</h3>
+<h3>Debugging and VCD dumping</h3>
 
 <p>Various utilities are provided for dumping VCD files showing runs of the design:</p>
 
@@ -179,6 +189,148 @@ as a helper function for the above.</li>
 </ul>
 
 <p>Note that for now, the moddb and aliases sub-stobjs must be recreated in
-order to run these, but this may be fixed soon.</p>
+order to run these.  However, this only needs to be done once; if the correct
+moddb and aliases have already been computed, the argument @(':skip-flatten t')
+may be given, saving this step, which might take several seconds otherwise.</p>
 
+<p>A common debug loop to be stuck in is finding the right set of signals to
+set in order to get a hardware module to produce a desired result.  In each
+iteration, we find a signal that wasn't previously driven (by examining a VCD,
+say), then add the signal to the pipeline and try again.  To support fast
+iteration on this debug loop, we have two utilities based on the svtv-data
+stobj.  These require the svtv-data stobj to have a valid cycle FSM (this will
+be the case if a @('defsvtv$') was previously processed).  They take as input a
+@('defsvtv$') or @('defsvtv$-phasewise') form and (respectively) run the
+pipeline or dump the VCD of the pipeline.</p>
+
+<ul>
+
+<li>@('svtv-data-debug-defsvtv$') runs the given pipeline, producing an output
+environment; it takes a @('defsvtv$') or @('defsvtv$-phasewise') form and
+keyword arguments @(':env') (an environment binding the input variables of the
+SVTV) and @(':svtv-data') (to optionally provide a congruent stobj
+to use in place of @('svtv-data')).</li>
+
+<li>@('svtv-data-debug-defsvtv$') dumps a VCD for the pipeline; it takes a
+@('defsvtv$') or @('defsvtv$-phasewise') form and keyword arguments
+@(':env') (an environment binding the input variables of the SVTV),
+@(':filename') (for the VCD file), @(':skip-flatten'), and the stobjs
+@('svtv-data'), @('moddb'), @('aliases'), @('vcd-wiremap'), and
+@('vcd-vals').</li>
+         
+</ul>
+
+")
+
+
+
+(defxdoc defsvtv$
+  :parents (svex-stvs svtv-data)
+  :short "Create an SVTV, storing and possibly using intermediate results from
+          the @('svtv-data') stobj."
+  :long "<p>@('Defsvtv$') is a drop-in replacement for @(see defsvtv), with a
+few differences.</p>
+
+<p>The implementation is different in that it operates on the @(see svtv-data)
+stobj, storing intermediate results such as the flattening and phase
+composition in the stobj.  Subsequent invocations of @('defsvtv') may reuse
+these results without recomputing them if they use the same design.</p>
+
+<p>A few features are removed, namely those that overload the SVTV to represent
+a state machine rather than just a pipeline.  We removed these because the new
+preferred way to deal with FSMs is with a @('base-fsm') or @('svtv-fsm') object
+rather than an @('svtv') object.</p>
+
+<p>One added feature is the ability to define a clock cycle separately from the
+pipeline timing diagram.  The clock cycle is given by the @(':cycle-phases')
+keyword argument, which must be a list of @('svtv-cyclephase') objects.  A
+typical clock cycle has two phases where the clock is low in one and high in
+the other, and input signals are provided and outputs read in the clock-low
+phase:</p>
+
+@({
+ :cycle-phases
+ (list (make-svtv-cyclephase :constants '((\"clock\" . 0))
+                             :inputs-free t
+                             :outputs-captured t)
+       (make-svtv-cyclephase :constants '((\"clock\" . 1))))
+ })
+
+<p>In this case, the phases of the provided timing diagram refer to the clock
+cycles of the design rather than individual clock phases.</p>
+
+<p>The default, when the @(':cycle-phases') argument is not provided, is for
+all clock phases to be explicitly represented in the timing diagram; this
+corresponds to the following cycle-phases value:</p>
+@({
+ :cycle-phases
+ (list (make-svtv-cyclephase :constants nil
+                             :inputs-free t
+                             :outputs-captured t))
+ })
+
+")
+
+
+(defxdoc defsvtv$-phasewise
+  :parents (svex-stvs svtv-data)
+  :short "Create an SVTV using the @(see defsvtv-phasewise) syntax, storing and
+          possibly using intermediate results from the @('svtv-data') stobj."
+  :long "<p>@('Defsvtv$-phasewise') is a drop-in replacement for @(see
+defsvtv-phasewise).  It differs from @('defsvtv-phasewise') analogously to how
+@('defsvtv$') differs from @('defsvtv'); see @(see defsvtv$).</p>
+")
+
+
+
+(defxdoc defcycle
+  :parents (svtv-data)
+  :short "Create a FSM from a design and a clock cycle specification, along with a signal name list."
+  :long "<p>Here is an example invocation of @('defcycle'):</p>
+
+@({
+ (defcycle my-clock-cycle
+    :design *my-sv-design*
+    :phases 
+    (list (make-svtv-cyclephase :constants '((\"my-clock\" . 0))
+                                :inputs-free t
+                                :outputs-captured t)
+          (make-svtv-cyclephase :constants '((\"my-clock\" . 1))))
+    :names
+     '((input0       . \"my-input\")
+       (internal-val . \"my-modinst[3].my_internal_signal\")
+       (output       . \"my-output\"))
+    :rewrite-phases t
+    :rewrite-cycle t
+    :cycle-simp t
+    :stobj svtv-data)
+ })
+
+<p>This form creates a clock cycle FSM for the given design, setting the signal
+@('\"my-clock\"') to 0 in the first phase (at which time input signals are
+provided and outputs captured) and 1 in the second phase.  It also provides
+short names @('input0'), @('internal-val'), and @('output') for some signals
+that are given as hierarchical Verilog names.  The rest of the arguments shown
+are shown as their default values:</p>
+
+<ul>
+
+<li>@(':rewrite-phases') if @('t') applies SVEX @(see rewriting) to the
+composed single phase FSM </li>
+
+<li>@(':rewrite-cycle') if @('t') applies SVEX rewriting to the composed cycle
+FSM</li>
+
+<li>@(':cycle-simp') should be a @('svex-simpconfig') object, that is, @('t'),
+@('nil'), or a natural number, controlling simplification that is applied while
+composing the cycle. Here @('nil') signifies that no simplification is
+performed, @('t') signifies that constants are propagated and cheap
+simplifications applied to concatenation, select, and shift operations, and a
+natural number says that full rewriting will be applied during composition with
+that number as the iteration limit (the @('clk') argument of
+@('svex-rewrite-fncall')).</li>
+
+<li> @(':stobj') allows the event to use another stobj congruent to
+@('svtv-data') rather than @('svtv-data') itself.</li>
+</ul>
 ")

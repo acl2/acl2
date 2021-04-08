@@ -108,3 +108,4 @@
                          (stobj 'svtv-data))
   (defcycle-fn name design phases names names-p rewrite-phases rewrite-cycle cycle-simp stobj))
 
+;; Doc in new-svtv-doc.lisp

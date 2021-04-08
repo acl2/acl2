@@ -529,12 +529,13 @@
 
 
 
-
+;; Documented in new-svtv-doc.lisp
 (defmacro defsvtv$ (name &rest args)
   (b* (((mv stobj norm-args)
         (process-defsvtv$-user-args name args)))
     `(make-event (defsvtv$-fn (make-defsvtv-args . ,norm-args)
                    ,stobj state))))
+
 
 
 (define process-defsvtv$-phasewise-user-args (name args)
@@ -561,7 +562,7 @@
     `(make-event (defsvtv$-fn (make-defsvtv-args . ,norm-args)
                    ,stobj state))))
 
-
+;; Doc in new-svtv-doc.lisp
 
 
 (local
