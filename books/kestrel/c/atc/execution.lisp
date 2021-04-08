@@ -1177,62 +1177,165 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support conversions
-     between @('int')s and @('unsigned char')s."))
+    "For now we only support casts between integer types.
+     None involving pointers."))
   (b* ((arg (value-result-fix arg))
        ((when (errorp arg)) arg)
-       (type (type-name-to-type tyname)))
-    (cond ((type-case type :uchar)
-           (cond ((ucharp arg) arg)
-                 ((scharp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((ushortp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((sshortp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((uintp arg) (error
-                               (list :cast-not-supported :from arg :to type)))
-                 ((sintp arg) (uchar-from-sint arg))
-                 ((ulongp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((slongp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((ullongp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((sllongp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((pointerp arg) (error
-                                  (list :cast-not-supported :from arg :to type)))
-                 (t (error (impossible)))))
-          ((type-case type :sint)
-           (cond ((sintp arg) arg)
-                 ((ucharp arg) (if (sint-from-uchar-okp arg)
-                                   (sint-from-uchar arg)
-                                 (error (list :cast-not-representable
-                                              :from arg :to type))))
-                 ((scharp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((ushortp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((sshortp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((uintp arg) (error
-                               (list :cast-not-supported :from arg :to type)))
-                 ((sintp arg) (error
-                               (list :cast-not-supported :from arg :to type)))
-                 ((ulongp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((slongp arg) (error
-                                (list :cast-not-supported :from arg :to type)))
-                 ((ullongp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((sllongp arg) (error
-                                 (list :cast-not-supported :from arg :to type)))
-                 ((pointerp arg) (error
-                                  (list :cast-pointer-not-supported
-                                        :from arg :to type)))
-                 (t (error (impossible)))))
-          (t (error (list :cast-not-supported :from arg :to type)))))
+       (type (type-name-to-type tyname))
+       (err (error (list :cast-undefined :from arg :to type)))
+       (todo (error (list :cast-todo :from arg :to type))))
+    (cond ((ucharp arg)
+           (type-case
+            type
+            :char todo
+            :uchar arg
+            :schar (if (schar-from-uchar-okp arg) (schar-from-uchar arg) err)
+            :ushort (ushort-from-uchar arg)
+            :sshort (if (sshort-from-uchar-okp arg) (sshort-from-uchar arg) err)
+            :uint (uint-from-uchar arg)
+            :sint (if (sint-from-uchar-okp arg) (sint-from-uchar arg) err)
+            :ulong (ulong-from-uchar arg)
+            :slong (if (slong-from-uchar-okp arg) (slong-from-uchar arg) err)
+            :ullong (ullong-from-uchar arg)
+            :sllong (if (sllong-from-uchar-okp arg) (sllong-from-uchar arg) err)
+            :pointer todo))
+          ((scharp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-schar arg)
+            :schar arg
+            :ushort (ushort-from-schar arg)
+            :sshort (if (sshort-from-schar-okp arg) (sshort-from-schar arg) err)
+            :uint (uint-from-schar arg)
+            :sint (if (sint-from-schar-okp arg) (sint-from-schar arg) err)
+            :ulong (ulong-from-schar arg)
+            :slong (if (slong-from-schar-okp arg) (slong-from-schar arg) err)
+            :ullong (ullong-from-schar arg)
+            :sllong (if (sllong-from-schar-okp arg) (sllong-from-schar arg) err)
+            :pointer todo))
+          ((ushortp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-ushort arg)
+            :schar (if (schar-from-ushort-okp arg) (schar-from-ushort arg) err)
+            :ushort arg
+            :sshort (if (sshort-from-ushort-okp arg) (sshort-from-ushort arg) err)
+            :uint (uint-from-ushort arg)
+            :sint (if (sint-from-ushort-okp arg) (sint-from-ushort arg) err)
+            :ulong (ulong-from-ushort arg)
+            :slong (if (slong-from-ushort-okp arg) (slong-from-ushort arg) err)
+            :ullong (ullong-from-ushort arg)
+            :sllong (if (sllong-from-ushort-okp arg) (sllong-from-ushort arg) err)
+            :pointer todo))
+          ((sshortp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-sshort arg)
+            :schar (if (schar-from-sshort-okp arg) (schar-from-sshort arg) err)
+            :ushort (ushort-from-sshort arg)
+            :sshort arg
+            :uint (uint-from-sshort arg)
+            :sint (if (sint-from-sshort-okp arg) (sint-from-sshort arg) err)
+            :ulong (ulong-from-sshort arg)
+            :slong (if (slong-from-sshort-okp arg) (slong-from-sshort arg) err)
+            :ullong (ullong-from-sshort arg)
+            :sllong (if (sllong-from-sshort-okp arg) (sllong-from-sshort arg) err)
+            :pointer todo))
+          ((uintp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-uint arg)
+            :schar (if (schar-from-uint-okp arg) (schar-from-uint arg) err)
+            :ushort (ushort-from-uint arg)
+            :sshort (if (sshort-from-uint-okp arg) (sshort-from-uint arg) err)
+            :uint arg
+            :sint (if (sint-from-uint-okp arg) (sint-from-uint arg) err)
+            :ulong (ulong-from-uint arg)
+            :slong (if (slong-from-uint-okp arg) (slong-from-uint arg) err)
+            :ullong (ullong-from-uint arg)
+            :sllong (if (sllong-from-uint-okp arg) (sllong-from-uint arg) err)
+            :pointer todo))
+          ((sintp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-sint arg)
+            :schar (if (schar-from-sint-okp arg) (schar-from-sint arg) err)
+            :ushort (ushort-from-sint arg)
+            :sshort (if (sshort-from-sint-okp arg) (sshort-from-sint arg) err)
+            :uint (uint-from-sint arg)
+            :sint arg
+            :ulong (ulong-from-sint arg)
+            :slong (if (slong-from-sint-okp arg) (slong-from-sint arg) err)
+            :ullong (ullong-from-sint arg)
+            :sllong (if (sllong-from-sint-okp arg) (sllong-from-sint arg) err)
+            :pointer todo))
+          ((ulongp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-ulong arg)
+            :schar (if (schar-from-ulong-okp arg) (schar-from-ulong arg) err)
+            :ushort (ushort-from-ulong arg)
+            :sshort (if (sshort-from-ulong-okp arg) (sshort-from-ulong arg) err)
+            :uint (uint-from-ulong arg)
+            :sint (if (sint-from-ulong-okp arg) (sint-from-ulong arg) err)
+            :ulong arg
+            :slong (if (slong-from-ulong-okp arg) (slong-from-ulong arg) err)
+            :ullong (ullong-from-ulong arg)
+            :sllong (if (sllong-from-ulong-okp arg) (sllong-from-ulong arg) err)
+            :pointer todo))
+          ((slongp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-slong arg)
+            :schar (if (schar-from-slong-okp arg) (schar-from-slong arg) err)
+            :ushort (ushort-from-slong arg)
+            :sshort (if (sshort-from-slong-okp arg) (sshort-from-slong arg) err)
+            :uint (uint-from-slong arg)
+            :sint (if (sint-from-slong-okp arg) (sint-from-slong arg) err)
+            :ulong (ulong-from-slong arg)
+            :slong arg
+            :ullong (ullong-from-slong arg)
+            :sllong (if (sllong-from-slong-okp arg) (sllong-from-slong arg) err)
+            :pointer todo))
+          ((ullongp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-ullong arg)
+            :schar (if (schar-from-ullong-okp arg) (schar-from-ullong arg) err)
+            :ushort (ushort-from-ullong arg)
+            :sshort (if (sshort-from-ullong-okp arg) (sshort-from-ullong arg) err)
+            :uint (uint-from-ullong arg)
+            :sint (if (sint-from-ullong-okp arg) (sint-from-ullong arg) err)
+            :ulong (ulong-from-ullong arg)
+            :slong (if (slong-from-ullong-okp arg) (slong-from-ullong arg) err)
+            :ullong arg
+            :sllong (if (sllong-from-ullong-okp arg) (sllong-from-ullong arg) err)
+            :pointer todo))
+          ((sllongp arg)
+           (type-case
+            type
+            :char todo
+            :uchar (uchar-from-sllong arg)
+            :schar (if (schar-from-sllong-okp arg) (schar-from-sllong arg) err)
+            :ushort (ushort-from-sllong arg)
+            :sshort (if (sshort-from-sllong-okp arg) (sshort-from-sllong arg) err)
+            :uint (uint-from-sllong arg)
+            :sint (if (sint-from-sllong-okp arg) (sint-from-sllong arg) err)
+            :ulong (ulong-from-sllong arg)
+            :slong (if (slong-from-sllong-okp arg) (slong-from-sllong arg) err)
+            :ullong (ullong-from-sllong arg)
+            :sllong arg
+            :pointer todo))
+          ((pointerp arg) todo)
+          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1290,9 +1393,6 @@
    (xdoc::p
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
-   (xdoc::p
-    "For now we reject cast expressions just for lack of support,
-     but eventually we will support them, since they are pure.")
    (xdoc::p
     "For now we reject tests of conditionals
      that are non-@('int') values.
