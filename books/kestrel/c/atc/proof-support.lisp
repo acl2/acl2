@@ -361,6 +361,7 @@
     exec-mul
     exec-div
     exec-rem
+    exec-add
     exec-binary-strict-pure
     exec-binary-logand
     exec-binary-logor

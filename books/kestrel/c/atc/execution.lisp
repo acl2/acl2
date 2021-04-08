@@ -543,6 +543,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-add ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute addition [C:6.5.6/2] [C:6.5.6/4] [C:6.5.6/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support additions involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-add
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-add
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-add arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-add val1 val2))
+     ((sintp val1) (if (sint-add-okp val1 val2) (sint-add val1 val2) err))
+     ((ulongp val1) (ulong-add val1 val2))
+     ((slongp val1) (if (slong-add-okp val1 val2) (slong-add val1 val2) err))
+     ((ullongp val1) (ullong-add val1 val2))
+     ((sllongp val1) (if (sllong-add-okp val1 val2) (sllong-add val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -572,11 +605,7 @@
       (:mul (exec-mul arg1 arg2))
       (:div (exec-div arg1 arg2))
       (:rem (exec-rem arg1 arg2))
-      (:add (if (and (sintp arg1) (sintp arg2))
-                (if (sint-add-okp arg1 arg2)
-                    (sint-add arg1 arg2)
-                  (error (list :exec-add arg1 arg2)))
-              (error :todo)))
+      (:add (exec-add arg1 arg2))
       (:sub (if (and (sintp arg1) (sintp arg2))
                 (if (sint-sub-okp arg1 arg2)
                     (sint-sub arg1 arg2)
