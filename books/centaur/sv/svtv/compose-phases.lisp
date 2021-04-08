@@ -48,7 +48,7 @@
   :hints(("Goal" :in-theory (enable svex-alistlist-fix nth))))
 
 (defprod svtv-composedata
-  ((rewrite booleanp)
+  ((simp svex-simpconfig-p)
    (nextstates svex-alist-p)
    (input-substs svex-alistlist-p)
    (initst svex-alist-p))
@@ -90,9 +90,7 @@
     (b* (((unless (mbt (svex-case x :call))) (svex-fix x))
          ((svex-call x))
          (args (svexlist-compose-svtv-phases x.args phase data)))
-      (if (svtv-composedata->rewrite data)
-          (svex-rewrite-fncall 1000 -1 x.fn args t t)
-        (svex-call x.fn args))))
+      (svex-call-simp x.fn args (svtv-composedata->simp data))))
 
   (define svexlist-compose-svtv-phases ((x svexlist-p)
                                         (phase natp)

@@ -40,11 +40,11 @@
 
 (define svtv-data-defcycle-core ((design design-p)
                                  (phases svtv-cyclephaselist-p)
-                                 (names svtv-namemap-p)
                                  svtv-data
                                  &key
                                  ((rewrite-phases booleanp) 't)
-                                 ((rewrite-cycle booleanp) 't))
+                                 ((rewrite-cycle booleanp) 't)
+                                 ((cycle-simp svex-simpconfig-p) 't))
   :guard (modalist-addr-p (design->modalist design))
   :returns (mv err new-svtv-data)
   (b* ((svtv-data (svtv-data-set-design design svtv-data))
@@ -52,11 +52,9 @@
        ((when err)
         (mv err svtv-data))
        (svtv-data (svtv-data-maybe-compute-flatnorm svtv-data))
-       ((mv err svtv-data) (svtv-data-maybe-compute-namemap names svtv-data))
-       ((when err) (mv err svtv-data))
        (svtv-data (svtv-data-maybe-compute-phase-fsm svtv-data))
        (svtv-data (svtv-data-maybe-rewrite-phase-fsm rewrite-phases svtv-data :verbosep t))
-       (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data))
+       (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp))
        (svtv-data (svtv-data-maybe-rewrite-cycle-fsm rewrite-cycle svtv-data)))
     (mv nil svtv-data))
   ///
@@ -64,20 +62,25 @@
     (implies (not err)
              (and (equal (svtv-data$c->design new-svtv-data) (design-fix design))
                   (equal (svtv-data$c->cycle-phases new-svtv-data) (svtv-cyclephaselist-fix phases))
-                  (equal (svtv-data$c->user-names new-svtv-data) (svtv-namemap-fix names))
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
-                  (equal (svtv-data$c->namemap-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
                   (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t)))))
 
-(defun defcycle-fn (name design phases names rewrite-phases rewrite-cycle stobj)
+(defun defcycle-fn (name design phases names names-p rewrite-phases rewrite-cycle cycle-simp stobj)
   `(make-event
     (b* (((mv err ,stobj)
-          (svtv-data-defcycle-core ,design ,phases ,names
+          (svtv-data-defcycle-core ,design ,phases
                                    ,stobj
                                    :rewrite-phases ,rewrite-phases
-                                   :rewrite-cycle ,rewrite-cycle))
+                                   :rewrite-cycle ,rewrite-cycle
+                                   :cycle-simp ,cycle-simp))
+         ((when err)
+          (mv err nil state ,stobj))
+         ((mv err ,stobj)
+          (if ,names-p
+              (svtv-data-maybe-compute-namemap ,names ,stobj)
+            (mv nil ,stobj)))
          ((when err)
           (mv err nil state ,stobj))
          (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
@@ -98,9 +101,10 @@
 (defmacro defcycle (name &key
                          design
                          phases
-                         names
+                         (names 'nil names-p)
                          (rewrite-phases 't)
                          (rewrite-cycle 't)
+                         (cycle-simp 't)
                          (stobj 'svtv-data))
-  (defcycle-fn name design phases names rewrite-phases rewrite-cycle stobj))
+  (defcycle-fn name design phases names names-p rewrite-phases rewrite-cycle cycle-simp stobj))
 
