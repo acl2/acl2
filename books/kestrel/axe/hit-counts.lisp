@@ -16,7 +16,7 @@
 ;; TODO: Or generalize this machinery to count things other than counts, eg.,
 ;; useful and useles tries.
 
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)

@@ -483,11 +483,13 @@
 ;; Returns a subst-candidate-listp representing all the substitution candidates
 ;; for the LITERAL-NODENUMS.  Looks through the literals for ones that equate
 ;; vars with other nodes.  Does not check whether the var depends on itself.
-(defund subst-candidates (literal-nodenums dag-array dag-len acc)
+(defund subst-candidates (literal-nodenums dag-array dag-len lim acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (if (endp literal-nodenums)
+                              (all-< literal-nodenums dag-len)
+                              (natp lim))))
+  (if (or (endp literal-nodenums)
+          (zp lim))
       acc
     (b* ((literal-nodenum (first literal-nodenums))
          ((mv foundp
@@ -499,6 +501,7 @@
       (subst-candidates (rest literal-nodenums)
                         dag-array
                         dag-len
+                        (if foundp (+ -1 lim) lim)
                         (if foundp
                             (cons (list nodenum-of-var nodenum-or-quotep-to-put-in literal-nodenum)
                                   acc)
@@ -506,7 +509,7 @@
 
 (defthm subst-candidates-when-not-consp
   (implies (not (consp literal-nodenums))
-           (equal (subst-candidates literal-nodenums dag-array dag-len acc)
+           (equal (subst-candidates literal-nodenums dag-array dag-len lim acc)
                   acc))
   :hints (("Goal" :in-theory (enable subst-candidates))))
 
@@ -515,7 +518,7 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (subst-candidate-listp acc))
-           (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len acc)))
+           (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len lim acc)))
   :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidatep subst-candidate-listp)
                                   ()))))
 
@@ -525,18 +528,18 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< (strip-cars acc)
                        dag-len))
-           (all-< (strip-cars (subst-candidates literal-nodenums dag-array dag-len acc))
+           (all-< (strip-cars (subst-candidates literal-nodenums dag-array dag-len lim acc))
                   dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates))))
 
 (defthmd subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len acc))
+  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
                  (append literal-nodenums (my-strip-caddrs acc)))
   :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL2)))))
 
 (local
  (defthm subsetp-equal-of-my-strip-caddrs-of-subst-candidates
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len nil))
+  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim nil))
                  literal-nodenums)
   :hints (("Goal" :use (:instance subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper (acc nil))
            :in-theory (disable subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper)))))
@@ -547,7 +550,7 @@
                 (nat-listp literal-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< (largest-non-quotep (strip-cadrs acc)) dag-len))
-           (< (largest-non-quotep (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len acc)))
+           (< (largest-non-quotep (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc)))
               dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs
                                      largest-non-quotep ;expensive
@@ -560,7 +563,7 @@
                 (nat-listp literal-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp-less-than (strip-cadrs acc) dag-len))
-           (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len acc))
+           (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
                                dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal2
                                      find-var-and-expr-to-subst2
@@ -837,6 +840,8 @@
           (disjointp-assuming-sorted-<= x (rest y)))))))
 
 ;; Returns a list of subst-candidates suitable for simultaneous checking (no var in the set depends on any other vars in the set, or on itself).
+;; TODO: Stop once we have a nice chunk of vars to substitute (100?).
+;; TODO: Can we mark vars to avoid in an array of bits, to avoid operations on sorted lists?
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
                                             subst-candidates-acc ; candidates we have already decided to added to the set
@@ -873,19 +878,18 @@
                                              nil
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
-           ;; Makes sure the var doesn't depend on itself:
-           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-this-var-depends-on))
            ;; Makes sure no already-selected candidate depends on this var:
            (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
-           (disjointp-assuming-sorted-<= nodenums-this-var-depends-on nodenums-of-vars-already-added))
+           (disjointp-assuming-sorted-<= nodenums-this-var-depends-on nodenums-of-vars-already-added)
+           ;; Makes sure the var doesn't depend on itself (tested last because it's rare):
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-this-var-depends-on)))
           ;; Add this candidate:
           (find-simultaneous-subst-candidates (rest subst-candidates)
                                               candidate-deps-array
                                               (cons subst-candidate subst-candidates-acc)
-                                              ;; todo: optimize:  todo: can dups even occur? maybe if a var is equated to 2 things?
+                                              ;; todo: can dups even occur? maybe if a var is equated to 2 things?
                                               (merge-<-and-remove-dups (list this-var-nodenum) nodenums-of-vars-already-added)
-                                              ;; todo: optimize:
                                               (merge-<-and-remove-dups nodenums-this-var-depends-on nodenums-of-vars-to-avoid))
         ;; Don't add this candidate:
         (find-simultaneous-subst-candidates (rest subst-candidates)
@@ -1102,22 +1106,23 @@
                                                          ;;cons-nth-0-nth-1 cons-of-nth-and-nth-plus-1 ;todo: why do these cause mv-nths to show up in appropriate places?
                                                          dargp-less-than
                                                          dargp-less-than-when-not-consp-cheap))))))
-  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)))
+  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len 300 nil))) ;; limit for now -- todo: what if all of the 500 have self loops?
     (if (not subst-candidates)
         ;; No change:
         (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-      (b* ((- (cw "~x0 subst candidates.~%" (len subst-candidates)))
+      (b* (;(- (cw "  ~x0 subst candidates.~%" (len subst-candidates)))
+           (num-candidates (len subst-candidates))
            (subst-candidates (if (all-consp (strip-cadrs subst-candidates)) ;check whether all the equated things are constants ;todo optimize
                                  ;; All vars are equated to constants, so we don't need the deps array and can substitute them all at once:
                                  subst-candidates
-                               (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps? -- actually that check is done when we form the candidates, but that may be slow):
+                               (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps)
                                      (candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-len)))
                                  (find-simultaneous-subst-candidates subst-candidates candidate-deps-array nil nil nil)))))
         (if (not subst-candidates)
             ;; No change:
-            (prog2$ (cw "No candidates are suitable for substitution.~%")
+            (prog2$ (cw "  No candidates are suitable for substitution.~%")
                     (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-          (b* ((- (cw "Applying ~x0 substitutions.~%" (len subst-candidates))) ;todo: print them?
+          (b* ((- (cw " (Applying ~x0 substitutions from ~x1 candidates.~%" (len subst-candidates) num-candidates)) ;todo: print them?
                ;; (and print (cw "~%(Using ~x0 to replace ~x1, which is ~x2.~%" literal-nodenum var
                ;;                          (if (consp nodenum-or-quotep-to-put-in)
                ;;                              nodenum-or-quotep-to-put-in
@@ -1159,8 +1164,9 @@
                ;; we had a bad ordering last time, we may have a good ordering this
                ;; time:
                (new-literal-nodenums (append changed-literal-nodenums unchanged-literal-nodenums))
-               ;; todo: avoid the call of len (compute it during the pass through the literals abovea?):
-               (- (and print (cw " ~x0 literals left, dag len is ~x1)~%" (len new-literal-nodenums) dag-len)))
+               ;; todo: avoid the call of len (compute it during the pass through the literals above?):
+               ;; Close paren matched the open paren printed above:
+               (- (and print (cw "  ~x0 literals left, dag len is ~x1)~%" (len new-literal-nodenums) dag-len)))
                )
             (mv (erp-nil)
                 nil ; provedp

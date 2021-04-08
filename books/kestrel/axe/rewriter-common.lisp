@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "axe-trees")
 (include-book "all-dargp-less-than")
 (include-book "dags") ;drop

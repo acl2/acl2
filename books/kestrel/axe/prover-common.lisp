@@ -24,7 +24,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; for negate-terms
 (include-book "kestrel/bv/bvif" :dir :system) ; since the prover knows about BVIF
 (include-book "kestrel/bv/bool-to-bit" :dir :system) ; since the prover knows about BOOL-TO-BIT
-(include-book "all-less-than-or-equal")
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
 (include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
