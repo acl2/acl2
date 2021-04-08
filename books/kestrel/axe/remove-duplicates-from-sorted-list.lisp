@@ -15,7 +15,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "all-less-than-or-equal-all")
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "merge-sort-less-than-rules") ;reduce
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

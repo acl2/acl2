@@ -18,7 +18,7 @@
 (include-book "axe-trees")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 
-;; The result array maps nodes to either null (no result) or a nodenum or quotep.
+;; The result array maps nodes to either nil (no result) or a nodenum or quotep.
 ;; TODO: Compare to bounded-node-replacement-array?
 (def-typed-acl2-array2 result-arrayp
   (or (null val) ;node is not yet processed

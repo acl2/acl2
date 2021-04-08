@@ -185,3 +185,12 @@
                   (or (equal i 0)
                       (equal i -1))))
   :hints (("Goal" :in-theory (enable lg))))
+
+(defthm lg-of-*-of-1/2
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (lg (* 1/2 x))
+                  (if (equal 0 x)
+                      -1
+                    (+ -1 (lg x)))))
+  :hints (("Goal" :in-theory (enable lg))))

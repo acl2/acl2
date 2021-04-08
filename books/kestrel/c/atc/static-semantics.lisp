@@ -399,19 +399,25 @@
    (xdoc::p
     "These only modify the character types
      and the unsigned and signed @('short int') types;
-     all the other types are unchanged.
-     Both @('signed char') and @('short') are promoted to @('int'),
-     because these signed types are always in the obvious inclusion relation.
-     Since @('unsigned char') and @('char') both take one byte,
-     their values are all representable as @('int'),
-     and therefore they get promoted to @('int').
-     For @('unsigned short'), there are two cases:
-     either its values are all contained in @('int'),
-     in which case it is converted to @('int'),
-     or they are not, in which case they are contained in @('unsigned int'),
-     and the type is promoted to @('unsigned int')."))
+     all the other types are unchanged.")
+   (xdoc::p
+    "If @('int') can represent all the values of the original type,
+     the promotion is to @('int'):
+     this is always the case for @('signed char') and @('signed short'),
+     but not necessarily for @('char') (which may be signed or not),
+     @('unsigned char'), and @('unsigned short').
+     In the unlikely but allowed case that
+     a byte consists of 16 bits and that @('int') also consists of 16 bits,
+     some @('unsigned char') values are not representable in @('int').
+     Otherwise, the promotion is to @('unsigned int').")
+   (xdoc::p
+    "The plain @('char') type is not supported for now. It will be soon."))
   (case (type-kind type)
-    ((:char :schar :uchar :sshort) (type-sint))
+    (:char (prog2$ (raise "Internal error: plain char type not supported.")
+                   (type-sint)))
+    (:schar (type-sint))
+    (:uchar (if (<= (uchar-max) (sint-max)) (type-sint) (type-uint)))
+    (:sshort (type-sint))
     (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
     (t (type-fix type)))
   :hooks (:fix))

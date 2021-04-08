@@ -39,7 +39,7 @@
                                    dag-array-name dag-array dag-len
                                    (if (and (consp expr) ;not a variable
                                             (or (eq 'quote (ffn-symb expr))
-                                                (no-atoms (dargs expr))))
+                                                (all-consp (dargs expr))))
                                        (acons-fast expr n dag-constant-alist)
                                      dag-constant-alist)))))
 
@@ -76,7 +76,7 @@
            (equal (make-dag-constant-alist-aux n dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len) dag-constant-alist)
                   (if (and (consp expr)
                            (or (eq 'quote (ffn-symb expr))
-                               (no-atoms (fargs expr))))
+                               (all-consp (fargs expr))))
                       (acons-fast expr dag-len (make-dag-constant-alist-aux n dag-array-name dag-array dag-len dag-constant-alist))
                     (make-dag-constant-alist-aux n dag-array-name dag-array dag-len dag-constant-alist))))
   :hints (("Goal" :expand ((make-dag-constant-alist-aux n dag-array-name
@@ -126,7 +126,7 @@
            (equal (make-dag-constant-alist dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len))
                   (if (and (consp expr)
                            (or (eq 'quote (ffn-symb expr))
-                               (no-atoms (fargs expr))))
+                               (all-consp (fargs expr))))
                       (acons-fast expr dag-len (make-dag-constant-alist dag-array-name dag-array dag-len))
                     (make-dag-constant-alist dag-array-name dag-array dag-len))))
   :hints (("Goal" :expand ((make-dag-constant-alist-aux

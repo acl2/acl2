@@ -117,7 +117,7 @@
 (defund find-expr-using-parents-with-name (fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)
   (declare (xargs :guard (and (true-listp args)
                               (all-dargp args)
-                              (not (no-atoms args))
+                              (not (all-consp args))
                               (symbolp fn)
                               (not (equal 'quote fn))
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -152,7 +152,7 @@
 (defthm integerp-of-find-expr-using-parents-with-name
   (implies (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (all-dargp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (iff (integerp (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len))
                 (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)))
   :hints (("Goal" :in-theory (enable find-expr-using-parents-with-name))))
@@ -163,13 +163,13 @@
                 (not (equal 'quote fn))
                 (all-dargp args)
                 ;; (true-listp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (<= 0 (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)))
   :hints (("Goal" :in-theory (enable find-expr-using-parents-with-name))))
 
 (defthm <-of-find-expr-using-parents-with-name
   (implies (and (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
-                (not (no-atoms args))
+                (not (all-consp args))
                 (all-dargp-less-than args (alen1 dag-array-name dag-array))
                 (natp dag-len)
                 (equal (alen1 dag-array-name dag-array)
@@ -234,11 +234,11 @@
         ;;it's a quotep:
         (add-to-parents-of-atoms-with-name (rest items) nodenum dag-parent-array-name dag-parent-array)))))
 
-(defthm add-to-parents-of-atoms-with-name-when-no-atoms
-  (implies (no-atoms items)
+(defthm add-to-parents-of-atoms-with-name-when-all-consp
+  (implies (all-consp items)
            (equal (add-to-parents-of-atoms-with-name items nodenum dag-parent-array-name dag-parent-array)
                   dag-parent-array))
-  :hints (("Goal" :in-theory (enable no-atoms add-to-parents-of-atoms-with-name))))
+  :hints (("Goal" :in-theory (enable all-consp add-to-parents-of-atoms-with-name))))
 
 (defthm array1p-of-add-to-parents-of-atoms-with-name
   (implies (and (all-dargp-less-than items (alen1 dag-parent-array-name dag-parent-array))

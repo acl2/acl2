@@ -39,6 +39,12 @@
 
 (local (in-theory (disable symbol-alistp strip-cdrs alistp))) ;prevent inductions
 
+(defthm all-myquotep-forward-to-all-consp
+  (implies (all-myquotep x)
+           (all-consp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable ALL-MYQUOTEP all-consp))))
+
 ;rename
 (defthmd alistp-guard-hack
   (implies (and (alistp dag)

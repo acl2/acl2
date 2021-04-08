@@ -369,7 +369,7 @@
 ;fixme could tag nodes as soon as they are added to the worklist? might prevent them from being added more than once...
                                                      (extend-with-not-done-args (dargs expr) 'done-array done-array worklist))
                                                    dag-array-name dag-array dag-len
-                                                   (aset1-safe 'done-array done-array nodenum t)
+                                                   (aset1 'done-array done-array nodenum t)
                                                    acc))))))
 
 (defthm true-listp-of-find-node-to-split-candidates-work-list

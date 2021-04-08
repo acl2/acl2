@@ -12,9 +12,9 @@
 (in-package "ACL2")
 
 (include-book "merge-sort-less-than")
-(include-book "all-less-than-or-equal")
-(include-book "less-than-or-equal-all")
-(include-book "all-less-than-or-equal-all")
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
+(include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (include-book "sortedp-less-than-or-equal")
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)

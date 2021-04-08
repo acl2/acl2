@@ -19,7 +19,7 @@
 ;(include-book "supporting-nodes")
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
@@ -78,7 +78,8 @@
 
 (local (in-theory (disable use-all-<-for-car
                            all-dargp-less-than-when-<-of-largest-non-quotep
-                           all-dargp-less-than-when-no-atoms)))
+                           ;all-dargp-less-than-when-all-consp
+                           )))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)

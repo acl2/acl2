@@ -31,7 +31,7 @@
 
 (in-package "SV")
 
-(include-book "svtv-stobj")
+(include-book "svtv-stobj-defsvtv")
 (include-book "debug")
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -247,15 +247,28 @@
                                    (aliases 'aliases)
                                    (vcd-wiremap 'vcd-wiremap)
                                    (vcd-vals 'vcd-vals)
+                                   (skip-flatten 'nil)
                                    (state 'state))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
   ;; :guard-hints ((and stable-under-simplificationp
   ;;                    '(:in-theory (enable svtv-data$ap)
   ;;                      :do-not-induct t)))
   (b* ((design (svtv-data->design svtv-data))
-       ((mv err ?flatten moddb aliases) (svtv-design-flatten design))
+       ((mv err ?flatten moddb aliases)
+        (if skip-flatten
+            (mv nil nil moddb aliases)
+          (svtv-design-flatten design)))
        ((when err)
         (mv err moddb aliases vcd-wiremap vcd-vals state))
        ((mv vcd-wiremap vcd-vals state)
@@ -274,13 +287,23 @@
                                    (aliases 'aliases)
                                    (vcd-wiremap 'vcd-wiremap)
                                    (vcd-vals 'vcd-vals)
+                                   (skip-flatten 'nil)
                                    (state 'state))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
   (b* ((base-ins (svtv-cycle-run-fsm-inputs ins (svtv-data->cycle-phases svtv-data))))
-    (svtv-data-debug-phase-fsm base-ins initst :filename filename)))
+    (svtv-data-debug-phase-fsm base-ins initst :filename filename :skip-flatten skip-flatten)))
 
 
 (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
@@ -300,23 +323,35 @@
                   (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-pipeline-okp))))
 
-(define svtv-data-debug-pipeline ((env svex-env-p)
-                               &key
-                               ((filename stringp) '"svtv-debug.vcd")
-                               (svtv-data 'svtv-data)
-                               (moddb 'moddb)
-                               (aliases 'aliases)
-                               (vcd-wiremap 'vcd-wiremap)
-                               (vcd-vals 'vcd-vals)
-                               (state 'state))
+
+(define svtv-data-debug-pipeline-aux ((env svex-env-p)
+                                      (setup pipeline-setup-p)
+                                      &key
+                                      ((filename stringp) '"svtv-debug.vcd")
+                                      (svtv-data 'svtv-data)
+                                      (moddb 'moddb)
+                                      (aliases 'aliases)
+                                      (vcd-wiremap 'vcd-wiremap)
+                                      (vcd-vals 'vcd-vals)
+                                      (skip-flatten 'nil)
+                                      (state 'state))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
-              (svtv-data->pipeline-validp svtv-data)
-              )
+              (equal (svex-alist-keys (pipeline-setup->initst setup))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
 
   (b* (((acl2::with-fast env))
-       ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
+       ((pipeline-setup setup))
        (rename-ins (svex-alistlist-eval setup.inputs env))
        (rename-overrides (svex-alistlist-eval setup.overrides env))
        (initst (svex-alist-eval setup.initst env))
@@ -327,7 +362,544 @@
        (cycle-ins (svtv-fsm-run-input-envs
                    (take len rename-ins)
                    rename-overrides fsm)))
-    (svtv-data-debug-cycle-fsm cycle-ins initst :filename filename)))
+    (svtv-data-debug-cycle-fsm cycle-ins initst :filename filename :skip-flatten skip-flatten)))
+
+(define svtv-data-debug-pipeline ((env svex-env-p)
+                                  &key
+                                  ((filename stringp) '"svtv-debug.vcd")
+                                  (svtv-data 'svtv-data)
+                                  (moddb 'moddb)
+                                  (aliases 'aliases)
+                                  (vcd-wiremap 'vcd-wiremap)
+                                  (vcd-vals 'vcd-vals)
+                                  (skip-flatten 'nil)
+                                  (state 'state))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              ;; (svtv-data->namemap-validp svtv-data)
+              (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
+  (svtv-data-debug-pipeline-aux
+   env (svtv-data->pipeline-setup svtv-data)
+   :filename filename :skip-flatten skip-flatten))
+
+
+
+(defun svtv-data-debug-defsvtv$-fn (defsvtv$-form
+                                     env
+                                     filename
+                                     svtv-data
+                                     moddb
+                                     aliases
+                                     vcd-wiremap
+                                     vcd-vals
+                                     skip-flatten)
+  (declare (xargs :mode :program))
+  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
+       ((acl2::unless-casematch defsvtv$-form
+                                ('defsvtv$ name . args))
+        (raise "Malformed defsvtv$-form (second argument)."))
+       ((mv ?stobj defsvtv-args)
+        (process-defsvtv$-user-args name args)))
+    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
+          ((mv err pipeline-setup ,svtv-data)
+           (defsvtv-stobj-pipeline-setup x ,svtv-data))
+          ((when err)
+           (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
+          ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
+           (svtv-data-debug-pipeline-aux ,env pipeline-setup
+                                         :filename ,filename
+                                         :svtv-data ,svtv-data
+                                         :moddb ,moddb
+                                         :aliases ,aliases
+                                         :vcd-wiremap ,vcd-wiremap
+                                         :vcd-vals ,vcd-vals
+                                         :skip-flatten ,skip-flatten)))
+       (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
+
+(defmacro svtv-data-debug-defsvtv$ (defsvtv$-form
+                                     &key
+                                     (env 'nil)
+                                     (filename '"svtv-debug.vcd")
+                                     (svtv-data 'svtv-data)
+                                     (moddb 'moddb)
+                                     (aliases 'aliases)
+                                     (vcd-wiremap 'vcd-wiremap)
+                                     (vcd-vals 'vcd-vals)
+                                     (skip-flatten 'nil))
+  (svtv-data-debug-defsvtv$-fn defsvtv$-form
+                               env
+                               filename
+                               svtv-data
+                               moddb
+                               aliases
+                               vcd-wiremap
+                               vcd-vals
+                               skip-flatten))
+
+
+
+(defun svtv-data-debug-defsvtv$-phasewise-fn (defsvtv$-form
+                                               env
+                                               filename
+                                               svtv-data
+                                               moddb
+                                               aliases
+                                               vcd-wiremap
+                                               vcd-vals
+                                               skip-flatten)
+  (declare (xargs :mode :program))
+  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
+       ((acl2::unless-casematch defsvtv$-form
+                                ('defsvtv$-phasewise name . args))
+        (raise "Malformed defsvtv$-form (second argument)."))
+       ((mv ?stobj defsvtv-args)
+        (process-defsvtv$-phasewise-user-args name args)))
+    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
+          ((mv err pipeline-setup ,svtv-data)
+           (defsvtv-stobj-pipeline-setup x ,svtv-data))
+          ((when err)
+           (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
+          ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
+           (svtv-data-debug-pipeline-aux ,env pipeline-setup
+                                         :filename ,filename
+                                         :svtv-data ,svtv-data
+                                         :moddb ,moddb
+                                         :aliases ,aliases
+                                         :vcd-wiremap ,vcd-wiremap
+                                         :vcd-vals ,vcd-vals
+                                         :skip-flatten ,skip-flatten)))
+       (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
+
+(defmacro svtv-data-debug-defsvtv$-phasewise (defsvtv$-form
+                                               &key
+                                               (env 'nil)
+                                               (filename '"svtv-debug.vcd")
+                                               (svtv-data 'svtv-data)
+                                               (moddb 'moddb)
+                                               (aliases 'aliases)
+                                               (vcd-wiremap 'vcd-wiremap)
+                                               (vcd-vals 'vcd-vals)
+                                               (skip-flatten 'nil))
+  (svtv-data-debug-defsvtv$-phasewise-fn defsvtv$-form
+                                         env
+                                         filename
+                                         svtv-data
+                                         moddb
+                                         aliases
+                                         vcd-wiremap
+                                         vcd-vals
+                                         skip-flatten))
+  
+
+
+(defprod svtv-evaldata
+  ((nextstate svex-alist-p)
+   (inputs svex-envlist-p)
+   (initst svex-env-p))
+  :layout :tree)
+
+(local (defthm svex-env-p-of-nth
+         (implies (svex-envlist-p x)
+                  (svex-env-p (nth n x)))))
+
+;; bozo move somewhere sensible
+(defines svex-eval-svtv-phases
+  (define svex-eval-svtv-phases ((x svex-p)
+                                    (phase natp)
+                                    (data svtv-evaldata-p))
+    :measure (acl2::nat-list-measure (list phase (svex-count x) 1))
+    :returns (val 4vec-p)
+    :verify-guards nil
+    (b* ((x (svex-fix x)))
+      (svex-case x
+        :quote x.val
+        :var (b* (((svtv-evaldata data))
+                  (look (svex-fastlookup x.name data.nextstate))
+                  ((when look)
+                   ;; state var
+                   (if (zp phase)
+                       (svex-env-lookup x.name data.initst)
+                     (svex-eval-svtv-phases look (1- phase) data))))
+               ;; input var
+               (svex-env-lookup x.name (nth phase data.inputs)))
+        :call (svex-eval-svtv-phases-call x phase data))))
+
+  (define svex-eval-svtv-phases-call ((x svex-p)
+                                      (phase natp)
+                                      (data svtv-evaldata-p))
+    :measure (acl2::nat-list-measure (list phase (svex-count x) 0))
+    :returns (val 4vec-p)
+    :guard (svex-case x :call)
+    (b* (((unless (mbt (svex-case x :call))) (4vec-x))
+         ((svex-call x)))
+      (mbe :logic (b* ((args (svexlist-eval-svtv-phases x.args phase data)))
+                    (svex-apply x.fn args))
+           :exec
+           (case x.fn
+             ((? ?*)
+              (b* (((unless (eql (len x.args) 3))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (3vec-fix (svex-eval-svtv-phases (first x.args) phase data)))
+                   ((4vec test))
+                   ((when (eql test.upper 0))
+                    (svex-eval-svtv-phases (third x.args) phase data))
+                   ((when (not (eql test.lower 0)))
+                    (svex-eval-svtv-phases (second x.args) phase data))
+                   (then (svex-eval-svtv-phases (second x.args) phase data))
+                   (else (svex-eval-svtv-phases (third x.args) phase data)))
+                (case x.fn
+                  (? (4vec-? test then else))
+                  (?* (4vec-?* test then else)))))
+             (?!
+              (b* (((unless (eql (len x.args) 3))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (svex-eval-svtv-phases (first x.args) phase data))
+                   ((4vec test))
+                   (testvec (logand test.upper test.lower))
+                   ((when (eql testvec 0))
+                    (svex-eval-svtv-phases (third x.args) phase data)))
+                (svex-eval-svtv-phases (second x.args) phase data)))
+             (bit?
+              (b* (((unless (eql (len x.args) 3))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (svex-eval-svtv-phases (first x.args) phase data))
+                   ((when (eql test 0))
+                    (svex-eval-svtv-phases (third x.args) phase data))
+                   ((when (eql test -1))
+                    (svex-eval-svtv-phases (second x.args) phase data)))
+                (4vec-bit? test
+                           (svex-eval-svtv-phases (second x.args) phase data)
+                           (svex-eval-svtv-phases (third x.args) phase data))))
+             (bit?!
+              (b* (((unless (eql (len x.args) 3))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (svex-eval-svtv-phases (first x.args) phase data))
+                   ((when (eql test -1))
+                    (svex-eval-svtv-phases (second x.args) phase data))
+                   ((4vec test))
+                   ((when (eql (logand test.upper test.lower) 0))
+                    (svex-eval-svtv-phases (third x.args) phase data)))
+                (4vec-bit?! test
+                            (svex-eval-svtv-phases (second x.args) phase data)
+                            (svex-eval-svtv-phases (third x.args) phase data))))
+             (bitand
+              (b* (((unless (eql (len x.args) 2))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (svex-eval-svtv-phases (first x.args) phase data))
+                   ((when (eql test 0)) 0))
+                (4vec-bitand test
+                             (svex-eval-svtv-phases (second x.args) phase data))))
+             (bitor
+              (b* (((unless (eql (len x.args) 2))
+                    (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))
+                   (test (svex-eval-svtv-phases (first x.args) phase data))
+                   ((when (eql test -1)) -1))
+                (4vec-bitor test
+                            (svex-eval-svtv-phases (second x.args) phase data))))
+             (otherwise
+              (svex-apply x.fn (svexlist-eval-svtv-phases x.args phase data)))))))
+
+  (define svexlist-eval-svtv-phases ((x svexlist-p)
+                                        (phase natp)
+                                        (data svtv-evaldata-p))
+    :measure (acl2::nat-list-measure (list phase (svexlist-count x) 1))
+    :returns (vals 4veclist-p)
+    (if (atom x)
+        nil
+      (cons (svex-eval-svtv-phases (car x) phase data)
+            (svexlist-eval-svtv-phases (cdr x) phase data))))
+  ///
+
+  (local (defthm consp-of-svexlist-eval-svtv-phases
+           (equal (consp (svexlist-eval-svtv-phases x phase data))
+                  (consp x))
+           :hints (("goal" :expand ((svexlist-eval-svtv-phases x phase data))))))
+
+  ;; (local (defthm len-of-svexlist-eval-svtv-phases
+  ;;          (equal (len (svexlist-eval-svtv-phases x phase data))
+  ;;                 (len x))
+  ;;          :hints(("Goal" :in-theory (enable len)))))
+  (local (in-theory (disable (tau-system))))
+
+    (local (defthm upper-lower-of-3vec-fix
+           (implies (and (3vec-p x)
+                         (not (equal (4vec->lower x) 0)))
+                    (not (equal (4vec->upper x) 0)))
+           :hints(("Goal" :in-theory (enable 3vec-p)))))
+
+  (local (defthm 4vec-?-cases
+           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                         (equal (4vec-? test then else)
+                                (4vec-fix else)))
+                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                         (equal (4vec-? test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+
+  (local (defthm 4vec-bit?-cases
+           (and (implies (equal test 0)
+                         (equal (4vec-bit? test then else)
+                                (4vec-fix else)))
+                (implies (equal test -1)
+                         (equal (4vec-bit? test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
+
+  (local (defthm 4vec-bit?!-cases
+           (and (implies (equal (logand (4vec->upper test)
+                                        (4vec->lower test))
+                                0)
+                         (equal (4vec-bit?! test then else)
+                                (4vec-fix else)))
+                (implies (equal test -1)
+                         (equal (4vec-bit?! test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
+
+  (local (defthm 4vec-?*-cases
+           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                         (equal (4vec-?* test then else)
+                                (4vec-fix else)))
+                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                         (equal (4vec-?* test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
+
+  (local (defthm 4vec-bitand-case
+           (implies (equal test 0)
+                    (equal (4vec-bitand test x)
+                           0))
+           :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand)))))
+
+  (local (defthm 4vec-bitor-case
+           (implies (equal test -1)
+                    (equal (4vec-bitor test x)
+                           -1))
+           :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor)))))
+
+  (verify-guards svex-eval-svtv-phases
+    :hints((and stable-under-simplificationp
+                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth 4vec-?!)
+                                  (svex-eval))
+                  :expand ((svexlist-eval-svtv-phases (svex-call->args x) phase data)
+                           (svexlist-eval-svtv-phases (cdr (svex-call->args x)) phase data)
+                           (svexlist-eval-svtv-phases (cddr (svex-call->args x)) phase data))))))
+  (memoize 'svex-eval-svtv-phases-call)
+
+  (defthm-svex-eval-svtv-phases-flag
+    (defthm svex-eval-svtv-phases-correct
+      (equal (svex-eval-svtv-phases x phase data)
+             (b* (((svtv-evaldata data)))
+               (svex-eval-unroll-multienv x phase data.nextstate data.inputs data.initst)))
+      :hints ('(:expand ((svex-eval-svtv-phases x phase data)
+                         (:free (ins initst nextstate phase) (svex-eval-unroll-multienv x phase nextstate ins initst)))))
+      :flag svex-eval-svtv-phases)
+    (defthm svex-eval-svtv-phases-call-correct
+      (implies (svex-case x :call)
+               (equal (svex-eval-svtv-phases-call x phase data)
+                      (b* (((svtv-evaldata data)))
+                        (svex-eval-unroll-multienv x phase data.nextstate data.inputs data.initst))))
+      :hints ('(:expand ((svex-eval-svtv-phases-call x phase data)
+                         (:free (ins initst nextstate phase) (svex-eval-unroll-multienv x phase nextstate ins initst))))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable svex-eval))))
+      :flag svex-eval-svtv-phases-call)
+    (defthm svexlist-eval-svtv-phases-correct
+      (equal (svexlist-eval-svtv-phases x phase data)
+             (b* (((svtv-evaldata data)))
+               (svexlist-eval-unroll-multienv x phase data.nextstate data.inputs data.initst)))
+      :hints ('(:expand ((svexlist-eval-svtv-phases x phase data)
+                         (:free (nextstate ins initst) (svexlist-eval-unroll-multienv x phase nextstate ins initst)))))
+      :flag svexlist-eval-svtv-phases))
+
+  (deffixequiv-mutual svex-eval-svtv-phases))
+
+
+(define svtv-probealist-eval ((x svtv-probealist-p)
+                              (values svex-alist-p)
+                              (data svtv-evaldata-p))
+  :returns (result svex-env-p)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (svtv-probealist-eval (cdr x) values data))
+       ((svtv-probe p) (cdar x))
+       (svex (svex-fastlookup p.signal values))
+       ((unless svex)
+        (cw "No signal named: ~x0~%" p.signal)
+        (svtv-probealist-eval (cdr x) values data)))
+    (cons (cons (svar-fix (caar x))
+                (svex-eval-svtv-phases svex p.time data))
+          (svtv-probealist-eval (cdr x) values data))))
+
+
+       
+       
+    
+
+
+
+
+
+(define svtv-data-run-cycle-fsm ((ins svex-envlist-p)
+                                 (initst svex-env-p)
+                                 (probes svtv-probealist-p)
+                                 &key
+                                 (svtv-data 'svtv-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              ;; (svtv-data->cycle-fsm-validp svtv-data)
+              (equal (alist-keys initst)
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+  :returns (result svex-env-p)
+  (b* (((base-fsm fsm) (svtv-data->cycle-fsm svtv-data))
+       ((with-fast fsm.values))
+       (renamed-values (svtv-name-lhs-map-compose (svtv-data->namemap svtv-data) fsm.values))
+       ((with-fast fsm.nextstate renamed-values initst))
+       (evaldata (make-svtv-evaldata :nextstate fsm.nextstate
+                                     :inputs (make-fast-alistlist ins)
+                                     :initst initst))
+       (res
+        (svtv-probealist-eval probes renamed-values evaldata)))
+    (clear-memoize-table 'svex-eval-svtv-phases-call)
+    res))
+
+
+
+(define svtv-data-run-pipeline-aux ((env svex-env-p)
+                                    (setup pipeline-setup-p)
+                                    &key
+                                    (svtv-data 'svtv-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              ;; (svtv-data->namemap-validp svtv-data)
+              (equal (svex-alist-keys (pipeline-setup->initst setup))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data)))))
+  :returns (result svex-env-p)
+  (b* (((acl2::with-fast env))
+       ((pipeline-setup setup))
+       (rename-ins (svex-alistlist-eval setup.inputs env))
+       (rename-overrides (svex-alistlist-eval setup.overrides env))
+       (initst (svex-alist-eval setup.initst env))
+       (outvars (svtv-probealist-outvars setup.probes))
+       (len (len outvars))
+       (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
+                           :namemap (svtv-data->namemap svtv-data)))
+       (cycle-ins (svtv-fsm-run-input-envs
+                   (take len rename-ins)
+                   rename-overrides fsm)))
+    (svtv-data-run-cycle-fsm cycle-ins initst setup.probes)))
+
+
+
+
+(defun svtv-data-run-defsvtv$-fn (defsvtv$-form
+                                   env
+                                   svtv-data)
+  (declare (xargs :mode :program))
+  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
+       ((acl2::unless-casematch defsvtv$-form
+                                ('defsvtv$ name . args))
+        (raise "Malformed defsvtv$-form (second argument)."))
+       ((mv ?stobj defsvtv-args)
+        (process-defsvtv$-user-args name args)))
+    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
+          ((mv err pipeline-setup ,svtv-data)
+           (defsvtv-stobj-pipeline-setup x ,svtv-data))
+          ((when err)
+           (mv err nil ,svtv-data))
+          (env
+           (svtv-data-run-pipeline-aux ,env pipeline-setup
+                                       :svtv-data ,svtv-data)))
+       (svtv-print-alist-readable env)
+       (mv nil env ,svtv-data))))
+
+(defmacro svtv-data-run-defsvtv$ (defsvtv$-form
+                                   &key
+                                   (env 'nil)
+                                   (svtv-data 'svtv-data))
+  (svtv-data-run-defsvtv$-fn defsvtv$-form
+                             env svtv-data))
+
+
+(defun svtv-data-run-defsvtv$-phasewise-fn (defsvtv$-form
+                                             env
+                                             svtv-data)
+  (declare (xargs :mode :program))
+  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-phasewise-fn)
+       ((acl2::unless-casematch defsvtv$-form
+                                ('defsvtv$-phasewise name . args))
+        (raise "Malformed defsvtv$-form (second argument)."))
+       ((mv ?stobj defsvtv-args)
+        (process-defsvtv$-phasewise-user-args name args)))
+    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
+          ((mv err pipeline-setup ,svtv-data)
+           (defsvtv-stobj-pipeline-setup x ,svtv-data))
+          ((when err)
+           (mv err nil ,svtv-data))
+          (env
+           (svtv-data-run-pipeline-aux ,env pipeline-setup
+                                       :svtv-data ,svtv-data)))
+       (svtv-print-alist-readable env)
+       (mv nil env ,svtv-data))))
+
+(defmacro svtv-data-run-defsvtv$-phasewise (defsvtv$-form
+                                             &key
+                                             (env 'nil)
+                                             (svtv-data 'svtv-data))
+  (svtv-data-run-defsvtv$-phasewise-fn defsvtv$-form
+                                       env svtv-data))
 
 
   
+
+(local
+ (defconst *my-design*
+   (make-design
+    :top "my-mod"
+    :modalist (list
+               (cons "my-mod"
+                     (make-module
+                      :wires (list (make-wire :name "in"
+                                              :width 5
+                                              :low-idx 0)
+                                   (make-wire :name "out"
+                                              :width 5
+                                              :low-idx 0))
+                      :assigns (list (cons
+                                      (list (make-lhrange
+                                             :w 5
+                                             :atom
+                                             (make-lhatom-var
+                                              :name "out"
+                                              :rsh 0)))
+                                      (make-driver
+                                       :value (svcall bitnot
+                                                      (svcall zerox 5 "in")))))))))))
+(local
+ (make-event
+  (b* (((mv err result svtv-data)
+        (svtv-data-run-defsvtv$-phasewise
+         (defsvtv$-phasewise my-svtv
+           :design *my-design*
+           :phases
+           ((:label the-phase
+             :inputs (("in" in))
+             :outputs (("out" out)))
+            (:label the-next-phase
+             :inputs (("in" in2))
+             :outputs (("out" out2)))))
+         :env '((in . 5) (in2 . 9))))
+       (expected '((OUT . #ux1A) (OUT2 . #ux16)))
+       ((unless (equal result expected))
+        (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
+            nil state svtv-data)))
+    (mv err '(value-triple :ok) state svtv-data))))

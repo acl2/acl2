@@ -23,16 +23,125 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
 
+;; ACC contains the smallest items, in decreasing order.
+(defund merge-<-and-remove-dups-aux (l1 l2 acc)
+  (declare (xargs :measure (+ (len l1) (len l2))
+
+                  :guard (and (all-rationalp l1)
+                              (all-rationalp l2)
+                              (true-listp acc))))
+  (cond ((atom l1) (revappend acc l2))
+        ((atom l2) (revappend acc l1))
+        ((equal (car l1) (car l2)) ;drop one copy:
+         (merge-<-and-remove-dups-aux (cdr l1) l2 acc))
+        ((< (car l1) (car l2))
+         (merge-<-and-remove-dups-aux (cdr l1)
+                                      l2 (cons (car l1) acc)))
+        (t (merge-<-and-remove-dups-aux l1 (cdr l2)
+                                        (cons (car l2) acc)))))
+
+(defthm nat-listp-of-merge-<-and-remove-dups-aux
+  (implies (and (nat-listp l1)
+                (nat-listp l2)
+                (nat-listp acc))
+           (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+
+(defthm sortedp-<=-of-merge-<-and-remove-dups-aux
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (sortedp-<= (reverse-list acc))
+                (all-<=-all acc l1)
+                (all-<=-all acc l2))
+           (sortedp-<= (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
+                                     revappend-lemma))))
+
+(defthmd not-intersection-equal-when-all-<-of-car-and-sortedp-<=
+  (implies (and (all-< acc (car l2))
+                (sortedp-<= l2))
+           (not (intersection-equal l2 acc)))
+  :hints (("Goal" :in-theory (enable all-< sortedp-<= intersection-equal))))
+
+(defthmd <=-of-car-and-cadr-when-sortedp-<=
+  (implies (and (sortedp-<= x)
+                (consp (cdr x)))
+           (<= (car x) (cadr x)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthmd <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal
+  (implies (and (sortedp-<= x)
+                (no-duplicatesp-equal x)
+                (consp (cdr x))
+                (all-rationalp x))
+           (< (car x) (cadr x)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable sortedp-<= no-duplicatesp-equal))))
+
+(defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (sortedp-<= (reverse-list acc))
+                (implies (consp l1) (all-< acc (first l1)))
+                (implies (consp l2) (all-< acc (first l2)))
+                (no-duplicatesp-equal l1)
+                (no-duplicatesp-equal l2)
+                (no-duplicatesp-equal acc)
+                (all-rationalp l1)
+                (all-rationalp l2))
+           (no-duplicatesp-equal (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
+                                     revappend-lemma
+                                     not-intersection-equal-when-all-<-of-car-and-sortedp-<=
+                                     <=-of-car-and-cadr-when-sortedp-<=
+                                     <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal))))
+
+;; Merge L1 and L2 into a sorted list representing their union, except avoid
+;; duplication that arises when an item is in both L1 and L2.  L1 and L2 should
+;; each be sorted and duplicate-free.  If either L1 or L2 is empty, this should
+;; be very fast.
+(defund merge-<-and-remove-dups (l1 l2)
+  (declare (xargs :guard (and (all-rationalp l1)
+                              (all-rationalp l2))))
+  (merge-<-and-remove-dups-aux l1 l2 nil))
+
+;(merge-<-and-remove-dups '(1 2 2 3 5 5 5 6 6 8) '(1 2 3 4 5 6 7 7))
+
+(defthm nat-listp-of-merge-<-and-remove-dups
+  (implies (and (nat-listp l1)
+                (nat-listp l2))
+           (nat-listp (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm sortedp-<=-of-merge-<-and-remove-dups
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2))
+           (sortedp-<= (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm no-duplicatesp-equal-of-merge-<-and-remove-dups
+  (implies (and (sortedp-<= l1)
+                (sortedp-<= l2)
+                (no-duplicatesp-equal l1)
+                (no-duplicatesp-equal l2)
+                (all-rationalp l1)
+                (all-rationalp l2))
+           (no-duplicatesp-equal (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
 ;(verify-termination strip-caddrs) ;todo: have matt fix the termination
 
 ;dup
-(defun my-strip-caddrs (x)
+(defund my-strip-caddrs (x)
   (declare (xargs :guard (all->=-len x 3)))
   (cond ((endp x) nil)
 	(t (cons (caddr (car x))
@@ -43,16 +152,39 @@
          (consp x))
   :hints (("Goal" :in-theory (enable my-strip-caddrs))))
 
+;can expose the cdr to other rules
+(defthm my-strip-caddrs-of-cdr
+  (equal (my-strip-caddrs (cdr x))
+         (cdr (my-strip-caddrs x)))
+  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+
+(defthm my-strip-caddrs-of-cons
+  (equal (my-strip-caddrs (cons x y))
+         (cons (caddr x)
+               (my-strip-caddrs y)))
+  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+
+(defthmd <-of-car-of-car-when-all-<-of-strip-cars
+  (implies (and (all-< (strip-cars x) bound)
+                (consp x))
+           (< (car (car x)) bound))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+(local (in-theory (enable <-of-car-of-car-when-all-<-of-strip-cars)))
+
 (local (in-theory (disable set-difference-equal strip-cars strip-cadrs))) ;prevent inductions
 
-(local (in-theory (disable natp  dargp)))
+(local (in-theory (disable natp dargp
+                           default-car
+                           max
+                           )))
 
 ;;todo: NO-ATOMS, all-consp, and all-myquotep are the same for lists of dargs
 
 (defthm <-of--1-and-largest-non-quotep
   (implies (all-dargp x)
            (equal (< -1 (largest-non-quotep x))
-                  (not (no-atoms x)))))
+                  (not (all-consp x)))))
 
 ;dup
 (defthm <-of-if-arg2
@@ -77,7 +209,7 @@
 
 ;; a triple of the form (<nodenum-of-var> <equated-nodenum-or-constant> <literal-nodenum>).
 ;; TODO: Save a cons by making the literal-nodenum the final cdr?
-(defun subst-candidatep (cand)
+(defund subst-candidatep (cand)
   (declare (xargs :guard t))
   (and (true-listp cand)
        (equal 3 (len cand))
@@ -87,31 +219,37 @@
 
 (defthmd natp-of-car-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (natp (car cand))))
+           (natp (car cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd consp-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (consp cand)))
+           (consp cand))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd consp-of-cdr-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (consp (cdr cand))))
+           (consp (cdr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd len-of-cadr-when-subst-candidatep
   (implies (subst-candidatep cand)
            (equal (len (cadr cand))
                   (if (consp (cadr cand))
                       2
-                    0))))
+                    0)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd dargp-of-cadr-when-subst-candidatep
   (implies (subst-candidatep cand)
-           (dargp (cadr cand))))
+           (dargp (cadr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defthmd natp-of-cadr-when-subst-candidatep
   (implies (and (subst-candidatep cand)
                 (not (consp (cadr cand))))
-           (natp (cadr cand))))
+           (natp (cadr cand)))
+  :hints (("Goal" :in-theory (enable subst-candidatep))))
 
 (defund subst-candidate-listp (cands)
   (declare (xargs :guard t))
@@ -133,16 +271,18 @@
   :hints (("Goal" :in-theory (enable subst-candidate-listp))))
 
 ;;so we can call strip-cadrs
-(defthmd ALL->=-LEN-of-2-when-SUBST-CANDIDATE-LISTP
-  (IMPLIES (SUBST-CANDIDATE-LISTP SUBST-CANDIDATES)
-           (ALL->=-LEN SUBST-CANDIDATES 2))
-  :hints (("Goal" :in-theory (enable SUBST-CANDIDATE-LISTP))))
+(defthmd all->=-len-of-2-when-subst-candidate-listp
+  (implies (subst-candidate-listp subst-candidates)
+           (all->=-len subst-candidates 2))
+  :hints (("Goal" :in-theory (enable subst-candidatep
+                                     subst-candidate-listp))))
 
 ;;so we can call strip-caddrs
-(defthmd ALL->=-LEN-of-3-when-SUBST-CANDIDATE-LISTP
-  (IMPLIES (SUBST-CANDIDATE-LISTP SUBST-CANDIDATES)
-           (ALL->=-LEN SUBST-CANDIDATES 3))
-  :hints (("Goal" :in-theory (enable SUBST-CANDIDATE-LISTP))))
+(defthmd all->=-len-of-3-when-subst-candidate-listp
+  (implies (subst-candidate-listp subst-candidates)
+           (all->=-len subst-candidates 3))
+  :hints (("Goal" :in-theory (enable subst-candidatep
+                                     subst-candidate-listp))))
 
 (defthm subst-candidate-listp-of-cdr
   (implies (subst-candidate-listp subst-candidates)
@@ -181,18 +321,175 @@
 (defthm all-dargp-of-strip-cadrs-when-subst-candidate-listp
   (implies (subst-candidate-listp subst-candidates)
            (all-dargp (strip-cadrs subst-candidates)))
-  :hints (("Goal" :in-theory (enable subst-candidate-listp strip-cadrs))))
+  :hints (("Goal" :in-theory (enable subst-candidatep subst-candidate-listp strip-cadrs))))
 
 ;; TODO: What if we have the equality of two vars?  Should we consider both?
 
+
+;decides whether we should substitute (is it the nodenum of a var, and is it equated to a term that doesn't include itself?)
+;; Returns (mv substp var).
+;; Does not check whether the var depends on itself.
+(defund ensure-substitutable-var2 (nodenum-or-quotep dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (dargp-less-than nodenum-or-quotep dag-len))
+                  :guard-hints (("Goal" :in-theory (disable myquotep))))
+           (ignore dag-len))
+  (if (atom nodenum-or-quotep)
+      (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+        (if (symbolp expr)
+            (mv t expr)
+          (mv nil nil)))
+    (mv nil nil)))
+
+;;;
+;;; find-var-and-expr-to-subst
+;;;
+
+;; Returns (mv foundp var nodenum-of-var equated-thing) where equated-thing will always be a nodenum or quotep.
+;the awkwardness here is to avoid doing the aref more than once..
+;; TODO: what if we have (equal var1 var2)?  is there a way to tell which would be better to eliminate? maybe it doesn't matter
+;; Does not check whether the var depends on itself.
+(defund find-var-and-expr-to-subst2 (lhs rhs dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (dargp-less-than lhs dag-len)
+                              (dargp-less-than rhs dag-len))))
+  (mv-let (substp var)
+    (ensure-substitutable-var2 lhs dag-array dag-len)
+    (if substp
+        (mv t var lhs rhs)
+      (mv-let (substp var)
+        (ensure-substitutable-var2 rhs dag-array dag-len)
+        (if substp
+            (mv t var rhs lhs)
+          (mv nil nil nil nil))))))
+
+(defthm natp-of-mv-nth-2-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (dargp rhs)
+                (dargp lhs))
+           (natp (mv-nth 2 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm <-of-mv-nth-2-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (dargp-less-than lhs dag-len)
+                (dargp-less-than rhs dag-len))
+           (< (mv-nth 2 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+              dag-len))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm dargp-of-mv-nth-3-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (dargp rhs)
+                (dargp lhs)
+                (not (consp (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len)))))
+           (dargp (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-find-var-and-expr-to-subst2
+  (implies (and (mv-nth 0 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (dargp-less-than lhs dag-len)
+                (dargp-less-than rhs dag-len))
+           (dargp-less-than (mv-nth 3 (find-var-and-expr-to-subst2 lhs rhs dag-array dag-len))
+                            dag-len))
+  :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst2 ensure-substitutable-var2))))
+
+;;;
+;;; check-for-var-subst-literal
+;;;
+
+;; Checks whether LITERAL-NODENUM represents a (negated) equality we can use to substitute.
+;; Returns (mv foundp var nodenum-of-var nodenum-or-quotep-to-put-in).
+;; Does not check whether the var depends on itself.
+(defund check-for-var-subst-literal2 (literal-nodenum dag-array dag-len)
+  (declare (xargs :guard (and (natp literal-nodenum)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (< literal-nodenum dag-len))
+                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr
+                                                           NATP-OF-+-OF-1)))))
+  (let ((expr (aref1 'dag-array dag-array literal-nodenum)))
+    ;; we seek an expr of the form (not <nodenum>)
+    (if (not (and (call-of 'not expr)
+                  (consp (dargs expr))
+                  (integerp (darg1 expr))))
+        (mv nil nil nil nil) ;fail
+      (let ((non-nil-expr (aref1 'dag-array dag-array (darg1 expr)))) ;;we seek a NON-NIL-EXPR of the form (equal <nodenum-of-var> <thing>) or vice-versa
+        (if (not (and (call-of 'equal non-nil-expr)
+                      (consp (cdr (dargs non-nil-expr)))))
+            (mv nil nil nil nil) ;fail
+          (find-var-and-expr-to-subst2 (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
+          )))))
+
+(defthm natp-of-mv-nth-2-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (natp (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm <-mv-nth-2-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (< (mv-nth 2 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+              dag-len))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (dargp-less-than (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                            dag-len))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal2 len-of-0-and-len consp-of-cdr))))
+
+(defthm dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len)
+                (<= dag-len bound))
+           (dargp-less-than (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                            bound))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2))))
+
+(defthm dargp-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (dargp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+                               dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen))))
+
+(defthm natp-of-mv-nth-3-of-check-for-var-subst-literal2
+  (implies (and (mv-nth 0 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))
+                (natp literal-nodenum)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< literal-nodenum dag-len))
+           (equal (natp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len)))
+                  (not (consp (mv-nth 3 (check-for-var-subst-literal2 literal-nodenum dag-array dag-len))))))
+  :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2)
+           :in-theory (disable dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2
+                               dargp-less-than-of-mv-nth-3-of-check-for-var-subst-literal2-gen))))
+
 ;; Returns a subst-candidate-listp representing all the substitution candidates
 ;; for the LITERAL-NODENUMS.  Looks through the literals for ones that equate
-;; vars with other nodes.
-(defund subst-candidates (literal-nodenums dag-array dag-len acc)
+;; vars with other nodes.  Does not check whether the var depends on itself.
+(defund subst-candidates (literal-nodenums dag-array dag-len lim acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (if (endp literal-nodenums)
+                              (all-< literal-nodenums dag-len)
+                              (natp lim))))
+  (if (or (endp literal-nodenums)
+          (zp lim))
       acc
     (b* ((literal-nodenum (first literal-nodenums))
          ((mv foundp
@@ -200,10 +497,11 @@
               nodenum-of-var
               nodenum-or-quotep-to-put-in)
           ;;  TTODO: Use a version of this that doesn't check supporters (make sure, elsewhere, that we avoid self-supporting vars):
-          (check-for-var-subst-literal literal-nodenum dag-array dag-len)))
+          (check-for-var-subst-literal2 literal-nodenum dag-array dag-len)))
       (subst-candidates (rest literal-nodenums)
                         dag-array
                         dag-len
+                        (if foundp (+ -1 lim) lim)
                         (if foundp
                             (cons (list nodenum-of-var nodenum-or-quotep-to-put-in literal-nodenum)
                                   acc)
@@ -211,7 +509,7 @@
 
 (defthm subst-candidates-when-not-consp
   (implies (not (consp literal-nodenums))
-           (equal (subst-candidates literal-nodenums dag-array dag-len acc)
+           (equal (subst-candidates literal-nodenums dag-array dag-len lim acc)
                   acc))
   :hints (("Goal" :in-theory (enable subst-candidates))))
 
@@ -220,8 +518,8 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (subst-candidate-listp acc))
-           (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len acc)))
-  :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidate-listp)
+           (subst-candidate-listp (subst-candidates literal-nodenums dag-array dag-len lim acc)))
+  :hints (("Goal" :in-theory (e/d (subst-candidates subst-candidatep subst-candidate-listp)
                                   ()))))
 
 (defthm all-<-of-strip-cars-of-subst-candidates
@@ -230,18 +528,18 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-< (strip-cars acc)
                        dag-len))
-           (all-< (strip-cars (subst-candidates literal-nodenums dag-array dag-len acc))
+           (all-< (strip-cars (subst-candidates literal-nodenums dag-array dag-len lim acc))
                   dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates))))
 
 (defthmd subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len acc))
+  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
                  (append literal-nodenums (my-strip-caddrs acc)))
-  :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL)))))
+  :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL2)))))
 
 (local
  (defthm subsetp-equal-of-my-strip-caddrs-of-subst-candidates
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len nil))
+  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim nil))
                  literal-nodenums)
   :hints (("Goal" :use (:instance subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper (acc nil))
            :in-theory (disable subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper)))))
@@ -252,12 +550,12 @@
                 (nat-listp literal-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< (largest-non-quotep (strip-cadrs acc)) dag-len))
-           (< (largest-non-quotep (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len acc)))
+           (< (largest-non-quotep (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc)))
               dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs
                                      largest-non-quotep ;expensive
-                                     check-for-var-subst-literal
-                                     find-var-and-expr-to-subst))))
+                                     check-for-var-subst-literal2
+                                     find-var-and-expr-to-subst2))))
 
 ;similar to the above
 (defthm all-dargp-less-than-of-strip-cadrs-of-subst-candidates
@@ -265,10 +563,10 @@
                 (nat-listp literal-nodenums)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (all-dargp-less-than (strip-cadrs acc) dag-len))
-           (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len acc))
+           (all-dargp-less-than (strip-cadrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
                                dag-len))
-  :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal
-                                     find-var-and-expr-to-subst
+  :hints (("Goal" :in-theory (enable subst-candidates strip-cadrs largest-non-quotep check-for-var-subst-literal2
+                                     find-var-and-expr-to-subst2
                                      NATP-OF-+-OF-1))))
 
 
@@ -323,10 +621,10 @@
   :hints ( ;("subgoal *1/4" :cases ((consp (CDR SUBST-CANDIDATES))))
           ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-relevant-vars STRIP-CARS))))
 
-;; Merges the deps for all the ARGS into ACC
-(defund merge-values-for-args (args candidate-deps-array
-                                   acc ; should be sorted
-                                   )
+;; Merges the deps for all the ARGS into ACC, avoiding duplicates.
+(defund merge-deps-for-args (args candidate-deps-array
+                                  acc ; should be sorted
+                                  )
   (declare (xargs :guard (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                               (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                               (true-listp args)
@@ -335,37 +633,48 @@
       acc
     (let ((arg (first args)))
       (if (consp arg) ;check for quotep
-          (merge-values-for-args (rest args) candidate-deps-array acc)
+          (merge-deps-for-args (rest args) candidate-deps-array acc)
         (let ((candidates-arg-depends-on (aref1 'candidate-deps-array candidate-deps-array arg)))
-          (merge-values-for-args (rest args)
-                                 candidate-deps-array
-                                 (merge-< candidates-arg-depends-on acc nil)))))))
+          (merge-deps-for-args (rest args)
+                               candidate-deps-array
+                               (merge-<-and-remove-dups candidates-arg-depends-on acc)))))))
 
-(defthm nat-listp-of-merge-values-for-args
+(defthm nat-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc))
-           (nat-listp (merge-values-for-args args candidate-deps-array acc)))
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+           (nat-listp (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
-(defthm true-listp-of-merge-values-for-args
+(defthm true-listp-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc))
-           (true-listp (merge-values-for-args args candidate-deps-array acc)))
+           (true-listp (merge-deps-for-args args candidate-deps-array acc)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
 
-(defthm sortedp-<=-of-merge-values-for-args
+(defthm sortedp-<=-of-merge-deps-for-args
   (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                 (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
                 (true-listp args)
                 (nat-listp acc)
                 (sortedp-<= acc))
-           (sortedp-<= (merge-values-for-args args candidate-deps-array acc)))
-  :hints (("Goal" :in-theory (enable merge-values-for-args))))
+           (sortedp-<= (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args))))
+
+(defthm no-duplicatesp-equal-of-merge-deps-for-args
+  (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                (all-dargp-less-than args (alen1 'candidate-deps-array candidate-deps-array))
+                (true-listp args)
+                (nat-listp acc)
+                (sortedp-<= acc)
+                (no-duplicatesp-equal acc))
+           (no-duplicatesp-equal (merge-deps-for-args args candidate-deps-array acc)))
+  :hints (("Goal" :in-theory (enable merge-deps-for-args
+                                     all-rationalp-when-nat-listp))))
 
 ;; Helps compute the set of candidate vars on which every node in the DAG depends.
 ;; Returns the candidate-deps-array
@@ -388,8 +697,7 @@
               (fquotep expr))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len)
         ;; it's a function call, so compute the set of vars on which the args depend
-        ;; TODO: Optimize the compositition of merging and the duplicate removal:
-        (let* ((candidates-node-depends-on (remove-duplicates-from-sorted-list (merge-values-for-args (dargs expr) candidate-deps-array nil) nil))
+        (let* ((candidates-node-depends-on (merge-deps-for-args (dargs expr) candidate-deps-array nil))
                (candidate-deps-array (aset1 'candidate-deps-array candidate-deps-array n candidates-node-depends-on)))
           (populate-candidate-deps-array-aux (+ 1 n) max candidate-deps-array dag-array dag-len))))))
 
@@ -419,7 +727,7 @@
 ;; todo: avoid doing this if all equated things are constants?
 (defund populate-candidate-deps-array (subst-candidates dag-array dag-len)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
-                              (not (no-atoms (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
+                              (not (all-consp (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
                               (consp subst-candidates)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (or (endp subst-candidates)
@@ -438,7 +746,7 @@
 (defthm candidate-deps-arrayp-of-populate-candidate-deps-array
   (implies (and (subst-candidate-listp subst-candidates)
                 (consp subst-candidates)
-                (not (no-atoms (strip-cadrs subst-candidates)))
+                (not (all-consp (strip-cadrs subst-candidates)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (or (endp subst-candidates)
                     (<= (maxelem (strip-cars subst-candidates))
@@ -449,23 +757,16 @@
   :hints (("Goal" :in-theory (enable populate-candidate-deps-array))))
 
 (local
- (defthm all-myquotep-becomes-no-atoms-when-and-all-dargp
+ (defthm all-myquotep-becomes-all-consp-when-all-dargp
    (implies (all-dargp items)
             (equal (all-myquotep items)
-                   (no-atoms items)))
-   :hints (("Goal" :in-theory (enable all-myquotep no-atoms all-dargp)))))
-
-(local
- (defthm no-atoms-becomes-all-consp-when-and-all-dargp
-   (implies (all-dargp items)
-            (equal (no-atoms items)
                    (all-consp items)))
-   :hints (("Goal" :in-theory (enable all-myquotep no-atoms all-dargp)))))
+   :hints (("Goal" :in-theory (enable all-myquotep all-consp all-dargp)))))
 
 (defthm alen1-of-populate-candidate-deps-array
   (implies (and (subst-candidate-listp subst-candidates)
                 (consp subst-candidates)
-                (not (no-atoms (strip-cadrs subst-candidates)))
+                (not (all-consp (strip-cadrs subst-candidates)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (or (endp subst-candidates)
                     (<= (maxelem (strip-cars subst-candidates))
@@ -501,8 +802,46 @@
           (cdr (strip-cadrs x)))
    :hints (("Goal" :in-theory (enable strip-cadrs)))))
 
-;; Returns a list of subst-candidates suitable for simultaneous checking.
-;; TODO: Exclude any that depend on themselves, then drop that check from when we form the candidates (it should be faster to do it here)
+(defun memberp-assuming-sorted-<= (a x)
+  (declare (xargs :guard (and (rationalp a)
+                              (rational-listp x)
+                              (sortedp-<= x))))
+  (if (atom x)
+      nil
+    (let ((x0 (car x)))
+      (if (= a x0)
+          t
+        (if (< a x0)
+            ;; since x is sorted, a cannot appear in it
+            nil
+          ;; we know that a>x0.
+          ;; keep looking:
+          (memberp-assuming-sorted-<= a (rest x)))))))
+
+(defun disjointp-assuming-sorted-<= (x y)
+  (declare (xargs :guard (and (rational-listp x)
+                              (sortedp-<= x)
+                              (rational-listp y)
+                              (sortedp-<= y))
+                  :measure (+ (len x)
+                              (len y))))
+  (if (or (atom x)
+          (atom y))
+      t
+    (let ((x0 (car x))
+          (y0 (car y)))
+      (if (= x0 y0)
+          nil ;not disjoint
+        (if (< x0 y0)
+            ;; since y is sorted, (car x) cannot be in y, so we skip it:
+            (disjointp-assuming-sorted-<= (rest x) y)
+          ;; We know (car y) < (car x).
+          ;; since x is sorted, (car y) cannot be in x, so we skip it:
+          (disjointp-assuming-sorted-<= x (rest y)))))))
+
+;; Returns a list of subst-candidates suitable for simultaneous checking (no var in the set depends on any other vars in the set, or on itself).
+;; TODO: Stop once we have a nice chunk of vars to substitute (100?).
+;; TODO: Can we mark vars to avoid in an array of bits, to avoid operations on sorted lists?
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
                                             subst-candidates-acc ; candidates we have already decided to added to the set
@@ -526,7 +865,8 @@
                                                   consp-of-cdr-when-subst-candidatep
                                                   natp-of-cadr-when-subst-candidatep
                                                   <=-of-0-when-0-natp
-                                                  ALL-RATIONALP-WHEN-ALL-NATP)
+                                                  rational-listp-when-nat-listp
+                                                  all-rationalp-when-all-natp)
                                                  (natp))))))
   (if (endp subst-candidates)
       subst-candidates-acc
@@ -539,26 +879,18 @@
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
            ;; Makes sure no already-selected candidate depends on this var:
-           ;; todo: optimize by using sortedness
-           (not (member this-var-nodenum nodenums-of-vars-to-avoid))
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
-           ;; TTODO: Make use of sortedness to optimize this:
-           (not (intersection-equal ;use a faster intersection?
-                 nodenums-this-var-depends-on nodenums-of-vars-already-added)))
+           (disjointp-assuming-sorted-<= nodenums-this-var-depends-on nodenums-of-vars-already-added)
+           ;; Makes sure the var doesn't depend on itself (tested last because it's rare):
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-this-var-depends-on)))
           ;; Add this candidate:
           (find-simultaneous-subst-candidates (rest subst-candidates)
                                               candidate-deps-array
                                               (cons subst-candidate subst-candidates-acc)
-                                              ;; todo: optimize:  todo: can dups even occur? maybe if a var is equated to 2 things?
-                                              (remove-duplicates-from-sorted-list (merge-< (list this-var-nodenum)
-                                                                                           nodenums-of-vars-already-added
-                                                                                           nil)
-                                                                                  nil)
-                                              ;; todo: optimize:
-                                              (remove-duplicates-from-sorted-list (merge-< nodenums-this-var-depends-on
-                                                                                           nodenums-of-vars-to-avoid
-                                                                                           nil)
-                                                                                  nil))
+                                              ;; todo: can dups even occur? maybe if a var is equated to 2 things?
+                                              (merge-<-and-remove-dups (list this-var-nodenum) nodenums-of-vars-already-added)
+                                              (merge-<-and-remove-dups nodenums-this-var-depends-on nodenums-of-vars-to-avoid))
         ;; Don't add this candidate:
         (find-simultaneous-subst-candidates (rest subst-candidates)
                                             candidate-deps-array
@@ -652,7 +984,9 @@
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (array1p 'translation-array translation-array)
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                              (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))))
+                              (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
+                  :guard-hints (("Goal" :in-theory (enable dargp-of-cadr-when-subst-candidatep)))
+                  ))
   (if (endp subst-candidates)
       translation-array
     (let* ((subst-candidate (first subst-candidates))
@@ -667,7 +1001,7 @@
                 ;(translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (array1p 'translation-array (mark-replacements subst-candidates translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements))))
+  :hints (("Goal" :in-theory (enable mark-replacements natp-of-car-when-subst-candidatep))))
 
 (defthm alen1-of-mark-replacements
   (implies (and (subst-candidate-listp subst-candidates)
@@ -676,7 +1010,9 @@
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (equal (alen1 'translation-array (mark-replacements subst-candidates translation-array))
                   (alen1 'translation-array translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements))))
+  :hints (("Goal" :in-theory (enable mark-replacements
+                                     natp-of-car-when-subst-candidatep
+                                     dargp-of-cadr-when-subst-candidatep))))
 
 (defthm translation-arrayp-aux-of-mark-replacements
   (implies (and (subst-candidate-listp subst-candidates)
@@ -684,7 +1020,9 @@
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (all-< (strip-cars subst-candidates) (alen1 'translation-array translation-array)))
            (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) (mark-replacements subst-candidates translation-array)))
-  :hints (("Goal" :in-theory (enable mark-replacements dargp-of-cadr-when-subst-candidatep))))
+  :hints (("Goal" :in-theory (enable mark-replacements
+                                     dargp-of-cadr-when-subst-candidatep
+                                     ))))
 
 (defthm translation-arrayp-aux-of-mark-replacements-gen
   (implies (and (<= TOP-NODENUM-TO-CHECK (+ -1 (alen1 'translation-array translation-array)))
@@ -751,9 +1089,9 @@
                   ;; clean up:
                   :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
                                                          <-of-nth-when-all-<
-                                                         ;;check-for-var-subst-literal
-                                                         find-var-and-expr-to-subst
-                                                         ensure-substitutable-var
+                                                         ;;check-for-var-subst-literal2
+                                                         find-var-and-expr-to-subst2
+                                                         ensure-substitutable-var2
                                                          consp-of-cdr
                                                          integerp-when-dargp
                                                          <=-of-0-when-dargp
@@ -768,22 +1106,23 @@
                                                          ;;cons-nth-0-nth-1 cons-of-nth-and-nth-plus-1 ;todo: why do these cause mv-nths to show up in appropriate places?
                                                          dargp-less-than
                                                          dargp-less-than-when-not-consp-cheap))))))
-  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)))
+  (let ((subst-candidates (subst-candidates literal-nodenums dag-array dag-len 300 nil))) ;; limit for now -- todo: what if all of the 500 have self loops?
     (if (not subst-candidates)
         ;; No change:
         (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-      (b* ((- (cw "~x0 subst candidates.~%" (len subst-candidates)))
+      (b* (;(- (cw "  ~x0 subst candidates.~%" (len subst-candidates)))
+           (num-candidates (len subst-candidates))
            (subst-candidates (if (all-consp (strip-cadrs subst-candidates)) ;check whether all the equated things are constants ;todo optimize
                                  ;; All vars are equated to constants, so we don't need the deps array and can substitute them all at once:
                                  subst-candidates
-                               (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps? -- actually that check is done when we form the candidates, but that may be slow):
+                               (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps)
                                      (candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-len)))
                                  (find-simultaneous-subst-candidates subst-candidates candidate-deps-array nil nil nil)))))
         (if (not subst-candidates)
             ;; No change:
-            (prog2$ (cw "No candidates are suitable for substitution.~%")
+            (prog2$ (cw "  No candidates are suitable for substitution.~%")
                     (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-          (b* ((- (cw "Applying ~x0 substitutions.~%" (len subst-candidates))) ;todo: print them?
+          (b* ((- (cw " (Applying ~x0 substitutions from ~x1 candidates.~%" (len subst-candidates) num-candidates)) ;todo: print them?
                ;; (and print (cw "~%(Using ~x0 to replace ~x1, which is ~x2.~%" literal-nodenum var
                ;;                          (if (consp nodenum-or-quotep-to-put-in)
                ;;                              nodenum-or-quotep-to-put-in
@@ -825,8 +1164,9 @@
                ;; we had a bad ordering last time, we may have a good ordering this
                ;; time:
                (new-literal-nodenums (append changed-literal-nodenums unchanged-literal-nodenums))
-               ;; todo: avoid the call of len (compute it during the pass through the literals abovea?):
-               (- (and print (cw " ~x0 literals left, dag len is ~x1)~%" (len new-literal-nodenums) dag-len)))
+               ;; todo: avoid the call of len (compute it during the pass through the literals above?):
+               ;; Close paren matched the open paren printed above:
+               (- (and print (cw "  ~x0 literals left, dag len is ~x1)~%" (len new-literal-nodenums) dag-len)))
                )
             (mv (erp-nil)
                 nil ; provedp
@@ -860,13 +1200,13 @@
                                      intersection-equal-when-subsetp-equal-iff))))
 
 ;;for the def-dag-builder-theorems just below (todo: should not be needed?):
-(local (in-theory (enable check-for-var-subst-literal consp-of-cdr
+(local (in-theory (enable check-for-var-subst-literal2 consp-of-cdr
                           ALL-<-OF-+-OF-1
                           ;;car-becomes-nth-of-0
                           <-of-nth-when-all-<
-                          ;;check-for-var-subst-literal
-                          find-var-and-expr-to-subst
-                          ensure-substitutable-var
+                          ;;check-for-var-subst-literal2
+                          find-var-and-expr-to-subst2
+                          ensure-substitutable-var2
                           consp-of-cdr
                           integerp-when-dargp
                           <=-of-0-when-dargp
@@ -885,7 +1225,7 @@
   :recursivep nil
   ;; TODO: Why doesn't this work without the in-theory event above?
   ;; :hints (("Goal" :in-theory (enable substitute-var-set
-  ;;                                    check-for-var-subst-literal)))
+  ;;                                    check-for-var-subst-literal2)))
   )
 
 ;; (defthm <=-of-mv-nth-5-of-substitute-var-set

@@ -10,11 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/append-with-key" :dir :system)
-(include-book "kestrel/lists-light/memberp" :dir :system)
-(include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
-
-;; TODO: Organize this material
+;; TODO: Rename this file
 
 (defun make-bitp-claims-aux (terms acc)
   (declare (xargs :guard (true-listp terms)))
@@ -26,4 +22,4 @@
 ;; Make a list of terms that together assert that all of the TERMS satisfy bitp.
 (defun make-bitp-claims (terms)
   (declare (xargs :guard (true-listp terms)))
-  (make-bitp-claims-aux (reverse-list terms) nil))
+  (make-bitp-claims-aux (reverse terms) nil))

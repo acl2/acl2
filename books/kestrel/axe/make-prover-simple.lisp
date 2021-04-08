@@ -2459,7 +2459,6 @@
        ;; todo: special handling for if/myif/boolif/bvif/boolor/booland?
        ;; todo: track the equiv used for each node?
        ;; todo: track polarities?
-       ;;this (and its callers) could take an explicit substitution for a variable, to support elim and substitute-a-var) - actually, i am changing those operations to not use rewriting..
        (defund ,rewrite-nodes-name (worklist ;could track the equivs and polarities?
                                     result-array-name result-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2502,8 +2501,8 @@
                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                         case-designator prover-depth options (+ -1 count))
-                 (b* ((- (and (member-eq print '(:verbose2 :verbose))
-                              (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
+                 (b* (;; (- (and (member-eq print '(:verbose2 :verbose))
+                      ;;         (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
                        (let ((new-nodenum-or-quotep ;;(maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)
@@ -2512,7 +2511,7 @@
                          ;;option to print the number of rule hits?
                          (,rewrite-nodes-name (rest worklist)
                                               result-array-name
-                                              (aset1-safe result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
+                                              (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                               nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                               rule-alist
@@ -2521,13 +2520,13 @@
                        (if (eq 'quote fn)
                            (,rewrite-nodes-name (rest worklist)
                                                 result-array-name
-                                                (aset1-safe result-array-name result-array nodenum expr) ;; update the result-array
+                                                ;; update the result-array (effectively eliminates the naked constant node):
+                                                (aset1 result-array-name result-array nodenum expr)
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                 rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
-                         ;;regular function call:
-                         ;;first make sure that the args have been processed
-                         ;;ffffixme special handling for if and related operators?!? TODO: Do we at least rewrite the IF-test using an equiv of IFF?
+                         ;; Regular function call.  First make sure that the args have been processed:
+                         ;; TTODO: Consider adding special handling for if and related operators?!? TODO: Do we at least rewrite the IF-test using an equiv of IFF?
                          (let* ((args (dargs expr))
                                 (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
                            (if extended-worklist-or-nil
@@ -2539,9 +2538,9 @@
                                                     case-designator prover-depth options (+ -1 count))
                              ;;all args are simplified (but under what equiv, just 'equal ?):
                              (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
-                                  (expr (cons fn args))
-                                  (- (and (member-eq print '(:verbose2 :verbose))
-                                          (cw "(Rewriting node ~x0." nodenum)))
+                                  (expr (cons fn args)) ; todo: consider cons-with-hint here
+                                  ;; (- (and (member-eq print '(:verbose2 :verbose))
+                                  ;;         (cw "(Rewriting node ~x0." nodenum)))
                                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                    ;; TODO: use the fact that we know it's a function call with simplified args?
                                    (,simplify-tree-name expr
@@ -2552,12 +2551,13 @@
                                                         equiv-alist print
                                                         info tries interpreted-function-alist monitored-symbols 0 case-designator prover-depth options (+ -1 count)))
                                   ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                                  (-  (and (or ;(eq t print) ;new
-                                            (member-eq print '(:verbose2 :verbose)))
-                                           (cw ")~%"))))
+                                  ;; (-  (and (or ;(eq t print) ;new
+                                  ;;           (member-eq print '(:verbose2 :verbose)))
+                                  ;;          (cw ")~%")))
+                                  )
                                ;;option to print the number of rule hits?
                                (,rewrite-nodes-name (rest worklist) result-array-name
-                                                    (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
+                                                    (aset1 result-array-name result-array nodenum new-nodenum) ;; update the result-array
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                     rule-alist equiv-alist interpreted-function-alist print info tries
@@ -2641,8 +2641,15 @@
               (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
               ;; Make an array to track results in the worklist algorithm:
               (result-array-name (pack$ 'result-array- prover-depth))
-              (result-array (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodeum)?
-                            )
+              ;; TODO: Consider using (+ 1 nodenum) for the length of the array
+              ;; here -- to make the array smaller -- but that may prevent
+              ;; re-using the previous raw Lisp array, since the old length is
+              ;; likely to differ. Perhaps we should always use the same array,
+              ;; of length dag-len, and simply write nils to the relevant spots
+              ;; here (but then consider that the array may often reach its
+              ;; maximum length, triggering compress1 calls -- perhaps use a
+              ;; very large maximum?).
+              (result-array (make-empty-array result-array-name dag-len))
               ;; Rewrite this literal:
               ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                ;; TODO: would it make sense to memoize in this?
@@ -3255,10 +3262,9 @@
                                          info tries prover-depth known-booleans options))
                   ((eq :subst tactic)
                    (b* ((- (and print (cw "(Substituting:~%")))
-                        (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
-                        (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
+                        ;; (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
+                        ;; (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
                         ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                         ;; todo: try substitute-vars2
                          (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
                                           (if (posp dag-len) ;todo: should always be true
                                               dag-len

@@ -141,46 +141,885 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg value-resultp))
-  :returns (result value-resultp)
-  :short "Execute a unary expression."
+(define promote-value ((val valuep))
+  :returns (promoted-val valuep)
+  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The argument is the result of
-     recursively executing the operand expression.
-     For now we only support some unary operators.")
-   (xdoc::p
-    "These unary operators are all pure,
-     so we just return a value as result (if there is no error).")
-   (xdoc::p
-    "For now we only support @('int')s,
-     but we plan to add support for more types of values."))
-  (b* ((op (unop-fix op))
-       (arg (value-result-fix arg)))
-    (cond ((errorp arg) arg)
-          ((ucharp arg) (error (list :exec-unary-uchar-todo op arg)))
-          ((scharp arg) (error (list :exec-unary-schar-todo op arg)))
-          ((ushortp arg) (error (list :exec-unary-ushort-todo op arg)))
-          ((sshortp arg) (error (list :exec-unary-sshort-todo op arg)))
-          ((uintp arg) (error (list :exec-unary-uint-todo op arg)))
-          ((sintp arg) (unop-case
-                        op
-                        :plus (sint-plus arg)
-                        :minus (if (sint-minus-okp arg)
-                                   (sint-minus arg)
-                                 (error (list :exec-unary op arg)))
-                        :bitnot (sint-bitnot arg)
-                        :lognot (sint-lognot arg)))
-          ((ulongp arg) (error (list :exec-unary-ulong-todo op arg)))
-          ((slongp arg) (error (list :exec-unary-slong-todo op arg)))
-          ((ullongp arg) (error (list :exec-unary-ullong-todo op arg)))
-          ((sllongp arg) (error (list :exec-unary-sllong-todo op arg)))
-          ((pointerp arg) (error (list :exec-unary-pointer op arg)))
+    "This is the dynamic counterpart of @(tsee promote-type).
+     See the documentation of that function for details.
+     Here we actually convert values;
+     we do not merely compute a promoted type."))
+  (b* ((val (value-fix val)))
+    (cond ((ucharp val) (if (<= (uchar-max) (sint-max))
+                            (sint-from-uchar val)
+                          (uint-from-uchar val)))
+          ((scharp val) (sint-from-schar val))
+          ((ushortp val) (if (<= (ushort-max) (sint-max))
+                             (sint-from-ushort val)
+                           (uint-from-ushort val)))
+          ((sshortp val) (sint-from-sshort val))
+          (t val)))
+  :guard-hints (("Goal" :in-theory (enable
+                                    sint-from-uchar-okp
+                                    sint-from-schar-okp
+                                    sint-from-ushort-okp
+                                    sint-from-sshort-okp
+                                    ucharp
+                                    scharp
+                                    ushortp
+                                    sshortp
+                                    uchar->get
+                                    schar->get
+                                    ushort->get
+                                    sshort->get
+                                    uchar-integerp-alt-def
+                                    schar-integerp-alt-def
+                                    ushort-integerp-alt-def
+                                    sshort-integerp-alt-def
+                                    sint-integerp-alt-def)))
+  :hooks (:fix)
+  ///
+
+  (defruled values-of-promote-value
+    (implies (value-arithmeticp val)
+             (b* ((pval (promote-value val)))
+               (or (uintp pval)
+                   (sintp pval)
+                   (ulongp pval)
+                   (slongp pval)
+                   (ullongp pval)
+                   (sllongp pval))))
+    :enable (promote-value
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-unsigned-integerp
+             value-signed-integerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-plus ((arg valuep))
+  :returns (result value-resultp)
+  :short "Execute unary plus [C:6.5.3.3/1] [C:6.5.3.3/2]."
+  (b* ((arg (value-fix arg))
+       ((unless (value-arithmeticp arg))
+        (error (list :mistype-plus
+                     :required :arithmetic
+                     :supplied arg)))
+       (val (promote-value arg)))
+    (cond ((uintp val) (uint-plus val))
+          ((sintp val) (sint-plus val))
+          ((ulongp val) (ulong-plus val))
+          ((slongp val) (slong-plus val))
+          ((ullongp val) (ullong-plus val))
+          ((sllongp val) (sllong-plus val))
           (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-minus ((arg valuep))
+  :returns (result value-resultp)
+  :short "Execute unary minus [C:6.5.3.3/1] [C:6.5.3.3/3]."
+  (b* ((arg (value-fix arg))
+       ((unless (value-arithmeticp arg))
+        (error (list :mistype-minus
+                     :required :arithmetic
+                     :supplied arg)))
+       (val (promote-value arg))
+       (err (error (list :undefined-minus arg))))
+    (cond ((uintp val) (uint-minus val))
+          ((sintp val) (if (sint-minus-okp val) (sint-minus val) err))
+          ((ulongp val) (ulong-minus val))
+          ((slongp val) (if (slong-minus-okp val) (slong-minus val) err))
+          ((ullongp val) (ullong-minus val))
+          ((sllongp val) (if (sllong-minus-okp val) (sllong-minus val) err))
+          (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitnot ((arg valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise complement [C:6.5.3.3/1] [C:6.5.3.3/4]."
+  (b* ((arg (value-fix arg))
+       ((unless (value-integerp arg))
+        (error (list :mistype-bitnot
+                     :required :integer
+                     :supplied arg)))
+       (val (promote-value arg)))
+    (cond ((uintp val) (uint-bitnot val))
+          ((sintp val) (sint-bitnot val))
+          ((ulongp val) (ulong-bitnot val))
+          ((slongp val) (slong-bitnot val))
+          ((ullongp val) (ullong-bitnot val))
+          ((sllongp val) (sllong-bitnot val))
+          (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-lognot ((arg valuep))
+  :returns (result value-resultp)
+  :short "Execute unary lognot [C:6.5.3.3/1] [C:6.5.3.3/5]."
+  (b* ((arg (value-fix arg))
+       ((unless (value-scalarp arg))
+        (error (list :mistype-lognot
+                     :required :scalar
+                     :supplied arg))))
+    (cond ((ucharp arg) (uchar-lognot arg))
+          ((scharp arg) (schar-lognot arg))
+          ((ushortp arg) (ushort-lognot arg))
+          ((sshortp arg) (sshort-lognot arg))
+          ((uintp arg) (uint-lognot arg))
+          ((sintp arg) (sint-lognot arg))
+          ((ulongp arg) (ulong-lognot arg))
+          ((slongp arg) (slong-lognot arg))
+          ((ullongp arg) (ullong-lognot arg))
+          ((sllongp arg) (sllong-lognot arg))
+          ((pointerp arg) (sint01 (pointer-nullp arg)))
+          (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :in-theory (enable value-scalarp
+                                    value-arithmeticp
+                                    value-realp
+                                    value-integerp
+                                    value-unsigned-integerp
+                                    value-signed-integerp)
+                 :use (:instance values-of-promote-value (val arg))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-unary ((op unopp) (arg value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a unary operation."
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg))
+    (unop-case op
+               :plus (exec-plus arg)
+               :minus (exec-minus arg)
+               :bitnot (exec-bitnot arg)
+               :lognot (exec-lognot arg)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uaconvert-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+  :returns (mv (new-val1 valuep)
+               (new-val2 valuep))
+  :short "Apply the usual arithmetic conversions to two arithmetic values
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee uaconvert-types).
+     See the documentation of that function for details.
+     Here we actually convert the values;
+     we do not merely compute the common type."))
+  (b* ((val1 (promote-value val1))
+       (val2 (promote-value val2)))
+    (cond ((sllongp val1)
+           (cond ((sllongp val2) (mv val1 val2))
+                 ((slongp val2) (mv val1 (sllong-from-slong val2)))
+                 ((sintp val2) (mv val1 (sllong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-sllong val1) val2))
+                 ((ulongp val2) (if (>= (sllong-max) (ulong-max))
+                                    (mv val1 (sllong-from-ulong val2))
+                                  (mv (ullong-from-sllong val1)
+                                      (ullong-from-ulong val2))))
+                 ((uintp val2) (if (>= (sllong-max) (uint-max))
+                                   (mv val1 (sllong-from-uint val2))
+                                 (mv (ullong-from-sllong val1)
+                                     (ullong-from-uint val2))))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((slongp val1)
+           (cond ((sllongp val2) (mv (sllong-from-slong val1) val2))
+                 ((slongp val2) (mv val1 val2))
+                 ((sintp val2) (mv val1 (slong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-slong val1) val2))
+                 ((ulongp val2) (mv (ulong-from-slong val1) val2))
+                 ((uintp val2) (if (>= (slong-max) (uint-max))
+                                   (mv val1 (slong-from-uint val2))
+                                 (mv (ulong-from-slong val1)
+                                     (ulong-from-uint val2))))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((sintp val1)
+           (cond ((sllongp val2) (mv (sllong-from-sint val1) val2))
+                 ((slongp val2) (mv (slong-from-sint val1) val2))
+                 ((sintp val2) (mv val1 val2))
+                 ((ullongp val2) (mv (ullong-from-sint val1) val2))
+                 ((ulongp val2) (mv (ulong-from-sint val1) val2))
+                 ((uintp val2) (mv (uint-from-sint val1) val2))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((ullongp val1)
+           (cond ((sllongp val2) (mv val1 (ullong-from-sllong val2)))
+                 ((slongp val2) (mv val1 (ullong-from-slong val2)))
+                 ((sintp val2) (mv val1 (ullong-from-sint val2)))
+                 ((ullongp val2) (mv val1 val2))
+                 ((ulongp val2) (mv val1 (ullong-from-ulong val2)))
+                 ((uintp val2) (mv val1 (ullong-from-uint val2)))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((ulongp val1)
+           (cond ((sllongp val2) (if (>= (sllong-max) (ulong-max))
+                                     (mv (sllong-from-ulong val1) val2)
+                                   (mv (ullong-from-ulong val1)
+                                       (ullong-from-sllong val2))))
+                 ((slongp val2) (mv val1 (ulong-from-slong val2)))
+                 ((sintp val2) (mv val1 (ulong-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-ulong val1) val2))
+                 ((ulongp val2) (mv val1 val2))
+                 ((uintp val2) (mv val1 (ulong-from-uint val2)))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          ((uintp val1)
+           (cond ((sllongp val2) (if (>= (sllong-max) (uint-max))
+                                     (mv (sllong-from-uint val1) val2)
+                                   (mv (ullong-from-uint val1)
+                                       (ullong-from-sllong val2))))
+                 ((slongp val2) (if (>= (slong-max) (uint-max))
+                                    (mv (slong-from-uint val1) val2)
+                                  (mv (ulong-from-uint val1)
+                                      (ulong-from-slong val2))))
+                 ((sintp val2) (mv val1 (uint-from-sint val2)))
+                 ((ullongp val2) (mv (ullong-from-uint val1) val2))
+                 ((ulongp val2) (mv (ulong-from-uint val1) val2))
+                 ((uintp val2) (mv val1 val2))
+                 (t (prog2$ (impossible) (mv val1 val2)))))
+          (t (prog2$ (impossible) (mv val1 val2)))))
+  :guard-hints (("Goal"
+                 :do-not '(preprocess) ; just for speed
+                 :in-theory (enable slong-from-sint-okp
+                                    slong-from-uint-okp
+                                    sllong-from-sint-okp
+                                    sllong-from-slong-okp
+                                    sllong-from-uint-okp
+                                    sllong-from-ulong-okp
+                                    sintp
+                                    slongp
+                                    sllongp
+                                    uintp
+                                    ulongp
+                                    ullongp
+                                    sint->get
+                                    slong->get
+                                    uint->get
+                                    ulong->get
+                                    sint-integerp-alt-def
+                                    slong-integerp-alt-def
+                                    sllong-integerp-alt-def
+                                    uint-integerp-alt-def
+                                    ulong-integerp-alt-def
+                                    ullong-integerp-alt-def)
+                 :use ((:instance values-of-promote-value (val val1))
+                       (:instance values-of-promote-value (val val2)))))
+  ///
+
+  (defrule values-of-uaconvert-values
+    (implies (and (value-arithmeticp val1)
+                  (value-arithmeticp val2))
+             (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+               (or (and (uintp cval1) (uintp cval2))
+                   (and (sintp cval1) (sintp cval2))
+                   (and (ulongp cval1) (ulongp cval2))
+                   (and (slongp cval1) (slongp cval2))
+                   (and (ullongp cval1) (ullongp cval2))
+                   (and (sllongp cval1) (sllongp cval2)))))
+    :use ((:instance values-of-promote-value (val val1))
+          (:instance values-of-promote-value (val val2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-mul ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-mul
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-mul
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-mul arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-mul val1 val2))
+     ((sintp val1) (if (sint-mul-okp val1 val2) (sint-mul val1 val2) err))
+     ((ulongp val1) (ulong-mul val1 val2))
+     ((slongp val1) (if (slong-mul-okp val1 val2) (slong-mul val1 val2) err))
+     ((ullongp val1) (ullong-mul val1 val2))
+     ((sllongp val1) (if (sllong-mul-okp val1 val2) (sllong-mul val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-div ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute division [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-div
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-div
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-div arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (if (uint-div-okp val1 val2) (uint-div val1 val2) err))
+     ((sintp val1) (if (sint-div-okp val1 val2) (sint-div val1 val2) err))
+     ((ulongp val1) (if (ulong-div-okp val1 val2) (ulong-div val1 val2) err))
+     ((slongp val1) (if (slong-div-okp val1 val2) (slong-div val1 val2) err))
+     ((ullongp val1) (if (ullong-div-okp val1 val2) (ullong-div val1 val2) err))
+     ((sllongp val1) (if (sllong-div-okp val1 val2) (sllong-div val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-rem ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute remainder [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/5]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-rem
+                     :required :integer
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-rem
+                     :required :integer
+                     :supplied arg2)))
+       (err (error (list :undefined-rem arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (if (uint-rem-okp val1 val2) (uint-rem val1 val2) err))
+     ((sintp val1) (if (sint-rem-okp val1 val2) (sint-rem val1 val2) err))
+     ((ulongp val1) (if (ulong-rem-okp val1 val2) (ulong-rem val1 val2) err))
+     ((slongp val1) (if (slong-rem-okp val1 val2) (slong-rem val1 val2) err))
+     ((ullongp val1) (if (ullong-rem-okp val1 val2) (ullong-rem val1 val2) err))
+     ((sllongp val1) (if (sllong-rem-okp val1 val2) (sllong-rem val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-add ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute addition [C:6.5.6/2] [C:6.5.6/4] [C:6.5.6/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support additions involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-add
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-add
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-add arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-add val1 val2))
+     ((sintp val1) (if (sint-add-okp val1 val2) (sint-add val1 val2) err))
+     ((ulongp val1) (ulong-add val1 val2))
+     ((slongp val1) (if (slong-add-okp val1 val2) (slong-add val1 val2) err))
+     ((ullongp val1) (ullong-add val1 val2))
+     ((sllongp val1) (if (sllong-add-okp val1 val2) (sllong-add val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-sub ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute subtraction [C:6.5.6/3] [C:6.5.6/4] [C:6.5.6/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support subtractions involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-sub
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-sub
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-sub arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-sub val1 val2))
+     ((sintp val1) (if (sint-sub-okp val1 val2) (sint-sub val1 val2) err))
+     ((ulongp val1) (ulong-sub val1 val2))
+     ((slongp val1) (if (slong-sub-okp val1 val2) (slong-sub val1 val2) err))
+     ((ullongp val1) (ullong-sub val1 val2))
+     ((sllongp val1) (if (sllong-sub-okp val1 val2) (sllong-sub val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-shl ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute left shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support operands with the same promoted type."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-shl
+                     :required :integer
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-shl
+                     :required :integer
+                     :supplied arg2)))
+       (err (error (list :undefined-shl arg1 arg2)))
+       (val1 (promote-value arg1))
+       (val2 (promote-value arg2)))
+    (cond
+     ((uintp val1) (if (uintp val2)
+                       (if (uint-shl-uint-okp val1 val2)
+                           (uint-shl-uint val1 val2)
+                         err)
+                     (error :todo)))
+     ((sintp val1) (if (sintp val2)
+                       (if (sint-shl-sint-okp val1 val2)
+                           (sint-shl-sint val1 val2)
+                         err)
+                     (error :todo)))
+     ((ulongp val1) (if (ulongp val2)
+                        (if (ulong-shl-ulong-okp val1 val2)
+                            (ulong-shl-ulong val1 val2)
+                          err)
+                      (error :todo)))
+     ((slongp val1) (if (slongp val2)
+                        (if (slong-shl-slong-okp val1 val2)
+                            (slong-shl-slong val1 val2)
+                          err)
+                      (error :todo)))
+     ((ullongp val1) (if (ullongp val2)
+                         (if (ullong-shl-ullong-okp val1 val2)
+                             (ullong-shl-ullong val1 val2)
+                           err)
+                       (error :todo)))
+     ((sllongp val1) (if (sllongp val2)
+                         (if (sllong-shl-sllong-okp val1 val2)
+                             (sllong-shl-sllong val1 val2)
+                           err)
+                       (error :todo)))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use ((:instance values-of-promote-value (val arg1))
+                       (:instance values-of-promote-value (val arg2)))
+                 :in-theory (enable value-arithmeticp
+                                    value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-shr ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute right shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support operands with the same promoted type."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-shr
+                     :required :integer
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-shr
+                     :required :integer
+                     :supplied arg2)))
+       (err (error (list :undefined-shr arg1 arg2)))
+       (val1 (promote-value arg1))
+       (val2 (promote-value arg2)))
+    (cond
+     ((uintp val1) (if (uintp val2)
+                       (if (uint-shr-uint-okp val1 val2)
+                           (uint-shr-uint val1 val2)
+                         err)
+                     (error :todo)))
+     ((sintp val1) (if (sintp val2)
+                       (if (sint-shr-sint-okp val1 val2)
+                           (sint-shr-sint val1 val2)
+                         err)
+                     (error :todo)))
+     ((ulongp val1) (if (ulongp val2)
+                        (if (ulong-shr-ulong-okp val1 val2)
+                            (ulong-shr-ulong val1 val2)
+                          err)
+                      (error :todo)))
+     ((slongp val1) (if (slongp val2)
+                        (if (slong-shr-slong-okp val1 val2)
+                            (slong-shr-slong val1 val2)
+                          err)
+                      (error :todo)))
+     ((ullongp val1) (if (ullongp val2)
+                         (if (ullong-shr-ullong-okp val1 val2)
+                             (ullong-shr-ullong val1 val2)
+                           err)
+                       (error :todo)))
+     ((sllongp val1) (if (sllongp val2)
+                         (if (sllong-shr-sllong-okp val1 val2)
+                             (sllong-shr-sllong val1 val2)
+                           err)
+                       (error :todo)))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use ((:instance values-of-promote-value (val arg1))
+                       (:instance values-of-promote-value (val arg2)))
+                 :in-theory (enable value-arithmeticp
+                                    value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-lt ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute less-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-realp arg1))
+        (error (list :mistype-lt
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-realp arg2))
+        (error (list :mistype-lt
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-lt val1 val2))
+     ((sintp val1) (sint-lt val1 val2))
+     ((ulongp val1) (ulong-lt val1 val2))
+     ((slongp val1) (slong-lt val1 val2))
+     ((ullongp val1) (ullong-lt val1 val2))
+     ((sllongp val1) (sllong-lt val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-gt ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute greater-than [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-realp arg1))
+        (error (list :mistype-gt
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-realp arg2))
+        (error (list :mistype-gt
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-gt val1 val2))
+     ((sintp val1) (sint-gt val1 val2))
+     ((ulongp val1) (ulong-gt val1 val2))
+     ((slongp val1) (slong-gt val1 val2))
+     ((ullongp val1) (ullong-gt val1 val2))
+     ((sllongp val1) (sllong-gt val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-le ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute less-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-realp arg1))
+        (error (list :mistype-le
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-realp arg2))
+        (error (list :mistype-le
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-le val1 val2))
+     ((sintp val1) (sint-le val1 val2))
+     ((ulongp val1) (ulong-le val1 val2))
+     ((slongp val1) (slong-le val1 val2))
+     ((ullongp val1) (ullong-le val1 val2))
+     ((sllongp val1) (sllong-le val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-ge ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute greater-than-or-equal-to [C:6.5.8/2] [C:6.5.8/3] [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-realp arg1))
+        (error (list :mistype-ge
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-realp arg2))
+        (error (list :mistype-ge
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-ge val1 val2))
+     ((sintp val1) (sint-ge val1 val2))
+     ((ulongp val1) (ulong-ge val1 val2))
+     ((slongp val1) (slong-ge val1 val2))
+     ((ullongp val1) (ullong-ge val1 val2))
+     ((sllongp val1) (sllong-ge val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-eq ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-eq
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-eq
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-eq val1 val2))
+     ((sintp val1) (sint-eq val1 val2))
+     ((ulongp val1) (ulong-eq val1 val2))
+     ((slongp val1) (slong-eq val1 val2))
+     ((ullongp val1) (ullong-eq val1 val2))
+     ((sllongp val1) (sllong-eq val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-ne ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute non-equality [C:6.5.9/2] [C:6.5.9/3] [C:6.5.9/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support comparisons involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-ne
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-ne
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-ne val1 val2))
+     ((sintp val1) (sint-ne val1 val2))
+     ((ulongp val1) (ulong-ne val1 val2))
+     ((slongp val1) (slong-ne val1 val2))
+     ((ullongp val1) (ullong-ne val1 val2))
+     ((sllongp val1) (sllong-ne val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitand ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.10]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitand
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitand
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitand val1 val2))
+     ((sintp val1) (sint-bitand val1 val2))
+     ((ulongp val1) (ulong-bitand val1 val2))
+     ((slongp val1) (slong-bitand val1 val2))
+     ((ullongp val1) (ullong-bitand val1 val2))
+     ((sllongp val1) (sllong-bitand val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitxor ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.11]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitxor
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitxor
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitxor val1 val2))
+     ((sintp val1) (sint-bitxor val1 val2))
+     ((ulongp val1) (ulong-bitxor val1 val2))
+     ((slongp val1) (slong-bitxor val1 val2))
+     ((ullongp val1) (ullong-bitxor val1 val2))
+     ((sllongp val1) (sllong-bitxor val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-bitior ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute bitwise cojunction [C:6.5.12]."
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-integerp arg1))
+        (error (list :mistype-bitior
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-integerp arg2))
+        (error (list :mistype-bitior
+                     :required :arithmetic
+                     :supplied arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-bitior val1 val2))
+     ((sintp val1) (sint-bitior val1 val2))
+     ((ulongp val1) (ulong-bitior val1 val2))
+     ((slongp val1) (slong-bitior val1 val2))
+     ((ullongp val1) (ullong-bitior val1 val2))
+     ((sllongp val1) (sllong-bitior val1 val2))
+     (t (error (impossible)))))
+  :guard-hints (("Goal"
+                 :use (:instance values-of-uaconvert-values
+                       (val1 arg1) (val2 arg2))
+                 :in-theory (enable value-arithmeticp value-realp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
@@ -203,66 +1042,61 @@
      by returning an error when we encounter them
      (this rejects valid programs, but does not accept invalid ones).
      We will add support for @('unsigned char') values later."))
-  (b* ((op (binop-fix op))
-       (arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2)))
-    (cond ((errorp arg1) arg1)
-          ((errorp arg2) arg2)
-          ((ucharp arg1) (error (list :exec-binary-uchar-todo op arg1)))
-          ((ucharp arg2) (error (list :exec-binary-uchar-todo op arg2)))
-          ((scharp arg1) (error (list :exec-binary-schar-todo op arg1)))
-          ((scharp arg2) (error (list :exec-binary-schar-todo op arg2)))
-          ((ushortp arg1) (error (list :exec-binary-ushort-todo op arg1)))
-          ((ushortp arg2) (error (list :exec-binary-ushort-todo op arg2)))
-          ((sshortp arg1) (error (list :exec-binary-sshort-todo op arg1)))
-          ((sshortp arg2) (error (list :exec-binary-sshort-todo op arg2)))
-          ((uintp arg1) (error (list :exec-binary-uint-todo op arg1)))
-          ((uintp arg2) (error (list :exec-binary-uint-todo op arg2)))
-          ((and (sintp arg1) (sintp arg2))
-           (case (binop-kind op)
-             (:mul (if (sint-mul-okp arg1 arg2)
-                       (sint-mul arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:div (if (sint-div-okp arg1 arg2)
-                       (sint-div arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:rem (if (sint-rem-okp arg1 arg2)
-                       (sint-rem arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:add (if (sint-add-okp arg1 arg2)
-                       (sint-add arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:sub (if (sint-sub-okp arg1 arg2)
-                       (sint-sub arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:shl (if (sint-shl-sint-okp arg1 arg2)
-                       (sint-shl-sint arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:shr (if (sint-shr-sint-okp arg1 arg2)
-                       (sint-shr-sint arg1 arg2)
-                     (error (list :exec-binary op arg1 arg2))))
-             (:lt (sint-lt arg1 arg2))
-             (:gt (sint-gt arg1 arg2))
-             (:le (sint-le arg1 arg2))
-             (:ge (sint-ge arg1 arg2))
-             (:eq (sint-eq arg1 arg2))
-             (:ne (sint-ne arg1 arg2))
-             (:bitand (sint-bitand arg1 arg2))
-             (:bitxor (sint-bitxor arg1 arg2))
-             (:bitior (sint-bitior arg1 arg2))
-             (t (error (impossible)))))
-          ((ulongp arg1) (error (list :exec-binary-ulong-todo op arg1)))
-          ((ulongp arg2) (error (list :exec-binary-ulong-todo op arg2)))
-          ((slongp arg1) (error (list :exec-binary-slong-todo op arg1)))
-          ((slongp arg2) (error (list :exec-binary-slong-todo op arg2)))
-          ((ullongp arg1) (error (list :exec-binary-ullong-todo op arg1)))
-          ((ullongp arg2) (error (list :exec-binary-ullong-todo op arg2)))
-          ((sllongp arg1) (error (list :exec-binary-sllong-todo op arg1)))
-          ((sllongp arg2) (error (list :exec-binary-sllong-todo op arg2)))
-          ((pointerp arg1) (error (list :exec-binary-pointer op arg1)))
-          ((pointerp arg2) (error (list :exec-binary-pointer op arg2)))
-          (t (error (impossible)))))
+  (b* ((arg1 (value-result-fix arg1))
+       (arg2 (value-result-fix arg2))
+       ((when (errorp arg1)) arg1)
+       ((when (errorp arg2)) arg2))
+    (case (binop-kind op)
+      (:mul (exec-mul arg1 arg2))
+      (:div (exec-div arg1 arg2))
+      (:rem (exec-rem arg1 arg2))
+      (:add (exec-add arg1 arg2))
+      (:sub (exec-sub arg1 arg2))
+      (:shl (exec-shl arg1 arg2))
+      (:shr (exec-shr arg1 arg2))
+      (:lt (exec-lt arg1 arg2))
+      (:gt (exec-gt arg1 arg2))
+      (:le (exec-le arg1 arg2))
+      (:ge (exec-ge arg1 arg2))
+      (:eq (exec-eq arg1 arg2))
+      (:ne (exec-ne arg1 arg2))
+      (:bitand (exec-bitand arg1 arg2))
+      (:bitxor (exec-bitxor arg1 arg2))
+      (:bitior (exec-bitior arg1 arg2))
+      (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-test ((arg value-resultp))
+  :returns (result bool-resultp)
+  :short "Execute a test on a value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for tests of conditionals
+     and for the operands of the non-strict operations.")
+   (xdoc::p
+    "The argument value must be a scalar.
+     We return an ACL2 boolean, or an error."))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-scalarp arg)) (error (list :test-mistype
+                                                  :required :scalar
+                                                  :supplied arg))))
+    (cond ((ucharp arg) (uchar-nonzerop arg))
+          ((scharp arg) (schar-nonzerop arg))
+          ((ushortp arg) (ushort-nonzerop arg))
+          ((sshortp arg) (sshort-nonzerop arg))
+          ((uintp arg) (uint-nonzerop arg))
+          ((sintp arg) (sint-nonzerop arg))
+          ((ulongp arg) (ulong-nonzerop arg))
+          ((slongp arg) (slong-nonzerop arg))
+          ((ullongp arg) (ullong-nonzerop arg))
+          ((sllongp arg) (sllong-nonzerop arg))
+          ((pointerp arg) (pointer-nullp arg))
+          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,45 +1107,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The arguments are the results of
-     recursively executing the operand expressions.
-     However, since this operator is non-strict,
-     we ignore the result of the second operand
-     if the result of the first operand is 0,
-     and return 0 in this case.
-     Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0.")
+    "We test the first operand;
+     if it yields @('nil'),
+     we return the @('int') 0 and ignore the second operand.
+     Otherwise, the test the second operand,
+     and we return the @('int') 0 or 1 accordingly.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
   (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2)))
-    (cond ((errorp arg1) arg1)
-          ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
-          ((scharp arg1) (error (list :exec-logand-schar-todo arg1)))
-          ((ushortp arg1) (error (list :exec-logand-ushort-todo arg1)))
-          ((sshortp arg1) (error (list :exec-logand-sshort-todo arg1)))
-          ((uintp arg1) (error (list :exec-logand-uint-todo arg1)))
-          ((sintp arg1)
-           (cond ((not (sint-nonzerop arg1)) (sint 0))
-                 ((errorp arg2) arg2)
-                 ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
-                 ((scharp arg2) (error (list :exec-logand-schar-todo arg2)))
-                 ((ushortp arg2) (error (list :exec-logand-ushort-todo arg2)))
-                 ((sshortp arg2) (error (list :exec-logand-sshort-todo arg2)))
-                 ((uintp arg2) (error (list :exec-logand-uint-todo arg2)))
-                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
-                 ((ulongp arg2) (error (list :exec-logand-ulong-todo arg2)))
-                 ((slongp arg2) (error (list :exec-logand-slong-todo arg2)))
-                 ((ullongp arg2) (error (list :exec-logand-ullong-todo arg2)))
-                 ((sllongp arg2) (error (list :exec-logand-sllong-todo arg2)))
-                 ((pointerp arg2) (error (list :exec-logand-pointer-todo arg2)))
-                 (t (error (impossible)))))
-          ((ulongp arg1) (error (list :exec-logand-ulong-todo arg1)))
-          ((slongp arg1) (error (list :exec-logand-slong-todo arg1)))
-          ((ullongp arg1) (error (list :exec-logand-ullong-todo arg1)))
-          ((sllongp arg1) (error (list :exec-logand-sllong-todo arg1)))
-          ((pointerp arg1) (error (list :exec-logand-pointer-todo arg1)))
-          (t (error (impossible)))))
+       (arg2 (value-result-fix arg2))
+       (test1 (exec-test arg1))
+       ((when (errorp test1)) test1)
+       ((when (not test1)) (sint 0))
+       (test2 (exec-test arg2))
+       ((when (errorp test2)) test2))
+    (if test2 (sint 1) (sint 0)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -322,46 +1132,69 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The arguments are the results of
-     recursively executing the operand expressions.
-     However, since this operator is non-strict,
-     we ignore the result of the second operand
-     if the result of the first operand is non-0,
-     and return 1 in this case.
-     Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0.")
+    "We test the first operand;
+     if it yields @('t'),
+     we return the @('int') 1 and ignore the second operand.
+     Otherwise, the test the second operand,
+     and we return the @('int') 0 or 1 accordingly.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
   (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2)))
-    (cond ((errorp arg1) arg1)
-          ((ucharp arg1) (error (list :exec-logor-uchar-todo arg1)))
-          ((scharp arg1) (error (list :exec-logor-schar-todo arg1)))
-          ((ushortp arg1) (error (list :exec-logor-ushort-todo arg1)))
-          ((sshortp arg1) (error (list :exec-logor-sshort-todo arg1)))
-          ((uintp arg1) (error (list :exec-logor-uint-todo arg1)))
-          ((sintp arg1)
-           (cond ((sint-nonzerop arg1) (sint 1))
-                 ((errorp arg2) arg2)
-                 ((ucharp arg2) (error (list :exec-logor-uchar-todo arg2)))
-                 ((scharp arg2) (error (list :exec-logor-schar-todo arg2)))
-                 ((ushortp arg2) (error (list :exec-logor-ushort-todo arg2)))
-                 ((sshortp arg2) (error (list :exec-logor-sshort-todo arg2)))
-                 ((uintp arg2) (error (list :exec-logor-uint-todo arg2)))
-                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
-                 ((ulongp arg2) (error (list :exec-logor-ulong-todo arg2)))
-                 ((slongp arg2) (error (list :exec-logor-slong-todo arg2)))
-                 ((ullongp arg2) (error (list :exec-logor-ullong-todo arg2)))
-                 ((sllongp arg2) (error (list :exec-logor-sllong-todo arg2)))
-                 ((pointerp arg2) (error (list :exec-logor-pointer-todo arg2)))
-                 (t (error (impossible)))))
-          ((ulongp arg1) (error (list :exec-logor-ulong-todo arg1)))
-          ((slongp arg1) (error (list :exec-logor-slong-todo arg1)))
-          ((ullongp arg1) (error (list :exec-logor-ullong-todo arg1)))
-          ((sllongp arg1) (error (list :exec-logor-sllong-todo arg1)))
-          ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
-          (t (error (impossible)))))
+       (arg2 (value-result-fix arg2))
+       (test1 (exec-test arg1))
+       ((when (errorp test1)) test1)
+       ((when test1) (sint 1))
+       (test2 (exec-test arg2))
+       ((when (errorp test2)) test2))
+    (if test2 (sint 1) (sint 0)))
   :hooks (:fix))
+
+;; (define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
+;;   :returns (result value-resultp)
+;;   :short "Execute a binary logical disjunction expression."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "The arguments are the results of
+;;      recursively executing the operand expressions.
+;;      However, since this operator is non-strict,
+;;      we ignore the result of the second operand
+;;      if the result of the first operand is non-0,
+;;      and return 1 in this case.
+;;      Otherwise, we look at the result of the second operand,
+;;      and return 0 or 1 depending on whether it is 0 or non-0.")
+;;    (xdoc::p
+;;     "Note that this binary operator is non-strict but pure."))
+;;   (b* ((arg1 (value-result-fix arg1))
+;;        (arg2 (value-result-fix arg2)))
+;;     (cond ((errorp arg1) arg1)
+;;           ((ucharp arg1) (error (list :exec-logor-uchar-todo arg1)))
+;;           ((scharp arg1) (error (list :exec-logor-schar-todo arg1)))
+;;           ((ushortp arg1) (error (list :exec-logor-ushort-todo arg1)))
+;;           ((sshortp arg1) (error (list :exec-logor-sshort-todo arg1)))
+;;           ((uintp arg1) (error (list :exec-logor-uint-todo arg1)))
+;;           ((sintp arg1)
+;;            (cond ((sint-nonzerop arg1) (sint 1))
+;;                  ((errorp arg2) arg2)
+;;                  ((ucharp arg2) (error (list :exec-logor-uchar-todo arg2)))
+;;                  ((scharp arg2) (error (list :exec-logor-schar-todo arg2)))
+;;                  ((ushortp arg2) (error (list :exec-logor-ushort-todo arg2)))
+;;                  ((sshortp arg2) (error (list :exec-logor-sshort-todo arg2)))
+;;                  ((uintp arg2) (error (list :exec-logor-uint-todo arg2)))
+;;                  ((sintp arg2) (sint01 (sint-nonzerop arg2)))
+;;                  ((ulongp arg2) (error (list :exec-logor-ulong-todo arg2)))
+;;                  ((slongp arg2) (error (list :exec-logor-slong-todo arg2)))
+;;                  ((ullongp arg2) (error (list :exec-logor-ullong-todo arg2)))
+;;                  ((sllongp arg2) (error (list :exec-logor-sllong-todo arg2)))
+;;                  ((pointerp arg2) (error (list :exec-logor-pointer-todo arg2)))
+;;                  (t (error (impossible)))))
+;;           ((ulongp arg1) (error (list :exec-logor-ulong-todo arg1)))
+;;           ((slongp arg1) (error (list :exec-logor-slong-todo arg1)))
+;;           ((ullongp arg1) (error (list :exec-logor-ullong-todo arg1)))
+;;           ((sllongp arg1) (error (list :exec-logor-sllong-todo arg1)))
+;;           ((pointerp arg1) (error (list :exec-logor-pointer arg1)))
+;;           (t (error (impossible)))))
+;;   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
