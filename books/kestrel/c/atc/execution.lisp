@@ -1107,45 +1107,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The arguments are the results of
-     recursively executing the operand expressions.
-     However, since this operator is non-strict,
-     we ignore the result of the second operand
-     if the result of the first operand is 0,
-     and return 0 in this case.
-     Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0.")
+    "We test the first operand;
+     if it yields @('nil'),
+     we return the @('int') 0 and ignore the second operand.
+     Otherwise, the test the second operand,
+     and we return the @('int') 0 or 1 accordingly.")
    (xdoc::p
     "Note that this binary operator is non-strict but pure."))
   (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2)))
-    (cond ((errorp arg1) arg1)
-          ((ucharp arg1) (error (list :exec-logand-uchar-todo arg1)))
-          ((scharp arg1) (error (list :exec-logand-schar-todo arg1)))
-          ((ushortp arg1) (error (list :exec-logand-ushort-todo arg1)))
-          ((sshortp arg1) (error (list :exec-logand-sshort-todo arg1)))
-          ((uintp arg1) (error (list :exec-logand-uint-todo arg1)))
-          ((sintp arg1)
-           (cond ((not (sint-nonzerop arg1)) (sint 0))
-                 ((errorp arg2) arg2)
-                 ((ucharp arg2) (error (list :exec-logand-uchar-todo arg2)))
-                 ((scharp arg2) (error (list :exec-logand-schar-todo arg2)))
-                 ((ushortp arg2) (error (list :exec-logand-ushort-todo arg2)))
-                 ((sshortp arg2) (error (list :exec-logand-sshort-todo arg2)))
-                 ((uintp arg2) (error (list :exec-logand-uint-todo arg2)))
-                 ((sintp arg2) (sint01 (sint-nonzerop arg2)))
-                 ((ulongp arg2) (error (list :exec-logand-ulong-todo arg2)))
-                 ((slongp arg2) (error (list :exec-logand-slong-todo arg2)))
-                 ((ullongp arg2) (error (list :exec-logand-ullong-todo arg2)))
-                 ((sllongp arg2) (error (list :exec-logand-sllong-todo arg2)))
-                 ((pointerp arg2) (error (list :exec-logand-pointer-todo arg2)))
-                 (t (error (impossible)))))
-          ((ulongp arg1) (error (list :exec-logand-ulong-todo arg1)))
-          ((slongp arg1) (error (list :exec-logand-slong-todo arg1)))
-          ((ullongp arg1) (error (list :exec-logand-ullong-todo arg1)))
-          ((sllongp arg1) (error (list :exec-logand-sllong-todo arg1)))
-          ((pointerp arg1) (error (list :exec-logand-pointer-todo arg1)))
-          (t (error (impossible)))))
+       (arg2 (value-result-fix arg2))
+       (test1 (exec-test arg1))
+       ((when (errorp test1)) test1)
+       ((when (not test1)) (sint 0))
+       (test2 (exec-test arg2))
+       ((when (errorp test2)) test2))
+    (if test2 (sint 1) (sint 0)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

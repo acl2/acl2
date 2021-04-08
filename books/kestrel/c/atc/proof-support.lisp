@@ -221,6 +221,7 @@
     (:e block-item-declon->get)
     (:e block-item-kind)
     (:e block-item-stmt->get)
+    (:e booleanp)
     (:e compustate)
     (:e compustate->frames)
     (:e compustate-fix)
@@ -375,6 +376,7 @@
     exec-bitxor
     exec-bitior
     exec-binary-strict-pure
+    exec-test
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
@@ -494,6 +496,11 @@
              (not (errorp x)))
     :enable (errorp uchar-arrayp))
 
+  (defruled not-errorp-when-booleanp
+    (implies (booleanp x)
+             (not (errorp x)))
+    :enable errorp)
+
   (defruled len-of-cons
     (equal (len (cons x y))
            (1+ (len y)))
@@ -598,6 +605,7 @@
    '(;; introduced in this file (see ATC-REWRITE-RULES):
      len-of-cons
      1+len-greater-than-0
+     not-errorp-when-booleanp
      not-errorp-when-scopep
      not-errorp-when-valuep
      not-errorp-when-value-listp
@@ -625,6 +633,16 @@
      natp-of-1+
      natp-of-len
      ;; introduced elsewhere:
+     booleanp-of-uchar-nonzerop
+     booleanp-of-schar-nonzerop
+     booleanp-of-ushort-nonzerop
+     booleanp-of-sshort-nonzerop
+     booleanp-of-uint-nonzerop
+     booleanp-of-sint-nonzerop
+     booleanp-of-ulong-nonzerop
+     booleanp-of-slong-nonzerop
+     booleanp-of-ullong-nonzerop
+     booleanp-of-sllong-nonzerop
      car-cons
      cdr-cons
      compustate-of-fields
