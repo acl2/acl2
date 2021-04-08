@@ -3066,7 +3066,7 @@
                    t ; proved the clause
                    t
                    literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums)))) ;the printed paren is closed below
+              (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, dag-len is ~x2):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
               (hit-count-alist-before (make-hit-count-alist (uniquify-alist-eq info) nil))
               ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                (,rewrite-literals-name literal-nodenums
@@ -3095,7 +3095,7 @@
                            (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
                            )
                        (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                     (b* ( ;; (- (cw "(Crunching: ...")) ;; matching paren printed below
+                     (b* ((- (cw " (Crunching: ...")) ;; matching paren printed below
                           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                            (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
                           ;; TODO: Prove that this can't happen.  Need to know that
@@ -3106,8 +3106,7 @@
                            (er hard? ',rewrite-clause-name "Bad nodenum after crunching.")
                            (mv :error-in-crunching
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))
-                          ;; (- (cw "Done.)~%"))
-                          )
+                          (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
                        (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
                   ((when erp)
                    (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))

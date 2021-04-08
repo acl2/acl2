@@ -722,9 +722,9 @@
                   (alen1 'candidate-deps-array candidate-deps-array)))
   :hints (("Goal" :in-theory (enable populate-candidate-deps-array-aux))))
 
-;; Ccompute, for each node in the DAG, the set of candidate vars (actually their nodenums) on which the node depends.
+;; Computes, for each node in the DAG (up through the largest node that is an equated-thing in the SUBST-CANDIDATES), the
+;; set of candidate vars (actually their nodenums) on which the node depends.
 ;; Returns the candidate-deps-array.
-;; todo: avoid doing this if all equated things are constants?
 (defund populate-candidate-deps-array (subst-candidates dag-array dag-len)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (not (all-consp (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
@@ -1287,11 +1287,12 @@
             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
       (b* (((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (if (and (= 0 prover-depth)
-                     (> (/ dag-len initial-dag-len)
-                        ;; todo: what is the best threshold ratio to use here?:
-                        10)) ;; crunching is less important now that we substitute first with lits that were just rebuilt
+                     t ;; (> (/ dag-len initial-dag-len)
+                       ;;  ;; todo: what is the best threshold ratio to use here?:
+                       ;;  10)
+                     ) ;; OLD: crunching is less important now that we substitute first with lits that were just rebuilt
                 ;; Crunch the dag:
-                (b* ((- (cw "(Crunching: ..."))
+                (b* ((- (cw " (Crunching: ..."))
                      ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                       (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
                      ;; TODO: Prove that this can't happen.  Need to know that
@@ -1301,7 +1302,7 @@
                                       (all-< literal-nodenums dag-len))))
                       (er hard? 'substitute-vars2 "Bad nodenum after crunching.")
                       (mv (erp-t) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                     (- (cw "Done).~%")))
+                     (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
                   (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
               ;; No change:
               (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
