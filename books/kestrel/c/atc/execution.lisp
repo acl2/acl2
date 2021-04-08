@@ -576,6 +576,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-sub ((arg1 valuep) (arg2 valuep))
+  :returns (result value-resultp)
+  :short "Execute subtraction [C:6.5.6/3] [C:6.5.6/4] [C:6.5.6/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not support subtractions involving pointers for now."))
+  (b* ((arg1 (value-fix arg1))
+       (arg2 (value-fix arg2))
+       ((unless (value-arithmeticp arg1))
+        (error (list :mistype-sub
+                     :required :arithmetic
+                     :supplied arg1)))
+       ((unless (value-arithmeticp arg2))
+        (error (list :mistype-sub
+                     :required :arithmetic
+                     :supplied arg2)))
+       (err (error (list :undefined-sub arg1 arg2)))
+       ((mv val1 val2) (uaconvert-values arg1 arg2)))
+    (cond
+     ((uintp val1) (uint-sub val1 val2))
+     ((sintp val1) (if (sint-sub-okp val1 val2) (sint-sub val1 val2) err))
+     ((ulongp val1) (ulong-sub val1 val2))
+     ((slongp val1) (if (slong-sub-okp val1 val2) (slong-sub val1 val2) err))
+     ((ullongp val1) (ullong-sub val1 val2))
+     ((sllongp val1) (if (sllong-sub-okp val1 val2) (sllong-sub val1 val2) err))
+     (t (error (impossible)))))
+  :guard-hints (("Goal" :use (:instance values-of-uaconvert-value
+                              (val1 arg1) (val2 arg2))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -606,11 +639,7 @@
       (:div (exec-div arg1 arg2))
       (:rem (exec-rem arg1 arg2))
       (:add (exec-add arg1 arg2))
-      (:sub (if (and (sintp arg1) (sintp arg2))
-                (if (sint-sub-okp arg1 arg2)
-                    (sint-sub arg1 arg2)
-                  (error (list :exec-sub arg1 arg2)))
-              (error :todo)))
+      (:sub (exec-sub arg1 arg2))
       (:shl (if (and (sintp arg1) (sintp arg2))
                 (if (sint-shl-sint-okp arg1 arg2)
                     (sint-shl-sint arg1 arg2)
