@@ -178,9 +178,7 @@
                                     schar-integerp-alt-def
                                     ushort-integerp-alt-def
                                     sshort-integerp-alt-def
-                                    sint-integerp-alt-def
-                                    )
-                 :do-not-induct t))
+                                    sint-integerp-alt-def)))
   :hooks (:fix)
   ///
 
@@ -368,8 +366,8 @@
                  ((sintp val2) (mv val1 (slong-from-sint val2)))
                  ((ullongp val2) (mv (ullong-from-slong val1) val2))
                  ((ulongp val2) (mv (ulong-from-slong val1) val2))
-                 ((uintp val2) (if (>= (sllong-max) (uint-max))
-                                   (mv val1 (sllong-from-uint val2))
+                 ((uintp val2) (if (>= (slong-max) (uint-max))
+                                   (mv val1 (slong-from-uint val2))
                                  (mv (ulong-from-slong val1)
                                      (ulong-from-uint val2))))
                  (t (prog2$ (impossible) (mv val1 val2)))))
@@ -440,7 +438,21 @@
                                     ulong-integerp-alt-def
                                     ullong-integerp-alt-def)
                  :use ((:instance values-of-promote-value (val val1))
-                       (:instance values-of-promote-value (val val2))))))
+                       (:instance values-of-promote-value (val val2)))))
+  ///
+
+  (defrule values-of-uaconvert-value
+    (implies (and (value-arithmeticp val1)
+                  (value-arithmeticp val2))
+             (b* (((mv cval1 cval2) (uaconvert-values val1 val2)))
+               (or (and (uintp cval1) (uintp cval2))
+                   (and (sintp cval1) (sintp cval2))
+                   (and (ulongp cval1) (ulongp cval2))
+                   (and (slongp cval1) (slongp cval2))
+                   (and (ullongp cval1) (ullongp cval2))
+                   (and (sllongp cval1) (sllongp cval2)))))
+    :use ((:instance values-of-promote-value (val val1))
+          (:instance values-of-promote-value (val val2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
