@@ -406,10 +406,16 @@
   (declare (xargs :mode :program))
   (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
        ((acl2::unless-casematch defsvtv$-form
-                                ('defsvtv$ name . args))
+                                (defsvtv-name name . args))
         (raise "Malformed defsvtv$-form (second argument)."))
+       ((unless (or (eq defsvtv-name 'defsvtv$)
+                    (eq defsvtv-name 'defsvtv$-phasewise)))
+        (raise "Malformed defsvtv$-form (must be a call of ~x0 or ~x1)."
+               'defsvtv$ 'defsvtv$-phasewise))
        ((mv ?stobj defsvtv-args)
-        (process-defsvtv$-user-args name args)))
+        (if (eq defsvtv-name 'defsvtv$)
+            (process-defsvtv$-user-args name args)
+          (process-defsvtv$-phasewise-user-args name args))))
     `(b* ((x (make-defsvtv-args . ,defsvtv-args))
           ((mv err pipeline-setup ,svtv-data)
            (defsvtv-stobj-pipeline-setup x ,svtv-data))
@@ -446,60 +452,6 @@
                                vcd-vals
                                skip-flatten))
 
-
-
-(defun svtv-data-debug-defsvtv$-phasewise-fn (defsvtv$-form
-                                               env
-                                               filename
-                                               svtv-data
-                                               moddb
-                                               aliases
-                                               vcd-wiremap
-                                               vcd-vals
-                                               skip-flatten)
-  (declare (xargs :mode :program))
-  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
-       ((acl2::unless-casematch defsvtv$-form
-                                ('defsvtv$-phasewise name . args))
-        (raise "Malformed defsvtv$-form (second argument)."))
-       ((mv ?stobj defsvtv-args)
-        (process-defsvtv$-phasewise-user-args name args)))
-    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
-          ((mv err pipeline-setup ,svtv-data)
-           (defsvtv-stobj-pipeline-setup x ,svtv-data))
-          ((when err)
-           (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))
-          ((mv err ,moddb ,aliases ,vcd-wiremap ,vcd-vals state)
-           (svtv-data-debug-pipeline-aux ,env pipeline-setup
-                                         :filename ,filename
-                                         :svtv-data ,svtv-data
-                                         :moddb ,moddb
-                                         :aliases ,aliases
-                                         :vcd-wiremap ,vcd-wiremap
-                                         :vcd-vals ,vcd-vals
-                                         :skip-flatten ,skip-flatten)))
-       (mv err ,svtv-data ,moddb ,aliases ,vcd-wiremap ,vcd-vals state))))
-
-(defmacro svtv-data-debug-defsvtv$-phasewise (defsvtv$-form
-                                               &key
-                                               (env 'nil)
-                                               (filename '"svtv-debug.vcd")
-                                               (svtv-data 'svtv-data)
-                                               (moddb 'moddb)
-                                               (aliases 'aliases)
-                                               (vcd-wiremap 'vcd-wiremap)
-                                               (vcd-vals 'vcd-vals)
-                                               (skip-flatten 'nil))
-  (svtv-data-debug-defsvtv$-phasewise-fn defsvtv$-form
-                                         env
-                                         filename
-                                         svtv-data
-                                         moddb
-                                         aliases
-                                         vcd-wiremap
-                                         vcd-vals
-                                         skip-flatten))
-  
 
 
 (defprod svtv-evaldata
@@ -805,12 +757,18 @@
                                    env
                                    svtv-data)
   (declare (xargs :mode :program))
-  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-fn)
+  (b* ((std::__function__ 'svtv-data-run-defsvtv$-fn)
        ((acl2::unless-casematch defsvtv$-form
-                                ('defsvtv$ name . args))
+                                (defsvtv-name name . args))
         (raise "Malformed defsvtv$-form (second argument)."))
+       ((unless (or (eq defsvtv-name 'defsvtv$)
+                    (eq defsvtv-name 'defsvtv$-phasewise)))
+        (raise "Malformed defsvtv$-form (must be a call of ~x0 or ~x1)."
+               'defsvtv$ 'defsvtv$-phasewise))
        ((mv ?stobj defsvtv-args)
-        (process-defsvtv$-user-args name args)))
+        (if (eq defsvtv-name 'defsvtv$)
+            (process-defsvtv$-user-args name args)
+          (process-defsvtv$-phasewise-user-args name args))))
     `(b* ((x (make-defsvtv-args . ,defsvtv-args))
           ((mv err pipeline-setup ,svtv-data)
            (defsvtv-stobj-pipeline-setup x ,svtv-data))
@@ -829,34 +787,6 @@
   (svtv-data-run-defsvtv$-fn defsvtv$-form
                              env svtv-data))
 
-
-(defun svtv-data-run-defsvtv$-phasewise-fn (defsvtv$-form
-                                             env
-                                             svtv-data)
-  (declare (xargs :mode :program))
-  (b* ((std::__function__ 'svtv-data-debug-defsvtv$-phasewise-fn)
-       ((acl2::unless-casematch defsvtv$-form
-                                ('defsvtv$-phasewise name . args))
-        (raise "Malformed defsvtv$-form (second argument)."))
-       ((mv ?stobj defsvtv-args)
-        (process-defsvtv$-phasewise-user-args name args)))
-    `(b* ((x (make-defsvtv-args . ,defsvtv-args))
-          ((mv err pipeline-setup ,svtv-data)
-           (defsvtv-stobj-pipeline-setup x ,svtv-data))
-          ((when err)
-           (mv err nil ,svtv-data))
-          (env
-           (svtv-data-run-pipeline-aux ,env pipeline-setup
-                                       :svtv-data ,svtv-data)))
-       (svtv-print-alist-readable env)
-       (mv nil env ,svtv-data))))
-
-(defmacro svtv-data-run-defsvtv$-phasewise (defsvtv$-form
-                                             &key
-                                             (env 'nil)
-                                             (svtv-data 'svtv-data))
-  (svtv-data-run-defsvtv$-phasewise-fn defsvtv$-form
-                                       env svtv-data))
 
 
   
@@ -887,7 +817,7 @@
 (local
  (make-event
   (b* (((mv err result svtv-data)
-        (svtv-data-run-defsvtv$-phasewise
+        (svtv-data-run-defsvtv$
          (defsvtv$-phasewise my-svtv
            :design *my-design*
            :phases
