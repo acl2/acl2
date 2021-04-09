@@ -1435,7 +1435,15 @@
   (defrule montgomery-mul-of-minus1
     (implies (point-on-montgomery-p point curve)
              (equal (montgomery-mul -1 point curve)
-                    (montgomery-neg point curve)))))
+                    (montgomery-neg point curve))))
+
+  (defrule montgomery-neg-of-montgomery-mul
+    (implies (and (montgomery-add-closure)
+                  (point-on-montgomery-p point curve))
+             (equal (montgomery-neg (montgomery-mul scalar point curve) curve)
+                    (montgomery-mul (- (ifix scalar)) point curve)))
+    :enable montgomery-mul
+    :prep-books ((include-book "kestrel/arithmetic-light/minus" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
