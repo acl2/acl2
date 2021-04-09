@@ -146,3 +146,7 @@
            (natp (maxelem items)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable all-natp maxelem))))
+
+(defthm all-<=-of-maxelem
+  (all-<= lst (maxelem lst))
+  :hints (("Goal" :in-theory (enable all-<=))))
