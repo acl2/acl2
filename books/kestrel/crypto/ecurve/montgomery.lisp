@@ -1437,7 +1437,7 @@
              (equal (montgomery-mul -1 point curve)
                     (montgomery-neg point curve))))
 
-  (defrule montgomery-neg-of-montgomery-mul
+  (defrule montgomery-neg-of-mul
     (implies (and (montgomery-add-closure)
                   (point-on-montgomery-p point curve))
              (equal (montgomery-neg (montgomery-mul scalar point curve) curve)
@@ -1452,12 +1452,37 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prove it for non-negative scalars initially.
-     We will extend that to negative scalars eventually.
-     We keep these rules disabled,
-     because distribution is not always desired."))
+    "We first prove it on @(tsee montgomery-mul-nonneg) by induction,
+     then we lift it to @(tsee montgomery-mul),
+     but only for non-negative scalars.
+     To extend it to negative scalars, we consider different cases.
+     If both scalars are non-positive,
+     the definition of @(tsee montgomery-mul) is expanded,
+     and the theorem about @(tsee montgomery-mul-nonneg) applies.
+     If one is non-negative and the other non-positive,
+     we consider two subcases:
+     when the sum is non-negative, and when the sum is non-positive.
+     The first subcase requires adding and subtracting the same quantity,
+     and thus we use Isar to explicate this proof strategy.
+     The second subcase is proved by considering the negated scalars
+     and thus applying the theorem for the first subcase;
+     we use Isar, but it might be possible to shorten the proof.
+     Finally, the case in which one is non-positive and the other non-negative
+     is handled by swapping the roles, and implicitly using commutativity.
+     With all the cases in hand, we prove the main theorem,
+     which applies to any integer scalars.
+     We keep the theorem disabled,
+     because distribution is not always desired.")
+   (xdoc::p
+    "Note that we consider non-negative and non-positive cases,
+     which overlap at zero,
+     rather than non-overlapping non-negative and negative cases.
+     The overlap is intentional, so that the cases are more symmetric
+     and it is easy to swap signs, as we do in some of the proofs."))
 
-  (defruled montogomery-mul-nonneg-of-scalar-addition
+  (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+  (defruledl montogomery-mul-nonneg-of-scalar-addition
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
                   (point-on-montgomery-p point curve)
@@ -1469,7 +1494,7 @@
                                     curve)))
     :enable montgomery-mul-nonneg)
 
-  (defruled montgomery-mul-of-scalar-addition
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
                   (point-on-montgomery-p point curve)
@@ -1479,7 +1504,206 @@
                     (montgomery-add (montgomery-mul scalar1 point curve)
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
-    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition)))
+    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)
+                    (montgomery-mul (+ scalar1 scalar2) point curve)))
+    :use montgomery-mul-of-scalar-addition-when-nonneg)
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonpos
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (<= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :enable (montgomery-mul
+             montogomery-mul-nonneg-of-scalar-addition))
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (>= (+ scalar1 scalar2) 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (>= (+ scalar1 scalar2) 0)))
+     (:derive (:add-and-sub
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add
+                       (montgomery-mul (+ scalar1 scalar2) point curve)
+                       (montgomery-add
+                        (montgomery-neg (montgomery-mul scalar2 point curve) curve)
+                        (montgomery-mul scalar2 point curve)
+                        curve)
+                       curve)))
+      :from (:point :closure)
+      :hints (("Goal" :in-theory (disable montgomery-neg-of-mul))))
+     (:derive (:simplify
+               (equal (montgomery-add
+                       (montgomery-mul (+ scalar1 scalar2) point curve)
+                       (montgomery-add
+                        (montgomery-neg
+                         (montgomery-mul scalar2 point curve) curve)
+                        (montgomery-mul scalar2 point curve)
+                        curve)
+                       curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:associativity :closure :point :scalar1+2 :scalar1 :scalar2)
+      :hints
+      (("Goal"
+        :in-theory (e/d (montgomery-add-associative-left
+                         montgomery-mul-of-scalar-addition-when-nonneg-converse)
+                        (montgomery-add-associative-right
+                         montgomery-add-commutative)))))
+     (:derive (:conclusion
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:add-and-sub :simplify))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)))
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (<= (+ scalar1 scalar2) 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (<= (+ scalar1 scalar2) 0)))
+     (:derive (:swapped-negated
+               (equal (montgomery-mul (+ (- scalar2) (- scalar1)) point curve)
+                      (montgomery-add (montgomery-mul (- scalar2) point curve)
+                                      (montgomery-mul (- scalar1) point curve)
+                                      curve)))
+      :from (:closure :associativity :point :scalar1 :scalar2 :scalar1+2)
+      :hints
+      (("Goal"
+        :in-theory
+        (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)
+        :use (:instance
+              montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+              (scalar1 (- scalar2))
+              (scalar2 (- scalar1))))))
+     (:derive (:negate-both
+               (equal (montgomery-neg
+                       (montgomery-mul (+ (- scalar2) (- scalar1)) point curve)
+                       curve)
+                      (montgomery-neg
+                       (montgomery-add (montgomery-mul (- scalar2) point curve)
+                                       (montgomery-mul (- scalar1) point curve)
+                                       curve)
+                       curve)))
+      :from (:swapped-negated))
+     (:derive (:conclusion
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:negate-both :closure :associativity :point :scalar1 :scalar2))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum)))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :cases ((>= (+ scalar1 scalar2) 0))
+    :enable (montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+             montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonpos-nonneg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (>= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :use (:instance montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+          (scalar1 scalar2) (scalar2 scalar1)))
+
+  (defruled montgomery-mul-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :cases ((and (>= scalar1 0) (>= scalar2 0))
+            (and (<= scalar1 0) (<= scalar2 0))
+            (and (>= scalar1 0) (<= scalar2 0))
+            (and (<= scalar1 0) (>= scalar2 0)))
+    :enable (montgomery-mul-of-scalar-addition-when-nonneg
+             montgomery-mul-of-scalar-addition-when-nonpos
+             montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+             montgomery-mul-of-scalar-addition-when-nonpos-nonneg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
