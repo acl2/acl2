@@ -377,6 +377,7 @@
     exec-bitior
     exec-binary-strict-pure
     exec-test
+    exec-integer
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
@@ -391,6 +392,10 @@
     sint-const
     sint-logand
     sint-logor
+    sint-shl-sint
+    sint-shl-sint-okp
+    sint-shr-sint
+    sint-shr-sint-okp
     top-frame
     type-of-value
     uaconvert-values
@@ -677,6 +682,8 @@
      sintp-of-sint-mul
      sintp-of-sint-div
      sintp-of-sint-rem
+     sintp-of-sint-shl
+     sintp-of-sint-shr
      sintp-of-sint-shl-sint
      sintp-of-sint-shr-sint
      sintp-of-sint-lt
@@ -732,6 +739,8 @@
     (:t sint-mul)
     (:t sint-div)
     (:t sint-rem)
+    (:t sint-shl)
+    (:t sint-shr)
     (:t sint-shl-sint)
     (:t sint-shr-sint)
     (:t sint-lt)

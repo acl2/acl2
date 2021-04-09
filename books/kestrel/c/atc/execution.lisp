@@ -191,10 +191,16 @@
                    (slongp pval)
                    (ullongp pval)
                    (sllongp pval))))
-    :enable (promote-value
-             value-arithmeticp
+    :enable (value-arithmeticp
              value-realp
              value-integerp
+             value-unsigned-integerp
+             value-signed-integerp))
+
+  (defrule value-integerp-of-promote-value
+    (equal (value-integerp (promote-value val))
+           (value-integerp (value-fix val)))
+    :enable (value-integerp
              value-unsigned-integerp
              value-signed-integerp)))
 
@@ -486,8 +492,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-integer ((arg value-resultp))
-  :returns (result int-resultp)
+(define exec-integer ((arg valuep))
+  :guard (value-integerp arg)
+  :returns (result integerp)
   :short "Execute a value to obtain an (ACL2) integer."
   :long
   (xdoc::topstring
@@ -495,16 +502,9 @@
     "This is used for operands such that
      only their mathematical values affect the result of the operation,
      and not their C types.
-     Instances are the second operand of shift operations
-     and the index operand of array subscript operations.")
-   (xdoc::p
-    "The value must be a C integer.
-     We return an ACL2 integer that is the mathematical value."))
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
-       ((unless (value-integerp arg)) (error (list :integer-mistype
-                                                   :required :integer
-                                                   :supplied arg))))
+     Examples are the second operand of shift operations
+     and the index operand of array subscript operations."))
+  (b* ((arg (value-fix arg)))
     (cond ((ucharp arg) (uchar-integer-value arg))
           ((scharp arg) (schar-integer-value arg))
           ((ushortp arg) (ushort-integer-value arg))
@@ -515,7 +515,7 @@
           ((slongp arg) (slong-integer-value arg))
           ((ullongp arg) (ullong-integer-value arg))
           ((sllongp arg) (sllong-integer-value arg))
-          (t (error (impossible)))))
+          (t (prog2$ (impossible) 0))))
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-unsigned-integerp
                                            value-signed-integerp)))
@@ -681,54 +681,27 @@
 (define exec-shl ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute left shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support operands with the same promoted type."))
   (b* ((arg1 (value-fix arg1))
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-shl
                      :required :integer
                      :supplied arg1)))
+       (val1 (promote-value arg1))
        ((unless (value-integerp arg2))
         (error (list :mistype-shl
                      :required :integer
                      :supplied arg2)))
-       (err (error (list :undefined-shl arg1 arg2)))
-       (val1 (promote-value arg1))
-       (val2 (promote-value arg2)))
+       (val2 (promote-value arg2))
+       (val2 (exec-integer val2))
+       (err (error (list :undefined-shl arg1 arg2))))
     (cond
-     ((uintp val1) (if (uintp val2)
-                       (if (uint-shl-uint-okp val1 val2)
-                           (uint-shl-uint val1 val2)
-                         err)
-                     (error :todo)))
-     ((sintp val1) (if (sintp val2)
-                       (if (sint-shl-sint-okp val1 val2)
-                           (sint-shl-sint val1 val2)
-                         err)
-                     (error :todo)))
-     ((ulongp val1) (if (ulongp val2)
-                        (if (ulong-shl-ulong-okp val1 val2)
-                            (ulong-shl-ulong val1 val2)
-                          err)
-                      (error :todo)))
-     ((slongp val1) (if (slongp val2)
-                        (if (slong-shl-slong-okp val1 val2)
-                            (slong-shl-slong val1 val2)
-                          err)
-                      (error :todo)))
-     ((ullongp val1) (if (ullongp val2)
-                         (if (ullong-shl-ullong-okp val1 val2)
-                             (ullong-shl-ullong val1 val2)
-                           err)
-                       (error :todo)))
-     ((sllongp val1) (if (sllongp val2)
-                         (if (sllong-shl-sllong-okp val1 val2)
-                             (sllong-shl-sllong val1 val2)
-                           err)
-                       (error :todo)))
+     ((uintp val1) (if (uint-shl-okp val1 val2) (uint-shl val1 val2) err))
+     ((sintp val1) (if (sint-shl-okp val1 val2) (sint-shl val1 val2) err))
+     ((ulongp val1) (if (ulong-shl-okp val1 val2) (ulong-shl val1 val2) err))
+     ((slongp val1) (if (slong-shl-okp val1 val2) (slong-shl val1 val2) err))
+     ((ullongp val1) (if (ullong-shl-okp val1 val2) (ullong-shl val1 val2) err))
+     ((sllongp val1) (if (sllong-shl-okp val1 val2) (sllong-shl val1 val2) err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use ((:instance values-of-promote-value (val arg1))
@@ -742,54 +715,28 @@
 (define exec-shr ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute right shifts [C:6.5.7/2] [C:6.5.7/3] [C:6.5.7/5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support operands with the same promoted type."))
   (b* ((arg1 (value-fix arg1))
        (arg2 (value-fix arg2))
        ((unless (value-integerp arg1))
         (error (list :mistype-shr
                      :required :integer
                      :supplied arg1)))
+       (val1 (promote-value arg1))
        ((unless (value-integerp arg2))
         (error (list :mistype-shr
                      :required :integer
                      :supplied arg2)))
-       (err (error (list :undefined-shr arg1 arg2)))
-       (val1 (promote-value arg1))
-       (val2 (promote-value arg2)))
+       (val2 (promote-value arg2))
+       (val2 (exec-integer val2))
+       ((when (errorp val2)) val2)
+       (err (error (list :undefined-shr arg1 arg2))))
     (cond
-     ((uintp val1) (if (uintp val2)
-                       (if (uint-shr-uint-okp val1 val2)
-                           (uint-shr-uint val1 val2)
-                         err)
-                     (error :todo)))
-     ((sintp val1) (if (sintp val2)
-                       (if (sint-shr-sint-okp val1 val2)
-                           (sint-shr-sint val1 val2)
-                         err)
-                     (error :todo)))
-     ((ulongp val1) (if (ulongp val2)
-                        (if (ulong-shr-ulong-okp val1 val2)
-                            (ulong-shr-ulong val1 val2)
-                          err)
-                      (error :todo)))
-     ((slongp val1) (if (slongp val2)
-                        (if (slong-shr-slong-okp val1 val2)
-                            (slong-shr-slong val1 val2)
-                          err)
-                      (error :todo)))
-     ((ullongp val1) (if (ullongp val2)
-                         (if (ullong-shr-ullong-okp val1 val2)
-                             (ullong-shr-ullong val1 val2)
-                           err)
-                       (error :todo)))
-     ((sllongp val1) (if (sllongp val2)
-                         (if (sllong-shr-sllong-okp val1 val2)
-                             (sllong-shr-sllong val1 val2)
-                           err)
-                       (error :todo)))
+     ((uintp val1) (if (uint-shr-okp val1 val2) (uint-shr val1 val2) err))
+     ((sintp val1) (if (sint-shr-okp val1 val2) (sint-shr val1 val2) err))
+     ((ulongp val1) (if (ulong-shr-okp val1 val2) (ulong-shr val1 val2) err))
+     ((slongp val1) (if (slong-shr-okp val1 val2) (slong-shr val1 val2) err))
+     ((ullongp val1) (if (ullong-shr-okp val1 val2) (ullong-shr val1 val2) err))
+     ((sllongp val1) (if (sllong-shr-okp val1 val2) (sllong-shr val1 val2) err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use ((:instance values-of-promote-value (val arg1))
