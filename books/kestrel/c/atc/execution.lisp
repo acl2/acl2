@@ -454,6 +454,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-test ((arg value-resultp))
+  :returns (result bool-resultp)
+  :short "Execute a test on a value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for tests of conditionals
+     and for the operands of the non-strict operations.")
+   (xdoc::p
+    "The argument value must be a scalar.
+     We return an ACL2 boolean, or an error."))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-scalarp arg)) (error (list :test-mistype
+                                                  :required :scalar
+                                                  :supplied arg))))
+    (cond ((ucharp arg) (uchar-nonzerop arg))
+          ((scharp arg) (schar-nonzerop arg))
+          ((ushortp arg) (ushort-nonzerop arg))
+          ((sshortp arg) (sshort-nonzerop arg))
+          ((uintp arg) (uint-nonzerop arg))
+          ((sintp arg) (sint-nonzerop arg))
+          ((ulongp arg) (ulong-nonzerop arg))
+          ((slongp arg) (slong-nonzerop arg))
+          ((ullongp arg) (ullong-nonzerop arg))
+          ((sllongp arg) (sllong-nonzerop arg))
+          ((pointerp arg) (pointer-nullp arg))
+          (t (error (impossible)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-mul ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
@@ -1065,38 +1097,6 @@
       (:bitior (exec-bitior arg1 arg2))
       (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-test ((arg value-resultp))
-  :returns (result bool-resultp)
-  :short "Execute a test on a value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for tests of conditionals
-     and for the operands of the non-strict operations.")
-   (xdoc::p
-    "The argument value must be a scalar.
-     We return an ACL2 boolean, or an error."))
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
-       ((unless (value-scalarp arg)) (error (list :test-mistype
-                                                  :required :scalar
-                                                  :supplied arg))))
-    (cond ((ucharp arg) (uchar-nonzerop arg))
-          ((scharp arg) (schar-nonzerop arg))
-          ((ushortp arg) (ushort-nonzerop arg))
-          ((sshortp arg) (sshort-nonzerop arg))
-          ((uintp arg) (uint-nonzerop arg))
-          ((sintp arg) (sint-nonzerop arg))
-          ((ulongp arg) (ulong-nonzerop arg))
-          ((slongp arg) (slong-nonzerop arg))
-          ((ullongp arg) (ullong-nonzerop arg))
-          ((sllongp arg) (sllong-nonzerop arg))
-          ((pointerp arg) (pointer-nullp arg))
-          (t (error (impossible)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
