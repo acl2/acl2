@@ -48,6 +48,7 @@
                get-ruleset
                implode
                impossible
+               int
                lnfix
                make-event-terse
                maybe-pseudo-event-formp
@@ -56,6 +57,8 @@
                nat
                patbind-bool-result-err ; workaround for an XDOC bug
                patbind-bool-result-ok ; workaround for an XDOC bug
+               patbind-int-result-err ; workaround for an XDOC bug
+               patbind-int-result-ok ; workaround for an XDOC bug
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
