@@ -1334,10 +1334,7 @@
      (this means that it must be a non-null pointer to @('unsigned char');
      see @(tsee deref)),
      obtaining an array.
-     The second operand must be an @('int'),
-     which is a bit more restrictive than [C18],
-     which allows any integer;
-     we will relax this at some point.
+     The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
      and the indexed element is returned as result."))
   (b* ((arr (value-result-fix arr))
@@ -1347,18 +1344,20 @@
        ((unless (pointerp arr)) (error (list :mistype-array :array
                                              :required :pointer
                                              :supplied (type-of-value arr))))
-       ((unless (sintp sub)) (error (list :mistype-array :index
-                                          :required (type-sint)
-                                          :supplied (type-of-value sub))))
+       ((unless (value-integerp sub)) (error
+                                       (list :mistype-array :index
+                                             :required (type-sint)
+                                             :supplied (type-of-value sub))))
        (array (deref arr heap))
        ((when (errorp array))
         (error (list :array-not-found arr (heap-fix heap))))
-       ((unless (uchar-array-sint-index-okp array sub))
+       (index (exec-integer sub))
+       ((unless (uchar-array-index-okp array index))
         (error (list :array-index-out-of-range
                      :pointer arr
                      :array array
                      :index sub))))
-    (uchar-array-read-sint array sub))
+    (uchar-array-read array index))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

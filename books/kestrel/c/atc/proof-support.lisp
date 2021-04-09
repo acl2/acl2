@@ -399,6 +399,9 @@
     top-frame
     type-of-value
     uaconvert-values
+    uchar-array-sint-index-okp
+    uchar-array-read-sint
+    uchar-array-write-sint
     value-unsigned-integerp
     value-signed-integerp
     value-integerp
@@ -697,6 +700,7 @@
      sintp-of-sint-bitior
      sintp-of-sint-from-uchar
      ucharp-of-uchar-array-read-sint
+     ucharp-of-uchar-array-read
      ucharp-of-uchar-from-sint
      top-frame-of-push-frame
      valuep-when-pointerp
@@ -754,6 +758,7 @@
     (:t sint-bitior)
     (:t sint-from-uchar)
     (:t uchar-array-read-sint)
+    (:t uchar-array-read)
     (:t uchar-from-sint)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
