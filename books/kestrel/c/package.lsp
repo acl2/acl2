@@ -49,6 +49,7 @@
                implode
                impossible
                int
+               int-resultp
                lnfix
                make-event-terse
                maybe-pseudo-event-formp

@@ -486,6 +486,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-integer ((arg value-resultp))
+  :returns (result int-resultp)
+  :short "Execute a value to obtain an (ACL2) integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for operands such that
+     only their mathematical values affect the result of the operation,
+     and not their C types.
+     Instances are the second operand of shift operations
+     and the index operand of array subscript operations.")
+   (xdoc::p
+    "The value must be a C integer.
+     We return an ACL2 integer that is the mathematical value."))
+  (b* ((arg (value-result-fix arg))
+       ((when (errorp arg)) arg)
+       ((unless (value-integerp arg)) (error (list :integer-mistype
+                                                   :required :integer
+                                                   :supplied arg))))
+    (cond ((ucharp arg) (uchar-integer-value arg))
+          ((scharp arg) (schar-integer-value arg))
+          ((ushortp arg) (ushort-integer-value arg))
+          ((sshortp arg) (sshort-integer-value arg))
+          ((uintp arg) (uint-integer-value arg))
+          ((sintp arg) (sint-integer-value arg))
+          ((ulongp arg) (ulong-integer-value arg))
+          ((slongp arg) (slong-integer-value arg))
+          ((ullongp arg) (ullong-integer-value arg))
+          ((sllongp arg) (sllong-integer-value arg))
+          (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable value-integerp
+                                           value-unsigned-integerp
+                                           value-signed-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-mul ((arg1 valuep) (arg2 valuep))
   :returns (result value-resultp)
   :short "Execute multiplication [C:6.5.5/2] [C:6.5.5/3] [C:6.5.5/4]."
