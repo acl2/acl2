@@ -25,6 +25,21 @@
 ;(include-book "def-dag-builder-theorems")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+
+;move
+(local
+ ;; Kept disabled by default
+ (defthmd rational-listp-when-nat-listp
+   (implies (nat-listp x)
+            (rational-listp x))))
+
+;move
+(local
+ (defthm <-of-0-and-len
+   (equal (< 0 (len x))
+          (consp x))
+   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr))))))
 
 ;move
 ;make local to axe?
@@ -55,8 +70,11 @@
             (all-< nodenums (+ 1 (maxelem nodenums))))
    :hints (("Goal" :in-theory (enable all-natp)))))
 
+;; Extract a dag (as a list) from DAG-ARRAY containing only the NODENUMS and
+;; the nodes that support them.  Since nodes will in general be renumbered,
+;; this returns renamed-nodenums.
 ;move
-;returns (mv renamed-nodenums dag-lst)
+;; Returns (mv renamed-nodenums dag-lst).
 (defund drop-non-supporters-array-node-list (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
@@ -70,7 +88,6 @@
       (mv (aref1-list 'translation-array translation-array nodenums)
           dag-lst))))
 
-
 (defthm len-of-mv-nth-0-of-drop-non-supporters-array-node-list
   (equal (len (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))
          (len nodenums))
@@ -80,14 +97,27 @@
   (true-listp (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
 
-;; (defthm all-<-of-mv-nth-0-of-drop-non-supporters-array-node-list
-;;   (implies (and (true-listp nodenums)
-;;                 (all-natp nodenums)
-;;                 (consp nodenums) ; so we can call maxelem
-;;                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
-;;            (all-< (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))
-;;                   (len (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))))
-;;   :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list))))
+;move
+(defthm all->-of--1-when-nat-listp
+  (implies (nat-listp x)
+           (all-> x '-1)))
+
+(defthm all->-of--1-when-all-natp
+  (implies (all-natp x)
+           (all-> x '-1))
+  :hints (("Goal" :in-theory (enable all-natp all->))))
+
+;; The renamed nodes are all valid nodes in the dag
+(defthm all-<-of-mv-nth-0-of-drop-non-supporters-array-node-list
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
+           (all-< (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))
+                  (len (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))))
+  :hints (("Goal" :in-theory (enable drop-non-supporters-array-node-list
+                                     car-of-car-when-pseudo-dagp
+                                     all-integerp-when-nat-listp))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list
   (implies (and (true-listp nodenums)
@@ -249,15 +279,15 @@
          (len nodenums))
   :hints (("Goal" :in-theory (enable crunch-dag-array2))))
 
-;; (defthm all-<-of-mv-nth-2-of-crunch-dag-array2
-;;   (implies (and (true-listp nodenums)
-;;                 (all-natp nodenums)
-;;                 (consp nodenums) ; so we can call maxelem
-;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-;;                 (all-< nodenums dag-len))
-;;            (all-< (mv-nth 2 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
-;;                   (mv-nth 1 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))))
-;;   :hints (("Goal" :in-theory (enable crunch-dag-array2))))
+(defthm all-<-of-mv-nth-2-of-crunch-dag-array2
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (all-< nodenums dag-len))
+           (all-< (mv-nth 2 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
+                  (mv-nth 1 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2))))
 
 (defthm nat-listp-of-mv-nth-2-of-crunch-dag-array2
   (implies (and (true-listp nodenums)
@@ -388,16 +418,16 @@
                                         (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
-;; (defthm all-<-of-mv-nth-5-of-crunch-dag-array2-with-indices
-;;   (implies (and (true-listp nodenums)
-;;                 (all-natp nodenums)
-;;                 (consp nodenums) ; so we can call maxelem
-;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-;;                 (symbolp dag-parent-array-name)
-;;                 (all-< nodenums dag-len))
-;;            (all-< (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
-;;                   (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-;;   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+(defthm all-<-of-mv-nth-5-of-crunch-dag-array2-with-indices
+  (implies (and (true-listp nodenums)
+                (all-natp nodenums)
+                (consp nodenums) ; so we can call maxelem
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (symbolp dag-parent-array-name)
+                (all-< nodenums dag-len))
+           (all-< (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
+                  (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
+  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
 (defthm len-of-mv-nth-5-of-crunch-dag-array2-with-indices
   (equal (len (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
@@ -483,12 +513,5 @@
     (b* ((- (cw " (Crunching: ...")) ;; matching paren printed below
          ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums)
           (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array nodenums))
-         ;; TODO: Prove that this can't happen.  Need to know that
-         ;; build-reduced-nodes maps all of the nodenums to
-         ;; nodenums (not constants -- currently)
-         ((when (not (and (rational-listp nodenums) ;todo: using nat-listp here didn't work
-                          (all-< nodenums dag-len))))
-          (er hard? 'maybe-crunch-dag-array2 "Bad nodenum after crunching.")
-          (mv :error-in-crunching nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
       (mv (erp-nil) nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
