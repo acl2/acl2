@@ -12940,7 +12940,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (order (array-order header))
          old-car
          ar
-         in-order)
+         (in-order t)
+         (num 1))
 
     (when (and (null order)
                (> (length l) maximum-length))
@@ -12953,35 +12954,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (cons #\2 (length l))
                         (cons #\3 (maximum-length name l)))))
 
-; Get an array that is all filled with the special mark *invisible-array-mark*.
+; Determine whether l is already is in normal form (header first, strictly
+; ordered keys, no default values, no extra header.)
 
-    (cond ((and old
-                (= 1 (array-rank (cadr old)))
-                (= (length (cadr old)) length))
-           (setq old-car (car old))
-           (setf (car old) *invisible-array-mark*)
-           (setq ar (cadr old))
-           (do ((i (1- length) (1- i))) ((< i 0))
-               (declare (type (signed-byte 32) i))
-               (setf (svref ar i) *invisible-array-mark*)))
-          (t (setq ar (make-array$ length :initial-element
-                                   *invisible-array-mark*))))
-
-; Store the value of each pair under its key (unless it is covered by
-; an earlier pair with the same key).
-
-    (do ((tl l (cdr tl)))
-        ((null tl))
-        (let ((index (caar tl)))
-          (cond ((eq index :header) nil)
-                ((eq *invisible-array-mark* (svref ar index))
-                 (setf (svref ar index)
-                       (cdar tl))))))
-
-; Determine whether l is already is in normal form (header first,
-; strictly ascending keys, no default values, no extra header.)
-
-    (setq in-order t)
     (when order
       (cond ((eq (caar l) :header)
              (do ((tl (cdr l) (cdr tl)))
@@ -13002,13 +12977,65 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (setq in-order nil)
                         (return nil)))))
             (t (setq in-order nil))))
-    (let ((num 1) x max-ar)
+
+; Get an array that is completely filled with default or the special mark
+; *invisible-array-mark*, depending on whether or not the alist is ordered,
+; i.e., in order after the initial header (we actually also require that the
+; header does not appear in the cdr) and where order is < or > (i.e., not nil).
+; In that ordered case we write the default value, skipping the extra pass for
+; writing *invisible-array-mark*, which is justified since there are no
+; duplicate indices in the alist.
+
+    (let ((init (if (and in-order order) default *invisible-array-mark*)))
+      (cond ((and old
+                  (= 1 (array-rank (cadr old)))
+                  (= (length (cadr old)) length))
+             (setq old-car (car old))
+             (setf (car old) *invisible-array-mark*)
+             (setq ar (cadr old))
+             (do ((i (1- length) (1- i))) ((< i 0))
+                 (declare (type (signed-byte 32) i))
+                 (setf (svref ar i) init)))
+            (t (setq ar (make-array$ length :initial-element init)))))
+
+; Store the value of each pair under its key.  However, if there may be
+; duplicate keys in the cdr of the alist, then we must avoid storing the value
+; when it is covered by an earlier pair with the same key.  We can avoid that
+; considerabion if the alist is ordered as discussed above, since in that case
+; there are no duplicate keys (and in that case, we have populated the array
+; using default rather than *initial-known-package-alist*).
+
+    (cond
+     ((and in-order order) ; just do the writes, as indicated above
+      (do ((tl (cdr l) (cdr tl))) ; note: by in-order, no header is in (cdr l)
+; The following termination test is true immediately if l consists only of the
+; header.
+          ((null tl))
+          (setf (svref ar (caar tl))
+                (cdar tl)))
+      (setq num (length (cdr l))))
+     (t
+      (do ((tl l (cdr tl)))
+; The following termination test is true immediately if l consists only of the
+; header (but we can only be in that case here if order is nil).
+          ((null tl))
+          (let ((index (caar tl)))
+            (cond ((eq index :header) nil)
+                  ((eq *invisible-array-mark* (svref ar index))
+                   (setf (svref ar index)
+                         (cdar tl))))))))
+
+    (let (x max-ar)
       (declare (type (unsigned-byte 31) num))
 
 ;  In one pass, set x to the value to be returned, put defaults into the array
-;  where the invisible mark still sits, and calculate the length of x.
+;  where the invisible mark still sits, and calculate the length of x.  Except:
+;  in the ordered case we skip the latter two steps, since defaults are already
+;  in the array and num is already set .
 
-      (cond (in-order
+      (cond ((and in-order order) ; array and num have already been updated
+             (setq x l))
+            (in-order ; hence order is nil
              (do ((i (1- length) (1- i))) ((< i 0))
                  (declare (type (signed-byte 32) i))
                  (let ((val (svref ar i)))
@@ -13026,14 +13053,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (t (push (cons i val) x)
                             (setq num (the (unsigned-byte 31) (1+ num)))))))
              (setq x (cons header x)))
-            (t (do ((i (1- length) (1- i))) ((< i 0))
-                   (declare (type (signed-byte 32) i))
-                   (let ((val (svref ar i)))
-                     (cond ((eq *invisible-array-mark* val)
-                            (setf (svref ar i) default))
-                           ((equal val default) nil)
-                           (t (push (cons i val) x)
-                              (setq num (the (unsigned-byte 31) (1+ num)))))))
+            (t ; (eq order '<)
+             (do ((i (1- length) (1- i))) ((< i 0))
+                 (declare (type (signed-byte 32) i))
+                 (let ((val (svref ar i)))
+                   (cond ((eq *invisible-array-mark* val)
+                          (setf (svref ar i) default))
+                         ((equal val default) nil)
+                         (t (push (cons i val) x)
+                            (setq num (the (unsigned-byte 31) (1+ num)))))))
                (setq x (cons header x))))
       (cond (old (setq max-ar (caddr old))
                  (setf (aref (the (array (unsigned-byte 31) (*)) max-ar)
