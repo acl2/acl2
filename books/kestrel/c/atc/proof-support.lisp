@@ -221,6 +221,7 @@
     (:e block-item-declon->get)
     (:e block-item-kind)
     (:e block-item-stmt->get)
+    (:e booleanp)
     (:e compustate)
     (:e compustate->frames)
     (:e compustate-fix)
@@ -350,16 +351,38 @@
     endp
     enter-scope
     exit-scope
-    exec-arrsub
+    exec-iconst
+    exec-const
+    exec-ident
+    exec-plus
+    exec-minus
+    exec-bitnot
+    exec-lognot
+    exec-unary
+    exec-mul
+    exec-div
+    exec-rem
+    exec-add
+    exec-sub
+    exec-shl
+    exec-shr
+    exec-lt
+    exec-gt
+    exec-le
+    exec-ge
+    exec-eq
+    exec-ne
+    exec-bitand
+    exec-bitxor
+    exec-bitior
+    exec-binary-strict-pure
+    exec-test
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
-    exec-binary-strict-pure
     exec-cast
-    exec-const
-    exec-iconst
-    exec-ident
-    exec-unary
+    exec-arrsub
+    promote-value
     mv-nth
     pop-frame
     push-frame
@@ -370,6 +393,13 @@
     sint-logor
     top-frame
     type-of-value
+    uaconvert-values
+    value-unsigned-integerp
+    value-signed-integerp
+    value-integerp
+    value-realp
+    value-arithmeticp
+    value-scalarp
     write-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -465,6 +495,11 @@
     (implies (uchar-arrayp x)
              (not (errorp x)))
     :enable (errorp uchar-arrayp))
+
+  (defruled not-errorp-when-booleanp
+    (implies (booleanp x)
+             (not (errorp x)))
+    :enable errorp)
 
   (defruled len-of-cons
     (equal (len (cons x y))
@@ -570,6 +605,7 @@
    '(;; introduced in this file (see ATC-REWRITE-RULES):
      len-of-cons
      1+len-greater-than-0
+     not-errorp-when-booleanp
      not-errorp-when-scopep
      not-errorp-when-valuep
      not-errorp-when-value-listp
@@ -597,6 +633,16 @@
      natp-of-1+
      natp-of-len
      ;; introduced elsewhere:
+     booleanp-of-uchar-nonzerop
+     booleanp-of-schar-nonzerop
+     booleanp-of-ushort-nonzerop
+     booleanp-of-sshort-nonzerop
+     booleanp-of-uint-nonzerop
+     booleanp-of-sint-nonzerop
+     booleanp-of-ulong-nonzerop
+     booleanp-of-slong-nonzerop
+     booleanp-of-ullong-nonzerop
+     booleanp-of-sllong-nonzerop
      car-cons
      cdr-cons
      compustate-of-fields

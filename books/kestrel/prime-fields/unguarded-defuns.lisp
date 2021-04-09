@@ -88,7 +88,7 @@
   :hints (("Goal" :in-theory (enable mul))))
 
 (defund pow-unguarded (x n p)
-  (declare (xargs :guard t :guard-debug t))
+  (declare (xargs :guard t))
   (if (not (posp n))
       1
     (if (<= (ifix p) 1)

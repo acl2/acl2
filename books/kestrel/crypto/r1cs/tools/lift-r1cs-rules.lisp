@@ -22,7 +22,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 ;; Turn large constants into more readable negative constants
-(defthm mul-normalize-constant-arg1
+(defthmd mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
                 (< (floor p 2) x) ;gets computed
@@ -33,7 +33,7 @@
                        p)))
   :hints (("Goal" :in-theory (enable mul acl2::mod-sum-cases))))
 
-(defthm mul-normalize-constant-arg1-alt
+(defthmd mul-normalize-constant-arg1-alt
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
                 (< x (- (floor p 2))) ;gets computed
@@ -743,53 +743,33 @@
 
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
-;drop? or is this needed for axe?
-(defthmd power-of-2p-when-equal-of-expt
-  (implies (and (equal x (expt 2 n)) ; n is a free var
-                (natp n))
-           (acl2::power-of-2p x))
-  :hints (("Goal" :in-theory (enable acl2::power-of-2p))))
-
-;; (thm
-;;  (implies (posp x)
-;;           (equal (integer-length (* 1/2 x))
-;;                  (+ -1 (integer-length x))))
-;;  :hints (("Goal" :in-theory (enable integer-length))))
-
-;; (thm
-;;  (implies (posp x)
-;;           (equal (ACL2::LG (* 1/2 x))
-;;                  (+ -1 (ACL2::LG x))))
-;;  :hints (("Goal" :in-theory (enable ACL2::LG))))
-
-
 ;; (thm
 ;;  (implies ..
 ;;           (< (ACL2::CEILING-OF-LG K2)
 ;;              (ACL2::CEILING-OF-LG K1))
 
+;drop?
 (defthm lg-of-*-of-1/2-and-expt
   (implies (natp n)
-           (equal (ACL2::LG (* 1/2 (EXPT 2 n)))
+           (equal (acl2::lg (* 1/2 (expt 2 n)))
                   (+ -1 n)))
-  :hints (("Goal" :use (:instance ACL2::LG-OF-EXPT
+  :hints (("Goal" :use (:instance acl2::lg-of-expt
                                   (n (+ -1 n)))
-           :in-theory (e/d (ACL2::EXPT-OF-+) (;ACL2::LG-OF-EXPT-GEN
-                                              ACL2::LG-OF-EXPT)))))
+           :in-theory (e/d (acl2::expt-of-+) (;acl2::lg-of-expt-gen
+                                              acl2::lg-of-expt)))))
 
 (defthm power-of-2p-of-*-of-/
   (implies (and (< k1 k2)
                 (acl2::power-of-2p k1)
                 (acl2::power-of-2p k2))
            (acl2::power-of-2p (* (/ k1) k2)))
-  :hints (("Goal" :use (:instance power-of-2p-when-equal-of-expt
-                                  (x (* (/ k1) k2))
+  :hints (("Goal" :use (:instance acl2::power-of-2p-of-expt-2
                                   (n (- (acl2::lg k2)
                                         (acl2::lg k1))))
            :expand ((ACL2::POWER-OF-2P K1)
                     (ACL2::POWER-OF-2P K2))
            :in-theory (e/d (ACL2::EXPT-OF-+)
-                           (power-of-2p-when-equal-of-expt)))))
+                           (acl2::power-of-2p-of-expt-2)))))
 
 (defthm integerp-of-*-of-/-when-POWER-OF-2P-and-POWER-OF-2P
   (implies (and (< K1 K2)

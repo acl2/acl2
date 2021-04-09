@@ -153,6 +153,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define value-signed-integerp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a signed integer [C:6.2.5/4]."
+  (b* ((val (value-fix val)))
+    (or (scharp val)
+        (sshortp val)
+        (sintp val)
+        (slongp val)
+        (sllongp val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-unsigned-integerp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is an unsigned integer [C:6.2.5/6]."
+  (b* ((val (value-fix val)))
+    (or (ucharp val)
+        (ushortp val)
+        (uintp val)
+        (ulongp val)
+        (ullongp val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-integerp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is an integer [C:6.2.5/17]."
+  (or (value-signed-integerp val)
+      (value-unsigned-integerp val))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-realp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a real [C:6.2.5/18]."
+  (value-integerp val)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-arithmeticp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is arithmetic [C:6.2.5/18]."
+  (value-realp val)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-scalarp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value is scalar [C:6.2.5/21]."
+  (or (value-arithmeticp val)
+      (pointerp (value-fix val)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-of-value ((val valuep))
   :returns (type typep)
   :short "Type of a value."
@@ -169,4 +229,50 @@
           ((sllongp val) (type-sllong))
           ((pointerp val) (type-pointer (pointer->reftype val)))
           (t (prog2$ (impossible) (irr-type)))))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled type-signed-integerp-of-type-of-signed-integer-value
+    (implies (value-signed-integerp val)
+             (type-signed-integerp (type-of-value val)))
+    :enable value-signed-integerp)
+
+  (defruled type-unsigned-integerp-of-type-of-unsigned-integer-value
+    (implies (value-unsigned-integerp val)
+             (type-unsigned-integerp (type-of-value val)))
+    :enable value-unsigned-integerp)
+
+  (defruled type-integerp-of-type-of-integer-value
+    (implies (value-integerp val)
+             (type-integerp (type-of-value val)))
+    :enable (value-integerp
+             value-signed-integerp
+             value-unsigned-integerp))
+
+  (defruled type-realp-of-type-of-real-value
+    (implies (value-realp val)
+             (type-realp (type-of-value val)))
+    :enable (value-realp
+             value-integerp
+             value-signed-integerp
+             value-unsigned-integerp))
+
+  (defruled type-arithmeticp-of-type-of-arithmetic-value
+    (implies (value-arithmeticp val)
+             (type-arithmeticp (type-of-value val)))
+    :enable (value-arithmeticp
+             value-realp
+             value-integerp
+             value-signed-integerp
+             value-unsigned-integerp))
+
+  (defruled type-scalarp-of-type-of-scalar-value
+    (implies (value-scalarp val)
+             (type-scalarp (type-of-value val)))
+    :enable (value-scalarp
+             value-arithmeticp
+             value-realp
+             value-integerp
+             value-signed-integerp
+             value-unsigned-integerp
+             type-scalarp)))

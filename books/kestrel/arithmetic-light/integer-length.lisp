@@ -22,6 +22,7 @@
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
+(local (include-book "numerator"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;move?
@@ -186,3 +187,14 @@
            :induct (sub1-induct n)
            :in-theory (e/d (integer-length expt)
                            (expt-hack)))))
+
+(defthm integer-length-of-*-of-1/2
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (integer-length (* 1/2 x))
+                  (if (equal x 0)
+                      0
+                    (+ -1 (integer-length x)))))
+  :hints (("Goal" :expand (integer-length x)
+           :in-theory (e/d (integer-length floor)
+                           (integer-length-of-floor-by-2)))))

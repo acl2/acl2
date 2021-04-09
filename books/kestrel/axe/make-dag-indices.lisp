@@ -62,7 +62,7 @@
                                     dag-variable-alist)
             ;;function call:
             (let* ((args (dargs expr)))
-              (if (no-atoms args) ;check if there are any args that are nodenums
+              (if (all-consp args) ;check if there are any args that are nodenums
                   ;;if all args are quoteps, it counts as a "constant"
                   (make-dag-indices-aux (+ 1 n)
                                         dag-len dag-array-name dag-array
