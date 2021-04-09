@@ -12959,23 +12959,29 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (when order
       (cond ((eq (caar l) :header)
-             (do ((tl (cdr l) (cdr tl)))
-                 (nil)
-                 (cond ((or (eq (caar tl) :header)
-                            (eq (car (cadr tl)) :header))
-                        (setq in-order nil)
-                        (return nil))
-                       ((equal (cdr (car tl)) default)
-                        (setq in-order nil)
-                        (return nil))
-                       ((null (cdr tl)) (return nil))
-                       ((if (eq order '>)
-                            (<= (the (unsigned-byte 31) (caar tl))
-                                (the (unsigned-byte 31) (car (cadr tl))))
-                          (>= (the (unsigned-byte 31) (caar tl))
-                              (the (unsigned-byte 31) (car (cadr tl)))))
-                        (setq in-order nil)
-                        (return nil)))))
+
+; When l consists only of the header, it is in order so we can skip the checks
+; below.  And as the code below is written, we need to skip the checks, because
+; (equal (cdr (car tl)) default) can be true when tl = (cdr l) = default = nil.
+
+             (when (consp (cdr l))
+               (do ((tl (cdr l) (cdr tl)))
+                   (nil)
+                   (cond ((or (eq (caar tl) :header)
+                              (eq (car (cadr tl)) :header))
+                          (setq in-order nil)
+                          (return nil))
+                         ((equal (cdr (car tl)) default) ; see comment above
+                          (setq in-order nil)
+                          (return nil))
+                         ((null (cdr tl)) (return nil))
+                         ((if (eq order '>)
+                              (<= (the (unsigned-byte 31) (caar tl))
+                                  (the (unsigned-byte 31) (car (cadr tl))))
+                            (>= (the (unsigned-byte 31) (caar tl))
+                                (the (unsigned-byte 31) (car (cadr tl)))))
+                          (setq in-order nil)
+                          (return nil))))))
             (t (setq in-order nil))))
 
 ; Get an array that is completely filled with default or the special mark
