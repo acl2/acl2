@@ -43,13 +43,6 @@
      However, we may need to extend the model in the future;
      in particular, we may provide operations to create arrays.")
    (xdoc::p
-    "As we are initially adding this model of array,
-     we still have to extend ATC to actually
-     recognize ACL2 code that uses arrays
-     and translate it to corresponding C.
-     We plan to do that soon, but in the meanwhile it is already possible to
-     develop APT derivations that target this model of arrays.")
-   (xdoc::p
     "This array model is similar to "
     (xdoc::seetopic "java::atj-java-primitive-array-model"
                     "ATJ's model of Java primitive arrays")
@@ -63,7 +56,7 @@
      an array's length and other attributes,
      there is nonetheless an implicit notion of array,
      with its length and other attributes,
-     that is created and passed around and manipulated.")
+     that is conceptually created and passed around and manipulated.")
    (xdoc::p
     "Similarly to the use of the Java array model in ATJ,
      the C arrays modeled here will have to be treated in a stobj-like manner
@@ -91,7 +84,7 @@
    (xdoc::p
     "[C:6.2.5/20] requires arrays to be non-empty,
      i.e. to contain at least one element,
-     i.e. to have positive length..")
+     i.e. to have positive length.")
    (xdoc::p
     "[C] does not appear to impose any upper limit on the length of an array.
      [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
