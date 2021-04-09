@@ -3092,6 +3092,7 @@
              (b* ((- (and print (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))))
                   ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
                   ;; TODO: Do we want to do this if changep is nil (perhaps yes, since nodes may have been created when relieving hyps even if no dag node was changed by a successful rule)?
+                  ;; TODO: Move this to happen before we rewrite?  Or always crunch between phases?
                   (crunchp (and (= prover-depth 0) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
                                 (consp literal-nodenums) ;;can't crunch if no nodenums (can this happen?)
                                 ))
