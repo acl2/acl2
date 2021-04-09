@@ -332,8 +332,8 @@
    (design design-p)
    (design-const symbolp)
    labels
-   (simplify booleanp)
-   (pre-simplify booleanp)
+   (simplify booleanp :default t)
+   (pre-simplify booleanp :default t)
    (pipe-simp svex-simpconfig-p)
    (cycle-phases svtv-cyclephaselist-p)
    (cycle-phases-p)
@@ -342,7 +342,7 @@
    (initial-state-vars booleanp)
    ;; keep-final-state
    ;; keep-all-states
-   define-macros
+   (define-macros :default t)
    parents
    short
    long)
