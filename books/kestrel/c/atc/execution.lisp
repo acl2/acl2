@@ -1394,46 +1394,24 @@
      e
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
-     :arrsub (b* ((arr (exec-expr-pure e.arr compst))
-                  (sub (exec-expr-pure e.sub compst)))
-               (exec-arrsub arr sub (compustate->heap compst)))
+     :arrsub (exec-arrsub (exec-expr-pure e.arr compst)
+                          (exec-expr-pure e.sub compst)
+                          (compustate->heap compst))
      :call (error (list :non-pure-expr e))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
      :predec (error (list :non-pure-expr e))
-     :unary (b* ((arg (exec-expr-pure e.arg compst)))
-              (exec-unary e.op arg))
+     :unary (exec-unary e.op (exec-expr-pure e.arg compst))
      :cast (exec-cast e.type (exec-expr-pure e.arg compst))
      :binary (b* (((unless (binop-purep e.op))
-                   (error (list :non-pure-expr e)))
-                  (arg1 (exec-expr-pure e.arg1 compst))
-                  (arg2 (exec-expr-pure e.arg2 compst)))
-               (exec-binary-pure e.op arg1 arg2))
-     :cond (b* ((test (exec-expr-pure e.test compst))
-                ((when (errorp test)) test)
-                ((when (ucharp test)) (error
-                                       (list :exec-cond-uchar-todo e)))
-                ((when (scharp test)) (error
-                                       (list :exec-cond-schar-todo e)))
-                ((when (ushortp test)) (error
-                                       (list :exec-cond-ushort-todo e)))
-                ((when (sshortp test)) (error
-                                        (list :exec-cond-sshort-todo e)))
-                ((when (uintp test)) (error
-                                      (list :exec-cond-uint-todo e)))
-                ((when (ulongp test)) (error
-                                       (list :exec-cond-ulong-todo e)))
-                ((when (slongp test)) (error
-                                        (list :exec-cond-slong-todo e)))
-                ((when (ullongp test)) (error
-                                       (list :exec-cond-ullong-todo e)))
-                ((when (sllongp test)) (error
-                                        (list :exec-cond-sllong-todo e)))
-                ((when (pointerp test)) (error
-                                         (list :exec-cond-pointer-todo e)))
-                ((unless (mbt (sintp test))) (error (impossible))))
-             (if (sint-nonzerop test)
+                   (error (list :non-pure-expr e))))
+               (exec-binary-pure e.op
+                                 (exec-expr-pure e.arg1 compst)
+                                 (exec-expr-pure e.arg2 compst)))
+     :cond (b* ((test (exec-test (exec-expr-pure e.test compst)))
+                ((when (errorp test)) test))
+             (if test
                  (exec-expr-pure e.then compst)
                (exec-expr-pure e.else compst)))))
   :measure (expr-count e)
