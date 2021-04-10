@@ -1040,7 +1040,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are for pure non-boolean terms
+    "These are for pure C-valued terms
      and for boolean terms (which are always pure)."))
 
   (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
@@ -1055,12 +1055,12 @@
                  state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be a pure non-boolean term."
+            that must be a pure C-valued term."
     :long
     (xdoc::topstring
      (xdoc::p
       "At the same time,
-       we check that the term is a pure non-boolean term,
+       we check that the term is a pure C-valued term,
        as described in the user documentation.")
      (xdoc::p
       "We also return the C type of the expression.")
@@ -1105,7 +1105,7 @@
        We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not a pure non-boolean term.
+       The term is not a pure C-valued term.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
@@ -1228,7 +1228,7 @@
         (& (er-soft+ ctx t (list (irr-expr) (irr-type))
                      "When generating C code for the function ~x0, ~
                       at a point where ~
-                      a non-boolean ACL2 term is expected, ~
+                      a C-valued ACL2 term is expected, ~
                       the term ~x1 is encountered instead."
                      fn term)))))
 
@@ -1255,11 +1255,11 @@
      (xdoc::p
       "If the term is a call of @(tsee sint-nonzerop),
        we call the mutually recursive function
-       that translates the argument, which must be a non-boolean term,
+       that translates the argument, which must be a C-valued term,
        to an expression, which we return.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not a non-boolean term.
+       The term is not a C-valued term.
        We could extend this code to provide
        more information to the user at some point."))
     (case-match term
@@ -1337,7 +1337,7 @@
                                         state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
-          that must be pure non-boolean terms."
+          that must be pure C-valued terms."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1359,12 +1359,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-nonbool ((term pseudo-termp)
-                              (vars atc-symbol-type-alist-listp)
-                              (fn symbolp)
-                              (prec-fns atc-symbol-fninfo-alistp)
-                              ctx
-                              state)
+(define atc-gen-expr-cval ((term pseudo-termp)
+                           (vars atc-symbol-type-alist-listp)
+                           (fn symbolp)
+                           (prec-fns atc-symbol-fninfo-alistp)
+                           ctx
+                           state)
   :returns (mv erp
                (val (tuple (expr exprp)
                            (type typep)
@@ -1372,12 +1372,12 @@
                            val))
                state)
   :short "Generate a C expression from an ACL2 term
-          that must be a non-boolean term."
+          that must be a C-valued term."
   :long
   (xdoc::topstring
    (xdoc::p
     "At the same time,
-     we check that the term is a non-boolean term,
+     we check that the term is a C-valued term,
      as described in the user documentation.")
    (xdoc::p
     "We also return the C type of the expression.")
@@ -1399,7 +1399,7 @@
      done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
-     as a pure non-boolean terms.
+     as a pure C-valued terms.
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
@@ -1426,9 +1426,9 @@
   (more-returns
    (val (and (consp val)
              (true-listp val))
-        :name typeset-of-atc-gen-expr-nonbool
+        :name typeset-of-atc-gen-expr-cval
         :rule-classes :type-prescription))
-  (defret natp-of-atc-gen-expr-nonbool.limit
+  (defret natp-of-atc-gen-expr-cval.limit
     (natp (caddr val))
     :rule-classes :type-prescription))
 
@@ -1573,7 +1573,7 @@
      to go from @(tsee exec-block-item-list) to its recursive call.")
    (xdoc::p
     "If the term is neither an @(tsee if) nor a @(tsee let),
-     we treat it as a non-boolean term.
+     we treat it as a C-valued term.
      We translate it to an expression
      and we generate a @('return') statement with that expression.
      For the limit, we need 1 to go from @(tsee exec-block-item-list)
@@ -1629,7 +1629,7 @@
                         var-name var fn))
              ((when (atc-var-newp var-name vars))
               (b* (((mv erp (list init-expr init-type init-limit) state)
-                    (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
+                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1656,7 +1656,7 @@
              (prev-type (atc-get-var-innermost var vars))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
+                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1689,7 +1689,7 @@
                      this is disallowed, even if the package names differ."
                     fn var)))
        ((mv erp (list expr type limit) state)
-        (atc-gen-expr-nonbool term vars fn prec-fns ctx state))
+        (atc-gen-expr-cval term vars fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
        (limit (+ 1 1 1 limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))

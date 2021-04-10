@@ -197,8 +197,8 @@
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
      " must be a statement term;
       this notion is defined in the sequel, along with the notions of
-      non-boolean terms,
-      pure non-boolean terms,
+      C-valued terms,
+      pure C-valued terms,
       and boolean terms.")
 
     (xdoc::p
@@ -206,11 +206,11 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A non-boolean term.
-       That is, a non-boolean term is also a statement term.
+      "A C-valued term.
+       That is, a C-valued term is also a statement term.
        This represents a C @('return') statement
        whose expression is represented by the same term,
-       viewed as a non-boolean term.")
+       viewed as a C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is a boolean term and
@@ -236,7 +236,7 @@
       "A term of the form @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('term') is a non-boolean term,
+       @('term') is a C-valued term,
        and @('body') is a statement term.
        The C type of @('term') must not be a pointer type.
        This @(tsee let) represents one of the following:"
@@ -275,14 +275,14 @@
        this is the pattern that ATC looks for."))
 
     (xdoc::p
-     "A <i>non-boolean term</i> is
+     "A <i>C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A pure non-boolean term.")
+      "A pure C-valued term.")
      (xdoc::li
       "A call of a target function @('fnj'), with @('j < i'),
-       on pure non-boolean terms.
+       on pure C-valued terms.
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed
        and the target functions must be specified
@@ -290,7 +290,7 @@
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "A <i>pure non-boolean term</i> is
+     "A <i>pure C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
@@ -308,7 +308,7 @@
        the quoted integer is within the range of type @('int').")
      (xdoc::li
       "A call of one of the following functions
-       on pure non-boolean terms:"
+       on pure C-valued terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -343,7 +343,7 @@
        but the strict version is slightly simpler when usable.")
      (xdoc::li
       "A call of one of the following functions
-       on pure non-boolean terms:"
+       on pure C-valued terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-from-uchar)")
        (xdoc::li "@(tsee uchar-from-sint)"))
@@ -360,25 +360,25 @@
        currently ATC always generates explicit casts;
        this will be improved in future extensions to ATC.")
      (xdoc::li
-      "A call of @(tsee uchar-array-read-sint) on a non-boolean terms.
+      "A call of @(tsee uchar-array-read-sint) on C-valued terms.
        This represents an array subscripting expression.
        Currently, this may be used only if @(':proofs') is @('nil');
        proof generation support for arrays will be added eventually.")
      (xdoc::li
       "A call of @(tsee sint01) on a boolean term.
        This converts a boolean term
-       to a pure non-boolean term.")
+       to a pure C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is a boolean term and
-       (ii) branches that are pure non-boolean terms.
+       (ii) branches that are pure C-valued terms.
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
        and whose branch expressions are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is a pure non-boolean term, and
+       (ii) a `then' branch that is a pure C-valued term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -395,8 +395,8 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of @(tsee sint-nonzerop) on a pure non-boolean term.
-       This converts a pure non-boolean term
+      "A call of @(tsee sint-nonzerop) on a pure C-valued term.
+       This converts a pure C-valued term
        to a boolean term.")
      (xdoc::li
       "A call of one of the following functions and macros
@@ -415,10 +415,10 @@
 
     (xdoc::p
      "Statement terms represent C statements,
-      while non-boolean and boolean terms represent C expressions.
+      while C-valued and boolean terms represent C expressions.
       The boolean terms return ACL2 boolean values,
-      while the statement (including non-boolean) terms return
-      ACL2 non-boolean values that represent C values:
+      while the statement (including C-valued) terms return
+      ACL2 values that represent C values:
       the distinction between these two kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
@@ -428,12 +428,12 @@
       @('||') expressions;
       ACL2's only non-strict construct is @(tsee if)
       (which the macros @(tsee and) and @(tsee or) expand to, see above).
-      Pure non-boolean terms
+      Pure C-valued terms
       represent C expressions without side effects;
       C function calls may be side-effect-free,
       but in general we do not consider them pure,
-      so they are represented by non-boolean terms
-      that are not pure non-boolean terms.
+      so they are represented by C-valued terms
+      that are not pure C-valued terms.
       Boolean terms are always pure;
       so they do not need the explicit designation `pure'
       because they are the only boolean terms.")
