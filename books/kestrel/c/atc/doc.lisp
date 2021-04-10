@@ -175,9 +175,7 @@
      (xdoc::li
       "@('(sintp x)'), representing @('int').")
      (xdoc::li
-      "@('(uchar-arrayp x)'), representing @('unsigned char *').
-       Currently, this may be used only if @(':proofs') is @('nil');
-       proof generation support for arrays will be added eventually."))
+      "@('(uchar-arrayp x)'), representing @('unsigned char *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
@@ -196,7 +194,7 @@
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
      " must be a statement term;
-      this notion is defined in the sequel, along with the notions of
+      this notion is defined below, along with the notions of
       C-valued terms,
       pure C-valued terms,
       and boolean terms.")
@@ -336,7 +334,7 @@
        the corresponding C operator applied to C @('int') values.
        The guard verification requirement ensures that
        the operators are always applied to values with a well-defined result,
-       and that result is an @('int') value.
+       and the result is an @('int') value.
        If the operator is @('&&') or @('||'),
        this represents a strict (i.e. not non-strict) use of them;
        see below for how to represent non-strict uses of them,
@@ -361,9 +359,7 @@
        this will be improved in future extensions to ATC.")
      (xdoc::li
       "A call of @(tsee uchar-array-read-sint) on C-valued terms.
-       This represents an array subscripting expression.
-       Currently, this may be used only if @(':proofs') is @('nil');
-       proof generation support for arrays will be added eventually.")
+       This represents an array subscripting expression.")
      (xdoc::li
       "A call of @(tsee sint01) on a boolean term.
        This converts a boolean term
