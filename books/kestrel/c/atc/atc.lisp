@@ -960,8 +960,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we recognize and decompose allowed outer terms
-     that are @(tsee let)s.
+    "Here we recognize and decompose outer terms that are @(tsee let)s.
      In translated form, these are terms @('((lambda (var) body) init)').
      However, if @('body') has other free variables in addition to @('var'),
      those appear as both formal paramaters and actual arguments, e.g.
@@ -1041,8 +1040,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are for allowed pure non-boolean terms
-     and for allowed boolean terms (which are always pure)."))
+    "These are for pure non-boolean terms
+     and for boolean terms (which are always pure)."))
 
   (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
                                      (vars atc-symbol-type-alist-listp)
@@ -1056,12 +1055,12 @@
                  state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be an allowed pure non-boolean term."
+            that must be a pure non-boolean term."
     :long
     (xdoc::topstring
      (xdoc::p
       "At the same time,
-       we check that the term is an allowed pure non-boolean term,
+       we check that the term is a pure non-boolean term,
        as described in the user documentation.")
      (xdoc::p
       "We also return the C type of the expression.")
@@ -1091,7 +1090,7 @@
      (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive ACL2 function
-       that translates the argument (which must be an allowed boolean term)
+       that translates the argument (which must be a boolean term)
        to an expression, which we return.
        The type of this expression is always @('int').")
      (xdoc::p
@@ -1106,7 +1105,7 @@
        We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not an allowed pure non-boolean term.
+       The term is not a pure non-boolean term.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
@@ -1229,7 +1228,7 @@
         (& (er-soft+ ctx t (list (irr-expr) (irr-type))
                      "When generating C code for the function ~x0, ~
                       at a point where ~
-                      an allowed non-boolean ACL2 term is expected, ~
+                      a non-boolean ACL2 term is expected, ~
                       the term ~x1 is encountered instead."
                      fn term)))))
 
@@ -1241,26 +1240,26 @@
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be an allowed boolean term."
+            that must be a boolean term."
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is an allowed boolen term,
+      "At the same time, we check that the term is a boolen term,
        as described in the user documentation.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
        we recursively translate the arguments,
-       which must be an allowed boolean terms,
+       which must be a boolean terms,
        and we construct a logical expression
        with the corresponding C operators.")
      (xdoc::p
       "If the term is a call of @(tsee sint-nonzerop),
        we call the mutually recursive function
-       that translates the argument, which must be an allowed non-boolean term,
+       that translates the argument, which must be a non-boolean term,
        to an expression, which we return.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not an allowed non-boolean term.
+       The term is not a non-boolean term.
        We could extend this code to provide
        more information to the user at some point."))
     (case-match term
@@ -1306,7 +1305,7 @@
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
                     at a point where
-                    an allowed boolean ACL2 term is expected, ~
+                    a boolean ACL2 term is expected, ~
                     the term ~x1 is encountered instead."
                    fn term))))
 
@@ -1338,7 +1337,7 @@
                                         state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
-          that must be allowed pure non-boolean terms."
+          that must be pure non-boolean terms."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1373,12 +1372,12 @@
                            val))
                state)
   :short "Generate a C expression from an ACL2 term
-          that must be an allowed non-boolean term."
+          that must be a non-boolean term."
   :long
   (xdoc::topstring
    (xdoc::p
     "At the same time,
-     we check that the term is an allowed non-boolean term,
+     we check that the term is a non-boolean term,
      as described in the user documentation.")
    (xdoc::p
     "We also return the C type of the expression.")
@@ -1400,7 +1399,7 @@
      done by @(tsee exec-expr-call-or-pure) when it calls @(tsee exec-fun).")
    (xdoc::p
     "Otherwise, we attempt to translate the term
-     as an allowed pure non-boolean terms.
+     as a pure non-boolean terms.
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
@@ -1493,7 +1492,7 @@
      These can be regarded as forming a compound statement,
      but lists of block items are compositional (via concatenation).")
    (xdoc::p
-    "At the same time, we check that the term is an allowed outer term,
+    "At the same time, we check that the term is an outer term,
      as described in the user documentation.")
    (xdoc::p
     "Besides the generated block items list,

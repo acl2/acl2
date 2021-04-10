@@ -1052,12 +1052,7 @@
      both of which must be considered because the operator is non-strict.")
    (xdoc::p
     "These operators are pure,
-     so we just return a value as result (if there is no error).")
-   (xdoc::p
-    "We temporarily disallow @('unsigned char') values,
-     by returning an error when we encounter them
-     (this rejects valid programs, but does not accept invalid ones).
-     We will add support for @('unsigned char') values later."))
+     so we just return a value as result (if there is no error)."))
   (b* ((arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2))
        ((when (errorp arg1)) arg1)
