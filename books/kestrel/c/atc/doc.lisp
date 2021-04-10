@@ -195,33 +195,33 @@
      "Each function @('fni') must be in logic mode and guard-verified.
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " must be an outer term;
+     " must be a statement term;
       this notion is defined in the sequel, along with the notions of
       non-boolean terms,
       pure non-boolean terms,
       and boolean terms.")
 
     (xdoc::p
-     "An <i>outer term</i> is
+     "A <i>statement term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "A non-boolean term.
-       That is, a non-boolean term is also an outer term.
+       That is, a non-boolean term is also a statement term.
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as a non-boolean term.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is a boolean term and
-       (ii) branches that are outer terms.
+       (ii) branches that are statement terms.
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an outer term, and
+       (ii) a `then' branch that is a statement term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -237,7 +237,7 @@
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
        @('term') is a non-boolean term,
-       and @('body') is an outer term.
+       and @('body') is a statement term.
        The C type of @('term') must not be a pointer type.
        This @(tsee let) represents one of the following:"
       (xdoc::ul
@@ -414,12 +414,10 @@
        these are the patterns that ATC looks for."))
 
     (xdoc::p
-     "Outer terms represent C statements,
-      while non-boolean and boolean terms represent C expressions;
-      the fact that expressions are ``inside'' statements
-      motivates the term `outer'.
+     "Statement terms represent C statements,
+      while non-boolean and boolean terms represent C expressions.
       The boolean terms return ACL2 boolean values,
-      while the outer (including non-boolean) terms return
+      while the statement (including non-boolean) terms return
       ACL2 non-boolean values that represent C values:
       the distinction between these two kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
@@ -450,7 +448,7 @@
       is the compound statement consisting of
       the block items (i.e. statements and declarations)
       represented by the ACL2 function's body
-      (which is an outer term).")
+      (which is a statement term).")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

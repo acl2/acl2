@@ -960,7 +960,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we recognize and decompose outer terms that are @(tsee let)s.
+    "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, these are terms @('((lambda (var) body) init)').
      However, if @('body') has other free variables in addition to @('var'),
      those appear as both formal paramaters and actual arguments, e.g.
@@ -1492,7 +1492,7 @@
      These can be regarded as forming a compound statement,
      but lists of block items are compositional (via concatenation).")
    (xdoc::p
-    "At the same time, we check that the term is an outer term,
+    "At the same time, we check that the term is a statement term,
      as described in the user documentation.")
    (xdoc::p
     "Besides the generated block items list,
