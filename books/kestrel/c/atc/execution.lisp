@@ -461,7 +461,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-test ((arg value-resultp))
-  :returns (result bool-resultp)
+  :returns (result boolean-resultp)
   :short "Execute a test on a value."
   :long
   (xdoc::topstring
