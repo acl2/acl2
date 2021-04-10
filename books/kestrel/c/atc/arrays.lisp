@@ -194,7 +194,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-read-okp) and @(tsee sint-integer-value)."))
+     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-read array (sint-integer-value index))
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
   :hooks (:fix))
@@ -243,7 +243,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-read-okp) and @(tsee sint-integer-value)."))
+     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-write array (sint-integer-value index) element)
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
   :hooks (:fix))
