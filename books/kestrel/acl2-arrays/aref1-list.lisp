@@ -32,16 +32,43 @@
                     (cons (aref1 array-name array (first indices))
                           acc))))
 
-(defthm len-of-are1-list-aux
+(defthm len-of-aref1-list-aux
   (equal (len (aref1-list-aux array-name array indices acc))
          (+ (len indices)
             (len acc)))
   :hints (("Goal" :in-theory (enable aref1-list-aux))))
 
-(defthm true-listp-of-are1-list-aux
+(defthm true-listp-of-aref1-list-aux
   (implies (true-listp acc)
            (true-listp (aref1-list-aux array-name array indices acc)))
   :hints (("Goal" :in-theory (enable aref1-list-aux))))
+
+(defthmd aref1-list-aux-acc-of-append
+  (implies (and (true-listp acc1)
+                (true-listp acc2))
+           (equal (aref1-list-aux array-name array indices (append acc1 acc2))
+                  (append (reverse acc2)
+                          (aref1-list-aux array-name array indices acc1))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux))))
+
+(defthmd aref1-list-aux-acc-normalize-acc
+  (implies (and (syntaxp (not (equal acc *nil*))) ;prevent loops
+                (true-listp acc))
+           (equal (aref1-list-aux array-name array indices acc)
+                  (append (reverse acc)
+                          (aref1-list-aux array-name array indices nil))))
+  :hints (("Goal" :use (:instance aref1-list-aux-acc-of-append
+                                  (acc2 acc)
+                                  (acc1 nil))
+           :in-theory (disable aref1-list-aux-acc-of-append))))
+
+(defthm aref1-list-aux-of-cons
+  (implies (true-listp acc)
+           (equal (aref1-list-aux array-name array indices (cons val acc))
+                  (append (reverse acc)
+                          (list val)
+                          (aref1-list-aux array-name array indices nil))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux-acc-normalize-acc))))
 
 (defund aref1-list (array-name array indices)
   (declare (xargs :guard (and (array1p array-name array)
@@ -50,11 +77,11 @@
                               (all-< indices (alen1 array-name array)))))
   (aref1-list-aux array-name array indices nil))
 
-(defthm len-of-are1-list
+(defthm len-of-aref1-list
   (equal (len (aref1-list array-name array indices))
          (len indices))
   :hints (("Goal" :in-theory (enable aref1-list))))
 
-(defthm true-listp-of-are1-list
+(defthm true-listp-of-aref1-list
   (true-listp (aref1-list array-name array indices))
   :hints (("Goal" :in-theory (enable aref1-list))))

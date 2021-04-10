@@ -96,11 +96,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable all-<))))
 
-;;move to rational-lists.lisp
-(defthm all-<=-of-maxelem
-  (all-<= lst (maxelem lst))
-  :hints (("Goal" :in-theory (enable all-<=))))
-
 (defthmd dargp-of-car-when-all-natp
   (implies (all-natp x)
            (equal (dargp (car x))
