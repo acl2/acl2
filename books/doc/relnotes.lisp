@@ -582,7 +582,7 @@
     (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
     " has been added.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
 
@@ -870,6 +870,14 @@
    (xdoc::p
     "Added an operation to create an omap
      from a list of keys and a corresponding list of values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "rstobj2::defrstobj"
+                             "Record-like Stobjs"))
+
+   (xdoc::p
+    "Add support for defining fields based off child stobjs.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

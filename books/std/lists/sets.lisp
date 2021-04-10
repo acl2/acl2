@@ -694,7 +694,7 @@ about set equivalence.</p>"
               (equal (remove-equal x l)
                      (true-list-fix l)))))
 
-  (defthm commutativity-2-of-append-under-set-equiv-corollary-1
+  (defthmd commutativity-2-of-append-under-set-equiv-corollary-1
     (implies
      (set-equiv y (cons w z))
      (set-equiv (cons w (cons x z))
@@ -718,7 +718,8 @@ about set equivalence.</p>"
   (defthm
     cons-of-remove-under-set-equiv-1
     (set-equiv (cons x (remove-equal x l))
-               (if (member-equal x l) l (cons x l)))))
+               (if (member-equal x l) l (cons x l)))
+    :hints (("Goal" :in-theory (enable commutativity-2-of-append-under-set-equiv-corollary-1)))))
 
 (defthm subsetp-of-remove1
   (equal (subsetp x (remove a y))

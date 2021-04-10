@@ -36,6 +36,7 @@
 ;; which can be used in books running GL stuff:
 (defmacro init-gl-params ()
   `(progn
+     (value-triple (acl2::tshell-start))
      (include-book "centaur/misc/memory-mgmt" :dir :system)
      (value-triple (hons-resize :addr-ht 2200000 :sbits 2200000))
      (value-triple (acl2::set-max-mem (* 50 (expt 2 30))))
@@ -47,7 +48,6 @@
      (defattach gl::gl-satlink-config
        my-satlink-config)
      (gl::gl-satlink-mode)
-     (value-triple (acl2::tshell-start))
      (set-slow-alist-action :break)))
 
 
