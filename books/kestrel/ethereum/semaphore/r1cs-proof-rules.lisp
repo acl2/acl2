@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ;for ACL2::COMMUTATIVITY-2-OF-+-WHEN-CONSTANT??
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
 
