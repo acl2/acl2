@@ -60,6 +60,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "floor-mod-expt"))
@@ -69,9 +70,9 @@
 ;(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;move
-(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
+;(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
 
-(local (in-theory (disable EQUAL-/
+(local (in-theory (disable ;EQUAL-/
                            logapp-0
                            UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT ;move
                            UNSIGNED-BYTE-P-PLUS
@@ -435,8 +436,8 @@
                 (natp free))
            (signed-byte-p size i))
   :hints (("Goal"
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (+ -1 free)) (j (+ -1 size)))
-           :in-theory (e/d (signed-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
+;           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (+ -1 free)) (j (+ -1 size)))
+           :in-theory (e/d (signed-byte-p) (;EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                             <-OF-EXPT-AND-EXPT
                                             )))))
 
@@ -1460,7 +1461,9 @@
                    (logapp 2 0 (logext (+ -2 k) x))))
    :hints (("Goal"
             :use (:instance INTEGERP-OF-EXPT-when-natp (r 2) (i (- k 3)))
-            :in-theory (e/d (logext logapp expt-hack)
+            :in-theory (e/d (logext logapp
+                                    ;expt-hack
+                                    EXPT-OF-+)
                             (LOGBITP-IFF-GETBIT INTEGERP-OF-EXPT-when-natp)))))
 
 (defthm bvor-of-slice-tighten
@@ -3259,8 +3262,8 @@
                                (* 2 (EXPT 2 HIGH) (/ (EXPT 2 LOW))))))
 
   :hints (("Goal"
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i 0) (j (+ 1 high (- low))))
-           :in-theory (e/d (UNSIGNED-BYTE-P) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
+;           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i 0) (j (+ 1 high (- low))))
+           :in-theory (e/d (UNSIGNED-BYTE-P expt-of-+) (;EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                               ;EXPONENTS-ADD
                                               )))))
 
@@ -3874,12 +3877,14 @@
                   (< (/ (- k1 (bvchop lowsize k2)) (expt 2 lowsize)) ;this gets computed
                      (bvchop highsize x))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp bvchop)
-                                  (<-*-left-cancel))
-           :use (:instance <-*-left-cancel
-                           (x (* (/ (expt 2 lowsize)) k1))
-                           (y (+ (bvchop highsize x) (* (/ (expt 2 lowsize)) k2)))
-                           (z (expt 2 lowsize))
-                           ))))
+                                  (;<-*-left-cancel
+                                   ))
+           ;; :use (:instance <-*-left-cancel
+           ;;                 (x (* (/ (expt 2 lowsize)) k1))
+           ;;                 (y (+ (bvchop highsize x) (* (/ (expt 2 lowsize)) k2)))
+           ;;                 (z (expt 2 lowsize))
+           ;;                 )
+           )))
 
 (defthm <-of-bvcat-with-low-constant-and-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2) (quotep lowsize)))
@@ -3892,14 +3897,16 @@
 ;this gets computed:
                      (/ (- k1 (bvchop lowsize k2)) (expt 2 lowsize)))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp bvchop)
-                                  (<-*-left-cancel))
-           :use (:instance <-*-left-cancel
-                           (y (+ (* K1 (/ (EXPT 2 LOWSIZE)))
-                                 (- (* (/ (EXPT 2 LOWSIZE))
-                                       (BVCHOP LOWSIZE K2)))))
-                           (x (BVCHOP HIGHSIZE X))
-                           (z (expt 2 lowsize))
-                           ))))
+                                  (;<-*-left-cancel
+                                   ))
+           ;; :use (:instance <-*-left-cancel
+           ;;                 (y (+ (* K1 (/ (EXPT 2 LOWSIZE)))
+           ;;                       (- (* (/ (EXPT 2 LOWSIZE))
+           ;;                             (BVCHOP LOWSIZE K2)))))
+           ;;                 (x (BVCHOP HIGHSIZE X))
+           ;;                 (z (expt 2 lowsize))
+           ;;                 )
+           )))
 
 
 
@@ -5251,7 +5258,8 @@
                   (and (natp n)
                        (unsigned-byte-p (+ n m) x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     <-of-floor-arg1))))
+                                     <-of-floor-arg1
+                                     expt-of-+))))
 
 (defthm unsigned-byte-p-of-floor-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
@@ -5331,7 +5339,7 @@
                 (natp n))
            (equal (logtail pos (floor x (expt 2 n)))
                   (logtail (+ pos n) x)))
-  :hints (("Goal" :in-theory (enable logtail))))
+  :hints (("Goal" :in-theory (enable logtail expt-of-+))))
 
 (defthm logtail-of-floor-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
@@ -7201,7 +7209,7 @@
                       (+ 1 (logtail size x) (logtail size y))
                     (+ (logtail size x) (logtail size y)))))
   :hints (("Goal" :use (:instance logtail-of-plus-helper)
-           :in-theory (e/d (bvplus) ( logtail-of-plus-helper
+           :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
                                       ;anti-bvplus
                                       )))))
 
@@ -7225,7 +7233,7 @@
                       (bvchop (+ 1 high (- low))
                               (+ (slice high low x)
                                  (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop)
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+)
                                   ( ;bvlt-of-plus-arg2 bvlt-of-plus-arg1
                                    anti-slice
                                    bvchop-of-logtail
@@ -7247,7 +7255,9 @@
   (implies (posp size)
            (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
                   0))
-  :hints (("Goal" :in-theory (e/d (slice LOGTAIL bvchop EXPONENTS-ADD-unrestricted)
+  :hints (("Goal" :in-theory (e/d (slice LOGTAIL bvchop
+                                         expt-of-+ ;;EXPONENTS-ADD-unrestricted
+                                         )
                                   (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    MOD-OF-EXPT-OF-2)))))
 
@@ -7266,7 +7276,7 @@
            (equal (BVCHOP (+ HIGH (- LOW)) (* (EXPT 2 HIGH) (/ (EXPT 2 LOW))))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (- high low)) (size2 (- high low)))
-           :in-theory (disable bvchop-of-expt-0 BVCHOP-OF-EXPT-2-N))))
+           :in-theory (e/d (expt-of-+) (bvchop-of-expt-0 BVCHOP-OF-EXPT-2-N)))))
 
 (local (in-theory (disable LOGTAIL-LESSP))) ;todo
 
