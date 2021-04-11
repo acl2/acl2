@@ -252,6 +252,40 @@
   (fourth axe-rule))
 
 ;;;
+;;; axe-rule-lhsp
+;;;
+
+;; The LHS of an Axe rule is a lambda-free pseudo-term that is not a function
+;; call (i.e., not a variable or constant)..
+(defund axe-rule-lhsp (lhs)
+  (declare (xargs :guard t))
+  (and (pseudo-termp lhs)
+       (lambda-free-termp lhs)
+       (consp lhs)
+       (not (eq 'quote (ffn-symb lhs)))))
+
+(defthm axe-rule-lhsp-forward-to-pseudo-termp
+  (implies (axe-rule-lhsp lhs)
+           (pseudo-termp lhs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+(defthm axe-rule-lhsp-forward-to-consp
+  (implies (axe-rule-lhsp lhs)
+           (consp lhs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+(defthm axe-rule-lhsp-of-cons
+  (equal (axe-rule-lhsp (cons fn args))
+         (and (symbolp fn)
+              (not (equal 'quote fn))
+              (pseudo-term-listp args)
+              (lambda-free-termsp args)))
+  :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
+
+
+;;;
 ;;; axe-rulep
 ;;;
 
@@ -261,12 +295,8 @@
   (declare (xargs :guard t))
   (and (equal 4 (len item))
        (symbolp (rule-symbol item))
-       ;; The LHS must be a pseudo-term, must be lambda-free, and must be a function call.
        (let ((lhs (rule-lhs item)))
-         (and (pseudo-termp lhs)
-              (lambda-free-termp lhs)
-              (consp lhs)
-              (not (eq 'quote (ffn-symb lhs)))))
+         (and (axe-rule-lhsp lhs)))
        (let ((rhs (rule-rhs item))) ;todo: require no free vars (that is checked in make-axe-rule)
          (pseudo-termp rhs))
        (let ((hyps (rule-hyps item)))
