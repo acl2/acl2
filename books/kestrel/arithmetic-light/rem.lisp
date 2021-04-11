@@ -17,10 +17,19 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
-(defthm rem-of-0
+(defthm rem-of-0-arg2
   (equal (rem x 0)
          (fix x))
+  :hints (("Goal" :in-theory (enable rem))))
+
+(defthm rem-of-0-arg1
+  (equal (rem 0 y)
+         0)
   :hints (("Goal" :in-theory (enable rem))))
 
 (defthmd rem-becomes-mod
@@ -36,3 +45,14 @@
   :hints (("Goal" :in-theory (e/d (rem mod truncate-becomes-floor-gen)
                                   ())
            :cases ((equal 0 y)))))
+
+(defthm rem-x-y-=-x-better
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (equal (rem x y) x)
+                  (if (equal 0 y)
+                      (acl2-numberp x)
+                    (< (abs x) (abs y)))))
+  :hints (("Goal" :cases ((< 0 x))
+           :in-theory (enable truncate-becomes-floor-gen
+                                     equal-of-floor))))
