@@ -33,9 +33,7 @@
 (include-book "bitxor")
 (include-book "bvmult")
 (include-book "bvuminus")
-(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (include-book "kestrel/booleans/booleans" :dir :system) ;why included here? maybe to get bool-to-bit...
-(include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "bv-syntax")
 (include-book "leftrotate")
@@ -58,7 +56,8 @@
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -181,11 +180,6 @@
 (defthm zbp-times-2
   (equal (zbp (* 2 x))
          (not (equal x 1/2))))
-
-(defun indfgh (x y n)
-  (if (zp n)
-      (list x y n)
-    (indfgh (floor x 2) (floor y 2) (+ -1 n))))
 
 (local (in-theory (disable FLOOR-MINUS-ERIC-BETTER)))
 
@@ -5059,11 +5053,11 @@
                   (getbit n y)))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
-(defthm bvnot-when-not-natp-size
-  (implies (not (natp size))
-           (equal (bvnot size x)
-                  0))
-  :hints (("Goal" :in-theory (e/d (bvnot) nil))))
+(local
+ (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)
+   (if (zp n)
+       (list x y n)
+     (induct-floor-by-2-floor-by-2-sub-1 (floor x 2) (floor y 2) (+ -1 n)))))
 
 (defthm logand-of-bvchop
   (implies (and (unsigned-byte-p m x)
@@ -5081,7 +5075,7 @@
            :expand ((LOGAND X (MOD Y (EXPT 2 M)))
                     (LOGAND X Y)
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
-           :induct (INDFGH x y m))))
+           :induct (INDUCT-FLOOR-BY-2-FLOOR-BY-2-SUB-1 x y m))))
 
 (defthmd bvand-of-bvnot-same-helper
   (implies (unsigned-byte-p size x)
@@ -5269,11 +5263,6 @@
                   (unsigned-byte-p (+ n (lg k)) x)))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-floor-of-expt (m (lg k)))
            :in-theory (disable unsigned-byte-p-of-floor-of-expt))))
-
-(DEFTHM ZERO-IS-ONLY-ZERO-DIVISOR-alt
-  (EQUAL (EQUAL 0 (* X Y))
-         (OR (EQUAL (FIX X) 0)
-             (EQUAL (FIX Y) 0))))
 
 ;; (defthm getbit-0-of-myif
 ;;   (equal (getbit 0 (myif test a b))
@@ -5746,23 +5735,7 @@
   :hints (("Goal" :use (:instance equal-of-bvxor-ones-and-bvnot)
            :in-theory (disable equal-of-bvxor-ones-and-bvnot))))
 
-(defthm rem-of-0-arg2
-  (equal (rem x 0)
-         (fix x))
-  :hints (("Goal" :in-theory (enable rem))))
 
-(defthm rem-of-0-arg1
-  (equal (rem 0 y)
-         0)
-  :hints (("Goal" :in-theory (e/d (rem) (REM-TYPE REM-=-0 TRUNCATE-=-X/Y TRUNCATE-TYPE)))))
-
-(defthm rem-x-y-=-x-better
-  (implies (and (rationalp x)
-                (rationalp y))
-           (equal (equal (rem x y) x)
-                  (if (equal 0 y)
-                      (acl2-numberp x)
-                    (< (abs x) (abs y))))))
 
 (defthm bitand-of-bitxor-of-1-same
   (equal (bitand x (bitxor 1 x))
