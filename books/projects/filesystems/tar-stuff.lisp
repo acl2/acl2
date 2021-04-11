@@ -1022,7 +1022,7 @@
      :hints
      (("goal"
        :induct (dec-induct n)
-       :in-theory (e/d (take-as-append-and-nth) (take append-of-take-and-cons))))))
+       :in-theory (e/d (take-as-append-and-nth) (take))))))
 
   (defthm
     no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-8
@@ -1097,7 +1097,6 @@
      :hints
      (("goal"
        :induct (dec-induct n)
-       :in-theory (e/d nil (append-of-take-and-cons))
        :expand
        (:with
         take-as-append-and-nth

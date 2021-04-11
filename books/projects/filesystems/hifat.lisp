@@ -529,6 +529,9 @@
 (encapsulate
   ()
 
+  ;; It's probably fine to include lemmas from this book locally, because it's
+  ;; not particularly useful to reprove the commutativity of intersection-equal
+  ;; under set-equiv.
   (local (include-book "std/lists/intersection" :dir :system))
 
   (defthm
