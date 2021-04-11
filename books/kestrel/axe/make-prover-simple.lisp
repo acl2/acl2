@@ -2640,7 +2640,7 @@
               ;; Note that the index used here may not be in nodenum of the literal:
               (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
               ;; Make an array to track results in the worklist algorithm:
-              (result-array-name (pack$ 'result-array- prover-depth))
+              (result-array-name (pack$ 'result-array- prover-depth)) ;don't re-compute for each literal?
               ;; TODO: Consider using (+ 1 nodenum) for the length of the array
               ;; here -- to make the array smaller -- but that may prevent
               ;; re-using the previous raw Lisp array, since the old length is
