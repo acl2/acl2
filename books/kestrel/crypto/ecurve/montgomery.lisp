@@ -1703,7 +1703,23 @@
     :enable (montgomery-mul-of-scalar-addition-when-nonneg
              montgomery-mul-of-scalar-addition-when-nonpos
              montgomery-mul-of-scalar-addition-when-nonneg-nonpos
-             montgomery-mul-of-scalar-addition-when-nonpos-nonneg)))
+             montgomery-mul-of-scalar-addition-when-nonpos-nonneg))
+
+  (defruled montgomery-mul-of-scalar-addition-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)
+                    (montgomery-mul (+ scalar1 scalar2) point curve)))
+    :use montgomery-mul-of-scalar-addition)
+
+  (theory-invariant
+   (incompatible (:rewrite montgomery-mul-of-scalar-addition)
+                 (:rewrite montgomery-mul-of-scalar-addition-converse))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
