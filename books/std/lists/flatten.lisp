@@ -116,7 +116,7 @@ an @(see atom-listp).  For instance,</p>
             :use ((:instance flatten-of-list-fix (x x))
                   (:instance flatten-of-list-fix (x x-equiv))))))
 
-  (defthm flattenp-of-append
+  (defthm flatten-of-append
     (equal (flatten (append x y))
            (append (flatten x)
                    (flatten y)))))
