@@ -21,6 +21,7 @@
 ;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars
 ;; if success-flg is nil, the alist returned is irrelevant
 ;; the alist returned maps variables to nodenums or quoteps
+;; TODO: Take an alist to extend, or return :fail.
 (defund match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
   (declare (xargs :guard (and (axe-treep hyp)
                               (consp hyp)
@@ -37,7 +38,10 @@
       ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
       ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
       ;; TODO: Consider a fast matcher that fails fast (without consing) if the skeleton is wrong, like we do for matching terms with dags:
-      (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)
+      (let ((res (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)))
+        (if (eq :fail res)
+            (mv nil nil)
+          (mv t res)))
     ;;otherwise we require the expr assumed false to be a call of NOT, and we try to match HYP with the argument of the NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
@@ -47,7 +51,10 @@
             (if (consp arg-to-assume) ;whoa, it's a constant! ;TODO: This may be impossible
                 (mv nil nil)
               ;; TODO: Consider a fast matcher that fails fast (without consing) if the skeleton is wrong, like we do for matching terms with dags:
-              (unify-tree-with-dag-node hyp arg-to-assume dag-array nil)))
+              (let ((res (unify-tree-with-dag-node hyp arg-to-assume dag-array nil)))
+                (if (eq :fail res)
+                    (mv nil nil)
+                  (mv t res)))))
         (mv nil nil)))))
 
 (defthm symbol-alistp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
