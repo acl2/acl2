@@ -17,11 +17,10 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;; Returns (mv success-flg alist-for-free-vars).
-;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars
-;; if success-flg is nil, the alist returned is irrelevant
+;; Returns :fail (meaning failure to match) or an alist binding the free vars in HYP.
+;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars.
 ;; the alist returned maps variables to nodenums or quoteps
-;; TODO: Take an alist to extend, or return :fail.
+;; TODO: Take an alist to extend, but i suppose that might make lookups in unify-tree-with-dag-node slower?  could pass it 2 alists, once to extend and one to use?
 (defund match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
   (declare (xargs :guard (and (axe-treep hyp)
                               (consp hyp)
@@ -38,10 +37,7 @@
       ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
       ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
       ;; TODO: Consider a fast matcher that fails fast (without consing) if the skeleton is wrong, like we do for matching terms with dags:
-      (let ((res (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)))
-        (if (eq :fail res)
-            (mv nil nil)
-          (mv t res)))
+      (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)
     ;;otherwise we require the expr assumed false to be a call of NOT, and we try to match HYP with the argument of the NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
@@ -49,40 +45,49 @@
                )
           (let ((arg-to-assume (darg1 expr-to-assume-false)))
             (if (consp arg-to-assume) ;whoa, it's a constant! ;TODO: This may be impossible
-                (mv nil nil)
+                :fail
               ;; TODO: Consider a fast matcher that fails fast (without consing) if the skeleton is wrong, like we do for matching terms with dags:
-              (let ((res (unify-tree-with-dag-node hyp arg-to-assume dag-array nil)))
-                (if (eq :fail res)
-                    (mv nil nil)
-                  (mv t res)))))
-        (mv nil nil)))))
+              (unify-tree-with-dag-node hyp arg-to-assume dag-array nil)))
+        :fail))))
 
-(defthm symbol-alistp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
-  (symbol-alistp (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+(defthm symbol-alistp-of-match-hyp-with-nodenum-to-assume-false
+  (implies (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+           (symbol-alistp (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
   :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
 
-(defthm true-listp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
-  (true-listp (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+(local
+ (defthm true-listp-when-alistp
+   (implies (alistp x)
+            (true-listp x))))
+
+(defthm true-listp-of-match-hyp-with-nodenum-to-assume-false
+  (implies (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+           (true-listp (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
+
+(defthm true-listp-of-match-hyp-with-nodenum-to-assume-false-type
+  (or (symbolp (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))
+      (true-listp (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
 
-(defthm all-dargp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+(defthm all-dargp-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
                 (< nodenum-to-assume-false dag-len)
-                (mv-nth 0 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
-           (all-dargp (strip-cdrs (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))))
+                (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+           (all-dargp (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))
 
-(defthm all-dargp-less-than-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+(defthm all-dargp-less-than-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
                 (< nodenum-to-assume-false dag-len)
-                (mv-nth 0 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
-           (all-dargp-less-than (strip-cdrs (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))) dag-len))
+                (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+           (all-dargp-less-than (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))

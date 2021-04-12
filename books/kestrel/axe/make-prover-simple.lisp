@@ -277,7 +277,7 @@
     (:REWRITE ALL-DARGP-LESS-THAN-MONOTONE)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-APPEND)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-CONS)
-    (:REWRITE ALL-DARGP-LESS-THAN-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:REWRITE ALL-DARGP-LESS-THAN-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE ALL-DARGP-LESS-THAN-WHEN-ALL-<)
     (:REWRITE ALL-DARGP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
@@ -356,7 +356,7 @@
     (:REWRITE STRIP-CDRS-OF-PAIRLIS$2)
     (:REWRITE SYMBOL-ALISTP-OF-APPEND)
     (:REWRITE SYMBOL-ALISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
-    (:REWRITE SYMBOL-ALISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:REWRITE SYMBOL-ALISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:REWRITE SYMBOL-ALISTP-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE SYMBOL-LISTP-OF-CDR)
     (:REWRITE SYMBOLP-OF-CAR-WHEN-AXE-TREEP-CHEAP)
@@ -414,7 +414,8 @@
     (:TYPE-PRESCRIPTION SYMBOL-LISTP)
     (:TYPE-PRESCRIPTION TRIESP)
     (:TYPE-PRESCRIPTION TRUE-LISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
-    (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE-type)
+    (:rewrite TRUE-LISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:TYPE-PRESCRIPTION WF-DAGP)
     equivp-forward-to-symbolp
     equivp-of-car-when-equiv-listp
@@ -754,12 +755,12 @@
               (mv (erp-nil) ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
                   nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down))
-                 ((mv matchp alist-for-free-vars)
+                 (fail-or-alist-for-free-vars
                   ;; TODO: Make 2 versions of this, according to whether HYP is a call of NOT:
                   (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
                   ))
-              (if matchp
-                  (b* ((new-alist (append alist-for-free-vars alist)) ;skip this append?
+              (if (not (eq :fail fail-or-alist-for-free-vars))
+                  (b* ((new-alist (append fail-or-alist-for-free-vars alist)) ;skip this append?
                        ;; Try to relieve all the other-hyps using the new-alist:
                        ((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                         (,relieve-rule-hyps-name other-hyps
