@@ -1020,13 +1020,13 @@
     ;;otherwise we require the expr assumed false to be a call of NOT, and we try to match HYP with the argument of the NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
-               (consp (dargs expr-to-assume-false)) ; for the guard proof, should always be true if arities are right.
+               (consp (dargs expr-to-assume-false)) ; for the guard proof, should always be true if arities are right (we could, at least, check the arities of NOTs)
                )
-          (let ((arg (darg1 expr-to-assume-false)))
-            (if (consp arg) ;whoa, it's a constant! ;TODO: This may be impossible
+          (let ((arg-to-assume (darg1 expr-to-assume-false)))
+            (if (consp arg-to-assume) ;whoa, it's a constant! ;TODO: This may be impossible
                 (mv nil nil)
               ;; TODO: Consider a fast matcher that fails fast (without consing) if the skeleton is wrong, like we do for matching terms with dags:
-              (unify-tree-with-dag-node hyp arg dag-array nil)))
+              (unify-tree-with-dag-node hyp arg-to-assume dag-array nil)))
         (mv nil nil)))))
 
 (defthm symbol-alistp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false

@@ -705,7 +705,8 @@
                                                            hyp ;partly instantiated
                                                            hyp-num
                                                            other-hyps
-                                                           alist rule-symbol
+                                                           alist
+                                                           rule-symbol
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            equiv-alist rule-alist
                                                            nodenums-to-assume-false ;we keep the whole list as well as walking down it
