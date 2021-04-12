@@ -46,10 +46,11 @@
 ;fixme could use a single RV if we used :fail (which is not an alist) to signal failure?
 (mutual-recursion
  ;; tree (e.g., a hyp with some free vars to be bound) has leaves that are quoteps, nodenums (from vars already bound), and free vars
- ;; returns (mv successp alist), where if successp is non-nil, then alist extends alist-acc with (compatible) bindings for the free vars
+ ;; Returns (mv successp alist), where if successp is non-nil, then alist extends alist-acc with (compatible) bindings for the free vars.
  ;; if successp is nil, the alist returned is irrelevant
  ;; the alist returned (and alist-acc) map variables to nodenums or quoteps
  ;; The guard would be simpler if we could pass in dag-len, but we don't want to pass that around.
+ ;; TODO: Should tree be lambda-free (should free var hyps be lambda-free?)?
  (defund unify-tree-with-dag-node (tree nodenum-or-quotep dag-array alist-acc)
    (declare (xargs :guard (and (axe-treep tree)
                                (dargp nodenum-or-quotep)
@@ -59,29 +60,32 @@
                                (symbol-alistp alist-acc))
                    :verify-guards nil ;done below
                    ))
-   (if (symbolp tree) ;it's a variable:
-       (let ((binding (assoc-eq tree alist-acc)))
-         (if binding
-             ;;bindings must match:
-             (mv (equal (cdr binding) nodenum-or-quotep)
+   (if (consp tree)
+       (let ((fn (ffn-symb tree)))
+         (if (eq fn 'quote)
+             ;; Tree is a quoted constant, so it only matched the same constant.
+             ;; Note that we do not check whether nodenum-or-quotep is the nodenum of a constant (we expect constants to be inlined).
+             (mv (equal tree nodenum-or-quotep)
                  alist-acc)
-           ;;make a new binding:
-           (mv t (acons-fast tree nodenum-or-quotep alist-acc))))
-     (if (consp tree)
-         (let ((fn (ffn-symb tree)))
-           (if (eq fn 'quote)
-               (mv (equal tree nodenum-or-quotep) ;todo: what if nodenum-or-quotep is the nodenum of a quotep?
+           ;; Tree is a function call:
+           (if (consp nodenum-or-quotep) ; checks for quotep
+               ;; a quotep doesn't match with a function call:
+               (mv nil nil)
+             ;;NODENUM-OR-QUOTEP must be a nodenum:
+             (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+               (if (call-of fn expr) ;doesn't support lambdas
+                   (unify-trees-with-dag-nodes (fargs tree) (dargs expr) dag-array alist-acc)
+                 (mv nil nil))))))
+     (if (symbolp tree)
+         ;; TREE is variable:
+         (let ((binding (assoc-eq tree alist-acc)))
+           (if binding
+               ;;bindings must match:
+               (mv (equal (cdr binding) nodenum-or-quotep)
                    alist-acc)
-             ;;regular function call:
-             (if (consp nodenum-or-quotep)
-                 ;; a quotep doesn't match with a function call:
-                 (mv nil nil)
-               ;;NODENUM-OR-QUOTEP must be a nodenum:
-               (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-                 (if (call-of fn expr) ;doesn't support lambdas
-                     (unify-trees-with-dag-nodes (fargs tree) (dargs expr) dag-array alist-acc)
-                   (mv nil nil))))))
-       ;;tree must be a nodenum:
+             ;;make a new binding:
+             (mv t (acons-fast tree nodenum-or-quotep alist-acc))))
+       ;; Tree is a nodenum, so nodenum-or-quotep must be the same nodenum (and not a quoted constant):
        (mv (eql tree nodenum-or-quotep)
            alist-acc))))
 
