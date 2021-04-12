@@ -36,6 +36,7 @@
 (include-book "kestrel/lists-light/prefixp2" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ;todo
 (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system) ;make local?
+(include-book "kestrel/arithmetic-light/floor" :dir :system)
 (local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))

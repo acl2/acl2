@@ -31,9 +31,8 @@
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
-       ;;TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
-       ;;ALIST binds vars to quoteps and/or nodenums
-       ;;this one does *not* wrap remaining free vars in :free
+       ;; TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
+       ;; ALIST binds vars to dargs (nodenums/ quoteps).
        ;; Returns (mv instantiated-hyp free-vars-flg).
        (mutual-recursion
         ;; Returns (mv term free-vars-flg) where TERM has been instantiated with ALIST and FREE-VARS-FLG indicates whether any variables remain in TERM.

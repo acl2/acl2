@@ -43,6 +43,11 @@
            (equal (+ k1 k2 i)
                   (+ (+ k1 k2) i))))
 
+(defthm equal-of-+-cancel-same
+  (equal (equal (+ x y) x)
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
 (defthm equal-of-+-and-+-cancel-1
   (equal (equal (+ x y1) (+ x y2))
          (equal (fix y1) (fix y2))))

@@ -168,25 +168,18 @@
                     (mv compst/error (compustate-fix compst))))
                 (mv nil compst/error))
         :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-        :if (b* ((test (exec-expr-pure s.test compst))
+        :if (b* ((test (exec-test (exec-expr-pure s.test compst)))
                  ((when (errorp test)) (mv test (compustate-fix compst))))
-              (if (sintp test)
-                  (if (sint-nonzerop test)
+              (if test
+                  (exec-stmt-induct s.then compst fenv (1- limit) (1- limit1))
+                (mv nil (compustate-fix compst))))
+        :ifelse (b* ((test (exec-test (exec-expr-pure s.test compst)))
+                     ((when (errorp test)) (mv test (compustate-fix compst))))
+                  (if test
                       (exec-stmt-induct s.then compst fenv
                                         (1- limit) (1- limit1))
-                    (mv nil (compustate-fix compst)))
-                (mv (error (list :exec-if-non-sint-todo s))
-                    (compustate-fix compst))))
-        :ifelse (b* ((test (exec-expr-pure s.test compst))
-                     ((when (errorp test)) (mv test (compustate-fix compst))))
-                  (if (sintp test)
-                      (if (sint-nonzerop test)
-                          (exec-stmt-induct s.then compst fenv
-                                            (1- limit) (1- limit1))
-                        (exec-stmt-induct s.else compst fenv
-                                          (1- limit) (1- limit1)))
-                    (mv (error (list :exec-ifelse-non-sint-todo s))
-                        (compustate-fix compst))))
+                    (exec-stmt-induct s.else compst fenv
+                                      (1- limit) (1- limit1))))
         :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))

@@ -29,6 +29,7 @@
 ; Author: Sol Swords <sswords@centtech.com>
 ; Based on previous work by Jared Davis and Shilpi Goel <shilpi@centtech.com>
 ;   -- see ../defrstobj/defrstobj.lisp.
+; Shilpi Goel <shilpi@centtech.com>: added support for child stobjs (04/09/2021)
 
 (in-package "RSTOBJ2")
 (include-book "def-multityped-record")
@@ -46,7 +47,7 @@
 with the reasoning efficiency of records.  They are designed for modeling,
 e.g., the state of a processor or virtual machine."
   :long " <p>Defrstobj creates an abstract stobj where the concrete stobj
-contains some user-specified scalar fields and fixed-length array fields, but
+contains some user-specified scalar fields, fixed-length array fields, and child stobjs, but
 the logical interface is that of a multityped record (see @(see
 def-multityped-record)).  The executable accessors/updaters expand to calls of
 a single multityped record accessor/updater so that only a small number of
@@ -58,20 +59,41 @@ writes, etc.</p>
 @('rstobj::defrstobj'), is defined in @('centaur/defrstobj/defrstobj.lisp'),
 and another one before that in @('projects/legacy-defrstobj/defrstobj.lisp').</p>
 
-<p>The difference between this version and previous versions is the logical
+<p>The main difference between this version and previous versions is the logical
 interface.  In previous versions the top-level stobj was an untyped record
 containing certain keys (those corresponding to array fields) that were
 uniformly typed records.  In this version, the entire stobj is a multityped
 record and the array contents are not their own subfields.</p>
 
 <h4>Invocation and Options</h4>
-<p>Example invocation:</p>
+<p>Example invocations:</p>
 @({
  (defrstobj myst
    (u32-scalar :type (unsigned-byte 32) :initially 0 :fix (ec-call (acl2::loghead$inline 32 x)))
    (u32-array :type (array (unsigned-byte 32) (16)) :initially 5 :fix (acl2::loghead 32 (ifix x)))
    (nat-scalar :type (integer 0 *) :initially 6 :fix (nfix x))
    (nat-array :type (array (integer 0 *) (12)) :initially 8 :fix (nfix x)))
+ 
+ (defrstobj parent
+   (parent-nat-scalar :type (integer 0 *) :initially 0 :fix (nfix x))
+   ;; \"Exporting\" two fields from the child stobj into this parent stobj
+   (child-u32-array :type (array (unsigned-byte 32) (16))
+                    :initially 5
+                    :fix (acl2::loghead 32 (ifix x))
+                    :child-stobj child
+                    :child-accessor get-u32-array
+                    :child-updater  set-u32-array)
+   (child-u32-scalar :type (unsigned-byte 32)
+                     :initially 0
+                     :fix (acl2::loghead 32 (ifix x))
+                     :child-stobj child
+                     :child-accessor get-u32-scalar
+                     :child-updater  set-u32-scalar)
+   :enable '(get-u32-array-over-set-u32-array
+             get-u32-scalar-over-set-u32-scalar
+             get-u32-array-default-value
+             get-u32-scalar-default-value))
+
  })
 
 <p>The first argument to @('defrstobj') is the name of the abstract stobj
@@ -139,8 +161,33 @@ default @('<accessor>$a')</li>
 <li>@(':logic-updater') -- the logical version of the updater function,
 default @('<updater>$a')</li>
 
+<li>@(':child-stobj') -- the name of a previously-introduced stobj</li>
+
+<li>@(':child-accessor') -- the name of an accessor function of some
+field of the child stobj</li>
+
+<li>@(':child-updater') -- the name of an updater function of some
+field of the child stobj</li>
+
 <li>@(':key') -- the keyword corresponding to the field, for use as a key in
 the typed record.</li>
+</ul>
+
+<p>When a field is based off a child stobj, then @('defrstobj')
+requires certain theorems about the child stobj's accessors and
+updaters to be made available to it using the top-level keyword option
+@(':enable').  Two kinds of theorems are expected:</p>
+
+<ul>
+
+<li>Non-interference Theorems -- standard accessor/updater
+independence or read-over-write theorems. Also see @(see
+stobjs::stobj-updater-independence) and @('std/stobjs/nicestobj') for
+a possible strategy to adopt to prove these kinds of theorems.</li>
+
+<li>Default-value Theorems -- theorems stating that calling the
+accessor on a stobj's creator function returns the default value.</li>
+
 </ul>")
 
 
@@ -155,9 +202,25 @@ the typed record.</li>
 
 (defthmd nth-when-all-equal
   (implies (And (all-equal x)
-                (< (nfix n) (len x)))
+                (natp n)
+                (< n (len x)))
            (equal (nth n x) (car x)))
   :hints(("Goal" :in-theory (enable all-equal))))
+
+(defthmd nth-of-cons  
+  ;; Deals with the following kinds of terms that appear during the
+  ;; proof of create-st{correspondence} when a child stobj's creator
+  ;; function shows up somewhere in the second arg. of nth and
+  ;; nth-when-all-equal doesn't work.
+  ;; (EQUAL 0 (NTH 1 (CONS (CREATE-CHILD) '(0))))
+  ;; (EQUAL 0 (NTH 0 (LIST 0 (CREATE-CHILD))))
+  ;; (EQUAL 0 (NTH 0 (LIST* 0 (CREATE-CHILD) '(0))))
+  (implies (syntaxp (or (not (quotep x))
+                        (not (quotep y))))
+           (equal (nth n (cons x y))
+                  (if (zp n)
+                      x
+                    (nth (1- n) y)))))
 
 
 
@@ -443,7 +506,7 @@ the typed record.</li>
               (update-myst-nat-scalar :logic update-myst$a-nat-scalar :exec update-myst$c-nat-scalar)
               (myst-nat-arrayi :logic myst$a-nat-arrayi :exec myst$c-nat-arrayi)
               (update-myst-nat-arrayi :logic update-myst$a-nat-arrayi :exec update-myst$c-nat-arrayi))))
-            
+
 
 ||#
 
@@ -494,19 +557,22 @@ the typed record.</li>
        ((rstobj x))
        (mksym-pkg x.pkg-sym)
        (type-look (assoc-keyword :type keyvals))
-       (stobj-type (if type-look
-                       (cadr type-look)
-                     t))
-       (arrayp (and (consp stobj-type)
-                    (eq (car stobj-type) 'array)))
-       (hashp (and (consp stobj-type)
-                   (eq (car stobj-type) 'hash-table)))
+       (child-stobj-look (assoc-keyword :child-stobj keyvals))
+       (child-stobj (if child-stobj-look (cadr child-stobj-look) nil))
+       (field-type (if type-look
+                     (cadr type-look)
+                   t))
+       (stobj-type (or child-stobj field-type))
+       (arrayp (and (consp field-type)
+                    (eq (car field-type) 'array)))
+       (hashp (and (consp field-type)
+                   (eq (car field-type) 'hash-table)))
        (- (and hashp
                (er hard? 'parse-defrstobj-field
                    "Hash table fields aren't supported yet")))
        (stobj-elt-type (if arrayp
-                           (cadr stobj-type)
-                         stobj-type))
+                           (cadr field-type)
+                         field-type))
        (pred-look (assoc-keyword :pred keyvals))
        (pred (if pred-look
                  (cadr pred-look)
@@ -521,14 +587,23 @@ the typed record.</li>
        (- (and (cadr resizable-look)
                (er hard? 'parse-defrstobj-field
                    "Resizable arrays aren't supported yet")))
-       (length (and arrayp (car (caddr stobj-type))))
+       (length (and arrayp (car (caddr field-type))))
        (exec-fieldname (mksym fieldname '$c))
-       (exec-accessor (if arrayp
+       (child-accessor-look (assoc-keyword :child-accessor keyvals))
+       (child-accessor (and child-accessor-look (cadr child-accessor-look)))
+       (child-updater-look (assoc-keyword :child-updater keyvals))
+       (child-updater (and child-updater-look (cadr child-updater-look)))
+       (- (and (xor child-stobj (and child-accessor child-updater))
+               (er hard? 'parse-defrstobj-field
+                   "Expected either all or none of the following: :child-stobj, :child-accessor, :child-updater")))
+       (exec-accessor (if (and arrayp (not child-stobj))
                           (acl2::defstobj-fnname exec-fieldname :accessor :array nil)
                         (acl2::defstobj-fnname exec-fieldname :accessor :scalar nil)))
-       (exec-updater (if arrayp
-                          (acl2::defstobj-fnname exec-fieldname :updater :array nil)
-                        (acl2::defstobj-fnname exec-fieldname :updater :scalar nil)))
+       (child-exec-accessor (and child-accessor (mksym child-accessor '$c)))
+       (child-exec-updater (and child-updater (mksym child-updater '$c)))
+       (exec-updater (if (and arrayp (not child-stobj))
+                         (acl2::defstobj-fnname exec-fieldname :updater :array nil)
+                       (acl2::defstobj-fnname exec-fieldname :updater :scalar nil)))
        (accessor-look (assoc-keyword :accessor keyvals))
        (accessor (if accessor-look
                      (cadr accessor-look)
@@ -544,14 +619,21 @@ the typed record.</li>
                       (cadr field-key-look)
                     (intern-in-package-of-symbol (symbol-name fieldname) :keyword))))
     `((:fieldname . ,fieldname)
+      (:field-type . ,field-type)
       (:stobj-type . ,stobj-type)
       (:arrayp . ,arrayp)
       (:pred . ,pred)
       (:fix . ,fix)
       (:initially . ,initially)
+      (:child-stobj . ,child-stobj)
+      (:child-accessor . ,child-accessor)
+      (:child-updater . ,child-updater)
       (:exec-fieldname . ,exec-fieldname)
       (:exec-accessor . ,exec-accessor)
       (:exec-updater . ,exec-updater)
+      ;; Functions :child-exec-accessor and :child-exec-updater are generated by defrstobj.
+      (:child-exec-accessor . ,child-exec-accessor)
+      (:child-exec-updater  . ,child-exec-updater)
       (:length . ,length)
       (:accessor . ,accessor)
       (:logic-accessor . ,logic-accessor)
@@ -676,12 +758,15 @@ the typed record.</li>
   (b* (((rstobj x))
        (mksym-pkg x.pkg-sym))
     (mksym x.name '-start)))
-    
+
 
 
 (defun rstobj-concrete-stobj-field (field)
   (b* (((rstobj-field field)))
-    `(,field.exec-fieldname :type ,field.stobj-type :initially ,field.initially)))
+    `(,field.exec-fieldname :type ,field.stobj-type
+                            ,@(if field.child-stobj
+                                  nil
+                                `(:initially ,field.initially)))))
 
 (defun rstobj-concrete-stobj-fields (fields)
   (if (atom fields)
@@ -695,6 +780,50 @@ the typed record.</li>
        ,@(rstobj-concrete-stobj-fields x.fields)
        :inline ,x.inline
        :non-memoizable ,x.non-memoizable)))
+
+(defun rstobj-concrete-stobj-field-child-stobj-accessor/updater-def (x.concrete-stobj field)
+  (b* (((rstobj-field field)))
+    `(progn
+       (defun ,field.child-exec-accessor (,@(and field.arrayp `(i)) ,x.concrete-stobj)
+         (declare (xargs :guard ,@(if field.arrayp
+                                      `((and (integerp i)
+                                             (<= 0 i)
+                                             (< i ,field.length)))
+                                    `(t))
+                         :stobjs ,x.concrete-stobj))
+         (stobj-let
+          ((,field.child-stobj (,field.exec-accessor ,x.concrete-stobj)))
+          (val)
+          (,field.child-accessor ,@(and field.arrayp `(i)) ,field.child-stobj)
+          val))
+       (defun ,field.child-exec-updater (,@(and field.arrayp `(i)) v ,x.concrete-stobj)
+         (declare (xargs :guard (and
+                                 ,(subst 'v 'x field.pred)
+                                 ,@(and field.arrayp
+                                        `((integerp i)
+                                          (<= 0 i)
+                                          (< i ,field.length))))
+                         :stobjs ,x.concrete-stobj))
+         (stobj-let
+          ((,field.child-stobj (,field.exec-accessor ,x.concrete-stobj)))
+          (,field.child-stobj)
+          (,field.child-updater ,@(and field.arrayp `(i)) v ,field.child-stobj)
+          ,x.concrete-stobj)))))
+
+
+(defun rstobj-concrete-stobj-field-child-stobj-accessor/updater-defs (x.concrete-stobj fields)
+  (if (atom fields)
+      nil
+    (b* (((rstobj-field field) (car fields))
+         (rest (rstobj-concrete-stobj-field-child-stobj-accessor/updater-defs x.concrete-stobj (cdr fields))))
+      (if field.child-stobj
+          (cons (rstobj-concrete-stobj-field-child-stobj-accessor/updater-def x.concrete-stobj (car fields))
+                rest)
+        rest))))
+
+(defun rstobj-child-stobj-concrete-accessor/updater-defs (x)
+  (b* (((rstobj x)))
+    (rstobj-concrete-stobj-field-child-stobj-accessor/updater-defs x.concrete-stobj x.fields)))
 
 (defun rstobj-elem-p-case (field)
   (b* (((rstobj-field field)))
@@ -797,7 +926,7 @@ the typed record.</li>
             (defun ,(mksym x.elem-default '-top) (key)
               (declare (xargs :guard t))
               (,x.elem-default (ec-call (car key)))))))
-  
+
 
 (defun rstobj-record-def (x)
   (b* (((rstobj x))
@@ -819,19 +948,19 @@ the typed record.</li>
                ,(subst `(,x.accessor ,field.field-key i ,x.logic-stobj)
                        'x field.pred)
                :hints (("goal" :use ((:instance ,(mksym x.elem-p '-of- x.accessor)
-                                      (fld ,field.field-key)))
+                                                (fld ,field.field-key)))
                         :in-theory (disable ,(mksym x.elem-p '-of- x.accessor)))))
-         (make-event
-          (prog2$ (cw "*** NOTE: Failed to prove rewrite rule stating that ~x0 satisfies ~x1 for field ~x2.~%"
-                      ',x.accessor ',field.pred ',field.field-key)
-                  '(value-triple :skipped))))))))
+             (make-event
+              (prog2$ (cw "*** NOTE: Failed to prove rewrite rule stating that ~x0 satisfies ~x1 for field ~x2.~%"
+                          ',x.accessor ',field.pred ',field.field-key)
+                      '(value-triple :skipped))))))))
 
 (defun rstobj-elem-p-of-accessor-thms (fields x)
   (if (atom fields)
       nil
     (append (rstobj-elem-p-of-accessor-thm (car fields) x)
             (rstobj-elem-p-of-accessor-thms (cdr fields) x))))
-       
+
 
 (defun rstobj-accessor/updater-defs (x)
   (b* (((rstobj x))
@@ -944,7 +1073,7 @@ the typed record.</li>
     (cons (rstobj-logic-updater-def (car fields) x)
           (rstobj-logic-updater-defs (cdr fields) x))))
 
-       
+
 
 (defun rstobj-field-array-corr-name (field x)
   (b* (((rstobj-field field))
@@ -961,8 +1090,10 @@ the typed record.</li>
        (field-index (rstobj-field-defconst field)))
     `((defun-sk ,name (,x.concrete-stobj ,x.logic-stobj)
         (forall idx
-                (implies (< (nfix idx) ,field.length)
-                         (equal (nth idx (nth ,field-index ,x.concrete-stobj))
+                (implies (and (natp idx) (< idx ,field.length))
+                         (equal ,(if field.child-stobj
+                                     `(,field.child-accessor idx (nth ,field-index ,x.concrete-stobj))
+                                   `(nth idx (nth ,field-index ,x.concrete-stobj)))
                                 (,x.accessor
                                  ,field.field-key (nfix idx)
                                  ,x.logic-stobj))))
@@ -981,10 +1112,12 @@ the typed record.</li>
      (defthm ,(mksym name '-of-update)
        (implies (and (,name ,x.concrete-stobj ,x.logic-stobj)
                      ,(subst 'val 'x field.pred)
-                     (natp idx))
+                     (natp idx) (< idx ,field.length))
                 (,name
                  (update-nth ,field-index
-                             (update-nth idx val (nth ,field-index ,x.concrete-stobj))
+                             ,(if field.child-stobj
+                                  `(,field.child-updater idx val (nth ,field-index ,x.concrete-stobj))
+                                `(update-nth idx val (nth ,field-index ,x.concrete-stobj)))
                              ,x.concrete-stobj)
                  (,x.updater ,field.field-key idx val ,x.logic-stobj)))
        :hints ((and stable-under-simplificationp
@@ -1012,7 +1145,8 @@ the typed record.</li>
         `(,(rstobj-field-array-corr-name field x)
           ,x.concrete-stobj ,x.logic-stobj)))
     `(equal (,field.logic-accessor ,x.logic-stobj)
-            (,field.exec-accessor ,x.concrete-stobj))))
+            (,(or field.child-exec-accessor field.exec-accessor)
+             ,x.concrete-stobj))))
 
 (defun rstobj-fields-corr (fields x)
   (if (atom fields)
@@ -1035,8 +1169,8 @@ the typed record.</li>
 
 (defun rstobj-exports-field (field)
   (b* (((rstobj-field field)))
-    `((,field.accessor :logic ,field.logic-accessor :exec ,field.exec-accessor)
-      (,field.updater :logic ,field.logic-updater :exec ,field.exec-updater))))
+    `((,field.accessor :logic ,field.logic-accessor :exec ,(or field.child-exec-accessor field.exec-accessor))
+      (,field.updater :logic ,field.logic-updater :exec ,(or field.child-exec-updater field.exec-updater)))))
 
 (defun rstobj-exports (fields)
   (if (atom fields)
@@ -1095,6 +1229,7 @@ the typed record.</li>
     `(encapsulate nil
        (local (deflabel ,(rstobj-start-label x)))
        ,(rstobj-concrete-stobj-def x)
+       ,@(rstobj-child-stobj-concrete-accessor/updater-defs x)
 
        ,(rstobj-elem-p-def x)
        ,(rstobj-elem-fix-def x)
@@ -1147,7 +1282,7 @@ the typed record.</li>
                          (member-eq (car lit) ',(rstobj-field-array-corr-names x.fields x))
                          `(:expand (,lit)))))))
 
-          (in-theory (e/d (nth-when-all-equal (all-equal))))))
+          (in-theory (e/d (nth-when-all-equal nth-of-cons (all-equal) (zp))))))
 
        ,(rstobj-defabsstobj x)
 
@@ -1182,3 +1317,43 @@ the typed record.</li>
    :accessor-template (@ x)
    :updater-template (! x)))
 
+(local
+ (encapsulate
+   ()
+   (defstobj mem
+     (arr :type (array (unsigned-byte 8) (10))
+          :initially 0)
+     :renaming ((arri read-mem)
+                (update-arri write-mem)))
+
+   (defthm read-mem-from-create-mem
+     (implies (and (natp i)
+                   (< i 10))
+              (equal (read-mem i (create-mem)) 0))
+     :hints (("Goal" :in-theory (e/d ()
+                                     (acl2::make-list-ac-removal
+                                      make-list-ac
+                                      (make-list-ac))))))
+   (defthm read-mem-over-write-mem
+     (implies (and (unsigned-byte-p 8 v)
+                   (natp i) (natp j)
+                   (< i 10)
+                   (< j 10))
+              (equal (read-mem i (write-mem j v mem))
+                     (if (equal i j)
+                         v
+                       (read-mem i mem)))))
+
+   (in-theory (e/d () (read-mem write-mem)))))
+
+(local
+ (defrstobj myst3
+   (child :type (array (unsigned-byte 8) (10))
+          :initially 0
+          :fix (acl2::loghead$inline 8 (ifix x))
+          :child-stobj mem
+          :child-accessor read-mem
+          :child-updater write-mem)
+   (u10-scalar :type (unsigned-byte 10) :initially 0 :fix (ec-call (acl2::loghead$inline 10 x)))
+   :enable '(read-mem-over-write-mem
+             read-mem-from-create-mem)))

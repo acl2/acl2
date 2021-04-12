@@ -30,6 +30,7 @@
             (pow pow-unguarded)
             pos-fix
             (fep fep-unguarded)
+            rtl::primep ;; could be dangerous if called on a large prime for which add-io-pairs has not been called
             (acl2::floor acl2::floor-unguarded)
             (acl2::slice acl2::slice-unguarded)
             bitp)))

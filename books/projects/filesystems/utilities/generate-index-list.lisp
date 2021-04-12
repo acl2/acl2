@@ -40,12 +40,13 @@
                    (nfix (+ disk-length
                             (nfix block-list-length))))))))
 
-(local
- ;; borrowed and adapted from books/std/lists/remove.lisp
- (defthm len-of-remove-when-non-member
-            (implies (not (member a x))
-                     (equal (len (remove a x))
-                            (len x)))))
+(defthm remove-when-absent
+  (implies (not (member-equal x l))
+           (equal (remove-equal x l)
+                  (true-list-fix l))))
+
+(defthm len-of-true-list-fix
+  (equal (len (true-list-fix x)) (len x)))
 
 (defthm
   generate-index-list-correctness-4
@@ -61,4 +62,3 @@
       x
       (generate-index-list disk-length block-list-length)))
     (- (nfix block-list-length) 1))))
-

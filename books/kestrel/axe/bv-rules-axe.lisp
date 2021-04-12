@@ -32,6 +32,7 @@
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 (add-known-boolean bvlt)
 (add-known-boolean sbvlt)

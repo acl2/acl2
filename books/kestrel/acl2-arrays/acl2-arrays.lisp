@@ -693,6 +693,8 @@
                   (assoc-keyword key (cdr lst))))
   :hints (("Goal" :in-theory (enable assoc-keyword))))
 
+;; Make an array where every element is the default.
+;; TODO: Rename this, since "empty" here doesn't mean an array of length 0 but rather that the alist is empty.
 ;according to array1p, the maximum-length field of an array can be at most *maximum-positive-32-bit-integer* = 2147483647
 ;and the length (first dimension) of the array is at most 2147483646 since it must be strictly smaller than the :maximum-length (why strictly?)
 ;; Note that array1p disallows arrays of size 0 (why?), so this function does also.

@@ -78,39 +78,40 @@
      when trying to prove the base type,
      in contexts where the result type is not used at all."))
 
-  (define defresult-fn (type desc enable (wrld plist-worldp))
+  (define defresult-fn (type desc name enable (wrld plist-worldp))
     :returns event ; PSEUDO-EVENT-FORMP
     :mode :program
     (b* ((fty-table (fty::get-fixtypes-alist wrld))
          (fty-info (fty::find-fixtype type fty-table))
          (typep (fty::fixtype->pred fty-info))
-         (type-result (add-suffix type "-RESULT"))
-         (type-resultp (add-suffix type "-RESULTP"))
+         (name (or name type))
+         (name-result (add-suffix name "-RESULT"))
+         (name-resultp (add-suffix name "-RESULTP"))
          (short (str::cat "Fixtype of " desc " and errors."))
-         (typep-when-type-resultp-and-not-errorp
-          (acl2::packn-pos (list typep '-when- type-resultp '-and-not-errorp)
-                           type)))
+         (typep-when-name-resultp-and-not-errorp
+          (acl2::packn-pos (list typep '-when- name-resultp '-and-not-errorp)
+                           name)))
       `(encapsulate ()
-         (fty::defflatsum ,type-result
+         (fty::defflatsum ,name-result
            :short ,short
            (:ok ,type)
            (:err error)
-           :pred ,type-resultp
+           :pred ,name-resultp
            ,@(and enable
                   `(:prepwork
                     ((defrulel disjoint
                        (implies (errorp x)
                                 (not (,typep x)))
                        :enable ,enable)))))
-         (defruled ,typep-when-type-resultp-and-not-errorp
-           (implies (and (,type-resultp x)
+         (defruled ,typep-when-name-resultp-and-not-errorp
+           (implies (and (,name-resultp x)
                          (not (errorp x)))
                     (,typep x))
-           :enable ,type-resultp))))
+           :enable ,name-resultp))))
 
-  (defmacro defresult (type desc &key enable)
-    `(make-event (defresult-fn ',type ',desc ',enable (w state)))))
+  (defmacro defresult (type desc &key name enable)
+    `(make-event (defresult-fn ',type ',desc ',name ',enable (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult bool "booleans") ; move
+(defresult bool "booleans" :name boolean)

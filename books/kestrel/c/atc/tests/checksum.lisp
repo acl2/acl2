@@ -57,8 +57,10 @@
                                    :in-theory (enable c::sint-integerp-alt-def
                                                       c::sint-add-okp
                                                       c::sint-shl-sint-okp
+                                                      c::sint-shl-okp
                                                       c::sint-add
                                                       c::sint-shl-sint
+                                                      c::sint-shl
                                                       c::sint-bitand
                                                       (:e c::sint-max))))))
     (c::sint-bitand (c::sint-add |current|

@@ -46,6 +46,13 @@
                   0))
   :hints (("Goal" :in-theory (enable bvnot))))
 
+;drop?
+(defthm bvnot-when-not-natp-size
+  (implies (not (natp size))
+           (equal (bvnot size x)
+                  0))
+  :hints (("Goal" :in-theory (e/d (bvnot) nil))))
+
 (defthm bvnot-when-size-is-not-integerp
   (implies (not (integerp size))
            (equal (bvnot size x)

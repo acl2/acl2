@@ -17,7 +17,8 @@
 
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
-                                '(byte
+                                '(boolean
+                                  byte
                                   error
                                   pi
                                   pprint-indent
@@ -27,7 +28,6 @@
                                   value))
              '(any
                bool
-               bool-resultp
                cw-event
                define-sk
                defmacro+
@@ -54,8 +54,6 @@
                mbt$
                msg-listp
                nat
-               patbind-bool-result-err ; workaround for an XDOC bug
-               patbind-bool-result-ok ; workaround for an XDOC bug
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp

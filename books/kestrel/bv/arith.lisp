@@ -38,10 +38,6 @@
   (equal (- (+ x y))
          (+ (- x) (- y))))
 
-;dup?
-(DEFTHM DISTRIBUTIVITY-OF-/-OVER-*
-  (EQUAL (/ (* X Y)) (* (/ X) (/ Y))))
-
 ;dup
 (DEFTHM FOLD-CONSTS-IN-+
   (IMPLIES (AND (SYNTAXP (QUOTEP X))

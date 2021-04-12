@@ -22,12 +22,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define ACL2 functions that model C operations on integers.
-     For now we define operations for (signed) integers only,
-     but we will cover the unsigned integers soon as well.
-     We only cover standard unsigned and signed integers (except @('_Bool').")
-   (xdoc::p
-    "As explained below, it suffices to introduce operations
-     on integers of rank equal to or higher than @('int').")
+     We only cover standard unsigned and signed integers (except @('_Bool')).")
    (xdoc::p
     "We introduce functions @('<type>-const')
      to construct integer constants.
@@ -38,29 +33,45 @@
      which the guard further constrains to be representable in the type.")
    (xdoc::p
     "We introduce functions @('<type>-nonzerop')
-     to turn integers into ACL2 booleans,
+     to turn C integers into ACL2 booleans,
      i.e. to test whether the integers are not zero.
      These are used to represent shallowly embedded tests.
-     Note that promoting [C:6.3.1.1/2] the integer arguments
-     does not affect the result,
-     so there is no need to define functions for
-     types of rank lower than @('int').")
+     We introduce a function for each integer type,
+     because there is no integer promotion on values used in tests.")
    (xdoc::p
-    "We introduce one function @(tsee sint01)
+    "We introduce functions @('<type>-integer-value')
+     to turn C integers into ACL2 integers.
+     These are used as operands of certain C operations
+     whose result does not depend on the C type of the operand,
+     but rather just on its (mathematical) integer value.
+     Since these operands are not always subjected to the integer promotions,
+     we define one function for each integer type
+     (not just of rank of @('int') or higher).
+     Even though these functions are essentially synonyms of
+     the deconstructors of the fixtypes of the integer values,
+     having a separate function provides more abstraction,
+     should the fixtype representation be changed in the future.")
+   (xdoc::p
+    "We introduce a single function @(tsee sint01)
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
      This function is used in the ACL2 representation of
      non-strict C conjunctions @('&&') and disjunctions @('||'),
-     which always return @('int') 0 or 1 [C:6.5.13/3] [C:6.5.14/3].")
+     which always return @('int') 0 or 1 [C:6.5.13/3] [C:6.5.14/3].
+     We do not need similar functions for other types,
+     because the 0 or 1 are always @('int')
+     for operations like @('&&') and @('||').")
    (xdoc::p
-    "We introduce functions for the unary and binary operators.
-     For all the unary integer operators except @('!'),
+    "We introduce functions for the unary and binary operators,
+     as detailed below.")
+   (xdoc::p
+    "For all the unary integer operators except @('!'),
      C promotes the operands [C:6.3.1.1/2] to types
-     whose rank is that of @('int') or higher.
-     Although C does not promote the operand of @('!'),
-     note that performing an explicit promotion does not affect the result;
-     thus, there is no need to define funtions for this operator
-     for types of rank lower than @('int').
-     For all the binary integer operators
+     whose rank is that of @('int') or higher:
+     thus, we only define the operations for types of those ranks.
+     Since C does not promote the operand of @('!'),
+     we define a function for each type.")
+   (xdoc::p
+    "For all the binary integer operators
      except @('<<'), @('>>'), @('&&'), and @('||'),
      C subjects the operands to the usual arithmetic conversions [C:6.3.1.8],
      which involve promoting them [C:6.3.1.1/2]
@@ -68,13 +79,21 @@
      thus, it suffices to define functions for operands
      of the same type of rank @('int') or higher.
      C also promotes, individually, the operands of @('<<') and @('>>'),
-     but without turning them into a common type:
-     for now, for these shift operators, we define functions
-     for operands of equal types of rank @('int') or higher.
+     but without turning them into a common type;
+     while the type of the first operand affects the result,
+     only the (mathematical) integer value of the second operand does,
+     and thus we introduce functions
+     that take an ACL2 integer as the second operand.
+     We temporarily also have functions
+     that take a C integer as the second operand,
+     of the same type as the first operand;
+     this will be removed eventually.
      Although C does not promote the operands of @('&&') and @('||'),
      note that performing explicit promotions does not affect the result:
      thus, we only define functions for these operators
-     for operands of equal types of rank @('int') or higher.")
+     for operands of equal types of rank @('int') or higher;
+     we may actually remove these functions altogether,
+     and always require their non-strict representation in ACL2.")
    (xdoc::p
     "When the exact result of an aritmetic operation on signed integers
      is not representable in the signed integer type,
@@ -87,7 +106,7 @@
     "The right operand of a signed shift operator
      must be non-negative and below the bit size of the left operand
      [C:6.5.7/3].
-     The left operand, whens signed, must be non-negative.")
+     The left operand, when signed, must be non-negative.")
    (xdoc::p
     "For division and remainder,
      the guard also requires the divisor to be non-zero.")
@@ -98,12 +117,12 @@
    (xdoc::p
     "The logical conjunction and disjunction operators defined here
      are strict versions, because they take two values as inputs.
-     Non-strict versions are represented differently.")
+     Non-strict versions are represented differently in ACL2.")
    (xdoc::p
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
     (xdoc::seetopic "atc-integers" "our model of integer values")
-    "; these operations depend on the representation of integers [C:6.5/4]."))
+    "; these operations depend on the C representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
@@ -147,6 +166,8 @@
        (utype-const (add-suffix utype "-CONST"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
+       (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
+       (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
        (stype-plus (add-suffix stype "-PLUS"))
        (utype-plus (add-suffix utype "-PLUS"))
        (stype-minus (add-suffix stype "-MINUS"))
@@ -173,6 +194,14 @@
        (utype-rem (add-suffix utype "-REM"))
        (stype-rem-okp (add-suffix stype-rem "-OKP"))
        (utype-rem-okp (add-suffix utype-rem "-OKP"))
+       (stype-shl (add-suffix stype "-SHL"))
+       (stype-shl-okp (add-suffix stype-shl "-OKP"))
+       (utype-shl (add-suffix utype "-SHL"))
+       (utype-shl-okp (add-suffix utype-shl "-OKP"))
+       (stype-shr (add-suffix stype "-SHR"))
+       (stype-shr-okp (add-suffix stype-shr "-OKP"))
+       (utype-shr (add-suffix utype "-SHR"))
+       (utype-shr-okp (add-suffix utype-shr "-OKP"))
        (stype-shl-stype (acl2::packn-pos (list stype "-SHL-" stype) 'atc))
        (utype-shl-utype (acl2::packn-pos (list utype "-SHL-" utype) 'atc))
        (stype-shl-stype-okp (add-suffix stype-shl-stype "-OKP"))
@@ -206,7 +235,7 @@
 
     `(progn
 
-       ;; The following operations are defined for all types.
+       ;; The following operations are defined for all the types.
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,6 +257,28 @@
                               type-string
                               "') value is not 0.")
          (/= (,utype->get x) 0)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,stype-integer-value ((x ,stypep))
+         :returns (ival integerp)
+         :short ,(concatenate 'string
+                              "Integer value of a @('signed "
+                              type-string
+                              "').")
+         (,stype->get x)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,utype-integer-value ((x ,utypep))
+         :returns (ival integerp)
+         :short ,(concatenate 'string
+                              "Integer value of an @('unsigned "
+                              type-string
+                              "').")
+         (,utype->get x)
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,9 +391,11 @@
                                    "') values [C:6.5.3].")
               (,utype (mod (- (,utype->get x))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,9 +423,11 @@
                                    "') values [C:6.5.3].")
               (,utype (mod (lognot (,utype->get x))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,9 +463,11 @@
                                    "') values [C:6.5.6].")
               (,utype (mod (+ (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,9 +503,11 @@
                                    "') values [C:6.5.6].")
               (,utype (mod (- (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,9 +543,11 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (* (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,10 +597,12 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (truncate (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-div-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-div-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -568,7 +631,8 @@
                                                        ,stype->get
                                                        ,stypep)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,10 +657,40 @@
                                    "') values [C:6.5.5].")
               (,utype (mod (rem (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-rem-okp
-                                                       ,utype-integerp-alt-def)))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-rem-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,stype-shl-okp ((x ,stypep) (y integerp))
+              :returns (yes/no booleanp)
+              :short ,(concatenate 'string
+                                   "Check if left shift of @('signed "
+                                   type-string
+                                   "') values is well-defined.")
+              (and (integer-range-p 0 (,type-bits) (ifix y))
+                   (>= (,stype->get x) 0)
+                   (,stype-integerp (* (,stype->get x)
+                                       (expt 2 (ifix y)))))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,stype-shl ((x ,stypep) (y integerp))
+              :guard (,stype-shl-okp x y)
+              :returns (result ,stypep)
+              :short ,(concatenate 'string
+                                   "Left shift of @('signed "
+                                   type-string
+                                   "') values [C:6.5.7].")
+              (,stype (* (,stype->get x)
+                         (expt 2 (ifix y))))
+              :guard-hints (("Goal" :in-theory (enable ,stype-shl-okp)))
+              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -608,10 +702,7 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values is well-defined.")
-              (and (integer-range-p 0 (,type-bits) (,stype->get y))
-                   (>= (,stype->get x) 0)
-                   (,stype-integerp (* (,stype->get x)
-                                       (expt 2 (,stype->get y)))))
+              (,stype-shl-okp x (,stype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -625,15 +716,44 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,stype (* (,stype->get x)
-                         (expt 2 (,stype->get y))))
+              (,stype-shl x (,stype-integer-value y))
               :guard-hints (("Goal" :in-theory (enable ,stype-shl-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shl-utype-okp ((x ,utypep) (y ,utypep))
+            (define ,utype-shl-okp ((x ,utypep) (y integerp))
               (declare (ignore x))
+              :returns (yes/no booleanp)
+              :short ,(concatenate 'string
+                                   "Check if left shift of @('unsigned "
+                                   type-string
+                                   "') values is well-defined.")
+              (integer-range-p 0 (,type-bits) (ifix y))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,utype-shl ((x ,utypep) (y integerp))
+              :guard (,utype-shl-okp x y)
+              :returns (result ,utypep)
+              :short ,(concatenate 'string
+                                   "Left shift of @('unsigned "
+                                   type-string
+                                   "') values [C:6.5.7].")
+              (,utype (mod (* (,utype->get x)
+                              (expt 2 (ifix y)))
+                           (1+ (,utype-max))))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-shl-okp
+                                          ,utype-integerp-alt-def)))
+              :hooks (:fix)
+              :prepwork
+              ((local (include-book "arithmetic-3/top" :dir :system))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,utype-shl-utype-okp ((x ,utypep) (y ,utypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if left shift of @('unsigned "
@@ -641,7 +761,7 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values is well-defined.")
-              (integer-range-p 0 (,type-bits) (,utype->get y))
+              (,utype-shl-okp x (,utype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,13 +775,43 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,utype (mod (* (,utype->get x)
-                              (expt 2 (,utype->get y)))
-                           (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shl-utype-okp
-                                                       ,utype-integerp-alt-def)))
+              (,utype-shl x (,utype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,utype-shl-utype-okp)))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,stype-shr-okp ((x ,stypep) (y integerp))
+              :returns (yes/no booleanp)
+              :short ,(concatenate 'string
+                                   "Check if right shift of @('signed "
+                                   type-string
+                                   "') values is well-defined.")
+              (and (integer-range-p 0 (,type-bits) (ifix y))
+                   (>= (,stype->get x) 0))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,stype-shr ((x ,stypep) (y integerp))
+              :guard (,stype-shr-okp x y)
+              :returns (result ,stypep)
+              :short ,(concatenate 'string
+                                   "Right shift of @('signed "
+                                   type-string
+                                   "') values [C:6.5.7].")
+              (,stype (truncate (,stype->get x)
+                                (expt 2 (ifix y))))
+              :guard-hints (("Goal" :in-theory (enable ,stype-shr-okp
+                                                       ,stype-integerp
+                                                       ,stype->get
+                                                       ,stypep)))
               :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              :prepwork
+              ((local
+                (include-book "kestrel/arithmetic-light/expt" :dir :system))
+               (local
+                (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,8 +823,7 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values is well-defined.")
-              (and (integer-range-p 0 (,type-bits) (,stype->get y))
-                   (>= (,stype->get x) 0))
+              (,stype-shr-okp x (,stype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,21 +837,43 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,stype (truncate (,stype->get x)
-                                (expt 2 (,stype->get y))))
-              :guard-hints (("Goal" :in-theory (enable ,stype-shr-stype-okp
-                                                       ,stype-integerp
-                                                       ,stype->get
-                                                       ,stypep)))
+              (,stype-shr x (,stype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,stype-shr-stype-okp)))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,utype-shr-okp ((x ,utypep) (y integerp))
+              (declare (ignore x))
+              :returns (yes/no booleanp)
+              :short ,(concatenate 'string
+                                   "Check if right shift of @('unsigned "
+                                   type-string
+                                   "') values is well-defined.")
+              (integer-range-p 0 (,type-bits) (ifix y))
+              :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+            (define ,utype-shr ((x ,utypep) (y integerp))
+              :returns (result ,utypep)
+              :short ,(concatenate 'string
+                                   "Left shift of @('unsigned "
+                                   type-string
+                                   "') values [C:6.5.7].")
+              (,utype (mod (truncate (,utype->get x)
+                                     (expt 2 y))
+                           (1+ (,utype-max))))
+              :guard-hints
+              (("Goal" :in-theory (enable ,utype-shr-okp
+                                          ,utype-integerp-alt-def)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-               (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
+              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             (define ,utype-shr-utype-okp ((x ,utypep) (y ,utypep))
-              (declare (ignore x))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if right shift of @('unsigned "
@@ -710,7 +881,7 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values is well-defined.")
-              (integer-range-p 0 (,type-bits) (,utype->get y))
+              (,utype-shr-okp x (,utype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -723,13 +894,9 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,utype (mod (truncate (,utype->get x)
-                                     (expt 2 (,utype->get y)))
-                           (1+ (,utype-max))))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shr-utype-okp
-                                                       ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+              (,utype-shr x (,utype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,utype-shr-utype-okp)))
+              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,10 +954,11 @@
 
             (define ,stype-le ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than-or-equal-to relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Less-than-or-equal-to relation of @('signed "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (<= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -800,10 +968,11 @@
 
             (define ,utype-le ((x ,utypep) (y ,utypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than-or-equal-to relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Less-than-or-equal-to relation of @('unsigned "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (<= (,utype->get x) (,utype->get y))
                   (sint 1)
                 (sint 0))
@@ -813,10 +982,11 @@
 
             (define ,stype-ge ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than-or-equal-to relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Greater-than-or-equal-to relation of @('signed "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (>= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -826,10 +996,11 @@
 
             (define ,utype-ge ((x ,utypep) (y ,utypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than-or-equal-to relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
+              :short ,(concatenate
+                       'string
+                       "Greater-than-or-equal-to relation of @('unsigned "
+                       type-string
+                       "') values [C:6.5.8].")
               (if (>= (,utype->get x) (,utype->get y))
                   (sint 1)
                 (sint 0))
@@ -839,10 +1010,11 @@
 
             (define ,stype-eq ((x ,stypep) (y ,stypep))
               :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Equality of @('signed "
-                                   type-string
-                                   "') values [C:6.5.9].")
+              :short ,(concatenate
+                       'string
+                       "Equality of @('signed "
+                       type-string
+                       "') values [C:6.5.9].")
               (if (= (,stype->get x) (,stype->get y))
                   (sint 1)
                 (sint 0))
@@ -900,7 +1072,8 @@
                                                        ,stypep
                                                        ,stype->get)))
               :hooks (:fix)
-              :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
+              :prepwork
+              ((local (include-book "ihs/logops-lemmas" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -915,7 +1088,8 @@
                                                        ,utypep
                                                        ,utype->get)))
               :hooks (:fix)
-              :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
+              :prepwork
+              ((local (include-book "ihs/logops-lemmas" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -931,23 +1105,26 @@
                                                        ,stype->get)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             (define ,utype-bitxor ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise exclusive disjunction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.10].")
+              :short ,(concatenate
+                       'string
+                       "Bitwise exclusive disjunction of @('unsigned "
+                       type-string
+                       "') values [C:6.5.10].")
               (,utype (logxor (,utype->get x) (,utype->get y)))
               :guard-hints (("Goal" :in-theory (enable ,utype-integerp
                                                        ,utypep
                                                        ,utype->get)))
               :hooks (:fix)
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,23 +1140,26 @@
                                                        ,stypep
                                                        ,stype->get)))
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             (define ,utype-bitior ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise inclusive disjunction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.12].")
+              :short ,(concatenate
+                       'string
+                       "Bitwise inclusive disjunction of @('unsigned "
+                       type-string
+                       "') values [C:6.5.12].")
               (,utype (logior (,utype->get x) (,utype->get y)))
               :hooks (:fix)
               :guard-hints (("Goal" :in-theory (enable ,utype-integerp
                                                        ,utypep
                                                        ,utype->get)))
               :prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+              ((local
+                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

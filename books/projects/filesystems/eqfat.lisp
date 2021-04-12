@@ -5577,28 +5577,22 @@ channel state))
            (intersectp-equal (mv-nth 0 (d-e-cc fat32$c d-e))
                              (mv-nth 0 (d-e-cc fat32$c d-e)))))
 
-(defthm lofat-remove-file-correctness-lemma-23
+(defthm
+  lofat-remove-file-correctness-lemma-23
   (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c))
+   (good-root-d-e-p root-d-e fat32$c)
    (equal
     (mv-nth
      1
      (update-dir-contents
-      fat32$c
-      (d-e-first-cluster root-d-e)
+      fat32$c (d-e-first-cluster root-d-e)
       (nats=>string
-       (clear-d-e
-        (string=>nats
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
+       (clear-d-e (string=>nats (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                  name))))
     0))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (enable hifat-remove-file
-                       (:rewrite lofat-to-hifat-inversion-lemma-4)
+    :in-theory (enable (:rewrite lofat-to-hifat-inversion-lemma-4)
                        lofat-to-hifat-inversion-lemma-15
                        good-root-d-e-p))))
 
@@ -7833,11 +7827,8 @@ channel state))
         fat32$c
         (mv-nth
          0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents fat32$c d-e)))
-          (fat32-filename-fix (car path))))))
+         (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                   name))))
       (make-list-ac
        (len
         (mv-nth
@@ -7846,12 +7837,8 @@ channel state))
           fat32$c
           (mv-nth
            0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents fat32$c d-e)))
-            (fat32-filename-fix (car path)))))))
+           (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                     name)))))
        0 nil))))
    (not
     (<
@@ -7866,12 +7853,9 @@ channel state))
           fat32$c
           (mv-nth
            '0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              '0
-              (d-e-cc-contents fat32$c d-e)))
-            (fat32-filename-fix (car path))))))
+           (find-d-e (make-d-e-list (mv-nth '0
+                                            (d-e-cc-contents fat32$c d-e)))
+                     name))))
         (make-list-ac
          (len
           (mv-nth
@@ -7880,12 +7864,9 @@ channel state))
             fat32$c
             (mv-nth
              '0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                '0
-                (d-e-cc-contents fat32$c d-e)))
-              (fat32-filename-fix (car path)))))))
+             (find-d-e (make-d-e-list (mv-nth '0
+                                              (d-e-cc-contents fat32$c d-e)))
+                       name)))))
          '0
          'nil))
        '1))
@@ -7906,11 +7887,8 @@ channel state))
         (mv-nth
          0
          (find-d-e
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))))
+          (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+          name))))
       (make-list-ac
        (len
         (mv-nth
@@ -7920,11 +7898,8 @@ channel state))
           (mv-nth
            0
            (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents fat32$c root-d-e)))
-            (car path))))))
+            (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+            name)))))
        0 nil))))
    (<=
     2
@@ -7940,11 +7915,8 @@ channel state))
          (mv-nth
           0
           (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))))
+           (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+           name))))
        (make-list-ac
         (len
          (mv-nth
@@ -7954,11 +7926,8 @@ channel state))
            (mv-nth
             0
             (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path))))))
+             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+             name)))))
         0 nil))
       1)))))
 
@@ -7971,82 +7940,33 @@ channel state))
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (fat32-filename-fix (car path))))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name))))
     (<
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (fat32-filename-fix (car path)))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name)))
      (+ 2 (count-of-clusters fat32$c)))
-    (<= 2 (d-e-first-cluster d-e))
-    (< (d-e-first-cluster d-e)
-       (+ 2 (count-of-clusters fat32$c)))
     (equal
      (mv-nth
       3
       (lofat-to-hifat-helper
        fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
+       (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
        entry-limit))
      0)
     (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
+     (mv-nth 0 (d-e-cc fat32$c d-e))
      (mv-nth
       2
       (lofat-to-hifat-helper
        fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
+       (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
        entry-limit)))
-    (equal (mv-nth 1
-                   (d-e-cc-contents fat32$c d-e))
-           0)
-    (<=
-     1
-     (count-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (fat32-filename-fix (car path))))))
-       (make-list-ac
-        (len
-         (mv-nth
-          0
-          (d-e-cc
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (fat32-filename-fix (car path)))))))
-        0 nil)))))
+    (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
+           0))
    (not
     (member-equal
      (nth
@@ -8061,11 +7981,9 @@ channel state))
           (mv-nth
            '0
            (find-d-e
-            (make-d-e-list
-             (mv-nth
-              '0
-              (d-e-cc-contents fat32$c root-d-e)))
-            (fat32-filename-fix (car path))))))
+            (make-d-e-list (mv-nth '0
+                                   (d-e-cc-contents fat32$c root-d-e)))
+            name))))
         (make-list-ac
          (len
           (mv-nth
@@ -8075,24 +7993,20 @@ channel state))
             (mv-nth
              '0
              (find-d-e
-              (make-d-e-list
-               (mv-nth
-                '0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (fat32-filename-fix (car path)))))))
+              (make-d-e-list (mv-nth '0
+                                     (d-e-cc-contents fat32$c root-d-e)))
+              name)))))
          '0
          'nil))
        '1))
-     (mv-nth '0
-             (d-e-cc fat32$c d-e)))))
+     (mv-nth '0 (d-e-cc fat32$c d-e)))))
   :hints
   (("goal"
     :in-theory (disable (:rewrite non-free-index-listp-correctness-2 . 1))
     :use
     ((:instance
       (:rewrite non-free-index-listp-correctness-2 . 1)
-      (x (mv-nth 0
-                 (d-e-cc fat32$c d-e)))
+      (x (mv-nth 0 (d-e-cc fat32$c d-e)))
       (key
        (nth
         0
@@ -8106,11 +8020,8 @@ channel state))
             (mv-nth
              0
              (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (fat32-filename-fix (car path))))))
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+              name))))
           (make-list-ac
            (len
             (mv-nth
@@ -8119,11 +8030,9 @@ channel state))
               fat32$c
               (mv-nth
                0
-               (find-d-e (make-d-e-list
-                          (mv-nth 0
-                                  (d-e-cc-contents
-                                   fat32$c root-d-e)))
-                         (fat32-filename-fix (car path)))))))
+               (find-d-e
+                (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                name)))))
            0 nil))
          1)))
       (fa-table
@@ -8136,11 +8045,8 @@ channel state))
           (mv-nth
            0
            (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents fat32$c root-d-e)))
-            (fat32-filename-fix (car path))))))
+            (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+            name))))
         (make-list-ac
          (len
           (mv-nth
@@ -8150,11 +8056,8 @@ channel state))
             (mv-nth
              0
              (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (fat32-filename-fix (car path)))))))
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+              name)))))
          0 nil))))))))
 
 (defthm lofat-place-file-correctness-lemma-44
@@ -9237,9 +9140,7 @@ channel state))
             (count-free-clusters (effective-fat fat32$c)))
         (not (lofat-directory-file-p file))
         (< 0
-           (len (explode (lofat-file->contents file))))
-        (<= 1
-            (count-free-clusters (effective-fat fat32$c))))
+           (len (explode (lofat-file->contents file)))))
    (equal
     (d-e-cc
      (mv-nth
@@ -9259,7 +9160,7 @@ channel state))
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                          (car path))
+                          name)
         nil)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -9270,7 +9171,7 @@ channel state))
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                         (car path))
+                         name)
        nil)
       (nth 0
            (find-n-free-clusters (effective-fat fat32$c)
@@ -9318,7 +9219,7 @@ channel state))
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                          (car path))
+                          name)
         nil)
        (nth 0
             (find-n-free-clusters (effective-fat fat32$c)
@@ -9329,12 +9230,11 @@ channel state))
                                                1)))
      (file-length (len (explode (lofat-file->contents file))))
      (contents (lofat-file->contents file))
-     (d-e2
-      (d-e-install-directory-bit
-       (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                         (car path))
-       nil))
+     (d-e2 (d-e-install-directory-bit
+            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
+                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                              name)
+            nil))
      (fat32$c
       (update-fati
        (nth 0
@@ -9378,7 +9278,7 @@ channel state))
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                          (car path))
+                          name)
         'nil)
        (lofat-file->contents$inline file)
        (len (explode$inline (lofat-file->contents$inline file)))
@@ -9389,7 +9289,7 @@ channel state))
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                         (car path))
+                         name)
        'nil)
       (nth '0
            (find-n-free-clusters (effective-fat fat32$c)
@@ -9399,20 +9299,18 @@ channel state))
      (implode
       (append
        (explode (lofat-file->contents file))
-       (make-list
-        (+ (- (len (explode (lofat-file->contents file))))
-           (min (len (explode (lofat-file->contents file)))
-                (* (cluster-size fat32$c)
-                   (len (make-clusters (lofat-file->contents file)
-                                       (cluster-size fat32$c))))))
-        :initial-element (code-char 0))))
+       (make-list (+ (- (len (explode (lofat-file->contents file))))
+                     (min (len (explode (lofat-file->contents file)))
+                          (* (cluster-size fat32$c)
+                             (len (make-clusters (lofat-file->contents file)
+                                                 (cluster-size fat32$c))))))
+                  :initial-element (code-char 0))))
      0)))
   :hints
   (("goal"
     :do-not-induct t
     :in-theory
-    (disable
-     (:rewrite d-e-cc-contents-of-place-contents-coincident-2))
+    (disable (:rewrite d-e-cc-contents-of-place-contents-coincident-2))
     :use
     (:instance
      (:rewrite d-e-cc-contents-of-place-contents-coincident-2)
@@ -9421,7 +9319,7 @@ channel state))
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
                               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                          (car path))
+                          name)
         nil)
        (nth 0
             (find-n-free-clusters (effective-fat fat32$c)
@@ -9432,12 +9330,11 @@ channel state))
                                                1)))
      (file-length (len (explode (lofat-file->contents file))))
      (contents (lofat-file->contents file))
-     (d-e1
-      (d-e-install-directory-bit
-       (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                         (car path))
-       nil))
+     (d-e1 (d-e-install-directory-bit
+            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
+                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                              name)
+            nil))
      (fat32$c
       (update-fati
        (nth 0
@@ -9468,17 +9365,15 @@ channel state))
            :restrict (((:rewrite put-assoc-under-hifat-equiv-1)
                        ((file1 file2) (file2 file1)))))))
 
-(defthm lofat-place-file-correctness-lemma-23
+(defthm
+  lofat-place-file-correctness-lemma-23
   (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (< 0
-       (len (explode (lofat-file->contents file))))
-    (<= 1
-        (count-free-clusters (effective-fat fat32$c))))
+   (and (good-root-d-e-p root-d-e fat32$c)
+        (<= (len (make-clusters (lofat-file->contents file)
+                                (cluster-size fat32$c)))
+            (count-free-clusters (effective-fat fat32$c)))
+        (< 0
+           (len (explode (lofat-file->contents file)))))
    (equal
     (mv-nth
      '2
@@ -9494,7 +9389,7 @@ channel state))
               fat32$c)
         '268435455)
        fat32$c)
-      (d-e-install-directory-bit (make-d-e-with-filename (car path))
+      (d-e-install-directory-bit (make-d-e-with-filename name)
                                  'nil)
       (lofat-file->contents$inline file)
       (len (explode$inline (lofat-file->contents$inline file)))
@@ -9514,9 +9409,8 @@ channel state))
                                                1)))
      (file-length (len (explode (lofat-file->contents file))))
      (contents (lofat-file->contents file))
-     (d-e
-      (d-e-install-directory-bit (make-d-e-with-filename (car path))
-                                 nil))
+     (d-e (d-e-install-directory-bit (make-d-e-with-filename name)
+                                     nil))
      (fat32$c
       (update-fati
        (nth 0
@@ -9530,7 +9424,8 @@ channel state))
         268435455)
        fat32$c))))))
 
-(defthm lofat-place-file-correctness-lemma-26
+(defthm
+  lofat-place-file-correctness-lemma-26
   (implies
    (and
     (equal
@@ -9538,9 +9433,7 @@ channel state))
       3
       (lofat-to-hifat-helper
        fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
+       (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
        entry-limit))
      0)
     (<=
@@ -9548,22 +9441,14 @@ channel state))
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name))))
     (<
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name)))
      (+ 2 (count-of-clusters fat32$c))))
    (<
     0
@@ -9578,11 +9463,8 @@ channel state))
          (mv-nth
           0
           (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))))))
+           (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+           name))))))
      1)))
   :hints (("goal" :do-not-induct t))
   :rule-classes :linear)
@@ -9621,9 +9503,7 @@ channel state))
       3
       (lofat-to-hifat-helper
        fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
+       (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
        entry-limit))
      0)
     (<=
@@ -9631,22 +9511,14 @@ channel state))
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name))))
     (<
      (d-e-first-cluster
       (mv-nth
        0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
+       (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                 name)))
      (+ 2 (count-of-clusters fat32$c)))
     (not
      (member-equal
@@ -9662,11 +9534,8 @@ channel state))
            (mv-nth
             0
             (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))
+             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+             name))))
          (make-list-ac
           (len
            (mv-nth
@@ -9676,10 +9545,8 @@ channel state))
              (mv-nth
               0
               (find-d-e
-               (make-d-e-list (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-               (car path))))))
+               (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+               name)))))
           0 nil))
         1))
       (mv-nth
@@ -9689,11 +9556,8 @@ channel state))
         (mv-nth
          0
          (find-d-e
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path))))))))
+          (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+          name)))))))
    (equal
     (fat32-entry-mask
      (fati
@@ -9709,23 +9573,19 @@ channel state))
            (mv-nth
             0
             (find-d-e
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents
-                                     fat32$c root-d-e)))
-             (car path)))))
+             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+             name))))
          (make-list-ac
           (len
            (mv-nth
             0
             (d-e-cc
              fat32$c
-             (mv-nth 0
-                     (find-d-e
-                      (make-d-e-list
-                       (mv-nth 0
-                               (d-e-cc-contents
-                                fat32$c root-d-e)))
-                      (car path))))))
+             (mv-nth
+              0
+              (find-d-e
+               (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+               name)))))
           0 nil))
         1))
       fat32$c))
@@ -9748,11 +9608,8 @@ channel state))
          (mv-nth
           0
           (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))))
+           (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+           name))))
        (make-list-ac
         (len
          (mv-nth
@@ -9762,11 +9619,8 @@ channel state))
            (mv-nth
             0
             (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path))))))
+             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+             name)))))
         0 nil)))
      (n2 0)))))
 
@@ -9841,7 +9695,7 @@ channel state))
       (:rewrite d-e-p-when-member-equal-of-d-e-list-p))))))
 
 (defthm
-  lofat-place-file-correctness-lemma-181
+  lofat-place-file-correctness-lemma-98
   (implies
    (and (lofat-fs-p fat32$c)
         (> (fat-entry-count fat32$c) i))
@@ -9862,12 +9716,12 @@ channel state))
            0
            (find-d-e
             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-            (car path))))
+            name)))
          2097152)))
       (mv-nth
        0
        (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-                 (car path)))
+                 name))
       (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
       0 i))
     0))
