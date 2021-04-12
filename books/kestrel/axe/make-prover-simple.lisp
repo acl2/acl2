@@ -2389,38 +2389,38 @@
                                ,(pack$ 'not-equal-of-quote-and-car-of-mv-nth-0-of- instantiate-hyp-name)
                                (:e booleanp)
                                (:e expt)
-                               (:e EQLABLEP)
-                               (:e EQLABLE-LISTP)
-                               MEMBER-EQ-EXEC-IS-MEMBER-EQUAL ;(:e member-eq-exec)
-                               MEMBER-EQL-EXEC-is-member-equal
+                               (:e eqlablep)
+                               (:e eqlable-listp)
+                               member-eq-exec-is-member-equal ;(:e member-eq-exec)
+                               member-eql-exec-is-member-equal
                                unsigned-byte-p-from-bounds
                                unsigned-byte-p-forward
                                rule-alistp-means-alistp
-                               AXE-BIND-FREE-FUNCTION-APPLICATIONP
-                               NATP-OF-+-OF-A-AND-LARGEST-NON-QUOTEP
-                               <-OF-LARGEST-NON-QUOTEP
-                               CONSP-WHEN-TRUE-LISTP-AND-NON-NIL
-                               ;; RATIONALP-+
-                               ;; RATIONALP-UNARY--
+                               axe-bind-free-function-applicationp
+                               natp-of-+-of-a-and-largest-non-quotep
+                               <-of-largest-non-quotep
+                               consp-when-true-listp-and-non-nil
+                               ;; rationalp-+
+                               ;; rationalp-unary--
                                rationalp-when-integerp-for-axe
                                integerp-of-sub-tries
-                               AXE-RULE-HYPP
-                               STORED-AXE-RULEP
-                               ALL-STORED-AXE-RULEP
+                               axe-rule-hypp
+                               stored-axe-rulep
+                               all-stored-axe-rulep
                                true-listp-of-unify-terms-and-dag-items-fast
-                               (:TYPE-PRESCRIPTION INTEGERP-OF-LARGEST-NON-QUOTEP)
-                               (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP)
+                               (:type-prescription integerp-of-largest-non-quotep)
+                               (:type-prescription pseudo-term-listp)
                                all-vars-in-terms-bound-in-alistp-correct
                                all-vars-in-term-bound-in-alistp-correct
-                               SYMBOL-ALISTP-OF-PAIRLIS$-ALT
+                               symbol-alistp-of-pairlis$-alt
                                true-listp-of-cons
                                axe-treep-when-consp-of-car
                                not-<-of-largest-non-quotep-and--1
                                integerp-when-natp-for-axe
                                pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
-                               INTEGERP-OF-MAXELEM2
+                               integerp-of-maxelem2
                                integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
-                               <-OF-MAXELEM-WHEN-ALL-<
+                               <-of-maxelem-when-all-<
                                ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                ,(pack$ relieve-rule-hyps-name '-return-type)
                                ,(pack$ try-to-apply-rules-name '-return-type)
