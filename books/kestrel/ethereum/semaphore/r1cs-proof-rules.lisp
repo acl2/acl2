@@ -1111,6 +1111,54 @@
            :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP)
            )))
 
+(defthm xor-idiom-special-2
+  (implies (and (bitp x)
+                (bitp (add y1 (add y2 (add y3 y4 p) p) p))
+                (fep z p)
+                (posp p)
+                (< 2 p)
+                (primep p))
+           (equal (equal (mul 2 (mul x (add y1 (add y2 (add y3 y4 p) p) p) p) p)
+                         (add y1 (add y2 (add x (add y3 (add y4 (neg z p) p) p) p) p) p))
+                  (equal z (bitxor x (add y1 (add y2 (add y3 y4 p) p) p)))))
+  :hints (("Goal" :use (:instance pfield::xor-idiom-1
+                                  (y (add y1 (add y2 (add y3 y4 p) p) p))
+                                  (z z)
+                                  (x x)
+                                  (p p))
+           :in-theory (disable pfield::add-of-neg-of-when-bitp
+                               pfield::equal-of-add-move-negations-bind-free
+                               pfield::add-subst-constant-arg1
+                               PFIELD::MUL-OF-ADD-ARG2
+                               ;; PFIELD::ADD-SUBST-CONSTANT-ARG2
+                               ;; PFIELD::NEG-WHEN-CONSTANT-ARG1
+                               ;; PFIELD::ADD-OF-CONSTANTS
+                               )
+           )))
+
+(defthm xor-idiom-special-3
+  (implies (and (bitp x)
+                (bitp (add y1 (add y2 y3 p) p))
+                (FEP z p)
+                (posp p)
+                (< 2 p)
+                (primep p))
+           (equal (equal (mul 2 (mul x (add y1 (add y2 y3 p) p) p) p)
+                         (add x (add y1 (add y2 (add y3 (neg z p) p) p) p) p))
+                  (equal z (bitxor x (add y1 (add y2 y3 p) p)))))
+  :hints (("Goal" :use (:instance pfield::xor-idiom-1
+                                  (y (add y1 (add y2 y3 p) p))
+                                  (z z)
+                                  (x x)
+                                  (p p))
+           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP
+                               PFIELD::MUL-OF-ADD-ARG2
+                               pfield::add-subst-constant-arg1
+                               PFIELD::NEG-WHEN-CONSTANT-ARG1)
+           )))
+
+
+
 (defthmd pull-out-inverse-coeff-32
   (implies (and ;(syntaxp (quotep k))
             (equal p *bn-254-group-prime*)
