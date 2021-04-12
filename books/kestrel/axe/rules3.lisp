@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv/rules8" :dir :system)
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
+(include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "rules1") ;drop? to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
@@ -35,8 +36,8 @@
 (include-book "kestrel/lists-light/prefixp" :dir :system)
 (include-book "kestrel/lists-light/prefixp2" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ;todo
-(include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system) ;make local?
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -676,94 +677,7 @@
                                   (z (/ x k))
                                   (y k) (x (/ x))))))
 
-(defthm bound-hack-quotient
-  (implies (and (rationalp x)
-                (< 0 x)
-                (posp k))
-           (<= (* x (/ k)) x)))
-
-;(in-theory (disable (:rewrite mod-x-y-=-x . 2)))
-
-;could loop?
-(defthmd logext-becomes-bvchop-when-positive
-  (implies (<= 0 (logext 32 x))
-           (equal (logext 32 x)
-                  (bvchop 31 x)))
-  :hints (("Goal" :in-theory (enable logext))))
-
-;;(bvuminus 32 (bvdiv 31 (bvuminus 31 x) y))
-
-;could loop?
-(defthmd logext-when-positive-gen
-  (implies (<= 0 (logext size x))
-           (equal (logext size x)
-                  (bvchop (+ -1 size) x)))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-(defthmd sbvdiv-when-both-positive
-  (implies (and (integerp x)
-                (integerp y)
-                (sbvle size 0 x)
-                (sbvle size 0 y)
-                (natp size)
-                )
-           (equal (sbvdiv size x y)
-                  (bvdiv (+ -1 size) x y)))
-  :hints (("Goal"
-           :use ((:instance my-FLOOR-upper-BOUND (i (BVCHOP (+ -1 size) X)) (j (BVCHOP (+ -1 size) y)))
-                 (:instance SLICE-TOO-HIGH-IS-0 (high (+ -1 size)) (low (+ -1 size)) (x (FLOOR (BVCHOP (+ -1 size) X) (BVCHOP (+ -1 size) Y))))
-                 (:instance bound-hack-quotient (x (BVCHOP (+ -1 size) X)) (k (BVCHOP (+ -1 size) Y)))
-                 )
-           :expand (:with UNSIGNED-BYTE-P (UNSIGNED-BYTE-P (+ -1 size) (FLOOR (BVCHOP (+ -1 size) x) (BVCHOP (+ -1 size) Y))))
-           :in-theory (e/d (sbvdiv bvdiv ;bvchop logext logapp getbit slice logtail
-                                   FLOOR-OF-SUM
-                                   logext-when-positive-gen
-                                   ;;bvuminus
-                                   sbvlt
-                                   bvchop-identity
-                                   truncate-becomes-floor
-                                   ) ( ;UNSIGNED-BYTE-P-RESOLVER
-                                   <-Y-*-Y-X
-                                   MOD-BOUNDED-BY-MODULUS
-                                   my-FLOOR-upper-BOUND
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   floor-bound
-                                   anti-slice
-                                   MOD-TYPE ;does this overlap with mod-bounded-by-modulus?
-                                   )))))
-
 ;;MOD-TYPE ;does this overlap with mod-bounded-by-modulus?
-
-(defthmd sbvdiv-when-both-negative
-  (implies (and (integerp x)
-                (integerp y)
-                (sbvlt size x 0)
-                (sbvlt size y 0)
-                (posp size)
-                )
-           (equal (sbvdiv size x y)
-                  (bvdiv size (bvuminus size x) (bvuminus size y))))
-  :hints (("Goal"
-           :expand ((BVCAT 1 1 (+ -1 size) X)
-                    (BVCAT 1 1 (+ -1 size) y)
-                    (:with logext (LOGEXT size X))
-                    (:with logext (LOGEXT size y)))
-           :use (:instance floor-of-minus-and-minus
-                           (x (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) X))))
-                           (y (+ (expt 2 (+ -1 size)) (- (BVCHOP (+ -1 size) y)))))
-           :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt
-                                   bvchop-reduce-when-top-bit-known
-                                   truncate-becomes-floor-gen)
-                           ( floor-of-minus-and-minus
-                             floor-minus
-                             PLUS-BVCAT-WITH-0
-                             bvplus-recollapse
-                             BVCAT-OF-+-LOW
-                             BVCAT-OF-GETBIT-AND-X-ADJACENT
-                             <-Y-*-Y-X
-                             my-FLOOR-upper-BOUND
-                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                             floor-bound)))))
 
 ;; (defthm <-of-expt-and-bvchop-better
 ;;   (equal (< (expt 2 size) (bvchop size x))
