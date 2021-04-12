@@ -48,6 +48,7 @@
 (include-book "result-array")
 (include-book "make-substitution-code-simple")
 (include-book "make-instantiation-code-simple")
+(include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 ;(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
