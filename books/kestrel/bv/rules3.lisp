@@ -21,6 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -2590,11 +2591,6 @@
            (equal (logext m (bvsx m n x))
                   (logext n x)))
   :hints (("Goal" :in-theory (enable bvsx-rewrite))))
-
-
-
-
-(in-theory (disable FLOOR-MINUS-ERIC-BETTER)) ;ifix this - it fired on 1
 
 (defthm bvcat-equal-expt-2-rewrite
   (implies (natp n)

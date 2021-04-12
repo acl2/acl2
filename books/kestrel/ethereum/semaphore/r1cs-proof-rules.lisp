@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ;for ACL2::COMMUTATIVITY-2-OF-+-WHEN-CONSTANT??
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
 
@@ -1091,6 +1092,7 @@
                        p)
                   (bitxor x y))))
 
+;; todo: for these next rules, it might be better to let other rules solve for the nregated vars (other vars appear twice and can't be solved for) and then rescognize the xor idioms in solved form
 ;;or get rid of the adds?
 (defthm xor-idiom-special
   (implies (and (bitp x)
@@ -1109,6 +1111,54 @@
                                   (p p))
            :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP)
            )))
+
+(defthm xor-idiom-special-2
+  (implies (and (bitp x)
+                (bitp (add y1 (add y2 (add y3 y4 p) p) p))
+                (fep z p)
+                (posp p)
+                (< 2 p)
+                (primep p))
+           (equal (equal (mul 2 (mul x (add y1 (add y2 (add y3 y4 p) p) p) p) p)
+                         (add y1 (add y2 (add x (add y3 (add y4 (neg z p) p) p) p) p) p))
+                  (equal z (bitxor x (add y1 (add y2 (add y3 y4 p) p) p)))))
+  :hints (("Goal" :use (:instance pfield::xor-idiom-1
+                                  (y (add y1 (add y2 (add y3 y4 p) p) p))
+                                  (z z)
+                                  (x x)
+                                  (p p))
+           :in-theory (disable pfield::add-of-neg-of-when-bitp
+                               pfield::equal-of-add-move-negations-bind-free
+                               pfield::add-subst-constant-arg1
+                               PFIELD::MUL-OF-ADD-ARG2
+                               ;; PFIELD::ADD-SUBST-CONSTANT-ARG2
+                               ;; PFIELD::NEG-WHEN-CONSTANT-ARG1
+                               ;; PFIELD::ADD-OF-CONSTANTS
+                               )
+           )))
+
+(defthm xor-idiom-special-3
+  (implies (and (bitp x)
+                (bitp (add y1 (add y2 y3 p) p))
+                (FEP z p)
+                (posp p)
+                (< 2 p)
+                (primep p))
+           (equal (equal (mul 2 (mul x (add y1 (add y2 y3 p) p) p) p)
+                         (add x (add y1 (add y2 (add y3 (neg z p) p) p) p) p))
+                  (equal z (bitxor x (add y1 (add y2 y3 p) p)))))
+  :hints (("Goal" :use (:instance pfield::xor-idiom-1
+                                  (y (add y1 (add y2 y3 p) p))
+                                  (z z)
+                                  (x x)
+                                  (p p))
+           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP
+                               PFIELD::MUL-OF-ADD-ARG2
+                               pfield::add-subst-constant-arg1
+                               PFIELD::NEG-WHEN-CONSTANT-ARG1)
+           )))
+
+
 
 (defthmd pull-out-inverse-coeff-32
   (implies (and ;(syntaxp (quotep k))
@@ -1833,3 +1883,25 @@
            (equal (bitxor z (bvplus size x y))
                   (bitxor z (bvplus 1 x y))))
   :hints (("Goal" :in-theory (e/d (bitxor BVXOR) (ACL2::BVXOR-1-BECOMES-BITXOR)))))
+
+(defthm unsigned-byte-p-32-of-slice-33-1
+  (equal (unsigned-byte-p 32 (slice 33 1 x))
+         (equal 0 (getbit 33 x)))
+  :hints (("Goal" :in-theory (enable getbit))))
+
+(defthm add-of-mul-of-256-becomes-bvcat
+  (implies (and (unsigned-byte-p 8 x)
+                (unsigned-byte-p 24 y)
+                (integerp p)
+                (< (expt 2 32) p)
+                )
+           (equal (add x (add (mul 256 y p) z p) p)
+                  (add (bvcat 24 y 8 x)
+                       z
+                       p)))
+  :hints (("Goal" :in-theory (e/d (add mul
+                                     acl2::bvchop-of-sum-cases
+                                     acl2::slice-of-sum-cases
+                                     bvcat acl2::logapp)
+                                  (ACL2::BVCAT-EQUAL-REWRITE
+                                   ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
