@@ -353,3 +353,7 @@
   (implies (rationalp x)
            (equal (/ (- x))
                   (- (/ x)))))
+
+(defthm /-of-*
+  (equal (/ (* x y))
+         (* (/ x) (/ y))))
