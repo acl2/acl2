@@ -1905,3 +1905,16 @@
                                      bvcat acl2::logapp)
                                   (ACL2::BVCAT-EQUAL-REWRITE
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
+
+(defthm combine-special ;todo: why needed?
+  (implies (and (bitp bit)
+                (unsigned-byte-p 15 bv15)
+                (unsigned-byte-p 16 bv16)
+                (equal p *baby-jubjub-prime*))
+           (equal (add (mul *2^16* bit p) (add (mul *2^17* bv15 p) bv16 p) p)
+                  (bvcat 15 bv15
+                         17 (bvcat 1 bit 16 bv16))))
+  :hints (("Goal" :in-theory (enable add mul
+                                     ACL2::BVCHOP-OF-SUM-CASES ;todo: prove without
+                                     ACL2::SLICE-OF-SUM-CASES
+                                     ))))
