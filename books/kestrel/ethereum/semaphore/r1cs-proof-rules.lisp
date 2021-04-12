@@ -1092,6 +1092,7 @@
                        p)
                   (bitxor x y))))
 
+;; todo: for these next rules, it might be better to let other rules solve for the nregated vars (other vars appear twice and can't be solved for) and then rescognize the xor idioms in solved form
 ;;or get rid of the adds?
 (defthm xor-idiom-special
   (implies (and (bitp x)
@@ -1882,3 +1883,25 @@
            (equal (bitxor z (bvplus size x y))
                   (bitxor z (bvplus 1 x y))))
   :hints (("Goal" :in-theory (e/d (bitxor BVXOR) (ACL2::BVXOR-1-BECOMES-BITXOR)))))
+
+(defthm unsigned-byte-p-32-of-slice-33-1
+  (equal (unsigned-byte-p 32 (slice 33 1 x))
+         (equal 0 (getbit 33 x)))
+  :hints (("Goal" :in-theory (enable getbit))))
+
+(defthm add-of-mul-of-256-becomes-bvcat
+  (implies (and (unsigned-byte-p 8 x)
+                (unsigned-byte-p 24 y)
+                (integerp p)
+                (< (expt 2 32) p)
+                )
+           (equal (add x (add (mul 256 y p) z p) p)
+                  (add (bvcat 24 y 8 x)
+                       z
+                       p)))
+  :hints (("Goal" :in-theory (e/d (add mul
+                                     acl2::bvchop-of-sum-cases
+                                     acl2::slice-of-sum-cases
+                                     bvcat acl2::logapp)
+                                  (ACL2::BVCAT-EQUAL-REWRITE
+                                   ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
