@@ -51,10 +51,10 @@
 ;;; Prove that the spec holds, assuming the R1CS holds
 ;;;
 
-(acl2::prove-implication-with-r1cs-prover
+(verify-semaphore-r1cs
  *mimcsponge-2-1-0k-r1cs-lifted*
- '(mimcsponge-2-1-spec |main.ins[0]| |main.ins[1]| |main.outs[0]|)
- :rule-lists '(;; empty rule set to force substitution, keeping the spec
+ (mimcsponge-2-1-spec |main.ins[0]| |main.ins[1]| |main.outs[0]|)
+ :rule-lists '( ;; empty rule set to force substitution, keeping the spec
                ;; closed to keep the dag small:
                ()
                ;; now open the spec:

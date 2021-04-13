@@ -20,10 +20,6 @@
 ;; (depends-on "json/rotr-32-7.json")
 (local (acl2::load-circom-json "json/rotr-32-7.json" *baby-jubjub-prime*))
 
-;; Print some common numbers more clearly:
-;; TODO: Put in a more central place?  Use #. ?
-(table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
-
 ;;;
 ;;; Unroll the R1CS
 ;;;
@@ -38,61 +34,61 @@
 ;;;
 
 ;; TOOD: Maybe have this take all the individual I/O vars?
-(defun spec (in out)
+(defun rotr-32-7-spec (in out)
   (equal out (acl2::rightrotate 32 7 in)))
 
 ;; TODO: Can we do the unrolling as part of this, instead of separately above?
-(acl2::prove-implication-with-r1cs-prover
+(verify-semaphore-r1cs
  *rotr-32-7-r1cs-lifted*
- `(spec (acl2::packbv '32 '1
-                      ,(acl2::make-cons-nest '(|main.in[31]| |main.in[30]|
-                                               |main.in[29]| |main.in[28]|
-                                               |main.in[27]| |main.in[26]|
-                                               |main.in[25]| |main.in[24]|
-                                               |main.in[23]| |main.in[22]|
-                                               |main.in[21]| |main.in[20]|
-                                               |main.in[19]| |main.in[18]|
-                                               |main.in[17]| |main.in[16]|
-                                               |main.in[15]| |main.in[14]|
-                                               |main.in[13]| |main.in[12]|
-                                               |main.in[11]| |main.in[10]|
-                                               |main.in[9]| |main.in[8]|
-                                               |main.in[7]| |main.in[6]|
-                                               |main.in[5]| |main.in[4]|
-                                               |main.in[3]| |main.in[2]|
-                                               |main.in[1]| |main.in[0]|)))
-    (acl2::packbv '32 '1 ,(acl2::make-cons-nest '(|main.out[31]| |main.out[30]|
-                                                  |main.out[29]|
-                                                  |main.out[28]|
-                                                  |main.out[27]|
-                                                  |main.out[26]|
-                                                  |main.out[25]|
-                                                  |main.out[24]|
-                                                  |main.out[23]|
-                                                  |main.out[22]|
-                                                  |main.out[21]|
-                                                  |main.out[20]|
-                                                  |main.out[19]|
-                                                  |main.out[18]|
-                                                  |main.out[17]|
-                                                  |main.out[16]|
-                                                  |main.out[15]|
-                                                  |main.out[14]|
-                                                  |main.out[13]|
-                                                  |main.out[12]|
-                                                  |main.out[11]|
-                                                  |main.out[10]|
-                                                  |main.out[9]| |main.out[8]|
-                                                  |main.out[7]| |main.out[6]|
-                                                  |main.out[5]| |main.out[4]|
-                                                  |main.out[3]| |main.out[2]|
-                                                  |main.out[1]| |main.out[0]|))))
+ (rotr-32-7-spec (acl2::packbv '32 '1
+                               (list |main.in[31]| |main.in[30]|
+                                     |main.in[29]| |main.in[28]|
+                                     |main.in[27]| |main.in[26]|
+                                     |main.in[25]| |main.in[24]|
+                                     |main.in[23]| |main.in[22]|
+                                     |main.in[21]| |main.in[20]|
+                                     |main.in[19]| |main.in[18]|
+                                     |main.in[17]| |main.in[16]|
+                                     |main.in[15]| |main.in[14]|
+                                     |main.in[13]| |main.in[12]|
+                                     |main.in[11]| |main.in[10]|
+                                     |main.in[9]| |main.in[8]|
+                                     |main.in[7]| |main.in[6]|
+                                     |main.in[5]| |main.in[4]|
+                                     |main.in[3]| |main.in[2]|
+                                     |main.in[1]| |main.in[0]|))
+                 (acl2::packbv '32 '1 (list |main.out[31]| |main.out[30]|
+                                            |main.out[29]|
+                                            |main.out[28]|
+                                            |main.out[27]|
+                                            |main.out[26]|
+                                            |main.out[25]|
+                                            |main.out[24]|
+                                            |main.out[23]|
+                                            |main.out[22]|
+                                            |main.out[21]|
+                                            |main.out[20]|
+                                            |main.out[19]|
+                                            |main.out[18]|
+                                            |main.out[17]|
+                                            |main.out[16]|
+                                            |main.out[15]|
+                                            |main.out[14]|
+                                            |main.out[13]|
+                                            |main.out[12]|
+                                            |main.out[11]|
+                                            |main.out[10]|
+                                            |main.out[9]| |main.out[8]|
+                                            |main.out[7]| |main.out[6]|
+                                            |main.out[5]| |main.out[4]|
+                                            |main.out[3]| |main.out[2]|
+                                            |main.out[1]| |main.out[0]|)))
  :rule-lists '(((acl2::lookup-rules)
                 (acl2::core-rules-bv)
                 (acl2::boolean-rules)
                 (acl2::unsigned-byte-p-rules)
                 implies
-                spec
+                rotr-32-7-spec
                 car-cons
                 acl2::equal-same
                 acl2::packbv-opener
