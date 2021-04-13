@@ -15,13 +15,6 @@
 (include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/crypto/mimc/mimcsponge-spec-rules" :dir :system)
 
-;; 3305 vars
-;; 3300 constraints
-
-;; Load the R1CS:
-;; (depends-on "json/mimcsponge-5-1-0k.json")
-(local (acl2::load-circom-json "json/mimcsponge-5-1-0k.json" *baby-jubjub-prime*))
-
 ;;;
 ;;; The spec
 ;;;
@@ -35,6 +28,15 @@
                               (fep out (baby-jubjub-prime)))
                   :guard-hints (("Goal" :in-theory (enable (:e baby-jubjub-prime))))))
   (equal out (car (mimc::mimcsponge-semaphore 5 1 (list in0 in1 in2 in3 in4)))))
+
+;;;
+;;; Load the R1CS:
+;;;
+
+;; 3305 vars
+;; 3300 constraints
+;; (depends-on "json/mimcsponge-5-1-0k.json")
+(local (acl2::load-circom-json "json/mimcsponge-5-1-0k.json" *baby-jubjub-prime*))
 
 ;;;
 ;;; Unroll the R1CS
