@@ -25,9 +25,9 @@
 
 ;;TODO: generalize to verify-r1cs
 (defmacro verify-semaphore-r1cs (lifted-r1cs ; a DAG
-                                 input-vars
                                  spec-term ; a term over the input and output vars
                                  &key
+                                 (bit-inputs 'nil) ; bitp assumptions will be generated for these
                                  ;; same as for acl2::prove-implication-with-r1cs-prover:
                                  (tactic ''(:rep :rewrite :subst))
                                  (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
@@ -49,7 +49,7 @@
                                                                        ;; bake in baby-jubjub-prime:
                                                                        ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
                                       ;; Assume that the inputs are bits:
-                                      (acl2::make-bitp-claims ,input-vars)))
+                                      (acl2::make-bitp-claims ,bit-inputs)))
                                     ,lifted-r1cs)
       ,spec-term
       :tactic ,tactic
