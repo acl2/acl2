@@ -1155,6 +1155,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule montgomery-add-cancel-left
+  (implies (and (montgomery-add-closure)
+                (montgomery-add-associativity)
+                (point-on-montgomery-p point curve)
+                (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve))
+           (equal (equal (montgomery-add point point1 curve)
+                         (montgomery-add point point2 curve))
+                  (equal (point-fix point1)
+                         (point-fix point2))))
+  :use lemma
+  :disable lemma
+  :prep-lemmas
+  ((acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (montgomery-add point point1 curve)
+                         (montgomery-add point point2 curve)))
+             (equal (point-fix point1)
+                    (point-fix point2)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:point1 (point-on-montgomery-p point1 curve)))
+     (:assume (:point2 (point-on-montgomery-p point2 curve)))
+     (:assume (:equality (equal (montgomery-add point point1 curve)
+                                (montgomery-add point point2 curve))))
+     (:derive (:add-neg (equal
+                         (montgomery-add (montgomery-neg point curve)
+                                         (montgomery-add point point1 curve)
+                                         curve)
+                         (montgomery-add (montgomery-neg point curve)
+                                         (montgomery-add point point2 curve)
+                                         curve)))
+      :from (:equality))
+     (:derive (:same-point (equal (point-fix point1)
+                                  (point-fix point2)))
+      :from (:add-neg :associativity :closure :point :point1 :point2)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection montgomery-distributivity-of-neg-over-add
   :short "Distributivity of negation over addition."
   :long
