@@ -1937,3 +1937,90 @@
      ///
      (fty::deffixequiv-sk montgomery-point-order-leastp
        :args ((point pointp) (order natp) (curve montgomery-curvep))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule montgomery-mul-of-mod-order
+  :short "Scalar multiplication modulo order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Multiplication by a scalar is the same as
+     multiplication by the scalar modulo the order of the point.
+     This is for points of non-zero order."))
+  (implies (and (montgomery-add-closure)
+                (montgomery-add-associativity)
+                (integerp scalar)
+                (point-on-montgomery-p point curve)
+                (natp order)
+                (montgomery-point-orderp point order curve))
+           (equal (montgomery-mul (mod scalar order) point curve)
+                  (montgomery-mul scalar point curve)))
+
+  :prep-lemmas
+
+  ((defrule decompose-floor-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (equal x (+ (* (floor x y) y)
+                          (mod x y))))
+     :rule-classes nil
+     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+   (defrule integerp-of-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (integerp (mod x y)))
+     :rule-classes :type-prescription
+     :enable mod)
+
+   (acl2::defisar
+    theorem
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (integerp scalar)
+                  (point-on-montgomery-p point curve)
+                  (natp order)
+                  (montgomery-point-orderp point order curve))
+             (equal (montgomery-mul (mod scalar order) point curve)
+                    (montgomery-mul scalar point curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:assoc (montgomery-add-associativity)))
+     (:assume (:scalar (integerp scalar)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:order (natp order)))
+     (:assume (:point-order (montgomery-point-orderp point order curve)))
+     (:derive (:order-not-zero (not (equal order 0)))
+      :from (:point-order)
+      :hints (("Goal" :in-theory (enable montgomery-point-orderp))))
+     (:derive (:decompose-scalar
+               (equal (montgomery-mul scalar point curve)
+                      (montgomery-mul (+ (* (floor scalar order) order)
+                                         (mod scalar order))
+                                      point
+                                      curve)))
+      :from (:scalar :order)
+      :hints (("Goal"
+               :use (:instance decompose-floor-mod (x scalar) (y order))
+               :in-theory (disable floor mod))))
+     (:derive (:reduce-to-mod
+               (equal (montgomery-mul (+ (* (floor scalar order) order)
+                                         (mod scalar order))
+                                      point
+                                      curve)
+                      (montgomery-mul (mod scalar order) point curve)))
+      :from (:closure :assoc :point :scalar :order :point-order)
+      :hints (("Goal"
+               :in-theory (e/d (montgomery-mul-of-scalar-addition
+                                montgomery-mul-of-mul-converse
+                                montgomery-point-orderp)
+                               (floor
+                                mod
+                                commutativity-of-*
+                                montgomery-mul-of-mul)))))
+     (:derive (:conclusion
+               (equal (montgomery-mul (mod scalar order) point curve)
+                      (montgomery-mul scalar point curve)))
+      :from (:decompose-scalar :reduce-to-mod))
+     (:qed)))))
