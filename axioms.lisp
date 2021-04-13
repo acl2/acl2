@@ -12995,7 +12995,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let ((init (if (and in-order order) default *invisible-array-mark*)))
       (cond ((and old
                   (= 1 (array-rank (cadr old)))
-                  (= (length (cadr old)) length))
+
+; Through Version_8.3 we required equality in the following comparison.  But
+; Eric Smith suggested that we might re-use an array whose length exceeds what
+; is needed, simply ignoring the extra elements.  That's what we do now, in the
+; hope that it speeds up applications like his Axe prover in which the same
+; array is to be reused many times; now, we avoid paying the price of
+; initializing at indices beyond the intended length.
+
+                  (>= (length (cadr old)) length))
              (setq old-car (car old))
              (setf (car old) *invisible-array-mark*)
              (setq ar (cadr old))
@@ -13339,8 +13347,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (cond ((and old
                 (= 2 (array-rank (cadr old)))
-                (and (= dimension1 (array-dimension (cadr old) 0))
-                     (= dimension2 (array-dimension (cadr old) 1))))
+                (and (>= (array-dimension (cadr old) 0) dimension1)
+                     (>= (array-dimension (cadr old) 1) dimension2)))
            (setq old-car (car old))
            (setf (car old) *invisible-array-mark*)
            (setq ar (cadr old))
