@@ -1875,7 +1875,24 @@
                                                     curve)
                                     curve)
                     (montgomery-mul (* scalar scalar1) point curve)))
-    :cases ((< scalar 0))))
+    :cases ((< scalar 0)))
+
+  (defruled montgomery-mul-of-mul-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul (* scalar scalar1) point curve)
+                    (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve))))
+
+  (theory-invariant
+   (incompatible (:rewrite montgomery-mul-of-mul)
+                 (:rewrite montgomery-mul-of-mul-converse))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
