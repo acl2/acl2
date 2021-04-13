@@ -527,8 +527,8 @@
                    (- (and (eq :verbose2 print)
                            (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 ;; todo: consider using CASE here:
-                (if (eq 'axe-syntaxp fn)
-                    (let* ((syntaxp-expr (farg1 hyp)) ;; strip off the AXE-SYNTAXP
+                (if (eq :axe-syntaxp fn)
+                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                         (,eval-axe-syntaxp-expr-name syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
                                         )))
@@ -547,16 +547,16 @@
                                              ;; (cw ")~%")
                                              ))
                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))
-                  (if (eq 'axe-bind-free fn)
+                  (if (eq :axe-bind-free fn)
                       ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
                       ;;The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. TODO: What if the axe-bind-free function gives back a result that is not even well-formed?
                       ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding usbp facts.
-                      (let* ((bind-free-expr (farg1 hyp)) ;; strip off the AXE-BIND-FREE
+                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
                              (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                           (,eval-axe-bind-free-function-application-name (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
                                           )))
-                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly (farg2 hyp)
-                            (let ((vars-to-bind (farg2 hyp)))
+                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
+                            (let ((vars-to-bind (cddr hyp)))
                               (if (not (axe-bind-free-result-okayp result vars-to-bind dag-len))
                                   (mv (erp-t)
                                       (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)

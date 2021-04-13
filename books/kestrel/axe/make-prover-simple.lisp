@@ -856,8 +856,8 @@
               (b* ((hyp (first hyps)) ;known to be a non-lambda function call
                    (fn (ffn-symb hyp))
                    (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
-                (if (eq 'axe-syntaxp fn)
-                    (let* ((syntaxp-expr (farg1 hyp)) ;; strip off the AXE-SYNTAXP; dag-array formals have been removed from the calls in this
+                (if (eq :axe-syntaxp fn)
+                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP; dag-array formals have been removed from the calls in this
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                         (,eval-axe-syntaxp-expr-name syntaxp-expr alist dag-array))))
                       (if result
@@ -869,13 +869,13 @@
                         (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                      (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
-                  (if (eq 'axe-bind-free fn)
-                      (let* ((bind-free-expr (farg1 hyp)) ;; strip off the AXE-BIND-FREE
+                  (if (eq :axe-bind-free fn)
+                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
                              (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                           (,eval-axe-bind-free-function-application-name (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
                                           )))
-                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly (farg2 hyp)
-                            (let ((vars-to-bind (farg2 hyp)))
+                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
+                            (let ((vars-to-bind (cddr hyp)))
                               (if (not (axe-bind-free-result-okayp result vars-to-bind dag-len))
                                   (mv (erp-t)
                                       (er hard? 'relieve-rule-hyps "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)

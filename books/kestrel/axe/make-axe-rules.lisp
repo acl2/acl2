@@ -140,7 +140,7 @@
 ;;     (let ((conjunct (car conjuncts)))
 ;;       (if (and (consp conjunct)
 ;;                (eq 'quotep (ffn-symb conjunct)))
-;;           (cons `(AXE-SYNTAXP (axe-QUOTEP-FN ,(first (fargs conjunct))))
+;;           (cons `(:AXE-SYNTAXP (axe-QUOTEP-FN ,(first (fargs conjunct))))
 ;;                 (process-syntaxp-conjuncts (cdr conjuncts)))
 ;;         (prog2$ (er hard? 'process-syntaxp-conjuncts "unrecognized argument to syntaxp: ~x0.  we only support quotep."
 ;;                             conjunct)
@@ -209,7 +209,7 @@
        ((when erp)
         (er hard? 'make-axe-syntaxp-hyp-for-synp-conjunct "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         *unrelievable-hyp*))
-    `(axe-syntaxp ,processed-arg)))
+    `(:axe-syntaxp . ,processed-arg)))
 
 (defthm axe-rule-hypp-of-make-axe-syntaxp-hyp-for-synp-conjunct
   (implies (pseudo-termp conjunct)
@@ -414,7 +414,7 @@
                   (mv *unrelievable-hyps* bound-vars))
                  ;; TODO: Should we convert any calls of quote to axe-quotep?
                  )
-              (mv `((axe-syntaxp ,processed-axe-syntaxp-expr)) bound-vars))
+              (mv `((:axe-syntaxp . ,processed-axe-syntaxp-expr)) bound-vars))
           (if (call-of 'axe-bind-free hyp) ;; (axe-bind-free <term> '<vars-to-bind>)
               (b* (((when (not (and (true-listp hyp)
                                     (eql 2 (len (fargs hyp))))))
@@ -449,15 +449,21 @@
                     (er hard? 'make-axe-rule-hyps-for-hyp "The axe-bind-free hyp ~x0 in rule ~x1 is declared to bind the vars ~x2, but these are not disjoint from the set of vars already bound (~x3)" hyp rule-symbol vars-to-bind bound-vars)
                     (mv *unrelievable-hyps* bound-vars)))
                 ;; axe-bind-free hyps include both the term and the variables:
-                (mv `((axe-bind-free ,axe-bind-free-expr ,vars-to-bind))
+                (mv `((:axe-bind-free ,axe-bind-free-expr . ,vars-to-bind))
                     (append vars-to-bind bound-vars)))
             ;; not a special hyp:
             (b* ((all-fns (fns-in-term hyp))
                  ((when (member-eq 'axe-syntaxp all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
                  ((when (member-eq 'axe-bind-free all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-bind-free all-fns))
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
                  ;; todo: check for work-hards not at the top-level?
                  (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
@@ -1006,7 +1012,7 @@
            (symbolp (first loop-stopper))
            (symbolp (second loop-stopper)))
       ;;a loop-stopper of (x y) means y must be smaller than x for the rule to fire
-      (let ((loop-stopper `(axe-syntaxp (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
+      (let ((loop-stopper `(:axe-syntaxp . (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
         (prog2$ nil ;(cw "Note: inserting loop stopper ~x0 for rule ~x1.~%" loop-stopper rule-name)
                 loop-stopper)) ;TODO: get the invisible fns and have heavier-dag-term (or a variant of it) ignore them
     (prog2$ (er hard? 'make-axe-rule-hyp-for-loop-stopper "Unrecognized loop stopper: ~x0." loop-stopper)
