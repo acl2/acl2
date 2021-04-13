@@ -11,6 +11,9 @@
 (in-package "ZKSEMAPHORE")
 
 (include-book "kestrel/crypto/r1cs/tools/lift-r1cs" :dir :system)
+(include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
+(include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
+(include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
 
 ;; A thin wrapper around lift-r1cs-new that sets the prime for semaphore.
 ;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
