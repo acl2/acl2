@@ -5945,16 +5945,15 @@
 ; symbol-function or symbol-value cell of the appropriate name, first
 ; saving the old value (form) on the undo-stack.
 
-  (when
-   (and (eq world-name 'current-acl2-world)
-        (eq (car trip) 'cltl-command)
-        (eq (cadr trip) 'global-value)
-        (consp (cddr trip)))
-   (let* ((wrld (w *the-live-state*))
-          (boot-strap-flg (f-get-global 'boot-strap-flg *the-live-state*))
-          (cltl-cmd (cddr trip)))
-     (case (car cltl-cmd)
-       (defuns
+  (when (and (eq world-name 'current-acl2-world)
+             (eq (car trip) 'cltl-command)
+             (eq (cadr trip) 'global-value)
+             (consp (cddr trip)))
+    (let* ((wrld (w *the-live-state*))
+           (boot-strap-flg (f-get-global 'boot-strap-flg *the-live-state*))
+           (cltl-cmd (cddr trip)))
+      (case (car cltl-cmd)
+        (defuns
 
 ; Cltl-cmd is of the form (defuns defun-mode ignorep def1 ... defn).
 ; Defun-mode non-nil is stored by DEFUNS and defun-mode nil by :non-executable
@@ -6000,9 +5999,9 @@
 ; computes the appropriate stobjs-in from the formals.  This is a problem
 ; analogous to the one addressed by the super-defun-wart table.
 
-         (let ((ignorep (caddr cltl-cmd))
-               (defun-mode (cadr cltl-cmd))
-               (new-defs
+          (let ((ignorep (caddr cltl-cmd))
+                (defun-mode (cadr cltl-cmd))
+                (new-defs
 
 ; We avoid potential "undefined" warnings by holding off on compilation until
 ; all the functions have been defined.  Moreover, in the case of CCL we
@@ -6011,9 +6010,9 @@
 ; (although proclaiming may be a no-op in some Lisps), then make all the
 ; definitions, and finally do the compilation as appropriate.
 
-                nil)
-               (new-*1*-defs nil))
-           (without-interrupts
+                 nil)
+                (new-*1*-defs nil))
+            (without-interrupts
 
 ; We need all the calls of maybe-push-undo-stack to be done atomically, in
 ; support of extend-world1 (specifically, the invocation of retract-world1 in
@@ -6021,57 +6020,57 @@
 ; will not prevent interruptions from taking place quickly overall, because the
 ; actions below will be completed very quickly.
 
-            (dolist
-              (def (cdddr cltl-cmd))
-              (cond ((and boot-strap-flg
-                          (not (global-val 'boot-strap-pass-2 wrld)))
+             (dolist
+               (def (cdddr cltl-cmd))
+               (cond ((and boot-strap-flg
+                           (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                     (or (fboundp (car def))
+                      (or (fboundp (car def))
 
 ; Note that names of macros are fboundp, so we can get away with symbols that
 ; are defined to be macros in raw Lisp but functions in the logic (e.g.,
 ; return-last).
 
-                         (interface-er "~x0 is not fboundp!"
-                                       (car def)))
+                          (interface-er "~x0 is not fboundp!"
+                                        (car def)))
 
 ; But during the first pass of initialization, we do NOT assume that every (or
 ; any) function's corresponding *1* function has been defined.  So we take care
 ; of that now.
 
-                     (or (member-eq (car def)
+                      (or (member-eq (car def)
 
 ; For explanation of the special handling of the first three of the following
 ; function symbols, see the comments in their defun-*1* forms.  For
 ; *defun-overrides*, we have already taken responsibility for defining *1*
 ; functions that we don't want to override here.
 
-                                    `(mv-list return-last wormhole-eval
-                                              ,@*defun-overrides*))
-                         (setq new-*1*-defs
-                               (cons (list* 'oneify-cltl-code
-                                            defun-mode
-                                            def
+                                     `(mv-list return-last wormhole-eval
+                                               ,@*defun-overrides*))
+                          (setq new-*1*-defs
+                                (cons (list* 'oneify-cltl-code
+                                             defun-mode
+                                             def
 
 ; The if below returns the stobj name being introduced, if any.
 
-                                            (if (consp ignorep)
-                                                (cdr ignorep)
-                                              nil))
-                                     new-*1*-defs))))
-                    ((and (not ignorep)
-                          (equal *main-lisp-package-name*
-                                 (symbol-package-name (car def))))
-                     (interface-er "It is illegal to redefine a function in ~
+                                             (if (consp ignorep)
+                                                 (cdr ignorep)
+                                               nil))
+                                      new-*1*-defs))))
+                     ((and (not ignorep)
+                           (equal *main-lisp-package-name*
+                                  (symbol-package-name (car def))))
+                      (interface-er "It is illegal to redefine a function in ~
                                     the main Lisp package, such as ~x0!"
-                                   (car def)))
-                    ((and (consp ignorep)
-                          (eq (car ignorep) 'defstobj))
+                                    (car def)))
+                     ((and (consp ignorep)
+                           (eq (car ignorep) 'defstobj))
 
 ; We wait for the cltl-command from the defstobj or defabsstobj (which is laid
 ; down last by defstobj-fn or defabsstobj-fn, using install-event) before
@@ -6082,11 +6081,11 @@
 ; still save the existing values (if any) of the current def and the current
 ; *1* def; see the next comment about ignorep.
 
-                     (maybe-push-undo-stack 'defun (car def) ignorep))
-                    ((and boot-strap-flg
-                          (member-eq (car def)
-                                     *boot-strap-pass-2-acl2-loop-only-fns*)))
-                    (t (maybe-push-undo-stack 'defun (car def) ignorep)
+                      (maybe-push-undo-stack 'defun (car def) ignorep))
+                     ((and boot-strap-flg
+                           (member-eq (car def)
+                                      *boot-strap-pass-2-acl2-loop-only-fns*)))
+                     (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
 ; current *1* def.  If ignorep is 'reclassifying, we save only the *1* def.
@@ -6095,31 +6094,31 @@
 ; neither.  The code for installing a defstobj CLTL-COMMAND doesn't bother to
 ; do undo-stack work, because it knows both cells were saved by the defun.
 
-                       (or ignorep
-                           (setq new-defs (cons (cons 'defun def) new-defs)))
-                       (setq new-*1*-defs
-                             (cons (list* 'oneify-cltl-code
-                                          defun-mode
-                                          def
+                        (or ignorep
+                            (setq new-defs (cons (cons 'defun def) new-defs)))
+                        (setq new-*1*-defs
+                              (cons (list* 'oneify-cltl-code
+                                           defun-mode
+                                           def
 
 ; The if below returns the stobj name being introduced, if any.
 
-                                          (if (consp ignorep)
-                                              (cdr ignorep)
-                                            nil))
-                                   new-*1*-defs)))))
-            (setf (cdr status) 'maybe-push-undo-stack-completed))
-           (setq new-defs (nconc new-defs new-*1*-defs))
-           (install-defs-for-add-trip new-defs
-                                      (eq ignorep 'reclassifying)
-                                      wrld
-                                      (not boot-strap-flg)
-                                      t)
-           (cond ((not (eq (f-get-global 'compiler-enabled *the-live-state*)
-                           t))
+                                           (if (consp ignorep)
+                                               (cdr ignorep)
+                                             nil))
+                                    new-*1*-defs)))))
+             (setf (cdr status) 'maybe-push-undo-stack-completed))
+            (setq new-defs (nconc new-defs new-*1*-defs))
+            (install-defs-for-add-trip new-defs
+                                       (eq ignorep 'reclassifying)
+                                       wrld
+                                       (not boot-strap-flg)
+                                       t)
+            (cond ((not (eq (f-get-global 'compiler-enabled *the-live-state*)
+                            t))
 ; Then skip compilation.
-                  )
-                 ((or
+                   )
+                  ((or
 
 ; It seems critical to compile as we go in CMUCL 18e during the boot-strap, in
 ; order to avoid stack overflows.  This seems to cut about 20% off the
@@ -6138,189 +6137,168 @@
 ; little performance penalty at runtime.  Something like this could be done
 ; with any Common Lisp, but there is only a point in GCL; see above.)
 
-                   (and #+gcl (not user::*fast-acl2-gcl-build*)
-                        boot-strap-flg) ; delete for build speedup (see above)
-                   (and
-                    (not *inside-include-book-fn*)
-                    (default-compile-fns wrld)))
-                  (dolist (def new-defs)
-                    (assert$
-                     def
+                    (and #+gcl (not user::*fast-acl2-gcl-build*)
+                         boot-strap-flg) ; delete for build speedup (see above)
+                    (and
+                     (not *inside-include-book-fn*)
+                     (default-compile-fns wrld)))
+                   (dolist (def new-defs)
+                     (assert$
+                      def
 
 ; Install-defs-for-add-trip can't make def nil, since either we are in the
 ; boot-strap or else the value of 'ld-skip-proofsp is not 'include-book.
 
-                     (let ((name (cond ((eq (car def) 'defun)
-                                        (cadr def))
-                                       ((eq (car def) 'oneify-cltl-code)
-                                        (car (caddr def)))
-                                       (t (error "Implementation error: ~
+                      (let ((name (cond ((eq (car def) 'defun)
+                                         (cadr def))
+                                        ((eq (car def) 'oneify-cltl-code)
+                                         (car (caddr def)))
+                                        (t (error "Implementation error: ~
                                                    unexpected form in ~
                                                    add-trip, ~x0"
-                                                 def)))))
-                       (eval `(compile ',name)))))))))
-       ((defstobj defabsstobj)
+                                                  def)))))
+                        (eval `(compile ',name)))))))))
+        ((defstobj defabsstobj)
 
-; Cltl-cmd is of one of the forms
-
-; (DEFSTOBJ name the-live-name init raw-defs template axiomatic-defs) or
-; (DEFABSSTOBJ name the-live-name init raw-defs event axiomatic-defs).
+; Cltl-cmd is of the form
+; (defstobj-type name the-live-name init raw-defs disc axiomatic-defs)
+; where defstobj-type is DEFSTOBJ or DEFABSSTOBJ and disc is the
+; redundant-raw-lisp-discriminator for name.
 
 ; Init is a form to eval to obtain the initial setting for the live variable.
 ; Each def in raw-defs and in axiomatic-defs is of the form (name args dcl
 ; body), where dcl may be omitted.  We make a function or macro definition for
 ; each raw-def, and we make a defun for the oneification of each axiomatic-def.
 
-        (let* ((absp (eq (car cltl-cmd) 'defabsstobj))
-               (name (nth 1 cltl-cmd))
-               (the-live-name (nth 2 cltl-cmd))
-               (init (nth 3 cltl-cmd))
-               (raw-defs (nth 4 cltl-cmd))
-               (template-or-event (nth 5 cltl-cmd)) ; event iff absp
-               (ax-defs (nth 6 cltl-cmd))
-               (event-form (if absp
-                               template-or-event
-                             (nth 7 cltl-cmd)))
-               (non-executable (and (not absp)
-                                    (access defstobj-template
-                                            template-or-event
-                                            :non-executable)))
-               (new-defs
+         (let* ((absp (eq (car cltl-cmd) 'defabsstobj))
+                (name (nth 1 cltl-cmd))
+                (the-live-name (nth 2 cltl-cmd))
+                (init (nth 3 cltl-cmd))
+                (raw-defs (nth 4 cltl-cmd))
+                (discriminator (nth 5 cltl-cmd))
+                (ax-defs (nth 6 cltl-cmd))
+                (non-executable
+                 (access defstobj-redundant-raw-lisp-discriminator-value
+                         (cdr discriminator)
+                         :non-executable))
+                (new-defs
 
 ; We avoid "undefined function" warnings by Allegro during compilation by
 ; defining all the functions first, and compiling them only after they have all
 ; been defined.  But we go further; see the comment in the binding of new-defs
 ; in the previous case.
 
-                nil))
-          (without-interrupts
-           (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
-           (setf (cdr status) 'maybe-push-undo-stack-completed))
+                 nil))
+           (without-interrupts
+            (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
+            (setf (cdr status) 'maybe-push-undo-stack-completed))
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
 ; of that directly here.  We see no need to involve install-for-add-trip or the
 ; like.
 
-          #+hons (let ((var (st-lst name)))
-                   (or (boundp var)
-                       (eval `(defg ,var nil))))
+           #+hons (let ((var (st-lst name)))
+                    (or (boundp var)
+                        (eval `(defg ,var nil))))
 
 ; As with defconst we want to make it look like we eval'd this defstobj or
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
 
-          (setf (get the-live-name 'redundant-raw-lisp-discriminator)
-                (cond (absp event-form)
-                      (t (cons 'defstobj
-                               (make
-                                defstobj-redundant-raw-lisp-discriminator-value
-                                :event event-form
-                                :creator
-                                (access defstobj-template
-                                        template-or-event
-                                        :creator)
-                                :congruent-stobj-rep
-                                (or (access defstobj-template
-                                            template-or-event
-                                            :congruent-to)
-                                    name)
-                                :non-memoizable
-                                (access defstobj-template
-                                        template-or-event
-                                        :non-memoizable)
-                                :non-executable non-executable)))))
+           (setf (get the-live-name 'redundant-raw-lisp-discriminator)
+                 discriminator)
 
 ; The following assignment to *user-stobj-alist* is structured to keep
 ; new ones at the front, so we can more often exploit the optimization
 ; in put-assoc-eq-alist.
 
-          (setq *user-stobj-alist*
-                (cond ((assoc-eq name *user-stobj-alist*)
+           (setq *user-stobj-alist*
+                 (cond ((assoc-eq name *user-stobj-alist*)
 
 ; This is a redefinition!  We'll just replace the old entry.
 
-                       (if non-executable
-                           (remove1-assoc-eq name *user-stobj-alist*)
-                         (put-assoc-eq name
-                                       (eval init)
-                                       *user-stobj-alist*)))
-                      (non-executable *user-stobj-alist*)
-                      (t (cons (cons name (eval init))
-                               *user-stobj-alist*))))
+                        (if non-executable
+                            (remove1-assoc-eq name *user-stobj-alist*)
+                          (put-assoc-eq name
+                                        (eval init)
+                                        *user-stobj-alist*)))
+                       (non-executable *user-stobj-alist*)
+                       (t (cons (cons name (eval init))
+                                *user-stobj-alist*))))
 
 ; We eval and compile the raw lisp definitions first, some of which may be
 ; macros (because :inline t was supplied for defstobj, or because we are
 ; handling defabsstobj), before dealing with the *1* functions.
 
-          (dolist
-            (def raw-defs)
-            (cond ((and boot-strap-flg
-                        (not (global-val 'boot-strap-pass-2 wrld)))
+           (dolist
+             (def raw-defs)
+             (cond ((and boot-strap-flg
+                         (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                   (or (fboundp (car def))
-                       (interface-er "~x0 is not fboundp!"
-                                     (car def))))
-                  ((equal *main-lisp-package-name*
-                          (symbol-package-name (car def)))
-                   (interface-er
-                    "It is illegal to redefine a function in the main Lisp ~
+                    (or (fboundp (car def))
+                        (interface-er "~x0 is not fboundp!"
+                                      (car def))))
+                   ((equal *main-lisp-package-name*
+                           (symbol-package-name (car def)))
+                    (interface-er
+                     "It is illegal to redefine a function in the main Lisp ~
                       package, such as ~x0!"
-                    (car def)))
+                     (car def)))
 
 ; We don't do maybe-push-undo-stack for defuns (whether inlined or not) under
 ; the defstobj or defabsstobj CLTL-COMMAND, because we did it for their
 ; defuns.
 
-                  (t
-                   (let ((def (cond
-                               (absp (cons 'defmacro def))
-                               ((member-equal *stobj-inline-declare* def)
+                   (t
+                    (let ((def (cond
+                                (absp (cons 'defmacro def))
+                                ((member-equal *stobj-inline-declare* def)
 
 ; We now handle the case where we are going to inline the function calls by
 ; defining the function as a defabbrev.  Note that this is allowed for
 ; access/update/array-length functions for stobjs, but only for these, where
 ; speed is often a requirement for efficiency.
 
-                                (cons 'defabbrev
-                                      (remove-stobj-inline-declare def)))
-                               (t (cons 'defun def)))))
-                     (setq new-defs (cons def new-defs))))))
-          (dolist
-            (def ax-defs)
-            (setq new-defs (cons (list* 'oneify-cltl-code :logic def name)
-                                 new-defs)))
-          (setq new-defs
+                                 (cons 'defabbrev
+                                       (remove-stobj-inline-declare def)))
+                                (t (cons 'defun def)))))
+                      (setq new-defs (cons def new-defs))))))
+           (dolist
+             (def ax-defs)
+             (setq new-defs (cons (list* 'oneify-cltl-code :logic def name)
+                                  new-defs)))
+           (setq new-defs
 
 ; We reverse new-defs because we want to be sure to define the *1*
 ; defs after the raw Lisp defs (which may be macros, because of :inline).
 
-                (nreverse new-defs))
-          (install-defs-for-add-trip new-defs nil wrld (not boot-strap-flg)
-                                     t)
-          (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
-                         t)
-                     (not *inside-include-book-fn*)
-                     (default-compile-fns wrld))
-            (dolist (def new-defs)
-              (assert$
+                 (nreverse new-defs))
+           (install-defs-for-add-trip new-defs nil wrld (not boot-strap-flg)
+                                      t)
+           (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
+                          t)
+                      (not *inside-include-book-fn*)
+                      (default-compile-fns wrld))
+             (dolist (def new-defs)
+               (assert$
 
 ; Install-defs-for-add-trip can't make def nil, since the value of
 ; 'ld-skip-proofsp is not 'include-book.
 
-               def
-               (let ((name (cond ((or (eq (car def) 'defun)
-                                      (eq (car def) 'defabbrev)
-                                      (eq (car def) 'defmacro))
-                                  (cadr def))
-                                 ((eq (car def) 'oneify-cltl-code)
-                                  (car (caddr def)))
-                                 (t (error "Implementation error: ~
+                def
+                (let ((name (cond ((or (eq (car def) 'defun)
+                                       (eq (car def) 'defabbrev)
+                                       (eq (car def) 'defmacro))
+                                   (cadr def))
+                                  ((eq (car def) 'oneify-cltl-code)
+                                   (car (caddr def)))
+                                  (t (error "Implementation error: ~
                                               unexpected form in add-trip, ~x0"
-                                           def)))))
+                                            def)))))
 
 ; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
 ; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
@@ -6328,18 +6306,18 @@
 ; version 18 or 19 of CMUCL, but we'll avoid that for CMUCL version 20, since
 ; 20D at least can compile macros.
 
-                 #+(and cmu (or cmu18 cmu19))
-                 (cond ((and (not (eq (car def) 'defabbrev))
-                             (not (eq (car def) 'defmacro)))
-                        (eval `(compile ',name))))
-                 #-(and cmu (or cmu18 cmu19))
-                 (eval `(compile ',name))))))))
-       (defpkg
-         (without-interrupts
-          (maybe-push-undo-stack 'defpkg (cadr cltl-cmd))
-          (setf (cdr status) 'maybe-push-undo-stack-completed))
-         (eval (cons 'defpkg (cdr cltl-cmd))))
-       (defconst
+                  #+(and cmu (or cmu18 cmu19))
+                  (cond ((and (not (eq (car def) 'defabbrev))
+                              (not (eq (car def) 'defmacro)))
+                         (eval `(compile ',name))))
+                  #-(and cmu (or cmu18 cmu19))
+                  (eval `(compile ',name))))))))
+        (defpkg
+          (without-interrupts
+           (maybe-push-undo-stack 'defpkg (cadr cltl-cmd))
+           (setf (cdr status) 'maybe-push-undo-stack-completed))
+          (eval (cons 'defpkg (cdr cltl-cmd))))
+        (defconst
 
 ; Historical remark on defconstant.
 
@@ -6407,10 +6385,10 @@
 
 ; Note: cltl-cmd here is (defconst var form val).
 
-         (cond (boot-strap-flg
-                (or (boundp (cadr cltl-cmd))
-                    (interface-er "~x0 is not boundp!"
-                                  (cadr cltl-cmd)))
+          (cond (boot-strap-flg
+                 (or (boundp (cadr cltl-cmd))
+                     (interface-er "~x0 is not boundp!"
+                                   (cadr cltl-cmd)))
 
 ; In the boot-strap, there are constants that will not get the necessary
 ; 'redundant-raw-lisp-discriminator proprerty without the following code.  In
@@ -6421,67 +6399,67 @@
 ; constant *BADGE-PRIM-FALIST*."  That error prevents loading of the compiled
 ; file.
 
-                (or (get (cadr cltl-cmd)
-                         'redundant-raw-lisp-discriminator)
-                    (setf (get (cadr cltl-cmd)
-                               'redundant-raw-lisp-discriminator)
-                          (list* 'defconst
-                                 (caddr cltl-cmd) ; form
-                                 (cadddr cltl-cmd)))))
-               ((equal *main-lisp-package-name*
-                       (symbol-package-name (cadr cltl-cmd)))
-                (interface-er "It is illegal to redefine a defconst in the ~
+                 (or (get (cadr cltl-cmd)
+                          'redundant-raw-lisp-discriminator)
+                     (setf (get (cadr cltl-cmd)
+                                'redundant-raw-lisp-discriminator)
+                           (list* 'defconst
+                                  (caddr cltl-cmd) ; form
+                                  (cadddr cltl-cmd)))))
+                ((equal *main-lisp-package-name*
+                        (symbol-package-name (cadr cltl-cmd)))
+                 (interface-er "It is illegal to redefine a defconst in the ~
                                 main Lisp package, such as ~x0!"
-                              (cadr cltl-cmd)))
-               (t (without-interrupts
-                   (let* ((name (cadr cltl-cmd))
-                          (form (caddr cltl-cmd))
-                          (val (cadddr cltl-cmd)))
-                     (maybe-push-undo-stack 'defconst name)
+                               (cadr cltl-cmd)))
+                (t (without-interrupts
+                    (let* ((name (cadr cltl-cmd))
+                           (form (caddr cltl-cmd))
+                           (val (cadddr cltl-cmd)))
+                      (maybe-push-undo-stack 'defconst name)
 
 ; We do not want to eval (defconst var form) here because that will recompute
 ; val.  But we make raw Lisp look like it did that.
 
-                     (setf (get name 'redundant-raw-lisp-discriminator)
-                           (list* 'defconst form val))
-                     (install-for-add-trip (ifat-defparameter name val form)
-                                           nil
-                                           t))
-                   (setf (cdr status)
-                         'maybe-push-undo-stack-completed)))))
-       (defmacro
-           (cond ((and boot-strap-flg
-                       (not (global-val 'boot-strap-pass-2 wrld)))
+                      (setf (get name 'redundant-raw-lisp-discriminator)
+                            (list* 'defconst form val))
+                      (install-for-add-trip (ifat-defparameter name val form)
+                                            nil
+                                            t))
+                    (setf (cdr status)
+                          'maybe-push-undo-stack-completed)))))
+        (defmacro
+            (cond ((and boot-strap-flg
+                        (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                  (or (fboundp (cadr cltl-cmd))
-                      (interface-er "~x0 is not fboundp!"
-                                    (cadr cltl-cmd))))
-                 ((equal *main-lisp-package-name*
-                         (symbol-package-name (cadr cltl-cmd)))
-                  (interface-er "It is illegal to redefine a macro in the ~
+                   (or (fboundp (cadr cltl-cmd))
+                       (interface-er "~x0 is not fboundp!"
+                                     (cadr cltl-cmd))))
+                  ((equal *main-lisp-package-name*
+                          (symbol-package-name (cadr cltl-cmd)))
+                   (interface-er "It is illegal to redefine a macro in the ~
                                 main Lisp package, such as ~x0!"
-                                (cadr cltl-cmd)))
-                 (t (without-interrupts
-                     (maybe-push-undo-stack 'defmacro (cadr cltl-cmd))
-                     (setf (cdr status) 'maybe-push-undo-stack-completed))
-                    (install-for-add-trip cltl-cmd nil t))))
-       (attachment ; cltl-cmd is produced by attachment-cltl-cmd
-        (dolist (x (cdr cltl-cmd))
-          (let ((name (if (symbolp x) x (car x))))
-            (without-interrupts
-             (maybe-push-undo-stack 'attachment name)
-             (setf (cdr status) 'maybe-push-undo-stack-completed))
-            (unless (eq name *special-cltl-cmd-attachment-mark-name*)
+                                 (cadr cltl-cmd)))
+                  (t (without-interrupts
+                      (maybe-push-undo-stack 'defmacro (cadr cltl-cmd))
+                      (setf (cdr status) 'maybe-push-undo-stack-completed))
+                     (install-for-add-trip cltl-cmd nil t))))
+        (attachment ; cltl-cmd is produced by attachment-cltl-cmd
+         (dolist (x (cdr cltl-cmd))
+           (let ((name (if (symbolp x) x (car x))))
+             (without-interrupts
+              (maybe-push-undo-stack 'attachment name)
+              (setf (cdr status) 'maybe-push-undo-stack-completed))
+             (unless (eq name *special-cltl-cmd-attachment-mark-name*)
 
 ; See maybe-push-undo-stack for relevant discussion of the condition above.
 
-              #+hons (push name *defattach-fns*)
-              (install-for-add-trip
+               #+hons (push name *defattach-fns*)
+               (install-for-add-trip
 
 ; It may be important here that set-attachment-symbol-form generates a
 ; defparameter whose form is quoted.  That way,
@@ -6490,13 +6468,13 @@
 ; the case that more than one attachment is provided to the same function in a
 ; given book (at the top level, as opposed to being in included books).
 
-               (cond ((symbolp x)
-                      (set-attachment-symbol-form x nil))
-                     (t (set-attachment-symbol-form name (cdr x))))
-               nil
-               t)))))
-       #+hons
-       (memoize
+                (cond ((symbolp x)
+                       (set-attachment-symbol-form x nil))
+                      (t (set-attachment-symbol-form name (cdr x))))
+                nil
+                t)))))
+        #+hons
+        (memoize
 
 ; Should we push onto the undo-stack first or should we memoize first?  The
 ; danger of memoizing first is that an interrupt could come immediately after
@@ -6506,32 +6484,32 @@
 ; complete, we are OK because the form pushed by maybe-push-undo-stack checks
 ; that the function is memoized before unmemoizing it.
 
-        (without-interrupts
-         (maybe-push-undo-stack 'memoize (cadr cltl-cmd))
-         (setf (cdr status) 'maybe-push-undo-stack-completed))
-        (let* ((tuple cltl-cmd)
-               (cl-defun (nth 4 tuple)))
-          (assert$ cl-defun
-                   (with-overhead
-                    (nth 13 tuple) ; stats
-                    (memoize-fn (nth 1 tuple)
-                                :condition  (nth 2 tuple)
-                                :inline     (nth 3 tuple)
-                                :cl-defun   cl-defun
-                                :formals    (nth 5 tuple)
-                                :stobjs-in  (nth 6 tuple)
-                                :stobjs-out (nth 7 tuple)
-                                :commutative (nth 9 tuple)
-                                :forget     (nth 10 tuple)
-                                :memo-table-init-size (nth 11 tuple)
-                                :aokp       (nth 12 tuple)
-                                :invoke     (nth 14 tuple))))))
-       #+hons
-       (unmemoize
-        (without-interrupts
-         (maybe-push-undo-stack 'unmemoize (cadr cltl-cmd))
-         (unmemoize-fn (cadr cltl-cmd))
-         (setf (cdr status) 'maybe-push-undo-stack-completed))))))
+         (without-interrupts
+          (maybe-push-undo-stack 'memoize (cadr cltl-cmd))
+          (setf (cdr status) 'maybe-push-undo-stack-completed))
+         (let* ((tuple cltl-cmd)
+                (cl-defun (nth 4 tuple)))
+           (assert$ cl-defun
+                    (with-overhead
+                     (nth 13 tuple) ; stats
+                     (memoize-fn (nth 1 tuple)
+                                 :condition  (nth 2 tuple)
+                                 :inline     (nth 3 tuple)
+                                 :cl-defun   cl-defun
+                                 :formals    (nth 5 tuple)
+                                 :stobjs-in  (nth 6 tuple)
+                                 :stobjs-out (nth 7 tuple)
+                                 :commutative (nth 9 tuple)
+                                 :forget     (nth 10 tuple)
+                                 :memo-table-init-size (nth 11 tuple)
+                                 :aokp       (nth 12 tuple)
+                                 :invoke     (nth 14 tuple))))))
+        #+hons
+        (unmemoize
+         (without-interrupts
+          (maybe-push-undo-stack 'unmemoize (cadr cltl-cmd))
+          (unmemoize-fn (cadr cltl-cmd))
+          (setf (cdr status) 'maybe-push-undo-stack-completed))))))
 
 ; Finally, we make sure always to leave the *current-acl2-world-key* as the
 ; first property on the symbol-plist of the symbol.
@@ -9495,11 +9473,12 @@
                     (dolist (x (car (cddddr (cddr trip))))
 
 ; (cddr trip) is of the form
-; (DEFSTOBJ name the-live-name init raw-defs template)
-; and x here is one of the raw-defs.  Note that since raw Lisp definitions for
-; defabsstobj are defmacros, we do not deal with defabsstobj, just as we skip
-; the defstobj case when defabbrev is used for raw Lisp definitions, as
-; determined by (member-equal *stobj-inline-declare* x) as shown below.
+; (DEFSTOBJ name the-live-name init raw-defs disc axiomatic-defs)
+; where disc is the redundant-raw-lisp-discriminator for name.  Note that since
+; raw Lisp definitions for defabsstobj are defmacros, we do not deal with
+; defabsstobj, just as we skip the defstobj case when defabbrev is used for raw
+; Lisp definitions, as determined by (member-equal *stobj-inline-declare* x) as
+; shown below.
 
                       (cond
                        ((and (not (gethash (car x) seen))

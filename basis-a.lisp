@@ -6620,6 +6620,8 @@
 
 (defrec defstobj-redundant-raw-lisp-discriminator-value
 
+; This record is used both for defstobj and defabsstobj events.
+
 ; The first field, :event, completely determines the other fields.  We store
 ; those simply for convenience, as per the comments below.  At the time of this
 ; writing (6/14/2020), none of the accesses needs to be efficient; if that
@@ -6629,7 +6631,7 @@
    creator             ; helpful for get-stobj-creator
    congruent-stobj-rep ; helpful for congruent-stobj-rep-raw
    non-memoizable      ; helpful for non-memoizable-stobj-raw
-   non-executable)     ; helpful for add-trip
+   non-executable)     ; helpful for add-trip; nil in defabsstobj case
   nil)
 
 (defun get-stobj-creator (stobj wrld)
@@ -6649,20 +6651,7 @@
          #-acl2-loop-only
          (let ((d (get (the-live-var stobj)
                        'redundant-raw-lisp-discriminator)))
-           (cond ((eq (car d) 'defabsstobj)
-
-; Then d is (defabsstobj name . keyword-alist).
-
-                  (let ((tail (assoc-keyword :CREATOR (cddr d))))
-                    (cond (tail (let* ((field-descriptor (cadr tail))
-                                       (c (if (consp field-descriptor)
-                                              (car field-descriptor)
-                                            field-descriptor)))
-                                  (assert$ (symbolp c)
-                                           c)))
-                          (t (let ((name (cadr d)))
-                               (absstobj-name name :CREATOR))))))
-                 ((eq (car d) 'defstobj)
+           (cond ((member-eq (car d) '(defstobj defabsstobj))
                   (access defstobj-redundant-raw-lisp-discriminator-value
                           (cdr d)
                           :creator))
@@ -7495,7 +7484,8 @@
 (defun congruent-stobj-rep-raw (name)
   (assert name)
   (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
-    (assert (eq (car d) 'defstobj))
+    (assert (member (car d) '(defstobj defabsstobj)
+                    :test #'eq))
     (assert (cdr d))
     (access defstobj-redundant-raw-lisp-discriminator-value
             (cdr d)
@@ -7570,10 +7560,6 @@
               (d (and (or old-pair non-executable) ; optimization
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
-
-; d is expected to be of the form (DEFSTOBJ namep creator field-templates
-; . congruent-stobj-rep).
-
               (ok-p (and (consp d)
                          (eq (car d) 'defstobj)
                          (equal (access

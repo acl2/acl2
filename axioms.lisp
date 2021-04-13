@@ -7924,7 +7924,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (t dcls)))
     (hard-error (car form)
                 "The declarations are ill-formed for the form,~%~x0."
-                form)))
+                (list (cons #\0 form)))))
 
 (defun defun-nx-form (form)
   (declare (xargs :guard (and (true-listp form)
@@ -28302,7 +28302,7 @@ Lisp definition."
 ;     re-entry to the proof-builder (see the calls of illegal-state-p in
 ;     pc-main-loop).
 
-; (c) When ld-read-eval-print runs chk-absstobj-invariants to check whether
+; (c) Ld-read-eval-print runs chk-absstobj-invariants to check whether
 ;     *inside-absstobj-update* shows that a non-interruptable abstract stobj
 ;     update didn't complete.  If we are not already at the top level, we will
 ;     abort to the top level (with (abort!), as mentioned above).  Otherwise

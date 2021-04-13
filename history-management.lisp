@@ -18129,10 +18129,6 @@
       wrld
     (global-set var val wrld)))
 
-(defrec absstobj-info
-  (st$c . logic-exec-pairs)
-  t)
-
 (defun cltl-def-memoize-partial (fn total wrld)
 
 ; Fn and total are function symbols, where we expect that with respect to the

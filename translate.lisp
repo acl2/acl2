@@ -10985,7 +10985,7 @@
 ; X is a stobj-let form.  We return (mv erp bound-vars actuals stobj
 ; producer-vars producer updaters corresponding-accessor-fns consumer), where
 ; erp is either a msg or nil, and when erp is nil:
-; - bound-vars is a list of symbols, without duplicates;
+; - bound-vars is a list of symbols;
 ; - actuals is a corresponding list of untranslated field accessors;
 ; - stobj is the stobj accessed by those field accessors;
 ; - producer-vars is the true-list of producer variables
@@ -11044,7 +11044,7 @@
                  (arglistp producer-vars)))
        (mv (illegal-stobj-let-msg
             "The producer-variables of a STOBJ-LET form must be a non-empty ~
-             list of legal variable names."
+             list of legal variable names without duplicates."
             x)
            nil nil nil nil nil nil nil nil))
       (t (mv-let
@@ -11150,7 +11150,7 @@
              `(progn$ ,@(no-duplicatesp-checks-for-stobj-let-actuals actuals
                                                                      nil)
 
-; Warning: Think carefully before modifying how the no-dupslicates test just
+; Warning: Think carefully before modifying how the no-duplicates test just
 ; above is worked into this logical code.  A concern is whether a program-mode
 ; wrapper will be able to circumvent this check.  Fortunately, the check only
 ; needs to be done if there are updater calls in form, in which case there is
@@ -11164,11 +11164,32 @@
 (defun non-memoizable-stobj-raw (name)
   (assert name)
   (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
-    (assert (eq (car d) 'defstobj))
+    (assert (member (car d) '(defstobj defabsstobj)
+                    :test #'eq))
     (assert (cdr d))
     (access defstobj-redundant-raw-lisp-discriminator-value
             (cdr d)
             :non-memoizable)))
+
+(defrec absstobj-info
+
+; For a given abstract stobj st, the 'absstobj-info property is one of these
+; records, where st$c is the corresponding foundational stobj and
+; absstobj-tuples is a list of tuples (name logic exec . updater), where
+; updater is non-nil only when name is a child stobj accessor (hence exec is a
+; child stobj accessofr for st$c).  The first tuple is for the recognizer, the
+; second is for the creator, and the rest are for the exports, in order of
+; the exports in the original defabsstobj event.
+
+  (st$c . absstobj-tuples)
+  t)
+
+(defun strip-non-nil-cddrs (x)
+  (cond ((endp x) nil)
+        ((cddr (car x))
+         (cons (cddr (car x))
+               (strip-non-nil-cddrs (cdr x))))
+        (t (strip-non-nil-cddrs (cdr x)))))
 
 #-acl2-loop-only
 (defun stobj-let-fn-raw (x)
@@ -11259,7 +11280,7 @@
                         (not (non-memoizable-stobj-raw stobj))
                         `(memoize-flush ,(congruent-stobj-rep-raw
                                           stobj))))
-                  (form
+                  (form0
                    `(let* ,(pairlis$ bound-vars (pairlis$ actuals nil))
                       (declare (ignorable ,@bound-vars))
                       ,(cond
@@ -11275,9 +11296,19 @@
                               #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
-             form)))))
+             (if (eq (car (get (the-live-var stobj)
+                               'redundant-raw-lisp-discriminator))
+                     'defabsstobj)
+                 (with-inside-absstobj-update (gensym) (gensym) x form0)
+               form0))))))
 
 (defun stobj-field-accessor-p (fn stobj wrld)
+
+; Return non-nil when fn is a child accessor (not updater) for the given stobj.
+; If stobj is an abstract stobj, this means that fn is an export with an
+; :updater field.  For more background see the Essay on the Correctness of
+; Abstract Stobjs.
+
   (and
 
 ; We believe that the first check is subsumed by the others, but we leave it
@@ -11290,14 +11321,22 @@
 
    (member-eq fn (cdddr (getpropc stobj 'stobj nil wrld)))
 
+; The remaining tests are different for concrete and abstract stobjs.
+
+   (let ((abs-info (getpropc stobj 'absstobj-info nil wrld)))
+     (cond
+      (abs-info (cdddr (assoc-eq fn (access absstobj-info abs-info
+                                            :absstobj-tuples))))
+      (t (and
+
 ; At this point, fn could still be a constant.
 
-   (function-symbolp fn wrld)
+          (function-symbolp fn wrld)
 
 ; Now distinguish accessors from updaters.
 
-   (not (eq (car (stobjs-out fn wrld))
-            stobj))))
+          (not (eq (car (stobjs-out fn wrld))
+                   stobj))))))))
 
 (defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
                                      wrld)
@@ -11310,6 +11349,10 @@
 ; associated with the first accessor; we have already checked in chk-stobj-let
 ; that this is congruent to stobj.  First-acc is the first accessor, which is
 ; just used in the error message when another accessor's stobj doesn't match.
+
+; We do an additional check in chk-stobj-let/accessors to ensure, in the
+; abstract stobj case, that two different accessors aren't aliases for the same
+; underlying concrete stobj accessor.  See chk-stobj-let/accessors
 
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
@@ -11366,19 +11409,19 @@
                                                (cdr actuals)
                                                wrld))))))))
 
-(defun chk-stobj-let/updaters1 (updaters accessors lst)
+(defun chk-stobj-updaters1 (accessors updaters lst source)
 
 ; Lst is the cdddr of the 'stobj property of a stobj in an implicit world,
 ; accessors is a list of field accessors for that stobj, and updaters is a list
-; of the same length as accessors.  We check for each i < (length accessors),
-; the ith updater is indeed the stobj field updater corresponding to the ith
-; accessor.  Recall that the 'stobj property is a list of the form
+; of the same length as accessors.  We check that for each i < (length
+; accessors), the ith updater is indeed the stobj field updater corresponding
+; to the ith accessor.  Recall that the 'stobj property is a list of the form
 ; (*the-live-var* recognizer creator ...), and that each field updater
-; immediately follows the corresponding field accessor in that list.
+; immediately follows the corresponding field accessor in that list.  Source is
+; as in chk-stobj-updaters.
 
   (cond ((endp updaters) nil)
-        (t (let* ((updater-expr (car updaters))
-                  (updater (car updater-expr))
+        (t (let* ((updater (car updaters))
                   (accessor (car accessors))
                   (accessor-tail (member-eq (car accessors) lst))
                   (actual-updater (cadr accessor-tail)))
@@ -11390,18 +11433,113 @@
               accessor-tail
               (cond
                ((eq updater actual-updater)
-                (chk-stobj-let/updaters1 (cdr updaters) (cdr accessors) lst))
-               (t (msg "The stobj-let bindings have specified that the stobj ~
-                        field updater corresponding to accessor ~x0 is ~x1, ~
-                        but the actual corresponding updater is ~x2."
-                       accessor updater actual-updater))))))))
+                (chk-stobj-updaters1 (cdr accessors) (cdr updaters)
+                                     lst source))
+               (t (msg "The ~@0 have specified that the stobj ~
+                        field updater corresponding to accessor ~x1 is ~x2, ~
+                        but the actual corresponding updater is ~x3."
+                       source accessor updater actual-updater))))))))
 
-(defun chk-stobj-let/updaters (updaters corresp-accessor-fns stobj wrld)
-  (chk-stobj-let/updaters1
+(defun chk-stobj-updaters (accessors updaters stobj wrld source)
+
+; Source is a string or message such as "stobj-let bindings" or "defabsstobj
+; exports", indicating (as a plural noun phrase) what has specified that the
+; given updater functions are supposed to correspond to the given accessor
+; functions.
+
+  (chk-stobj-updaters1
+   accessors
    updaters
-   corresp-accessor-fns
-   (cdddr ; optimization: pop live-var, recognizer, and creator
-    (getpropc stobj 'stobj nil wrld))))
+   (cdddr ; pop live-var, recognizer, and creator
+    (getpropc stobj 'stobj nil wrld))
+   source))
+
+(defun chk-stobj-let/updaters (updater-calls corresp-accessor-fns stobj wrld)
+  (chk-stobj-updaters corresp-accessor-fns
+                      (strip-cars updater-calls)
+                      stobj wrld "stobj-let bindings"))
+
+(defun concrete-accessor (accessor tuples-lst)
+
+; Accessor is a stobj accessor for a stobj st.  Tuples-lst is nil if st is a
+; concrete stobj; otherwise its car is the :absstobj-tuples field of the
+; 'absstobj-info property of st and its cdr is (recursively) a list of such
+; tuples starting with the underlying stobj for st.
+
+  (cond ((endp tuples-lst) accessor)
+        (t (let* ((tuples (car tuples-lst))
+                  (accessor$c (caddr (assoc-eq accessor tuples))))
+             (assert$ accessor$c
+                      (concrete-accessor accessor$c (cdr tuples-lst)))))))
+
+(defun chk-stobj-let/accessors1 (tuples tuples-lst wrld alist)
+
+; Tuples is a subsequence of the :absstobj-tuples field of an absstobj-info
+; record for an abstract stobj name.  See chk-stobj-let/accessors.
+
+  (cond
+   ((endp tuples) nil)
+   ((null (cdddr (car tuples))) ; tuple is not for a stobj accessor
+    (chk-stobj-let/accessors1 (cdr tuples) tuples-lst wrld alist))
+   (t (let* ((tuple (car tuples))
+             (name (car tuple))
+             (exec (caddr tuple))
+             (fld$c (concrete-accessor exec tuples-lst))
+             (old (assoc-eq fld$c alist)))
+        (cond
+         (old (assert$
+
+; Since tuples is a subsequence of the :absstobj-tuples field of an
+; absstobj-info record, there are no duplicate names (cars) in those tuples.
+; So if we already put a name from a tuple into alist (as a cdr of an entry),
+; we would not see that same name in another tuple.
+
+               (not (eq (cdr old) name))
+               (msg "The accessors ~x0 and ~x1 ultimately invoke the same ~
+                     accessor, ~x2, of the same concrete stobj, ~x3."
+                    (cdr old)
+                    name
+                    fld$c
+                    (getpropc fld$c 'stobj-function nil wrld))))
+         (t (chk-stobj-let/accessors1 (cdr tuples) tuples-lst wrld
+                                      (acons fld$c name alist))))))))
+
+(defun absstobj-tuples-lst (st$c wrld)
+  (let ((abs-info (getpropc st$c 'absstobj-info nil wrld)))
+    (cond ((null abs-info) nil)
+          (t (cons (access absstobj-info abs-info :absstobj-tuples)
+                   (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
+                                        wrld))))))
+
+(defun collect-some-triples-with-non-nil-cdddrs (keys alist)
+
+; Collect each triple from alist that has a non-nil cdddr and whose car belongs
+; to keys.
+
+  (cond ((endp alist) nil)
+        ((and (cdddr (car alist))
+              (member-eq (caar alist) keys))
+         (cons (car alist)
+               (collect-some-triples-with-non-nil-cdddrs keys (cdr alist))))
+        (t (collect-some-triples-with-non-nil-cdddrs keys (cdr alist)))))
+
+(defun chk-stobj-let/accessors (st accessor-fns wrld)
+
+; We ensure, in the abstract stobj case, that two different accessors aren't
+; aliases for the same underlying concrete stobj accessor.  This notion of
+; "underlying" refers to following the chain of foundational stobjs until a
+; concrete stobj is reached.
+
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (and abs-info      ; st is an abstract stobj
+         (let ((tuples ; absstobj-tuples with updater component
+                (collect-some-triples-with-non-nil-cdddrs
+                 accessor-fns
+                 (access absstobj-info abs-info :absstobj-tuples))))
+           (and (consp (cdr tuples)) ; optimization; else no aliasing issue
+                (let* ((st$c (access absstobj-info abs-info :st$c))
+                       (tuples-lst (absstobj-tuples-lst st$c wrld)))
+                  (chk-stobj-let/accessors1 tuples tuples-lst wrld nil)))))))
 
 (defun chk-stobj-let (bound-vars actuals stobj updaters corresp-accessor-fns
                                  known-stobjs wrld)
@@ -11417,10 +11555,6 @@
      "The name ~x0 is being used as a single-threaded object.  But in the ~
       current context, ~x0 is not a declared stobj name."
      stobj))
-   ((getpropc stobj 'absstobj-info nil wrld)
-    (msg
-     "The name ~x0 is the name of an abstract stobj."
-     stobj))
    (t (let* ((first-actual (car actuals))
              (first-accessor (car first-actual))
              (acc-stobj (getpropc first-accessor 'stobj-function nil wrld)))
@@ -11434,6 +11568,7 @@
            stobj acc-stobj first-accessor bound-vars actuals wrld))
          ((chk-stobj-let/updaters
            updaters corresp-accessor-fns acc-stobj wrld))
+         ((chk-stobj-let/accessors acc-stobj corresp-accessor-fns wrld))
          (t nil))))))
 
 (defun all-nils-or-x (x lst)
@@ -11445,19 +11580,61 @@
          (all-nils-or-x x (cdr lst)))
         (t nil)))
 
+(defun absstobj-field-fn-of-stobj-type-p (fn tuples)
+
+; Fn is an exported function for some abstract stobj st, and at the top level,,
+; exports is the list of exported functions for st (including fn) and tuples is
+; the cddr of the :absstobj-tuples field of the absstobj-info property of st.
+; Hence tuples is a list of elements (name logic exec . updater) corresponding
+; to the exported functions; see absstobj-info.  We return t when fn is a child
+; stobj accessor or updater, else nil.  We do this by cdring through tuples,
+; looking for the tuple corresponding to fn, which should be among the exports.
+; We return t if we find that fn is a stobj field accessor (as evidenced by
+; presence of a non-nil updater component of the corresponding tuple) or a
+; stobj field updater (as evidenced by finding fn as such an updater
+; component).
+
+  (cond
+   ((endp tuples)
+    (er hard 'absstobj-field-fn-of-stobj-type-p
+        "Implementation error: Failed to find ~x0 among the exports of an ~
+         (implicit) abstract stobj."
+        fn))
+   (t (let* ((tuple (car tuples))
+             (updater (cdddr tuple)))
+        (cond ((eq fn (car tuple))
+               (and updater t))
+              ((eq fn updater)
+               t)
+              (t (absstobj-field-fn-of-stobj-type-p fn (cdr tuples))))))))
+
 (defun stobj-field-fn-of-stobj-type-p (fn wrld)
 
-; Return true if for some concrete stobj st, fn is the accessor or updater for
-; a field fld of st of stobj type.  For fn the accessor or updater for fld,
-; this is equivalent to taking or returning that stobj type, respectively,
-; which is equivalent to taking or returning some stobj other than st.
-; Abstract stobjs are not a concern here; they don't have "fields".
+; Fn is a function symbol of wrld.  Return true if for some stobj st (concrete
+; or abstract), fn is the accessor or updater for a field fld of st of stobj
+; type.  For fn the accessor or updater for fld, this is equivalent to taking
+; or returning that stobj type, respectively, which is equivalent to taking or
+; returning some stobj other than st.  Note that all of this applies not only
+; to concrete stobjs, but also to abstract stobjs with child stobj fields
+; (whose accessors have the :UPDATER keyword in their function specs, and whose
+; updaters are the values of those :UPDATER keywords).
 
   (let ((st (getpropc fn 'stobj-function nil wrld)))
     (and st
-         (not (getpropc st 'absstobj-info nil wrld))
-         (or (not (all-nils-or-x st (stobjs-in fn wrld)))
-             (not (all-nils-or-x st (stobjs-out fn wrld)))))))
+         (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+           (cond
+            (abs-info ; st is an abstract stobj
+             (let ((stobj-prop (getpropc st 'stobj nil wrld)))
+               (and (not (eq fn (cadr stobj-prop)))  ; recognizer
+                    (not (eq fn (caddr stobj-prop))) ; creator
+                    (absstobj-field-fn-of-stobj-type-p
+                     fn
+; We take the cddr to remove the tuples for the recognizer and creator.
+                     (cddr (access absstobj-info abs-info
+                                   :absstobj-tuples))))))
+            (t ; st is a concrete stobj
+             (or (not (all-nils-or-x st (stobjs-in fn wrld)))
+                 (not (all-nils-or-x st (stobjs-out fn wrld))))))))))
 
 (defun stobj-recognizer-p (fn wrld)
 
