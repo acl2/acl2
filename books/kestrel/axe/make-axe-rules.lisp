@@ -530,6 +530,34 @@
   :hints (("Goal" :expand (fns-in-term x)
            :in-theory (enable fns-in-term))))
 
+(defthmd lambda-free-termp-when-equal-of-car-and-quote
+  (implies (equal 'quote (car term))
+           (lambda-free-termp term)))
+
+;move
+(defthm car-of-expand-lambdas-in-terms
+  (equal (car (expand-lambdas-in-terms terms))
+         (expand-lambdas-in-term (car terms)))
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
+
+;(local (in-theory (disable pairlis$))) ;prevent inductions
+
+(defthm car-of-my-sublis-var-lst
+  (implies (consp l)
+           (equal (car (my-sublis-var-lst alist l))
+                  (my-sublis-var alist (car l))))
+  :hints (("Goal" :expand (my-sublis-var-lst alist l)
+           :in-theory (enable my-sublis-var-lst))))
+
+(defthm lambda-free-termp-of-cadr
+  (implies (and (pseudo-termp term)
+                (lambda-free-termp term)
+                (not (equal 'quote (car term)))
+                ;(not (consp (car term)))
+                )
+           (lambda-free-termp (cadr term)))
+  :hints (("Goal" :in-theory (enable lambda-free-termp-when-equal-of-car-and-quote))))
+
 (defthm axe-rule-hyp-listp-of-mv-nth-0-of-make-axe-rule-hyps-for-hyp
   (implies (pseudo-termp hyp)
            (axe-rule-hyp-listp (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
@@ -559,6 +587,7 @@
                     ;(PSEUDO-TERM-LISTP (CDR HYP))
                     ;;(PSEUDO-TERMP HYP)
                     (AXE-SYNTAXP-EXPRP (CADR HYP))
+                    ;(EXPAND-LAMBDAS-IN-TERM HYP)
                     )
            :in-theory (e/d (axe-rule-hypp make-axe-rule-hyps-for-hyp symbolp-when-pseudo-termp
                                           not-equal-of-car-when-not-memberp-of-fns-in-term

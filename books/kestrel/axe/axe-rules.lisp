@@ -124,8 +124,9 @@
 ;;; axe-rule-hypp
 ;;;
 
-;; An axe-rule-hyp (hypothesis of an axe rule) is a regular function call, or an axe-syntaxp or axe-bind-free hyp.
-;; TODO: add that hyps are usually non-lambda function calls? ffffixme what about lambdas deeper in hyps?
+;; An axe-rule-hyp (hypothesis of an axe rule) is an axe-syntaxp hyp, an
+;; axe-bind-free hyp, or a lambda-free (currently) function call.  TODO:
+;; Consider not expanding lambdas in hyps (if they don't have free vars?).
 (defund axe-rule-hypp (hyp)
   (declare (xargs :guard t))
   (and (consp hyp)
@@ -141,7 +142,8 @@
                          (axe-bind-free-function-applicationp (farg1 hyp))
                          ;; This list of vars to bind is quoted when supplied by the user but is unquoted when we process the hyp
                          (symbol-listp (farg2 hyp)))
-                  (pseudo-termp hyp)))))))
+                  (and (pseudo-termp hyp)
+                       (lambda-free-termp hyp))))))))
 
 (defthm axe-rule-hypp-when-not-special
   (implies (and (consp hyp)
@@ -149,14 +151,16 @@
                 (not (equal 'axe-bind-free (car hyp)))
                 (not (equal 'quote (car hyp))))
            (equal (axe-rule-hypp hyp)
-                  (pseudo-termp hyp)))
+                  (and (pseudo-termp hyp)
+                       (lambda-free-termp hyp))))
   :hints (("Goal" :in-theory (enable axe-rule-hypp)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0))))
 
 (defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
   (implies (equal 'work-hard (car hyp))
            (equal (axe-rule-hypp hyp)
-                  (pseudo-termp hyp)))
+                  (and (pseudo-termp hyp)
+                       (lambda-free-termp hyp))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
@@ -166,7 +170,8 @@
            (equal (axe-rule-hypp hyp)
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
-                       (pseudo-termp hyp))))
+                       (pseudo-termp hyp)
+                       (lambda-free-termp hyp))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
