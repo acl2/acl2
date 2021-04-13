@@ -348,6 +348,27 @@
    long)
   :layout :list)
 
+(define keyword-value-list-add-quotes ((quoted-keys symbol-listp)
+                                       (args acl2::keyword-value-listp))
+  :returns (new-args (implies (acl2::keyword-value-listp args)
+                              (acl2::keyword-value-listp new-args)))
+  (if (atom args)
+      nil
+    (cons-with-hint
+     (car args)
+     (cons-with-hint
+      (if (member-eq (car args) quoted-keys)
+          (list 'quote (cadr args))
+        (cadr args))
+      (keyword-value-list-add-quotes quoted-keys (cddr args))
+      (cdr args))
+     args)))
+
+(defmacro make-defsvtv-args! (&rest args)
+  (if (acl2::keyword-value-listp args)
+      (cons 'make-defsvtv-args (keyword-value-list-add-quotes '(:parents) args))
+    (er hard? 'make-defsvtv-args! "Arguments must be a keyword/value-list~%")))
+
 
 (define svtv-data-to-svtv ((x defsvtv-args-p)
                            svtv-data)
@@ -533,7 +554,7 @@
 (defmacro defsvtv$ (name &rest args)
   (b* (((mv stobj norm-args)
         (process-defsvtv$-user-args name args)))
-    `(make-event (defsvtv$-fn (make-defsvtv-args . ,norm-args)
+    `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
                    ,stobj state))))
 
 
@@ -559,7 +580,7 @@
 (defmacro defsvtv$-phasewise (name &rest args)
   (b* (((mv stobj norm-args)
         (process-defsvtv$-phasewise-user-args name args)))
-    `(make-event (defsvtv$-fn (make-defsvtv-args . ,norm-args)
+    `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
                    ,stobj state))))
 
 ;; Doc in new-svtv-doc.lisp

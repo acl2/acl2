@@ -48,6 +48,7 @@
 (include-book "result-array")
 (include-book "make-substitution-code-simple")
 (include-book "make-instantiation-code-simple")
+(include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 ;(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
@@ -276,7 +277,7 @@
     (:REWRITE ALL-DARGP-LESS-THAN-MONOTONE)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-APPEND)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-CONS)
-    (:REWRITE ALL-DARGP-LESS-THAN-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:REWRITE ALL-DARGP-LESS-THAN-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:REWRITE ALL-DARGP-LESS-THAN-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE ALL-DARGP-LESS-THAN-WHEN-ALL-<)
     (:REWRITE ALL-DARGP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
@@ -355,7 +356,7 @@
     (:REWRITE STRIP-CDRS-OF-PAIRLIS$2)
     (:REWRITE SYMBOL-ALISTP-OF-APPEND)
     (:REWRITE SYMBOL-ALISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
-    (:REWRITE SYMBOL-ALISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:REWRITE SYMBOL-ALISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:REWRITE SYMBOL-ALISTP-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE SYMBOL-LISTP-OF-CDR)
     (:REWRITE SYMBOLP-OF-CAR-WHEN-AXE-TREEP-CHEAP)
@@ -413,7 +414,8 @@
     (:TYPE-PRESCRIPTION SYMBOL-LISTP)
     (:TYPE-PRESCRIPTION TRIESP)
     (:TYPE-PRESCRIPTION TRUE-LISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
-    (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
+    (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE-type)
+    (:rewrite TRUE-LISTP-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:TYPE-PRESCRIPTION WF-DAGP)
     equivp-forward-to-symbolp
     equivp-of-car-when-equiv-listp
@@ -705,7 +707,8 @@
                                                            hyp ;partly instantiated
                                                            hyp-num
                                                            other-hyps
-                                                           alist rule-symbol
+                                                           alist
+                                                           rule-symbol
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            equiv-alist rule-alist
                                                            nodenums-to-assume-false ;we keep the whole list as well as walking down it
@@ -752,12 +755,12 @@
               (mv (erp-nil) ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
                   nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down))
-                 ((mv matchp alist-for-free-vars)
+                 (fail-or-alist-for-free-vars
                   ;; TODO: Make 2 versions of this, according to whether HYP is a call of NOT:
                   (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
                   ))
-              (if matchp
-                  (b* ((new-alist (append alist-for-free-vars alist)) ;skip this append?
+              (if (not (eq :fail fail-or-alist-for-free-vars))
+                  (b* ((new-alist (append fail-or-alist-for-free-vars alist)) ;skip this append?
                        ;; Try to relieve all the other-hyps using the new-alist:
                        ((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                         (,relieve-rule-hyps-name other-hyps
@@ -2389,38 +2392,38 @@
                                ,(pack$ 'not-equal-of-quote-and-car-of-mv-nth-0-of- instantiate-hyp-name)
                                (:e booleanp)
                                (:e expt)
-                               (:e EQLABLEP)
-                               (:e EQLABLE-LISTP)
-                               MEMBER-EQ-EXEC-IS-MEMBER-EQUAL ;(:e member-eq-exec)
-                               MEMBER-EQL-EXEC-is-member-equal
+                               (:e eqlablep)
+                               (:e eqlable-listp)
+                               member-eq-exec-is-member-equal ;(:e member-eq-exec)
+                               member-eql-exec-is-member-equal
                                unsigned-byte-p-from-bounds
                                unsigned-byte-p-forward
                                rule-alistp-means-alistp
-                               AXE-BIND-FREE-FUNCTION-APPLICATIONP
-                               NATP-OF-+-OF-A-AND-LARGEST-NON-QUOTEP
-                               <-OF-LARGEST-NON-QUOTEP
-                               CONSP-WHEN-TRUE-LISTP-AND-NON-NIL
-                               ;; RATIONALP-+
-                               ;; RATIONALP-UNARY--
+                               axe-bind-free-function-applicationp
+                               natp-of-+-of-a-and-largest-non-quotep
+                               <-of-largest-non-quotep
+                               consp-when-true-listp-and-non-nil
+                               ;; rationalp-+
+                               ;; rationalp-unary--
                                rationalp-when-integerp-for-axe
                                integerp-of-sub-tries
-                               AXE-RULE-HYPP
-                               STORED-AXE-RULEP
-                               ALL-STORED-AXE-RULEP
+                               axe-rule-hypp
+                               stored-axe-rulep
+                               all-stored-axe-rulep
                                true-listp-of-unify-terms-and-dag-items-fast
-                               (:TYPE-PRESCRIPTION INTEGERP-OF-LARGEST-NON-QUOTEP)
-                               (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP)
+                               (:type-prescription integerp-of-largest-non-quotep)
+                               (:type-prescription pseudo-term-listp)
                                all-vars-in-terms-bound-in-alistp-correct
                                all-vars-in-term-bound-in-alistp-correct
-                               SYMBOL-ALISTP-OF-PAIRLIS$-ALT
+                               symbol-alistp-of-pairlis$-alt
                                true-listp-of-cons
                                axe-treep-when-consp-of-car
                                not-<-of-largest-non-quotep-and--1
                                integerp-when-natp-for-axe
                                pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
-                               INTEGERP-OF-MAXELEM2
+                               integerp-of-maxelem2
                                integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
-                               <-OF-MAXELEM-WHEN-ALL-<
+                               <-of-maxelem-when-all-<
                                ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                ,(pack$ relieve-rule-hyps-name '-return-type)
                                ,(pack$ try-to-apply-rules-name '-return-type)
@@ -2640,7 +2643,7 @@
               ;; Note that the index used here may not be in nodenum of the literal:
               (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
               ;; Make an array to track results in the worklist algorithm:
-              (result-array-name (pack$ 'result-array- prover-depth))
+              (result-array-name (pack$ 'result-array- prover-depth)) ;don't re-compute for each literal?
               ;; TODO: Consider using (+ 1 nodenum) for the length of the array
               ;; here -- to make the array smaller -- but that may prevent
               ;; re-using the previous raw Lisp array, since the old length is
@@ -3254,7 +3257,7 @@
                         ;; (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
                         ;; (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
                         ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                         (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
+                         (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
                                           (if (posp dag-len) ;todo: should always be true
                                               dag-len
                                             1)

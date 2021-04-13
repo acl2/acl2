@@ -516,22 +516,19 @@
            :in-theory (enable fns-in-term))))
 
 ;memberp version
-(DEFTHM NOT-MEMBERp-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM
-  (IMPLIES
-   (AND (PSEUDO-TERMP TERM)
-        (NOT (MEMBERp FN (FNS-IN-TERM TERM))))
-   (NOT (MEMBERp
-         FN
-         (FNS-IN-TERM (EXPAND-LAMBDAS-IN-TERM TERM)))))
-  :hints (("Goal" :use (:instance NOT-MEMBER-equal-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM)
-           :in-theory (disable NOT-MEMBER-equal-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM))))
+(defthm not-memberp-of-fns-in-term-of-expand-lambdas-in-term
+  (implies (and (pseudo-termp term)
+                (not (memberp fn (fns-in-term term))))
+           (not (memberp fn (fns-in-term (expand-lambdas-in-term term)))))
+  :hints (("Goal" :use (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)
+           :in-theory (disable not-member-equal-of-fns-in-term-of-expand-lambdas-in-term))))
 
-(defthm not-memberp-of-FNS-IN-TERM-of-cadr
-  (implies (and (NOT (MEMBERP fn (FNS-IN-TERM x)))
-                (not (EQUAL 'QUOTE (CAR X))))
-           (NOT (MEMBERP fn (FNS-IN-TERM (CAR (CDR x))))))
-  :hints (("Goal" :expand (FNS-IN-TERM X)
-           :in-theory (enable FNS-IN-TERM))))
+(defthm not-memberp-of-fns-in-term-of-cadr
+  (implies (and (not (memberp fn (fns-in-term x)))
+                (not (equal 'quote (car x))))
+           (not (memberp fn (fns-in-term (car (cdr x))))))
+  :hints (("Goal" :expand (fns-in-term x)
+           :in-theory (enable fns-in-term))))
 
 (defthm axe-rule-hyp-listp-of-mv-nth-0-of-make-axe-rule-hyps-for-hyp
   (implies (pseudo-termp hyp)
@@ -687,11 +684,7 @@
 ;; TODO: Consider deprecating this in favor of the stored-rule format.
 ;; TODO: Allow this to return an error (causing the caller to skip the rule)?
 (defund make-axe-rule (lhs rhs rule-symbol hyps extra-hyps print wrld)
-  (declare (xargs :guard (and (pseudo-termp lhs)
-                              (consp lhs) ;must be a function call
-                              (symbolp (ffn-symb lhs))
-                              (not (eq 'quote (ffn-symb lhs)))
-                              (lambda-free-termp lhs)
+  (declare (xargs :guard (and (axe-rule-lhsp lhs)
                               (pseudo-termp rhs)
                               (pseudo-term-listp hyps) ;; from the theorem
                               (axe-rule-hyp-listp extra-hyps) ;; already processed, don't bind any vars, for stopping loops
@@ -735,11 +728,7 @@
   :hints (("Goal" :in-theory (enable rule-hyps make-axe-rule))))
 
 (defthm axe-rulep-of-make-axe-rule
-  (implies (and (pseudo-termp lhs)
-                (lambda-free-termp lhs)
-                (consp lhs)
-;                (symbolp (ffn-symb lhs))
-                (not (equal 'quote (ffn-symb lhs)))
+  (implies (and (axe-rule-lhsp lhs)
                 (pseudo-termp rhs)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
@@ -747,7 +736,7 @@
            (axe-rulep (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
   :hints (("Goal" :in-theory (enable axe-rulep))))
 
-;;Returns (mv erp lhs rhs)
+;;Returns (mv erp lhs rhs).
 (defund lhs-and-rhs-of-conc (conc rule-symbol known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (symbolp rule-symbol)
@@ -783,50 +772,60 @@
             (if (member-eq fn known-boolean-fns)
                 ;; pred -> (equal pred 't)
                 (mv nil (expand-lambdas-in-term conc) *t*)
-              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not a known boolean) ~x0 in rule ~x1" conc rule-symbol)
+              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
                       (mv t nil nil)))))))))
 
-(defthm lambda-free-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+(defthm axe-rule-lhsp-of-mv-nth-1-of-lhs-and-rhs-of-conc
   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+                (symbol-listp known-boolean-fns) ;drop?
                 (pseudo-termp conc))
-           (lambda-free-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+           (axe-rule-lhsp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+  :hints (("Goal"  :expand ((expand-lambdas-in-term conc))
+           :in-theory (enable lhs-and-rhs-of-conc axe-rule-lhsp))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (pseudo-termp conc))
-           (pseudo-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm lambda-free-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (pseudo-termp conc))
+;;            (lambda-free-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm symbolp-of-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (symbolp (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm pseudo-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (pseudo-termp conc))
+;;            (pseudo-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm consp-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (consp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm symbolp-of-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (symbol-listp known-boolean-fns)
+;;                 (pseudo-termp conc))
+;;            (symbolp (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))))
+;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;;            :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm not-equal-of-quote-and-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (not (equal 'quote (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm consp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (symbol-listp known-boolean-fns)
+;;                 (pseudo-termp conc))
+;;            (consp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;;            :in-theory (enable lhs-and-rhs-of-conc))))
+
+;; ;; (defthm not-equal-of-quote-and-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;; ;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;; ;;                 (symbol-listp known-boolean-fns)
+;; ;;                 (pseudo-termp conc))
+;; ;;            (not (equal 'quote (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))))
+;; ;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;; ;;            :in-theory (enable lhs-and-rhs-of-conc))))
 
 (defthm pseudo-termp-of-mv-nth-2-of-lhs-and-rhs-of-conc
   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
                 (pseudo-termp conc))
            (pseudo-termp (mv-nth 2 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+
+
 
 ;;;
 ;;; axe-rule-listp

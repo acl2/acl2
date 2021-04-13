@@ -17,7 +17,7 @@
             (path-clear path (cdr frame)))
         nil)
        (path (mbe :exec path :logic (fat32-filename-list-fix
-                                             path))))
+                                     path))))
     (and
      (or
       (not (prefixp
@@ -503,7 +503,7 @@
       (:rewrite abs-file-alist-p-correctness-1)
       (:definition len)
       (:rewrite abs-find-file-correctness-lemma-16)
-      (:rewrite abs-find-file-correctness-lemma-40)))
+      (:rewrite abs-find-file-correctness-lemma-26)))
     :induct (collapse frame))
    ("subgoal *1/6"
     :use
@@ -1776,49 +1776,6 @@
            (equal (names-at fs path) nil))
   :hints (("goal" :in-theory (enable abs-find-file-helper names-at))))
 
-(defthm
-  path-clear-partial-collapse-when-zp-src-lemma-16
-  (implies
-   (and
-    (equal (frame-val->src$inline (cdr (assoc-equal 0 frame)))
-           0)
-    (not (member-equal (car indices)
-                       (seq-this-under-path frame path)))
-    (consp (assoc-equal (car indices)
-                        (frame->frame frame)))
-    (not (prefixp (fat32-filename-list-fix path)
-                  (frame-val->path (cdr (assoc-equal (car indices)
-                                                     (frame->frame frame))))))
-    (prefixp (frame-val->path (cdr (assoc-equal (car indices)
-                                                (frame->frame frame))))
-             (fat32-filename-list-fix path))
-    (frame-p frame)
-    (no-duplicatesp-equal (strip-cars frame))
-    (abs-separate frame)
-    (mv-nth 1 (collapse frame))
-    (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-    (subsetp-equal (abs-addrs (frame->root frame))
-                   (frame-addrs-root (frame->frame frame)))
-    (equal (abs-find-file-src (partial-collapse frame path)
-                              path)
-           0))
-   (equal
-    (names-at
-     (frame-val->dir
-      (cdr (assoc-equal (car indices)
-                        (frame->frame (partial-collapse frame path)))))
-     (nthcdr (len (frame-val->path (cdr (assoc-equal (car indices)
-                                                     (frame->frame frame)))))
-             path))
-    nil))
-  :hints (("goal" :do-not-induct t
-           :use (:instance abs-find-file-correctness-1-lemma-36
-                           (x (car indices)))
-           :in-theory (e/d
-                       ((:linear
-                         path-clear-partial-collapse-when-zp-src-lemma-6))
-                       (prefixp-when-prefixp len-when-prefixp)))))
-
 (local
  (defthmd
    path-clear-partial-collapse-when-zp-src-lemma-1
@@ -1842,8 +1799,11 @@
      :induct (path-clear-alt path
                              (frame->frame (partial-collapse frame path))
                              indices)
-     :in-theory (e/d (subsetp-equal path-clear-alt)
-                     ())))))
+     :in-theory (e/d
+                 ((:linear
+                   path-clear-partial-collapse-when-zp-src-lemma-6)
+                  subsetp-equal path-clear-alt)
+                 (prefixp-when-prefixp len-when-prefixp))))))
 
 (defthm
   path-clear-partial-collapse-when-zp-src
@@ -1926,7 +1886,7 @@
       path))
     (cons (abs-file-fix nil) '(2))))
   :hints (("goal" :in-theory (e/d (assoc-of-frame->frame))
-           :use (:instance abs-find-file-correctness-1-lemma-75
+           :use (:instance abs-find-file-correctness-lemma-7
                            (x (abs-find-file-src frame path))))))
 
 (defthm

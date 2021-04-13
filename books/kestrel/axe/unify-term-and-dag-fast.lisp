@@ -102,16 +102,14 @@
        (if (eq 'quote (ffn-symb term))
            ;; Term is a constant, and we know the skeletons match:
            alist
-         ;; Term is a function call (the only thing that matches is a call to the same function with args that match)
-         ;; The darg is a nodenum (since if it was a cons, the skeletons wouldn't match)
-         (let ((darg-expr (aref1 'dag-array dag-array (the (integer 0 *) darg)))) ;todo: strengthen type decl?
-           ;; We know the fns match since the skeletons match, so just process the args:
+         ;; Term is a function call.  We know darg is a nodenum whose expr is a call of the same function, since the skeletons match.  So we just have to check the args:
+         (let ((darg-expr (aref1 'dag-array dag-array (the (integer 0 *) darg)))) ;todo: strengthen type decl? or drop it?
            (unify-terms-and-dag-when-skeleton-correct (fargs term) (dargs (the cons darg-expr)) dag-array dag-len alist)))
-     ;; Term is not a consp, so it must be a variable:
+     ;; Term is not a cons, so it must be a variable:
      (let ((previous-binding (assoc-eq (the symbol term) alist)))
        (if previous-binding
            ;; If there's a previous binding for the variable, it must match the current item:
-           ;;( what if it was bound to a quotep and now we have the nodenum of the quotep - better to always inline?)
+           ;;(what if it was bound to a quotep and now we have the nodenum of the quotep - better to always inline?)
            (if (equal (cdr previous-binding) darg)
                alist
              :fail)

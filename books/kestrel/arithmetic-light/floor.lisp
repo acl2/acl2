@@ -22,6 +22,7 @@
 (local (include-book "integerp"))
 (local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable floor))
 
@@ -110,7 +111,7 @@
                 (rationalp j)
                 (not (equal 0 j)))
            (< (+ -1 (/ i j)) (floor i j)))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :in-theory (e/d (floor) (<-OF-*-OF-/-ARG1)))))
 
 (defthm my-floor-lower-bound-linear
   (implies (and (rationalp i)
@@ -118,7 +119,7 @@
                 (not (equal 0 j)))
            (< (+ -1 (/ i j)) (floor i j)))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :by my-floor-lower-bound)))
 
 ;; In this version, we have multiplied through by j.
 (defthm my-floor-lower-bound-alt
@@ -148,7 +149,7 @@
                 (rationalp j))
            ;; the phrasing of the * term matches our normal form
            (<= (floor i j) (* i (/ j))))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :in-theory (e/d (floor) (<-of-*-of-/-arg1)))))
 
 (defthm floor-upper-bound-linear
   (implies (and (rationalp i)
@@ -156,7 +157,7 @@
            ;; the phrasing of the * term matches our normal form
            (<= (floor i j) (* i (/ j))))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :by my-floor-upper-bound)))
 
 (defthm *-of-floor-upper-bound-linear
   (implies (and (rationalp i)
@@ -171,7 +172,8 @@
                 (rationalp i)
                 (rationalp j))
            (< (floor i j) (* (/ j) i)))
-  :rule-classes ((:linear :backchain-limit-lst (0 nil nil))))
+  :rule-classes ((:linear :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG2))))
 
 ;; In this version, we have multiplied through by j.
 (defthmd my-floor-upper-bound-alt
@@ -323,6 +325,31 @@
                        (<= 0 i))))
   :hints (("Goal" :in-theory (enable floor))))
 
+;move
+(defthm <-of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (numerator x) (denominator x))
+                  (if (<= x 0)
+                      t
+                    (< x 1))))
+  :hints (("Goal" :use (:instance rational-implies2)
+           :in-theory (disable rational-implies2))))
+
+;drop the non-gen one?
+(defthm equal-of-0-and-floor-gen
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (equal 0 (floor i j))
+                  (if (< 0 j)
+                      (and (< i j)
+                           (<= 0 i))
+                    (if (equal 0 j)
+                        t
+                      ;; (< j 0):
+                      (and (< j i)
+                           (<= i 0))))))
+  :hints (("Goal" :in-theory (enable floor))))
+
 (defthm floor-of-1-arg1
   (implies (natp j) ;allow non nats somehow? ;allow negatives?
            (equal (floor 1 j)
@@ -400,8 +427,9 @@
 ;floor-minus should be split into two lemmas
 
 ;FIXME all-vars-negated returns true for a constant (even 0).  quotep help fixes it for this rule
-;todo: i thnk i've seen this loop
-(defthm floor-minus-eric-better
+;todo: i think i've seen this loop
+;ifix this - it fired on 1 <-- old comment?
+(defthmd floor-minus-eric-better
   (implies (and (syntaxp (and (all-vars-negated i)
                               (not (quotep i))))
                 (rationalp i)
@@ -904,7 +932,9 @@
                                                 <-*-/-left
                                                 <-y-*-y-x
                                                 <-*-/-right
-                                                floor-bound-hack-eric)))))
+                                                floor-bound-hack-eric
+                                                <-OF-*-OF-/-ARG1
+                                                <-OF-*-OF-/-ARG2)))))
 
 (defthm floor-bound-arg1-linear
   (implies (and (rationalp i)
@@ -928,19 +958,6 @@
 ;;            :in-theory (disable floor-upper-bound-strict
 ;;                                <-of-times-of-floor-and-same
 ;;                                floor-mod-elim))))
-
-(defthm equal-of-floor-and-i
-  (implies (and (natp i)
-                (< 1 j)
-                (integerp j))
-           (equal (equal (floor i j) i)
-                  (equal i 0)))
-  :hints (("Goal"
-           :use (:instance floor-upper-bound-strict)
-           :in-theory (disable floor-upper-bound-strict
-                               <-of-times-of-floor-and-same
-                               floor-mod-elim))))
-
 
 ;; ;we now have a more general version
 ;; ;gen!
@@ -1153,3 +1170,15 @@
 (defthm equal-of-floor-and-*-of-/
   (equal (equal (floor i j) (* i (/ j)))
          (integerp (* i (/ j)))))
+
+;; quite strong!
+;rephrase the rhs?
+(defthmd equal-of-floor
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (equal val (floor i j))
+                  (and (integerp val)
+                       (<= val (/ i j))
+                       (< (/ i j) (+ 1 val)))))
+  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG1
+                                      <-OF-*-OF-/-ARG1-alt))))

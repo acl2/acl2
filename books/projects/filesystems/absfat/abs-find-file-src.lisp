@@ -38,7 +38,6 @@
     (:rewrite member-of-abs-fs-fix-when-natp)
     (:rewrite abs-find-file-helper-of-collapse-lemma-2)
     (:rewrite m1-file-alist-p-of-intersection-equal-2)
-    (:rewrite absfat-subsetp-transitivity-lemma-5)
     (:rewrite
      abs-separate-of-frame->frame-of-collapse-this-lemma-7)
     (:linear 1st-complete-correctness-2)

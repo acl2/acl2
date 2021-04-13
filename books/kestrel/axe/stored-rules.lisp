@@ -24,7 +24,10 @@
 
 ;these are what are stored in rule-alists
 (defund make-stored-rule (lhs-args hyps rule-symbol rhs)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (and (pseudo-term-listp lhs-args) ;should be lambda-free
+                              (axe-rule-hyp-listp hyps)
+                              (pseudo-termp rhs) ;todo: disallow free vars
+                              (symbolp rule-symbol))))
   (list* lhs-args ;does not include the leading function symbol (we'll always know it)
          hyps     ;hyps are the next-most-frequenty-accessed part of the rule
          rule-symbol
@@ -51,7 +54,7 @@
 (defund stored-axe-rulep (item)
   (declare (xargs :guard t))
   (and (<= 3 (len item)) ;the final cdr is the rhs
-       (pseudo-term-listp (stored-rule-lhs-args item))
+       (pseudo-term-listp (stored-rule-lhs-args item)) ;should be lambda-free
        (axe-rule-hyp-listp (stored-rule-hyps item))
        (pseudo-termp (stored-rule-rhs item)) ;todo: disallow free vars
        (symbolp (stored-rule-symbol item))))

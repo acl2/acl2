@@ -528,16 +528,14 @@
                     (abs-file->contents-when-m1-file-p nfix))))
   :rule-classes :congruence)
 
-;; This is kinda general.
-(defthmd ctx-app-ok-when-absfat-equiv-lemma-6
-  (implies (and (natp x)
-                (absfat-equiv abs-file-alist1 abs-file-alist2)
-                (abs-fs-p abs-file-alist1)
-                (abs-fs-p abs-file-alist2))
-           (iff (member-equal x abs-file-alist1)
-                (member-equal x abs-file-alist2)))
+;; If we're going to keep this, we might as well make it a congruence.
+(defthm ctx-app-ok-when-absfat-equiv-lemma-2
+  (implies (absfat-equiv abs-file-alist1 abs-file-alist2)
+           (iff (member-equal (nfix x) (abs-fs-fix abs-file-alist1))
+                (member-equal (nfix x) (abs-fs-fix abs-file-alist2))))
   :hints (("goal" :in-theory (enable absfat-equiv)
-           :do-not-induct t)))
+           :do-not-induct t))
+  :rule-classes :congruence)
 
 (defthm
   absfat-equiv-of-ctx-app-lemma-1
@@ -4343,7 +4341,7 @@
                                  (take n (seq-this (collapse-this frame x))))))
       :hints
       (("goal"
-        :in-theory (e/d (valid-seqp collapse-seq seq-this)
+        :in-theory (e/d (valid-seqp collapse-seq seq-this take-as-append-and-nth)
                         ((:rewrite binary-append-take-nthcdr)
                          (:rewrite collapse-seq-of-collapse-seq)
                          (:rewrite collapse-seq-of-collapse-seq)
@@ -4360,7 +4358,8 @@
                          (:rewrite
                           different-from-own-src-1)
                          (:rewrite
-                          m1-file-alist-p-of-final-val-seq-lemma-2)))
+                          m1-file-alist-p-of-final-val-seq-lemma-2)
+                         take))
         :use
         ((:instance (:rewrite take-of-nthcdr)
                     (l (seq-this (collapse-this frame x)))
@@ -4510,10 +4509,12 @@
                               (nthcdr (+ -1 n) (take n seq)))))))
   :hints
   (("goal"
-    :in-theory (e/d (frame-addrs-before-seq ctx-app-list ctx-app-list-seq member-of-take)
+    :in-theory (e/d (frame-addrs-before-seq ctx-app-list ctx-app-list-seq
+                                            member-of-take take-as-append-and-nth)
                     ((:definition member-equal)
                      (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
-                     (:rewrite binary-append-take-nthcdr)))
+                     (:rewrite binary-append-take-nthcdr)
+                     take))
     :use ((:instance (:rewrite binary-append-take-nthcdr)
                      (l (take n seq))
                      (i (+ -1 n)))
@@ -5008,38 +5009,17 @@
   (("goal"
     :do-not-induct t
     :cases
-    ((equal
-      (if
-          (<
-           (binary-+
-            (len (frame->frame frame))
-            (unary--
-             (collapse-1st-index
-              frame
-              (frame-val->src$inline (cdr (assoc-equal (nth (binary-+ '-1 n) seq)
-                                                       (frame->frame frame)))))))
-           '0)
-          '0
-        (binary-+
-         (len (frame->frame frame))
-         (unary--
-          (collapse-1st-index
-           frame
-           (frame-val->src$inline (cdr (assoc-equal (nth (binary-+ '-1 n) seq)
-                                                    (frame->frame frame))))))))
-      (binary-+
-       (len (frame->frame frame))
-       (unary-- (collapse-1st-index
-                 frame
-                 (frame-val->src$inline
-                  (cdr (assoc-equal (nth (binary-+ '-1 n) seq)
-                                    (frame->frame frame))))))))))))
+    ((<
+      (len (frame->frame frame))
+      (collapse-1st-index
+       frame
+       (frame-val->src$inline (cdr (assoc-equal (nth (+ -1 n) seq)
+                                                (frame->frame frame))))))))))
 
 (defthm
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-18
   (implies
    (and
-    (not (zp n))
     (subsetp-equal (frame-addrs-before-seq frame x (take (+ -1 n) seq))
                    (frame-addrs-before frame x (collapse-1st-index frame x)))
     (frame-p (frame->frame frame))
@@ -5054,9 +5034,11 @@
                   (frame-addrs-before frame x (collapse-1st-index frame x))))
   :hints
   (("goal"
-    :in-theory (e/d (frame-addrs-before-seq)
+    :in-theory (e/d (frame-addrs-before-seq take-as-append-and-nth)
                     ((:rewrite binary-append-take-nthcdr)
-                     (:rewrite frame-addrs-before-seq-of-append)))
+                     (:rewrite frame-addrs-before-seq-of-append)
+                     take
+                     subsetp-append1))
     :use
     ((:instance (:rewrite binary-append-take-nthcdr)
                 (l (take n seq))
@@ -5125,10 +5107,11 @@
      :hints
      (("goal"
        :do-not-induct t
-       :in-theory (e/d (member-of-take)
+       :in-theory (e/d (member-of-take take-as-append-and-nth)
                        ((:rewrite binary-append-take-nthcdr)
                         (:rewrite subsetp-append1)
-                        valid-seqp-after-collapse-this-lemma-7))
+                        valid-seqp-after-collapse-this-lemma-7
+                        take))
        :use
        ((:instance
          (:rewrite binary-append-take-nthcdr)
@@ -5710,7 +5693,6 @@
      lemma-2
      (implies
       (and
-       (not (zp n))
        (mv-nth
         1
         (ctx-app-list (frame->root frame)
@@ -5733,14 +5715,16 @@
                             nil frame
                             (frame-addrs-before-seq frame 0 (take n seq)))))
      :hints
-     (("goal"
-       :do-not-induct t
-       :in-theory (e/d (frame-addrs-before-seq ctx-app-list-seq ctx-app-list)
-                       ((:rewrite binary-append-take-nthcdr)
-                        (:rewrite frame-addrs-before-seq-of-append)
-                        (:rewrite member-equal-nth-take-when-no-duplicatesp)
-                        (:rewrite ctx-app-ok-of-ctx-app-list-seq)
-                        ctx-app-ok-of-ctx-app-list-seq-lemma-1))
+     (("goal" :do-not-induct t
+       :in-theory
+       (e/d (frame-addrs-before-seq ctx-app-list-seq
+                                    ctx-app-list take-as-append-and-nth)
+            ((:rewrite binary-append-take-nthcdr)
+             (:rewrite frame-addrs-before-seq-of-append)
+             (:rewrite member-equal-nth-take-when-no-duplicatesp)
+             (:rewrite ctx-app-ok-of-ctx-app-list-seq)
+             ctx-app-ok-of-ctx-app-list-seq-lemma-1
+             take))
        :use ((:instance (:rewrite binary-append-take-nthcdr)
                         (l (take n seq))
                         (i (+ -1 n)))
@@ -5788,7 +5772,8 @@
                                 (frame-addrs-before-seq frame 0 (take n seq))
                                 seq)))
      :instructions
-     ((:bash
+     ((in-theory (e/d (take-as-append-and-nth) (take)))
+      (:bash
        ("goal"
         :do-not-induct t
         :in-theory (e/d (frame-addrs-before-seq ctx-app-list-seq ctx-app-list)
@@ -7005,7 +6990,6 @@
         (consp (assoc-equal x (frame->frame frame)))
         (abs-complete
          (frame-val->dir$inline (cdr (assoc-equal x (frame->frame frame)))))
-        (not (zp n))
         (<= n (len (seq-this frame)))
         (subsetp-equal (take (+ -1 n) (seq-this frame))
                        (cons x (seq-this (collapse-this frame x))))
@@ -7018,7 +7002,8 @@
                       (cons x (seq-this (collapse-this frame x)))))
       :hints
       (("goal" :do-not-induct t
-        :in-theory (disable (:rewrite subsetp-append1))
+        :in-theory (e/d (take-as-append-and-nth)
+                        (take (:rewrite subsetp-append1)))
         :use ((:instance (:rewrite subsetp-append1)
                          (c (cons x (seq-this (collapse-this frame x))))
                          (b (nthcdr (+ -1 n)
@@ -7045,8 +7030,7 @@
        (not (consp (frame-val->path$inline (cdr (assoc-equal 0 frame))))))
       (subsetp-equal (take n (seq-this frame))
                      (cons x (seq-this (collapse-this frame x)))))
-     :hints (("goal" :in-theory (e/d nil nil)
-              :induct (dec-induct n))))))
+     :hints (("goal" :induct (dec-induct n))))))
 
 (local
  (defthm

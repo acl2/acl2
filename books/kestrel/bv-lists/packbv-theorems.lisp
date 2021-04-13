@@ -304,5 +304,5 @@
                   (equal (bvchop-list size (take n x))
                          (bvchop-list size (take n y)))))
   :hints (("Goal" :induct t
-           :in-theory (e/d (packbv take)
+           :in-theory (e/d (packbv take floor-minus-eric-better)
                            (bvchop-upper-bound)))))

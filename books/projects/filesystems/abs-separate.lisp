@@ -3679,14 +3679,15 @@
                            (abs-file->contents (cdr (assoc-equal name z)))))
   :hints (("goal" :in-theory (enable absfat-subsetp))))
 
-(defthm
-  absfat-subsetp-transitivity-lemma-5
-  (implies (and (abs-directory-file-p (cdr (assoc-equal name z)))
-                (abs-file-alist-p z)
-                (consp (assoc-equal name y))
-                (not (abs-directory-file-p (cdr (assoc-equal name y)))))
-           (not (absfat-subsetp y z)))
-  :hints (("goal" :in-theory (enable absfat-subsetp))))
+(local
+ (defthm
+   absfat-subsetp-transitivity-lemma-5
+   (implies (and (abs-directory-file-p (cdr (assoc-equal name z)))
+                 (abs-file-alist-p z)
+                 (consp (assoc-equal name y))
+                 (not (abs-directory-file-p (cdr (assoc-equal name y)))))
+            (not (absfat-subsetp y z)))
+   :hints (("goal" :in-theory (enable absfat-subsetp)))))
 
 (defthm absfat-subsetp-transitivity-lemma-6
   (implies (and (not (consp (car x)))

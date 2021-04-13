@@ -452,20 +452,19 @@
                              (cw "(Failed to relieve free vars in hyp ~x0 of rule ~x1.)~%" hyp-num rule-symbol))
                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
               (b* ((arg-list (first assumption-arg-lists)) ;; args of this assumption
-                   ((mv matchp extended-alist) ;extended-alist is a possibly-extended version of alist (todo: just return an alist or :fail?)
-                    (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
-                (if (not matchp)
+                   (fail-or-extended-alist (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
+                (if (eq :fail fail-or-extended-alist)
                     ;;this assumption didn't match:
                     (,relieve-free-var-hyp-and-all-others-name (rest assumption-arg-lists)
                                                                hyp-args hyp-num other-hyps
                                                                alist rule-symbol
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
-                                                                rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
+                                                               rewriter-rule-alist refined-assumption-alist node-replacement-array-num-valid-nodes print
                                                                interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                   ;; the assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
                   (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                     (,relieve-rule-hyps-name other-hyps (+ 1 hyp-num)
-                                             extended-alist ;ASSUMPTION bound some free vars
+                                             fail-or-extended-alist ;ASSUMPTION bound some free vars
                                              rule-symbol
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array
                                               rewriter-rule-alist
