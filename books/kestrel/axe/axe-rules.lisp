@@ -131,9 +131,9 @@
 ;; Axe creates these structures by processing hyps in theorems from the world.
 (defund axe-rule-hypp (hyp)
   (declare (xargs :guard t))
-  (and (consp hyp)
+  (and (consp hyp) ; can't be a variable
        (let ((fn (ffn-symb hyp)))
-         (and (not (eq 'quote fn))
+         (and (not (eq 'quote fn)) ; can't be a quoted constant
               (if (eq :axe-syntaxp fn) ;; (:axe-syntaxp . <expr>)
                   ;; The symbol 'axe-syntaxp consed on to an expression:
                   (and (pseudo-termp (cdr hyp))
