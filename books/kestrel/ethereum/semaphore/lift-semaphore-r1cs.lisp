@@ -36,21 +36,26 @@
                                  (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
                                  (monitor 'nil)
                                  (print ':brief))
-  `(acl2::prove-implication-with-r1cs-prover
-    (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
-                                   (cons
-                                    ;; Assume all vars are field elements:
-                                    (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
-                                                                     ;; bake in baby-jubjub-prime:
-                                                                     ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
-                                    ;; Assume that the inputs are bits:
-                                    (acl2::make-bitp-claims ,input-vars)))
-                                  ,lifted-r1cs)
-    ,spec-term
-    :tactic ,tactic
-    :rule-lists ,rule-lists     ;todo: use a default rule-list
-    :global-rules ,global-rules ;todo: add some default global-rules
-    :interpreted-function-alist ,interpreted-function-alist ;todo
-    :no-splitp ,no-splitp
-    :monitor ,monitor
-    :print ,print))
+  `(encapsulate ()
+     ;; Print the prime more clearly:
+     (table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
+
+     ;; TODO: Suppress printing of error output at the end of failed proofs:
+     (acl2::prove-implication-with-r1cs-prover
+      (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
+                                     (cons
+                                      ;; Assume all vars are field elements:
+                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
+                                                                       ;; bake in baby-jubjub-prime:
+                                                                       ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
+                                      ;; Assume that the inputs are bits:
+                                      (acl2::make-bitp-claims ,input-vars)))
+                                    ,lifted-r1cs)
+      ,spec-term
+      :tactic ,tactic
+      :rule-lists ,rule-lists   ;todo: use a default rule-list
+      :global-rules ,global-rules ;todo: add some default global-rules
+      :interpreted-function-alist ,interpreted-function-alist ;todo
+      :no-splitp ,no-splitp
+      :monitor ,monitor
+      :print ,print)))

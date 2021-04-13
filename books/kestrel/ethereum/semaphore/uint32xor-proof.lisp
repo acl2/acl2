@@ -19,10 +19,6 @@
 ;; (depends-on "json/uint32xor.json")
 (local (acl2::load-circom-json "json/uint32xor.json" *BABY-JUBJUB-PRIME*))
 
-;; Print some common numbers more clearly:
-;; TODO: Put in a more central place?  Use #. ?
-(table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
-
 ;;;
 ;;; Unroll the R1CS
 ;;;
