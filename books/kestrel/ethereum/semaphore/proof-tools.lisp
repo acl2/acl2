@@ -25,7 +25,7 @@
 
 ;;TODO: generalize to verify-r1cs
 (defmacro verify-semaphore-r1cs (lifted-r1cs ; a DAG
-                                 spec-term ; a term over the input and output vars
+                                 spec-term ; a term over the input and output vars, not evaluated
                                  &key
                                  (bit-inputs 'nil) ; bitp assumptions will be generated for these
                                  ;; same as for acl2::prove-implication-with-r1cs-prover:
@@ -51,7 +51,7 @@
                                       ;; Assume that the inputs are bits:
                                       (acl2::make-bitp-claims ,bit-inputs)))
                                     ,lifted-r1cs)
-      ,spec-term
+      ',spec-term
       :tactic ,tactic
       :rule-lists ,rule-lists   ;todo: use a default rule-list
       :global-rules ,global-rules ;todo: add some default global-rules
