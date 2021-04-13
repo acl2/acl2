@@ -289,6 +289,7 @@
   :hints (("Goal" :expand (axe-syntaxp-exprp expr)
            :in-theory (enable process-axe-syntaxp-function-application axe-syntaxp-function-applicationp axe-syntaxp-exprp))))
 
+;; Drop dag-array formals passed as the last args to functions
 (defund process-axe-syntaxp-expr (expr wrld)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-syntaxp-exprp expr)
@@ -402,6 +403,7 @@
                  ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
+                 ;; Drop dag-array formals passed a last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
                  (mentioned-vars (all-vars processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
