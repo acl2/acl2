@@ -32,3 +32,9 @@
 (defthm nthcdr-of-len-same
   (equal (nthcdr (len x) x)
          (finalcdr x)))
+
+;where should this go?
+(defthm equal-of-append-same
+  (equal (equal x (append x y))
+         (equal y (finalcdr x)))
+  :hints (("Goal" :in-theory (enable))))

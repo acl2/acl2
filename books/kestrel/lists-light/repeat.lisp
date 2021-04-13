@@ -159,3 +159,9 @@
        (or (natp x)
            (zp n)))
   :hints (("Goal" :in-theory (enable nat-listp repeat))))
+
+;; In case we are not re-combining the cons with the repeat of n-1
+(defthm equal-of-repeat-and-cons-of-repeat-one-one-less
+  (equal (equal (repeat n x) (cons x (repeat (+ -1 n) x)))
+         (posp (nfix n)))
+  :hints (("Goal" :in-theory (enable repeat))))
