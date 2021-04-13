@@ -1772,6 +1772,113 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montgomery-mul-associativity
+  :short "Associativity of scalar multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This involves heterogeneous entities,
+     namely two scalars and a point.
+     Multiplying the point by one scalar and the the other
+     is equivalent to multiplying the scalars first and then the point."))
+
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+  (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+  (defrulel montgomery-mul-of-mul-when-nonneg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :induct (acl2::dec-induct scalar)
+    :enable montgomery-mul-of-scalar-addition)
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-mul-when-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (< scalar 0)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:scalar (and (integerp scalar) (< scalar 0))))
+     (:assume (:scalar1 (integerp scalar1)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:derive (:lhs-to-intermediate
+               (equal (montgomery-mul scalar
+                                      (montgomery-mul scalar1
+                                                      point
+                                                      curve)
+                                      curve)
+                      (montgomery-neg
+                       (montgomery-mul (- scalar)
+                                       (montgomery-mul scalar1
+                                                       point
+                                                       curve)
+                                       curve)
+                       curve)))
+      :from (:closure :point :scalar)
+      :hints (("Goal"
+               :use (:instance montgomery-neg-of-mul
+                     (scalar (- scalar))
+                     (point (montgomery-mul scalar1 point curve)))
+               :in-theory (disable montgomery-neg-of-mul))))
+     (:derive (:intermediate-to-rhs
+               (equal (montgomery-neg
+                       (montgomery-mul (- scalar)
+                                       (montgomery-mul scalar1
+                                                       point
+                                                       curve)
+                                       curve)
+                       curve)
+                      (montgomery-mul (* scalar scalar1) point curve)))
+      :from (:closure :associativity :point :scalar :scalar1))
+     (:derive (:lhs-to-rhs
+               (equal (montgomery-mul scalar
+                                      (montgomery-mul scalar1
+                                                      point
+                                                      curve)
+                                      curve)
+                      (montgomery-mul (* scalar scalar1) point curve)))
+      :from (:lhs-to-intermediate :intermediate-to-rhs))
+     (:qed))))
+
+  (defrule montgomery-mul-of-mul
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :cases ((< scalar 0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-point-orderp ((point pointp)
                                  (order natp)
                                  (curve montgomery-curvep))
