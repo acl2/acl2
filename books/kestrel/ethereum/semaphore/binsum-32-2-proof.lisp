@@ -28,12 +28,12 @@
 ;; (depends-on "json/binsum-32-2.json")
 (local (acl2::load-circom-json "json/binsum-32-2.json" *baby-jubjub-prime*))
 
-(local (lift-semaphore-r1cs-new *binsum-32-2-r1cs-lifted*
-                                (acl2::binsum-32-2-vars)
-                                (acl2::binsum-32-2-constraints)
-                                :extra-rules '(primep-of-baby-jubjub-prime)
-                                :remove-rules '(pfield::add-commutative-2-axe
-                                                pfield::add-commutative-axe)))
+(local (lift-semaphore-r1cs *binsum-32-2-r1cs-lifted*
+                            (acl2::binsum-32-2-vars)
+                            (acl2::binsum-32-2-constraints)
+                            :extra-rules '(primep-of-baby-jubjub-prime)
+                            :remove-rules '(pfield::add-commutative-2-axe
+                                            pfield::add-commutative-axe)))
 
 (defun spec (|main.in[0][0]| |main.in[0][1]| |main.in[0][2]| |main.in[0][3]|
              |main.in[0][4]| |main.in[0][5]| |main.in[0][6]| |main.in[0][7]|

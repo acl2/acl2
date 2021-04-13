@@ -37,11 +37,11 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *mimcsponge-1-1-0k-r1cs-lifted*
-                          (acl2::mimcsponge-1-1-0k-vars)
-                          (acl2::mimcsponge-1-1-0k-constraints)
-                          ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
-                          ))
+ (lift-semaphore-r1cs *mimcsponge-1-1-0k-r1cs-lifted*
+                      (acl2::mimcsponge-1-1-0k-vars)
+                      (acl2::mimcsponge-1-1-0k-constraints)
+                      ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
+                      ))
 
 ;;;
 ;;; Prove that the spec holds, assuming the R1CS holds

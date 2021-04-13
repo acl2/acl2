@@ -41,9 +41,9 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *mimcsponge-5-1-0k-r1cs-lifted*
-                          (acl2::mimcsponge-5-1-0k-vars)
-                          (acl2::mimcsponge-5-1-0k-constraints)))
+ (lift-semaphore-r1cs *mimcsponge-5-1-0k-r1cs-lifted*
+                      (acl2::mimcsponge-5-1-0k-vars)
+                      (acl2::mimcsponge-5-1-0k-constraints)))
 
 ;;;
 ;;; Prove that the spec holds, assuming the R1CS holds

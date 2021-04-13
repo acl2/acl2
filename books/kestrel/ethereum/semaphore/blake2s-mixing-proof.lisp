@@ -40,13 +40,13 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *blake2s-mixingg-0-r1cs-lifted*
-                          (acl2::blake2s-mixingg-0-vars)
-                          (acl2::blake2s-mixingg-0-constraints)
-                          ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
-                          ;; todo: remove these as default rules
-                          :remove-rules '(pfield::add-commutative-axe
-                                          pfield::add-commutative-2-axe)))
+ (lift-semaphore-r1cs *blake2s-mixingg-0-r1cs-lifted*
+                      (acl2::blake2s-mixingg-0-vars)
+                      (acl2::blake2s-mixingg-0-constraints)
+                      ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
+                      ;; todo: remove these as default rules
+                      :remove-rules '(pfield::add-commutative-axe
+                                      pfield::add-commutative-2-axe)))
 
 ;; Takes 32 bits (least signficant bit first) and packs them into a 32-bit word
 (defun pack-blake-word (bit0 bit1 bit2 bit3

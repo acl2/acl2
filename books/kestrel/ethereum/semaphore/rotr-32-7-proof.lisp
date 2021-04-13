@@ -29,9 +29,9 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *rotr-32-7-r1cs-lifted*
-                          (acl2::rotr-32-7-vars)
-                          (acl2::rotr-32-7-constraints)))
+ (lift-semaphore-r1cs *rotr-32-7-r1cs-lifted*
+                      (acl2::rotr-32-7-vars)
+                      (acl2::rotr-32-7-constraints)))
 
 ;;;
 ;;; The spec

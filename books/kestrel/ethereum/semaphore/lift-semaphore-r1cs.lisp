@@ -14,7 +14,7 @@
 
 ;; A thin wrapper around lift-r1cs-new that sets the prime for semaphore.
 ;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
-(defmacro lift-semaphore-r1cs-new (name-of-defconst vars constraints &rest args)
+(defmacro lift-semaphore-r1cs (name-of-defconst vars constraints &rest args)
   `(r1cs::lift-r1cs-new ,name-of-defconst
                         ,vars
                         ,constraints

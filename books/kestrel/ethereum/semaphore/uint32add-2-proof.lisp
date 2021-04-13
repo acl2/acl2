@@ -32,11 +32,11 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *uint32add-2-r1cs-lifted*
-                          (acl2::uint32add-2-vars)
-                          (acl2::uint32add-2-constraints)
-                          ;; todo: think about this:
-                          :remove-rules '(r1cs::mul-normalize-constant-arg1)))
+ (lift-semaphore-r1cs *uint32add-2-r1cs-lifted*
+                      (acl2::uint32add-2-vars)
+                      (acl2::uint32add-2-constraints)
+                      ;; todo: think about this:
+                      :remove-rules '(r1cs::mul-normalize-constant-arg1)))
 
 (defmacro acl2::make-cons-nest-mac (&rest terms)
   (acl2::make-cons-nest terms))

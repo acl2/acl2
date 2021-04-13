@@ -28,9 +28,9 @@
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *uint32xor-r1cs-lifted*
-                          (acl2::uint32xor-vars)
-                          (acl2::uint32xor-constraints)))
+ (lift-semaphore-r1cs *uint32xor-r1cs-lifted*
+                      (acl2::uint32xor-vars)
+                      (acl2::uint32xor-constraints)))
 
 ;;;
 ;;; The spec
