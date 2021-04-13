@@ -22,3 +22,35 @@
                         21888242871839275222246405745257275088548364400416034343698204186575808495617
                         :package "ZKSEMAPHORE"
                         ,@args))
+
+;;TODO: generalize to verify-r1cs
+(defmacro verify-semaphore-r1cs (lifted-r1cs ; a DAG
+                                 input-vars
+                                 spec-term ; a term over the input and output vars
+                                 &key
+                                 ;; same as for acl2::prove-implication-with-r1cs-prover:
+                                 (tactic ''(:rep :rewrite :subst))
+                                 (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
+                                 (global-rules 'nil) ;; rules to be added to every rule-list
+                                 (interpreted-function-alist 'nil)
+                                 (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
+                                 (monitor 'nil)
+                                 (print ':brief))
+  `(acl2::prove-implication-with-r1cs-prover
+    (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
+                                   (cons
+                                    ;; Assume all vars are field elements:
+                                    (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
+                                                                     ;; bake in baby-jubjub-prime:
+                                                                     ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
+                                    ;; Assume that the inputs are bits:
+                                    (acl2::make-bitp-claims ,input-vars)))
+                                  ,lifted-r1cs)
+    ,spec-term
+    :tactic ,tactic
+    :rule-lists ,rule-lists     ;todo: use a default rule-list
+    :global-rules ,global-rules ;todo: add some default global-rules
+    :interpreted-function-alist ,interpreted-function-alist ;todo
+    :no-splitp ,no-splitp
+    :monitor ,monitor
+    :print ,print))
