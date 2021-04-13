@@ -171,6 +171,9 @@
 (defthm return-of-rfix
   (rationalp (rfix x)))
 
+(defthm return-of-equal
+  (booleanp (equal x y)))
+
 (defthm return-of-equal-integer
   (implies (and (integerp x) (integerp y))
            (booleanp (equal x y))))
@@ -259,6 +262,9 @@
                :formals '(x)
                :returns-thm 'return-of-rfix)))
     (equal . (,(make-return-spec
+                :formals '(x y)
+                :returns-thm 'return-of-equal)
+              ,(make-return-spec
                 :formals '(x y)
                 :returns-thm 'return-of-equal-integer)))))
 

@@ -191,6 +191,151 @@
                             consp-of-pseudo-lambdap
                             pseudo-termp)))))
 
+(define generate-judge-from-equality-acc ((lhs symbolp)
+                                          (rhs pseudo-termp)
+                                          (judge pseudo-termp)
+                                          (supertype-alst
+                                           type-to-types-alist-p)
+                                          (acc pseudo-termp))
+  :returns (new-judge pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((lhs (pseudo-term-fix lhs))
+       (rhs (pseudo-term-fix rhs))
+       (judge (pseudo-term-fix judge))
+       (acc (pseudo-term-fix acc))
+       ((if (equal judge ''t)) acc)
+       ((if (judgement-of-term judge rhs supertype-alst))
+        `(if ,(substitute-term-in-judge judge rhs lhs supertype-alst) ,acc 'nil))
+       ((unless (is-conjunct? judge)) acc)
+       ((list* & judge-hd judge-tl &) judge)
+       (new-acc (generate-judge-from-equality-acc lhs rhs judge-hd
+                                                  supertype-alst acc)))
+    (generate-judge-from-equality-acc lhs rhs judge-tl supertype-alst
+                                      new-acc)))
+
+(verify-guards generate-judge-from-equality-acc)
+
+(defthm correctness-of-generate-judge-from-equality-acc
+  (implies (and (symbolp lhs)
+                (pseudo-termp rhs)
+                (pseudo-termp judge)
+                (pseudo-termp acc)
+                (alistp a)
+                (ev-smtcp judge a)
+                (ev-smtcp acc a)
+                (equal (ev-smtcp lhs a) (ev-smtcp rhs a)))
+           (ev-smtcp (generate-judge-from-equality-acc
+                      lhs rhs judge supertype-alst acc)
+                     a))
+  :hints (("Goal"
+           :induct (generate-judge-from-equality-acc
+                    lhs rhs judge supertype-alst acc)
+           :in-theory (e/d (generate-judge-from-equality-acc is-conjunct?)
+                           (implies-of-is-conjunct?
+                            member-equal symbol-listp
+                            consp-of-is-conjunct?
+                            correctness-of-path-test-list
+                            correctness-of-path-test
+                            consp-of-pseudo-lambdap)))))
+
+(define generate-judge-from-equality ((lhs symbolp)
+                                      (rhs pseudo-termp)
+                                      (judge pseudo-termp)
+                                      (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp)
+  (generate-judge-from-equality-acc lhs rhs judge supertype-alst ''t))
+
+(defthm correctness-of-generate-judge-from-equality
+  (implies (and (symbolp lhs)
+                (pseudo-termp rhs)
+                (pseudo-termp judge)
+                (alistp a)
+                (ev-smtcp judge a)
+                (equal (ev-smtcp lhs a) (ev-smtcp rhs a)))
+           (ev-smtcp (generate-judge-from-equality lhs rhs judge
+                                                   supertype-alst)
+                     a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (generate-judge-from-equality) ()))))
+
+(define augment-path-cond ((cond pseudo-termp)
+                           (judge-cond pseudo-termp)
+                           (path-cond pseudo-termp)
+                           (supertype-alst type-to-types-alist-p))
+  :returns (mv (then-pc pseudo-termp)
+               (else-pc pseudo-termp))
+  (b* ((cond (pseudo-term-fix cond))
+       (judge-cond (pseudo-term-fix judge-cond))
+       (path-cond (pseudo-term-fix path-cond))
+       ((mv okp1 var1 term1)
+        (case-match cond
+          (('equal lhs rhs) (mv (symbolp lhs) lhs rhs))
+          (& (mv nil nil nil))))
+       ((mv okp2 var2 term2)
+        (case-match cond
+          (('not ('equal lhs rhs)) (mv (symbolp lhs) lhs rhs))
+          (& (mv nil nil nil))))
+       ((unless (or okp1 okp2))
+        (mv (conjoin `(,(simple-transformer cond) ,path-cond))
+            (conjoin `(,(simple-transformer `(not ,cond)) ,path-cond))))
+       ((if okp1)
+        (mv (conjoin `(,(generate-judge-from-equality var1 term1 judge-cond
+                                                      supertype-alst)
+                       ,(simple-transformer cond) ,path-cond))
+            (conjoin `(,(simple-transformer `(not ,cond)) ,path-cond)))))
+    (mv (conjoin `(,(simple-transformer cond) ,path-cond))
+        (conjoin `(,(generate-judge-from-equality var2 term2 judge-cond
+                                                  supertype-alst)
+                   ,(simple-transformer `(not ,cond)) ,path-cond)))))
+
+(defthm correctness-of-augment-path-cond-1
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp cond)
+                (pseudo-termp judge-cond)
+                (pseudo-termp path-cond)
+                (alistp a)
+                (ev-smtcp judge-cond a))
+           (b* (((mv then-pc &)
+                 (augment-path-cond cond judge-cond path-cond supertype-alst)))
+             (iff (ev-smtcp then-pc a)
+                  (ev-smtcp `(if ,cond ,path-cond 'nil) a))))
+  :hints (("Goal"
+           :in-theory (e/d (augment-path-cond simple-transformer)
+                           (pseudo-termp
+                            correctness-of-path-test-list-corollary
+                            correctness-of-path-test-list
+                            correctness-of-path-test
+                            symbol-listp
+                            acl2::symbol-listp-when-not-consp
+                            ev-smtcp-of-variable
+                            consp-of-is-conjunct?
+                            acl2::pseudo-termp-opener)))))
+
+(defthm correctness-of-augment-path-cond-2
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp cond)
+                (pseudo-termp judge-cond)
+                (pseudo-termp path-cond)
+                (alistp a)
+                (ev-smtcp judge-cond a))
+           (b* (((mv & else-pc)
+                 (augment-path-cond cond judge-cond path-cond supertype-alst)))
+             (iff (ev-smtcp else-pc a)
+                  (ev-smtcp `(if (not ,cond) ,path-cond 'nil) a))))
+  :hints (("Goal"
+           :in-theory (e/d (augment-path-cond simple-transformer)
+                           (pseudo-termp
+                            correctness-of-path-test-list-corollary
+                            correctness-of-path-test-list
+                            correctness-of-path-test
+                            symbol-listp
+                            acl2::symbol-listp-when-not-consp
+                            ev-smtcp-of-variable
+                            consp-of-is-conjunct?
+                            acl2::pseudo-termp-opener)))))
+
 (defines type-judgements
   :flag-local nil
   :well-founded-relation l<
@@ -209,6 +354,7 @@
          (path-cond (pseudo-term-fix path-cond))
          (names (symbol-list-fix names))
          (options (type-options-fix options))
+         ((type-options o) options)
          ((unless (mbt (and (consp term) (equal (car term) 'if)))) ''t)
          ((cons & actuals) term)
          ((unless (equal (len actuals) 3))
@@ -217,13 +363,12 @@
                   ''t))
          ((list cond then else) actuals)
          (judge-cond (type-judgement cond path-cond options names state))
+         ((mv then-path-cond else-path-cond)
+          (augment-path-cond cond judge-cond path-cond o.supertype))
          (judge-then
-          (type-judgement then `(if ,(simple-transformer cond) ,path-cond 'nil)
-                          options names state))
+          (type-judgement then then-path-cond options names state))
          (judge-else
-          (type-judgement else
-                          `(if ,(simple-transformer `(not ,cond)) ,path-cond 'nil)
-                          options names state))
+          (type-judgement else else-path-cond options names state))
          (judge-then-top (type-judgement-top judge-then then options))
          (judge-else-top (type-judgement-top judge-else else options))
          (judge-if-top
@@ -347,16 +492,6 @@
 ;; Correctness theorems for type-judgement
 
 (defthm-type-judgements-flag
-  ;; (defthm correctness-of-type-judgement-lambda
-  ;;   (implies (and (ev-smtcp-meta-extract-global-facts)
-  ;;                 (pseudo-termp term)
-  ;;                 (pseudo-termp path-cond)
-  ;;                 (alistp a)
-  ;;                 (ev-smtcp path-cond a))
-  ;;            (ev-smtcp (type-judgement-lambda term path-cond options state) a))
-  ;;   :flag type-judgement-lambda
-  ;;   :hints ((and stable-under-simplificationp
-  ;;                '(:expand (type-judgement-lambda term path-cond options state)))))
   (defthm correctness-of-type-judgement-if
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)

@@ -489,6 +489,34 @@
   (implies (pseudo-term-symbol-list-alistp x)
            (pseudo-term-listp (strip-cars x))))
 
+(define add-hypotheses ((ordered-hypo pseudo-term-listp)
+                        (concl pseudo-termp))
+  :returns (new-term pseudo-termp)
+  (b* ((ordered-hypo (pseudo-term-list-fix ordered-hypo))
+       (concl (pseudo-term-fix concl))
+       ((unless (consp ordered-hypo)) concl)
+       ((cons hypo-hd hypo-tl) ordered-hypo))
+    `(if ,hypo-hd ,(add-hypotheses hypo-tl concl) 't)))
+
+(defthm correctness-of-add-hypotheses
+  (implies (and (pseudo-term-listp ordered-hypo)
+                (pseudo-termp concl)
+                (alistp a)
+                (ev-smtcp (add-hypotheses ordered-hypo concl) a))
+           (ev-smtcp `(if ,(conjoin ordered-hypo) ,concl 't) a))
+  :hints (("Goal"
+           :induct (add-hypotheses ordered-hypo concl)
+           :in-theory (enable add-hypotheses))))
+
+#|
+(add-hypotheses '((integerp x)
+(equal x0 (ifix x))
+(rationalp y)
+(equal x1 (rfix y))
+(equal x2 (binary-+ x0 x1)))
+'(< x2 '0))
+|#
+
 (define reorder-hypotheses ((term pseudo-termp)
                             (hint smtlink-hint-p))
   :returns (new-term pseudo-termp)
@@ -502,20 +530,18 @@
        (ordered-hypo
         (order-hypo-lst root-hypo var-term-alst term-var-alst rest-hypo
                         h.types-info)))
-    `(if ,(conjoin ordered-hypo) ,new-term 't)))
+    (add-hypotheses ordered-hypo new-term)))
 
 #|
-(reorder-hypotheses '(if (if (if (integerp x)
-                                 (rationalp y)
-                               'nil)
-                             (if (equal x2 (binary-+ x0 x1))
-                                 (if (equal x0 (ifix x))
-                                     (equal x1 (rfix y))
-                                   'nil)
-                               'nil)
-                           'nil)
-                         (< x2 '0)
-                       't)
+(reorder-hypotheses '(if (if (equal x2 (binary-+ x0 x1))
+                             (if (equal x1 (rfix y))
+                                 (if (equal x0 (ifix x)) 't 'nil)
+                                 'nil)
+                             'nil)
+                         (if (if (integerp x) (rationalp y) 'nil)
+                             (< x2 '0)
+                             't)
+                         't)
                     (change-smtlink-hint
                      (make-smtlink-hint)
                      :types-info
@@ -530,7 +556,39 @@
                 (ev-smtcp (reorder-hypotheses term hint) a))
            (ev-smtcp term a))
   :hints (("Goal"
+           :do-not-induct t
            :in-theory (e/d (reorder-hypotheses)
-                           (correctness-of-extractor))
+                           (correctness-of-extractor
+                            correctness-of-add-hypotheses))
            :use ((:instance correctness-of-extractor
-                            (fixinfo (smtlink-hint->types-info hint)))))))
+                            (fixinfo (smtlink-hint->types-info hint)))
+                 (:instance correctness-of-add-hypotheses
+                            (ordered-hypo
+                             (order-hypo-lst
+                              (mv-nth 0
+                                      (filter-type-hypo
+                                       (mv-nth 0
+                                               (extractor term (smtlink-hint->types-info hint)))
+                                       (smtlink-hint->types-info hint)))
+                              (make-var-to-terms
+                               (mv-nth 1
+                                       (filter-type-hypo
+                                        (mv-nth 0
+                                                (extractor term (smtlink-hint->types-info hint)))
+                                        (smtlink-hint->types-info hint)))
+                               nil)
+                              (make-term-to-vars
+                               (mv-nth 1
+                                       (filter-type-hypo
+                                        (mv-nth 0
+                                                (extractor term (smtlink-hint->types-info hint)))
+                                        (smtlink-hint->types-info hint))))
+                              (mv-nth 1
+                                      (filter-type-hypo
+                                       (mv-nth 0
+                                               (extractor term (smtlink-hint->types-info hint)))
+                                        (smtlink-hint->types-info hint)))
+                              (smtlink-hint->types-info hint)))
+                            (concl
+                             (mv-nth 1
+                                     (extractor term (smtlink-hint->types-info hint)))))))))

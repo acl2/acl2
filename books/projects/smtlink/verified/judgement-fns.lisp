@@ -126,15 +126,34 @@
   :ignore-ok t
   (b* ((single-judge (pseudo-term-fix single-judge))
        ((unless (type-predicate-of-term single-judge term supertype-alst))
-        (er hard? 'judgement-fns=>substitute-term-in-type-predicate
-            "Type predicate judgement is malformed: ~q0" single-judge))
+        (prog2$
+         (er hard? 'judgement-fns=>substitute-term-in-type-predicate
+             "Type predicate judgement is malformed: ~q0" single-judge)
+         single-judge))
        (new-var (symbol-fix new-var))
        ((mv okp type)
         (case-match single-judge
-          ((type &) (mv t type))
+          ((type &) (mv (and (symbolp type)
+                             (not (equal type 'quote)))
+                        type))
           (& (mv nil nil))))
-       ((unless (mbt okp)) nil))
+       ((unless (mbt okp)) single-judge))
     `(,type ,new-var)))
+
+(defthm correctness-of-substitute-term-in-type-predicate
+  (implies (and (symbolp new-var)
+                (pseudo-termp term)
+                (pseudo-termp single-judge)
+                (alistp a)
+                (ev-smtcp single-judge a)
+                (equal (ev-smtcp new-var a) (ev-smtcp term a)))
+           (ev-smtcp (substitute-term-in-type-predicate
+                      single-judge term new-var supertype-alst)
+                     a))
+  :hints (("Goal"
+           :in-theory (e/d (substitute-term-in-type-predicate
+                            ev-smtcp-of-fncall-args)
+                           ()))))
 
 (define substitute-term-in-args ((args pseudo-term-listp)
                                  (term pseudo-termp)
@@ -147,6 +166,17 @@
        ((if (equal first-arg term)) (cons new-var rest-args)))
     (cons first-arg (substitute-term-in-args rest-args term new-var))))
 
+(defthm correctness-of-substitute-term-in-args
+  (implies (and (symbolp new-var)
+                (pseudo-termp term)
+                (pseudo-term-listp args)
+                (alistp a)
+                (equal (ev-smtcp new-var a) (ev-smtcp term a)))
+           (equal (ev-smtcp-lst (substitute-term-in-args args term new-var) a)
+                  (ev-smtcp-lst args a)))
+  :hints (("Goal"
+           :in-theory (enable substitute-term-in-args))))
+
 (define substitute-term-in-single-var-fncall ((single-judge pseudo-termp)
                                               (term pseudo-termp)
                                               (new-var symbolp))
@@ -154,14 +184,31 @@
   :guard (single-var-fncall-of-term single-judge term)
   (b* ((single-judge (pseudo-term-fix single-judge))
        ((unless (single-var-fncall-of-term single-judge term))
-        (er hard? 'judgement-fns=>substitute-term-in-single-var-fncall
-            "Single-var fncall judgement is malformed: ~q0" single-judge))
+        (prog2$
+         (er hard? 'judgement-fns=>substitute-term-in-single-var-fncall
+             "Single-var fncall judgement is malformed: ~q0" single-judge)
+         single-judge))
        ((mv okp fn args)
         (case-match single-judge
           ((fn . args) (mv t fn args))
           (& (mv nil nil nil))))
-       ((unless (mbt okp)) nil))
+       ((unless (mbt okp)) single-judge))
     `(,fn ,@(substitute-term-in-args args term new-var))))
+
+(defthm correctness-of-substitute-term-in-single-var-fncall
+  (implies (and (symbolp new-var)
+                (pseudo-termp term)
+                (pseudo-termp single-judge)
+                (alistp a)
+                (ev-smtcp single-judge a)
+                (equal (ev-smtcp new-var a) (ev-smtcp term a)))
+           (ev-smtcp (substitute-term-in-single-var-fncall
+                      single-judge term new-var)
+                     a))
+  :hints (("Goal"
+           :in-theory (enable substitute-term-in-single-var-fncall
+                              substitute-term-in-args
+                              ev-smtcp-of-fncall-args))))
 
 (define substitute-term-in-judge ((single-judge pseudo-termp)
                                   (term pseudo-termp)
@@ -176,7 +223,20 @@
            (substitute-term-in-type-predicate single-judge term new-var supertype-alst))
           ((single-var-fncall-of-term single-judge term)
            (substitute-term-in-single-var-fncall single-judge term new-var))
-          (t nil))))
+          (t single-judge))))
+
+(defthm correctness-of-substitute-term-in-judge
+  (implies (and (symbolp new-var)
+                (pseudo-termp term)
+                (pseudo-termp single-judge)
+                (alistp a)
+                (ev-smtcp single-judge a)
+                (equal (ev-smtcp new-var a) (ev-smtcp term a)))
+           (ev-smtcp (substitute-term-in-judge
+                      single-judge term new-var supertype-alst)
+                     a))
+  :hints (("Goal"
+           :in-theory (enable substitute-term-in-judge))))
 
 #|
 (substitute-term-in-judge '(rationalp (foo x))

@@ -179,6 +179,7 @@
              (iff (ev-smtcp `(if ,(conjoin hypo-lst) ,new-term 't) a)
                   (ev-smtcp term a))))
   :hints (("Goal"
+           :do-not-induct t
            :in-theory (enable extractor))))
 
 ;;)

@@ -1600,7 +1600,7 @@
 	       ((unless (consp alst)) ''t)
 	       ((cons alst-hd alst-tl) alst)
 	       ((cons term var) alst-hd))
-      `(if (equal ,term ,var)
+      `(if (equal ,var ,term)
 	         ,(generate-equalities alst-tl)
 	       'nil))
     ///
@@ -1681,7 +1681,7 @@
 	       ((mv new-goal alst &)
 	        (expand-term goal hints nil nil (acl2::simple-term-vars goal)
 		                   h.wrld-fn-len state)))
-      (mv `(if ,(generate-equalities alst) ,new-goal ''t) alst)))
+      (mv `(if ,(generate-equalities alst) ,new-goal 't) alst)))
 
   (defthm correctness-of-expand-cp-fn
     (implies
