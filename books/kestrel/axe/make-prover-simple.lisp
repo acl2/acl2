@@ -857,7 +857,7 @@
                    (fn (ffn-symb hyp))
                    (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 (if (eq 'axe-syntaxp fn)
-                    (let* ((syntaxp-expr (farg1 hyp)) ;; strip off the AXE-SYNTAXP
+                    (let* ((syntaxp-expr (farg1 hyp)) ;; strip off the AXE-SYNTAXP; dag-array formals have been removed from the calls in this
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
                                         (,eval-axe-syntaxp-expr-name syntaxp-expr alist dag-array))))
                       (if result
