@@ -11,7 +11,7 @@
 (in-package "ZKSEMAPHORE")
 
 (include-book "json-to-r1cs/load-circom-json")
-(include-book "lift-semaphore-r1cs")
+(include-book "proof-tools")
 (include-book "baby-jubjub-prime")
 (include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
