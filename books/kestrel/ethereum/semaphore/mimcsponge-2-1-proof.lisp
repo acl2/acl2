@@ -27,7 +27,7 @@
   (equal out (car (mimc::mimcsponge-semaphore 2 1 (list in0 in1)))))
 
 ;;;
-;;; Load the R1CS:
+;;; Load the R1CS
 ;;;
 
 ;; 1322 vars

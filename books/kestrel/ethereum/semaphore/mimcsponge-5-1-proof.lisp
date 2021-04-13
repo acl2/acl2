@@ -30,7 +30,7 @@
   (equal out (car (mimc::mimcsponge-semaphore 5 1 (list in0 in1 in2 in3 in4)))))
 
 ;;;
-;;; Load the R1CS:
+;;; Load the R1CS
 ;;;
 
 ;; 3305 vars

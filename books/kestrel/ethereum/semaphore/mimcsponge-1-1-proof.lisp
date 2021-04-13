@@ -26,14 +26,13 @@
   (equal out (car (mimc::mimcsponge-semaphore 1 1 (list in)))))
 
 ;;;
-;;; Load the R1CS:
+;;; Load the R1CS
 ;;;
 
 ;; 661 vars
 ;; 660 constraints
 ;; (depends-on "json/mimcsponge-1-1-0k.json")
 (local (acl2::load-circom-json "json/mimcsponge-1-1-0k.json" *baby-jubjub-prime*))
-
 
 ;;;
 ;;; Lift the R1CS
