@@ -357,3 +357,34 @@
 (defthm /-of-*
   (equal (/ (* x y))
          (* (/ x) (/ y))))
+
+;gen?
+(defthm <-of-/-and-constant
+  (implies (and (syntaxp (quotep k))
+                ;(syntaxp (not (quotep x))) ;needed?
+                (< 0 x)
+                (< 0 k)
+                (rationalp k)
+                (rationalp x)
+                )
+           (equal (< k (/ x))
+                  (< x (/ k))))
+  :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
+  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
+                                  (z (/ x k))
+                                  (x k) (y (/ x))))))
+
+;gen?
+(defthm /-equal-constant-alt
+  (implies (and (syntaxp (quotep k))
+                (< 0 x)
+                (< 0 k)
+                (rationalp k)
+                (rationalp x)
+                )
+           (equal (< (/ x) k)
+                  (< (/ k) x)))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
+                                  (z (/ x k))
+                                  (y k) (x (/ x))))))

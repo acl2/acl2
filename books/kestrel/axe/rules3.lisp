@@ -74,19 +74,6 @@
                            <=-OF-BVCHOP-SAME-LINEAR ;slow
                            )))
 
-;move
-(defthm equal-of-append-same
-  (equal (equal x (append x y))
-         (equal y (finalcdr x)))
-  :hints (("Goal" :in-theory (enable equal-of-append))))
-
-;move
-;; In case we are not re-combining the cons with the repeat of n-1
-(defthm equal-of-repeat-and-cons-of-repeat-one-one-less
-  (equal (equal (repeat n x) (cons x (repeat (+ -1 n) x)))
-         (posp (nfix n)))
-  :hints (("Goal" :in-theory (enable repeat))))
-
 ;todo: move the rest of the prefixp rules out of this file
 
 ;todo: uncomment:(add-known-boolean prefixp) ;todo: make a list-rules-axe book.  prefixp-when-longer-work-hard etc could also go there
@@ -648,35 +635,6 @@
 
 (local (in-theory (disable FLOOR-=-X/Y))) ;corollary is bad
 
-(defthm <-of-/-and-constant
-  (implies (and (syntaxp (quotep k))
-                ;(syntaxp (not (quotep x))) ;needed?
-                (< 0 x)
-                (< 0 k)
-                (rationalp k)
-                (rationalp x)
-                )
-           (equal (< k (/ x))
-                  (< x (/ k))))
-  :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
-  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
-                                  (z (/ x k))
-                                  (x k) (y (/ x))))))
-
-(defthm /-equal-constant-alt
-  (implies (and (syntaxp (quotep k))
-                (< 0 x)
-                (< 0 k)
-                (rationalp k)
-                (rationalp x)
-                )
-           (equal (< (/ x) k)
-                  (< (/ k) x)))
-  :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
-                                  (z (/ x k))
-                                  (y k) (x (/ x))))))
-
 ;;MOD-TYPE ;does this overlap with mod-bounded-by-modulus?
 
 ;; (defthm <-of-expt-and-bvchop-better
@@ -812,10 +770,6 @@
 ;;           :cases ((INTEGERP (BINARY-* (UNARY-/ J) Y)))
 ;;           :in-theory (disable bound-hack-quotient FLOOR-BOUND-LEMMA3 FLOOR-BOUND-LEMMA2
 ;;                               ))))
-
-
-
-
 
 (defthm plus-and-bvplus-hack
   (equal (equal (+ -1 x) (bvplus 32 1 y))
@@ -956,8 +910,6 @@
                                    )
                                   ))))
 
-(in-theory (disable bvlt)) ;move up
-
 (defthm sbvlt-when-bvlt-constants
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 31 free i))
@@ -972,9 +924,6 @@
                                   (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                       TIMES-4-BECOMES-LOGAPP)))))
 
-
-
-
 ;restrict?
 (defthm sbvlt-transitive-free-back
   (implies (and (not (sbvlt size x free))
@@ -984,11 +933,6 @@
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
-
-(in-theory (disable bvlt))
-
-(in-theory (disable BVPLUS-RECOLLAPSE))
-
 
 ;; (thm
 ;;  (implies (and (integerp x)
@@ -1025,9 +969,6 @@
                     (bvlt 32 x 2147483647))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt) (anti-bvplus
                                                                       <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free)))))
-
-
-
 
 ;; (thm
 ;;  (implies (integerp x)
@@ -1147,10 +1088,7 @@
                                                 <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                ;;BVLT-OF-PLUS-ARG1
                                                ;;BVLT-OF-PLUS-ARG2
-                                               )))))
-
-
-
+                                                )))))
 
 (defthm bvlt-of-bvchop-tighten
   (implies (and (unsigned-byte-p 31 y)
@@ -1220,8 +1158,6 @@
   (implies (natp size)
            (equal (bvplus size k1 (bvplus size a (bvuminus size k1)))
                   (bvchop size a))))
-
-
 
 ;can split into cases
 ;removed bool op from conclusion Tue Feb 23 12:46:43 2010
@@ -1361,7 +1297,6 @@
 ;;                (syntaxp (quotep free)))
 ;;           (equal (SLICE 31 2 x)
 ;;                  (slice 31 2 free))))
-
 
 (defthm bvlt-of-bvplus-tighten-arg1
   (implies (unsigned-byte-p 31 z)
