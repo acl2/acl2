@@ -412,3 +412,12 @@
    (implies (equal x 3)
             (foo x))
    :rule-classes nil))
+
+(deftest
+  (defthm integerp-when-unsigned-byte-p
+    (implies (unsigned-byte-p size x) ;size is a free var
+             (integerp x)))
+  (defthm-with-basic-prover-clause-processor free-1
+    (implies (unsigned-byte-p 16 x)
+             (integerp x))
+    :rules (integerp-when-unsigned-byte-p)))

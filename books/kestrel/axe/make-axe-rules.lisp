@@ -465,6 +465,9 @@
                  ((when (member-eq :axe-bind-free all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :free-vars all-fns))
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
                  ;; todo: check for work-hards not at the top-level?
                  (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
                  ((when (not (consp hyp)))
@@ -477,7 +480,6 @@
                  (free-vars (set-difference-eq hyp-vars bound-vars)))
               (if free-vars
                   ;; Normal hyp with free vars that will get bound by matching with assumptions:
-                  ;; TODO: Wrap the hyp in a marker that indicates that free vars are present?
                   (b* (;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
                        ;; Strip and note the work-hard, if any:
                        ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
@@ -504,7 +506,7 @@
                                          bound-vars)
                              ;;(cw "Note: Binding hyp ~x0 detected in rule ~x1.~%" hyp rule-symbol) ;todo: add a print option?
                              )
-                            (mv (list hyp)
+                            (mv (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
                                 (append free-vars ;if the hyp is relieved by searching for matches in the context, any free vars in the hyp wil become bound
                                         bound-vars))))
                 ;; Normal hyp with no free vars:

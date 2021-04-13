@@ -133,30 +133,39 @@
   (declare (xargs :guard t))
   (and (consp hyp) ; can't be a variable
        (let ((fn (ffn-symb hyp)))
-         (and (not (eq 'quote fn)) ; can't be a quoted constant
-              (if (eq :axe-syntaxp fn) ;; (:axe-syntaxp . <expr>)
-                  ;; The symbol 'axe-syntaxp consed on to an expression:
-                  (and (pseudo-termp (cdr hyp))
-                       (axe-syntaxp-exprp (cdr hyp)))
-                (if (eq :axe-bind-free fn) ;; (:axe-bind-free <expr> . <vars>)
-                    (and (consp (cdr hyp))
-                         (pseudo-termp (cadr hyp))
-                         (axe-bind-free-function-applicationp (cadr hyp))
-                         ;; This list of vars to bind is quoted when supplied by the user but is unquoted when we process the hyp
-                         (symbol-listp (cddr hyp)))
-                  (and (pseudo-termp hyp)
-                       (lambda-free-termp hyp))))))))
+         (if (eq :axe-syntaxp fn) ;; (:axe-syntaxp . <expr>)
+             ;; The symbol 'axe-syntaxp consed on to an expression:
+             (and (pseudo-termp (cdr hyp))
+                  (axe-syntaxp-exprp (cdr hyp)))
+           (if (eq :axe-bind-free fn) ;; (:axe-bind-free <expr> . <vars>)
+               (and (consp (cdr hyp))
+                    (pseudo-termp (cadr hyp))
+                    (axe-bind-free-function-applicationp (cadr hyp))
+                    ;; This list of vars to bind is quoted when supplied by the user but is unquoted when we process the hyp
+                    (symbol-listp (cddr hyp)))
+             (if (eq :free-vars fn) ;; (:free-vars . expr) indicates that the hyp has free vars
+                 (let ((expr (cdr hyp)))
+                   (and (consp expr)                      ; can't be a var
+                        (not (eq 'quote (ffn-symb expr))) ; can't be a quoted constant
+                        (pseudo-termp expr)
+                        (lambda-free-termp expr)))
+               ;; regular hyp with no free vars:
+               (and (not (eq 'quote fn)) ; can't be a quoted constant
+                    (pseudo-termp hyp)
+                    ;; consider relaxng this for efficiency of rewriting:
+                    (lambda-free-termp hyp))))))))
 
 (defthm axe-rule-hypp-when-not-special
   (implies (and (consp hyp)
                 (not (equal :axe-syntaxp (car hyp)))
                 (not (equal :axe-bind-free (car hyp)))
+                (not (equal :free-vars (car hyp)))
                 (not (equal 'quote (car hyp))))
            (equal (axe-rule-hypp hyp)
                   (and (pseudo-termp hyp)
                        (lambda-free-termp hyp))))
   :hints (("Goal" :in-theory (enable axe-rule-hypp)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 0 0))))
 
 (defthm axe-rule-hypp-when-equal-of-car-and-work-hard-cheap
   (implies (equal 'work-hard (car hyp))
@@ -168,13 +177,14 @@
 
 (defthm axe-rule-hypp-when-simple
   (implies (and (not (equal :axe-syntaxp (car hyp)))
-                (not (equal :axe-bind-free (car hyp))))
+                (not (equal :axe-bind-free (car hyp)))
+                (not (equal :free-vars (car hyp))))
            (equal (axe-rule-hypp hyp)
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
                        (pseudo-termp hyp)
                        (lambda-free-termp hyp))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 (defthm axe-rule-hypp-when-axe-bind-free
@@ -184,6 +194,17 @@
                        (pseudo-termp (cadr hyp))
                        (axe-bind-free-function-applicationp (cadr hyp))
                        (symbol-listp (cddr hyp)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
+(defthm axe-rule-hypp-when-free-vars
+  (implies (equal :free-vars (car hyp))
+           (equal (axe-rule-hypp hyp)
+                  (let ((expr (cdr hyp)))
+                    (and (consp expr)                     ; can't be a var
+                         (not (eq 'quote (ffn-symb expr))) ; can't be a quoted constant
+                         (pseudo-termp expr)
+                         (lambda-free-termp expr)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
