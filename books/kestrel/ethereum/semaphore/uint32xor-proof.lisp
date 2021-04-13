@@ -36,6 +36,7 @@
 ;;; The spec
 ;;;
 
+;; Checks that the 32 output bits represent the bitwise XOR of the 32-bit inputs a and b.
 (defun spec (|main.a_bits[0]| |main.a_bits[1]| |main.a_bits[2]| |main.a_bits[3]|
              |main.a_bits[4]| |main.a_bits[5]| |main.a_bits[6]| |main.a_bits[7]|
              |main.a_bits[8]| |main.a_bits[9]| |main.a_bits[10]| |main.a_bits[11]|
@@ -118,8 +119,23 @@
                                 (cons
                                  (pfield::gen-fe-listp-assumption (acl2::dag-vars *uint32xor-r1cs-lifted*)
                                                                 ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
-                                 ;; TODO: We probably shouldn't need this:
-                                 (acl2::make-bitp-claims (acl2::dag-vars *uint32xor-r1cs-lifted*))))
+                                 ;; Assume that the inputs are bits:
+                                 (acl2::make-bitp-claims '(|main.a_bits[0]| |main.a_bits[1]| |main.a_bits[2]| |main.a_bits[3]|
+                                                           |main.a_bits[4]| |main.a_bits[5]| |main.a_bits[6]| |main.a_bits[7]|
+                                                           |main.a_bits[8]| |main.a_bits[9]| |main.a_bits[10]| |main.a_bits[11]|
+                                                           |main.a_bits[12]| |main.a_bits[13]| |main.a_bits[14]| |main.a_bits[15]|
+                                                           |main.a_bits[16]| |main.a_bits[17]| |main.a_bits[18]| |main.a_bits[19]|
+                                                           |main.a_bits[20]| |main.a_bits[21]| |main.a_bits[22]| |main.a_bits[23]|
+                                                           |main.a_bits[24]| |main.a_bits[25]| |main.a_bits[26]| |main.a_bits[27]|
+                                                           |main.a_bits[28]| |main.a_bits[29]| |main.a_bits[30]| |main.a_bits[31]|
+                                                           |main.b_bits[0]| |main.b_bits[1]| |main.b_bits[2]| |main.b_bits[3]|
+                                                           |main.b_bits[4]| |main.b_bits[5]| |main.b_bits[6]| |main.b_bits[7]|
+                                                           |main.b_bits[8]| |main.b_bits[9]| |main.b_bits[10]| |main.b_bits[11]|
+                                                           |main.b_bits[12]| |main.b_bits[13]| |main.b_bits[14]| |main.b_bits[15]|
+                                                           |main.b_bits[16]| |main.b_bits[17]| |main.b_bits[18]| |main.b_bits[19]|
+                                                           |main.b_bits[20]| |main.b_bits[21]| |main.b_bits[22]| |main.b_bits[23]|
+                                                           |main.b_bits[24]| |main.b_bits[25]| |main.b_bits[26]| |main.b_bits[27]|
+                                                           |main.b_bits[28]| |main.b_bits[29]| |main.b_bits[30]| |main.b_bits[31]|))))
                                *uint32xor-r1cs-lifted*)
  `(spec |main.a_bits[0]| |main.a_bits[1]| |main.a_bits[2]| |main.a_bits[3]|
     |main.a_bits[4]| |main.a_bits[5]| |main.a_bits[6]| |main.a_bits[7]|
