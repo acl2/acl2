@@ -1,6 +1,6 @@
 ; A simpler utility to find all the vars in a term
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
