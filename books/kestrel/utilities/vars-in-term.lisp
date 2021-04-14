@@ -26,6 +26,8 @@
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
            nil
+         ;; We do not include free vars in lambda bodies, because lambdas in
+         ;; ACL2 should always be closed:
          (vars-in-terms (fargs term))))))
 
  (defund vars-in-terms (terms)
