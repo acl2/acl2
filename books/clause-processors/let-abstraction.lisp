@@ -79,8 +79,8 @@
      (mv bindings (cons first rest)))))
 
 (flag::make-flag let-abstract-flg let-abstract-term-rec
-                 :flag-mapping ((let-abstract-term-rec . term)
-                                (let-abstract-list-rec . list)))
+                 :flag-mapping ((let-abstract-term-rec term)
+                                (let-abstract-list-rec list)))
 
 
 (defthm cdr-assoc-when-symbol-listp-cdrs

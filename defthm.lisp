@@ -697,31 +697,35 @@
 ; We return a list of all the vars mentioned in hyps or, if there is
 ; a synp hyp whose var-list is 't, we return t.
 
-  (cond ((null hyps)
-         nil)
-        ((variablep (car hyps))
-         (add-to-set-eq (car hyps)
-                        (all-vars-in-hyps (cdr hyps))))
-        ((fquotep (car hyps))
-         (all-vars-in-hyps (cdr hyps)))
-        ((eq (ffn-symb (car hyps)) 'synp)
-         (cond ((equal (fargn (car hyps) 1) *nil*)
-                (all-vars-in-hyps (cdr hyps)))
-               ((equal (fargn (car hyps) 1) *t*)
-                t)
-               ((and (quotep (fargn (car hyps) 1))
-                     (not (collect-non-legal-variableps
-                           (cadr (fargn (car hyps) 1)))))
-                (union-eq (cadr (fargn (car hyps) 1))
-                          (all-vars-in-hyps (cdr hyps))))
-               (t (er hard 'free-vars-in-hyps-considering-bind-free
-                      "We thought the first argument of synp in this context ~
-                       was either 'NIL, 'T, or else a quoted true list of ~
-                       variables, but ~x0 is not!"
-                      (fargn (car hyps) 1)))))
-        (t
-         (union-eq (all-vars (car hyps))
-                   (all-vars-in-hyps (cdr hyps))))))
+  (cond
+   ((null hyps)
+    nil)
+   (t
+    (let ((vars (all-vars-in-hyps (cdr hyps))))
+      (cond
+       ((eq vars t) t)
+       ((variablep (car hyps))
+        (add-to-set-eq (car hyps) vars))
+       ((fquotep (car hyps))
+        vars)
+       ((eq (ffn-symb (car hyps)) 'synp)
+        (cond ((equal (fargn (car hyps) 1) *nil*)
+               vars)
+              ((equal (fargn (car hyps) 1) *t*)
+               t)
+              ((and (quotep (fargn (car hyps) 1))
+                    (not (collect-non-legal-variableps
+                          (cadr (fargn (car hyps) 1)))))
+               (union-eq (cadr (fargn (car hyps) 1))
+                         vars))
+              (t (er hard 'free-vars-in-hyps-considering-bind-free
+                     "We thought the first argument of synp in this context ~
+                      was either 'NIL, 'T, or else a quoted true list of ~
+                      variables, but ~x0 is not!"
+                     (fargn (car hyps) 1)))))
+       (t
+        (union-eq (all-vars (car hyps))
+                  vars)))))))
 
 (defun match-free-value (match-free hyps pat wrld)
   (or match-free
@@ -2214,6 +2218,21 @@
                     hyps (cdr max-terms) final-term name ctx ens wrld
                     state)))))
 
+(defun no-linear-msg (name concl extra ens wrld state)
+  (msg
+   "No :LINEAR rule can be generated from ~x0.  See :DOC linear.~@1~@2"
+   name
+   (mv-let (flg x ttree)
+     (eval-ground-subexpressions concl ens wrld state nil)
+     (declare (ignore flg ttree))
+     (if (quotep x)
+         (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+              (untranslate concl t wrld)
+              (untranslate x t wrld))
+       ""))
+   extra))
+
 (defun chk-acceptable-linear-rule2 (name match-free trigger-terms hyps concl
                                          ctx ens wrld state)
 
@@ -2230,21 +2249,13 @@
 ; term that is a legal (if possibly silly) trigger for each rule.
 
   (let* ((xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state)))
-    (cond ((null lst)
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state))))
+    (cond ((and (null trigger-terms)
+                (null lst))
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
-                linear.~@1"
-               name
-               (mv-let (flg x ttree)
-                 (eval-ground-subexpressions concl ens wrld state nil)
-                 (declare (ignore flg ttree))
-                 (if (quotep x)
-                     (msg "  Note that after ground evaluation, the ~
-                           conclusion, ~x0, was treated as the constant, ~x1."
-                          (untranslate concl t wrld)
-                          (untranslate x t wrld))
-                   ""))))
+               "~@0"
+               (no-linear-msg name concl "" ens wrld state)))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -2258,7 +2269,8 @@
                   (potential-free-vars
                    (free-vars-in-hyps-considering-bind-free hyps nil wrld))
                   (all-vars-in-poly-lst
-                   (all-vars-in-poly-lst (car lst)))
+                   (and (null trigger-terms) ; optimization
+                        (all-vars-in-poly-lst (car lst))))
                   (max-terms
                    (or trigger-terms
                        (maximal-terms all-vars-in-poly-lst
@@ -2280,7 +2292,8 @@
              (cond
               ((null max-terms)
                (cond
-                ((null all-vars-in-poly-lst)
+                ((and (null trigger-terms)
+                      (null all-vars-in-poly-lst))
                  (er soft ctx
                      "No :LINEAR rule can be generated from ~x0 because there ~
                       are no ``maximal terms'' in the inequality produced ~
@@ -2466,7 +2479,8 @@
                               backchain-limit-lst match-free ens wrld state)
   (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state))
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (all-vars-in-hyps hyps))
          (max-terms
@@ -2474,8 +2488,22 @@
               (maximal-terms (all-vars-in-poly-lst (car lst))
                              all-vars-hyps
                              (all-vars concl)))))
-    (add-linear-rule3 rune nume hyps xconcl max-terms backchain-limit-lst
-                      match-free nil wrld)))
+    (cond ((and (null trigger-terms)
+                (null lst))
+           (er hard 'add-linear-rule2
+               "~@0"
+               (no-linear-msg (base-symbol rune)
+                              concl
+                              (msg "  This can happen during ~x0 or the ~
+                                    second pass of a call of ~x1, when the ~
+                                    current-theory is different than when the ~
+                                    rule was originally checked.  You can ~
+                                    avoid this error by supplying ~
+                                    :trigger-terms in your :linear rule-class."
+                                   'include-book 'encapsulate)
+                              ens wrld state)))
+          (t (add-linear-rule3 rune nume hyps xconcl max-terms
+                               backchain-limit-lst match-free nil wrld)))))
 
 (defun add-linear-rule1 (rune nume trigger-terms lst
                               backchain-limit-lst match-free ens wrld state)
@@ -7107,7 +7135,7 @@
                                   (change pequivs-property prop
                                           :deep new
                                           :deep-pequiv-p t))
-                                 (t 
+                                 (t
                                   (change pequivs-property prop
                                           :deep new))))))))
                (parent-prop
@@ -10878,9 +10906,9 @@
        (cond
         (only-simple
          (warning$ ctx "Monitor"
-                   "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] simple ~
-                    abbreviation rule~#1~[~/s~].  Monitors can be installed ~
-                    on abbreviation rules, but will not fire during ~
+                   "The rune~#0~[~/s~] ~&0 name~#0~[s~/~] only~#1~[ a~/~] ~
+                    simple abbreviation rule~#1~[~/s~].  Monitors can be ~
+                    installed on abbreviation rules, but will not fire during ~
                     preprocessing, so you may want to supply the hint :DO-NOT ~
                     '(PREPROCESS); see :DOC hints.  For an explanation of ~
                     what a simple abbreviation rule is, see :DOC simple.  ~

@@ -38,6 +38,12 @@
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp take member-equal)))
 
+(defthmd list-equiv-when-true-listp
+  (implies (and (true-listp x) (true-listp y))
+           (iff (list-equiv x y) (equal x y)))
+  :hints (("goal" :in-theory (enable fast-list-equiv)
+           :induct (fast-list-equiv x y))))
+
 (defthm consp-of-remove-assocs-equal
   (iff (consp (remove-assocs-equal keys alist))
        (not (subsetp-equal (strip-cars alist) keys)))
@@ -536,8 +542,8 @@
     (assoc-equal (find-new-index (strip-cars alist))
                  alist)))
   :hints
-  (("goal" :in-theory (disable (:rewrite find-new-index-correctness-1))
-    :use (:instance (:rewrite find-new-index-correctness-1)
+  (("goal" :in-theory (disable find-new-index-correctness-1)
+    :use (:instance find-new-index-correctness-1
                     (fd-list (strip-cars alist))))))
 
 (defthm
@@ -890,11 +896,20 @@
 (encapsulate
   ()
 
-  ;; This was the (less general) lemma in books/std/lists/prefixp.lisp.
+  ;; These were the (less general) lemmas in books/std/lists/prefixp.lisp.
   (local
    (defthm when-prefixp-append-same
      (iff (prefixp (append x y) x) (atom y))
      :hints (("goal" :in-theory (enable prefixp)))))
+  (local
+   (defthm prefixp-of-append-when-same-length
+     (implies (<= (len x) (len y))
+              (implies (equal (len x) (len y))
+                       (equal (prefixp x (append y z))
+                              (prefixp x y))))
+     :hints(("Goal"
+             :induct (prefixp x y)
+             :in-theory (enable prefixp list-equiv)))))
 
   (defthm
     no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-1
@@ -926,7 +941,8 @@
     (("goal" :in-theory
       (e/d (hifat-tar-name-list-alist hifat-pread hifat-open hifat-lstat)
            (atom append append-of-cons
-                 (:rewrite prefixp-of-append-arg1)))))
+                 (:rewrite prefixp-of-append-arg1)))
+      :expand (list-equiv (cons name 'nil) (cons (car name-list) 'nil))))
     :rule-classes
     (:rewrite
      (:rewrite
@@ -1006,13 +1022,7 @@
      :hints
      (("goal"
        :induct (dec-induct n)
-       :in-theory (e/d nil (append-of-take-and-cons))
-       :expand
-       (:with
-        take-as-append-and-nth
-        (take n
-              (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
-                                                     (+ -1 entry-count)))))))))
+       :in-theory (e/d (take-as-append-and-nth) (take))))))
 
   (defthm
     no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-8
@@ -1087,7 +1097,6 @@
      :hints
      (("goal"
        :induct (dec-induct n)
-       :in-theory (e/d nil (append-of-take-and-cons))
        :expand
        (:with
         take-as-append-and-nth

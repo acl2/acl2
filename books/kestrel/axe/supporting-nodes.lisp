@@ -25,6 +25,7 @@
 (include-book "translation-array")
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system)
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
+(include-book "kestrel/typed-lists-light/all-greater" :dir :system)
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -88,21 +89,63 @@
   :hints (("Goal" :cases ((stringp x))
            :in-theory (e/d (reverse-becomes-reverse-list) ()))))
 
-;; ;move
-;; (defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux
-;;   (implies (and (bounded-translation-arrayp-aux nodenum2 translation-array bound2)
-;;                 (<= bound2 bound)
-;;                 (all-<= nodenums nodenum2)
-;;                 (all-natp nodenums)
-;;                 (natp nodenum2)
-;;                 ;(aref1 'translation-array translation-array nodenum)
-;;                 ;(not (consp (aref1 'translation-array translation-array nodenum)))
-;;                 (all-integerp (aref1-list 'translation-array translation-array nodenums))
-;;                 (all-< acc bound)
-;;                 )
-;;            (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
-;;                   bound))
-;;   :hints (("Goal" :in-theory (enable aref1-list-aux AREF1-LIST))))
+;move
+(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                (all-< acc bound)
+                )
+           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
+                  bound))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+
+(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux-gen
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (<= bound bound2)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                (all-< acc bound2)
+                )
+           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
+                  bound2))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+
+(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (<= bound bound2)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                )
+           (all-< (aref1-list 'translation-array translation-array nodenums)
+                  bound2))
+  :hints (("Goal" :in-theory (enable aref1-list))))
+
+(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-no-free
+  (implies (and (bounded-translation-arrayp-aux (maxelem nodenums) translation-array bound)
+                (consp nodenums) ;because of the call to maxelem
+                (all-natp nodenums)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                )
+           (all-< (aref1-list 'translation-array translation-array nodenums)
+                  bound))
+  :hints (("Goal" :use (:instance all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
+                                  (bound2 bound)
+                                  (top-nodenum-to-check (maxelem nodenums))))))
 
 ;; (defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux
 ;;   (implies (and (bounded-translation-arrayp-aux nodenum2 translation-array bound2)
@@ -407,13 +450,14 @@
 ;;; dropping non-supporters
 ;;;
 
-;returns (mv dag-lst translation-array)
+;; Returns (mv dag-lst translation-array).
 ;takes arrays but returns a dag-lst
 ;the name of translation-array must be 'translation-array
 ;the name of tag-array must be 'tag-array
 ;the name of dag-array must be dag-array-name
 ;todo: avoid making a node that is a quotep (but then consider what to do about possible duplicates caused by that)?
-(defund build-reduced-dag2 (n top-nodenum dag-array-name dag-array tag-array
+(defund build-reduced-dag2 (n top-nodenum dag-array-name dag-array
+                              tag-array ; nodes that we want to keep have been tagged
                               dag-len ;the next nodenum to use in the new DAG
                               translation-array dag-acc)
   (declare (xargs :measure (+ 1 (nfix (+ 1 (- top-nodenum n))))
@@ -448,17 +492,17 @@
                (dag-acc (acons-fast dag-len expr dag-acc)))
           (build-reduced-dag2 (+ 1 n) top-nodenum dag-array-name dag-array tag-array (+ 1 dag-len) translation-array dag-acc))))))
 
-(defthm consp-mv-nth-0-of-translation-array-after-build-reduced-dag2
+(defthm consp-of-mv-nth-0-of-build-reduced-dag2
   (implies (consp dag-acc)
            (consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
   :hints (("Goal" :in-theory (enable build-reduced-dag2))))
 
-(defthm alen1-of-translation-array-after-build-reduced-dag2
+(defthm alen1-of-mv-nth-1-of-build-reduced-dag2
   (equal (alen1 'translation-array (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
          (alen1 'translation-array translation-array))
   :hints (("Goal" :in-theory (enable build-reduced-dag2))))
 
-(defthm array1p-of-translation-array-after-build-reduced-dag2
+(defthm array1p-of-mv-nth-1-of-build-reduced-dag2
   (implies (and (array1p 'translation-array translation-array)
                 (<= 0 n)
                 (<= n top-nodenum)
@@ -490,7 +534,7 @@
                 ;;(PSEUDO-DAGP-AUX dag-acc (car (car dag-acc)))
                 (all-natp (strip-cars dag-acc))
                 )
-           (bounded-translation-arrayp-aux (top-nodenum (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
+           (bounded-translation-arrayp-aux top-nodenum
                                            (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                            (+ 1 (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))))))
   :hints (;; ("subgoal *1/1" :use (:instance BOUNDED-TRANSLATION-ARRAYP-AUX-MONOTONE
@@ -504,6 +548,34 @@
            :expand ((build-reduced-dag2 n n dag-array-name
                                         dag-array tag-array dag-len
                                         translation-array dag-acc)))))
+
+(defthm bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2-gen
+  (implies (and (<= (+ 1 (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))) bound)
+                (array1p 'translation-array translation-array)
+                (array1p 'tag-array tag-array)
+                (alistp dag-acc)
+                (natp top-nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))
+                (natp n)
+                (natp dag-len)
+                (< top-nodenum (alen1 'tag-array tag-array))
+                (< top-nodenum (alen1 'translation-array translation-array))
+                (<= n (+ 1 top-nodenum))
+                ;(translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux top-nodenum translation-array (+ 1 (if (consp dag-acc)
+                                                                                       (car (car dag-acc))
+                                                                                     0)))
+                (<= dag-len n)
+                (implies (consp dag-acc)
+                         (< (car (car dag-acc)) dag-len))
+                ;;(PSEUDO-DAGP-AUX dag-acc (car (car dag-acc)))
+                (all-natp (strip-cars dag-acc))
+                )
+           (bounded-translation-arrayp-aux top-nodenum
+                                           (mv-nth 1 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
+                                           bound))
+  :hints (("Goal" :use (:instance bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2)
+           :in-theory (disable bounded-translation-arrayp-aux-of-translation-array-after-build-reduced-dag2))))
 
 (defthm build-reduced-dag2-type
   (implies (and (array1p 'translation-array translation-array)
@@ -535,7 +607,7 @@
                             ) (                ;dag-exprp
                             )))))
 
-(defthm consp-of-mv-nth-0-of-build-reduced-dag2
+(defthm consp-of-mv-nth-0-of-build-reduced-dag2-alt
   (implies (and (aref1 'tag-array tag-array top-nodenum) ;since the top-nodenum is tagged, the result cannot be empty
                 (natp top-nodenum)
                 (natp n)
@@ -578,11 +650,9 @@
                 (< top-nodenum (alen1 'tag-array tag-array))
                 (< top-nodenum (alen1 'translation-array translation-array))
                 (<= n top-nodenum))
-           (pseudo-dagp
-            (mv-nth 0
-                    (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array
-                                        dag-len ;the next nodenum to use in the new dag
-                                        translation-array dag-acc))))
+           (pseudo-dagp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array
+                                                      dag-len ;the next nodenum to use in the new dag
+                                                      translation-array dag-acc))))
   :hints (("Goal" :use (build-reduced-dag2-type
                         consp-of-mv-nth-0-of-build-reduced-dag2)
            :expand ()

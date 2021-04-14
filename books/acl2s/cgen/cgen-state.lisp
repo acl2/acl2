@@ -481,7 +481,7 @@ cgen-state"
       (list (first term) (third term) (second term))
     term))
 
-(include-book "../defdata/defdata-util")
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 
 (u::defloop orient-equalities (terms)
   (for ((term in terms)) (collect (orient-equality term))))

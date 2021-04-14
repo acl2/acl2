@@ -14,6 +14,7 @@
 (include-book "bvchop")
 (include-book "logtail")
 (include-book "slice-def")
+(include-book "kestrel/arithmetic-light/lg" :dir :system)
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/floor-mod-expt"))
@@ -467,3 +468,24 @@
                 (equal x1 x2))
            (equal (equal (slice high1 low1 x1) (slice high2 low2 x2))
                   t)))
+
+(defthmd bvchop-of-floor-of-expt-of-2
+  (implies (and (integerp x) ;would like to drop this..
+                (integerp n)
+                (natp m))
+           (equal (bvchop n (floor x (expt 2 m)))
+                  (slice (+ m -1 n) m x)))
+  :hints (("Goal" :in-theory (e/d (slice logtail) (;anti-slice
+                                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                                   )))))
+
+(defthmd bvchop-of-floor-of-expt-of-2-constant-version
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep n)))
+                (integerp x)
+                (integerp n)
+                (power-of-2p k))
+           (equal (bvchop n (floor x k))
+                  (slice (+ (lg k) -1 n) (lg k) x)))
+  :hints (("Goal" :use (:instance bvchop-of-floor-of-expt-of-2 (m (lg k)))
+           :in-theory (e/d (power-of-2p) (bvchop-of-floor-of-expt-of-2)))))

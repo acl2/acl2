@@ -165,8 +165,8 @@ use the clause processor.</p>")
 
 (local (flag::make-flag flag-autohide-term
                         autohide-term
-                        :flag-mapping ((autohide-term . term)
-                                       (autohide-term-list . list))))
+                        :flag-mapping ((autohide-term term)
+                                       (autohide-term-list list))))
 
 (local (defthm autohide-term-list-when-atom
          (implies (atom x)

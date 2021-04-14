@@ -118,15 +118,6 @@
          (bitand x y))
   :hints (("Goal" :in-theory (e/d (bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer) ()))))
 
-(defund logtail-unguarded (size i)
-  (declare (xargs :guard t))
-  (logtail (nfix size) (ifix i)))
-
-(defthm logtail-unguarded-correct
-  (equal (logtail-unguarded size i)
-         (logtail size i))
-  :hints (("Goal" :in-theory (enable logtail-unguarded))))
-
 (defund getbit-unguarded (n x)
   (declare (xargs :guard t))
   (getbit (nfix n) (ifix x)))
@@ -324,7 +315,6 @@
                 (natp low))
            (equal (slice-less-guarded high low x)
                   (slice high low x)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (slice slice-less-guarded) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defund bvchop-list-unguarded (size lst)

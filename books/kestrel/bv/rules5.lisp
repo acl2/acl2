@@ -43,7 +43,6 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -75,7 +74,6 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -96,7 +94,6 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -115,7 +112,6 @@
                 (not (signed-addition-underflowsp size k y))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -134,7 +130,7 @@
                 (not (signed-addition-underflowsp size k x))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :otf-flg t
+
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -153,7 +149,6 @@
                 (not (signed-addition-overflowsp size k y))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -172,7 +167,6 @@
                 (not (signed-addition-overflowsp size k x))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -282,7 +276,6 @@
                 (posp size))
            (equal (sbvlt size x (bvplus size y x))
                   (sbvlt size 0 y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
@@ -316,7 +309,6 @@
                 (unsigned-byte-p size y))
            (equal (unsigned-byte-p size (bvplus sizeplusone (bvuminus sizeplusone x) y))
                   (bvle size x y)))
-  :otf-flg t
   :hints (("Goal" ;:cases ((natp size))
            :in-theory (e/d (bvplus bvchop-of-sum-cases
                                           bvuminus
@@ -402,7 +394,6 @@
                 (not (equal (bvchop 32 k2) (expt 2 31)))) ;k2 not min int
            (equal (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))
                   nil))
-  :otf-flg t
   :hints (("Goal":in-theory (e/d (signed-addition-underflowsp
                                   bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                   bvuminus

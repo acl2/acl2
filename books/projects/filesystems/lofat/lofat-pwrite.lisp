@@ -77,25 +77,7 @@
   :hints (("Goal" :in-theory (enable lofat-pwrite)) ))
 
 (defthm
-  lofat-pwrite-refinement-lemma-9
-  (implies (and (not (stringp buf))
-                (< (+ offset (len buf)) 4294967296))
-           (m1-file-contents-p (implode$inline (insert-text nil offset buf))))
-  :hints
-  (("goal" :do-not-induct t
-    :in-theory
-    (e/d (lofat-pwrite m1-file-contents-p insert-text)
-         ((:rewrite d-e-cc-of-update-dir-contents-coincident)
-          (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident)
-          lofat-place-file))
-    :expand ((:free (fs) (hifat-find-file fs nil))
-             (:free (fs file)
-                    (hifat-place-file fs nil file))
-             (:free (fat32$c file root-d-e)
-                    (lofat-place-file fat32$c root-d-e nil file))))))
-
-(defthm
-  lofat-pwrite-refinement-lemma-17
+  lofat-pwrite-refinement-lemma-1
   (implies
    (and (good-root-d-e-p (pseudo-root-d-e fat32$c)
                          fat32$c)
@@ -138,48 +120,7 @@
                     (lofat-place-file fat32$c root-d-e nil file))))))
 
 (defthm
-  lofat-pwrite-refinement-lemma-19
-  (implies
-   (and
-    (fat32-filename-list-p path)
-    (lofat-fs-p fat32$c)
-    (equal (mv-nth 1 (lofat-to-hifat fat32$c))
-           0)
-    (< (hifat-entry-count (mv-nth 0 (lofat-to-hifat fat32$c)))
-       (max-entry-count fat32$c))
-    (not (equal (mv-nth 1
-                        (lofat-find-file fat32$c
-                                         (mv-nth 0 (root-d-e-list fat32$c))
-                                         path))
-                0)))
-   (equal
-    (mv-nth
-     1
-     (lofat-to-hifat
-      (mv-nth 0
-              (lofat-place-file
-               fat32$c (pseudo-root-d-e fat32$c)
-               path
-               (lofat-file '(0 0 0 0 0 0 0 0 0 0 0 0
-                               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                           (implode (insert-text nil offset buf)))))))
-    0))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (update-dir-contents-correctness-1)
-                    ((:rewrite lofat-mkdir-refinement-lemma-10)
-                     lofat-place-file))
-    :expand (:free (fat32$c root-d-e file)
-                   (lofat-place-file fat32$c root-d-e nil file))
-    :use ((:instance
-           (:rewrite lofat-mkdir-refinement-lemma-10)
-           (file (lofat-file '(0 0 0 0 0 0 0 0 0 0 0 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                             (implode (insert-text nil offset buf)))))))))
-
-(defthm
-  lofat-pwrite-refinement-lemma-21
+  lofat-pwrite-refinement-lemma-2
   (implies (and (<= 0 offset)
                 (< (+ offset (len (explode buf)))
                    4294967296))

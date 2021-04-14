@@ -61,12 +61,17 @@ This comment motivates the macro install-not-normalized, defined below.
                                name))
 
 (defun install-not-normalized-fn-1 (name wrld clique defthm-name)
-  (declare (xargs :guard (and (symbolp name)
+  (declare (xargs :mode :program ; because of logical-defun call
+                  :guard (and (symbolp name)
                               (symbolp defthm-name)
                               (plist-worldp wrld)
                               (symbol-listp clique))))
   (let* ((formals (formals name wrld))
-         (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
+         (name-def (or (logical-defun name wrld)
+                       (er hard? 'install-not-normalized-fn-1
+                           "There is no defun associated with the name, ~x0."
+                           name)))
+         (body (car (last name-def)))
          (defthm-name (or defthm-name
                           (install-not-normalized-name name)))
          (controller-alist (let* ((def-bodies
@@ -75,12 +80,14 @@ This comment motivates the macro install-not-normalized, defined below.
                                   (def-body ; (def-body name wrld)
                                     (and (true-listp def-bodies)
                                          (car def-bodies))))
-                             (and (weak-def-body-p def-body) ; for guard proof
-                                  (access def-body def-body
-                                          :controller-alist))))
+                             (and ;; (weak-def-body-p def-body) ; for guard proof
+                              (access def-body def-body
+                                      :controller-alist))))
+         (unnormalized-body
+          (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
          (cliquep (and clique
-                       (pseudo-termp body) ; for guard proof
-                       (intersectp-eq clique (all-fnnames body)))))
+                       ;; (pseudo-termp unnormalized-body) ; for guard proof
+                       (intersectp-eq clique (all-fnnames unnormalized-body)))))
     `((defthm ,defthm-name
         (equal (,name ,@formals)
                ,body)
@@ -96,7 +103,8 @@ This comment motivates the macro install-not-normalized, defined below.
       (in-theory (disable ,name)))))
 
 (defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-doublets)
-  (declare (xargs :guard (and (symbol-listp fns)
+  (declare (xargs :mode :program
+                  :guard (and (symbol-listp fns)
                               (symbol-listp all-fns)
                               (symbol-alistp defthm-name-doublets)
                               (doublet-listp defthm-name-doublets)
@@ -112,7 +120,8 @@ This comment motivates the macro install-not-normalized, defined below.
                     defthm-name-doublets)))))
 
 (defun install-not-normalized-fn (name wrld allp defthm-name)
-  (declare (xargs :guard (and (symbolp name)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (let* ((ctx 'install-not-normalized)
          (fns (getprop name 'recursivep nil 'current-acl2-world wrld))
@@ -323,10 +332,14 @@ This comment motivates the macro install-not-normalized, defined below.
  ACL2 !>
  })
 
+ <p>Remark.  Each definition installed by @('install-not-normalized') contains
+ the original body, not a translated version.  (See @(see term) for a
+ discussion of the the notion of ``translated term''.)</p>
+
  <p>For a somewhat related utility, see @(see fn-is-body).</p>
 
  <p>For examples, see the Community Book
- @('misc/install-not-normalized.lisp').</p>")
+ @('misc/install-not-normalized-tests.lisp').</p>")
 
 (defxdoc fn-is-body
   :parents (proof-automation)

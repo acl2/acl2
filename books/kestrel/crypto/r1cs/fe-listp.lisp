@@ -19,3 +19,10 @@
       (equal elems nil)
     (and (fep (first elems) prime)
          (fe-listp (rest elems) prime))))
+
+;for acl2, not Axe
+(defthm fep-when-fe-listp-and-member-equal
+  (implies (and (syntaxp (acl2::variablep x)) ;for now, we only generate the fe-listp assumptions for vars
+                (fe-listp free p)
+                (acl2::member-equal x free))
+           (fep x p)))

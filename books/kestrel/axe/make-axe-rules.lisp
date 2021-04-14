@@ -22,7 +22,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
-;(include-book "all-consp")
+;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
 (include-book "axe-rules")
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
@@ -140,7 +140,7 @@
 ;;     (let ((conjunct (car conjuncts)))
 ;;       (if (and (consp conjunct)
 ;;                (eq 'quotep (ffn-symb conjunct)))
-;;           (cons `(AXE-SYNTAXP (axe-QUOTEP-FN ,(first (fargs conjunct))))
+;;           (cons `(:AXE-SYNTAXP (axe-QUOTEP-FN ,(first (fargs conjunct))))
 ;;                 (process-syntaxp-conjuncts (cdr conjuncts)))
 ;;         (prog2$ (er hard? 'process-syntaxp-conjuncts "unrecognized argument to syntaxp: ~x0.  we only support quotep."
 ;;                             conjunct)
@@ -209,7 +209,7 @@
        ((when erp)
         (er hard? 'make-axe-syntaxp-hyp-for-synp-conjunct "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         *unrelievable-hyp*))
-    `(axe-syntaxp ,processed-arg)))
+    `(:axe-syntaxp . ,processed-arg)))
 
 (defthm axe-rule-hypp-of-make-axe-syntaxp-hyp-for-synp-conjunct
   (implies (pseudo-termp conjunct)
@@ -289,6 +289,7 @@
   :hints (("Goal" :expand (axe-syntaxp-exprp expr)
            :in-theory (enable process-axe-syntaxp-function-application axe-syntaxp-function-applicationp axe-syntaxp-exprp))))
 
+;; Drop dag-array formals passed as the last args to functions
 (defund process-axe-syntaxp-expr (expr wrld)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-syntaxp-exprp expr)
@@ -402,6 +403,7 @@
                  ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
+                 ;; Drop dag-array formals passed a last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
                  (mentioned-vars (all-vars processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
@@ -412,7 +414,7 @@
                   (mv *unrelievable-hyps* bound-vars))
                  ;; TODO: Should we convert any calls of quote to axe-quotep?
                  )
-              (mv `((axe-syntaxp ,processed-axe-syntaxp-expr)) bound-vars))
+              (mv `((:axe-syntaxp . ,processed-axe-syntaxp-expr)) bound-vars))
           (if (call-of 'axe-bind-free hyp) ;; (axe-bind-free <term> '<vars-to-bind>)
               (b* (((when (not (and (true-listp hyp)
                                     (eql 2 (len (fargs hyp))))))
@@ -447,15 +449,24 @@
                     (er hard? 'make-axe-rule-hyps-for-hyp "The axe-bind-free hyp ~x0 in rule ~x1 is declared to bind the vars ~x2, but these are not disjoint from the set of vars already bound (~x3)" hyp rule-symbol vars-to-bind bound-vars)
                     (mv *unrelievable-hyps* bound-vars)))
                 ;; axe-bind-free hyps include both the term and the variables:
-                (mv `((axe-bind-free ,axe-bind-free-expr ,vars-to-bind))
+                (mv `((:axe-bind-free ,axe-bind-free-expr . ,vars-to-bind))
                     (append vars-to-bind bound-vars)))
             ;; not a special hyp:
             (b* ((all-fns (fns-in-term hyp))
                  ((when (member-eq 'axe-syntaxp all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
                  ((when (member-eq 'axe-bind-free all-fns))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :axe-bind-free all-fns))
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
+                  (mv *unrelievable-hyps* bound-vars))
+                 ((when (member-eq :free-vars all-fns))
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
                   (mv *unrelievable-hyps* bound-vars))
                  ;; todo: check for work-hards not at the top-level?
                  (hyp (expand-lambdas-in-term hyp)) ;could print a note here, if this does anything.  ;; TODO: What if we don't expand lambdas?  Maybe that's only needed for the free variable case?
@@ -469,7 +480,6 @@
                  (free-vars (set-difference-eq hyp-vars bound-vars)))
               (if free-vars
                   ;; Normal hyp with free vars that will get bound by matching with assumptions:
-                  ;; TODO: Wrap the hyp in a marker that indicates that free vars are present?
                   (b* (;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
                        ;; Strip and note the work-hard, if any:
                        ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
@@ -496,7 +506,7 @@
                                          bound-vars)
                              ;;(cw "Note: Binding hyp ~x0 detected in rule ~x1.~%" hyp rule-symbol) ;todo: add a print option?
                              )
-                            (mv (list hyp)
+                            (mv (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
                                 (append free-vars ;if the hyp is relieved by searching for matches in the context, any free vars in the hyp wil become bound
                                         bound-vars))))
                 ;; Normal hyp with no free vars:
@@ -516,27 +526,51 @@
            :in-theory (enable fns-in-term))))
 
 ;memberp version
-(DEFTHM NOT-MEMBERp-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM
-  (IMPLIES
-   (AND (PSEUDO-TERMP TERM)
-        (NOT (MEMBERp FN (FNS-IN-TERM TERM))))
-   (NOT (MEMBERp
-         FN
-         (FNS-IN-TERM (EXPAND-LAMBDAS-IN-TERM TERM)))))
-  :hints (("Goal" :use (:instance NOT-MEMBER-equal-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM)
-           :in-theory (disable NOT-MEMBER-equal-OF-FNS-IN-TERM-OF-EXPAND-LAMBDAS-IN-TERM))))
+(defthm not-memberp-of-fns-in-term-of-expand-lambdas-in-term
+  (implies (and (pseudo-termp term)
+                (not (memberp fn (fns-in-term term))))
+           (not (memberp fn (fns-in-term (expand-lambdas-in-term term)))))
+  :hints (("Goal" :use (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)
+           :in-theory (disable not-member-equal-of-fns-in-term-of-expand-lambdas-in-term))))
 
-(defthm not-memberp-of-FNS-IN-TERM-of-cadr
-  (implies (and (NOT (MEMBERP fn (FNS-IN-TERM x)))
-                (not (EQUAL 'QUOTE (CAR X))))
-           (NOT (MEMBERP fn (FNS-IN-TERM (CAR (CDR x))))))
-  :hints (("Goal" :expand (FNS-IN-TERM X)
-           :in-theory (enable FNS-IN-TERM))))
+(defthm not-memberp-of-fns-in-term-of-cadr
+  (implies (and (not (memberp fn (fns-in-term x)))
+                (not (equal 'quote (car x))))
+           (not (memberp fn (fns-in-term (car (cdr x))))))
+  :hints (("Goal" :expand (fns-in-term x)
+           :in-theory (enable fns-in-term))))
+
+(defthmd lambda-free-termp-when-equal-of-car-and-quote
+  (implies (equal 'quote (car term))
+           (lambda-free-termp term)))
+
+;move
+(defthm car-of-expand-lambdas-in-terms
+  (equal (car (expand-lambdas-in-terms terms))
+         (expand-lambdas-in-term (car terms)))
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
+
+;(local (in-theory (disable pairlis$))) ;prevent inductions
+
+(defthm car-of-my-sublis-var-lst
+  (implies (consp l)
+           (equal (car (my-sublis-var-lst alist l))
+                  (my-sublis-var alist (car l))))
+  :hints (("Goal" :expand (my-sublis-var-lst alist l)
+           :in-theory (enable my-sublis-var-lst))))
+
+(defthm lambda-free-termp-of-cadr
+  (implies (and (pseudo-termp term)
+                (lambda-free-termp term)
+                (not (equal 'quote (car term)))
+                ;(not (consp (car term)))
+                )
+           (lambda-free-termp (cadr term)))
+  :hints (("Goal" :in-theory (enable lambda-free-termp-when-equal-of-car-and-quote))))
 
 (defthm axe-rule-hyp-listp-of-mv-nth-0-of-make-axe-rule-hyps-for-hyp
   (implies (pseudo-termp hyp)
            (axe-rule-hyp-listp (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
-  :otf-flg t
   :hints (("Goal" :use (;; (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
                         ;;            (fn 'axe-bind-free)
                         ;;            (term hyp))
@@ -563,6 +597,7 @@
                     ;(PSEUDO-TERM-LISTP (CDR HYP))
                     ;;(PSEUDO-TERMP HYP)
                     (AXE-SYNTAXP-EXPRP (CADR HYP))
+                    ;(EXPAND-LAMBDAS-IN-TERM HYP)
                     )
            :in-theory (e/d (axe-rule-hypp make-axe-rule-hyps-for-hyp symbolp-when-pseudo-termp
                                           not-equal-of-car-when-not-memberp-of-fns-in-term
@@ -688,11 +723,7 @@
 ;; TODO: Consider deprecating this in favor of the stored-rule format.
 ;; TODO: Allow this to return an error (causing the caller to skip the rule)?
 (defund make-axe-rule (lhs rhs rule-symbol hyps extra-hyps print wrld)
-  (declare (xargs :guard (and (pseudo-termp lhs)
-                              (consp lhs) ;must be a function call
-                              (symbolp (ffn-symb lhs))
-                              (not (eq 'quote (ffn-symb lhs)))
-                              (lambda-free-termp lhs)
+  (declare (xargs :guard (and (axe-rule-lhsp lhs)
                               (pseudo-termp rhs)
                               (pseudo-term-listp hyps) ;; from the theorem
                               (axe-rule-hyp-listp extra-hyps) ;; already processed, don't bind any vars, for stopping loops
@@ -736,11 +767,7 @@
   :hints (("Goal" :in-theory (enable rule-hyps make-axe-rule))))
 
 (defthm axe-rulep-of-make-axe-rule
-  (implies (and (pseudo-termp lhs)
-                (lambda-free-termp lhs)
-                (consp lhs)
-;                (symbolp (ffn-symb lhs))
-                (not (equal 'quote (ffn-symb lhs)))
+  (implies (and (axe-rule-lhsp lhs)
                 (pseudo-termp rhs)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
@@ -748,7 +775,7 @@
            (axe-rulep (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
   :hints (("Goal" :in-theory (enable axe-rulep))))
 
-;;Returns (mv erp lhs rhs)
+;;Returns (mv erp lhs rhs).
 (defund lhs-and-rhs-of-conc (conc rule-symbol known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (symbolp rule-symbol)
@@ -784,50 +811,60 @@
             (if (member-eq fn known-boolean-fns)
                 ;; pred -> (equal pred 't)
                 (mv nil (expand-lambdas-in-term conc) *t*)
-              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not a known boolean) ~x0 in rule ~x1" conc rule-symbol)
+              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
                       (mv t nil nil)))))))))
 
-(defthm lambda-free-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+(defthm axe-rule-lhsp-of-mv-nth-1-of-lhs-and-rhs-of-conc
   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+                (symbol-listp known-boolean-fns) ;drop?
                 (pseudo-termp conc))
-           (lambda-free-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+           (axe-rule-lhsp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+  :hints (("Goal"  :expand ((expand-lambdas-in-term conc))
+           :in-theory (enable lhs-and-rhs-of-conc axe-rule-lhsp))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (pseudo-termp conc))
-           (pseudo-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm lambda-free-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (pseudo-termp conc))
+;;            (lambda-free-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm symbolp-of-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (symbolp (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm pseudo-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (pseudo-termp conc))
+;;            (pseudo-termp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm consp-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (consp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm symbolp-of-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (symbol-listp known-boolean-fns)
+;;                 (pseudo-termp conc))
+;;            (symbolp (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))))
+;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;;            :in-theory (enable lhs-and-rhs-of-conc))))
 
-(defthm not-equal-of-quote-and-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
-  (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
-                (symbol-listp known-boolean-fns)
-                (pseudo-termp conc))
-           (not (equal 'quote (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))))
-  :hints (("Goal" :expand ((expand-lambdas-in-term conc))
-           :in-theory (enable lhs-and-rhs-of-conc))))
+;; (defthm consp-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;;                 (symbol-listp known-boolean-fns)
+;;                 (pseudo-termp conc))
+;;            (consp (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
+;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;;            :in-theory (enable lhs-and-rhs-of-conc))))
+
+;; ;; (defthm not-equal-of-quote-and-car-of-mv-nth-1-of-lhs-and-rhs-of-conc
+;; ;;   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
+;; ;;                 (symbol-listp known-boolean-fns)
+;; ;;                 (pseudo-termp conc))
+;; ;;            (not (equal 'quote (car (mv-nth 1 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))))
+;; ;;   :hints (("Goal" :expand ((expand-lambdas-in-term conc))
+;; ;;            :in-theory (enable lhs-and-rhs-of-conc))))
 
 (defthm pseudo-termp-of-mv-nth-2-of-lhs-and-rhs-of-conc
   (implies (and (not (mv-nth 0 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns)))
                 (pseudo-termp conc))
            (pseudo-termp (mv-nth 2 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
+
+
 
 ;;;
 ;;; axe-rule-listp
@@ -977,7 +1014,7 @@
            (symbolp (first loop-stopper))
            (symbolp (second loop-stopper)))
       ;;a loop-stopper of (x y) means y must be smaller than x for the rule to fire
-      (let ((loop-stopper `(axe-syntaxp (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
+      (let ((loop-stopper `(:axe-syntaxp . (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
         (prog2$ nil ;(cw "Note: inserting loop stopper ~x0 for rule ~x1.~%" loop-stopper rule-name)
                 loop-stopper)) ;TODO: get the invisible fns and have heavier-dag-term (or a variant of it) ignore them
     (prog2$ (er hard? 'make-axe-rule-hyp-for-loop-stopper "Unrecognized loop stopper: ~x0." loop-stopper)

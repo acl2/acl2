@@ -39,8 +39,9 @@
             unless
             when
             pfield::add
-            pfield::mul
             pfield::neg
+            pfield::sub
+            pfield::mul
             pfield::inv
             pfield::div
             pfield::fep
@@ -60,7 +61,6 @@
             ecurve::twisted-edwards-curve-completep
             ecurve::twisted-edwards-curve-primep
             primes::*bn-254-group-prime*
-            r1cs::lift-r1cs
             ) ; added symbols
           (set-difference-eq
            *acl2-exports*

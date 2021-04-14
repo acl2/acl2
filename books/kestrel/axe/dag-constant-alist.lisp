@@ -1,7 +1,7 @@
 ; Index for constant nodes in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,7 +18,6 @@
 ;; The entries in the dag-constant-alist should be sorted by decreasing
 ;; nodenum.
 
-(include-book "no-atoms")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 

@@ -7,151 +7,18 @@
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "FTY")
 
+;; defset has been moved to centaur/fty/deftypes.lisp so that it can be used resursively in fty::deftypes
+;; the implementation has been moved to fty-set.lisp
 (include-book "centaur/fty/top" :dir :system)
+
+#|
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc defset
-
-  :parents (fty-extensions fty set::std/osets)
-
-  :short "Generate a <see topic='@(url fty::fty)'>fixtype</see>
-          of <see topic='@(url set::std/osets)'>osets</see>
-          whose elements have a specified fixtype."
-
-  :long
-
-  (xdoc::topstring
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h3 "Introduction")
-
-   (xdoc::p
-    "This is analogous to
-     @(tsee fty::deflist),
-     @(tsee fty::defalist), and
-     @(tsee fty::defomap).
-     Besides the fixtype itself,
-     this macro also generates some theorems about the fixtype.
-     Future versions of this macro may generate more theorems, as needed.")
-
-   (xdoc::p
-    "Aside from the recognizer, fixer, and equivalence for the fixtype,
-     this macro does not generate any operations on the typed osets.
-     Instead, the "
-    (xdoc::seetopic "acl2::std/osets" "generic oset operations")
-    " can be used on typed osets.
-     This macro generates theorems about
-     the use of these generic operations on typed osets.")
-
-   (xdoc::p
-    "Future versions of this macro may be modularized to provide
-     a ``sub-macro'' that generates only the recognizer and theorems about it,
-     without the fixtype (and without the fixer and equivalence),
-     similarly to @(tsee std::deflist) and @(tsee std::defalist).
-     That sub-macro could be called @('set::defset').")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h3 "General Form")
-
-   (xdoc::codeblock
-    "(defset type"
-    "        :elt-type ..."
-    "        :elementp-of-nil ..."
-    "        :pred ..."
-    "        :fix ..."
-    "        :equiv ..."
-    "        :parents ..."
-    "        :short ..."
-    "        :long ..."
-    "  )")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h3 "Inputs")
-
-   (xdoc::desc
-    "@('type')"
-    (xdoc::p
-     "The name of the new fixtype."))
-
-   (xdoc::desc
-    "@(':elt-type')"
-    (xdoc::p
-     "The (existing) fixtype of the elements of the new set fixtype."))
-
-   (xdoc::desc
-    "@(':elementp-of-nil')"
-    (xdoc::p
-     "Specifies whether @('nil') is in the element fixtype @(':elt-type').
-      It must be @('t'), @('nil'), or @(':unknown') (the default).
-      When @('t') or @('nil'), slightly better theorems are generated."))
-
-   (xdoc::desc
-    "@(':pred')
-     <br/>
-     @(':fix')
-     <br/>
-     @(':equiv')"
-    (xdoc::p
-     "The name of the recognizer, fixer, and equivalence for the new fixtype.")
-    (xdoc::p
-     "The defaults are @('type') followed by
-      @('-p'), @('-fix'), and @('-equiv')."))
-
-   (xdoc::desc
-    "@(':parents')
-     <br/>
-     @(':short')
-     <br/>
-     @(':long')"
-    (xdoc::p
-     "These are used to generate XDOC documentation
-      for the topic @('name').")
-    (xdoc::p
-     "If any of these is not supplied, the corresponding component
-      is omitted from the generated XDOC topic."))
-
-   (xdoc::p
-    "This macro currently does not perform a thorough validation of its inputs.
-     Erroneous inputs may result in failures of the generated events.
-     Errors should be easy to diagnose,
-     also since this macro has a very simple and readable implementation.
-     Future versions of this macro
-     should perform more thorough input validation.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h3 "Generated Events")
-
-   (xdoc::p
-    "The following are generated, inclusive of XDOC documentation:")
-
-   (xdoc::ul
-
-    (xdoc::li
-     "The recognizer, the fixer, the equivalence, and the fixtype.")
-
-    (xdoc::li
-     "Several theorems about the recognizer, fixer, and equivalence."))
-
-   (xdoc::p
-    "See the implementation, which uses a readable backquote notation,
-     for details.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc defset-implementation
-  :parents (defset)
-  :short "Implementation of @(tsee defset).")
 
 (define defset-fn (type
                    elt-type
@@ -351,3 +218,4 @@
                    ,short
                    ,long
                    state))))
+|#

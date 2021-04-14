@@ -43,12 +43,6 @@
   :short "The Jubjub curve in Montgomery form."
   (ecurve::twisted-edwards-to-montgomery (jubjub-curve))
   ///
-
-  (defrule montgomery-curve-primep-of-jubjub-montgomery-curve
-    (ecurve::montgomery-curve-primep (jubjub-montgomery-curve))
-    :enable ecurve::montgomery-curve-primep
-    :disable ((:e ecurve::montgomery-curve-primep)))
-
   (in-theory (disable (:e jubjub-montgomery-curve))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

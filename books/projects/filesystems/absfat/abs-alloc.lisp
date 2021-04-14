@@ -38,7 +38,6 @@
                         (:rewrite member-of-abs-fs-fix-when-natp)
                         (:rewrite
                          m1-file-alist-p-of-intersection-equal-2)
-                        (:rewrite absfat-subsetp-transitivity-lemma-5)
                         (:rewrite
                          abs-separate-of-frame->frame-of-collapse-this-lemma-7)
                         (:linear 1st-complete-correctness-2)
@@ -318,7 +317,6 @@
              (:rewrite consp-of-assoc-of-abs-fs-fix)
              (:rewrite abs-file->contents-when-m1-file-p)
              (:rewrite remove-when-absent)
-             (:rewrite absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
              (:definition remove-equal)
              (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
              (:rewrite abs-file-alist-p-when-m1-file-alist-p)
@@ -474,7 +472,6 @@
                                (:rewrite intersectp-equal-of-atom-left)
                                (:rewrite intersectp-equal-of-atom-right)
                                (:rewrite intersectp-is-commutative)
-                               (:rewrite list-equiv-when-true-listp)
                                (:rewrite member-of-cons)
                                (:rewrite member-when-atom)
                                (:rewrite set-difference$-when-not-intersectp)
@@ -487,3 +484,10 @@
                                (:type-prescription abs-fs-fix)
                                (:type-prescription set-difference-equal)))
            :induct (abs-alloc fs path new-index))))
+
+(defthmd hifat-no-dups-p-of-abs-alloc
+  (implies (and (hifat-no-dups-p fs)
+                (m1-file-alist-p fs))
+           (hifat-no-dups-p (mv-nth 0 (abs-alloc fs path new-index))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p abs-alloc
+                                     abs-fs-p-when-hifat-no-dups-p))))

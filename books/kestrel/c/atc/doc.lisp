@@ -158,7 +158,7 @@
       the names of the formal parameters of the corresponding C function,
       in the same order.
       Therefore, the formal parameters of each @('fni')
-      must have must have all distinct symbol names;
+      must have all distinct symbol names;
       even if they are in different packages,
       they must have distinct symbol names
       (the package names are ignored).")
@@ -175,9 +175,7 @@
      (xdoc::li
       "@('(sintp x)'), representing @('int').")
      (xdoc::li
-      "@('(uchar-arrayp)'), representing @('unsigned char *').
-       Currently, this may be used only if @(':proofs') is @('nil');
-       proof generation support for arrays will be added eventually."))
+      "@('(uchar-arrayp x)'), representing @('unsigned char *')."))
     (xdoc::p
      "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
@@ -195,33 +193,33 @@
      "Each function @('fni') must be in logic mode and guard-verified.
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " must be an allowed outer term;
-      this notion is defined in the sequel, along with the notions of
-      allowed non-boolean terms,
-      allowed pure non-boolean terms,
-      and allowed boolean terms.")
+     " must be a statement term;
+      this notion is defined below, along with the notions of
+      C-valued terms,
+      pure C-valued terms,
+      and boolean terms.")
 
     (xdoc::p
-     "An <i>allowed outer term</i> is
+     "A <i>statement term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "An allowed non-boolean term.
-       That is, an allowed non-boolean term is also an allowed outer term.
+      "A C-valued term.
+       That is, a C-valued term is also a statement term.
        This represents a C @('return') statement
        whose expression is represented by the same term,
-       viewed as an allowed non-boolean term.")
+       viewed as a C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is an allowed boolean term and
-       (ii) branches that are allowed outer terms.
+       (i) a test that is a boolean term and
+       (ii) branches that are statement terms.
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an allowed outer term, and
+       (ii) a `then' branch that is a statement term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -236,8 +234,8 @@
       "A term of the form @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('term') is an allowed non-boolean term,
-       and @('body') is an allowed outer term.
+       @('term') is a C-valued term,
+       and @('body') is a statement term.
        The C type of @('term') must not be a pointer type.
        This @(tsee let) represents one of the following:"
       (xdoc::ul
@@ -275,14 +273,14 @@
        this is the pattern that ATC looks for."))
 
     (xdoc::p
-     "An <i>allowed non-boolean term</i> is
+     "A <i>C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "An allowed pure non-boolean term.")
+      "A pure C-valued term.")
      (xdoc::li
       "A call of a target function @('fnj'), with @('j < i'),
-       on allowed pure non-boolean terms.
+       on pure C-valued terms.
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed
        and the target functions must be specified
@@ -290,7 +288,7 @@
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "An <i>allowed pure non-boolean term</i> is
+     "A <i>pure C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
@@ -308,7 +306,7 @@
        the quoted integer is within the range of type @('int').")
      (xdoc::li
       "A call of one of the following functions
-       on allowed pure non-boolean terms:"
+       on pure C-valued terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -336,14 +334,14 @@
        the corresponding C operator applied to C @('int') values.
        The guard verification requirement ensures that
        the operators are always applied to values with a well-defined result,
-       and that result is an @('int') value.
+       and the result is an @('int') value.
        If the operator is @('&&') or @('||'),
        this represents a strict (i.e. not non-strict) use of them;
        see below for how to represent non-strict uses of them,
        but the strict version is slightly simpler when usable.")
      (xdoc::li
       "A call of one of the following functions
-       on allowed pure non-boolean terms:"
+       on pure C-valued terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-from-uchar)")
        (xdoc::li "@(tsee uchar-from-sint)"))
@@ -360,25 +358,23 @@
        currently ATC always generates explicit casts;
        this will be improved in future extensions to ATC.")
      (xdoc::li
-      "A call of @(tsee uchar-array-read-sint) on an allowed boolean term.
-       This represents an array subscripting expression.
-       Currently, this may be used only if @(':proofs') is @('nil');
-       proof generation support for arrays will be added eventually.")
+      "A call of @(tsee uchar-array-read-sint) on C-valued terms.
+       This represents an array subscripting expression.")
      (xdoc::li
-      "A call of @(tsee sint01) on an allowed boolean term.
-       This converts an allowed boolean term
-       to an allowed pure non-boolean term.")
+      "A call of @(tsee sint01) on a boolean term.
+       This converts a boolean term
+       to a pure C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is an allowed boolean term and
-       (ii) branches that are allowed pure non-boolean terms.
+       (i) a test that is a boolean term and
+       (ii) branches that are pure C-valued terms.
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
        and whose branch expressions are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an allowed pure non-boolean term, and
+       (ii) a `then' branch that is a pure C-valued term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -391,16 +387,16 @@
        these are the patterns that ATC looks for."))
 
     (xdoc::p
-     "An <i>allowed boolean term</i> is
+     "A <i>boolean term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of @(tsee sint-nonzerop) on an allowed pure non-boolean term.
-       This converts an allowed pure non-boolean term
-       to an allowed boolean term.")
+      "A call of @(tsee sint-nonzerop) on a pure C-valued term.
+       This converts a pure C-valued term
+       to a boolean term.")
      (xdoc::li
       "A call of one of the following functions and macros
-       on allowed boolean terms:"
+       on boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
@@ -414,31 +410,29 @@
        these are the patterns that ATC looks for."))
 
     (xdoc::p
-     "Allowed outer terms represent C statements,
-      while allowed non-boolean and boolean terms represent C expressions;
-      the fact that expressions are ``inside'' statements
-      motivates the term `outer'.
-      The allowed boolean terms return ACL2 boolean values,
-      while the allowed outer (including non-boolean) terms return
-      ACL2 non-boolean values that represent C values:
-      the distinction between these two kinds of allowed terms
+     "Statement terms represent C statements,
+      while C-valued and boolean terms represent C expressions.
+      The boolean terms return ACL2 boolean values,
+      while the statement (including C-valued) terms return
+      ACL2 values that represent C values:
+      the distinction between these two kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
       @('if') statements,
       @('?:') expressions,
       @('&&') expressions, and
       @('||') expressions;
-      C's only non-strict construct is @(tsee if)
+      ACL2's only non-strict construct is @(tsee if)
       (which the macros @(tsee and) and @(tsee or) expand to, see above).
-      Allowed pure non-boolean terms
+      Pure C-valued terms
       represent C expressions without side effects;
       C function calls may be side-effect-free,
       but in general we do not consider them pure,
-      so they are represented by allowed non-boolean terms
-      that are not allowed pure non-boolean terms.
-      Allowed boolean terms are always pure;
+      so they are represented by C-valued terms
+      that are not pure C-valued terms.
+      Boolean terms are always pure;
       so they do not need the explicit designation `pure'
-      because they are the only allowed boolean terms.")
+      because they are the only boolean terms.")
 
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
@@ -450,7 +444,7 @@
       is the compound statement consisting of
       the block items (i.e. statements and declarations)
       represented by the ACL2 function's body
-      (which is an allowed outer term).")
+      (which is a statement term).")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

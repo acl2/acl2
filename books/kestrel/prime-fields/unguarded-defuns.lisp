@@ -44,6 +44,15 @@
          (neg x p))
   :hints (("Goal" :in-theory (enable neg neg-unguarded))))
 
+(defund sub-unguarded (x y p)
+  (declare (xargs :guard t))
+  (add-unguarded x (neg-unguarded y p) p))
+
+(defthm sub-unguarded-correct
+  (equal (sub-unguarded x y p)
+         (sub x y p))
+  :hints (("Goal" :in-theory (enable sub sub-unguarded))))
+
 (defund mul-unguarded (x y p)
   (declare (xargs :guard t))
   (let ((p (pos-fix p)))
@@ -79,7 +88,7 @@
   :hints (("Goal" :in-theory (enable mul))))
 
 (defund pow-unguarded (x n p)
-  (declare (xargs :guard t :guard-debug t))
+  (declare (xargs :guard t))
   (if (not (posp n))
       1
     (if (<= (ifix p) 1)

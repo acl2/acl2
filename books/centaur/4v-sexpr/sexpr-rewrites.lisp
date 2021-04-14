@@ -177,8 +177,8 @@ substitution as an alist binding variables to subterms."
          (mv nil alist)))))
 
   (flag::make-flag sexpr-unify-flag sexpr-unify-ind
-                   :flag-mapping ((sexpr-unify-ind . sexpr-unify)
-                                  (sexpr-unify-list-ind . sexpr-unify-list)))
+                   :flag-mapping ((sexpr-unify-ind sexpr-unify)
+                                  (sexpr-unify-list-ind sexpr-unify-list)))
 
   ;; SEXPR-UNIFY preserves bindings that already exist in alist
   (defthm-sexpr-unify-flag
@@ -558,9 +558,9 @@ composition of the RHS and the substitution.</p>")
              (sexpr-rewrite-sigma-list clk (cdr x) sigma rewrites)))))
 
   (flag::make-flag sexpr-rewrite-step-flag sexpr-rewrite-fncall
-                   :flag-mapping ((sexpr-rewrite-fncall . fncall)
-                                  (sexpr-rewrite-sigma . sigma)
-                                  (sexpr-rewrite-sigma-list . sigma-list)))
+                   :flag-mapping ((sexpr-rewrite-fncall fncall)
+                                  (sexpr-rewrite-sigma sigma)
+                                  (sexpr-rewrite-sigma-list sigma-list)))
 
   ;; Predicate that indicates that al is a good alist of rewrite rules, mapping
   ;; function symbols to rewrite lists recognized by 4v-sexpr-fn-rewritesp.
@@ -659,8 +659,8 @@ input."
   (memoize 'sexpr-rewrite :condition '(consp x))
 
   (flag::make-flag sexpr-rewrite-flag sexpr-rewrite
-                   :flag-mapping ((sexpr-rewrite . rw)
-                                  (sexpr-rewrite-list . rw-list)))
+                   :flag-mapping ((sexpr-rewrite rw)
+                                  (sexpr-rewrite-list rw-list)))
 
 
 
@@ -2196,10 +2196,10 @@ simplifying using the known signals."
             (sexpr-booleanp-list (cdr x) all-rules)))))
 
   (flag::make-flag flag-sexpr-booleanp sexpr-booleanp
-                   :flag-mapping ((sexpr-booleanp-by-rule . rule)
-                                  (sexpr-booleanp-by-rules . rules)
-                                  (sexpr-booleanp . sexpr)
-                                  (sexpr-booleanp-list . list)))
+                   :flag-mapping ((sexpr-booleanp-by-rule rule)
+                                  (sexpr-booleanp-by-rules rules)
+                                  (sexpr-booleanp sexpr)
+                                  (sexpr-booleanp-list list)))
 
   (local (in-theory (disable 4v-lookup)))
 

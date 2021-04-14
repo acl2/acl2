@@ -123,7 +123,6 @@
                            (cons :|main.out[0]| x3)
                            (cons :|main.out[1]| y3)
                            (cons :|main.lamda| lambda)))
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (precond auxp r1cs::r1cs-valuationp)
                                         ((:e baby-jubjub-prime))))))
 
@@ -204,6 +203,7 @@
            r1cs::dot-product
            circom
            (:e baby-jubjub-prime))
+  :disable pfield::move-negation-1
   :prep-books ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
 
 ; Now we turn to the core of the proof that the circuit implements the spec.
@@ -275,6 +275,7 @@
            spec
            montgomery-add
            (:e baby-jubjub-prime))
+  :disable pfield::move-negation-1
   :use (:instance PFIELD::EQUAL-OF-MUL-CANCEL
         (y (lambda-witness x1 y1 x2 y2))
         (z (pfsub x2 x1))

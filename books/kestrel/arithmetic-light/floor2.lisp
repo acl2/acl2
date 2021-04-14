@@ -252,7 +252,6 @@
                        (< k m)
                        (<= (* k j) (mod n (* m j)))
                        (< (mod n (* m j)) (* j (+ 1 k))))))
-  :otf-flg t
   :hints (("Goal" :use (:instance helper-lemmm (m m ;17
                                                   ))
            :in-theory (e/d (;mod

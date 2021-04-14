@@ -63,5 +63,5 @@
                   (,ev-list-ind (cdr x) a)))))
 
        (flag::make-flag ,ev-flag ,ev-ind
-                        :flag-mapping ((,ev-ind . ,ev)
-                                       (,ev-list-ind . ,ev-list))))))
+                        :flag-mapping ((,ev-ind ,ev)
+                                       (,ev-list-ind ,ev-list))))))

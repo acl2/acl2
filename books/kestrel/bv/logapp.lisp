@@ -101,7 +101,7 @@
                 (natp size2))
            (equal (mod (logapp size i j) (expt 2 size2))
                   (mod i (expt 2 size2))))
-  :hints (("Goal" :in-theory (enable logapp))))
+  :hints (("Goal" :in-theory (e/d (logapp) (EQUAL-OF-MOD-OF-+-AND-MOD-CANCEL)))))
 
 (defthm mod-of-logapp-2
   (implies (and (< size size2) ;this case

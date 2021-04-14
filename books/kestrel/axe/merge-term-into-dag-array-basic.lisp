@@ -19,7 +19,7 @@
 ;(include-book "supporting-nodes")
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "evaluator-basic")
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
@@ -31,14 +31,9 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;; this version does not handle embedded dags
-
-(in-theory (disable WEAK-DAGP))
-
-(local (in-theory (disable wf-dagp-expander wf-dagp
-                           member-equal
-                           )))
 
 ;dup
 (local
@@ -47,14 +42,18 @@
             (pseudo-termp (nth n l)))
    :hints (("Goal" :in-theory (e/d (pseudo-term-listp nth) (nth-of-cdr))))))
 
+(local (in-theory (enable integerp-when-natp)))
+
 (local (in-theory (disable consp-from-len-cheap
-                           ;use-all-consp-for-car
+                           ;;use-all-consp-for-car
                            default-+-2
                            default-car
                            default-cdr
-                           quote-lemma-for-all-dargp-less-than-gen-alt)))
-
-(local (in-theory (disable symbol-alistp))) ;don't induct
+                           quote-lemma-for-all-dargp-less-than-gen-alt
+                           symbol-alistp ;don't induct
+                           wf-dagp-expander
+                           wf-dagp
+                           member-equal)))
 
 (defthm lookup-equal-forward-to-assoc-equal
   (implies (lookup-equal key alist)
@@ -79,7 +78,8 @@
 
 (local (in-theory (disable use-all-<-for-car
                            all-dargp-less-than-when-<-of-largest-non-quotep
-                           all-dargp-less-than-when-no-atoms)))
+                           ;all-dargp-less-than-when-all-consp
+                           )))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)
@@ -543,7 +543,6 @@
                                dargp-of-mv-nth-1-of-merge-term-into-dag-array-basic))))
 
 (verify-guards merge-term-into-dag-array-basic
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
@@ -606,11 +605,6 @@
     :rule-classes :type-prescription
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
-
-(local
- (defthm integerp-when-natp
-   (implies (natp x)
-            (integerp x))))
 
 (defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))

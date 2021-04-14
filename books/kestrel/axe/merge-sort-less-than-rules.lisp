@@ -12,9 +12,9 @@
 (in-package "ACL2")
 
 (include-book "merge-sort-less-than")
-(include-book "all-less-than-or-equal")
-(include-book "less-than-or-equal-all")
-(include-book "all-less-than-or-equal-all")
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
+(include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (include-book "sortedp-less-than-or-equal")
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
@@ -22,7 +22,17 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
+;move
+(defthm all-<-of-+-of-1
+  (implies (and (syntaxp (not (quotep y)))
+                (all-integerp x)
+                (integerp y))
+           (equal (all-< x (+ 1 y))
+                  (all-<= x y)))
+  :hints (("Goal" :in-theory (enable all-<= all-<))))
 
 ;; this one actually uses perm as the equiv
 (DEFTHM PERM-OF-MERGE-SORT-<-2
@@ -412,3 +422,43 @@
   (equal (all-< (merge-sort-< lst) val)
          (all-< lst val))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
+
+(defthm all-<=-of-car-of-last-when-sortedp-<=-2
+  (implies (and (sortedp-<= x)
+                (subsetp-equal y x))
+           (all-<= y (car (last x))))
+  :hints (("Goal" :in-theory (enable ALL-<=
+                                     SUBSETP-EQUAL
+                                     sortedp-<=))))
+
+(encapsulate ()
+  (local (include-book "kestrel/lists-light/memberp" :dir :system))
+;move
+  (defcong perm iff (member-equal x y) 2
+    :hints (("Goal" :in-theory (enable member-equal perm)))))
+
+;move
+(defcong perm equal (subsetp-equal x y) 2
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
+(defthm subsetp-equal-of-merge-sort-<
+  (equal (subsetp-equal x (merge-sort-< x))
+         (subsetp-equal x x)))
+
+(defthm all-<=-of-car-of-last-of-merge-sort-<
+  (all-<= x (car (last (merge-sort-< x))))
+  :hints (("Goal" :use (:instance all-<=-of-car-of-last-when-sortedp-<=-2
+                                  (x (merge-sort-< x))
+                                  (y x))
+           :in-theory (disable all-<=-of-car-of-last-when-sortedp-<=-2))))
+
+(defthm all-integerp-of-merge-sort-<-when-nat-listp
+  (implies (nat-listp x) ;gen
+           (all-integerp (merge-sort-< x))))
+
+(defthm all-<-of-+-of-1-and-car-of-last-of-merge-sort-<
+  (implies (and (nat-listp x) ;(all-integerp x)
+                (consp x))
+           (all-< x (+ 1 (car (last (merge-sort-< x))))))
+  :hints (("Goal" :in-theory (e/d (integerp-of-car-of-last-when-all-integerp ALL-INTEGERP-WHEN-NAT-LISTP)
+                                  (NAT-LISTP)))))

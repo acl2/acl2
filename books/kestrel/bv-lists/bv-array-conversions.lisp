@@ -231,7 +231,6 @@
                 (< i len))
            (EQUAL (BV-ARRAY-READ SIZE len I (CDR ARR))
                   (BV-ARRAY-READ SIZE (+ 1 len) (+ 1 I) ARR)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bv-array-read ;ceiling-of-lg BVCHOP-OF-SUM-CASES
                                    )
                                   (BVCHOP-IDENTITY)))))

@@ -604,10 +604,11 @@
 (defun MiMCsponge-semaphore (m n inputs)
   (declare (xargs :guard (and (natp m)
                               (posp n)
-                              (pfield::fe-listp inputs (primes::bn-254-group-prime))
+                              (pfield::fe-listp inputs (zksemaphore::baby-jubjub-prime))
                               (= (len inputs) m))))
+  (declare (xargs :guard-hints (("Goal" :in-theory (enable (:e ZKSEMAPHORE::BABY-JUBJUB-PRIME))))))
   (MiMCsponge m n inputs
-              (primes::bn-254-group-prime)
+              (zksemaphore::baby-jubjub-prime)
               (mimc-feistel-220-constants)
               5 ; exponent
               220 ; nrounds
@@ -616,15 +617,17 @@
 (defthm return-type-of--mimcsponge-semaphore
   (implies (and (natp m)
                 (posp n)
-                (pfield::fe-listp inputs (primes::bn-254-group-prime))
+                (pfield::fe-listp inputs (zksemaphore::baby-jubjub-prime))
                 (= (len (double-rewrite inputs)) m))
            (pfield::fe-listp (MiMCsponge-semaphore m n inputs)
-                             (primes::bn-254-group-prime))))
+                             (zksemaphore::baby-jubjub-prime)))
+  :hints (("Goal" :in-theory (enable (:e ZKSEMAPHORE::BABY-JUBJUB-PRIME)))))
 
 (defthm number-of-outputs-of--mimcsponge-semaphore
   (implies (and (natp m)
                 (posp n)
-                (pfield::fe-listp inputs (primes::bn-254-group-prime))
+                (pfield::fe-listp inputs (zksemaphore::baby-jubjub-prime))
                 (= (len (double-rewrite inputs)) m))
            (equal (len (MiMCsponge-semaphore m n inputs))
-                  n)))
+                  n))
+  :hints (("Goal" :in-theory (enable (:e ZKSEMAPHORE::BABY-JUBJUB-PRIME)))))

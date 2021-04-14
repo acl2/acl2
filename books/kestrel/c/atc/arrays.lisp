@@ -11,12 +11,12 @@
 
 (in-package "C")
 
-(include-book "integers")
+(include-book "integer-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-arrays
-  :parents (atc-implementation)
+  :parents (atc-dynamic-semantics)
   :short "A model of C arrays for ATC."
   :long
   (xdoc::topstring
@@ -43,13 +43,6 @@
      However, we may need to extend the model in the future;
      in particular, we may provide operations to create arrays.")
    (xdoc::p
-    "As we are initially adding this model of array,
-     we still have to extend ATC to actually
-     recognize ACL2 code that uses arrays
-     and translate it to corresponding C.
-     We plan to do that soon, but in the meanwhile it is already possible to
-     develop APT derivations that target this model of arrays.")
-   (xdoc::p
     "This array model is similar to "
     (xdoc::seetopic "java::atj-java-primitive-array-model"
                     "ATJ's model of Java primitive arrays")
@@ -63,7 +56,7 @@
      an array's length and other attributes,
      there is nonetheless an implicit notion of array,
      with its length and other attributes,
-     that is created and passed around and manipulated.")
+     that is conceptually created and passed around and manipulated.")
    (xdoc::p
     "Similarly to the use of the Java array model in ATJ,
      the C arrays modeled here will have to be treated in a stobj-like manner
@@ -91,7 +84,7 @@
    (xdoc::p
     "[C:6.2.5/20] requires arrays to be non-empty,
      i.e. to contain at least one element,
-     i.e. to have positive length..")
+     i.e. to have positive length.")
    (xdoc::p
     "[C] does not appear to impose any upper limit on the length of an array.
      [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
@@ -130,6 +123,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uchar-array-index-okp ((array uchar-arrayp) (index integerp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer is a valid index (i.e. in range)
+          for a C @('unsigned char') array."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used as guard for array read and write operations.
+     Note that the integer here is a mathematical one,
+     to provide uniformity across the different C integer types.
+     Recall that functions like @(tsee slong-integer-value)
+     can be used, in ACL2 representations of C code,
+     to turn C integers into ACL2 integers.")
+   (xdoc::p
+    "Since arrays are zero-indexed in C,
+     the index is valid if it is non-negative and below the length."))
+  (integer-range-p 0 (len (uchar-array->elements array)) (ifix index))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uchar-array-sint-index-okp ((array uchar-arrayp) (index sintp))
   :returns (yes/no booleanp)
   :short "Check if a C @('int') is a valid index (i.e. in range)
@@ -137,33 +151,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used as guard for array read and write operations
-     that use @('int')s as indices.")
-   (xdoc::p
-    "Since arrays are zero-indexed in C,
-     the index is valid if it is non-negative and below the length."))
-  (integer-range-p 0 (len (uchar-array->elements array)) (sint->get index))
+    "This is temporary, since its role will be replaced by
+     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
+  (uchar-array-index-okp array (sint-integer-value index))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uchar-array-read-sint ((array uchar-arrayp) (index sintp))
-  :guard (uchar-array-sint-index-okp array index)
+(define uchar-array-read ((array uchar-arrayp) (index integerp))
+  :guard (uchar-array-index-okp array index)
   :returns (element ucharp)
   :short "Read an element in an @('unsigned char') array,
-          using an @('int') index."
+          using an integer index."
   :long
   (xdoc::topstring
    (xdoc::p
     "As mentioned in @(tsee uchar-array),
      [C] allows any integer type for array indices.
-     Given our strictly typed model of C for ATC,
-     we provide separate array read operations
-     not only for different array types, but also for different index types.
-     We start with this operation for @('int') indices, which are common.
-     We may add more as needed."))
-  (uchar-fix (nth (sint->get index) (uchar-array->elements array)))
-  :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
+     As in @(tsee uchar-array-index-okp), the index is a mathematical integer;
+     see the explanation there."))
+  (uchar-fix (nth index (uchar-array->elements array)))
+  :guard-hints (("Goal" :in-theory (enable uchar-array-index-okp)))
   :hooks (:fix)
 
   :prepwork
@@ -175,7 +183,54 @@
             :elementp-of-nil nil
             :pred uchar-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-array-read-sint ((array uchar-arrayp) (index sintp))
+  :guard (uchar-array-sint-index-okp array index)
+  :returns (element ucharp)
+  :short "Read an element in an @('unsigned char') array,
+          using an @('int') index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary, since its role will be replaced by
+     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
+  (uchar-array-read array (sint-integer-value index))
+  :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-array-write ((array uchar-arrayp)
+                           (index integerp)
+                           (element ucharp))
+  :guard (uchar-array-index-okp array index)
+  :returns (new-array uchar-arrayp)
+  :short "Write an element in an @('unsigned char') array,
+          using an integer index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned in @(tsee uchar-array),
+     [C] allows any integer type for array indices.
+     As in @(tsee uchar-array-index-okp), the index is a mathematical integer;
+     see the explanation there."))
+  (make-uchar-array :elements (update-nth index
+                                          (uchar-fix element)
+                                          (uchar-array->elements array)))
+  :guard-hints (("Goal" :in-theory (enable uchar-array-index-okp)))
+  :hooks (:fix)
+
+  :prepwork
+  ;; to generate theorems about UPDATE-NTH:
+  ((local (include-book "std/lists/update-nth" :dir :system))
+   (local (fty::deflist uchar-list
+            :elt-type uchar
+            :true-listp t
+            :elementp-of-nil nil
+            :pred uchar-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define uchar-array-write-sint ((array uchar-arrayp)
                                 (index sintp)
@@ -187,24 +242,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned in @(tsee uchar-array),
-     [C] allows any integer type for array indices.
-     Given our strictly typed model of C for ATC,
-     we provide separate array write operations
-     not only for different array types, but also for different index types.
-     We start with this operation for @('int') indices, which are common.
-     We may add more as needed."))
-  (make-uchar-array :elements (update-nth (sint->get index)
-                                          (uchar-fix element)
-                                          (uchar-array->elements array)))
+    "This is temporary, since its role will be replaced by
+     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
+  (uchar-array-write array (sint-integer-value index) element)
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
-  :hooks (:fix)
-
-  :prepwork
-  ;; to generate theorems about UPDATE-NTH:
-  ((local (include-book "std/lists/update-nth" :dir :system))
-   (local (fty::deflist uchar-list
-            :elt-type uchar
-            :true-listp t
-            :elementp-of-nil nil
-            :pred uchar-listp))))
+  :hooks (:fix))

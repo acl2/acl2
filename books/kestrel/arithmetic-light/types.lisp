@@ -13,14 +13,38 @@
 ;; Simple rules about arithmetic types.  Since these could be expensive, we
 ;; keep them disabled.
 
-(defthmd integerp-when-natp
+;;; These establish acl2-numberp:
+
+(defthmd acl2-numberp-when-natp
   (implies (natp x)
-           (integerp x)))
+           (acl2-numberp x)))
+
+(defthmd acl2-numberp-when-integerp
+  (implies (integerp x)
+           (acl2-numberp x)))
+
+(defthmd acl2-numberp-when-rationalp
+  (implies (rationalp x)
+           (acl2-numberp x)))
+
+;;; These establish rationalp
+
+(defthmd rationalp-when-natp
+  (implies (natp x)
+           (rationalp x)))
 
 (defthmd rationalp-when-integerp
   (implies (integerp x)
            (rationalp x)))
 
-(defthmd acl2-numberp-when-rationalp
-  (implies (rationalp x)
-           (acl2-numberp x)))
+;;; These establish integerp
+
+(defthmd integerp-when-natp
+  (implies (natp x)
+           (integerp x)))
+
+;;; These establish >=0
+
+(defthmd <=-of-0-when-0-natp
+  (implies (natp x)
+           (<= 0 x)))

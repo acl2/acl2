@@ -152,6 +152,9 @@
   (acl2-package-primitives *primitive-formals-and-guards*))
 
 (defun assoc-eq-cadr (x alist)
+  (declare (xargs :guard (and (symbolp x)
+                              (alistp alist)
+                              (alistp (strip-cdrs alist)))))
   (cond ((endp alist) nil)
         ((eq x (cadr (car alist))) (car alist))
         (t (assoc-eq-cadr x (cdr alist)))))

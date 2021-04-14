@@ -20,7 +20,7 @@
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "all-less-than-or-equal")
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
 
 ;move
 (defthm <-of-maxelem-when-all-<-cheap
@@ -135,9 +135,18 @@
            (all-rationalp acc))
   :hints (("Goal" :in-theory (enable all-natp))))
 
+(defthmd all-rationalp-when-nat-listp
+  (implies (nat-listp acc)
+           (all-rationalp acc))
+  :hints (("Goal" :in-theory (enable all-natp))))
+
 (defthm natp-of-maxelem
   (implies (and (all-natp items)
                 (consp items))
            (natp (maxelem items)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable all-natp maxelem))))
+
+(defthm all-<=-of-maxelem
+  (all-<= lst (maxelem lst))
+  :hints (("Goal" :in-theory (enable all-<=))))

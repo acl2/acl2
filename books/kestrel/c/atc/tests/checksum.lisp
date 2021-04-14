@@ -54,15 +54,15 @@
                                 (<= 0 (c::sint->get |lobyte|))
                                 (<= (c::sint->get |lobyte|) 255))
                     :guard-hints (("Goal"
-                                   :in-theory (enable sbyte32p
-                                                      sbyte32-fix
-                                                      c::sintp
+                                   :in-theory (enable c::sint-integerp-alt-def
                                                       c::sint-add-okp
                                                       c::sint-shl-sint-okp
+                                                      c::sint-shl-okp
                                                       c::sint-add
                                                       c::sint-shl-sint
+                                                      c::sint-shl
                                                       c::sint-bitand
-                                                      c::sint->get)))))
+                                                      (:e c::sint-max))))))
     (c::sint-bitand (c::sint-add |current|
                                  (c::sint-add (c::sint-shl-sint |hibyte|
                                                                 (c::sint-const

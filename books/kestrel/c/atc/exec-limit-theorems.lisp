@@ -94,12 +94,9 @@
        (if (expr-case e :call)
            (b* ((e.args (expr-call->args e))
                 (e.fun (expr-call->fun e))
-                (args (exec-expr-pure-list e.args compst)))
-             (value-list-result-case
-              args
-              :err (mv args.get (compustate-fix compst))
-              :ok (exec-fun-induct e.fun args.get compst fenv
-                                   (1- limit) (1- limit1))))
+                (args (exec-expr-pure-list e.args compst))
+                ((when (errorp args)) (mv args (compustate-fix compst))))
+             (exec-fun-induct e.fun args compst fenv (1- limit) (1- limit1)))
          (mv (exec-expr-pure e compst)
              (compustate-fix compst))))
      :measure (nfix limit))
@@ -118,11 +115,9 @@
           (var (expr-ident->get left))
           ((mv val compst)
            (exec-expr-call-or-pure-induct right compst fenv
-                                          (1- limit) (1- limit1))))
-       (value-result-case
-        val
-        :err val.get
-        :ok (write-var var val.get compst)))
+                                          (1- limit) (1- limit1)))
+          ((when (errorp val)) val))
+       (write-var var val compst))
      :measure (nfix limit))
 
    (define exec-fun-induct (fun args compst fenv limit limit1)
@@ -133,32 +128,26 @@
            (mv (error (list :function-undefined (ident-fix fun)))
                (compustate-fix compst)))
           ((fun-info info) info)
-          (scope (init-scope info.params args)))
-       (scope-result-case
-        scope
-        :err (mv scope.get (compustate-fix compst))
-        :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
-                 (compst (push-frame frame compst))
-                 ((mv val-opt compst)
-                  (exec-stmt-induct info.body compst fenv
-                                    (1- limit) (1- limit1)))
-                 (compst (pop-frame compst)))
-              (value-option-result-case
-               val-opt
-               :err (mv val-opt.get compst)
-               :ok (if val-opt.get
-                       (if (equal (type-of-value val-opt.get)
-                                  (type-name-to-type
-                                   (make-tyname :specs info.result
-                                                :pointerp nil)))
-                           (mv val-opt.get compst)
-                         (mv (error (list :return-value-mistype
-                                          :required info.result
-                                          :supplied (type-of-value
-                                                     val-opt.get)))
-                             compst))
-                     (mv (error (list :no-return-value (ident-fix fun)))
-                         compst))))))
+          (scope (init-scope info.params args))
+          ((when (errorp scope)) (mv scope (compustate-fix compst)))
+          (frame (make-frame :function fun :scopes (list scope)))
+          (compst (push-frame frame compst))
+          ((mv val-opt compst) (exec-stmt-induct info.body compst fenv
+                                                 (1- limit) (1- limit1)))
+          (compst (pop-frame compst))
+          ((when (errorp val-opt)) (mv val-opt compst)))
+       (if val-opt
+           (if (equal (type-of-value val-opt)
+                      (type-name-to-type
+                       (make-tyname :specs info.result
+                                    :pointerp nil)))
+               (mv val-opt compst)
+             (mv (error (list :return-value-mistype
+                              :required info.result
+                              :supplied (type-of-value val-opt)))
+                 compst))
+         (mv (error (list :no-return-value (ident-fix fun)))
+             compst)))
      :measure (nfix limit))
 
    (define exec-stmt-induct (s compst fenv limit limit1)
@@ -179,41 +168,18 @@
                     (mv compst/error (compustate-fix compst))))
                 (mv nil compst/error))
         :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-        :if (b* ((test (exec-expr-pure s.test compst)))
-              (value-result-case
-               test
-               :ok (cond ((pointerp test.get)
-                          (mv (error (list :exec-if-pointer-todo s))
-                              (compustate-fix compst)))
-                         ((ucharp test.get)
-                          (mv (error (list :exec-if-uchar-todo s))
-                              (compustate-fix compst)))
-                         ((sintp test.get)
-                          (if (sint-nonzerop test.get)
-                              (exec-stmt-induct s.then compst fenv
-                                                (1- limit) (1- limit1))
-                            (mv nil (compustate-fix compst))))
-                         (t (mv (error (impossible))
-                                (compustate-fix compst))))
-               :err (mv test.get (compustate-fix compst))))
-        :ifelse (b* ((test (exec-expr-pure s.test compst)))
-                  (value-result-case
-                   test
-                   :ok (cond ((pointerp test.get)
-                              (mv (error (list :exec-if-pointer-todo s))
-                                  (compustate-fix compst)))
-                             ((ucharp test.get)
-                              (mv (error (list :exec-if-uchar-todo s))
-                                  (compustate-fix compst)))
-                             ((sintp test.get)
-                              (if (sint-nonzerop test.get)
-                                  (exec-stmt-induct s.then compst fenv
-                                                    (1- limit) (1- limit1))
-                                (exec-stmt-induct s.else compst fenv
-                                                  (1- limit) (1- limit1))))
-                             (t (mv (error (impossible))
-                                    (compustate-fix compst))))
-                   :err (mv test.get (compustate-fix compst))))
+        :if (b* ((test (exec-test (exec-expr-pure s.test compst)))
+                 ((when (errorp test)) (mv test (compustate-fix compst))))
+              (if test
+                  (exec-stmt-induct s.then compst fenv (1- limit) (1- limit1))
+                (mv nil (compustate-fix compst))))
+        :ifelse (b* ((test (exec-test (exec-expr-pure s.test compst)))
+                     ((when (errorp test)) (mv test (compustate-fix compst))))
+                  (if test
+                      (exec-stmt-induct s.then compst fenv
+                                        (1- limit) (1- limit1))
+                    (exec-stmt-induct s.else compst fenv
+                                      (1- limit) (1- limit1))))
         :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -222,16 +188,11 @@
         :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
         :return (if (exprp s.value)
-                    (b* (((mv retval compst)
-                          (exec-expr-call-or-pure-induct s.value
-                                                         compst
-                                                         fenv
-                                                         (1- limit)
-                                                         (1- limit1))))
-                      (value-result-case
-                       retval
-                       :err (mv retval.get compst)
-                       :ok (mv retval.get compst)))
+                    (exec-expr-call-or-pure-induct s.value
+                                                   compst
+                                                   fenv
+                                                   (1- limit)
+                                                   (1- limit1))
                   (mv nil (compustate-fix compst)))))
      :measure (nfix limit))
 
@@ -257,11 +218,9 @@
                                        :required type
                                        :supplied (type-of-value init)))
                           compst))
-                     (new-compst (create-var var init compst)))
-                  (compustate-result-case
-                   new-compst
-                   :ok (mv (value-option-result-ok nil) new-compst.get)
-                   :err (mv new-compst.get compst)))
+                     (new-compst (create-var var init compst))
+                    ((when (errorp new-compst)) (mv new-compst compst)))
+                 (mv (value-option-result-ok nil) new-compst))
         :stmt (exec-stmt-induct item.get compst fenv
                                 (1- limit) (1- limit1))))
      :measure (nfix limit))
@@ -272,7 +231,7 @@
           ((when (endp items)) (mv nil (compustate-fix compst)))
           ((mv val? compst) (exec-block-item-induct (car items) compst fenv
                                                     (1- limit) (1- limit1)))
-          ((when (value-option-result-case val? :err)) (mv val? compst))
+          ((when (errorp val?)) (mv val? compst))
           ((when (valuep val?)) (mv val? compst)))
        (exec-block-item-list-induct (cdr items) compst fenv
                                     (1- limit) (1- limit1)))

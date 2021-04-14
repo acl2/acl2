@@ -20,7 +20,7 @@
 (include-book "boolean-rules-axe")
 (include-book "bv-rules")
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
-(include-book "bvseq-rules-axe")
+(include-book "bv-list-rules-axe")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system) ;for not-<-same
 (include-book "kestrel/arithmetic-light/minus" :dir :system)

@@ -17,7 +17,7 @@
 
 ;; It is a generalization of the info-world idea in hit-counts.lisp.
 
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))

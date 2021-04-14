@@ -186,12 +186,6 @@
 
 (defcong nat-equiv equal (nthcdr n l) 1)
 
-(defthm list-equiv-when-true-listp
-  (implies (and (true-listp x) (true-listp y))
-           (iff (list-equiv x y) (equal x y)))
-  :hints (("goal" :in-theory (enable fast-list-equiv)
-           :induct (fast-list-equiv x y))))
-
 (defthm
   consecutive-read-file-into-string-1
   (implies
@@ -445,9 +439,99 @@
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
 
+(defthm list-equiv-when-atom
+  (implies (not (consp path))
+           (list-equiv path nil))
+  :rule-classes :forward-chaining)
+
+(defthm nthcdr-when->=-n-len-l-under-list-equiv
+  (implies (>= (nfix n) (len l))
+           (list-equiv (nthcdr n l) nil)))
+
+;; These lemmas pertain to built-in functions but are not easily provable
+;; without the help of books.
+(defthm painful-debugging-lemma-15
+  (implies (and (not (zp j)) (integerp i) (> i j))
+           (> (floor i j) 0))
+  :rule-classes (:linear :type-prescription))
+(defthmd painful-debugging-lemma-16
+  (implies (and (<= i1 i2)
+                (integerp i1)
+                (integerp i2)
+                (not (zp j)))
+           (and
+            (<= (floor i1 j) (floor i2 j))
+            (<= (ceiling i1 j) (ceiling i2 j))))
+  :rule-classes :linear)
+(defthm painful-debugging-lemma-14 (equal (mod (* y (len x)) y) 0)
+  :rule-classes :type-prescription)
+
+(defthmd when-atom-of-remove-assoc
+  (implies (and (not (null x))
+                (atom (remove-assoc-equal x alist))
+                (no-duplicatesp-equal (strip-cars alist)))
+           (list-equiv alist
+                       (if (consp (assoc-equal x alist))
+                           (list (assoc-equal x alist)) nil))))
+
+;; This should probably stay here, because it does have the annoying property
+;; of introducing a non-built-in function to replace a built-in one. It's
+;; annoying when rules like make-list-ac-removal do that in my books, so I
+;; probably shouldn't inflict it on the books of others.
+(defthm subsetp-when-subsetp
+  (implies (subsetp-equal x y)
+           (equal (subsetp-equal y x)
+                  (set-equiv x y)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable set-equiv))))
+
+(theory-invariant (not (and (active-runep '(:rewrite subsetp-when-subsetp))
+                            (active-runep '(:definition set-equiv)))))
+
+(defthm
+  append-of-set-difference$-when-subsetp-lemma-1
+  (set-equiv (cons a (set-difference-equal (remove a x) y))
+             (if (member-equal a (set-difference-equal x y))
+                 (set-difference-equal x y)
+                 (cons a (set-difference-equal x y))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable remove-of-set-difference-equal)
+           :use remove-of-set-difference-equal))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary
+             (set-equiv (cons a
+                              (append z
+                                      (set-difference-equal (remove a x) y)))
+                        (if (member-equal a (set-difference-equal x y))
+                            (append z (set-difference-equal x y))
+                            (append z
+                                    (cons a (set-difference-equal x y))))))))
+
+;; Look, we can't very easily move this theorem to STD - nor the next one -
+;; unless we're willing to start including the specific books for these set
+;; functions.
+(defthm
+  append-of-set-difference$-when-subsetp
+  (implies (subsetp-equal x y)
+           (set-equiv (append (set-difference-equal y x) x)
+                      y))
+  :hints
+  (("goal" :in-theory (e/d (set-difference$-redefinition subsetp-equal append)
+                           (set-difference-equal))
+    :induct (subsetp-equal x y)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary (implies (subsetp-equal x y)
+                        (set-equiv (append x (set-difference-equal y x))
+                                   y)))))
 (encapsulate
   ()
 
+  ;; It's probably fine to include lemmas from this book locally, because it's
+  ;; not particularly useful to reprove the commutativity of intersection-equal
+  ;; under set-equiv.
   (local (include-book "std/lists/intersection" :dir :system))
 
   (defthm
@@ -460,57 +544,6 @@
     (:rewrite (:rewrite :corollary (implies (subsetp-equal x y)
                                             (set-equiv (intersection-equal y x)
                                                        x))))))
-
-(defthm list-equiv-when-atom
-  (implies (not (consp path))
-           (list-equiv path nil))
-  :rule-classes :forward-chaining)
-
-(defthm nthcdr-when->=-n-len-l-under-list-equiv
-  (implies (>= (nfix n) (len l))
-           (list-equiv (nthcdr n l) nil)))
-
-(defthmd
-  painful-debugging-lemma-14
-  (implies (not (zp cluster-size))
-           (and
-            (equal (ceiling cluster-size cluster-size) 1)
-            (equal (ceiling 0 cluster-size) 0))))
-
-(defthm painful-debugging-lemma-15
-  (implies (and (not (zp j)) (integerp i) (> i j))
-           (> (floor i j) 0))
-  :rule-classes :linear)
-
-(defthmd painful-debugging-lemma-16
-  (implies (and (<= i1 i2)
-                (integerp i1)
-                (integerp i2)
-                (not (zp j)))
-           (and
-            (<= (floor i1 j) (floor i2 j))
-            (<= (ceiling i1 j) (ceiling i2 j))))
-  :rule-classes :linear)
-
-(defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
-
-(defthm painful-debugging-lemma-19
-  (implies (and (not (zp j)) (integerp i) (>= i 0))
-           (>= (ceiling i j) 0))
-  :rule-classes :linear)
-
-(defthm painful-debugging-lemma-20
-  (implies (and (not (zp j)) (integerp i) (> i 0))
-           (> (ceiling i j) 0))
-  :rule-classes :linear)
-
-(defthmd when-atom-of-remove-assoc
-  (implies (and (not (null x))
-                (atom (remove-assoc-equal x alist))
-                (no-duplicatesp-equal (strip-cars alist)))
-           (list-equiv alist
-                       (if (consp (assoc-equal x alist))
-                           (list (assoc-equal x alist)) nil))))
 
 (defund d-e-p (x)
   (declare (xargs :guard t))
@@ -2796,7 +2829,14 @@
   (not (member-equal
         (find-new-index fd-list)
         fd-list))
-  :hints (("Goal" :in-theory (enable find-new-index))))
+  :hints (("Goal" :in-theory (enable find-new-index)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (subsetp-equal x fd-list)
+     (not (member-equal (find-new-index fd-list)
+                        x))))))
 
 ;; Here's a problem with our current formulation: realpath-helper will receive
 ;; something that was emitted by path-to-fat32-path, and that means all

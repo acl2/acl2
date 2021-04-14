@@ -165,12 +165,6 @@
   (declare (xargs :guard (symbolp sym)))
   (acl2s::fix-intern-in-pkg-of-sym (symbol-name sym) :a))
 
-; utility fn to print if verbose flag is true
-(defmacro cw? (verbose-flag &rest rst)
-  `(if ,verbose-flag
-     (cw ,@rst)
-     nil))
-
 (defmacro acl2-getprop (name prop w &key default)
  `(getprop ,name ,prop ,default 'acl2::current-acl2-world ,w))
 

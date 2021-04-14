@@ -16,9 +16,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ types
+(defxdoc+ atc-types
   :parents (atc-implementation)
-  :short "C types."
+  :short "A model of C types for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -39,11 +39,11 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only model the plain @('char') type and
-     the standard signed and unsigned integer types,
+     the standard signed and unsigned integer types (except @('_Bool'),
      as well as pointer types.
      The referenced type of a pointer type may be any type (that we model),
      including a pointer type.
-     The recursion bottoms out at the @('char') and standard integer types.")
+     The recursion bottoms out at the integer types.")
    (xdoc::p
     "This semantic model is more general
      than its syntactic counterpart @(tsee tyname):
@@ -104,6 +104,61 @@
   (with-guard-checking :none (ec-call (type-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  (and (member-eq (type-kind type)
+                  '(:schar :sshort :sint :slong :sllong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  (and (member-eq (type-kind type)
+                  '(:uchar :ushort :uint :ulong :ullong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type [C:6.2.5/17]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-realp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real type [C:6.2.5/18]."
+  (type-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  (type-realp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalarp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  (or (type-arithmeticp type)
+      (type-case type :pointer))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -429,7 +429,7 @@
 (defthm natp-of-count-myif-branches
   (natp (count-myif-branches nest dag-array)))
 
-(verify-guards count-myif-branches :otf-flg t
+(verify-guards count-myif-branches
                     :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0)
                                                     (len)))))
 

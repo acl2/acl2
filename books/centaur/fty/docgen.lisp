@@ -587,6 +587,23 @@ binder.</p>")
                                          ,(remove nil (list x.pred x.fix x.equiv x.count)))))
         state)))
 
+(defun flexset->defxdoc (x parents kwd-alist state)
+  ;; Returns (mv events state)
+  (declare (ignorable state))
+  (b* (((flexset x) x)
+       (parents (getarg :parents parents kwd-alist))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A set of @(see? " (xdoc::full-escape-symbol x.elt-type)
+                         ") objects.")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::defset).</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long
+            :no-override t))
+        state)))
+
 (defun flextranssum-members->xdoc (members acc state)
   (b* (((when (atom members))
         acc)

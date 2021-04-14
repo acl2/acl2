@@ -138,8 +138,8 @@
 ;;; (make-flag pseudo-termp-flg
 ;;;            pseudo-termp
 ;;;            :flag-var flg
-;;;            :flag-mapping ((pseudo-termp . term)
-;;;                           (pseudo-term-listp . list))
+;;;            :flag-mapping ((pseudo-termp term)
+;;;                           (pseudo-term-listp list))
 ;;;            :defthm-macro-name defthm-pseudo-termp
 ;;;            :local t)
 
@@ -188,8 +188,8 @@
 ;;; (make-flag var-counts1-flg
 ;;;            var-counts1
 ;;;            :flag-var flg
-;;;            :flag-mapping ((var-counts1 . term)
-;;;                           (var-counts1-lst . list))
+;;;            :flag-mapping ((var-counts1 term)
+;;;                           (var-counts1-lst list))
 ;;;            :defthm-macro-name defthm-var-counts1
 ;;;            :local t)
 
@@ -320,8 +320,8 @@
 ;;; (make-flag occur-cnt-bounded-flg
 ;;;            occur-cnt-bounded
 ;;;            :flag-var flg
-;;;            :flag-mapping ((occur-cnt-bounded . term)
-;;;                           (occur-cnt-bounded-lst . list))
+;;;            :flag-mapping ((occur-cnt-bounded term)
+;;;                           (occur-cnt-bounded-lst list))
 ;;;            :defthm-macro-name defthm-occur-cnt-bounded
 ;;;            :local t)
 

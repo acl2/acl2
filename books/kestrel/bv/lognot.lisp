@@ -131,7 +131,8 @@
                   (lognot (floor i (expt 2 n)))))
   :hints (("Goal" :in-theory (e/d (lognot
                                    floor-of-sum
-                                   mod-sum-cases)
+                                   mod-sum-cases
+                                   floor-minus-eric-better)
                                   (floor-minus-arg1-hack)))))
 
 (defthm <-of---and-lognot

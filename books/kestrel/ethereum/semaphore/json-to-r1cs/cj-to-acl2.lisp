@@ -36,6 +36,10 @@
           (simple-union (cdr syms1) syms2)
         (simple-union (cdr syms1) (cons (car syms1) syms2))))))
 
+;; Since we are not currently proving anything about this conversion code,
+;; speed it up by putting it in program mode.
+(program)
+
 (defun cj-extract-signal-names (cj-top)
   ;; case-insensitive assoc test
   ;; returns an alist from names (strings) to signal numbers (integers)

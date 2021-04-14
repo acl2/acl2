@@ -2369,7 +2369,7 @@
 ; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems))
+         (mv (reverse bad) (reverse macros) (reverse theorems)))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond
@@ -20656,23 +20656,33 @@
                             (guard-pre (subcor-var (formals logic wrld)
                                                    formals
                                                    (guard logic nil wrld))))
-                       (value-cmp
-                        (make absstobj-method
-                              :NAME name
-                              :FORMALS formals
-                              :GUARD-PRE guard-pre
-                              :GUARD-POST nil ; to be filled in later
-                              :GUARD-THM guard-thm
-                              :GUARD-THM-P (if type :SKIP guard-thm-p)
-                              :STOBJS-IN-POSN posn-exec
-                              :STOBJS-IN-EXEC (stobjs-in exec wrld)
-                              :STOBJS-OUT
-                              (substitute st st$c stobjs-out-exec)
-                              :LOGIC logic
-                              :EXEC exec
-                              :CORRESPONDENCE correspondence
-                              :PRESERVED preserved
-                              :PROTECT protect))))))))))))))))))))
+                       (cond
+                        ((member-eq st$c (stobjs-in logic wrld))
+                         (er-cmp ctx
+                                 "the :LOGIC function ~x0 for export ~x1  ~
+                                  declares as a stobj the formal parameter, ~
+                                  ~x2.  This is illegal because ~x2 is the ~
+                                  corresponding concrete stobj for the ~
+                                  proposed abstract stobj, ~x3."
+                                 logic name st$c st))
+                        (t
+                         (value-cmp
+                          (make absstobj-method
+                                :NAME name
+                                :FORMALS formals
+                                :GUARD-PRE guard-pre
+                                :GUARD-POST nil ; to be filled in later
+                                :GUARD-THM guard-thm
+                                :GUARD-THM-P (if type :SKIP guard-thm-p)
+                                :STOBJS-IN-POSN posn-exec
+                                :STOBJS-IN-EXEC (stobjs-in exec wrld)
+                                :STOBJS-OUT
+                                (substitute st st$c stobjs-out-exec)
+                                :LOGIC logic
+                                :EXEC exec
+                                :CORRESPONDENCE correspondence
+                                :PRESERVED preserved
+                                :PROTECT protect))))))))))))))))))))))
 
 (defun simple-translate-absstobj-fields (st st$c fields types protect-default
                                             ld-skip-proofsp)

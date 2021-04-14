@@ -37,22 +37,21 @@
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
-(include-book "all-greater")
+(include-book "kestrel/typed-lists-light/all-greater" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
-;(include-book "no-atoms")
 ;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable symbolp-of-car-when-dag-exprp0)))
 
 (defthmd all-dargp-less-than-when-<-of-largest-non-quotep
   (implies (and (< (largest-non-quotep items) bound)
-;                (not (no-atoms items))
+;                (not (all-consp items))
                 (all-dargp items))
            (all-dargp-less-than items bound))
   :hints (("Goal" :in-theory (enable all-dargp-less-than all-dargp
-                                     ;;no-atoms
+                                     ;;all-consp
                                      largest-non-quotep))))
 
 ;may help during backchaining?

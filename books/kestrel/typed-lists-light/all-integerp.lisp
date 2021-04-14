@@ -34,6 +34,12 @@
                   (consp x)))
   :hints (("Goal" :in-theory (enable all-integerp))))
 
+(defthmd integerp-of-car-of-last-when-all-integerp
+  (implies (all-integerp x)
+           (equal (integerp (car (last x)))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable all-integerp))))
+
 (defthm integerp-of-car-when-all-integerp-cheap
   (implies (all-integerp x)
            (equal (integerp (car x))
@@ -57,6 +63,11 @@
   (implies (all-integerp x)
            (all-integerp (nthcdr n x)))
   :hints (("Goal" :in-theory (enable all-integerp nthcdr))))
+
+(defthm all-integerp-of-set-difference-equal
+  (implies (all-integerp x)
+           (all-integerp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable all-integerp set-difference-equal))))
 
 ;okay to backchain?
 (defthm integerp-of-nth-when-all-integerp
@@ -96,3 +107,9 @@
            (equal (all-integerp (take n lst))
                   (<= (nfix n) (len lst))))
   :hints (("Goal" :in-theory (enable all-integerp take))))
+
+;;Kept disabled by default
+(defthmd all-integerp-when-nat-listp
+  (implies (nat-listp x)
+           (all-integerp x))
+  :hints (("Goal" :in-theory (enable all-integerp nat-listp))))

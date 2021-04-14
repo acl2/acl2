@@ -175,11 +175,6 @@
          (mynot y))
   :hints (("Goal" :in-theory (enable xor mynot))))
 
-(defthm bool-fix-does-nothing
-  (implies (booleanp x)
-           (equal (bool-fix x)
-                  x)))
-
 (defthm boolif-boolif-lift-same
   (equal (boolif test1 (boolif test2 x y) y)
          (boolif (booland test1 test2) x y))

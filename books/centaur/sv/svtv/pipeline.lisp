@@ -300,7 +300,7 @@
                               (prev-st svex-alist-p)
                               (x base-fsm-p)
                               (signals svarlist-list-p)
-                              (rewrite booleanp))
+                              (simp svex-simpconfig-p))
   :guard (and (equal (svex-alist-keys prev-st) (svex-alist-keys (base-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (base-fsm->nextstate x)))))
   :returns (out-alists svex-alistlist-p)
@@ -309,7 +309,7 @@
        (composedata (make-svtv-composedata :nextstates x.nextstate
                                            :input-substs (make-fast-alistlist ins)
                                            :initst prev-st
-                                           :rewrite rewrite))
+                                           :simp simp))
        (ans (base-fsm-run-compile-phases 0 signals x.values composedata)))
     (fast-alistlist-clean ins)
     ans)
@@ -361,11 +361,11 @@
 
 
 (define svtv-fsm-run-compile ((ins svex-alistlist-p)
-                                      (overrides svex-alistlist-p)
-                                      (prev-st svex-alist-p)
-                                      (x svtv-fsm-p)
-                                      (outvars svarlist-list-p)
-                                      (rewrite booleanp))
+                              (overrides svex-alistlist-p)
+                              (prev-st svex-alist-p)
+                              (x svtv-fsm-p)
+                              (outvars svarlist-list-p)
+                              (simp svex-simpconfig-p))
   :guard (and (equal (svex-alist-keys prev-st) (svex-alist-keys (svtv-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (svtv-fsm->nextstate x)))))
   :guard-hints (("goal" :in-theory (enable svtv-fsm->renamed-fsm)))
@@ -374,7 +374,7 @@
                       (take (len outvars) ins)
                       overrides x))
        ((svtv-fsm x)))
-    (base-fsm-run-compile input-substs prev-st x.renamed-fsm outvars rewrite))
+    (base-fsm-run-compile input-substs prev-st x.renamed-fsm outvars simp))
   ///
 
   (local (defthm take-of-svex-alistlist-eval
@@ -431,10 +431,10 @@
              :in-theory (disable eval-of-<fn> <fn> len-of-svtv-fsm-run)))))
 
 
-  (defret normalize-<fn>-rewrite-under-svex-alistlist-eval-equiv
-    (implies (syntaxp (not (equal rewrite ''nil)))
+  (defret normalize-<fn>-simp-under-svex-alistlist-eval-equiv
+    (implies (syntaxp (not (equal simp ''nil)))
              (svex-alistlist-eval-equiv out-alists
-                                        (let ((rewrite nil)) <call>)))
+                                        (let ((simp nil)) <call>)))
     :hints (("goal" :in-theory (disable <fn>))
             (witness) (witness) (witness)))
 
@@ -492,7 +492,7 @@
                                   probes
                                   (svtv-fsm-run-compile
                                    inputs overrides initst fsm
-                                   (svtv-probealist-outvars probes) rewrite)))
+                                   (svtv-probealist-outvars probes) simp)))
                     env)
          (b* ((inputs-eval (svex-alistlist-eval inputs env))
               (overrides-eval (svex-alistlist-eval overrides env))

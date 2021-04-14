@@ -254,7 +254,6 @@
                 (natp m2))
            (equal (subrange m m2 (group n x))
                   (group n (subrange (* n m) (+ (* n m) (+ -1 (* n (+ 1 (- m2 m))))) x))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                               CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                               TAKE-OF-CDR-BECOMES-SUBRANGE

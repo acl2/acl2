@@ -21,6 +21,8 @@
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "plus"))
+(local (include-book "times"))
+(local (include-book "numerator"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;move?
@@ -37,7 +39,6 @@
                             ;;COLLECT-CONSTANTS-TIMES-EQUAL ;bozo looped
                             )))))
 
-
 (defthm integer-length-of-expt2
   (implies (integerp n)
            (equal (integer-length (expt 2 n))
@@ -46,16 +47,14 @@
                     (+ 1 n))))
   :hints
   (("Goal" :in-theory (e/d (integer-length expt)
-                           (expt-hack)))))
+                           ()))))
 
 (defthm integer-length-of-mask
   (implies (natp size)
            (equal (integer-length (+ -1 (expt 2 size)))
                   size))
   :hints (("Goal" :in-theory (e/d (integer-length expt)
-                                  (expt-hack)))))
-
-
+                                  ()))))
 
 ;for integer-length proofs
 (defun double-floor-by-2-induct (i j)
@@ -163,3 +162,39 @@
                   (<= 0 index)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p integer-length)
                                   ()))))
+
+(defthm <-of-integer-length-and-1
+  (equal (< (integer-length i) 1)
+         (or (not (integerp i))
+             (equal i 0)
+             (equal i -1)))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
+(local
+ (defun sub1-induct (n)
+  (if (zp n)
+      n
+    (sub1-induct (+ -1 n)))))
+
+(defthm integer-length-of-*-of-expt2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (integer-length (* x (expt 2 n)))
+                  (if (equal 0 x)
+                      0
+                    (+ n (integer-length x)))))
+  :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
+           :induct (sub1-induct n)
+           :in-theory (e/d (integer-length expt)
+                           (expt-hack)))))
+
+(defthm integer-length-of-*-of-1/2
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (integer-length (* 1/2 x))
+                  (if (equal x 0)
+                      0
+                    (+ -1 (integer-length x)))))
+  :hints (("Goal" :expand (integer-length x)
+           :in-theory (e/d (integer-length floor)
+                           (integer-length-of-floor-by-2)))))

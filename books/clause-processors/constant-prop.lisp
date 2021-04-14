@@ -97,8 +97,8 @@
            (termlist-ind (cdr x))))))
 
 (flag::make-flag term-flg term-ind
-                 :flag-mapping ((term-ind . term)
-                                (termlist-ind . list)))
+                 :flag-mapping ((term-ind term)
+                                (termlist-ind list)))
 
 (local (defthm assoc-append-when-key
          (implies k
@@ -301,8 +301,8 @@
 
 
 (flag::make-flag deep-substitute-flg deep-substitute-term
-                 :flag-mapping ((deep-substitute-term . term)
-                                (deep-substitute-term-list . list)))
+                 :flag-mapping ((deep-substitute-term term)
+                                (deep-substitute-term-list list)))
 
 (defthm-deep-substitute-flg
   (defthm true-listp-deep-substitute-term-list
@@ -408,8 +408,8 @@
          (mv nil x))))))
 
 (flag::make-flag deep-substitute/alist-flg deep-substitute-term/alist
-                 :flag-mapping ((deep-substitute-term/alist . term)
-                                (deep-substitute-term-list/alist . list)))
+                 :flag-mapping ((deep-substitute-term/alist term)
+                                (deep-substitute-term-list/alist list)))
 
 (local
  (defthm-deep-substitute/alist-flg

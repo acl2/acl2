@@ -84,12 +84,30 @@
            (fep 1 p))
   :hints (("Goal" :in-theory (enable fep))))
 
+;; For when X is constant but P is not.  P may often be a constrained function
+;; (e.g., a large prime) about which we have a strong :linear rule.
+(defthm fep-when-constant
+  (implies (and (syntaxp (quotep x))
+                (< x p))
+           (equal (fep x p)
+                  ;; Gets evaluated:
+                  (natp x)))
+  :hints (("Goal" :in-theory (enable fep))))
+
 ;; This breaks the abstraction a bit, but mod can appear when add, sub, or neg
-;; is applied to constant arguments.
+;; is applied to constant arguments, or when we don't know that things are
+;; field elements.
 (defthm fep-of-mod
   (implies (and (integerp x)
                 (posp p))
            (fep (mod x p) p))
+  :hints (("Goal" :in-theory (enable fep))))
+
+;; combines 2 steps, dropping the mod and dropping the ifix.
+(defthmd mod-of-ifix-when-fep
+  (implies (fep x p)
+           (equal (mod (ifix x) p)
+                  x))
   :hints (("Goal" :in-theory (enable fep))))
 
 ;;;
@@ -500,6 +518,11 @@
                   x))
   :hints (("Goal" :in-theory (enable mul))))
 
+(defthm mul-of-1-arg1-gen
+  (equal (mul 1 x p)
+         (mod (ifix x) (pos-fix p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
 (defthm mul-of-1-arg2
   (implies (and (fep x p)
                 (integerp p))
@@ -564,6 +587,17 @@
          (mul x (mul y z p) p))
   :hints (("Goal" :in-theory (enable mul))))
 
+
+(defthm mul-of-mod-arg1
+  (equal (mul (mod x p) y p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-mod-arg2
+  (equal (mul x (mod y p) p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
 ;;;
 ;;; pow
 ;;;
@@ -594,6 +628,13 @@
            (fep (pow x n p) p))
   :hints (("Goal" :in-theory (enable pow))))
 
+(defthm <-of-pow
+  (implies (and (< 1 p) ;so that 1 is a fep
+                (integerp p))
+           (< (pow x n p) p))
+  :hints (("Goal" :use (:instance fep-of-pow)
+           :in-theory (disable fep-of-pow))))
+
 (defthm pow-of-+
   (implies (and (fep a p)
                 (natp b)
@@ -606,12 +647,26 @@
                        p)))
   :hints (("Goal" :in-theory (enable pow))))
 
-(defthm pow-of-0
+(defthm pow-of-0-arg1
+  (equal (pow 0 n p)
+         (if (posp n)
+             0
+           1))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-of-0-arg2
   (equal (pow a 0 p)
          1)
   :hints (("Goal" :in-theory (enable pow))))
 
-(defthm pow-of-1
+(defthm pow-of-1-arg1
+  (implies (and (< 1 p)
+                (integerp p))
+           (equal (pow 1 n p)
+                  1))
+  :hints (("Goal" :in-theory (enable pow))))
+
+(defthm pow-of-1-arg2
   (implies (and (fep a p)
                 (integerp p))
            (equal (pow a 1 p)
@@ -663,6 +718,13 @@
            (fep (inv x p) p))
   :hints (("Goal" :in-theory (enable inv minus1))))
 
+(defthm <-of-inv
+  (implies (and (< 1 p) ;so that 1 is a fep
+                (integerp p))
+           (< (inv x p) p))
+  :hints (("Goal" :use (:instance fep-of-inv)
+           :in-theory (disable fep-of-inv))))
+
 ;;;
 ;;; div
 ;;;
@@ -685,3 +747,11 @@
                 (integerp p))
            (fep (div x y p) p))
   :hints (("Goal" :in-theory (enable div))))
+
+(defthm div-of-1-arg2
+  (implies (and (< 1 p)
+                (integerp p)
+                (integerp x))
+           (equal (div x 1 p)
+                  (mod x p)))
+  :hints (("Goal" :in-theory (enable div inv))))

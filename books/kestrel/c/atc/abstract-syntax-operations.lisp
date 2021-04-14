@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-abstract-syntax-operations
-  :parents (atc-implementation atc-abstract-syntax)
+  :parents (atc-abstract-syntax)
   :short "Operations on the C abstract syntax for ATC."
   :order-subtopics t
   :default-parent t)

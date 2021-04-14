@@ -491,8 +491,8 @@
 (local
  (progn
    (flag::make-flag clean-lambdas-flag clean-lambdas
-                    :flag-mapping ((clean-lambdas . term)
-                                   (clean-lambdas-list . list)))
+                    :flag-mapping ((clean-lambdas term)
+                                   (clean-lambdas-list list)))
 
 
    (defthm-clean-lambdas-flag
@@ -529,8 +529,8 @@
 (local
  (progn
    (flag::make-flag term-ev-flag term-ev-ind
-                    :flag-mapping ((term-ev-ind . term)
-                                   (term-ev-list-ind . list)))
+                    :flag-mapping ((term-ev-ind term)
+                                   (term-ev-list-ind list)))
 
    (defthm-term-ev-flag
      (defthm clean-lambdas-correct

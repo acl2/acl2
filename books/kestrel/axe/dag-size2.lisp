@@ -1,7 +1,7 @@
 ; DAG size tools dealing only with relevant nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -125,7 +125,7 @@
 ;; The nodes in the worklist are always sorted.  We say we "examine" a node when
 ;; we add its not-already-examined children in sorted order before it on the
 ;; worklist.  They will be fully processed before we return to the node.  A
-;; node in general moves through the following 4 states over time:
+;; node affected by this algorithm in general moves through the following 4 states over time:
 ;;   1. untouched (not on worklist, unexamined)
 ;;   2. on worklist and unexamined (e.g., while smaller children of its parent are being processed)
 ;;   3. on worklist and examined (e.g., while its own children are being processed)
@@ -164,6 +164,7 @@
                                                  (consp-from-len-cheap
                                                   dag-exprp0))))))
   (if (or (endp worklist)
+          ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
                     (mbt (all-natp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))

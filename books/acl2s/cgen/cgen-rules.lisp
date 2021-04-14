@@ -13,7 +13,7 @@ date created: [2016-03-22 Tue]
 
 (in-package "CGEN")
 
-(include-book "../defdata/defdata-util")
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 (include-book "utilities")
 
 

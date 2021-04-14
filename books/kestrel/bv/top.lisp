@@ -77,6 +77,7 @@
 
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
+(include-book "sbvdiv-rules")
 (include-book "sbvdivdown-rules")
 (include-book "sbvrem")
 (include-book "sbvrem-rules")
@@ -152,6 +153,7 @@
 (include-book "rules6")
 (include-book "rules7")
 (include-book "rules8")
+(include-book "rules9")
 
 ;; (include-book "bv-tests") ; not including this one because it just contains tests
 

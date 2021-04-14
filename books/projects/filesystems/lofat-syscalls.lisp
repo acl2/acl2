@@ -667,10 +667,10 @@
       :in-theory
       (e/d
        (lofat-remove-file lofat-remove-file-helper)
-       ((:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-6)))
+       ((:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-2)))
       :use
       (:instance
-       (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-6)
+       (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-2)
        (d-e2 (pseudo-root-d-e fat32$c))
        (d-e1
         (mv-nth

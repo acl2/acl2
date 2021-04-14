@@ -124,4 +124,4 @@
   (equal (bvsx new-size old-size 0)
          0)
   :hints (("Goal" :in-theory (e/d (bvsx bvcat)
-                                  (bvcat-recombine)))))
+                                  ()))))
