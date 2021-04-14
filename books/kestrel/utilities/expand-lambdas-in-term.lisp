@@ -14,8 +14,25 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "substitution")
+(include-book "lambda-free-termp")
+;(include-book "vars-in-term")
 (local (include-book "../alists-light/pairlis-dollar"))
+(local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
+
+(defthm-flag-my-sublis-var
+  (defthm lambda-free-termp-of-my-sublis-var
+    (implies (and (lambda-free-termp form)
+                  (lambda-free-termsp (strip-cdrs alist)))
+             (lambda-free-termp (my-sublis-var alist form)))
+    :flag my-sublis-var)
+  (defthm lambda-free-termsp-of-my-sublis-var-lst
+    (implies (and (lambda-free-termsp l)
+                  (lambda-free-termsp (strip-cdrs alist)))
+             (lambda-free-termsp (my-sublis-var-lst alist l)))
+    :flag my-sublis-var-lst)
+  :hints (("Goal" :in-theory (enable my-sublis-var
+                                     my-sublis-var-lst))))
 
 ;(later we may handle non-pseudo-terms that still include lets).
 ;This is similar to remove-lambdas, but we don't use remove-lambdas,
@@ -79,3 +96,42 @@
                                      expand-lambdas-in-terms))))
 
 (verify-guards expand-lambdas-in-term)
+
+(defthm car-of-expand-lambdas-in-terms
+  (equal (car (expand-lambdas-in-terms terms))
+         (expand-lambdas-in-term (car terms)))
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
+
+(defthm-flag-expand-lambdas-in-term
+  (defthm lambda-free-termp-of-expand-lambdas-in-term
+    (implies (pseudo-termp term)
+             (lambda-free-termp (expand-lambdas-in-term term)))
+    :flag expand-lambdas-in-term)
+  (defthm lambda-free-term-listp-of-expand-lambdas-in-terms
+    (implies (pseudo-term-listp terms)
+             (lambda-free-termsp (expand-lambdas-in-terms terms)))
+    :flag expand-lambdas-in-terms)
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-term
+                                     expand-lambdas-in-terms))))
+
+(defthm not-consp-of-car-of-expand-lambdas-in-term
+  (implies (pseudo-termp term)
+           (not (consp (car (expand-lambdas-in-term term)))))
+  :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
+           :in-theory (disable lambda-free-termp-of-expand-lambdas-in-term))))
+
+;todo: need to know the lambda is closed?
+;; (defthm-flag-expand-lambdas-in-term
+;;   (defthm vars-in-term-of-expand-lambdas-in-term
+;;     (implies (pseudo-termp term)
+;;              (subsetp-equal (vars-in-term (expand-lambdas-in-term term))
+;;                             (vars-in-term term)))
+;;     :flag expand-lambdas-in-term)
+;;   (defthm pseudo-term-listp-of-expand-lambdas-in-terms
+;;     (implies (pseudo-term-listp terms)
+;;              (subsetp-equal (vars-in-terms (expand-lambdas-in-terms terms))
+;;                             (vars-in-terms terms)))
+;;     :flag expand-lambdas-in-terms)
+;;   :hints (("Goal" :in-theory (enable vars-in-term
+;;                                      expand-lambdas-in-term
+;;                                      expand-lambdas-in-terms))))
