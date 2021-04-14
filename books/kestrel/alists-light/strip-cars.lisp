@@ -76,3 +76,8 @@
            (iff (member-equal key (strip-cars alist))
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
+
+(defthm strip-cars-of-pairlis$
+  (equal (strip-cars (pairlis$ x y))
+         (true-list-fix x))
+  :hints (("Goal" :in-theory (enable strip-cars))))
