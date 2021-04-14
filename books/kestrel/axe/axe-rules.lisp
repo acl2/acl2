@@ -17,11 +17,12 @@
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
+(include-book "kestrel/utilities/vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
-(local (include-book "kestrel/std/system/all-vars" :dir :system))
+;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
-(local (in-theory (disable all-vars)))
+;(local (in-theory (disable all-vars)))
 
 (defund list-of-variables-and-constantsp (items)
   (declare (xargs :guard t))
@@ -331,20 +332,20 @@
       (:axe-syntaxp
        (let ((syntaxp-expr (cdr hyp))) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
          ;; All vars mentioned must be bound:
-         (subsetp-equal (all-vars syntaxp-expr) bound-vars)))
+         (subsetp-equal (vars-in-term syntaxp-expr) bound-vars)))
       (:axe-bind-free
        (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
               (vars-to-bind (cddr hyp)))
          (and ;; All vars mentioned must be bound:
-          (subsetp-equal (all-vars bind-free-expr) bound-vars)
+          (subsetp-equal (vars-in-term bind-free-expr) bound-vars)
           ;; Vars to be bound now must not already be bound:
           (not (intersection-eq vars-to-bind bound-vars)))))
       ;; a hyp marked with :free-vars must have at least 1 free var:
-      (:free-vars (let* ((hyp-vars (all-vars hyp))
+      (:free-vars (let* ((hyp-vars (vars-in-term hyp))
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
       ;; a hyp not marked with :free-vars must have no free vars:
-      (otherwise (let* ((hyp-vars (all-vars hyp))
+      (otherwise (let* ((hyp-vars (vars-in-term hyp))
                         (free-vars (set-difference-eq hyp-vars bound-vars)))
                    (not free-vars))))))
 
@@ -362,7 +363,7 @@
                       ;; some vars get bound:
                       (append vars-to-bind bound-vars)))
     ;; a hyp marked with :free-vars must have at least 1 free var:
-    (:free-vars (let* ((hyp-vars (all-vars hyp))
+    (:free-vars (let* ((hyp-vars (vars-in-term hyp))
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
                   (append free-vars bound-vars)))
     ;; a hyp not marked with :free-vars must have no free vars:
@@ -473,7 +474,7 @@
          (and (axe-rule-lhsp lhs)
               (pseudo-termp rhs)
               (axe-rule-hyp-listp hyps)
-              ;; (bound-vars-suitable-for-hypsp (all-vars lhs) hyps)
-              ;; (subsetp-equal (all-vars rhs)
-              ;;                (bound-vars-after-hyps (all-vars lhs) hyps))
+              ;; (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
+              ;; (subsetp-equal (vars-in-term rhs)
+              ;;                (bound-vars-after-hyps (vars-in-term lhs) hyps))
               ))))
