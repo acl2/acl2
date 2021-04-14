@@ -15,8 +15,10 @@
 
 (include-book "substitution")
 (include-book "lambda-free-termp")
+(include-book "lambdas-closed-in-termp")
 ;(include-book "vars-in-term")
 (local (include-book "../alists-light/pairlis-dollar"))
+(local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 
@@ -120,18 +122,51 @@
   :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
            :in-theory (disable lambda-free-termp-of-expand-lambdas-in-term))))
 
-;todo: need to know the lambda is closed?
-;; (defthm-flag-expand-lambdas-in-term
-;;   (defthm vars-in-term-of-expand-lambdas-in-term
-;;     (implies (pseudo-termp term)
-;;              (subsetp-equal (vars-in-term (expand-lambdas-in-term term))
-;;                             (vars-in-term term)))
-;;     :flag expand-lambdas-in-term)
-;;   (defthm pseudo-term-listp-of-expand-lambdas-in-terms
-;;     (implies (pseudo-term-listp terms)
-;;              (subsetp-equal (vars-in-terms (expand-lambdas-in-terms terms))
-;;                             (vars-in-terms terms)))
-;;     :flag expand-lambdas-in-terms)
-;;   :hints (("Goal" :in-theory (enable vars-in-term
-;;                                      expand-lambdas-in-term
-;;                                      expand-lambdas-in-terms))))
+(local
+ (defthm subsetp-equal-of-vars-in-term-of-assoc-equal-and-vars-in-terms-of-strip-cdrs
+   (implies (and (member-equal term (strip-cars alist))
+                 (assoc-equal term alist))
+            (subsetp-equal (vars-in-term (cdr (assoc-equal term alist)))
+                           (vars-in-terms (strip-cdrs alist))))
+   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal vars-in-terms)))))
+
+(defthm-flag-vars-in-term
+  (defthm subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (vars-in-term term)
+                            (strip-cars alist))
+             (subsetp-equal (vars-in-term (my-sublis-var alist term))
+                            (vars-in-terms (strip-cdrs alist))))
+    :flag vars-in-term)
+  (defthm subsetp-equal-of-vars-in-term-of-my-sublis-var-lst-and-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (vars-in-terms terms)
+                            (strip-cars alist))
+             (subsetp-equal (vars-in-terms (my-sublis-var-lst alist terms))
+                            (vars-in-terms (strip-cdrs alist))))
+    :flag vars-in-terms)
+  :hints (("Goal" :in-theory (enable MY-SUBLIS-VAR
+                                     MY-SUBLIS-VAR-lst
+                                     vars-in-term
+                                     vars-in-terms))))
+
+(defthm-flag-expand-lambdas-in-term
+  (defthm subsetp-equal-of-vars-in-term-of-expand-lambdas-in-term-and-vars-in-term
+    (implies (and (pseudo-termp term)
+                  (lambdas-closed-in-termp term))
+             (subsetp-equal (vars-in-term (expand-lambdas-in-term term))
+                            (vars-in-term term)))
+    :flag expand-lambdas-in-term)
+  (defthm subsetp-equal-of-vars-in-terms-of-expand-lambdas-in-terms-and-vars-in-terms
+    (implies (and (pseudo-term-listp terms)
+                  (lambdas-closed-in-termsp terms))
+             (subsetp-equal (vars-in-terms (expand-lambdas-in-terms terms))
+                            (vars-in-terms terms)))
+    :flag expand-lambdas-in-terms)
+  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs
+                                           (term (expand-lambdas-in-term (caddr (car term))))
+                                           (alist (pairlis$ (cadr (car term))
+                                                            (expand-lambdas-in-terms (cdr term))))))
+           ("Goal" :in-theory (e/d (vars-in-term
+                                    expand-lambdas-in-term
+                                    expand-lambdas-in-terms
+                                    LAMBDAS-CLOSED-IN-TERMP)
+                                   (subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs)))))
