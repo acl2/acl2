@@ -51,6 +51,15 @@
 
 (verify-guards vars-in-term)
 
+(defthm-flag-vars-in-term
+  (defthm true-listp-of-vars-in-term
+    (true-listp (vars-in-term term))
+    :flag vars-in-term)
+  (defthm true-listp-of-vars-in-terms
+    (true-listp (vars-in-terms terms))
+    :flag vars-in-terms)
+  :hints (("Goal" :in-theory (enable vars-in-term vars-in-terms))))
+
 (defthm subsetp-equal-of-vars-in-term-of-car
   (implies (consp terms)
            (subsetp-equal (vars-in-term (car terms))
@@ -85,3 +94,16 @@
                   (list term)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable vars-in-term))))
+
+(defthm vars-in-term-of-cons
+  (equal (vars-in-term (cons fn args))
+         (if (eq fn 'quote)
+             nil
+           (vars-in-terms args)))
+  :hints (("Goal" :in-theory (enable vars-in-term))))
+
+(defthm vars-in-terms-of-cons
+  (equal (vars-in-terms (cons term terms))
+         (union-equal (vars-in-term term)
+                      (vars-in-terms terms)))
+  :hints (("Goal" :in-theory (enable vars-in-terms))))
