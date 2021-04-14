@@ -22,9 +22,9 @@
 (defun |f| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|))))
-  (let* ((|a| (c::sint-bitand |x| |y|))
-         (|a| (c::sint-bitnot |a|)))
-    (c::sint-gt |a| (c::sint-const 0))))
+  (let* ((|a| (c::bitand-sint-sint |x| |y|))
+         (|a| (c::bitnot-sint |a|)))
+    (c::gt-sint-sint |a| (c::sint-const 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,10 +36,10 @@
                               (<= (c::sint->get |a|) 100))
                   :guard-hints (("Goal"
                                  :in-theory
-                                 (enable c::sint-add-okp
+                                 (enable c::add-sint-sint-okp
                                          c::sint-integerp-alt-def)))))
-  (let ((|a| (c::sint-add |a| (c::sint-const 200))))
-    (c::sint-lt |b| |a|)))
+  (let ((|a| (c::add-sint-sint |a| (c::sint-const 200))))
+    (c::lt-sint-sint |b| |a|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,11 +47,11 @@
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|)
                               (c::sintp |z|))))
-  (let* ((|a| (c::sint-bitand |x| |y|))
-         (|a| (c::sint-bitior |a| |z|))
-         (|b| (c::sint-bitxor |x| |z|))
-         (|a| (c::sint-bitand |a| |b|)))
-    (c::sint-lt |a| |b|)))
+  (let* ((|a| (c::bitand-sint-sint |x| |y|))
+         (|a| (c::bitior-sint-sint |a| |z|))
+         (|b| (c::bitxor-sint-sint |x| |z|))
+         (|a| (c::bitand-sint-sint |a| |b|)))
+    (c::lt-sint-sint |a| |b|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

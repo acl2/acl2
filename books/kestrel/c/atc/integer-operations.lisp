@@ -167,70 +167,70 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (stype-plus (add-suffix stype "-PLUS"))
-       (utype-plus (add-suffix utype "-PLUS"))
-       (stype-minus (add-suffix stype "-MINUS"))
-       (utype-minus (add-suffix utype "-MINUS"))
-       (stype-minus-okp (add-suffix stype-minus "-OKP"))
-       (stype-bitnot (add-suffix stype "-BITNOT"))
-       (utype-bitnot (add-suffix utype "-BITNOT"))
-       (stype-lognot (add-suffix stype "-LOGNOT"))
-       (utype-lognot (add-suffix utype "-LOGNOT"))
-       (stype-add (add-suffix stype "-ADD"))
-       (utype-add (add-suffix utype "-ADD"))
-       (stype-add-okp (add-suffix stype-add "-OKP"))
-       (stype-sub (add-suffix stype "-SUB"))
-       (utype-sub (add-suffix utype "-SUB"))
-       (stype-sub-okp (add-suffix stype-sub "-OKP"))
-       (stype-mul (add-suffix stype "-MUL"))
-       (utype-mul (add-suffix utype "-MUL"))
-       (stype-mul-okp (add-suffix stype-mul "-OKP"))
-       (stype-div (add-suffix stype "-DIV"))
-       (utype-div (add-suffix utype "-DIV"))
-       (stype-div-okp (add-suffix stype-div "-OKP"))
-       (utype-div-okp (add-suffix utype-div "-OKP"))
-       (stype-rem (add-suffix stype "-REM"))
-       (utype-rem (add-suffix utype "-REM"))
-       (stype-rem-okp (add-suffix stype-rem "-OKP"))
-       (utype-rem-okp (add-suffix utype-rem "-OKP"))
-       (stype-shl (add-suffix stype "-SHL"))
-       (stype-shl-okp (add-suffix stype-shl "-OKP"))
-       (utype-shl (add-suffix utype "-SHL"))
-       (utype-shl-okp (add-suffix utype-shl "-OKP"))
-       (stype-shr (add-suffix stype "-SHR"))
-       (stype-shr-okp (add-suffix stype-shr "-OKP"))
-       (utype-shr (add-suffix utype "-SHR"))
-       (utype-shr-okp (add-suffix utype-shr "-OKP"))
-       (stype-shl-stype (acl2::packn-pos (list stype "-SHL-" stype) 'atc))
-       (utype-shl-utype (acl2::packn-pos (list utype "-SHL-" utype) 'atc))
-       (stype-shl-stype-okp (add-suffix stype-shl-stype "-OKP"))
-       (utype-shl-utype-okp (add-suffix utype-shl-utype "-OKP"))
-       (stype-shr-stype (acl2::packn-pos (list stype "-SHR-" stype) 'atc))
-       (utype-shr-utype (acl2::packn-pos (list utype "-SHR-" utype) 'atc))
-       (stype-shr-stype-okp (add-suffix stype-shr-stype "-OKP"))
-       (utype-shr-utype-okp (add-suffix utype-shr-utype "-OKP"))
-       (stype-lt (add-suffix stype "-LT"))
-       (utype-lt (add-suffix utype "-LT"))
-       (stype-gt (add-suffix stype "-GT"))
-       (utype-gt (add-suffix utype "-GT"))
-       (stype-le (add-suffix stype "-LE"))
-       (utype-le (add-suffix utype "-LE"))
-       (stype-ge (add-suffix stype "-GE"))
-       (utype-ge (add-suffix utype "-GE"))
-       (stype-eq (add-suffix stype "-EQ"))
-       (utype-eq (add-suffix utype "-EQ"))
-       (stype-ne (add-suffix stype "-NE"))
-       (utype-ne (add-suffix utype "-NE"))
-       (stype-bitand (add-suffix stype "-BITAND"))
-       (utype-bitand (add-suffix utype "-BITAND"))
-       (stype-bitxor (add-suffix stype "-BITXOR"))
-       (utype-bitxor (add-suffix utype "-BITXOR"))
-       (stype-bitior (add-suffix stype "-BITIOR"))
-       (utype-bitior (add-suffix utype "-BITIOR"))
-       (stype-logand (add-suffix stype "-LOGAND"))
-       (utype-logand (add-suffix utype "-LOGAND"))
-       (stype-logor (add-suffix stype "-LOGOR"))
-       (utype-logor (add-suffix utype "-LOGOR")))
+       (plus-stype (acl2::packn-pos (list "PLUS-" stype) 'atc))
+       (plus-utype (acl2::packn-pos (list "PLUS-" utype) 'atc))
+       (minus-stype (acl2::packn-pos (list "MINUS-" stype) 'atc))
+       (minus-utype (acl2::packn-pos (list "MINUS-" utype) 'atc))
+       (minus-stype-okp (add-suffix minus-stype "-OKP"))
+       (bitnot-stype (acl2::packn-pos (list "BITNOT-" stype) 'atc))
+       (bitnot-utype (acl2::packn-pos (list "BITNOT-" utype) 'atc))
+       (lognot-stype (acl2::packn-pos (list "LOGNOT-" stype) 'atc))
+       (lognot-utype (acl2::packn-pos (list "LOGNOT-" utype) 'atc))
+       (add-stype-stype (acl2::packn-pos (list "ADD-" stype "-" stype) 'atc))
+       (add-utype-utype (acl2::packn-pos (list "ADD-" utype "-" utype) 'atc))
+       (add-stype-stype-okp (add-suffix add-stype-stype "-OKP"))
+       (sub-stype-stype (acl2::packn-pos (list "SUB-" stype "-" stype) 'atc))
+       (sub-utype-utype (acl2::packn-pos (list "SUB-" utype "-" utype) 'atc))
+       (sub-stype-stype-okp (add-suffix sub-stype-stype "-OKP"))
+       (mul-stype-stype (acl2::packn-pos (list "MUL-" stype "-" stype) 'atc))
+       (mul-utype-utype (acl2::packn-pos (list "MUL-" utype "-" utype) 'atc))
+       (mul-stype-stype-okp (add-suffix mul-stype-stype "-OKP"))
+       (div-stype-stype (acl2::packn-pos (list "DIV-" stype "-" stype) 'atc))
+       (div-utype-utype (acl2::packn-pos (list "DIV-" utype "-" utype) 'atc))
+       (div-stype-stype-okp (add-suffix div-stype-stype "-OKP"))
+       (div-utype-utype-okp (add-suffix div-utype-utype "-OKP"))
+       (rem-stype-stype (acl2::packn-pos (list "REM-" stype "-" stype) 'atc))
+       (rem-utype-utype (acl2::packn-pos (list "REM-" utype "-" utype) 'atc))
+       (rem-stype-stype-okp (add-suffix rem-stype-stype "-OKP"))
+       (rem-utype-utype-okp (add-suffix rem-utype-utype "-OKP"))
+       (shl-stype (acl2::packn-pos (list "SHL-" stype) 'atc))
+       (shl-utype (acl2::packn-pos (list "SHL-" utype) 'atc))
+       (shl-stype-okp (add-suffix shl-stype "-OKP"))
+       (shl-utype-okp (add-suffix shl-utype "-OKP"))
+       (shr-stype (acl2::packn-pos (list "SHR-" stype) 'atc))
+       (shr-utype (acl2::packn-pos (list "SHR-" utype) 'atc))
+       (shr-stype-okp (add-suffix shr-stype "-OKP"))
+       (shr-utype-okp (add-suffix shr-utype "-OKP"))
+       (shl-stype-stype (acl2::packn-pos (list "SHL-" stype "-" stype) 'atc))
+       (shl-utype-utype (acl2::packn-pos (list "SHL-" utype "-" utype) 'atc))
+       (shl-stype-stype-okp (add-suffix shl-stype-stype "-OKP"))
+       (shl-utype-utype-okp (add-suffix shl-utype-utype "-OKP"))
+       (shr-stype-stype (acl2::packn-pos (list "SHR-" stype "-" stype) 'atc))
+       (shr-utype-utype (acl2::packn-pos (list "SHR-" utype "-" utype) 'atc))
+       (shr-stype-stype-okp (add-suffix shr-stype-stype "-OKP"))
+       (shr-utype-utype-okp (add-suffix shr-utype-utype "-OKP"))
+       (lt-stype-stype (acl2::packn-pos (list "LT-" stype "-" stype) 'atc))
+       (lt-utype-utype (acl2::packn-pos (list "LT-" utype "-" utype) 'atc))
+       (gt-stype-stype (acl2::packn-pos (list "GT-" stype "-" stype) 'atc))
+       (gt-utype-utype (acl2::packn-pos (list "GT-" utype "-" utype) 'atc))
+       (le-stype-stype (acl2::packn-pos (list "LE-" stype "-" stype) 'atc))
+       (le-utype-utype (acl2::packn-pos (list "LE-" utype "-" utype) 'atc))
+       (ge-stype-stype (acl2::packn-pos (list "GE-" stype "-" stype) 'atc))
+       (ge-utype-utype (acl2::packn-pos (list "GE-" utype "-" utype) 'atc))
+       (eq-stype-stype (acl2::packn-pos (list "EQ-" stype "-" stype) 'atc))
+       (eq-utype-utype (acl2::packn-pos (list "EQ-" utype "-" utype) 'atc))
+       (ne-stype-stype (acl2::packn-pos (list "NE-" stype "-" stype) 'atc))
+       (ne-utype-utype (acl2::packn-pos (list "NE-" utype "-" utype) 'atc))
+       (bitand-stype-stype (acl2::packn-pos (list "BITAND-" stype "-" stype) 'atc))
+       (bitand-utype-utype (acl2::packn-pos (list "BITAND-" utype "-" utype) 'atc))
+       (bitxor-stype-stype (acl2::packn-pos (list "BITXOR-" stype "-" stype) 'atc))
+       (bitxor-utype-utype (acl2::packn-pos (list "BITXOR-" utype "-" utype) 'atc))
+       (bitior-stype-stype (acl2::packn-pos (list "BITIOR-" stype "-" stype) 'atc))
+       (bitior-utype-utype (acl2::packn-pos (list "BITIOR-" utype "-" utype) 'atc))
+       (logand-stype-stype (acl2::packn-pos (list "LOGAND-" stype "-" stype) 'atc))
+       (logand-utype-utype (acl2::packn-pos (list "LOGAND-" utype "-" utype) 'atc))
+       (logor-stype-stype (acl2::packn-pos (list "LOGOR-" stype "-" stype) 'atc))
+       (logor-utype-utype (acl2::packn-pos (list "LOGOR-" utype "-" utype) 'atc)))
 
     `(progn
 
@@ -282,7 +282,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,stype-lognot ((x ,stypep))
+       (define ,lognot-stype ((x ,stypep))
          :returns (result sintp)
          :short ,(concatenate 'string
                               "Logical complement of @('signed "
@@ -295,7 +295,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,utype-lognot ((x ,utypep))
+       (define ,lognot-utype ((x ,utypep))
          :returns (result sintp)
          :short ,(concatenate 'string
                               "Logical complement of @('unsigned "
@@ -336,7 +336,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-plus ((x ,stypep))
+            (define ,plus-stype ((x ,stypep))
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Unary plus of @('signed "
@@ -347,7 +347,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-plus ((x ,utypep))
+            (define ,plus-utype ((x ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Unary plus of @('unsigned "
@@ -358,7 +358,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-minus-okp ((x ,stypep))
+            (define ,minus-stype-okp ((x ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if unary minus of @('signed "
@@ -369,20 +369,20 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-minus ((x ,stypep))
-              :guard (,stype-minus-okp x)
+            (define ,minus-stype ((x ,stypep))
+              :guard (,minus-stype-okp x)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Unary minus of @('signed "
                                    type-string
                                    "') values [C:6.5.3].")
               (,stype (- (,stype->get x)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-minus-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,minus-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-minus ((x ,utypep))
+            (define ,minus-utype ((x ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Unary minus of @('unsigned "
@@ -398,7 +398,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-bitnot ((x ,stypep))
+            (define ,bitnot-stype ((x ,stypep))
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Bitwise complement of @('signed "
@@ -414,7 +414,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-bitnot ((x ,utypep))
+            (define ,bitnot-utype ((x ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Bitwise complement of @('unsigned "
@@ -430,7 +430,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-add-okp ((x ,stypep) (y ,stypep))
+            (define ,add-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if addition of @('signed "
@@ -441,20 +441,20 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-add ((x ,stypep) (y ,stypep))
-              :guard (,stype-add-okp x y)
+            (define ,add-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,add-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Addition of @('signed "
                                    type-string
                                    "') values [C:6.5.6].")
               (,stype (+ (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-add-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,add-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-add ((x ,utypep) (y ,utypep))
+            (define ,add-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Addition of @('unsigned "
@@ -470,7 +470,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-sub-okp ((x ,stypep) (y ,stypep))
+            (define ,sub-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if subtraction of @('signed "
@@ -481,20 +481,20 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-sub ((x ,stypep) (y ,stypep))
-              :guard (,stype-sub-okp x y)
+            (define ,sub-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,sub-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Subtraction of @('signed "
                                    type-string
                                    "') values [C:6.5.6].")
               (,stype (- (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-sub-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,sub-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-sub ((x ,utypep) (y ,utypep))
+            (define ,sub-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Subtraction of @('unsigned "
@@ -510,7 +510,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-mul-okp ((x ,stypep) (y ,stypep))
+            (define ,mul-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if multiplication of @('signed "
@@ -521,20 +521,20 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-mul ((x ,stypep) (y ,stypep))
-              :guard (,stype-mul-okp x y)
+            (define ,mul-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,mul-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Multiplication of @('signed "
                                    type-string
                                    "') values [C:6.5.5].")
               (,stype (* (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-mul-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,mul-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-mul ((x ,utypep) (y ,utypep))
+            (define ,mul-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Multiplication of @('unsigned "
@@ -550,7 +550,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-div-okp ((x ,stypep) (y ,stypep))
+            (define ,div-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if division of @('signed "
@@ -562,20 +562,20 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-div ((x ,stypep) (y ,stypep))
-              :guard (,stype-div-okp x y)
+            (define ,div-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,div-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Division of @('signed "
                                    type-string
                                    "') values [C:6.5.5].")
               (,stype (truncate (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-div-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,div-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-div-okp ((x ,utypep) (y ,utypep))
+            (define ,div-utype-utype-okp ((x ,utypep) (y ,utypep))
               :returns (yes/no booleanp)
               (declare (ignore x))
               :short ,(concatenate 'string
@@ -587,8 +587,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-div ((x ,utypep) (y ,utypep))
-              :guard (,utype-div-okp x y)
+            (define ,div-utype-utype ((x ,utypep) (y ,utypep))
+              :guard (,div-utype-utype-okp x y)
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Division of @('unsigned "
@@ -597,7 +597,7 @@
               (,utype (mod (truncate (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
               :guard-hints
-              (("Goal" :in-theory (enable ,utype-div-okp
+              (("Goal" :in-theory (enable ,div-utype-utype-okp
                                           ,utype-integerp-alt-def)))
               :hooks (:fix)
               :prepwork
@@ -605,7 +605,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-rem-okp ((x ,stypep) (y ,stypep))
+            (define ,rem-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if remainder of @('signed "
@@ -617,15 +617,15 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-rem ((x ,stypep) (y ,stypep))
-              :guard (,stype-rem-okp x y)
+            (define ,rem-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,rem-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Remainder of @('signed "
                                    type-string
                                    "') values [C:6.5.5].")
               (,stype (rem (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-rem-okp
+              :guard-hints (("Goal" :in-theory (enable ,rem-stype-stype-okp
                                                        ,stype-integerp
                                                        ,stype->get
                                                        ,stypep)))
@@ -635,7 +635,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-rem-okp ((x ,utypep) (y ,utypep))
+            (define ,rem-utype-utype-okp ((x ,utypep) (y ,utypep))
               (declare (ignore x))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
@@ -647,8 +647,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-rem ((x ,utypep) (y ,utypep))
-              :guard (,utype-rem-okp x y)
+            (define ,rem-utype-utype ((x ,utypep) (y ,utypep))
+              :guard (,rem-utype-utype-okp x y)
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Remainder of @('unsigned "
@@ -657,7 +657,7 @@
               (,utype (mod (rem (,utype->get x) (,utype->get y))
                            (1+ (,utype-max))))
               :guard-hints
-              (("Goal" :in-theory (enable ,utype-rem-okp
+              (("Goal" :in-theory (enable ,rem-utype-utype-okp
                                           ,utype-integerp-alt-def)))
               :hooks (:fix)
               :prepwork
@@ -665,7 +665,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shl-okp ((x ,stypep) (y integerp))
+            (define ,shl-stype-okp ((x ,stypep) (y integerp))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if left shift of @('signed "
@@ -679,8 +679,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shl ((x ,stypep) (y integerp))
-              :guard (,stype-shl-okp x y)
+            (define ,shl-stype ((x ,stypep) (y integerp))
+              :guard (,shl-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Left shift of @('signed "
@@ -688,12 +688,12 @@
                                    "') values [C:6.5.7].")
               (,stype (* (,stype->get x)
                          (expt 2 (ifix y))))
-              :guard-hints (("Goal" :in-theory (enable ,stype-shl-okp)))
+              :guard-hints (("Goal" :in-theory (enable ,shl-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shl-stype-okp ((x ,stypep) (y ,stypep))
+            (define ,shl-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if left shift of @('signed "
@@ -701,13 +701,13 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values is well-defined.")
-              (,stype-shl-okp x (,stype-integer-value y))
+              (,shl-stype-okp x (,stype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shl-stype ((x ,stypep) (y ,stypep))
-              :guard (,stype-shl-stype-okp x y)
+            (define ,shl-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,shl-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Left shift of @('signed "
@@ -715,13 +715,13 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,stype-shl x (,stype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,stype-shl-stype-okp)))
+              (,shl-stype x (,stype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,shl-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shl-okp ((x ,utypep) (y integerp))
+            (define ,shl-utype-okp ((x ,utypep) (y integerp))
               (declare (ignore x))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
@@ -733,8 +733,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shl ((x ,utypep) (y integerp))
-              :guard (,utype-shl-okp x y)
+            (define ,shl-utype ((x ,utypep) (y integerp))
+              :guard (,shl-utype-okp x y)
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Left shift of @('unsigned "
@@ -744,7 +744,7 @@
                               (expt 2 (ifix y)))
                            (1+ (,utype-max))))
               :guard-hints
-              (("Goal" :in-theory (enable ,utype-shl-okp
+              (("Goal" :in-theory (enable ,shl-utype-okp
                                           ,utype-integerp-alt-def)))
               :hooks (:fix)
               :prepwork
@@ -752,7 +752,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shl-utype-okp ((x ,utypep) (y ,utypep))
+            (define ,shl-utype-utype-okp ((x ,utypep) (y ,utypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if left shift of @('unsigned "
@@ -760,13 +760,13 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values is well-defined.")
-              (,utype-shl-okp x (,utype-integer-value y))
+              (,shl-utype-okp x (,utype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shl-utype ((x ,utypep) (y ,utypep))
-              :guard (,utype-shl-utype-okp x y)
+            (define ,shl-utype-utype ((x ,utypep) (y ,utypep))
+              :guard (,shl-utype-utype-okp x y)
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Left shift of @('unsigned "
@@ -774,13 +774,13 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,utype-shl x (,utype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shl-utype-okp)))
+              (,shl-utype x (,utype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,shl-utype-utype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shr-okp ((x ,stypep) (y integerp))
+            (define ,shr-stype-okp ((x ,stypep) (y integerp))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if right shift of @('signed "
@@ -792,8 +792,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shr ((x ,stypep) (y integerp))
-              :guard (,stype-shr-okp x y)
+            (define ,shr-stype ((x ,stypep) (y integerp))
+              :guard (,shr-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Right shift of @('signed "
@@ -801,7 +801,7 @@
                                    "') values [C:6.5.7].")
               (,stype (truncate (,stype->get x)
                                 (expt 2 (ifix y))))
-              :guard-hints (("Goal" :in-theory (enable ,stype-shr-okp
+              :guard-hints (("Goal" :in-theory (enable ,shr-stype-okp
                                                        ,stype-integerp
                                                        ,stype->get
                                                        ,stypep)))
@@ -814,7 +814,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shr-stype-okp ((x ,stypep) (y ,stypep))
+            (define ,shr-stype-stype-okp ((x ,stypep) (y ,stypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if right shift of @('signed "
@@ -822,13 +822,13 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values is well-defined.")
-              (,stype-shr-okp x (,stype-integer-value y))
+              (,shr-stype-okp x (,stype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-shr-stype ((x ,stypep) (y ,stypep))
-              :guard (,stype-shr-stype-okp x y)
+            (define ,shr-stype-stype ((x ,stypep) (y ,stypep))
+              :guard (,shr-stype-stype-okp x y)
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Right shift of @('signed "
@@ -836,13 +836,13 @@
                                    "') values by @('signed "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,stype-shr x (,stype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,stype-shr-stype-okp)))
+              (,shr-stype x (,stype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,shr-stype-stype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shr-okp ((x ,utypep) (y integerp))
+            (define ,shr-utype-okp ((x ,utypep) (y integerp))
               (declare (ignore x))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
@@ -854,7 +854,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shr ((x ,utypep) (y integerp))
+            (define ,shr-utype ((x ,utypep) (y integerp))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Left shift of @('unsigned "
@@ -864,7 +864,7 @@
                                      (expt 2 y))
                            (1+ (,utype-max))))
               :guard-hints
-              (("Goal" :in-theory (enable ,utype-shr-okp
+              (("Goal" :in-theory (enable ,shr-utype-okp
                                           ,utype-integerp-alt-def)))
               :hooks (:fix)
               :prepwork
@@ -872,7 +872,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shr-utype-okp ((x ,utypep) (y ,utypep))
+            (define ,shr-utype-utype-okp ((x ,utypep) (y ,utypep))
               :returns (yes/no booleanp)
               :short ,(concatenate 'string
                                    "Check if right shift of @('unsigned "
@@ -880,12 +880,12 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values is well-defined.")
-              (,utype-shr-okp x (,utype-integer-value y))
+              (,shr-utype-okp x (,utype-integer-value y))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-shr-utype ((x ,utypep) (y ,utypep))
+            (define ,shr-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Left shift of @('unsigned "
@@ -893,13 +893,13 @@
                                    "') values by @('unsigned "
                                    type-string
                                    "') values [C:6.5.7].")
-              (,utype-shr x (,utype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,utype-shr-utype-okp)))
+              (,shr-utype x (,utype-integer-value y))
+              :guard-hints (("Goal" :in-theory (enable ,shr-utype-utype-okp)))
               :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-lt ((x ,stypep) (y ,stypep))
+            (define ,lt-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Less-than relation of @('signed "
@@ -912,7 +912,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-lt ((x ,utypep) (y ,utypep))
+            (define ,lt-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Less-than relation of @('unsigned "
@@ -925,7 +925,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-gt ((x ,stypep) (y ,stypep))
+            (define ,gt-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Greater-than relation of @('signed "
@@ -938,7 +938,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-gt ((x ,utypep) (y ,utypep))
+            (define ,gt-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Greater-than relation of @('unsigned "
@@ -951,7 +951,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-le ((x ,stypep) (y ,stypep))
+            (define ,le-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate
                        'string
@@ -965,7 +965,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-le ((x ,utypep) (y ,utypep))
+            (define ,le-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate
                        'string
@@ -979,7 +979,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-ge ((x ,stypep) (y ,stypep))
+            (define ,ge-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate
                        'string
@@ -993,7 +993,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-ge ((x ,utypep) (y ,utypep))
+            (define ,ge-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate
                        'string
@@ -1007,7 +1007,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-eq ((x ,stypep) (y ,stypep))
+            (define ,eq-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate
                        'string
@@ -1021,7 +1021,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-eq ((x ,utypep) (y ,utypep))
+            (define ,eq-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Equality of @('unsigned "
@@ -1034,7 +1034,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-ne ((x ,stypep) (y ,stypep))
+            (define ,ne-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Non-equality of @('signed "
@@ -1047,7 +1047,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-ne ((x ,utypep) (y ,utypep))
+            (define ,ne-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Non-equality of @('unsigned "
@@ -1060,7 +1060,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-bitand ((x ,stypep) (y ,stypep))
+            (define ,bitand-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Bitwise conjunction of @('signed "
@@ -1076,7 +1076,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-bitand ((x ,utypep) (y ,utypep))
+            (define ,bitand-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate 'string
                                    "Bitwise conjunction of @('unsigned "
@@ -1092,7 +1092,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-bitxor ((x ,stypep) (y ,stypep))
+            (define ,bitxor-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Bitwise exclusive disjunction of @('signed "
@@ -1109,7 +1109,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-bitxor ((x ,utypep) (y ,utypep))
+            (define ,bitxor-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate
                        'string
@@ -1127,7 +1127,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-bitior ((x ,stypep) (y ,stypep))
+            (define ,bitior-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result ,stypep)
               :short ,(concatenate 'string
                                    "Bitwise inclusive disjunction of @('signed "
@@ -1144,7 +1144,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-bitior ((x ,utypep) (y ,utypep))
+            (define ,bitior-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result ,utypep)
               :short ,(concatenate
                        'string
@@ -1162,7 +1162,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-logand ((x ,stypep) (y ,stypep))
+            (define ,logand-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Logical conjunction of @('signed "
@@ -1173,7 +1173,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-logand ((x ,utypep) (y ,utypep))
+            (define ,logand-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Logical conjunction of @('unsigned "
@@ -1184,7 +1184,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,stype-logor ((x ,stypep) (y ,stypep))
+            (define ,logor-stype-stype ((x ,stypep) (y ,stypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Logical disjunction of @('signed "
@@ -1195,7 +1195,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (define ,utype-logor ((x ,utypep) (y ,utypep))
+            (define ,logor-utype-utype ((x ,utypep) (y ,utypep))
               :returns (result sintp)
               :short ,(concatenate 'string
                                    "Logical disjunction of @('unsigned "

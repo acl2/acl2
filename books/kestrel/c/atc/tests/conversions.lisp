@@ -32,14 +32,14 @@
                                                     c::uchar-max
                                                     c::char-bits
                                                     c::int-bits)))))
-  (c::sint-bitxor (c::sint-from-uchar |x|)
-                  (c::sint-from-uchar |y|)))
+  (c::bitxor-sint-sint (c::sint-from-uchar |x|)
+                       (c::sint-from-uchar |y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |g| (|i|)
   (declare (xargs :guard (c::sintp |i|)))
-  (c::uchar-from-sint (c::sint-bitnot |i|)))
+  (c::uchar-from-sint (c::bitnot-sint |i|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
