@@ -22,7 +22,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define ACL2 functions that model C operations on integers.
-     We only cover standard unsigned and signed integers (except @('_Bool')).")
+     We only cover standard unsigned and signed integers, except @('_Bool').")
    (xdoc::p
     "We introduce functions @('<type>-const')
      to construct integer constants.
@@ -84,10 +84,9 @@
      only the (mathematical) integer value of the second operand does,
      and thus we introduce functions
      that take an ACL2 integer as the second operand.
-     We temporarily also have functions
+     We also have functions
      that take a C integer as the second operand,
-     of the same type as the first operand;
-     this will be removed eventually.
+     of the same type as the first operand;.
      Although C does not promote the operands of @('&&') and @('||'),
      note that performing explicit promotions does not affect the result:
      thus, we only define functions for these operators
