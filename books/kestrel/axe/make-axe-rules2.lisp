@@ -14,9 +14,12 @@
            (pseudo-term-listp hyps)
            (axe-rule-hyp-listp extra-hyps)
            (symbolp rule-symbol))
-      (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)
+      (mv-let (erp rule)
+        (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)
+        (if erp
+            (er hard? 'make-axe-rule-safe "Error making axe rule. LHS: ~x0. RHS: ~x1. HYPS: ~x2." lhs rhs hyps)
+          rule))
     (er hard? 'make-axe-rule-safe "Bad input to make-axe-rule-safe (perhaps things are not pseudo-terms). LHS: ~x0. RHS: ~x1. HYPS: ~x2." lhs rhs hyps)))
-
 
 ;;Returns (mv lhs rhs) or throws an error if it's not a theorem with a single conclusion conjunct and no hyps ("simple" means no hyps here)
 ;; Used in axe.lisp.
