@@ -173,7 +173,7 @@
     ,(if (= (char-bits) (short-bits))
          '(= (char-bits) (short-bits))
        '(< (char-bits) (short-bits)))
-    :rule-classes :linear
+    :rule-classes ((:linear :trigger-terms ((char-bits) (short-bits))))
     :enable (char-bits short-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,7 +185,7 @@
     ,(if (= (short-bits) (int-bits))
          '(= (short-bits) (int-bits))
        '(< (short-bits) (int-bits)))
-    :rule-classes :linear
+    :rule-classes ((:linear :trigger-terms ((short-bits) (int-bits))))
     :enable (short-bits int-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -197,7 +197,7 @@
     ,(if (= (int-bits) (long-bits))
          '(= (int-bits) (long-bits))
        '(< (int-bits) (long-bits)))
-    :rule-classes :linear
+    :rule-classes ((:linear :trigger-terms ((int-bits) (long-bits))))
     :enable (int-bits long-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,5 +209,5 @@
     ,(if (= (long-bits) (llong-bits))
          '(= (long-bits) (llong-bits))
        '(< (long-bits) (llong-bits)))
-    :rule-classes :linear
+    :rule-classes ((:linear :trigger-terms ((long-bits) (llong-bits))))
     :enable (long-bits llong-bits)))
