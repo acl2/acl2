@@ -185,7 +185,17 @@
        (type-integerp (add-suffix type "-INTEGERP"))
        (type-const (add-suffix type "-CONST"))
        (type-nonzerop (add-suffix type "-NONZEROP"))
-       (type-integer-value (add-suffix type "-INTEGER-VALUE")))
+       (type-integer-value (add-suffix type "-INTEGER-VALUE"))
+       (plus-type (acl2::packn-pos (list "PLUS-" type) 'atc))
+       (promotype (case type
+                    (schar 'sint)
+                    (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
+                    (sshort 'sint)
+                    (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
+                    (t type)))
+       (promotypep (add-suffix promotype "P"))
+       (promotype-integerp-alt-def (add-suffix promotype "-INTEGERP-ALT-DEF"))
+       )
 
     `(progn
 
@@ -207,9 +217,9 @@
        (define ,type-nonzerop ((x ,typep))
          :returns (yes/no booleanp)
          :short ,(concatenate 'string
-                              "Check if a @('"
+                              "Check if a value of type @('"
                               type-string
-                              "') value is not 0.")
+                              "') is not 0.")
          (/= (,type->get x) 0)
          :hooks (:fix))
 
@@ -218,15 +228,27 @@
        (define ,type-integer-value ((x ,typep))
          :returns (ival integerp)
          :short ,(concatenate 'string
-                              "Integer value of a @('"
+                              "Turn a vaue of type @('"
                               type-string
-                              "') value.")
+                              "') into an ACL2 integer value.")
          (,type->get x)
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-      )))
+       (define ,plus-type ((x ,typep))
+         :returns (result ,promotypep)
+         :short ,(concatenate 'string
+                              "Unary plus of a value of type @('"
+                              type-string
+                              "') [C:6.5.3].")
+         (,promotype (,type->get x))
+         :guard-hints (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,22 +293,16 @@
        (utype-max (add-suffix utype "-MAX"))
        (stypep (add-suffix stype "P"))
        (utypep (add-suffix utype "P"))
-       (stype-fix (add-suffix stype "-FIX"))
-       (utype-fix (add-suffix utype "-FIX"))
        (stype->get (add-suffix stype "->GET"))
        (utype->get (add-suffix utype "->GET"))
        (stype-integerp (add-suffix stype "-INTEGERP"))
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-integerp-alt-def (add-suffix stype-integerp "-ALT-DEF"))
        (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
-       ;; (stype-const (add-suffix stype "-CONST"))
-       ;; (utype-const (add-suffix utype "-CONST"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (plus-stype (acl2::packn-pos (list "PLUS-" stype) 'atc))
-       (plus-utype (acl2::packn-pos (list "PLUS-" utype) 'atc))
        (minus-stype (acl2::packn-pos (list "MINUS-" stype) 'atc))
        (minus-utype (acl2::packn-pos (list "MINUS-" utype) 'atc))
        (minus-stype-okp (add-suffix minus-stype "-OKP"))
@@ -385,28 +401,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,plus-stype ((x ,stypep))
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Unary plus of @('signed "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,stype-fix x)
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,plus-utype ((x ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Unary plus of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,utype-fix x)
-              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
