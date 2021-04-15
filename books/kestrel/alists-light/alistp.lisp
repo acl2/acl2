@@ -63,7 +63,8 @@
            (alistp (cdr x)))
   :hints (("Goal" :in-theory (enable alistp))))
 
-(defthmd consp-of-car-when-alistp
+;; Avoid name clash with the version in std
+(defthmd consp-of-car-when-alistp-alt
   (implies (alistp x)
            (equal (consp (car x))
                   (consp x)))

@@ -33,6 +33,7 @@
            )
   (if (and (eq 'not (ffn-symb hyp)) ;; TODO: Avoid checking this over and over for each nodenum-to-assume-false
            (consp (fargs hyp)) ; for the guard proof, should always be true if arities are right.
+           (endp (cdr (fargs hyp))) ; needed for the proof that all free vars get bound, should always be true if arities are right.
            )
       ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
       ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
@@ -91,3 +92,26 @@
            (all-dargp-less-than (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)) dag-len))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))
+
+;; All the free vars get bound
+(defthm match-hyp-with-nodenum-to-assume-false-binds-all-vars
+  (implies (and (axe-treep hyp)
+                (consp hyp)
+                (not (equal 'quote (ffn-symb hyp)))
+                (symbol-alistp alist)
+                (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+           (subsetp-equal (axe-tree-vars hyp)
+                          (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+  :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false) (unify-tree-with-dag-node-binds-all-vars))
+           :expand ((axe-tree-vars hyp)
+                    (axe-tree-vars-lst (cdr hyp)))
+           :use ((:instance unify-tree-with-dag-node-binds-all-vars
+                            (alist nil)
+                            (tree (cadr hyp))
+                            (nodenum-or-quotep nodenum-to-assume-false))
+                 (:instance unify-tree-with-dag-node-binds-all-vars
+                            (tree hyp)
+                            (alist nil)
+                            (nodenum-or-quotep (nth 0
+                                                    (dargs (aref1 'dag-array
+                                                                  dag-array nodenum-to-assume-false)))))))))

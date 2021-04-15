@@ -17,7 +17,12 @@
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
+(include-book "kestrel/utilities/vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
+;(local (include-book "kestrel/std/system/all-vars" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
+;(local (in-theory (disable all-vars)))
 
 (defund list-of-variables-and-constantsp (items)
   (declare (xargs :guard t))
@@ -225,7 +230,7 @@
 ;;; axe-rule-hyp-listp
 ;;;
 
-(defun axe-rule-hyp-listp (hyps)
+(defund axe-rule-hyp-listp (hyps)
   (declare (xargs :guard t))
   (if (atom hyps)
       (null hyps)
@@ -312,6 +317,145 @@
               (lambda-free-termsp args)))
   :hints (("Goal" :in-theory (enable axe-rule-lhsp))))
 
+;;;
+;;; checking bound-vars
+;;;
+
+;; Checks whether BOUND-VARS is suitable for the strip-cars of the alist upon
+;; reaching HYP and attempting to relieve it.
+(defund bound-vars-suitable-for-hypp (bound-vars hyp)
+  (declare (xargs :guard (and (symbol-listp bound-vars)
+                              (axe-rule-hypp hyp))
+                  :guard-hints (("Goal" :in-theory (enable axe-rule-hypp)))))
+  (let* ((fn (ffn-symb hyp)))
+    (case fn
+      (:axe-syntaxp
+       (let ((syntaxp-expr (cdr hyp))) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
+         ;; All vars mentioned must be bound:
+         (subsetp-equal (vars-in-term syntaxp-expr) bound-vars)))
+      (:axe-bind-free
+       (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
+              (vars-to-bind (cddr hyp)))
+         (and ;; All vars mentioned must be bound:
+          (subsetp-equal (vars-in-term bind-free-expr) bound-vars)
+          ;; Vars to be bound now must not already be bound:
+          (not (intersection-eq vars-to-bind bound-vars)))))
+      ;; a hyp marked with :free-vars must have at least 1 free var:
+      (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+                         (free-vars (set-difference-eq hyp-vars bound-vars)))
+                    (if free-vars t nil)))
+      ;; a hyp not marked with :free-vars must have no free vars:
+      (otherwise (let* ((hyp-vars (vars-in-term hyp))
+                        (free-vars (set-difference-eq hyp-vars bound-vars)))
+                   (not free-vars))))))
+
+;;;
+;;; bound-vars-after-hyp
+;;;
+
+(defund bound-vars-after-hyp (bound-vars hyp)
+  (declare (xargs :guard (and (symbol-listp bound-vars)
+                              (axe-rule-hypp hyp))
+                  :guard-hints (("Goal" :in-theory (enable axe-rule-hypp)))))
+  (case (ffn-symb hyp)
+    (:axe-syntaxp bound-vars) ; no change
+    (:axe-bind-free (let ((vars-to-bind (cddr hyp)))
+                      ;; some vars get bound:
+                      (append vars-to-bind bound-vars)))
+    ;; a hyp marked with :free-vars must have at least 1 free var:
+    (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+                       (free-vars (set-difference-eq hyp-vars bound-vars)))
+                  (append free-vars bound-vars)))
+    ;; a hyp not marked with :free-vars must have no free vars:
+    (otherwise bound-vars ;no change
+               )))
+
+(defthm symbol-listp-of-bound-vars-after-hyp
+  (implies (and (axe-rule-hypp hyp)
+                (symbol-listp bound-vars))
+           (symbol-listp (bound-vars-after-hyp bound-vars hyp)))
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
+
+(defthm true-listp-of-bound-vars-after-hyp
+  (implies (true-listp bound-vars)
+           (true-listp (bound-vars-after-hyp bound-vars hyp)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
+
+;;;
+;;; bound-vars-after-hyps
+;;;
+
+(defund bound-vars-after-hyps (bound-vars hyps)
+  (declare (xargs :guard (and (symbol-listp bound-vars)
+                              (axe-rule-hyp-listp hyps))
+                  :measure (len hyps)
+                  :guard-hints (("Goal" :expand (axe-rule-hyp-listp hyps)
+                                 :in-theory (enable axe-rule-hypp)))))
+  (if (endp hyps)
+      bound-vars
+    (let* ((hyp (first hyps))
+           (new-bound-vars (bound-vars-after-hyp bound-vars hyp)))
+      (bound-vars-after-hyps new-bound-vars (rest hyps)))))
+
+(defthm true-listp-of-bound-vars-after-hyps
+  (implies (true-listp bound-vars)
+           (true-listp (bound-vars-after-hyps bound-vars hyps)))
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyps))))
+
+(defthm bound-vars-after-hyps-of-append
+  (equal (bound-vars-after-hyps bound-vars (append hyps1 hyps2))
+         (bound-vars-after-hyps (bound-vars-after-hyps bound-vars hyps1) hyps2))
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyps))))
+
+(defthm bound-vars-after-hyps-of-cons
+  (equal (bound-vars-after-hyps bound-vars (cons hyp hyps))
+         (bound-vars-after-hyps (bound-vars-after-hyp bound-vars hyp) hyps))
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyps))))
+
+(defthm bound-vars-after-hyps-of-nil
+  (equal (bound-vars-after-hyps bound-vars nil)
+         bound-vars)
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyps))))
+
+;;;
+;;; bound-vars-suitable-for-hypsp
+;;;
+
+;; Checks whether BOUND-VARS is suitable for the strip-cars of the alist upon
+;; reaching HYPS and attempting to relieve them.
+(defund bound-vars-suitable-for-hypsp (bound-vars hyps)
+  (declare (xargs :guard (and (symbol-listp bound-vars)
+                              (axe-rule-hyp-listp hyps))
+                  :measure (len hyps)
+                  :guard-hints (("Goal" :expand (axe-rule-hyp-listp hyps)
+                                 :in-theory (enable axe-rule-hypp)))))
+  (if (endp hyps)
+      t
+    (let ((hyp (first hyps)))
+      (and (bound-vars-suitable-for-hypp bound-vars hyp)
+           (let* ((new-bound-vars (bound-vars-after-hyp bound-vars hyp)))
+             (bound-vars-suitable-for-hypsp new-bound-vars (rest hyps)))))))
+
+(defthm bound-vars-suitable-for-hypsp-of-append
+  (equal (bound-vars-suitable-for-hypsp bound-vars (append hyps1 hyps2))
+         (and (bound-vars-suitable-for-hypsp bound-vars hyps1)
+              (bound-vars-suitable-for-hypsp (bound-vars-after-hyps bound-vars hyps1) hyps2)))
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp
+                                     bound-vars-after-hyps))))
+
+(defthm bound-vars-suitable-for-hypsp-of-cons
+  (equal (bound-vars-suitable-for-hypsp bound-vars (cons hyp hyps))
+         (and (bound-vars-suitable-for-hypp bound-vars hyp)
+              (bound-vars-suitable-for-hypsp (bound-vars-after-hyp bound-vars hyp) hyps)))
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp
+                                     bound-vars-after-hyps))))
+
+(defthm bound-vars-suitable-for-hypsp-of-nil
+  (bound-vars-suitable-for-hypsp bound-vars nil)
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp
+                                     bound-vars-after-hyps))))
+
 
 ;;;
 ;;; axe-rulep
@@ -319,13 +463,18 @@
 
 ;; An axe-rule is a 4-tuple containing: LHS, RHS, rule name ("rule-symbol"), and hyps.
 ;; See also stored-axe-rulep.
-(defund axe-rulep (item)
+(defund axe-rulep (axe-rule)
   (declare (xargs :guard t))
-  (and (equal 4 (len item))
-       (symbolp (rule-symbol item))
-       (let ((lhs (rule-lhs item)))
-         (and (axe-rule-lhsp lhs)))
-       (let ((rhs (rule-rhs item))) ;todo: require no free vars (that is checked in make-axe-rule)
-         (pseudo-termp rhs))
-       (let ((hyps (rule-hyps item)))
-         (axe-rule-hyp-listp hyps))))
+  (and (true-listp axe-rule)
+       (= 4 (len axe-rule))
+       (symbolp (rule-symbol axe-rule))
+       (let ((lhs (rule-lhs axe-rule))
+             (rhs (rule-rhs axe-rule))
+             (hyps (rule-hyps axe-rule)))
+         (and (axe-rule-lhsp lhs)
+              (pseudo-termp rhs)
+              (axe-rule-hyp-listp hyps)
+              ;; (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
+              ;; (subsetp-equal (vars-in-term rhs)
+              ;;                (bound-vars-after-hyps (vars-in-term lhs) hyps))
+              ))))
