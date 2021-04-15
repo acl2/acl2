@@ -828,11 +828,11 @@
  (2 2 (:REWRITE |(< (- x) c)|))
  (2 2 (:REWRITE |(< (- x) (- y))|)))
 (RTL::QUOT-EXACT-1
- (49182 28
+ (49822 28
         (:REWRITE |(<= x (/ y)) with (< 0 y)|))
- (48450 40
+ (49090 40
         (:REWRITE |(< (/ x) y) with (< 0 x)|))
- (37742 282 (:REWRITE |(< x (+ c/d y))|))
+ (38062 282 (:REWRITE |(< x (+ c/d y))|))
  (18231 1363 (:REWRITE DEFAULT-PLUS-2))
  (13458 1136 (:REWRITE DEFAULT-TIMES-2))
  (10942
@@ -851,12 +851,12 @@
  (10422 1260
         (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT))
  (7727 1363 (:REWRITE DEFAULT-PLUS-1))
- (7524 218 (:REWRITE |(< y (+ (- c) x))|))
- (7430 228 (:REWRITE CONSTANT-<-INTEGERP))
+ (7604 218 (:REWRITE |(< y (+ (- c) x))|))
+ (7442 240 (:REWRITE CONSTANT-<-INTEGERP))
  (6080 58
        (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
- (4040 375 (:REWRITE DEFAULT-LESS-THAN-2))
- (3519 224
+ (4052 387 (:REWRITE DEFAULT-LESS-THAN-2))
+ (3535 236
        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
  (3438 1260
        (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT))
@@ -874,7 +874,7 @@
        (:REWRITE |(<= (/ x) y) with (< x 0)|))
  (2028 112 (:REWRITE |(* c (* d x))|))
  (1976 198 (:REWRITE DEFAULT-MINUS))
- (1949 375 (:REWRITE DEFAULT-LESS-THAN-1))
+ (1969 387 (:REWRITE DEFAULT-LESS-THAN-1))
  (1926 261 (:LINEAR EXPT-X->=-X))
  (1769 1769
        (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
@@ -882,15 +882,16 @@
        (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
  (1769 1769
        (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+ (1660 260 (:LINEAR RTL::BVECP-BMUX4SIGNED))
  (1639 45 (:META META-INTEGERP-CORRECT))
  (1473 49 (:REWRITE INTEGERP-MINUS-X))
  (1460 1460 (:TYPE-PRESCRIPTION COLLECT-*))
- (1382 298
+ (1394 310
        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
  (1159 1159 (:REWRITE |arith (* (- x) y)|))
  (1154 166 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
- (1116 224 (:REWRITE INTEGERP-<-CONSTANT))
- (967 126 (:REWRITE SIMPLIFY-SUMS-<))
+ (1128 236 (:REWRITE INTEGERP-<-CONSTANT))
+ (979 138 (:REWRITE SIMPLIFY-SUMS-<))
  (884 40
       (:REWRITE |(< (/ x) y) with (< x 0)|))
  (868 28
@@ -907,13 +908,17 @@
  (522 522
       (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
  (432 60 (:REWRITE |(* a (/ a) b)|))
- (375 375 (:REWRITE THE-FLOOR-BELOW))
- (375 375 (:REWRITE THE-FLOOR-ABOVE))
+ (387 387 (:REWRITE THE-FLOOR-BELOW))
+ (387 387 (:REWRITE THE-FLOOR-ABOVE))
  (360 360 (:REWRITE |(+ c (+ d x))|))
  (306 306 (:REWRITE FOLD-CONSTS-IN-+))
- (278 278
+ (292 292
+      (:TYPE-PRESCRIPTION RTL::INTEGERP-SIGA))
+ (290 290
       (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (276 238 (:REWRITE |(< (- x) (- y))|))
+ (288 288
+      (:TYPE-PRESCRIPTION RTL::INTEGERP-OPA))
+ (288 250 (:REWRITE |(< (- x) (- y))|))
  (261 261 (:LINEAR EXPT-LINEAR-UPPER-<=))
  (261 261 (:LINEAR EXPT-LINEAR-UPPER-<))
  (261 261 (:LINEAR EXPT-LINEAR-LOWER-<=))
@@ -922,29 +927,31 @@
  (261 261 (:LINEAR EXPT->-1-TWO))
  (261 261 (:LINEAR EXPT-<=-1-ONE))
  (261 261 (:LINEAR EXPT-<-1-ONE))
- (238 238
+ (260 260 (:REWRITE RTL::INTEGERP-SIGA))
+ (260 260 (:REWRITE RTL::INTEGERP-OPA))
+ (250 250
       (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (238 238
+ (250 250
       (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (238 238
+ (250 250
       (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (238 238
+ (250 250
       (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (238 238
+ (250 250
       (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (238 238
+ (250 250
       (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (238 238
+ (250 250
       (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (238 238
+ (250 250
       (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (238 238 (:REWRITE |(< (/ x) (/ y))|))
- (224 224
+ (250 250 (:REWRITE |(< (/ x) (/ y))|))
+ (236 236
       (:REWRITE REMOVE-STRICT-INEQUALITIES))
  (210 4 (:REWRITE |(integerp (- x))|))
  (209 209 (:REWRITE |arith (+ c (+ d x))|))
  (185 185 (:REWRITE |(* (- x) y)|))
- (167 167 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+ (179 179 (:REWRITE REMOVE-WEAK-INEQUALITIES))
  (160 16 (:REWRITE |(* (/ c) (expt d n))|))
  (160 16
       (:REWRITE |(* (- (/ c)) (expt d n))|))

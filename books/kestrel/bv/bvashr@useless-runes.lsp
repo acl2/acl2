@@ -11,6 +11,8 @@
                      (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
                   (8 8 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
                   (8 8
+                     (:REWRITE BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE))
+                  (8 8
                      (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
                   (8 8
                      (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))

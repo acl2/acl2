@@ -71,7 +71,6 @@
                   (2 2 (:REWRITE NFIX-WHEN-NOT-NATP))
                   (2 2 (:REWRITE DEFAULT-+-2))
                   (2 2 (:REWRITE DEFAULT-+-1)))
-(PARITY-OF-NFIX-N-NORMALIZE-CONST)
 (PARITY-NAT-EQUIV-CONGRUENCE-ON-N)
 (PARITY-OF-IFIX-X (335 32 (:DEFINITION UNSIGNED-BYTE-P))
                   (303 32 (:DEFINITION INTEGER-RANGE-P))
@@ -106,8 +105,6 @@
                   (21 21 (:REWRITE DEFAULT-+-2))
                   (21 21 (:REWRITE DEFAULT-+-1))
                   (16 16 (:TYPE-PRESCRIPTION BITP))
-                  (16 16
-                      (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
                   (13 13 (:TYPE-PRESCRIPTION NEGP))
                   (13 13 (:REWRITE NEGP-WHEN-INTEGERP))
                   (9 9
@@ -116,7 +113,6 @@
                   (4 2
                      (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP))
                   (2 2 (:TYPE-PRESCRIPTION NATP)))
-(PARITY-OF-IFIX-X-NORMALIZE-CONST)
 (PARITY-INT-EQUIV-CONGRUENCE-ON-X)
 (BITOPS::PARITY-DECOMP
      (1520 42 (:DEFINITION UNSIGNED-BYTE-P))
@@ -182,10 +178,6 @@
          (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
      (15 5
          (:TYPE-PRESCRIPTION BITOPS::LOGCONS-NEGP))
-     (13 13
-         (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-     (13 13
-         (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
      (12 6 (:REWRITE NATP-WHEN-GTE-0))
      (10 5
          (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-2))
@@ -233,10 +225,6 @@
      (20 20 (:TYPE-PRESCRIPTION BITP))
      (19 19 (:REWRITE DEFAULT-+-2))
      (19 19 (:REWRITE DEFAULT-+-1))
-     (18 18
-         (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-     (18 18
-         (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
      (18 6 (:REWRITE FOLD-CONSTS-IN-+))
      (16 16
          (:REWRITE BITOPS::LOGXOR-FOLD-CONSTS))
@@ -253,10 +241,6 @@
                      (4 4 (:REWRITE DEFAULT-<-1))
                      (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
                      (4 2 (:REWRITE IFIX-WHEN-INTEGERP))
-                     (3 3
-                        (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-                     (3 3
-                        (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
                      (3 3 (:REWRITE DEFAULT-+-2))
                      (3 3 (:REWRITE DEFAULT-+-1)))
 (BITOPS::PARITY-OF-LOGHEAD-SPLIT
@@ -314,10 +298,6 @@
      (65 65 (:REWRITE NEGP-WHEN-INTEGERP))
      (49 7
          (:REWRITE BITOPS::LOGHEAD-OF-LOGHEAD-2))
-     (33 33
-         (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-     (33 33
-         (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
      (30 10
          (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
      (30 10
@@ -339,7 +319,6 @@
 (BITOPS::PARITY4$INLINE)
 (BITOPS::BITP-OF-PARITY4)
 (BITOPS::PARITY4$INLINE-OF-IFIX-X)
-(BITOPS::PARITY4$INLINE-OF-IFIX-X-NORMALIZE-CONST)
 (BITOPS::PARITY4$INLINE-INT-EQUIV-CONGRUENCE-ON-X)
 (BITOPS::CHECK-PARITY4)
 (BITOPS::CHECK-PARITY4-CORRECT
@@ -348,8 +327,6 @@
      (23 23 (:REWRITE DEFAULT-<-2))
      (23 23 (:REWRITE DEFAULT-<-1))
      (18 6 (:REWRITE NEGP-WHEN-LESS-THAN-0))
-     (16 16
-         (:REWRITE BITOPS::PARITY4$INLINE-OF-IFIX-X-NORMALIZE-CONST))
      (16 2 (:REWRITE IFIX-POSITIVE-TO-NON-ZP))
      (15 15 (:REWRITE DEFAULT-+-2))
      (15 15 (:REWRITE DEFAULT-+-1))
@@ -396,10 +373,6 @@
      (2 2
         (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
      (2 2
-        (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-     (2 2
-        (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
-     (2 2
         (:REWRITE BITOPS::CHECK-PARITY4-CORRECT))
      (1 1 (:REWRITE NFIX-WHEN-NOT-NATP))
      (1 1 (:REWRITE DEFAULT-+-2))
@@ -421,10 +394,6 @@
                          (93 93
                              (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
                          (90 89 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                         (32 32
-                             (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-                         (32 32
-                             (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
                          (9 3 (:REWRITE LOGHEAD-IDENTITY))
                          (2 2 (:TYPE-PRESCRIPTION BITP))
                          (1 1
@@ -451,10 +420,6 @@
                  (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION))
              (16 16
                  (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE))
-             (16 16
-                 (:REWRITE PARITY-OF-NFIX-N-NORMALIZE-CONST))
-             (16 16
-                 (:REWRITE PARITY-OF-IFIX-X-NORMALIZE-CONST))
              (15 15
                  (:REWRITE-QUOTED-CONSTANT IFIX-UNDER-INT-EQUIV))
              (14 14 (:REWRITE DEFAULT-+-2))

@@ -1,63 +1,65 @@
-(ASH-OF-0 (100 2 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+(ASH-OF-0 (104 2 (:LINEAR MY-FLOOR-LOWER-BOUND-LINEAR))
+          (98 2 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+          (95 5 (:REWRITE FLOOR-WHEN-<))
           (84 2 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
           (52 2 (:REWRITE <-OF-*-AND-0))
-          (49 3 (:REWRITE FLOOR-WHEN-<))
+          (32 4 (:REWRITE <-OF-*-CANCEL-2))
+          (21 11 (:REWRITE DEFAULT-<-1))
           (20 20
               (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
           (20 20
               (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-          (17 9 (:REWRITE DEFAULT-<-1))
-          (16 2 (:REWRITE <-OF-*-CANCEL-2))
-          (9 9 (:REWRITE DEFAULT-<-2))
-          (8 8 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
-          (8 8
-             (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-          (8 8 (:LINEAR <-OF-*-AND-*))
-          (8 6 (:REWRITE DEFAULT-*-2))
-          (8 6 (:REWRITE DEFAULT-*-1))
-          (5 3
+          (14 10 (:REWRITE DEFAULT-*-2))
+          (14 10 (:REWRITE DEFAULT-*-1))
+          (12 12 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+          (12 12
+              (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+          (12 12 (:LINEAR <-OF-*-AND-*))
+          (11 11 (:REWRITE DEFAULT-<-2))
+          (9 5
              (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
-          (5 3
+          (9 5
              (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
-          (5 3
+          (9 5
              (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
-          (5 3
+          (9 5
              (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
-          (4 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-          (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-          (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-          (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-          (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-          (3 3
+          (6 6 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+          (6 6 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+          (6 6 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+          (6 6 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+          (6 6 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+          (5 5
              (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
-          (3 3 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
-          (2 2 (:REWRITE *-OF-*-COMBINE-CONSTANTS)))
+          (4 4 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+          (4 2 (:REWRITE DEFAULT-+-2))
+          (2 2 (:REWRITE DEFAULT-+-1)))
 (INTEGERP-OF-ASH)
 (UNSIGNED-BYTE-P-OF-ASH-ALT
+     (102 30 (:REWRITE DEFAULT-*-2))
      (90 90 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-     (78 30 (:REWRITE DEFAULT-*-2))
+     (81 30 (:REWRITE DEFAULT-*-1))
      (78 6 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (64 30 (:REWRITE DEFAULT-*-1))
-     (38 18 (:REWRITE DEFAULT-<-2))
-     (30 18 (:REWRITE DEFAULT-<-1))
-     (20 4 (:REWRITE DEFAULT-UNARY-/))
-     (13 1 (:REWRITE FLOOR-WHEN-<))
+     (32 17 (:REWRITE DEFAULT-<-1))
+     (29 17 (:REWRITE DEFAULT-<-2))
+     (28 4 (:REWRITE DEFAULT-UNARY-/))
+     (18 6 (:REWRITE <-OF-1-AND-EXPT))
+     (18 1 (:REWRITE FLOOR-WHEN-<))
+     (14 8 (:REWRITE DEFAULT-+-2))
+     (14 8 (:REWRITE DEFAULT-+-1))
      (12 12
          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
      (12 12 (:LINEAR <-OF-*-AND-*))
-     (12 8 (:REWRITE DEFAULT-+-2))
-     (12 8 (:REWRITE DEFAULT-+-1))
+     (7 4 (:REWRITE DEFAULT-UNARY-MINUS))
      (6 6 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (6 4 (:REWRITE DEFAULT-UNARY-MINUS))
-     (3 1
+     (4 1
         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
-     (3 1
+     (4 1
         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
-     (3 1
+     (4 1
         (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
-     (3 1
+     (4 1
         (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
      (2 2 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
      (1 1
-        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
-     (1 1 (:REWRITE FLOOR-MINUS-ERIC-BETTER)))
+        (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT)))

@@ -46,11 +46,11 @@
                     (6 6 (:REWRITE DEFAULT-COERCE-1))
                     (6 6 (:META META-INTEGERP-CORRECT))
                     (2 1 (:REWRITE |(< d (+ c x y))|)))
-(NIQ-BOUNDS (628 628
+(NIQ-BOUNDS (624 624
                  (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
-            (628 628
+            (624 624
                  (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-            (628 628
+            (624 624
                  (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
             (166 85
                  (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
@@ -623,20 +623,20 @@
                      (1 1 (:REWRITE |(- (* c x))|)))
 (FLOOR-INDUCT-FN (8432 100
                        (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-                 (2131 2131
+                 (2091 2091
                        (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                 (2131 2131
+                 (2091 2091
                        (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-                 (2131 2131
+                 (2091 2091
                        (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
                  (1580 100 (:DEFINITION NFIX))
-                 (1232 394
+                 (1220 394
                        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-                 (1051 380 (:REWRITE DEFAULT-<-1))
+                 (1043 380 (:REWRITE DEFAULT-<-1))
                  (866 344 (:REWRITE DEFAULT-+-2))
-                 (660 182 (:REWRITE DEFAULT-UNARY-MINUS))
+                 (656 182 (:REWRITE DEFAULT-UNARY-MINUS))
                  (580 100 (:DEFINITION IFIX))
-                 (531 380 (:REWRITE DEFAULT-<-2))
+                 (527 380 (:REWRITE DEFAULT-<-2))
                  (527 59
                       (:REWRITE INTEGERP==>DENOMINATOR-=-1))
                  (430 344 (:REWRITE DEFAULT-+-1))
@@ -685,20 +685,20 @@
                  (6 6 (:REWRITE FOLD-CONSTS-IN-+)))
 (MOD-INDUCT-FN (8432 100
                      (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-               (2131 2131
+               (2091 2091
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-               (2131 2131
+               (2091 2091
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-               (2131 2131
+               (2091 2091
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
                (1580 100 (:DEFINITION NFIX))
-               (1232 394
+               (1220 394
                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-               (1051 380 (:REWRITE DEFAULT-<-1))
+               (1043 380 (:REWRITE DEFAULT-<-1))
                (866 344 (:REWRITE DEFAULT-+-2))
-               (660 182 (:REWRITE DEFAULT-UNARY-MINUS))
+               (656 182 (:REWRITE DEFAULT-UNARY-MINUS))
                (580 100 (:DEFINITION IFIX))
-               (531 380 (:REWRITE DEFAULT-<-2))
+               (527 380 (:REWRITE DEFAULT-<-2))
                (527 59
                     (:REWRITE INTEGERP==>DENOMINATOR-=-1))
                (430 344 (:REWRITE DEFAULT-+-1))
@@ -749,11 +749,11 @@
 (MOD-IND)
 (FLOOR-BOUNDS-1 (4336 64
                       (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-                (789 789
+                (785 785
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                (789 789
+                (785 785
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-                (789 789
+                (785 785
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
                 (704 64 (:DEFINITION NFIX))
                 (666 173 (:REWRITE DEFAULT-+-2))
@@ -817,11 +817,7 @@
                 (2 2 (:REWRITE |arith (+ c (+ d x))|))
                 (2 1 (:REWRITE |(< (+ d x) (+ c y))|))
                 (2 1 (:REWRITE |(< (+ c x) (+ d y))|)))
-(FLOOR-BOUNDS-2 (28 28 (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
-                (28 28 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                (28 28 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-                (28 28 (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-                (26 26
+(FLOOR-BOUNDS-2 (26 26
                     (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 2))
                 (26 26
                     (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 1))
@@ -829,6 +825,10 @@
                     (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 2))
                 (26 26
                     (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 1))
+                (26 26 (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
+                (26 26 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
+                (26 26 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
+                (26 26 (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
                 (15 3 (:REWRITE DEFAULT-UNARY-/))
                 (3 3
                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
@@ -853,11 +853,11 @@
                       (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
                 (352 32 (:DEFINITION NFIX))
                 (337 90 (:REWRITE DEFAULT-+-2))
-                (332 332
+                (330 330
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                (332 332
+                (330 330
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-                (332 332
+                (330 330
                      (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
                 (244 102
                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))

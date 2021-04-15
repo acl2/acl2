@@ -279,10 +279,10 @@
                  (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
               (4 4
                  (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
-(|iZZEDB| (36 36
-              (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-          (36 36
-              (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+(|iZZEDB| (111 111
+               (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
+          (111 111
+               (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
 (|iZZEDB-DOMAIN| (24 24
                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
                  (24 24
@@ -629,8 +629,8 @@
 (ZED1-DEFAULT)
 (|ZED1-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
-(|iZED1| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
+(|iZED1| (10 10
+             (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iZED1-DOMAIN| (24 16
                     (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
                 (20 16
@@ -855,8 +855,8 @@
 (ZED2-DEFAULT)
 (|ZED2-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
-(|iZED2| (8 8
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
+(|iZED2| (26 26
+             (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iZED2-DOMAIN| (48 32
                     (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
                 (40 32
@@ -1396,10 +1396,10 @@
                (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
             (2 2
                (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
-(|iYAK| (4 4
-           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-        (4 4
-           (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+(|iYAK| (10 10
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
+        (10 10
+            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
 (|iYAK-DOMAIN| (4 4
                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
                (4 4
@@ -2069,10 +2069,10 @@
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
              (4 4
                 (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
-(|iZZED| (36 36
-             (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (36 36
-             (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+(|iZZED| (111 111
+              (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
+         (111 111
+              (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
 (|iZZED-DOMAIN| (24 24
                     (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
                 (24 24
@@ -2397,9 +2397,9 @@
      (9715 9715 (:REWRITE UNHIDE-HIDE))
      (233 4
           (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
-(ZZED-MONADIC (13427 13427
+(ZZED-MONADIC (13436 13436
                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-              (13427 13427
+              (13436 13436
                      (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
               (7042 1444 (:REWRITE DEFUNG::NORMALIZE-TRUE))
               (2422 1528 (:REWRITE DEFAULT-+-2))
