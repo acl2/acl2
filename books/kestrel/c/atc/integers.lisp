@@ -15,6 +15,8 @@
 
 (include-book "kestrel/fty/defbyte" :dir :system)
 
+(local (include-book "arithmetic-3/top" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integers
@@ -82,8 +84,6 @@
 
     `(encapsulate ()
 
-       (local (include-book "arithmetic-3/top" :dir :system))
-
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (fty::defbyte ,utype-integer
@@ -126,67 +126,7 @@
            :rule-classes :linear
            :enable ,utype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,type-bits-bound) (n (,type-bits)) (x 2)))
-
-         ,@(case type
-
-             (:char nil)
-
-             (:short
-              `((defrule uchar-max-vs-ushort-max
-                  ,(if (= (char-bits) (short-bits))
-                       '(= (uchar-max) (ushort-max))
-                     '(< (uchar-max) (ushort-max)))
-                  :rule-classes :linear
-                  :enable uchar-max
-                  ,@(if (= (char-bits) (short-bits))
-                        '(:disable char-bits-vs-short-bits
-                          :use char-bits-vs-short-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (char-bits)) (n (short-bits)) (x 2)))))))
-
-             (:int
-              `((defrule ushort-max-vs-uint-max
-                  ,(if (= (short-bits) (int-bits))
-                       '(= (ushort-max) (uint-max))
-                     '(< (ushort-max) (uint-max)))
-                  :rule-classes :linear
-                  :enable ushort-max
-                  ,@(if (= (short-bits) (int-bits))
-                        '(:disable short-bits-vs-int-bits
-                          :use short-bits-vs-int-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (short-bits)) (n (int-bits)) (x 2)))))))
-
-             (:long
-              `((defrule uint-max-vs-ulong-max
-                  ,(if (= (int-bits) (long-bits))
-                       '(= (uint-max) (ulong-max))
-                     '(< (uint-max) (ulong-max)))
-                  :rule-classes :linear
-                  :enable uint-max
-                  ,@(if (= (int-bits) (long-bits))
-                        '(:disable int-bits-vs-long-bits
-                          :use int-bits-vs-long-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))))
-
-             (:llong
-              `((defrule ulong-max-vs-ullong-max
-                  ,(if (= (long-bits) (llong-bits))
-                       '(= (ulong-max) (ullong-max))
-                     '(< (ulong-max) (ullong-max)))
-                  :rule-classes :linear
-                  :enable ulong-max
-                  ,@(if (= (long-bits) (llong-bits))
-                        '(:disable long-bits-vs-llong-bits
-                          :use long-bits-vs-llong-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (long-bits)) (n (llong-bits)) (x 2)))))))))
+                 (m ,type-bits-bound) (n (,type-bits)) (x 2))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,67 +146,7 @@
            :rule-classes :linear
            :enable ,stype-min
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
-
-         ,@(case type
-
-             (:char nil)
-
-             (:short
-              `((defrule schar-min-vs-sshort-min
-                  ,(if (= (char-bits) (short-bits))
-                       '(= (schar-min) (sshort-min))
-                     '(>= (schar-min) (sshort-min)))
-                  :rule-classes :linear
-                  :enable schar-min
-                  ,@(if (= (char-bits) (short-bits))
-                        '(:disable char-bits-vs-short-bits
-                          :use char-bits-vs-short-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (char-bits)) (n (short-bits)) (x 2)))))))
-
-             (:int
-              `((defrule sshort-min-vs-sint-min
-                  ,(if (= (short-bits) (int-bits))
-                       '(= (sshort-min) (sint-min))
-                     '(> (sshort-min) (sint-min)))
-                  :rule-classes :linear
-                  :enable sshort-min
-                  ,@(if (= (char-bits) (short-bits))
-                        '(:disable short-bits-vs-int-bits
-                          :use short-bits-vs-int-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (short-bits)) (n (int-bits)) (x 2)))))))
-
-             (:long
-              `((defrule sint-min-vs-slong-min
-                  ,(if (= (int-bits) (long-bits))
-                       '(= (sint-min) (slong-min))
-                     '(> (sint-min) (slong-min)))
-                  :rule-classes :linear
-                  :enable sint-min
-                  ,@(if (= (int-bits) (long-bits))
-                        '(:disable int-bits-vs-long-bits
-                          :use int-bits-vs-long-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))))
-
-             (:llong
-              `((defrule slong-min-vs-sllong-min
-                  ,(if (= (long-bits) (llong-bits))
-                       '(= (slong-min) (sllong-min))
-                     '(> (slong-min) (sllong-min)))
-                  :rule-classes :linear
-                  :enable slong-min
-                  ,@(if (= (long-bits) (llong-bits))
-                        '(:disable long-bits-vs-llong-bits
-                          :use long-bits-vs-llong-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (long-bits)) (n (llong-bits)) (x 2)))))))))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,67 +166,7 @@
            :rule-classes :linear
            :enable ,stype-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
-
-         ,@(case type
-
-             (:char nil)
-
-             (:short
-              `((defrule schar-max-vs-sshort-max
-                  ,(if (= (char-bits) (short-bits))
-                       '(= (schar-max) (sshort-max))
-                     '(< (schar-max) (sshort-max)))
-                  :rule-classes :linear
-                  :enable schar-max
-                  ,@(if (= (char-bits) (short-bits))
-                        '(:disable char-bits-vs-short-bits
-                          :use char-bits-vs-short-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (char-bits)) (n (short-bits)) (x 2)))))))
-
-             (:int
-              `((defrule sshort-max-vs-sint-max
-                  ,(if (= (short-bits) (int-bits))
-                       '(= (sshort-max) (sint-max))
-                     '(< (sshort-max) (sint-max)))
-                  :rule-classes :linear
-                  :enable sshort-max
-                  ,@(if (= (char-bits) (short-bits))
-                        '(:disable short-bits-vs-int-bits
-                          :use short-bits-vs-int-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (short-bits)) (n (int-bits)) (x 2)))))))
-
-             (:long
-              `((defrule sint-max-vs-slong-max
-                  ,(if (= (int-bits) (long-bits))
-                       '(= (sint-max) (slong-max))
-                     '(< (sint-max) (slong-max)))
-                  :rule-classes :linear
-                  :enable sint-max
-                  ,@(if (= (int-bits) (long-bits))
-                        '(:disable int-bits-vs-long-bits
-                          :use int-bits-vs-long-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))))
-
-             (:llong
-              `((defrule slong-max-vs-sllong-max
-                  ,(if (= (long-bits) (llong-bits))
-                       '(= (slong-max) (sllong-max))
-                     '(< (slong-max) (sllong-max)))
-                  :rule-classes :linear
-                  :enable slong-max
-                  ,@(if (= (long-bits) (llong-bits))
-                        '(:disable long-bits-vs-llong-bits
-                          :use long-bits-vs-llong-bits)
-                      '(:use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (long-bits)) (n (llong-bits)) (x 2)))))))))
+                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,3 +255,231 @@
 (atc-def-integer-values :long)
 
 (atc-def-integer-values :llong)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-ushort-max
+    :parents (uchar-max ushort-max)
+    :short "Relation between
+            @('unsigned char') and @('unsigned short') maxima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (uchar-max) (ushort-max))
+       '(< (uchar-max) (ushort-max)))
+    :rule-classes :linear
+    :enable (uchar-max ushort-max)
+    ,@(if (= (char-bits) (short-bits))
+          '(:disable char-bits-vs-short-bits
+            :use char-bits-vs-short-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-uint-max
+    :parents (ushort-max uint-max)
+    :short "Relation between
+            @('unsigned short') and @('unsigned int') maxima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (ushort-max) (uint-max))
+       '(< (ushort-max) (uint-max)))
+    :rule-classes :linear
+    :enable (ushort-max uint-max)
+    ,@(if (= (short-bits) (int-bits))
+          '(:disable short-bits-vs-int-bits
+            :use short-bits-vs-int-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-ulong-max
+    :parents (uint-max ulong-max)
+    :short "Relation between
+            @('unsigned int') and @('unsigned long') maxima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (uint-max) (ulong-max))
+       '(< (uint-max) (ulong-max)))
+    :rule-classes :linear
+    :enable (uint-max ulong-max)
+    ,@(if (= (int-bits) (long-bits))
+          '(:disable int-bits-vs-long-bits
+            :use int-bits-vs-long-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ulong-max-vs-ullong-max
+    :parents (ulong-max ullong-max)
+    :short "Relation between
+            @('unsigned long') and @('unsigned long long') maxima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (ulong-max) (ullong-max))
+       '(< (ulong-max) (ullong-max)))
+    :rule-classes :linear
+    :enable (ulong-max ullong-max)
+    ,@(if (= (long-bits) (llong-bits))
+          '(:disable long-bits-vs-llong-bits
+            :use long-bits-vs-llong-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule schar-min-vs-sshort-min
+    :parents (schar-min schar-min)
+    :short "Relation between
+            @('signed char') and @('signed short') minima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (schar-min) (sshort-min))
+       '(>= (schar-min) (sshort-min)))
+    :rule-classes :linear
+    :enable (schar-min sshort-min)
+    ,@(if (= (char-bits) (short-bits))
+          '(:disable char-bits-vs-short-bits
+            :use char-bits-vs-short-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sshort-min-vs-sint-min
+    :parents (sshort-min sint-min)
+    :short "Relation between
+            @('signed short') and @('signed int') minima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (sshort-min) (sint-min))
+       '(> (sshort-min) (sint-min)))
+    :rule-classes :linear
+    :enable (sshort-min sint-min)
+    ,@(if (= (char-bits) (short-bits))
+          '(:disable short-bits-vs-int-bits
+            :use short-bits-vs-int-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sint-min-vs-slong-min
+    :parents (sint-min slong-min)
+    :short "Relation between
+            @('signed int') and @('signed long') minima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (sint-min) (slong-min))
+       '(> (sint-min) (slong-min)))
+    :rule-classes :linear
+    :enable (sint-min slong-min)
+    ,@(if (= (int-bits) (long-bits))
+          '(:disable int-bits-vs-long-bits
+            :use int-bits-vs-long-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule slong-min-vs-sllong-min
+    :parents (slong-min sllong-min)
+    :short "Relation between
+            @('signed long') and @('signed long long') minima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (slong-min) (sllong-min))
+       '(> (slong-min) (sllong-min)))
+    :rule-classes :linear
+    :enable (slong-min sllong-min)
+    ,@(if (= (long-bits) (llong-bits))
+          '(:disable long-bits-vs-llong-bits
+            :use long-bits-vs-llong-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule schar-max-vs-sshort-max
+    :parents (schar-max sshort-max)
+    :short "Relation between
+            @('signed char') and @('signed short') maxima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (schar-max) (sshort-max))
+       '(< (schar-max) (sshort-max)))
+    :rule-classes :linear
+    :enable (schar-max sshort-max)
+    ,@(if (= (char-bits) (short-bits))
+          '(:disable char-bits-vs-short-bits
+            :use char-bits-vs-short-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sshort-max-vs-sint-max
+    :parents (sshort-max sint-max)
+    :short "Relation between
+            @('signed short') and @('signed int') maxima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (sshort-max) (sint-max))
+       '(< (sshort-max) (sint-max)))
+    :rule-classes :linear
+    :enable (sshort-max sint-max)
+    ,@(if (= (char-bits) (short-bits))
+          '(:disable short-bits-vs-int-bits
+            :use short-bits-vs-int-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sint-max-vs-slong-max
+    :parents (sint-max slong-max)
+    :short "Relation between
+            @('signed int') and @('signed long') maxima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (sint-max) (slong-max))
+       '(< (sint-max) (slong-max)))
+    :rule-classes :linear
+    :enable (sint-max slong-max)
+    ,@(if (= (int-bits) (long-bits))
+          '(:disable int-bits-vs-long-bits
+            :use int-bits-vs-long-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule slong-max-vs-sllong-max
+    :parents (slong-max sllong-max)
+    :short "Relation between
+            @('signed long') and @('signed long long') maxima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (slong-max) (sllong-max))
+       '(< (slong-max) (sllong-max)))
+    :rule-classes :linear
+    :enable (slong-max sllong-max)
+    ,@(if (= (long-bits) (llong-bits))
+          '(:disable long-bits-vs-llong-bits
+            :use long-bits-vs-llong-bits)
+        '(:use (:instance
+                acl2::expt-is-weakly-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
