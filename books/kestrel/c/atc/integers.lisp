@@ -130,28 +130,28 @@
 
          ,@(case type
              (:char nil)
-             (:short '((defrule ushort-max->=-uchar-max
+             (:short '((defrule ushort-max-vs-uchar-max
                          (>= (ushort-max) (uchar-max))
                          :rule-classes :linear
                          :enable uchar-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
                                (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule uint-max->=-ushort-max
+             (:int '((defrule uint-max-vs-ushort-max
                        (>= (uint-max) (ushort-max))
                        :rule-classes :linear
                        :enable ushort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
                              (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule ulong-max->=-uint-max
+             (:long '((defrule ulong-max-vs-uint-max
                         (>= (ulong-max) (uint-max))
                         :rule-classes :linear
                         :enable uint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
                               (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule ullong-max->=-ulong-max
+             (:llong '((defrule ullong-max-vs-ulong-max
                          (>= (ullong-max) (ulong-max))
                          :rule-classes :linear
                          :enable ulong-max
@@ -181,28 +181,28 @@
 
          ,@(case type
              (:char nil)
-             (:short '((defrule sshort-min-<=-schar-min
+             (:short '((defrule sshort-min-vs-schar-min
                          (<= (sshort-min) (schar-min))
                          :rule-classes :linear
                          :enable schar-min
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
                                (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule sint-min-<=-sshort-min
+             (:int '((defrule sint-min-vs-sshort-min
                        (<= (sint-min) (sshort-min))
                        :rule-classes :linear
                        :enable sshort-min
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
                              (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule slong-min-<=-sint-min
+             (:long '((defrule slong-min-vs-sint-min
                         (<= (slong-min) (sint-min))
                         :rule-classes :linear
                         :enable sint-min
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
                               (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule sllong-min-<=-slong-min
+             (:llong '((defrule sllong-min-vs-slong-min
                          (<= (sllong-min) (slong-min))
                          :rule-classes :linear
                          :enable slong-min
@@ -232,28 +232,28 @@
 
          ,@(case type
              (:char nil)
-             (:short '((defrule sshort-max->=-schar-max
+             (:short '((defrule sshort-max-vs-schar-max
                          (>= (sshort-max) (schar-max))
                          :rule-classes :linear
                          :enable schar-max
                          :use (:instance
                                acl2::expt-is-weakly-increasing-for-base->-1
                                (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule sint-max->=-sshort-max
+             (:int '((defrule sint-max-vs-sshort-max
                        (>= (sint-max) (sshort-max))
                        :rule-classes :linear
                        :enable sshort-max
                        :use (:instance
                              acl2::expt-is-weakly-increasing-for-base->-1
                              (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule slong-max->=-sint-max
+             (:long '((defrule slong-max-vs-sint-max
                         (>= (slong-max) (sint-max))
                         :rule-classes :linear
                         :enable sint-max
                         :use (:instance
                               acl2::expt-is-weakly-increasing-for-base->-1
                               (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule sllong-max->=-slong-max
+             (:llong '((defrule sllong-max-vs-slong-max
                          (>= (sllong-max) (slong-max))
                          :rule-classes :linear
                          :enable slong-max
