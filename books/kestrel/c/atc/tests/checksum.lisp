@@ -40,6 +40,11 @@
                          hist
                          pspv))))
 
+  (defrulel sint-max->=-200k
+    (>= (c::sint-max) 200000)
+    :rule-classes :linear
+    :enable (c::sint-max c::int-bits))
+
   (defun |checksum| (|current| |hibyte| |lobyte|)
     (declare (xargs :guard (and (c::sintp |current|)
                                 (c::sintp |hibyte|)
@@ -61,8 +66,7 @@
                                                       c::add-sint-sint
                                                       c::shl-sint-sint
                                                       c::shl-sint
-                                                      c::bitand-sint-sint
-                                                      (:e c::sint-max))))))
+                                                      c::bitand-sint-sint)))))
     (c::bitand-sint-sint
      (c::add-sint-sint |current|
                        (c::add-sint-sint (c::shl-sint-sint |hibyte|

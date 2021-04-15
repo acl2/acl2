@@ -51,9 +51,6 @@
                     :guard-hints (("Goal"
                                    :do-not-induct t
                                    :in-theory (enable c::sint-integerp-alt-def
-                                                      c::sint
-                                                      c::sint->get
-                                                      c::sintp
                                                       c::add-sint-sint-okp
                                                       c::sub-sint-sint-okp
                                                       c::mul-sint-sint-okp

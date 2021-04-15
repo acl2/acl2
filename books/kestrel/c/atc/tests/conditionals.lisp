@@ -46,9 +46,7 @@
                               (> (c::sint->get |x|) 0))
                   :guard-hints (("Goal"
                                  :in-theory (enable c::sub-sint-sint-okp
-                                                    c::sint-integerp-alt-def
-                                                    c::sint-integer-fix
-                                                    c::sint->get)))))
+                                                    c::sint-integerp-alt-def)))))
   (c::sub-sint-sint |x|
                     (if (c::sint-nonzerop (c::ge-sint-sint |y| (c::sint-const 18)))
                         (c::sint-const 0)
@@ -62,10 +60,8 @@
                   :guard-hints (("Goal"
                                  :in-theory (enable c::sint-nonzerop
                                                     c::sint-integerp-alt-def
-                                                    c::sint-integer-fix
                                                     c::gt-sint-sint
-                                                    c::sub-sint-sint-okp
-                                                    c::sint->get)))))
+                                                    c::sub-sint-sint-okp)))))
   (if (c::sint-nonzerop (c::gt-sint-sint |a| |b|))
       (c::sub-sint-sint |a|
                         (if (c::sint-nonzerop (c::eq-sint-sint |b| (c::sint-const 3)))
@@ -79,16 +75,13 @@
   (declare (xargs :guard (and (c::sintp |x|)
                               (>= (c::sint->get |x|) 0))
                   :guard-hints (("Goal"
-                                 :in-theory (enable c::sint-integerp
-                                                    c::sint-integer-fix
+                                 :in-theory (enable c::sint-integerp-alt-def
                                                     c::lt-sint-sint
                                                     c::sub-sint-sint-okp
-                                                    c::mul-sint-sint-okp
-                                                    c::sint->get
-                                                    (:e c::int-bits))))))
+                                                    c::mul-sint-sint-okp)))))
   (if (c::sint-nonzerop (c::lt-sint-sint |x| (c::sint-const 1000)))
       (c::mul-sint-sint |x| (c::sint-const 10))
-    (c::sub-sint-sint |x| (c::sint-const 1000000))))
+    (c::sub-sint-sint |x| (c::sint-const 10000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

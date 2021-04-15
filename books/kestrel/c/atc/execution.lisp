@@ -166,14 +166,6 @@
                                     sint-from-schar-okp
                                     sint-from-ushort-okp
                                     sint-from-sshort-okp
-                                    ucharp
-                                    scharp
-                                    ushortp
-                                    sshortp
-                                    uchar->get
-                                    schar->get
-                                    ushort->get
-                                    sshort->get
                                     uchar-integerp-alt-def
                                     schar-integerp-alt-def
                                     ushort-integerp-alt-def
@@ -425,16 +417,6 @@
                                     sllong-from-slong-okp
                                     sllong-from-uint-okp
                                     sllong-from-ulong-okp
-                                    sintp
-                                    slongp
-                                    sllongp
-                                    uintp
-                                    ulongp
-                                    ullongp
-                                    sint->get
-                                    slong->get
-                                    uint->get
-                                    ulong->get
                                     sint-integerp-alt-def
                                     slong-integerp-alt-def
                                     sllong-integerp-alt-def
