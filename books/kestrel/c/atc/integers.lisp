@@ -75,12 +75,21 @@
        (stype-integer (add-suffix stype "-INTEGER"))
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-integerp (add-suffix stype "-INTEGERP"))
+       (utype-integer-fix (add-suffix utype "-INTEGER-FIX"))
+       (stype-integer-fix (add-suffix stype "-INTEGER-FIX"))
+       (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
+       (stype-integerp-alt-def (add-suffix stype-integerp "-ALT-DEF"))
        (utype-max (add-suffix utype "-MAX"))
        (utype-max-bound (1- (expt 2 type-bits-bound)))
        (stype-min (add-suffix stype "-MIN"))
        (stype-min-bound (- (expt 2 (1- type-bits-bound))))
        (stype-max (add-suffix stype "-MAX"))
-       (stype-max-bound (1- (expt 2 (1- type-bits-bound)))))
+       (stype-max-bound (1- (expt 2 (1- type-bits-bound))))
+       (utype->get (add-suffix utype "->GET"))
+       (stype->get (add-suffix stype "->GET"))
+       (utype->get-upper-bound (add-suffix utype->get "-UPPER-BOUND"))
+       (stype->get-lower-bound (add-suffix stype->get "-LOWER-BOUND"))
+       (stype->get-upper-bound (add-suffix stype->get "-UPPER-BOUND")))
 
     `(encapsulate ()
 
@@ -170,7 +179,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defruled ,(add-suffix utype-integerp "-ALT-DEF")
+       (defruled ,utype-integerp-alt-def
          :short ,(concatenate 'string
                               "Alternative definition of @(tsee "
                               (acl2::string-downcase
@@ -184,7 +193,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defruled ,(add-suffix stype-integerp "-ALT-DEF")
+       (defruled ,stype-integerp-alt-def
          :short ,(concatenate 'string
                               "Alternative definition of @(tsee "
                               (acl2::string-downcase
@@ -206,7 +215,15 @@
          ((get ,utype-integer))
          :tag ,(intern (symbol-name utype) "KEYWORD")
          :layout :list
-         :pred ,utypep)
+         :pred ,utypep
+         ///
+
+         (defrule ,utype->get-upper-bound
+           (<= (,utype->get x) (,utype-max))
+           :rule-classes :linear
+           :enable (,utype->get
+                    ,utype-integer-fix
+                    ,utype-integerp-alt-def)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,7 +259,22 @@
          :elt-type ,stype
          :true-listp t
          :elementp-of-nil nil
-         :pred ,stype-listp))))
+         :pred ,stype-listp
+         ///
+
+         (defrule ,stype->get-lower-bound
+           (<= (,stype-min) (,stype->get x))
+           :rule-classes :linear
+           :enable (,stype->get
+                    ,stype-integer-fix
+                    ,stype-integerp-alt-def))
+
+         (defrule ,stype->get-upper-bound
+           (<= (,stype->get x) (,stype-max))
+           :rule-classes :linear
+           :enable (,stype->get
+                    ,stype-integer-fix
+                    ,stype-integerp-alt-def))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

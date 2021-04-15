@@ -43,13 +43,14 @@
                                 (<= -10 (c::sint->get |z|))
                                 (<= (c::sint->get |z|) 10))
                     :guard-hints (("Goal"
-                                   :in-theory (enable c::sint-integerp-alt-def
-                                                      c::sintp
-                                                      c::add-sint-sint-okp
-                                                      c::sub-sint-sint-okp
-                                                      c::mul-sint-sint-okp
-                                                      c::add-sint-sint
-                                                      c::sub-sint-sint)))))
+                                   :in-theory
+                                   (e/d (c::sint-integerp-alt-def
+                                         c::add-sint-sint-okp
+                                         c::sub-sint-sint-okp
+                                         c::mul-sint-sint-okp
+                                         c::add-sint-sint
+                                         c::sub-sint-sint)
+                                        (c::sint->get-upper-bound))))))
     (c::mul-sint-sint (c::add-sint-sint |x| |y|)
                       (c::sub-sint-sint |z| (c::sint-const 3)))))
 
