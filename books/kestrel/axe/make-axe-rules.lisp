@@ -405,10 +405,14 @@
                    (equal *nil* (farg1 hyp))
                    ;; arg 2 is the untranslated form, which we ignore
                    (myquotep (farg3 hyp))
-                   (pseudo-termp (unquote (farg3 hyp))))
-              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for very simple hyps)
+                   (let ((core-term (unquote (farg3 hyp)))) ; example: (IF (QUOTEP X) 'T 'NIL)
+                     (and (pseudo-termp core-term)
+                          (call-of 'if core-term)
+                          (equal *t* (farg2 core-term))
+                          (equal *nil* (farg3 core-term)))))
+              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
                    ((mv erp hyps)
-                    (make-axe-syntaxp-hyps-for-synp-hyp (unquote (farg3 hyp)) bound-vars rule-symbol hyp))
+                    (make-axe-syntaxp-hyps-for-synp-hyp (farg1 (unquote (farg3 hyp))) bound-vars rule-symbol hyp))
                    ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
                 (mv (erp-nil)
                     ;; We reverse this to compensate for the reverse in make-axe-rule-hyps:
