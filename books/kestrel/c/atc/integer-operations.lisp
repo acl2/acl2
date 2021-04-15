@@ -29,6 +29,7 @@
      Following [C:6.4.4.1], these have non-negative values
      and may have only certain integer types,
      namely those with the same rank as @('int') or higher.
+     Thus we introduce a function for each integer type in those ranks.
      Each takes a natural number as argument,
      which the guard further constrains to be representable in the type.")
    (xdoc::p
@@ -36,17 +37,14 @@
      to turn C integers into ACL2 booleans,
      i.e. to test whether the integers are not zero.
      These are used to represent shallowly embedded tests.
-     We introduce a function for each integer type,
-     because there is no integer promotion on values used in tests.")
+     We introduce a function for each integer type.")
    (xdoc::p
     "We introduce functions @('<type>-integer-value')
      to turn C integers into ACL2 integers.
      These are used as operands of certain C operations
      whose result does not depend on the C type of the operand,
      but rather just on its (mathematical) integer value.
-     Since these operands are not always subjected to the integer promotions,
-     we define one function for each integer type
-     (not just of rank of @('int') or higher).
+     We define one function for each integer type.
      Even though these functions are essentially synonyms of
      the deconstructors of the fixtypes of the integer values,
      having a separate function provides more abstraction,
@@ -64,12 +62,19 @@
     "We introduce functions for the unary and binary operators,
      as detailed below.")
    (xdoc::p
-    "For all the unary integer operators except @('!'),
+    "For each unary operator, we introduce a function for each integer type.
+     The function takes an argument of that integer type,
+     and returns a result of possibly different type.
+     For all the unary integer operators except @('!'),
      C promotes the operands [C:6.3.1.1/2] to types
      whose rank is that of @('int') or higher:
-     thus, we only define the operations for types of those ranks.
-     Since C does not promote the operand of @('!'),
-     we define a function for each type.")
+     that is the result type of the operator.
+     Our generated functions perform the promotion internally,
+     for the type of rank lower than @('int'),
+     and then call the function for the promoted type.
+     C does not promote the operand of @('!'),
+     so neither do our generated functions;
+     these always return an @('int').")
    (xdoc::p
     "For all the binary integer operators
      except @('<<'), @('>>'), @('&&'), and @('||'),
@@ -127,6 +132,119 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-def-integer-type-to-string (type)
+  :guard (member-eq type '(schar
+                           uchar
+                           sshort
+                           ushort
+                           sint
+                           uint
+                           slong
+                           ulong
+                           sllong
+                           ullong))
+  :returns (string stringp)
+  :short "Turn an integer type symbol into a string describing it."
+  (case type
+    (schar "signed char")
+    (uchar "unsigned char")
+    (sshort "signed short")
+    (ushort "unsigned short")
+    (sint "signed int")
+    (uint "unsigned int")
+    (slong "signed long")
+    (ulong "unsigned long")
+    (sllong "signed long long")
+    (ullong "unsigned long long")
+    (t (prog2$ (raise "Internal error: unknown type ~x0." type) ""))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-operations-1 (type)
+  :guard (member-eq type '(schar
+                           uchar
+                           sshort
+                           ushort
+                           sint
+                           uint
+                           slong
+                           ulong
+                           sllong
+                           ullong))
+  :short "Event to generate the ACL2 models of
+          the C integer operations that involve one integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a new improved macro that will replace
+     the old @(tsee atc-def-integer-operations), which will be removed."))
+
+  (b* ((type-string (atc-def-integer-type-to-string type))
+       (typep (add-suffix type "P"))
+       (type->get (add-suffix type "->GET"))
+       (type-integerp (add-suffix type "-INTEGERP"))
+       (type-const (add-suffix type "-CONST"))
+       (type-nonzerop (add-suffix type "-NONZEROP"))
+       (type-integer-value (add-suffix type "-INTEGER-VALUE")))
+
+    `(progn
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          (member-eq type '(sint uint slong ulong sllong ullong))
+          `((define ,type-const ((x natp))
+              :guard (,type-integerp x)
+              :returns (result ,typep)
+              :short ,(concatenate 'string
+                                   "Integer constant of type @('"
+                                   type-string
+                                   "').")
+              (,type x))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,type-nonzerop ((x ,typep))
+         :returns (yes/no booleanp)
+         :short ,(concatenate 'string
+                              "Check if a @('"
+                              type-string
+                              "') value is not 0.")
+         (/= (,type->get x) 0)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,type-integer-value ((x ,typep))
+         :returns (ival integerp)
+         :short ,(concatenate 'string
+                              "Integer value of a @('"
+                              type-string
+                              "') value.")
+         (,type->get x)
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+      )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(progn
+  (make-event (atc-def-integer-operations-1 'schar))
+  (make-event (atc-def-integer-operations-1 'uchar))
+  (make-event (atc-def-integer-operations-1 'sshort))
+  (make-event (atc-def-integer-operations-1 'ushort))
+  (make-event (atc-def-integer-operations-1 'sint))
+  (make-event (atc-def-integer-operations-1 'uint))
+  (make-event (atc-def-integer-operations-1 'slong))
+  (make-event (atc-def-integer-operations-1 'ulong))
+  (make-event (atc-def-integer-operations-1 'sllong))
+  (make-event (atc-def-integer-operations-1 'ullong))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ atc-def-integer-operations (type)
   (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
   :short "Macro to generate the models of the C integer operations."
@@ -161,8 +279,8 @@
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-integerp-alt-def (add-suffix stype-integerp "-ALT-DEF"))
        (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
-       (stype-const (add-suffix stype "-CONST"))
-       (utype-const (add-suffix utype "-CONST"))
+       ;; (stype-const (add-suffix stype "-CONST"))
+       ;; (utype-const (add-suffix utype "-CONST"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
@@ -238,50 +356,6 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,stype-nonzerop ((x ,stypep))
-         :returns (yes/no booleanp)
-         :short ,(concatenate 'string
-                              "Check if a @('signed "
-                              type-string
-                              "') value is not 0.")
-         (/= (,stype->get x) 0)
-         :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,utype-nonzerop ((x ,utypep))
-         :returns (yes/no booleanp)
-         :short ,(concatenate 'string
-                              "Check if an @('unsigned "
-                              type-string
-                              "') value is not 0.")
-         (/= (,utype->get x) 0)
-         :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,stype-integer-value ((x ,stypep))
-         :returns (ival integerp)
-         :short ,(concatenate 'string
-                              "Integer value of a @('signed "
-                              type-string
-                              "').")
-         (,stype->get x)
-         :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,utype-integer-value ((x ,utypep))
-         :returns (ival integerp)
-         :short ,(concatenate 'string
-                              "Integer value of an @('unsigned "
-                              type-string
-                              "').")
-         (,utype->get x)
-         :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
        (define ,lognot-stype ((x ,stypep))
          :returns (result sintp)
          :short ,(concatenate 'string
@@ -311,28 +385,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,stype-const ((x natp))
-              :guard (,stype-integerp x)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Integer constant of type @('signed "
-                                   type-string
-                                   "').")
-              (,stype x))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,utype-const ((x natp))
-              :guard (,utype-integerp x)
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Integer constant of type @('unsigned "
-                                   type-string
-                                   "').")
-              (,utype x))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
