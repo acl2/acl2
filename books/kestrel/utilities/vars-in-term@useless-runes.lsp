@@ -56,6 +56,17 @@
               (6 2 (:DEFINITION SYMBOL-LISTP))
               (2 2 (:REWRITE DEFAULT-COERCE-2))
               (2 2 (:REWRITE DEFAULT-COERCE-1)))
+(FLAG-LEMMA-FOR-TRUE-LISTP-OF-VARS-IN-TERM
+     (122 122 (:REWRITE DEFAULT-CDR))
+     (101 101 (:REWRITE DEFAULT-CAR))
+     (46 46
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
+     (1 1
+        (:REWRITE SUBSETP-EQUAL-TRANSITIVE-ALT))
+     (1 1
+        (:REWRITE SUBSETP-EQUAL-TRANSITIVE-2-ALT)))
+(TRUE-LISTP-OF-VARS-IN-TERM)
+(TRUE-LISTP-OF-VARS-IN-TERMS)
 (SUBSETP-EQUAL-OF-VARS-IN-TERM-OF-CAR
      (85 5 (:DEFINITION UNION-EQUAL))
      (35 5 (:DEFINITION MEMBER-EQUAL))
@@ -142,3 +153,19 @@
      (1 1
         (:REWRITE SUBSETP-EQUAL-TRANSITIVE-ALT)))
 (VARS-IN-TERM-WHEN-NOT-CONSP-CHEAP)
+(VARS-IN-TERM-OF-CONS (1 1
+                         (:REWRITE VARS-IN-TERM-WHEN-NOT-CONSP-CHEAP))
+                      (1 1 (:REWRITE DEFAULT-CDR))
+                      (1 1 (:REWRITE DEFAULT-CAR)))
+(VARS-IN-TERMS-OF-CONS (85 5 (:DEFINITION UNION-EQUAL))
+                       (35 5 (:DEFINITION MEMBER-EQUAL))
+                       (18 18 (:REWRITE DEFAULT-CDR))
+                       (18 18 (:REWRITE DEFAULT-CAR))
+                       (10 10 (:TYPE-PRESCRIPTION VARS-IN-TERM))
+                       (10 10
+                           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+                       (10 10
+                           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
+                       (5 5 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                       (5 5
+                          (:REWRITE VARS-IN-TERM-WHEN-NOT-CONSP-CHEAP)))

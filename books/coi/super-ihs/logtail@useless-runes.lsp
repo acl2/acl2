@@ -837,15 +837,15 @@
                  (367 147
                       (:REWRITE INTEGERP-*-CONSTANT-MEANS-1))
                  (360 24 (:REWRITE UNSIGNED-BYTE-P-PLUS))
-                 (268 38 (:LINEAR LOGTAIL-LEQ))
+                 (260 38 (:LINEAR LOGTAIL-LEQ))
                  (161 161
                       (:REWRITE REMOVE-REDUNDANT-LESS-THANS))
                  (158 117 (:REWRITE DEFAULT-<-2))
-                 (152 117 (:REWRITE DEFAULT-<-1))
                  (152 11
                       (:REWRITE DIFFERENCE-UNSIGNED-BYTE-P))
+                 (144 117 (:REWRITE DEFAULT-<-1))
                  (140 140 (:REWRITE REMOVE-REDUNDANT-<=-HYPS))
-                 (79 79
+                 (71 71
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                  (51 21 (:REWRITE <-*-/-LEFT-COMMUTED))
                  (36 18

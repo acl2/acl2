@@ -27,7 +27,9 @@
                 (8 4 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                 (8 4
                    (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
-                (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+                (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                (4 4
+                   (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT)))
 (REPEAT-WHEN-ZP (1 1 (:REWRITE ZP-OPEN)))
 (MAKE-LIST-AC-REWRITE (247 22 (:REWRITE CONSP-FROM-LEN-CHEAP))
                       (91 28 (:REWRITE ZP-OPEN))
@@ -41,6 +43,8 @@
                       (24 24 (:REWRITE DEFAULT-+-2))
                       (24 24 (:REWRITE DEFAULT-+-1))
                       (22 22 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                      (22 22
+                          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                       (18 6 (:REWRITE FOLD-CONSTS-IN-+)))
 (REPEAT (44 6 (:REWRITE REPEAT-WHEN-ZP))
         (42 11 (:REWRITE ZP-OPEN))
@@ -67,6 +71,8 @@
                  (7 7 (:REWRITE DEFAULT-<-1))
                  (2 2 (:REWRITE DEFAULT-+-2))
                  (2 2 (:REWRITE DEFAULT-+-1))
+                 (2 2
+                    (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                  (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER)))
 (CAR-OF-REPEAT (30 6 (:REWRITE DEFAULT-CAR))
                (26 8 (:REWRITE ZP-OPEN))
@@ -80,7 +86,7 @@
                (1 1
                   (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (CDR-OF-REPEAT (42 11 (:REWRITE ZP-OPEN))
-               (14 1 (:REWRITE DEFAULT-CDR))
+               (15 1 (:REWRITE DEFAULT-CDR))
                (12 12 (:REWRITE DEFAULT-<-2))
                (12 12 (:REWRITE DEFAULT-<-1))
                (11 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
@@ -92,7 +98,9 @@
                (4 4 (:TYPE-PRESCRIPTION LEN))
                (4 2 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                (3 3
-                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+               (1 1
+                  (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT)))
 (SUB1-SUB1-INDUCT)
 (NTH-OF-REPEAT (84 24 (:REWRITE ZP-OPEN))
                (51 50 (:REWRITE DEFAULT-<-2))
@@ -108,6 +116,8 @@
                (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
                (1 1
+                  (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+               (1 1
                   (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (REPEAT-OPENER-END (98 36 (:REWRITE REPEAT-WHEN-ZP))
                    (62 62 (:TYPE-PRESCRIPTION ZP))
@@ -117,7 +127,7 @@
                    (23 9 (:REWRITE DEFAULT-CAR))
                    (9 9 (:REWRITE DEFAULT-<-2))
                    (9 9 (:REWRITE DEFAULT-<-1)))
-(MY-NTHCDR-OF-REPEAT (232 5 (:REWRITE DEFAULT-CDR))
+(MY-NTHCDR-OF-REPEAT (237 5 (:REWRITE DEFAULT-CDR))
                      (197 195 (:REWRITE DEFAULT-<-1))
                      (195 195 (:REWRITE DEFAULT-<-2))
                      (194 179 (:REWRITE DEFAULT-+-2))
@@ -128,6 +138,8 @@
                          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                      (15 15 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
                      (10 10 (:TYPE-PRESCRIPTION POSP))
+                     (8 8
+                        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                      (5 1 (:REWRITE REPEAT-OF-+-OF-1))
                      (3 1 (:DEFINITION NATP))
                      (1 1 (:TYPE-PRESCRIPTION NATP)))
@@ -137,7 +149,8 @@
                (2 2 (:REWRITE DEFAULT-<-1))
                (2 2 (:REWRITE DEFAULT-+-2))
                (2 2 (:REWRITE DEFAULT-+-1)))
-(EQUAL-OF-REPEAT-OF-1 (37 5 (:DEFINITION TRUE-LISTP))
+(EQUAL-OF-REPEAT-OF-1 (39 5 (:DEFINITION TRUE-LISTP))
+                      (19 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
                       (10 10 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                       (8 5 (:REWRITE DEFAULT-CDR))
                       (8 4 (:REWRITE DEFAULT-CAR))
@@ -151,15 +164,48 @@
                 (81 78 (:REWRITE DEFAULT-<-2))
                 (78 78 (:REWRITE DEFAULT-<-1))
                 (70 5 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                (50 8 (:REWRITE DEFAULT-CDR))
                 (49 16 (:REWRITE FOLD-CONSTS-IN-+))
-                (48 8 (:REWRITE DEFAULT-CDR))
                 (38 35 (:REWRITE DEFAULT-+-2))
                 (35 35 (:REWRITE DEFAULT-+-1))
                 (23 23 (:TYPE-PRESCRIPTION LEN))
                 (23 5
                     (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
                 (21 7 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                (5 5
+                   (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                 (4 3 (:REWRITE DEFAULT-CAR))
                 (3 3
                    (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                 (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+(NAT-LISTP-OF-REPEAT (119 19 (:REWRITE REPEAT-WHEN-ZP))
+                     (110 30 (:REWRITE ZP-OPEN))
+                     (109 4 (:REWRITE CDR-OF-REPEAT))
+                     (37 37 (:REWRITE DEFAULT-<-2))
+                     (37 37 (:REWRITE DEFAULT-<-1))
+                     (15 5 (:REWRITE FOLD-CONSTS-IN-+))
+                     (13 13 (:REWRITE DEFAULT-+-2))
+                     (13 13 (:REWRITE DEFAULT-+-1))
+                     (2 1 (:REWRITE DEFAULT-CDR))
+                     (2 1 (:REWRITE DEFAULT-CAR)))
+(EQUAL-OF-REPEAT-AND-CONS-OF-REPEAT-ONE-ONE-LESS
+     (44 6 (:REWRITE REPEAT-WHEN-ZP))
+     (41 10 (:REWRITE ZP-OPEN))
+     (16 15 (:REWRITE DEFAULT-<-2))
+     (15 15 (:REWRITE DEFAULT-<-1))
+     (12 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (7 7 (:TYPE-PRESCRIPTION ZP))
+     (7 5 (:REWRITE DEFAULT-+-2))
+     (7 2 (:REWRITE FOLD-CONSTS-IN-+))
+     (5 5 (:TYPE-PRESCRIPTION LEN))
+     (5 5 (:REWRITE DEFAULT-+-1))
+     (2 2
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (2 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (2 1
+        (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (1 1 (:REWRITE DEFAULT-CDR))
+     (1 1 (:REWRITE DEFAULT-CAR))
+     (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (1 1
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT)))

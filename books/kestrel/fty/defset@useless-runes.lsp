@@ -1,1 +1,0 @@
-(FTY::DEFSET-FN)

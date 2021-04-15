@@ -35,3 +35,7 @@
      (13 13
          (:REWRITE STRIP-CARS-WHEN-NOT-CONSP-CHEAP))
      (12 12 (:REWRITE CONSP-OF-STRIP-CARS)))
+(STRIP-CARS-OF-PAIRLIS$ (18 18 (:REWRITE DEFAULT-CAR))
+                        (14 9
+                            (:REWRITE STRIP-CARS-WHEN-NOT-CONSP-CHEAP))
+                        (10 10 (:REWRITE DEFAULT-CDR)))

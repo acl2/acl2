@@ -206,11 +206,11 @@
                          (3 3 (:REWRITE FLOOR-TYPE-3 . 3))
                          (1 1 (:REWRITE FLOOR-TYPE-2))
                          (1 1 (:REWRITE FLOOR-FLOOR-INTEGER)))
-(EQUAL-OF-BASIC-ENI-CORES (59144 59144
+(EQUAL-OF-BASIC-ENI-CORES (58493 58493
                                  (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-                          (59144 59144
+                          (58493 58493
                                  (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-                          (59144 59144
+                          (58493 58493
                                  (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
                           (21183 13293 (:REWRITE DEFAULT-*-2))
                           (13448 13293 (:REWRITE DEFAULT-*-1))

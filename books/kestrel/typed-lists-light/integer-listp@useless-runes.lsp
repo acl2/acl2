@@ -7,16 +7,20 @@
                       (1 1 (:REWRITE DEFAULT-<-1))
                       (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
                       (1 1
+                         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+                      (1 1
                          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (INTEGER-LISTP-OF-TAKE-2 (299 36 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                         (87 34 (:REWRITE DEFAULT-CAR))
+                         (94 34 (:REWRITE DEFAULT-CAR))
                          (76 52 (:REWRITE DEFAULT-<-2))
+                         (71 27 (:REWRITE DEFAULT-CDR))
                          (68 17 (:REWRITE INTEGER-LISTP-OF-CDR))
                          (64 52 (:REWRITE DEFAULT-<-1))
-                         (63 27 (:REWRITE DEFAULT-CDR))
                          (58 49 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                          (39 24
                              (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+                         (36 36
+                             (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                          (27 27 (:REWRITE CONSP-WHEN-LEN-GREATER))
                          (14 13 (:REWRITE DEFAULT-+-2))
                          (13 13 (:REWRITE DEFAULT-+-1))

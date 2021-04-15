@@ -43,3 +43,5 @@
                             (2 2 (:REWRITE BOOLOR-OF-NON-NIL)))
 (IFF-IMPLIES-EQUAL-BOOLOR-2 (2 2 (:REWRITE BOOLOR-OF-NON-NIL-ARG2))
                             (2 2 (:REWRITE BOOLOR-OF-NON-NIL)))
+(NOT-OF-IF-OF-NIL-ARG3-WHEN-BOOLEANS (1 1 (:REWRITE BOOLOR-OF-NON-NIL-ARG2))
+                                     (1 1 (:REWRITE BOOLOR-OF-NON-NIL)))

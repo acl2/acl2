@@ -651,6 +651,7 @@
      (2 2 (:TYPE-PRESCRIPTION MEMBERP))
      (2 2 (:REWRITE USE-ALL-RATIONALP-FOR-CAR))
      (2 2 (:REWRITE USE-ALL-RATIONALP-2)))
+(ALL-RATIONALP-WHEN-NAT-LISTP)
 (NATP-OF-MAXELEM (1338 56 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
                  (1252 29 (:DEFINITION NAT-LISTP))
                  (945 55 (:REWRITE DEFAULT-<-1))
@@ -723,3 +724,90 @@
                      (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
                  (10 10 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
                  (10 10 (:REWRITE ALL-<=-MONOTONE)))
+(ALL-<=-OF-MAXELEM (12168 42 (:REWRITE ACL2-NUMBERP-OF-MAXELEM))
+                   (11547 90
+                          (:REWRITE INTEGER-LISTP-WHEN-ALL-NATP))
+                   (10149 189 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
+                   (9672 249 (:DEFINITION NAT-LISTP))
+                   (9502 45 (:DEFINITION INTEGER-LISTP))
+                   (8721 44 (:REWRITE ALL-<=-OF-CDR))
+                   (6959 13
+                         (:REWRITE NOT-<-OF-MAXELEM-WHEN-ALL-<-2))
+                   (6854 61 (:REWRITE DEFAULT-+-2))
+                   (6429 99 (:REWRITE ALL-NATP-OF-CDR))
+                   (5907 249 (:DEFINITION NATP))
+                   (5222 19 (:REWRITE USE-ALL-<=-FOR-CAR))
+                   (4325 377 (:REWRITE DEFAULT-<-1))
+                   (4120 319 (:REWRITE USE-ALL-<-FOR-CAR))
+                   (3957 377 (:REWRITE DEFAULT-<-2))
+                   (1821 225 (:REWRITE ALL-<-OF-CDR))
+                   (1620 1620 (:TYPE-PRESCRIPTION ALL-NATP))
+                   (1506 753
+                         (:TYPE-PRESCRIPTION NATP-OF-MAXELEM))
+                   (1470 61
+                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                   (1357 753
+                         (:TYPE-PRESCRIPTION RATIONALP-OF-MAXELEM))
+                   (1244 1244 (:TYPE-PRESCRIPTION ALL-<))
+                   (1224 1224 (:TYPE-PRESCRIPTION NAT-LISTP))
+                   (755 755 (:REWRITE DEFAULT-CDR))
+                   (740 740 (:TYPE-PRESCRIPTION RATIONAL-LISTP))
+                   (736 16 (:LINEAR MAXELEM-OF-CDR-LINEAR))
+                   (730 32 (:REWRITE RATIONALP-OF-MAXELEM))
+                   (670 607 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+                   (667 35 (:DEFINITION RATIONAL-LISTP))
+                   (636 22
+                        (:REWRITE <=-OF-MAXELEM-WHEN-MEMBER-EQUAL))
+                   (615 607 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+                   (607 607
+                        (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
+                   (607 607 (:REWRITE ALL-<-TRANSITIVE-FREE))
+                   (607 607 (:REWRITE ALL-<-TRANSITIVE))
+                   (592 34 (:DEFINITION MEMBER-EQUAL))
+                   (567 567 (:REWRITE DEFAULT-CAR))
+                   (498 249 (:REWRITE USE-ALL-NATP-FOR-CAR))
+                   (480 240
+                        (:REWRITE INTEGERP-OF-CAR-WHEN-ALL-NATP-CHEAP))
+                   (480 240
+                        (:REWRITE INTEGERP-OF-CAR-WHEN-ALL-INTEGERP-CHEAP))
+                   (432 32 (:REWRITE TIGHTEN))
+                   (420 59 (:REWRITE USE-ALL-RATIONALP-FOR-CAR))
+                   (385 385 (:REWRITE USE-ALL-<-2))
+                   (385 385 (:REWRITE USE-ALL-<))
+                   (378 189
+                        (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
+                   (373 369 (:REWRITE USE-ALL-<=))
+                   (369 369 (:REWRITE USE-ALL-<=-2))
+                   (292 30 (:REWRITE <-OF-MAXELEM-WHEN-ALL-<))
+                   (288 288 (:TYPE-PRESCRIPTION LEN))
+                   (264 189 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+                   (257 13
+                        (:REWRITE NOT-<-OF-MAXELEM-WHEN-ALL-<))
+                   (249 249 (:REWRITE USE-ALL-NATP-2))
+                   (249 249 (:REWRITE USE-ALL-NATP))
+                   (240 240 (:TYPE-PRESCRIPTION ALL-INTEGERP))
+                   (224 32 (:DEFINITION LEN))
+                   (222 22 (:LINEAR MAXELEM-CAR-LINEAR))
+                   (189 189
+                        (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP))
+                   (186 186 (:TYPE-PRESCRIPTION INTEGER-LISTP))
+                   (168 168 (:TYPE-PRESCRIPTION ALL-RATIONALP))
+                   (140 140 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                   (135 79 (:REWRITE MAXELEM-SINGLETON-ALT))
+                   (125 25 (:REWRITE ALL-RATIONALP-OF-CDR))
+                   (114 75 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
+                   (96 96 (:REWRITE USE-ALL-RATIONALP-2))
+                   (96 96 (:REWRITE USE-ALL-RATIONALP))
+                   (84 84
+                       (:REWRITE ALL-RATIONALP-WHEN-NOT-CONSP-CHEAP))
+                   (84 84
+                       (:REWRITE ALL-RATIONALP-WHEN-NOT-CONSP))
+                   (61 61 (:REWRITE DEFAULT-+-1))
+                   (60 30
+                       (:REWRITE <-OF-MAXELEM-WHEN-ALL-<-CHEAP))
+                   (41 25
+                       (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
+                   (32 32 (:REWRITE <-OF-+-OF-1-STRENGTHEN))
+                   (13 13
+                       (:REWRITE LESS-THAN-MAXELEM-WHEN-LESS-THAN-SOME-ELEM))
+                   (4 4 (:TYPE-PRESCRIPTION MEMBERP)))

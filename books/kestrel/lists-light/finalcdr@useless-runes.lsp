@@ -8,3 +8,9 @@
                     (9 9 (:REWRITE DEFAULT-CDR))
                     (6 3 (:REWRITE DEFAULT-<-2))
                     (3 3 (:REWRITE DEFAULT-<-1)))
+(EQUAL-OF-APPEND-SAME (320 160
+                           (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+                      (160 160 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                      (160 160 (:TYPE-PRESCRIPTION BINARY-APPEND))
+                      (21 18 (:REWRITE DEFAULT-CDR))
+                      (15 12 (:REWRITE DEFAULT-CAR)))

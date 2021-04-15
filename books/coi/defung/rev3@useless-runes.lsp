@@ -103,22 +103,40 @@
                              (32 1
                                  (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (TRUE-LISTP-IMPLIES-TRUE-LISTP-REV3-0
+     (144 24
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (98 98 (:REWRITE DEFAULT-CDR))
      (81 81 (:META *META*-UNHIDE-HIDE))
+     (48 48 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (48 24 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (25 25 (:REWRITE DEFAULT-CAR))
+     (24 24 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (24 24
-         (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP)))
+         (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP))
+     (24 24 (:REWRITE SET::IN-SET)))
 (TRUE-LISTP-IMPLIES-TRUE-LISTP-REV3
      (2590 2590 (:REWRITE DEFAULT-CDR))
      (778 778 (:META *META*-UNHIDE-HIDE))
      (533 533 (:REWRITE DEFAULT-CAR))
+     (156 26
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
+     (52 52 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (52 26 (:REWRITE SET::NONEMPTY-MEANS-SET))
+     (26 26 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (26 26
-         (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP)))
+         (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP))
+     (26 26 (:REWRITE SET::IN-SET)))
 (REV3-MONADIC (501 487 (:REWRITE DEFAULT-CDR))
               (216 216 (:META *META*-UNHIDE-HIDE))
+              (204 34
+                   (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
               (72 58 (:REWRITE DEFAULT-CAR))
+              (68 68 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+              (68 34 (:REWRITE SET::NONEMPTY-MEANS-SET))
+              (34 34 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
               (34 34
                   (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP))
+              (34 34 (:REWRITE SET::IN-SET))
               (13 13 (:REWRITE DEFUNG::TRUE-FROM-X))
               (13 13 (:REWRITE DEFUNG::QUOTED-TRUE))
               (12 12 (:REWRITE CDR-CONS))
@@ -194,10 +212,16 @@
                       (1035 786 (:REWRITE DEFAULT-CAR))
                       (217 217 (:REWRITE OPEN-REV3-INDUCTION)))
 (T-IMPLIES-TRUE-LISTP-REV3 (194 2 (:DEFINITION REV3-DEFINITION))
+                           (84 14
+                               (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
                            (61 54 (:REWRITE DEFAULT-CDR))
+                           (28 28 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+                           (28 14 (:REWRITE SET::NONEMPTY-MEANS-SET))
                            (17 14
                                (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP))
                            (16 13 (:REWRITE DEFAULT-CAR))
+                           (14 14 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+                           (14 14 (:REWRITE SET::IN-SET))
                            (2 2 (:REWRITE CDR-CONS)))
 (REV1)
 (TRUE-LISTP-IMPLIES-TRUE-LISTP-REV1)
@@ -207,11 +231,17 @@
            (66 39 (:REWRITE DEFAULT-CAR))
            (60 15
                (:REWRITE LIST::EQUIV-OF-NON-CONSP-TWO))
+           (30 5
+               (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
            (25 25
                (:REWRITE LIST::APPEND-OF-NON-CONSP-2))
            (23 8 (:REWRITE LIST::CDR-APPEND-NOT-CONSP))
            (23 8 (:REWRITE LIST::CAR-APPEND-NOT-CONSP))
-           (16 16 (:REWRITE LIST::EQUIV-OF-CONSTANT)))
+           (16 16 (:REWRITE LIST::EQUIV-OF-CONSTANT))
+           (10 10 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+           (10 5 (:REWRITE SET::NONEMPTY-MEANS-SET))
+           (5 5 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+           (5 5 (:REWRITE SET::IN-SET)))
 (CONSP-REV1 (9 5
                (:REWRITE LIST::APPEND-OF-NON-CONSP-2))
             (5 5 (:REWRITE DEFAULT-CAR))

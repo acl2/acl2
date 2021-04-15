@@ -7,6 +7,8 @@
      (1 1 (:REWRITE DEFAULT-<-1))
      (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (1 1
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (1 1
         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (REMOVE1-EQUAL-WHEN-NOT-CONSP-CHEAP)
 (CONSP-OF-REMOVE1-EQUAL (53 53 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
@@ -32,14 +34,18 @@
                        (2 2 (:REWRITE DEFAULT-<-1))
                        (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
                        (2 2
+                          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+                       (2 2
                           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (REMOVE1-EQUAL-OF-CAR-SAME (26 3 (:REWRITE CONSP-FROM-LEN-CHEAP))
                            (13 13 (:TYPE-PRESCRIPTION LEN))
-                           (10 2 (:REWRITE DEFAULT-CDR))
-                           (10 2 (:REWRITE DEFAULT-CAR))
+                           (11 2 (:REWRITE DEFAULT-CDR))
+                           (11 2 (:REWRITE DEFAULT-CAR))
                            (7 3
                               (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
                            (5 5 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                           (3 3
+                              (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                            (2 1 (:REWRITE DEFAULT-<-2))
                            (1 1
                               (:REWRITE REMOVE1-EQUAL-WHEN-NOT-CONSP-CHEAP))
@@ -57,8 +63,12 @@
      (8 1 (:LINEAR LEN-OF-CDR-LINEAR))
      (7 6 (:REWRITE DEFAULT-+-2))
      (6 6 (:REWRITE DEFAULT-+-1))
-     (5 5 (:REWRITE CONSP-WHEN-LEN-GREATER)))
+     (5 5 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (5 5
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT)))
 (LEN-OF-REMOVE1-EQUAL-LINEAR-2
+     (22 22
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (21 13 (:REWRITE DEFAULT-+-2))
      (18 16
          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
@@ -68,7 +78,7 @@
      (11 2 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
      (6 6 (:REWRITE CONSP-WHEN-LEN-GREATER)))
 (TRUE-LISTP-OF-REMOVE1-EQUAL
-     (175 18 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+     (181 18 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
      (135 14 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (66 19 (:REWRITE DEFAULT-CDR))
      (55 11 (:REWRITE LEN-OF-CDR))
@@ -77,13 +87,15 @@
      (18 18 (:REWRITE DEFAULT-CAR))
      (14 14 (:REWRITE DEFAULT-<-1))
      (14 14 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (14 14
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (13 12 (:REWRITE DEFAULT-+-2))
      (12 12 (:REWRITE DEFAULT-+-1))
      (10 10
          (:REWRITE REMOVE1-EQUAL-WHEN-NOT-CONSP-CHEAP))
      (5 5
         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
-(TRUE-LIST-FIX-OF-REMOVE1-EQUAL (247 30 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+(TRUE-LIST-FIX-OF-REMOVE1-EQUAL (254 30 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
                                 (232 24 (:REWRITE CONSP-FROM-LEN-CHEAP))
                                 (115 23 (:REWRITE LEN-OF-CDR))
                                 (103 61 (:REWRITE DEFAULT-CAR))
@@ -94,13 +106,15 @@
                                 (24 24 (:REWRITE DEFAULT-<-1))
                                 (24 24 (:REWRITE DEFAULT-+-1))
                                 (24 24 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                                (24 24
+                                    (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                                 (11 11
                                     (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (REMOVE1-EQUAL-OF-APPEND (1012 506
                                (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
                          (506 506 (:TYPE-PRESCRIPTION TRUE-LISTP))
                          (506 506 (:TYPE-PRESCRIPTION BINARY-APPEND))
-                         (362 42 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+                         (373 42 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
                          (351 36 (:REWRITE CONSP-FROM-LEN-CHEAP))
                          (153 93 (:REWRITE DEFAULT-CAR))
                          (125 25 (:REWRITE LEN-OF-CDR))
@@ -111,13 +125,15 @@
                          (62 36 (:REWRITE DEFAULT-<-2))
                          (36 36 (:REWRITE DEFAULT-<-1))
                          (36 36 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                         (36 36
+                             (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                          (27 26 (:REWRITE DEFAULT-+-2))
                          (26 26 (:REWRITE DEFAULT-+-1))
                          (10 10
                              (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (NOT-MEMBER-EQUAL-OF-REMOVE1-EQUAL
      (117 12 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (90 9 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+     (93 9 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
      (43 29 (:REWRITE DEFAULT-CAR))
      (29 29 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (29 12 (:REWRITE DEFAULT-CDR))
@@ -127,12 +143,14 @@
          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (12 12 (:REWRITE DEFAULT-<-1))
      (12 12 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (12 12
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (5 5 (:REWRITE DEFAULT-+-2))
      (5 5 (:REWRITE DEFAULT-+-1))
      (2 2
         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (MEMBER-EQUAL-OF-REMOVE1-EQUAL-WHEN-NOT-EQUAL-IFF
-     (308 45 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+     (316 45 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
      (241 25 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (141 89 (:REWRITE DEFAULT-CAR))
      (99 32 (:REWRITE DEFAULT-CDR))
@@ -141,6 +159,8 @@
      (45 25 (:REWRITE DEFAULT-<-2))
      (25 25 (:REWRITE DEFAULT-<-1))
      (25 25 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (25 25
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (18 16 (:REWRITE DEFAULT-+-2))
      (16 16 (:REWRITE DEFAULT-+-1))
      (5 5
@@ -148,7 +168,7 @@
 (NO-DUPLICATESP-EQUAL-OF-REMOVE1-EQUAL
      (373 22 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (131 21 (:REWRITE LEN-OF-CDR))
-     (107 12 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
+     (110 12 (:REWRITE CONSP-OF-REMOVE1-EQUAL))
      (74 74 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (65 51 (:REWRITE DEFAULT-CAR))
      (59 42 (:REWRITE DEFAULT-CDR))
@@ -162,6 +182,8 @@
      (24 24 (:REWRITE DEFAULT-+-1))
      (22 22 (:REWRITE DEFAULT-<-1))
      (22 22 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (22 22
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (22 5 (:REWRITE EQUAL-OF-LEN-AND-0))
      (13 13
          (:REWRITE REMOVE1-EQUAL-WHEN-NOT-CONSP-CHEAP))
@@ -180,6 +202,8 @@
      (42 42 (:REWRITE DEFAULT-+-1))
      (29 29 (:REWRITE DEFAULT-<-1))
      (29 29 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (29 29
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (19 15
          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (14 14

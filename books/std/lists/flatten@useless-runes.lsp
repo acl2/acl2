@@ -38,8 +38,8 @@
      (8 4 (:REWRITE DEFAULT-+-2))
      (4 4 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
      (4 4 (:REWRITE DEFAULT-+-1)))
-(FLATTENP-OF-APPEND (170 62
-                         (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
-                    (144 142 (:REWRITE DEFAULT-CDR))
-                    (140 138 (:REWRITE DEFAULT-CAR))
-                    (12 6 (:DEFINITION TRUE-LISTP)))
+(FLATTEN-OF-APPEND (170 62
+                        (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                   (144 142 (:REWRITE DEFAULT-CDR))
+                   (140 138 (:REWRITE DEFAULT-CAR))
+                   (12 6 (:DEFINITION TRUE-LISTP)))

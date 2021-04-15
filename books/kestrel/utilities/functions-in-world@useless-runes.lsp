@@ -1,0 +1,7 @@
+(ALL-MODE-FNS-1 (360 360 (:REWRITE DEFAULT-CAR))
+                (275 25 (:DEFINITION FGETPROP))
+                (227 227 (:REWRITE DEFAULT-CDR))
+                (20 2
+                    (:DEFINITION REMOVE-DUPLICATES-EQUAL)))
+(ALL-LOGIC-FNS)
+(ALL-PROGRAM-FNS)

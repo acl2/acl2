@@ -64,6 +64,8 @@
      (88 6 (:REWRITE MOD-X-Y-=-X+Y . 3))
      (82 20 (:REWRITE SIMPLIFY-SUMS-<))
      (82 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
+     (82 6
          (:REWRITE MOD-CANCEL-*-REWRITING-GOAL-LITERAL))
      (82 6
          (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|))
@@ -121,6 +123,8 @@
      (20 20 (:REWRITE |(< (- x) (- y))|))
      (19 9 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (15 15 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 6 (:REWRITE DEFAULT-MOD-2))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
@@ -149,8 +153,10 @@
      (9 3 (:REWRITE |(+ y x)|))
      (7 7
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6
         (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
+     (6 6 (:REWRITE SET::IN-SET))
      (6 6 (:REWRITE |(mod x (- y))| . 3))
      (6 6 (:REWRITE |(mod x (- y))| . 2))
      (6 6 (:REWRITE |(mod x (- y))| . 1))
@@ -516,6 +522,8 @@
      (85 70
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
      (76 4 (:REWRITE RATIONALP-X))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (71 10 (:REWRITE |(+ 0 x)|))
      (71 5 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (70 70 (:REWRITE THE-FLOOR-BELOW))
@@ -593,6 +601,8 @@
      (17 17 (:REWRITE |(< 0 (* x y))|))
      (15 15
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (11 11 (:REWRITE |(equal (+ (- c) x) y)|))
      (10 10
          (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
@@ -601,6 +611,8 @@
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (9 9 (:REWRITE INTEGERP-MINUS-X))
      (9 9 (:META META-INTEGERP-CORRECT))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (6 6 (:REWRITE SET::IN-SET))
      (5 5
         (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
      (5 5 (:REWRITE |(+ x (- x))|))
@@ -611,27 +623,27 @@
      (3 3 (:LINEAR RTL::MOD-BND-3))
      (2 2 (:REWRITE |(* c (* d x))|)))
 (RTL::TRIPP$-DBL$-2
-     (4103 82 (:REWRITE RATIONALP-X))
-     (3504 3504 (:TYPE-PRESCRIPTION RTL::TRIPP))
-     (3062 1531
+     (4127 82 (:REWRITE RATIONALP-X))
+     (3516 3516 (:TYPE-PRESCRIPTION RTL::TRIPP))
+     (3074 1537
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-X))
-     (3062 1531
+     (3074 1537
            (:TYPE-PRESCRIPTION RTL::INT-CAR-TRIPP))
-     (2764 4 (:REWRITE RTL::INTEGERP-EVALP$))
-     (2679 2679 (:TYPE-PRESCRIPTION RTL::ECP))
-     (2532 1266
+     (2788 4 (:REWRITE RTL::INTEGERP-EVALP$))
+     (2723 2723 (:TYPE-PRESCRIPTION RTL::ECP))
+     (2540 1270
            (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
-     (2459 52 (:REWRITE ACL2-NUMBERP-X))
-     (2272 46 (:DEFINITION MEMBER-EQUAL))
-     (2196 1098
+     (2471 52 (:REWRITE ACL2-NUMBERP-X))
+     (2272 1136
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))
+     (2272 46 (:DEFINITION MEMBER-EQUAL))
      (1896 140
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (1478 2 (:REWRITE DEFAULT-MOD-1))
-     (1460 2
+     (1490 2 (:REWRITE DEFAULT-MOD-1))
+     (1472 2
            (:REWRITE |(equal (mod (+ x y) z) x)|))
      (1325 61 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-     (1250 625
+     (1254 627
            (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
      (754 61 (:TYPE-PRESCRIPTION RTL::NATP-MOD))
      (736 8 (:LINEAR MOD-BOUNDS-2))
@@ -654,6 +666,8 @@
      (621 475 (:REWRITE DEFAULT-CAR))
      (590 7 (:DEFINITION NATP))
      (556 530 (:REWRITE DEFAULT-CDR))
+     (200 20
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (196 4 (:LINEAR MOD-BOUNDS-3))
      (148 2 (:REWRITE MOD-X-Y-=-X-Y . 3))
      (148 2 (:REWRITE MOD-X-Y-=-X+Y . 3))
@@ -701,8 +715,12 @@
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (34 34
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (32 32 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (31 13 (:REWRITE RTL::INT-CADR-TRIPP))
+     (24 12 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (24 10 (:REWRITE RTL::INT-CADDR-TRIPP))
+     (12 12 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (12 12 (:REWRITE SET::IN-SET))
      (7 7 (:REWRITE THE-FLOOR-BELOW))
      (7 7 (:REWRITE THE-FLOOR-ABOVE))
      (7 7
@@ -810,6 +828,8 @@
      (338 11 (:LINEAR MOD-BOUNDS-3))
      (322 30 (:REWRITE DEFAULT-MOD-1))
      (296 66 (:REWRITE DEFAULT-CAR))
+     (278 26
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (260 260 (:TYPE-PRESCRIPTION NATP))
      (253 193 (:REWRITE DEFAULT-CDR))
      (162 84 (:REWRITE NORMALIZE-ADDENDS))
@@ -884,6 +904,8 @@
      (57 57 (:REWRITE INTEGERP-MINUS-X))
      (57 57 (:META META-INTEGERP-CORRECT))
      (54 18 (:REWRITE |(+ y x)|))
+     (52 52 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (52 26 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (50 50
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
      (50 50
@@ -895,6 +917,8 @@
      (30 30 (:REWRITE |(mod x (- y))| . 3))
      (30 30 (:REWRITE |(mod x (- y))| . 2))
      (30 30 (:REWRITE |(mod x (- y))| . 1))
+     (26 26 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (26 26 (:REWRITE SET::IN-SET))
      (25 25
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
      (25 25
@@ -955,6 +979,8 @@
          (:TYPE-PRESCRIPTION RTL::INTEGERP-MOD))
      (88 6 (:LINEAR MOD-BOUNDS-2))
      (75 75 (:TYPE-PRESCRIPTION NATP))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (69 14 (:REWRITE NORMALIZE-ADDENDS))
      (62 19 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (49 6 (:REWRITE |(+ 0 x)|))
@@ -1016,6 +1042,8 @@
      (18 18 (:REWRITE |(< (* x y) 0)|))
      (15 15
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 6 (:DEFINITION FIX))
      (11 11
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -1035,6 +1063,8 @@
      (9 9 (:REWRITE |(< 0 (/ x))|))
      (9 9 (:REWRITE |(< 0 (* x y))|))
      (7 7 (:REWRITE |(equal (+ (- c) x) y)|))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (6 6 (:REWRITE SET::IN-SET))
      (6 3 (:REWRITE DEFAULT-DIVIDE))
      (6 3 (:REWRITE |(* y x)|))
      (5 5
@@ -1209,6 +1239,8 @@
          (:TYPE-PRESCRIPTION RTL::INTEGERP-MOD))
      (88 6 (:LINEAR MOD-BOUNDS-2))
      (75 75 (:TYPE-PRESCRIPTION NATP))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (69 14 (:REWRITE NORMALIZE-ADDENDS))
      (62 19 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (49 6 (:REWRITE |(+ 0 x)|))
@@ -1270,6 +1302,8 @@
      (18 18 (:REWRITE |(< (* x y) 0)|))
      (15 15
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 6 (:DEFINITION FIX))
      (11 11
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -1289,6 +1323,8 @@
      (9 9 (:REWRITE |(< 0 (/ x))|))
      (9 9 (:REWRITE |(< 0 (* x y))|))
      (7 7 (:REWRITE |(equal (+ (- c) x) y)|))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (6 6 (:REWRITE SET::IN-SET))
      (6 3 (:REWRITE DEFAULT-DIVIDE))
      (6 3 (:REWRITE |(* y x)|))
      (5 5
@@ -1479,6 +1515,8 @@
           (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|))
      (168 12
           (:REWRITE |(mod (* x (/ y)) z) rewriting-goal-literal|))
+     (164 12
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (150 24 (:REWRITE RATIONALP-X))
      (129 61
           (:TYPE-PRESCRIPTION RTL::RATIONALP-MOD))
@@ -1529,10 +1567,12 @@
      (27 17 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (27 13 (:REWRITE NORMALIZE-ADDENDS))
      (26 13 (:REWRITE DEFAULT-MOD-2))
+     (24 24 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (24 24 (:REWRITE REDUCE-RATIONALP-+))
      (24 24 (:REWRITE REDUCE-RATIONALP-*))
      (24 24 (:REWRITE RATIONALP-MINUS-X))
      (24 24 (:META META-RATIONALP-CORRECT))
+     (24 12 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (22 22
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
      (22 22
@@ -1554,10 +1594,12 @@
      (18 2 (:REWRITE ACL2-NUMBERP-X))
      (14 14
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (12 12 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (12 12
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (12 12
          (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
+     (12 12 (:REWRITE SET::IN-SET))
      (12 12 (:REWRITE |(mod x (- y))| . 3))
      (12 12 (:REWRITE |(mod x (- y))| . 2))
      (12 12 (:REWRITE |(mod x (- y))| . 1))
@@ -1681,6 +1723,8 @@
      (168 168 (:REWRITE |(< (- x) (- y))|))
      (159 1
           (:REWRITE |(equal (mod a n) (mod b n))|))
+     (148 12
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (133 5 (:REWRITE ACL2-NUMBERP-X))
      (105 105 (:REWRITE REMOVE-WEAK-INEQUALITIES))
      (93 21 (:REWRITE NORMALIZE-ADDENDS))
@@ -1748,6 +1792,8 @@
      (26 26 (:REWRITE REDUCE-RATIONALP-*))
      (26 26 (:REWRITE RATIONALP-MINUS-X))
      (26 26 (:META META-RATIONALP-CORRECT))
+     (24 24 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (24 12 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (20 20
          (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (18 18
@@ -1758,6 +1804,8 @@
      (14 14 (:LINEAR EXPT-LINEAR-LOWER-<=))
      (14 14 (:LINEAR EXPT-LINEAR-LOWER-<))
      (13 13 (:LINEAR RTL::MOD-BND-3))
+     (12 12 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (12 12 (:REWRITE SET::IN-SET))
      (12 6 (:DEFINITION FIX))
      (10 10
          (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
@@ -1946,6 +1994,8 @@
      (2951 233 (:REWRITE RATIONALP-X))
      (2896 116 (:LINEAR MOD-BOUNDS-2))
      (2448 235 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (2428 205
+           (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (2341 169
            (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
      (2341 169
@@ -2006,6 +2056,8 @@
      (564 564
           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (478 478 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (410 410 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (410 205 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (400 208 (:REWRITE DEFAULT-DIVIDE))
      (395 395 (:REWRITE REDUCE-INTEGERP-+))
      (356 214 (:REWRITE DEFAULT-MOD-2))
@@ -2039,6 +2091,9 @@
      (212 212 (:REWRITE |(* c (* d x))|))
      (208 208
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+     (205 205
+          (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (205 205 (:REWRITE SET::IN-SET))
      (174 174
           (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
      (174 174
@@ -2095,6 +2150,8 @@
            (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
      (2975 1993
            (:TYPE-PRESCRIPTION RTL::NATP-MOD-2))
+     (2316 194
+           (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (2020 1038
            (:TYPE-PRESCRIPTION RTL::RATIONALP-MOD))
      (2020 1038
@@ -2126,6 +2183,8 @@
      (462 36
           (:REWRITE |(equal (mod (+ x y) z) x)|))
      (412 220 (:META META-INTEGERP-CORRECT))
+     (388 388 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (388 194 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (352 217 (:REWRITE |(< (- x) (- y))|))
      (336 196 (:REWRITE |(equal (- x) (- y))|))
      (307 217 (:REWRITE |(< (- x) c)|))
@@ -2173,6 +2232,9 @@
      (196 196 (:REWRITE |(equal c (- x))|))
      (196 196 (:REWRITE |(equal (/ x) c)|))
      (196 196 (:REWRITE |(equal (/ x) (/ y))|))
+     (194 194
+          (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (194 194 (:REWRITE SET::IN-SET))
      (192 192
           (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
      (189 189 (:REWRITE REDUCE-RATIONALP-+))
@@ -2269,6 +2331,8 @@
            (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
      (4015 3906
            (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (3572 300
+           (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (3463 279 (:REWRITE |(equal (- x) c)|))
      (3273 676 (:REWRITE NORMALIZE-ADDENDS))
      (3168 3059
@@ -2302,6 +2366,8 @@
      (726 60 (:REWRITE |(+ y (+ x z))|))
      (704 33
           (:REWRITE |(equal (mod (+ x y) z) x)|))
+     (600 600 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (600 300 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (528 20 (:REWRITE |(+ (if a b c) x)|))
      (527 527
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -2342,6 +2408,9 @@
      (308 308 (:REWRITE REDUCE-RATIONALP-*))
      (308 308 (:REWRITE RATIONALP-MINUS-X))
      (308 308 (:META META-RATIONALP-CORRECT))
+     (300 300
+          (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (300 300 (:REWRITE SET::IN-SET))
      (279 279
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
      (279 279
@@ -2413,20 +2482,20 @@
      (4 4
         (:REWRITE INTEGERP-+-REDUCE-CONSTANT)))
 (RTL::TRIPP$-SUM$-7
-     (2846 1423
+     (2866 1433
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-X))
-     (2755 115 (:REWRITE RATIONALP-X))
+     (2767 115 (:REWRITE RATIONALP-X))
      (2753 141
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (2520 87 (:REWRITE ACL2-NUMBERP-X))
+     (2526 87 (:REWRITE ACL2-NUMBERP-X))
      (2486 44 (:DEFINITION MEMBER-EQUAL))
-     (1924 962
+     (1936 968
            (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
-     (1828 914
+     (1832 916
            (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
-     (1442 2 (:REWRITE RTL::INTEGERP-EVALP$))
+     (1454 2 (:REWRITE RTL::INTEGERP-EVALP$))
      (1224 84 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-     (764 1
+     (770 1
           (:REWRITE |(equal (mod (+ x y) z) x)|))
      (753 565 (:REWRITE DEFAULT-CAR))
      (738 84 (:TYPE-PRESCRIPTION RTL::NATP-MOD))
@@ -2449,6 +2518,8 @@
      (530 7 (:DEFINITION NATP))
      (496 8 (:LINEAR MOD-BOUNDS-2))
      (496 8 (:LINEAR MOD-BOUNDS-1))
+     (322 26
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (157 141 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (141 141
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
@@ -2489,8 +2560,10 @@
          (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|))
      (58 2
          (:REWRITE |(mod (* x (/ y)) z) rewriting-goal-literal|))
+     (48 48 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (45 1 (:REWRITE MOD-X-Y-=-X-Y . 1))
      (45 1 (:REWRITE MOD-X-Y-=-X+Y . 1))
+     (44 22 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (35 13 (:REWRITE RTL::INT-CADR-TRIPP))
      (33 33
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
@@ -2498,6 +2571,8 @@
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (29 11 (:REWRITE RTL::INT-CADDR-TRIPP))
      (24 24 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (22 22 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (22 22 (:REWRITE SET::IN-SET))
      (7 7 (:REWRITE THE-FLOOR-BELOW))
      (7 7 (:REWRITE THE-FLOOR-ABOVE))
      (7 7
@@ -2580,6 +2655,8 @@
      (2030 1807
            (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
      (1996 62 (:REWRITE MOD-X-Y-=-X . 3))
+     (1980 164
+           (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (1821 62 (:REWRITE MOD-X-Y-=-X+Y . 2))
      (1795 99 (:REWRITE ACL2-NUMBERP-X))
      (1671 1448
@@ -2619,6 +2696,8 @@
      (351 351 (:REWRITE REDUCE-INTEGERP-+))
      (351 351 (:REWRITE INTEGERP-MINUS-X))
      (351 351 (:META META-INTEGERP-CORRECT))
+     (328 328 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (328 164 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (298 76 (:REWRITE SIMPLIFY-SUMS-<))
      (285 285
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -2643,6 +2722,9 @@
      (175 175 (:REWRITE |(equal c (- x))|))
      (175 175 (:REWRITE |(equal (/ x) c)|))
      (175 175 (:REWRITE |(equal (/ x) (/ y))|))
+     (164 164
+          (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (164 164 (:REWRITE SET::IN-SET))
      (132 22 (:REWRITE |(+ 0 x)|))
      (132 11 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (99 33 (:REWRITE |(+ y x)|))
@@ -2735,31 +2817,33 @@
      (3112 32 (:DEFINITION MEMBER-EQUAL))
      (2707 99
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (2618 57 (:REWRITE RATIONALP-X))
-     (2407 50 (:REWRITE ACL2-NUMBERP-X))
-     (2046 2 (:REWRITE RTL::INTEGERP-EVALP$))
-     (1748 874
+     (2686 57 (:REWRITE RATIONALP-X))
+     (2441 50 (:REWRITE ACL2-NUMBERP-X))
+     (2114 2 (:REWRITE RTL::INTEGERP-EVALP$))
+     (1832 916
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))
      (1652 118
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EVALP$))
-     (1458 1458 (:TYPE-PRESCRIPTION RTL::ECP))
-     (1142 1142 (:TYPE-PRESCRIPTION RTL::TRIPP))
-     (1096 1 (:REWRITE DEFAULT-MOD-1))
-     (1082 1
+     (1516 1516 (:TYPE-PRESCRIPTION RTL::ECP))
+     (1178 1178 (:TYPE-PRESCRIPTION RTL::TRIPP))
+     (1130 1 (:REWRITE DEFAULT-MOD-1))
+     (1116 1
            (:REWRITE |(equal (mod (+ x y) z) x)|))
-     (1076 538
+     (1108 554
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-X))
-     (1076 538
+     (1108 554
            (:TYPE-PRESCRIPTION RTL::INT-CAR-TRIPP))
      (631 147 (:REWRITE DEFAULT-CAR))
-     (578 289
+     (602 301
           (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
-     (486 243
+     (502 251
           (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
      (402 5 (:DEFINITION NATP))
      (313 177 (:REWRITE DEFAULT-CDR))
+     (246 6 (:DEFINITION TRUE-LISTP))
+     (244 12
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (145 5 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-     (110 6 (:DEFINITION TRUE-LISTP))
      (104 1 (:REWRITE MOD-X-Y-=-X-Y . 3))
      (104 1 (:REWRITE MOD-X-Y-=-X+Y . 3))
      (104 1
@@ -2813,10 +2897,14 @@
      (22 22
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (22 22 (:REWRITE NORMALIZE-ADDENDS))
+     (20 20 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (20 8 (:REWRITE RTL::INT-CADDR-TRIPP))
+     (16 8 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (14 7 (:REWRITE DEFAULT-DIVIDE))
      (14 7 (:REWRITE |(* y x)|))
      (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (8 8 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (8 8 (:REWRITE SET::IN-SET))
      (7 7
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (7 7
@@ -2989,6 +3077,8 @@
           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
      (104 2 (:LINEAR MOD-BOUNDS-3))
      (96 1 (:REWRITE MOD-X-Y-=-X+Y . 1))
+     (82 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (78 20 (:TYPE-PRESCRIPTION RTL::NATP-MOD))
      (76 5 (:REWRITE MOD-X-Y-=-X-Y . 3))
      (76 5 (:REWRITE MOD-X-Y-=-X+Y . 3))
@@ -3051,7 +3141,9 @@
      (16 16 (:REWRITE |(< (- x) (- y))|))
      (13 13
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (12 12 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (11 1
@@ -3077,8 +3169,10 @@
      (8 8 (:REWRITE |(< (* x y) 0)|))
      (7 7
         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (6 6 (:REWRITE SET::IN-SET))
      (5 5
         (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
      (5 5 (:REWRITE |(mod x (- y))| . 3))
@@ -3194,6 +3288,8 @@
      (487 487
           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (486 44 (:REWRITE RTL::RATIONALP-MOD))
+     (464 48
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (436 436 (:REWRITE REDUCE-RATIONALP-+))
      (436 436 (:REWRITE REDUCE-RATIONALP-*))
      (436 436 (:REWRITE RATIONALP-MINUS-X))
@@ -3253,6 +3349,8 @@
      (114 12 (:REWRITE MOD-POSITIVE . 2))
      (114 8 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (112 15 (:REWRITE |(+ 0 x)|))
+     (96 96 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (96 48 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (91 91 (:REWRITE |(mod x (- y))| . 3))
      (91 91 (:REWRITE |(mod x (- y))| . 2))
      (91 91 (:REWRITE |(mod x (- y))| . 1))
@@ -3273,6 +3371,8 @@
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
      (52 52 (:REWRITE |(< 0 (/ x))|))
      (52 52 (:REWRITE |(< 0 (* x y))|))
+     (48 48 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (48 48 (:REWRITE SET::IN-SET))
      (42 42
          (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (39 39 (:REWRITE |(+ x (if a b c))|))
@@ -3345,6 +3445,8 @@
          (:REWRITE |(mod x (* y (/ z))) rewriting-goal-literal|))
      (86 6
          (:REWRITE |(mod (* x (/ y)) z) rewriting-goal-literal|))
+     (82 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (81 21 (:REWRITE DEFAULT-CAR))
      (80 21 (:TYPE-PRESCRIPTION RTL::NATP-MOD))
      (80 6 (:REWRITE DEFAULT-MOD-1))
@@ -3406,6 +3508,7 @@
      (15 15 (:REWRITE FOLD-CONSTS-IN-+))
      (13 12 (:REWRITE |(equal (- x) c)|))
      (13 12 (:REWRITE |(equal (- x) (- y))|))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (12 12
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
      (12 12
@@ -3417,6 +3520,7 @@
      (12 12 (:REWRITE |(equal (/ x) c)|))
      (12 12 (:REWRITE |(equal (/ x) (/ y))|))
      (12 12 (:REWRITE |(* c (* d x))|))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 6 (:REWRITE DEFAULT-MOD-2))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
@@ -3430,8 +3534,10 @@
      (10 10 (:REWRITE |(< (* x y) 0)|))
      (7 7
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6
         (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
+     (6 6 (:REWRITE SET::IN-SET))
      (6 6 (:REWRITE |(mod x (- y))| . 3))
      (6 6 (:REWRITE |(mod x (- y))| . 2))
      (6 6 (:REWRITE |(mod x (- y))| . 1))
@@ -3481,6 +3587,8 @@
      (96 1 (:REWRITE MOD-X-Y-=-X+Y . 1))
      (76 5 (:REWRITE MOD-X-Y-=-X-Y . 3))
      (76 5 (:REWRITE MOD-X-Y-=-X+Y . 3))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (73 33 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
      (71 5
          (:REWRITE MOD-CANCEL-*-REWRITING-GOAL-LITERAL))
@@ -3541,7 +3649,9 @@
      (16 10 (:REWRITE DEFAULT-CAR))
      (15 15
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (12 12 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (11 11
@@ -3569,8 +3679,10 @@
      (8 8 (:REWRITE |(< (* x y) 0)|))
      (7 7 (:REWRITE |(expt 1/c n)|))
      (7 7 (:REWRITE |(expt (- x) n)|))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (6 6 (:REWRITE SET::IN-SET))
      (5 5
         (:REWRITE MOD-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
      (5 5 (:REWRITE |(mod x (- y))| . 3))
@@ -3779,6 +3891,8 @@
      (108 108 (:TYPE-PRESCRIPTION NATP))
      (96 1 (:REWRITE MOD-X-Y-=-X+Y . 1))
      (84 4 (:LINEAR EXPT-<=-1-ONE))
+     (82 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (60 60 (:REWRITE THE-FLOOR-BELOW))
      (60 60 (:REWRITE THE-FLOOR-ABOVE))
      (60 60
@@ -3875,6 +3989,8 @@
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
      (15 15 (:REWRITE |(< 0 (/ x))|))
      (15 15 (:REWRITE |(< 0 (* x y))|))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (11 1
@@ -3895,6 +4011,8 @@
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (7 7 (:REWRITE |(expt 1/c n)|))
      (7 7 (:REWRITE |(expt (- x) n)|))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (6 6 (:REWRITE SET::IN-SET))
      (4 4 (:REWRITE INTEGERP-/))
      (4 4 (:REWRITE |(* c (* d x))|))
      (4 4 (:LINEAR EXPT-LINEAR-UPPER-<=))
@@ -3996,6 +4114,8 @@
      (109 109 (:REWRITE |(< (- x) (- y))|))
      (96 1 (:REWRITE MOD-X-Y-=-X+Y . 1))
      (86 86 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (82 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (80 66 (:REWRITE NORMALIZE-ADDENDS))
      (65 65
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
@@ -4046,8 +4166,10 @@
      (17 17 (:REWRITE |(< y (+ (- c) x))|))
      (17 17 (:REWRITE |(< x (+ c/d y))|))
      (16 16 (:REWRITE INTEGERP-/))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (12 12 (:REWRITE |(expt 1/c n)|))
      (12 12 (:REWRITE |(expt (- x) n)|))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (11 1
@@ -4056,7 +4178,9 @@
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (9 9 (:LINEAR RTL::MOD-BND-3))
      (8 8 (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6 (:TYPE-PRESCRIPTION ABS))
+     (6 6 (:REWRITE SET::IN-SET))
      (4 4
         (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (4 2 (:DEFINITION FIX))
@@ -4166,6 +4290,8 @@
          (:LINEAR EXPT-IS-INCREASING-FOR-BASE->-1))
      (80 80
          (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (72 52
          (:TYPE-PRESCRIPTION RTL::RATIONALP-MOD))
      (72 52
@@ -4222,11 +4348,15 @@
      (14 14
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (14 14 (:REWRITE |(* c (* d x))|))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (12 12 (:TYPE-PRESCRIPTION ABS))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (8 8
         (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (8 4 (:REWRITE DEFAULT-DIVIDE))
      (7 7 (:REWRITE |(equal (+ (- c) x) y)|))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (6 6 (:REWRITE SET::IN-SET))
      (4 4
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (4 4
@@ -4302,6 +4432,8 @@
      (208 4
           (:REWRITE |(equal (mod (+ x y) z) x)|))
      (206 50 (:REWRITE |(* y (* x z))|))
+     (196 16
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (189 189
           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (186 186 (:REWRITE REDUCE-INTEGERP-+))
@@ -4364,6 +4496,8 @@
      (33 33 (:REWRITE |(< (+ (- c) x) y)|))
      (33 31 (:REWRITE |(equal (- x) c)|))
      (33 31 (:REWRITE |(equal (- x) (- y))|))
+     (32 32 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (32 16 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (31 31
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
      (31 31
@@ -4398,6 +4532,8 @@
      (20 10 (:REWRITE |(- (* c x))|))
      (18 18 (:REWRITE |(expt 1/c n)|))
      (18 18 (:REWRITE |(expt (- x) n)|))
+     (16 16 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (16 16 (:REWRITE SET::IN-SET))
      (11 11
          (:REWRITE |(mod (+ x y) z) where (<= z 0)| . 3))
      (11 11
@@ -4489,6 +4625,8 @@
           (:REWRITE |(mod (+ x y) z) where (<= z 0)| . 1))
      (208 4
           (:REWRITE |(equal (mod (+ x y) z) x)|))
+     (196 16
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (177 177
           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (168 24 (:REWRITE |(* (* x y) z)|))
@@ -4565,6 +4703,7 @@
          (:REWRITE |(mod x (* y (/ z))) not rewriting-goal-literal|))
      (33 33
          (:REWRITE |(mod (* x (/ y)) z) not rewriting-goal-literal|))
+     (32 32 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (32 32
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
      (32 32
@@ -4573,6 +4712,7 @@
      (32 32 (:REWRITE |(expt (- x) n)|))
      (32 32 (:REWRITE |(< 0 (/ x))|))
      (32 32 (:REWRITE |(< 0 (* x y))|))
+     (32 16 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (27 25 (:REWRITE |(equal (- x) c)|))
      (27 25 (:REWRITE |(equal (- x) (- y))|))
      (25 25
@@ -4598,6 +4738,8 @@
      (20 20 (:REWRITE INTEGERP-/))
      (20 10 (:REWRITE |(- (* c x))|))
      (17 17 (:REWRITE FOLD-CONSTS-IN-+))
+     (16 16 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (16 16 (:REWRITE SET::IN-SET))
      (15 15
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (15 15 (:REWRITE |(< (+ c/d x) y)|))
@@ -4660,6 +4802,8 @@
      (90 70
          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
      (75 55 (:TYPE-PRESCRIPTION RTL::NATP-MOD-2))
+     (74 6
+         (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (55 55 (:TYPE-PRESCRIPTION NATP))
      (50 6 (:META META-INTEGERP-CORRECT))
      (34 34 (:REWRITE THE-FLOOR-BELOW))
@@ -4721,6 +4865,8 @@
      (13 13 (:REWRITE |(equal c (- x))|))
      (13 13 (:REWRITE |(equal (/ x) c)|))
      (13 13 (:REWRITE |(equal (/ x) (/ y))|))
+     (12 12 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (12 6 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (12 2 (:REWRITE |(+ 0 x)|))
      (12 1 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (11 1
@@ -4752,8 +4898,10 @@
      (8 2 (:REWRITE |(* y (* x z))|))
      (7 7
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (6 6 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
      (6 6 (:REWRITE REDUCE-INTEGERP-+))
      (6 6 (:REWRITE INTEGERP-MINUS-X))
+     (6 6 (:REWRITE SET::IN-SET))
      (4 4
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (4 4
@@ -4987,27 +5135,27 @@
               (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP)))
 (RTL::EQ$-TERM-REWRITE)
 (RTL::EQ$-TERM-POLYP
-     (5464 5464 (:TYPE-PRESCRIPTION RTL::TRIPP))
-     (4708 130 (:REWRITE RATIONALP-X))
-     (4184 2092
+     (5488 5488 (:TYPE-PRESCRIPTION RTL::TRIPP))
+     (4732 130 (:REWRITE RATIONALP-X))
+     (4208 2104
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-X))
-     (4184 2092
+     (4208 2104
            (:TYPE-PRESCRIPTION RTL::INT-CAR-TRIPP))
-     (4100 4100 (:TYPE-PRESCRIPTION RTL::ECP))
-     (3832 1916
+     (4184 4184 (:TYPE-PRESCRIPTION RTL::ECP))
+     (3976 1988
            (:TYPE-PRESCRIPTION RTL::INTEGERP-EC-Y))
      (3528 64 (:DEFINITION MEMBER-EQUAL))
-     (3510 100 (:REWRITE ACL2-NUMBERP-X))
+     (3522 100 (:REWRITE ACL2-NUMBERP-X))
      (3350 198
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (3276 1638
+     (3292 1646
            (:TYPE-PRESCRIPTION RTL::INT-CADR-TRIPP))
-     (3180 1590
+     (3188 1594
            (:TYPE-PRESCRIPTION RTL::INT-CADDR-TRIPP))
-     (2884 4 (:REWRITE RTL::INTEGERP-EVALP$))
+     (2908 4 (:REWRITE RTL::INTEGERP-EVALP$))
      (2058 82 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-     (1548 2 (:REWRITE DEFAULT-MOD-1))
-     (1528 2
+     (1560 2 (:REWRITE DEFAULT-MOD-1))
+     (1540 2
            (:REWRITE |(equal (mod (+ x y) z) x)|))
      (1152 82 (:TYPE-PRESCRIPTION RTL::NATP-MOD))
      (1070 82
@@ -5029,6 +5177,8 @@
      (832 8 (:LINEAR MOD-BOUNDS-1))
      (796 10 (:DEFINITION NATP))
      (418 194 (:REWRITE DEFAULT-CAR))
+     (376 32
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (344 300 (:REWRITE DEFAULT-CDR))
      (220 4 (:LINEAR MOD-BOUNDS-3))
      (198 198 (:REWRITE SIMPLIFY-SUMS-EQUAL))
@@ -5069,7 +5219,9 @@
      (76 76 (:META META-INTEGERP-CORRECT))
      (68 34 (:REWRITE DEFAULT-DIVIDE))
      (68 34 (:REWRITE |(* y x)|))
+     (56 56 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
      (48 48 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (48 24 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (46 18 (:REWRITE RTL::INT-CADR-TRIPP))
      (40 16 (:REWRITE RTL::INT-CADDR-TRIPP))
      (34 34
@@ -5079,6 +5231,8 @@
      (32 32
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (32 32 (:REWRITE NORMALIZE-ADDENDS))
+     (24 24 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (24 24 (:REWRITE SET::IN-SET))
      (10 10 (:REWRITE THE-FLOOR-BELOW))
      (10 10 (:REWRITE THE-FLOOR-ABOVE))
      (10 10
@@ -5197,6 +5351,8 @@
      (13017 941 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (11052 252
             (:REWRITE |(equal (mod (+ x y) z) x)|))
+     (9464 860
+           (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (8524 5624
            (:TYPE-PRESCRIPTION RTL::RATIONALP-MOD))
      (8524 5624
@@ -5243,6 +5399,9 @@
            (:REWRITE REMOVE-WEAK-INEQUALITIES))
      (2069 122 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (1963 191 (:REWRITE |(+ 0 x)|))
+     (1720 1720
+           (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (1720 860 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (1692 1692
            (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
      (1692 1692
@@ -5281,6 +5440,9 @@
      (891 891 (:REWRITE |(mod x (- y))| . 3))
      (891 891 (:REWRITE |(mod x (- y))| . 2))
      (891 891 (:REWRITE |(mod x (- y))| . 1))
+     (860 860
+          (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (860 860 (:REWRITE SET::IN-SET))
      (782 782
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (768 768
@@ -6035,6 +6197,8 @@
            (:TYPE-PRESCRIPTION RTL::NATP-MOD-2))
      (994 6
           (:REWRITE |(equal (mod a n) (mod b n))|))
+     (944 80
+          (:REWRITE SET::SETS-ARE-TRUE-LISTS-CHEAP))
      (943 91 (:META META-INTEGERP-CORRECT))
      (768 768 (:TYPE-PRESCRIPTION NATP))
      (678 110
@@ -6111,6 +6275,8 @@
           (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (164 164
           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (160 160 (:TYPE-PRESCRIPTION SET::SETP-TYPE))
+     (160 80 (:REWRITE SET::NONEMPTY-MEANS-SET))
      (144 48 (:REWRITE |(+ y x)|))
      (144 18 (:REWRITE ACL2-NUMBERP-X))
      (131 131
@@ -6131,6 +6297,8 @@
      (91 91 (:REWRITE REDUCE-INTEGERP-+))
      (88 88
          (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
+     (80 80 (:TYPE-PRESCRIPTION SET::EMPTY-TYPE))
+     (80 80 (:REWRITE SET::IN-SET))
      (72 36 (:DEFINITION FIX))
      (63 9 (:REWRITE RATIONALP-X))
      (54 54 (:REWRITE |(equal (+ (- c) x) y)|))
