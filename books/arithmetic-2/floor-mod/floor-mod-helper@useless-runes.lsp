@@ -2,12 +2,12 @@
 (FM-X-GUARD)
 (NIQ-BOUNDSXXX (471 6
                     (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-               (338 338 (:TYPE-PRESCRIPTION NINTEGERP-/))
+               (334 334 (:TYPE-PRESCRIPTION NINTEGERP-/))
                (330 12 (:REWRITE NIQ-TYPE . 3))
-               (197 197 (:TYPE-PRESCRIPTION NINTEGERP-4A))
-               (197 197 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-               (197 197 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-               (197 197 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+               (193 193 (:TYPE-PRESCRIPTION NINTEGERP-4A))
+               (193 193 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+               (193 193 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+               (193 193 (:TYPE-PRESCRIPTION NINTEGERP-1A))
                (143 12 (:REWRITE NIQ-TYPE . 2))
                (109 6 (:REWRITE |(* (+ x y) z)|))
                (78 6 (:LINEAR X*Y>=1-POSITIVE))
@@ -179,21 +179,21 @@
           (2 2 (:TYPE-PRESCRIPTION NINTEGERP-/)))
 (FLOOR* (9013 55
               (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-        (4251 4251 (:TYPE-PRESCRIPTION NINTEGERP-/))
-        (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-        (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-        (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+        (4217 4217 (:TYPE-PRESCRIPTION NINTEGERP-/))
+        (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+        (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+        (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-1A))
         (1342 111 (:REWRITE NIQ-TYPE . 3))
         (1136 505
               (:REWRITE |Non-numeric y in (+ x y)|))
-        (867 411
+        (862 411
              (:REWRITE |Non-Numeric y in (< x y)|))
-        (867 411 (:REWRITE DEFAULT-<-2))
+        (862 411 (:REWRITE DEFAULT-<-2))
         (788 436
              (:REWRITE |Non-Numeric y in (* x y)|))
-        (761 411
+        (751 411
              (:REWRITE |Non-Numeric x in (< x y)|))
-        (761 411 (:REWRITE DEFAULT-<-1))
+        (751 411 (:REWRITE DEFAULT-<-1))
         (656 505
              (:REWRITE |Non-numeric x in (+ x y)|))
         (536 64 (:LINEAR X*Y>=1-POSITIVE))
@@ -202,9 +202,9 @@
         (474 436
              (:REWRITE |Non-Numeric x in (* x y)|))
         (440 55 (:DEFINITION NFIX))
-        (285 165 (:REWRITE |Non-numeric x in (- x)|))
         (282 120
              (:REWRITE |integerp x in (denominator x)|))
+        (280 165 (:REWRITE |Non-numeric x in (- x)|))
         (275 55 (:DEFINITION IFIX))
         (250 4 (:LINEAR NIQ-TYPE))
         (175 120
@@ -272,21 +272,21 @@
         (2 1 (:REWRITE |(/ (/ x))|)))
 (MOD* (9013 55
             (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-      (4251 4251 (:TYPE-PRESCRIPTION NINTEGERP-/))
-      (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-      (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-      (2188 2188 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+      (4217 4217 (:TYPE-PRESCRIPTION NINTEGERP-/))
+      (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+      (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+      (2154 2154 (:TYPE-PRESCRIPTION NINTEGERP-1A))
       (1342 111 (:REWRITE NIQ-TYPE . 3))
       (1136 505
             (:REWRITE |Non-numeric y in (+ x y)|))
-      (867 411
+      (862 411
            (:REWRITE |Non-Numeric y in (< x y)|))
-      (867 411 (:REWRITE DEFAULT-<-2))
+      (862 411 (:REWRITE DEFAULT-<-2))
       (788 436
            (:REWRITE |Non-Numeric y in (* x y)|))
-      (761 411
+      (751 411
            (:REWRITE |Non-Numeric x in (< x y)|))
-      (761 411 (:REWRITE DEFAULT-<-1))
+      (751 411 (:REWRITE DEFAULT-<-1))
       (656 505
            (:REWRITE |Non-numeric x in (+ x y)|))
       (536 64 (:LINEAR X*Y>=1-POSITIVE))
@@ -295,9 +295,9 @@
       (474 436
            (:REWRITE |Non-Numeric x in (* x y)|))
       (440 55 (:DEFINITION NFIX))
-      (285 165 (:REWRITE |Non-numeric x in (- x)|))
       (282 120
            (:REWRITE |integerp x in (denominator x)|))
+      (280 165 (:REWRITE |Non-numeric x in (- x)|))
       (275 55 (:DEFINITION IFIX))
       (250 4 (:LINEAR NIQ-TYPE))
       (175 120
@@ -369,10 +369,10 @@
                          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
                    (3313 46 (:REWRITE NIQ-TYPE . 2))
                    (498 46 (:REWRITE NIQ-TYPE . 3))
-                   (462 462 (:TYPE-PRESCRIPTION NINTEGERP-4A))
-                   (462 462 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-                   (462 462 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-                   (462 462 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+                   (458 458 (:TYPE-PRESCRIPTION NINTEGERP-4A))
+                   (458 458 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+                   (458 458 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+                   (458 458 (:TYPE-PRESCRIPTION NINTEGERP-1A))
                    (381 135
                         (:REWRITE |Non-numeric y in (+ x y)|))
                    (310 127
@@ -426,14 +426,6 @@
                    (11 11
                        (:META CANCEL-FACTORS-GATHER-EXPONENTS-EQUAL-THM))
                    (11 11 (:META CANCEL-ADDENDS-EQUAL-THM))
-                   (10 10
-                       (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-                   (10 10
-                       (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-                   (10 10
-                       (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-                   (10 10
-                       (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
                    (9 9 (:REWRITE INTEGERP-1B))
                    (9 9 (:REWRITE INTEGERP-1A))
                    (9 9 (:META META-INTEGERP-CORRECT))
@@ -441,6 +433,10 @@
                    (6 6 (:TYPE-PRESCRIPTION NINTEGERP-3B))
                    (6 6 (:TYPE-PRESCRIPTION NINTEGERP-2B))
                    (6 6 (:TYPE-PRESCRIPTION NINTEGERP-1B))
+                   (6 6 (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+                   (6 6 (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
+                   (6 6 (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
+                   (6 6 (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
                    (6 6
                       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGER))
                    (4 4 (:REWRITE COLLECT-TIMES-0C))
@@ -451,11 +447,11 @@
                    (2 2 (:REWRITE |(+ c (+ d x))|))
                    (1 1 (:REWRITE FOLD-CONSTS-IN-+)))
 (FLOOR-BOUNDS-2XXX
-     (34 34 (:TYPE-PRESCRIPTION NINTEGERP-/))
-     (31 31 (:TYPE-PRESCRIPTION NINTEGERP-4A))
-     (31 31 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-     (31 31 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-     (31 31 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+     (32 32 (:TYPE-PRESCRIPTION NINTEGERP-/))
+     (29 29 (:TYPE-PRESCRIPTION NINTEGERP-4A))
+     (29 29 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+     (29 29 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+     (29 29 (:TYPE-PRESCRIPTION NINTEGERP-1A))
      (28 28
          (:TYPE-PRESCRIPTION NUMERATOR-TYPE-PRESCRIPTION-POSITIVE))
      (28 28
@@ -464,13 +460,13 @@
          (:TYPE-PRESCRIPTION NUMERATOR-TYPE-PRESCRIPTION-NON-NEGATIVE))
      (28 28
          (:TYPE-PRESCRIPTION NUMERATOR-TYPE-PRESCRIPTION-NEGATIVE))
-     (22 22
+     (20 20
          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-     (22 22
+     (20 20
          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-     (22 22
+     (20 20
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-     (22 22
+     (20 20
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
      (6 3 (:REWRITE |Non-Numeric y in (* x y)|))
      (3 3 (:REWRITE |Non-Numeric x in (/ x)|))
@@ -488,15 +484,15 @@
 (FLOOR-BOUNDS-3XXX (1915 13
                          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
                    (1617 26 (:REWRITE NIQ-TYPE . 2))
-                   (324 324 (:TYPE-PRESCRIPTION NINTEGERP-/))
+                   (322 322 (:TYPE-PRESCRIPTION NINTEGERP-/))
                    (258 26 (:REWRITE NIQ-TYPE . 3))
                    (180 67
                         (:REWRITE |Non-Numeric x in (< x y)|))
                    (180 67 (:REWRITE DEFAULT-<-1))
-                   (176 176 (:TYPE-PRESCRIPTION NINTEGERP-4A))
-                   (176 176 (:TYPE-PRESCRIPTION NINTEGERP-3A))
-                   (176 176 (:TYPE-PRESCRIPTION NINTEGERP-2A))
-                   (176 176 (:TYPE-PRESCRIPTION NINTEGERP-1A))
+                   (174 174 (:TYPE-PRESCRIPTION NINTEGERP-4A))
+                   (174 174 (:TYPE-PRESCRIPTION NINTEGERP-3A))
+                   (174 174 (:TYPE-PRESCRIPTION NINTEGERP-2A))
+                   (174 174 (:TYPE-PRESCRIPTION NINTEGERP-1A))
                    (158 62
                         (:REWRITE |Non-numeric y in (+ x y)|))
                    (155 13 (:REWRITE |(* (+ x y) z)|))
@@ -519,13 +515,13 @@
                    (36 8 (:LINEAR X*Y>=1-POSITIVE))
                    (36 8 (:LINEAR X*Y>1-POSITIVE))
                    (35 26 (:REWRITE |Non-numeric x in (- x)|))
-                   (24 24
+                   (22 22
                        (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-                   (24 24
+                   (22 22
                        (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-                   (24 24
+                   (22 22
                        (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-                   (24 24
+                   (22 22
                        (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
                    (16 16
                        (:LINEAR *-WEAKLY-MONOTONIC-NEGATIVE-MULTIPLIER

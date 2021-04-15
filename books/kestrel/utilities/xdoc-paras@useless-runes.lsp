@@ -1,13 +1,16 @@
 (SKIP-NEWLINES (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                (1 1 (:REWRITE DEFAULT-CDR))
                (1 1 (:REWRITE DEFAULT-CAR)))
-(CHARACTER-LISTP-OF-SKIP-NEWLINES (125 12 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                                  (24 12 (:REWRITE DEFAULT-<-2))
-                                  (19 15 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                                  (18 18 (:REWRITE DEFAULT-CAR))
-                                  (12 12 (:REWRITE DEFAULT-<-1))
-                                  (12 12 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                                  (8 8 (:REWRITE DEFAULT-CDR)))
+(CHARACTER-LISTP-OF-SKIP-NEWLINES
+     (125 12 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (24 12 (:REWRITE DEFAULT-<-2))
+     (19 15 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (18 18 (:REWRITE DEFAULT-CAR))
+     (12 12 (:REWRITE DEFAULT-<-1))
+     (12 12 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (12 12
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (8 8 (:REWRITE DEFAULT-CDR)))
 (<=-OF-LEN-OF-SKIP-NEWLINES (48 5 (:REWRITE CONSP-FROM-LEN-CHEAP))
                             (19 10 (:REWRITE DEFAULT-<-2))
                             (12 10 (:REWRITE DEFAULT-<-1))
@@ -16,6 +19,8 @@
                             (6 6 (:REWRITE DEFAULT-CAR))
                             (5 5 (:REWRITE DEFAULT-CDR))
                             (5 5 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                            (5 5
+                               (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                             (4 4 (:REWRITE DEFAULT-+-2))
                             (4 4 (:REWRITE DEFAULT-+-1)))
 (SPLIT-CHARS-AT-DOUBLE-NEWLINE (78 8 (:REWRITE CONSP-FROM-LEN-CHEAP))
@@ -29,11 +34,14 @@
                                (9 9 (:REWRITE DEFAULT-+-1))
                                (8 8 (:REWRITE DEFAULT-<-1))
                                (8 8 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                               (8 8
+                                  (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                                (1 1
                                   (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (<=-OF-LEN-OF-MV-NTH-1-OF-SPLIT-CHARS-AT-DOUBLE-NEWLINE
-     (252 18 (:DEFINITION REVAPPEND))
-     (171 9 (:REWRITE DEFAULT-COERCE-3))
+     (452 41 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (270 18 (:DEFINITION REVAPPEND))
+     (180 9 (:REWRITE DEFAULT-COERCE-3))
      (76 40 (:REWRITE DEFAULT-<-2))
      (62 60 (:REWRITE DEFAULT-CDR))
      (45 45
@@ -50,7 +58,8 @@
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
      (2 2 (:REWRITE EQUAL-OF-LEN-AND-0)))
 (<-OF-LEN-OF-MV-NTH-1-OF-SPLIT-CHARS-AT-DOUBLE-NEWLINE
-     (703 37 (:REWRITE DEFAULT-COERCE-3))
+     (1588 146 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (740 37 (:REWRITE DEFAULT-COERCE-3))
      (488 340 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (217 215 (:REWRITE DEFAULT-CDR))
      (209 121 (:REWRITE DEFAULT-<-2))
@@ -67,7 +76,8 @@
      (3 3
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (CHARACTER-LISTP-OF--MV-NTH-0-OF-SPLIT-CHARS-AT-DOUBLE-NEWLINE
-     (168 12 (:DEFINITION REVAPPEND))
+     (586 58 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (180 12 (:DEFINITION REVAPPEND))
      (125 125 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (104 55 (:REWRITE DEFAULT-<-2))
      (89 86 (:REWRITE DEFAULT-CDR))
@@ -83,9 +93,10 @@
      (1 1
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (CHARACTER-LISTP-OF--MV-NTH-1-OF-SPLIT-CHARS-AT-DOUBLE-NEWLINE
-     (162 15 (:DEFINITION REVAPPEND))
+     (714 63 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (177 15 (:DEFINITION REVAPPEND))
      (145 145 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (131 6
+     (141 6
           (:LINEAR <=-OF-LEN-OF-MV-NTH-1-OF-SPLIT-CHARS-AT-DOUBLE-NEWLINE))
      (106 103 (:REWRITE DEFAULT-CDR))
      (96 92 (:REWRITE DEFAULT-CAR))
@@ -104,9 +115,11 @@
      (2 2 (:REWRITE EQUAL-OF-LEN-AND-0)))
 (XDOC::PARAS-AUX (43 5 (:REWRITE CONSP-FROM-LEN-CHEAP))
                  (19 16 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                 (14 1 (:DEFINITION CHARACTER-LISTP))
+                 (15 1 (:DEFINITION CHARACTER-LISTP))
                  (8 4 (:REWRITE DEFAULT-<-2))
                  (5 5 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                 (5 5
+                    (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                  (5 4 (:REWRITE DEFAULT-<-1))
                  (1 1 (:REWRITE DEFAULT-CDR))
                  (1 1 (:REWRITE DEFAULT-CAR)))

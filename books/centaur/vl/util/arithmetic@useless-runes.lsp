@@ -1948,10 +1948,10 @@
      (6 6 (:META CANCEL_PLUS-EQUAL-CORRECT))
      (2 2 (:REWRITE SUBSETP-OF-CDR)))
 (VL::STRING-LISTP-OF-STRIP-CDRS-OF-PAIRLIS$
-     (46 1 (:REWRITE TAKE-WHEN-PREFIXP))
-     (32 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (29 5 (:REWRITE LEN-WHEN-ATOM))
-     (24 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (63 1 (:REWRITE TAKE-WHEN-PREFIXP))
+     (49 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (35 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (33 9 (:REWRITE LEN-WHEN-ATOM))
      (18 18
          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
      (18 18
@@ -2151,8 +2151,6 @@
      (3 3 (:REWRITE DEFAULT-CDR))
      (3 3 (:REWRITE DEFAULT-CAR))
      (3 3 (:REWRITE CAR-WHEN-ALL-EQUALP))
-     (3 3
-        (:REWRITE CAR-OF-STRING-LIST-FIX-X-NORMALIZE-CONST-UNDER-STREQV))
      (2 2 (:REWRITE CONSP-OF-CDR-BY-LEN)))
 (VL::PLIST-WORLDP-OF-W)
 (VL::ALISTP-OF-MAKE-FAL
@@ -3058,17 +3056,18 @@
      (2 2 (:REWRITE DEFAULT-<-2))
      (2 2 (:REWRITE DEFAULT-<-1))
      (2 2 (:META CANCEL_PLUS-LESSP-CORRECT)))
-(VL::LEN-OF-CDR-STRONG (204 2
+(VL::LEN-OF-CDR-STRONG (214 6
                             (:REWRITE LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                       (176 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                       (106 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                       (92 6 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                       (186 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                       (116 8 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                       (100 8 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                       (50 6 (:REWRITE LEN-WHEN-PREFIXP))
                        (28 12 (:REWRITE LEN-WHEN-ATOM))
-                       (22 6
+                       (24 8
                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                       (22 6
+                       (24 8
                            (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-                       (22 2 (:REWRITE LEN-WHEN-PREFIXP))
+                       (22 22 (:TYPE-PRESCRIPTION PREFIXP))
                        (20 20
                            (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
                        (20 20
@@ -3076,30 +3075,26 @@
                        (20 10
                            (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
                        (18 2 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                       (14 14 (:TYPE-PRESCRIPTION PREFIXP))
-                       (12 12
-                           (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                       (12 12
-                           (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                       (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+                       (12 6 (:REWRITE DEFAULT-<-2))
+                       (12 6 (:REWRITE DEFAULT-<-1))
                        (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
                        (10 10 (:REWRITE CONSP-BY-LEN))
-                       (8 8 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                       (8 4 (:REWRITE SET::DOUBLE-CONTAINMENT))
-                       (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                       (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                       (6 6
+                       (8 8 (:TYPE-PRESCRIPTION SUBLISTP))
+                       (8 8 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                       (8 8 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                       (8 8
                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                       (6 6
+                       (8 8
                           (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                       (6 6 (:LINEAR LEQ-POSITION-EQUAL-LEN))
-                       (6 6 (:LINEAR INDEX-OF-<-LEN))
-                       (4 4 (:TYPE-PRESCRIPTION SUBLISTP))
-                       (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
-                       (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT))
-                       (4 2 (:REWRITE DEFAULT-<-2))
-                       (4 2 (:REWRITE DEFAULT-<-1))
+                       (8 8 (:REWRITE CONSP-OF-CDR-BY-LEN))
+                       (8 8
+                          (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                       (8 8
+                          (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+                       (8 8 (:LINEAR LEN-WHEN-PREFIXP))
+                       (6 6 (:META CANCEL_PLUS-LESSP-CORRECT))
+                       (4 4 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+                       (4 4 (:LINEAR INDEX-OF-<-LEN))
                        (2 2 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                        (2 2 (:REWRITE SUBLISTP-COMPLETE))
-                       (2 2 (:REWRITE DEFAULT-CDR))
-                       (2 2 (:META CANCEL_PLUS-LESSP-CORRECT)))
+                       (2 2 (:REWRITE DEFAULT-CDR)))

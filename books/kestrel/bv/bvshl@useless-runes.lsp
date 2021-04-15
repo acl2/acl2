@@ -10,6 +10,8 @@
                  (1 1 (:REWRITE DEFAULT-+-2))
                  (1 1 (:REWRITE DEFAULT-+-1))
                  (1 1
+                    (:REWRITE BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE))
+                 (1 1
                     (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
                  (1 1
                     (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
@@ -67,6 +69,8 @@
      (3 3
         (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
      (3 3
+        (:REWRITE BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE))
+     (3 3
         (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
      (3 3
         (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
@@ -110,6 +114,8 @@
                     (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
                  (1 1 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
                  (1 1
+                    (:REWRITE BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE))
+                 (1 1
                     (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
                  (1 1
                     (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
@@ -129,9 +135,9 @@
                              (:REWRITE BVCAT-WHEN-HIGHSIZE-IS-NOT-POSP))
                           (4 4 (:REWRITE DEFAULT-<-2))
                           (4 4 (:REWRITE DEFAULT-<-1))
+                          (3 3 (:REWRITE DEFAULT-+-2))
+                          (3 3 (:REWRITE DEFAULT-+-1))
                           (2 2 (:TYPE-PRESCRIPTION POSP))
-                          (2 2 (:REWRITE DEFAULT-+-2))
-                          (2 2 (:REWRITE DEFAULT-+-1))
                           (1 1 (:REWRITE FOLD-CONSTS-IN-+))
                           (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
                           (1 1

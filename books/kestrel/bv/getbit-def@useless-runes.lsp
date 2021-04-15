@@ -1,15 +1,15 @@
 (GETBIT (40 40 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-        (28 4 (:REWRITE FLOOR-WHEN-<))
-        (18 6
+        (38 4 (:REWRITE FLOOR-WHEN-<))
+        (24 6
             (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
-        (15 3 (:REWRITE DEFAULT-UNARY-/))
+        (21 3 (:REWRITE DEFAULT-UNARY-/))
         (13 13
             (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
         (13 13
             (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-        (9 3 (:REWRITE DEFAULT-*-2))
-        (8 4 (:REWRITE DEFAULT-<-2))
-        (5 3 (:REWRITE DEFAULT-*-1))
+        (12 3 (:REWRITE DEFAULT-*-2))
+        (10 4 (:REWRITE DEFAULT-<-2))
+        (6 3 (:REWRITE DEFAULT-*-1))
         (4 4
            (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
         (4 4
@@ -18,7 +18,6 @@
            (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
         (4 4
            (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
-        (4 4 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
         (4 4 (:REWRITE DEFAULT-<-1))
         (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
         (1 1 (:REWRITE DEFAULT-+-2))

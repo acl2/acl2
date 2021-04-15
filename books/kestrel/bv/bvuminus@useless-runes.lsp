@@ -35,14 +35,14 @@
         (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
      (1 1 (:REWRITE BVCHOP-SUBST-CONSTANT)))
 (BVUMINUS-EQUAL-CONSTANT
-     (60 36 (:REWRITE DEFAULT-<-2))
+     (72 36 (:REWRITE DEFAULT-<-2))
      (36 36 (:REWRITE DEFAULT-<-1))
+     (22 7 (:REWRITE DEFAULT-+-2))
      (21 7 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
-     (17 7 (:REWRITE DEFAULT-+-2))
      (16 16 (:REWRITE BVCHOP-SUBST-CONSTANT))
-     (12 2 (:REWRITE BVCHOP-IMPOSSIBLE-VALUE))
+     (14 2 (:REWRITE BVCHOP-IMPOSSIBLE-VALUE))
+     (13 7 (:REWRITE DEFAULT-+-1))
      (11 11 (:TYPE-PRESCRIPTION POSP))
-     (11 7 (:REWRITE DEFAULT-+-1))
      (11 3 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR))
      (7 7
         (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
@@ -116,11 +116,11 @@
      (13 13 (:REWRITE BVCHOP-SUBST-CONSTANT))
      (12 10
          (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
+     (12 3 (:REWRITE DEFAULT-+-1))
      (10 10 (:TYPE-PRESCRIPTION POSP))
      (10 10
          (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
      (10 10 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
-     (9 3 (:REWRITE DEFAULT-+-1))
      (7 3 (:REWRITE BVCHOP-IMPOSSIBLE-VALUE))
      (5 5
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -153,10 +153,10 @@
      (20 12
          (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
      (15 15 (:REWRITE BVCHOP-SUBST-CONSTANT))
+     (14 5 (:REWRITE DEFAULT-+-1))
      (12 12 (:TYPE-PRESCRIPTION POSP))
      (12 12
          (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
-     (11 5 (:REWRITE DEFAULT-+-1))
      (10 10 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
      (7 3 (:REWRITE BVCHOP-IMPOSSIBLE-VALUE))
      (6 6
@@ -193,13 +193,13 @@
      (12 8
          (:REWRITE BVCHOP-WHEN-NOT-NATP-ARG1-CHEAP))
      (10 10 (:REWRITE BVCHOP-SUBST-CONSTANT))
+     (9 3 (:REWRITE DEFAULT-+-1))
      (8 8 (:TYPE-PRESCRIPTION POSP))
      (8 8
         (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
      (8 8
         (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
      (8 8 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
-     (7 3 (:REWRITE DEFAULT-+-1))
      (6 6 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
      (6 2 (:REWRITE BVCHOP-IMPOSSIBLE-VALUE))
      (4 4
@@ -221,17 +221,17 @@
      (43 15 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
      (26 26 (:REWRITE BVCHOP-SUBST-CONSTANT))
      (25 5 (:REWRITE UNSIGNED-BYTE-P-OF-0-ARG1))
+     (22 7 (:REWRITE DEFAULT-+-2))
      (20 20 (:REWRITE DEFAULT-<-2))
      (20 20 (:REWRITE DEFAULT-<-1))
      (19 19 (:TYPE-PRESCRIPTION POSP))
-     (17 7 (:REWRITE DEFAULT-+-2))
      (15 15
          (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
      (15 15
          (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
      (15 15
          (:REWRITE BVCHOP-WHEN-NOT-NATP-ARG1-CHEAP))
-     (11 7 (:REWRITE DEFAULT-+-1))
+     (13 7 (:REWRITE DEFAULT-+-1))
      (6 2
         (:REWRITE UNSIGNED-BYTE-P-OF-BVCHOP-WHEN-ALREADY))
      (5 4 (:REWRITE DEFAULT-UNARY-MINUS))
@@ -266,7 +266,7 @@
      (13 3 (:REWRITE UNSIGNED-BYTE-P-OF-0-ARG1))
      (12 12
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-     (6 2 (:REWRITE DEFAULT-+-2))
+     (8 2 (:REWRITE DEFAULT-+-2))
      (5 5 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
      (2 2 (:REWRITE DEFAULT-UNARY-MINUS))
      (2 2 (:REWRITE DEFAULT-+-1))
@@ -307,3 +307,85 @@
                             (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
                          (1 1 (:REWRITE BVCHOP-SUBST-CONSTANT)))
 (BVUMINUS-OF-BVCHOP-ARG2-SAME)
+(BVPLUS-OF-BVUMINUS-SAME (22 1 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR))
+                         (21 21 (:TYPE-PRESCRIPTION IFIX))
+                         (19 2 (:DEFINITION NATP))
+                         (6 2 (:REWRITE BVCHOP-IDENTITY))
+                         (5 5 (:TYPE-PRESCRIPTION NATP))
+                         (5 3 (:REWRITE DEFAULT-<-1))
+                         (5 1
+                            (:LINEAR BVCHOP-UPPER-BOUND-LINEAR-STRONG))
+                         (4 4 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                         (4 3 (:REWRITE DEFAULT-<-2))
+                         (4 2
+                            (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
+                         (4 2
+                            (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
+                         (4 2
+                            (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
+                         (4 1 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
+                         (3 1
+                            (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
+                         (2 2 (:TYPE-PRESCRIPTION POSP))
+                         (2 2 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                         (2 2
+                            (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
+                         (2 2 (:REWRITE DEFAULT-+-2))
+                         (2 2 (:REWRITE DEFAULT-+-1))
+                         (2 2 (:REWRITE BVCHOP-SUBST-CONSTANT))
+                         (2 2 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
+                         (2 1
+                            (:REWRITE BVCHOP-WHEN-NOT-NATP-ARG1-CHEAP))
+                         (1 1
+                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                         (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
+                         (1 1
+                            (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
+                         (1 1
+                            (:REWRITE BVCHOP-SUM-SUBST-CONST-ARG2))
+                         (1 1 (:REWRITE BVCHOP-SUM-SUBST-CONST))
+                         (1 1
+                            (:REWRITE BVCHOP-CHOP-LEADING-CONSTANT)))
+(BVPLUS-OF-BVUMINUS-SAME-ALT
+     (18 1
+         (:REWRITE BVUMINUS-WHEN-BVCHOP-KNOWN-SUBST))
+     (6 2
+        (:REWRITE BVPLUS-WHEN-NOT-NATP-ARG1-CHEAP))
+     (4 3 (:REWRITE DEFAULT-<-2))
+     (4 2
+        (:REWRITE BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE))
+     (4 1 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
+     (3 3 (:TYPE-PRESCRIPTION NATP))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 2
+        (:REWRITE BVPLUS-WHEN-ARG2-IS-NOT-AN-INTEGER))
+     (3 2
+        (:REWRITE BVPLUS-WHEN-ARG1-IS-NOT-AN-INTEGER))
+     (3 1 (:REWRITE BVCHOP-IDENTITY))
+     (3 1 (:DEFINITION NATP))
+     (2 2 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+     (2 2 (:TYPE-PRESCRIPTION BVUMINUS))
+     (2 2
+        (:REWRITE BVPLUS-WHEN-EQUAL-OF-CONSTANT-AND-BVCHOP-ARG3))
+     (2 2
+        (:REWRITE BVPLUS-WHEN-EQUAL-OF-CONSTANT-AND-BVCHOP-ARG2))
+     (2 2 (:REWRITE BVPLUS-SUBST-VALUE-ALT))
+     (2 2 (:REWRITE BVPLUS-SUBST-VALUE))
+     (2 1
+        (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
+     (2 1
+        (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
+     (2 1
+        (:REWRITE BVCHOP-WHEN-NOT-NATP-ARG1-CHEAP))
+     (1 1 (:TYPE-PRESCRIPTION POSP))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE BVUMINUS-WHEN-ARG-IS-NOT-AN-INTEGER))
+     (1 1
+        (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
+     (1 1
+        (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
+     (1 1
+        (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
+     (1 1 (:REWRITE BVCHOP-SUBST-CONSTANT)))

@@ -175,28 +175,29 @@
                     (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
                  (3 3
                     (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP)))
-(EXPT-GATHER-TIMES (656 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+(EXPT-GATHER-TIMES (620 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
                    (188 2 (:REWRITE <-*-/-RIGHT))
-                   (181 181 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                   (181 181
+                   (173 173 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                   (173 173
                         (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
                    (146 2
                         (:REWRITE <-UNARY-/-POSITIVE-RIGHT-BETTER))
-                   (96 4 (:LINEAR X*Y>1-POSITIVE))
                    (91 4 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
-                   (84 2 (:REWRITE X*Y>1-POSITIVE))
+                   (78 4 (:LINEAR X*Y>1-POSITIVE))
                    (70 10 (:REWRITE DEFAULT-*-2))
-                   (60 22 (:REWRITE DEFAULT-<-2))
+                   (66 2 (:REWRITE X*Y>1-POSITIVE))
                    (46 22 (:REWRITE DEFAULT-<-1))
                    (40 8 (:LINEAR EXPT->-1))
+                   (36 22 (:REWRITE DEFAULT-<-2))
                    (35 10 (:REWRITE DEFAULT-*-1))
                    (34 2 (:REWRITE COMMUTATIVITY-OF-*))
                    (32 4 (:REWRITE UNICITY-OF-1))
+                   (30 30 (:REWRITE DROP->-HYPS))
+                   (30 30 (:REWRITE DROP-<-HYPS))
                    (28 4 (:DEFINITION FIX))
-                   (26 26 (:REWRITE DROP->-HYPS))
-                   (26 26 (:REWRITE DROP-<-HYPS))
                    (26 2 (:REWRITE DEFAULT-UNARY-/))
                    (25 1 (:REWRITE NUMERATOR-WHEN-INTEGERP))
+                   (20 4 (:REWRITE <-OF-1-AND-EXPT))
                    (16 16
                        (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1))
                    (14 2
@@ -476,18 +477,18 @@
                         (1 1 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
                         (1 1
                            (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT)))
-(EQUAL-OF-SUM-CANCEL-3 (12 8 (:REWRITE DEFAULT-+-1))
-                       (11 8 (:REWRITE DEFAULT-+-2))
-                       (8 8
+(EQUAL-OF-SUM-CANCEL-3 (7 5 (:REWRITE DEFAULT-+-1))
+                       (6 5 (:REWRITE DEFAULT-+-2))
+                       (4 4
                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                       (5 5 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
-                       (5 5
+                       (4 4
                           (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
-                       (5 5
+                       (4 4
                           (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
-                       (5 5 (:REWRITE EQUAL-CONSTANT-+))
-                       (3 3 (:REWRITE FOLD-CONSTS-IN-+))
-                       (3 3 (:REWRITE +-COMBINE-CONSTANTS)))
+                       (4 4 (:REWRITE EQUAL-CONSTANT-+))
+                       (3 3 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
+                       (2 2 (:REWRITE FOLD-CONSTS-IN-+))
+                       (2 2 (:REWRITE +-COMBINE-CONSTANTS)))
 (EQUAL-WHEN-<-OF-+ (2 2
                       (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                    (2 1 (:REWRITE DEFAULT-+-2))
@@ -509,11 +510,11 @@
                        (1 1
                           (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT)))
 (HACK1)
-(EQUAL-OF-SAME-CANCEL-1 (4 4
+(EQUAL-OF-SAME-CANCEL-1 (6 6
                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                        (2 2 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
-                        (2 2 (:REWRITE EQUAL-WHEN-<-OF-+))
-                        (2 2 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
+                        (4 4 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
+                        (4 4 (:REWRITE EQUAL-WHEN-<-OF-+))
+                        (2 1 (:REWRITE DEFAULT-+-2))
                         (2 1 (:REWRITE DEFAULT-+-1))
                         (1 1
                            (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
@@ -680,6 +681,8 @@
           (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
      (151 151
           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP))
+     (48 48
+         (:TYPE-PRESCRIPTION <=-OF-0-AND-EXPT))
      (48 48 (:TYPE-PRESCRIPTION <-OF-0-AND-EXPT))
      (28 14 (:REWRITE DEFAULT-<-2))
      (28 14 (:REWRITE DEFAULT-<-1))
@@ -695,328 +698,93 @@
      (2 2
         (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1)))
 (<-OF-CONSTANT-WHEN-<=-OF-FREE)
-(RATIONALP-WHEN-INTEGERP)
-(POWER-OF-2P (7 7 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-             (7 7
-                (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE)))
-(INTEGERP-OF-POWER2-HACK
-     (447 9 (:DEFINITION INTEGER-LENGTH))
-     (405 9 (:DEFINITION FLOOR))
-     (385 10 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
-     (366 366 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-     (366 366
-          (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-     (266 3 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (216 9
-          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-     (182 3
-          (:REWRITE <-UNARY-/-POSITIVE-RIGHT-BETTER))
-     (132 40 (:REWRITE INTEGERP-OF-*))
-     (132 14 (:REWRITE NUMERATOR-WHEN-INTEGERP))
-     (130 34 (:REWRITE DEFAULT-*-2))
-     (85 53 (:REWRITE DEFAULT-+-2))
-     (79 16
-         (:REWRITE COMMUTATIVITY-OF-*-WHEN-CONSTANT))
-     (75 53 (:REWRITE DEFAULT-<-1))
-     (65 5 (:REWRITE DEFAULT-UNARY-/))
-     (63 9 (:DEFINITION NFIX))
-     (59 59 (:REWRITE DROP->-HYPS))
-     (59 59 (:REWRITE DROP-<-HYPS))
-     (59 53 (:REWRITE DEFAULT-+-1))
-     (56 53 (:REWRITE DEFAULT-<-2))
-     (52 34 (:REWRITE DEFAULT-*-1))
-     (50 6 (:LINEAR EXPT->-1))
-     (50 1 (:LINEAR EXPT-HALF-LINEAR))
-     (43 43 (:REWRITE DROP-<=-HYPS))
-     (43 43
-         (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
-     (40 2 (:REWRITE INTEGERP-OF-/))
-     (37 13 (:REWRITE DEFAULT-NUMERATOR))
-     (30 6 (:REWRITE INTEGERP-OF-EXPT))
-     (28 2 (:REWRITE INTEGERP-OF-/-OF-EXPT-2))
-     (27 9 (:REWRITE EQUAL-DENOMINATOR-1))
-     (21 3
-         (:REWRITE <-UNARY-/-NEGATIVE-RIGHT-BETTER))
-     (18 9 (:REWRITE INTEGERP==>DENOMINATOR=1))
-     (15 3 (:LINEAR X*Y>1-POSITIVE))
-     (14 14 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
-     (14 14 (:REWRITE EQUAL-WHEN-<-OF-+))
-     (13 5 (:REWRITE COLLECT-CONSTANTS-OVER-<))
-     (11 11 (:REWRITE DEFAULT-UNARY-MINUS))
-     (9 9
-        (:TYPE-PRESCRIPTION NONNEGATIVE-INTEGER-QUOTIENT))
-     (9 9 (:REWRITE DEFAULT-DENOMINATOR))
-     (9 9 (:DEFINITION IFIX))
-     (7 7 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
-     (6 6 (:REWRITE ZIP-OPEN))
-     (6 6
-        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-     (6 6 (:LINEAR <-OF-*-AND-*))
-     (4 4
-        (:REWRITE COLLECT-CONSTANTS-TIMES-EQUAL))
-     (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-     (4 4
-        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
-     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-     (3 3 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-     (2 2 (:REWRITE FOLD-CONSTS-IN-+))
-     (2 2 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
-     (2 2 (:REWRITE COLLECT-CONSTANTS-OVER-<-2))
-     (2 2 (:REWRITE +-COMBINE-CONSTANTS)))
-(INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR
-     (596 16 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
-     (559 559 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-     (559 559
-          (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-     (544 11 (:DEFINITION INTEGER-LENGTH))
-     (495 11 (:DEFINITION FLOOR))
-     (264 11
-          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-     (229 53 (:REWRITE INTEGERP-OF-*))
-     (204 18 (:REWRITE NUMERATOR-WHEN-INTEGERP))
-     (186 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (162 40 (:REWRITE DEFAULT-*-2))
-     (130 2
-          (:REWRITE <-UNARY-/-POSITIVE-RIGHT-BETTER))
-     (109 69 (:REWRITE DEFAULT-+-2))
-     (104 8 (:REWRITE DEFAULT-UNARY-/))
-     (80 62 (:REWRITE DEFAULT-<-1))
-     (77 69 (:REWRITE DEFAULT-+-1))
-     (77 11 (:DEFINITION NFIX))
-     (76 40 (:REWRITE DEFAULT-*-1))
-     (72 18
-         (:REWRITE COMMUTATIVITY-OF-*-WHEN-CONSTANT))
-     (67 67 (:REWRITE DROP->-HYPS))
-     (67 67 (:REWRITE DROP-<-HYPS))
-     (64 62 (:REWRITE DEFAULT-<-2))
-     (60 18 (:REWRITE DEFAULT-NUMERATOR))
-     (60 3 (:REWRITE INTEGERP-OF-/))
-     (56 56 (:REWRITE DROP-<=-HYPS))
-     (56 56
-         (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
-     (52 10 (:REWRITE INTEGERP-OF-EXPT))
-     (50 1 (:LINEAR EXPT-HALF-LINEAR))
-     (42 3 (:REWRITE INTEGERP-OF-/-OF-EXPT-2))
-     (35 4 (:LINEAR EXPT->-1))
-     (33 11 (:REWRITE EQUAL-DENOMINATOR-1))
-     (22 11 (:REWRITE INTEGERP==>DENOMINATOR=1))
-     (17 17 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
-     (17 17 (:REWRITE EQUAL-WHEN-<-OF-+))
-     (15 15 (:REWRITE DEFAULT-UNARY-MINUS))
-     (15 7 (:REWRITE COLLECT-CONSTANTS-OVER-<))
-     (14 2
-         (:REWRITE <-UNARY-/-NEGATIVE-RIGHT-BETTER))
-     (11 11
-         (:TYPE-PRESCRIPTION NONNEGATIVE-INTEGER-QUOTIENT))
-     (11 11 (:REWRITE DEFAULT-DENOMINATOR))
-     (11 11 (:DEFINITION IFIX))
-     (10 2 (:LINEAR X*Y>1-POSITIVE))
-     (8 8 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
-     (8 8
-        (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1))
-     (6 6
-        (:REWRITE EXPONENTS-ADD-FOR-NONNEG-EXPONENTS))
-     (6 6 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-     (6 6
-        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
-     (5 5 (:REWRITE ZIP-OPEN))
-     (5 5 (:REWRITE INTEGERP-OF-POWER2-HACK))
-     (4 4 (:REWRITE FOLD-CONSTS-IN-+))
-     (4 4
-        (:REWRITE COLLECT-CONSTANTS-TIMES-EQUAL))
-     (4 4 (:REWRITE +-COMBINE-CONSTANTS))
-     (4 4
-        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-     (4 4 (:LINEAR <-OF-*-AND-*))
-     (2 2 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
-     (2 2 (:REWRITE COLLECT-CONSTANTS-OVER-<-2))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1)))
-(INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR-ALT
-     (440 440 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-     (440 440
-          (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-     (428 12 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
-     (297 6 (:DEFINITION INTEGER-LENGTH))
-     (270 6 (:DEFINITION FLOOR))
-     (187 30 (:REWRITE INTEGERP-OF-*))
-     (186 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (144 6
-          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-     (142 11 (:REWRITE NUMERATOR-WHEN-INTEGERP))
-     (130 2
-          (:REWRITE <-UNARY-/-POSITIVE-RIGHT-BETTER))
-     (119 27 (:REWRITE DEFAULT-*-2))
-     (78 6 (:REWRITE DEFAULT-UNARY-/))
-     (62 38 (:REWRITE DEFAULT-+-2))
-     (60 3 (:REWRITE INTEGERP-OF-/))
-     (56 41 (:REWRITE DEFAULT-<-1))
-     (55 11
-         (:REWRITE COMMUTATIVITY-OF-*-WHEN-CONSTANT))
-     (50 1 (:LINEAR EXPT-HALF-LINEAR))
-     (45 45 (:REWRITE DROP->-HYPS))
-     (45 45 (:REWRITE DROP-<-HYPS))
-     (45 27 (:REWRITE DEFAULT-*-1))
-     (44 38 (:REWRITE DEFAULT-+-1))
-     (43 41 (:REWRITE DEFAULT-<-2))
-     (42 6 (:DEFINITION NFIX))
-     (42 3 (:REWRITE INTEGERP-OF-/-OF-EXPT-2))
-     (41 11 (:REWRITE DEFAULT-NUMERATOR))
-     (38 8 (:REWRITE INTEGERP-OF-EXPT))
-     (35 4 (:LINEAR EXPT->-1))
-     (34 34 (:REWRITE DROP-<=-HYPS))
-     (34 34
-         (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
-     (18 6 (:REWRITE EQUAL-DENOMINATOR-1))
-     (14 2
-         (:REWRITE <-UNARY-/-NEGATIVE-RIGHT-BETTER))
-     (12 6 (:REWRITE INTEGERP==>DENOMINATOR=1))
-     (12 4 (:REWRITE COLLECT-CONSTANTS-OVER-<))
-     (10 2 (:LINEAR X*Y>1-POSITIVE))
-     (9 9 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
-     (9 9 (:REWRITE EQUAL-WHEN-<-OF-+))
-     (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
-     (8 8
-        (:LINEAR EXPT-IS-INCREASING-FOR-BASE>1))
-     (6 6
-        (:TYPE-PRESCRIPTION NONNEGATIVE-INTEGER-QUOTIENT))
-     (6 6 (:REWRITE DEFAULT-DENOMINATOR))
-     (6 6 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
-     (6 6 (:DEFINITION IFIX))
-     (4 4 (:REWRITE INTEGERP-OF-POWER2-HACK))
-     (4 4
-        (:REWRITE EXPONENTS-ADD-FOR-NONNEG-EXPONENTS))
-     (4 4
-        (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-     (4 4 (:LINEAR <-OF-*-AND-*))
-     (3 3 (:REWRITE ZIP-OPEN))
-     (3 3 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-     (3 3
-        (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
-     (2 2 (:REWRITE FOLD-CONSTS-IN-+))
-     (2 2
-        (:REWRITE COLLECT-CONSTANTS-TIMES-EQUAL))
-     (2 2 (:REWRITE +-COMBINE-CONSTANTS))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-     (2 2 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-     (2 1
-        (:REWRITE INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR))
-     (1 1 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
-     (1 1
-        (:REWRITE COLLECT-CONSTANTS-OVER-<-2)))
 (<-OF-SUMS-CANCEL)
 (NO-ROOM-BETWEEN-INTS-LEMMA)
-(<-OF-EXPT-CANCEL-LEMMA (139 1 (:REWRITE <-*-/-RIGHT-COMMUTED))
-                        (126 126 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                        (126 126
+(<-OF-EXPT-CANCEL-LEMMA (115 115 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                        (115 115
                              (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-                        (97 8 (:REWRITE RATIONALP-WHEN-INTEGERP))
-                        (49 3
-                            (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-                        (47 2
-                            (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
+                        (44 1 (:REWRITE <-*-/-RIGHT-COMMUTED))
                         (30 6 (:REWRITE DEFAULT-+-2))
-                        (23 5 (:REWRITE DEFAULT-<-1))
+                        (23 2
+                            (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
+                        (21 3 (:REWRITE DEFAULT-<-1))
                         (14 2 (:REWRITE DEFAULT-*-2))
-                        (14 1 (:REWRITE INTEGERP-OF-EXPT-WHEN-NATP))
-                        (11 5 (:REWRITE DEFAULT-<-2))
-                        (10 6 (:REWRITE DEFAULT-+-1))
-                        (5 5 (:REWRITE DROP->-HYPS))
-                        (5 5 (:REWRITE DROP-<=-HYPS))
-                        (5 5 (:REWRITE DROP-<-HYPS))
-                        (5 5
-                           (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
-                        (5 3
+                        (9 3 (:REWRITE DEFAULT-<-2))
+                        (8 6 (:REWRITE DEFAULT-+-1))
+                        (3 3
                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                        (4 2 (:REWRITE RATIONALP-OF-+))
                         (3 3 (:REWRITE NO-ROOM-BETWEEN-INTS-LEMMA))
-                        (3 3
-                           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-                        (3 3
-                           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+                        (3 3 (:REWRITE DROP->-HYPS))
+                        (3 3 (:REWRITE DROP-<=-HYPS))
+                        (3 3 (:REWRITE DROP-<-HYPS))
                         (3 3 (:REWRITE COLLECT-CONSTANTS-OVER-<-2))
+                        (3 3
+                           (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
                         (3 3 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
                         (3 3
                            (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                        (2 2 (:REWRITE RATIONALP-OF-+))
                         (2 2 (:REWRITE FOLD-CONSTS-IN-+))
                         (2 2
                            (:REWRITE EXPONENTS-ADD-FOR-NONNEG-EXPONENTS))
                         (2 2 (:REWRITE EXPONENTS-ADD))
                         (2 2 (:REWRITE DEFAULT-*-1))
                         (2 2 (:REWRITE +-COMBINE-CONSTANTS))
-                        (2 1
-                           (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG1))
                         (2 1 (:DEFINITION FIX))
+                        (1 1
+                           (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG1))
                         (1 1 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
                         (1 1 (:REWRITE EQUAL-WHEN-<-OF-+)))
-(<-OF-EXPT-CANCEL-LEMMA-2 (115 115 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                          (115 115
+(<-OF-EXPT-CANCEL-LEMMA-2 (110 110 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                          (110 110
                                (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-                          (73 1 (:REWRITE <-*-/-RIGHT-COMMUTED))
-                          (51 4 (:REWRITE RATIONALP-WHEN-INTEGERP))
-                          (27 1
-                              (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-                          (23 5 (:REWRITE DEFAULT-<-1))
+                          (23 1 (:REWRITE <-*-/-RIGHT-COMMUTED))
+                          (21 3 (:REWRITE DEFAULT-<-1))
                           (16 4 (:REWRITE DEFAULT-+-2))
                           (14 2 (:REWRITE DEFAULT-*-2))
-                          (14 1 (:REWRITE INTEGERP-OF-EXPT-WHEN-NATP))
-                          (11 5 (:REWRITE DEFAULT-<-2))
-                          (10 1
-                              (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
-                          (6 4 (:REWRITE DEFAULT-+-1))
-                          (5 5 (:REWRITE DROP->-HYPS))
-                          (5 5 (:REWRITE DROP-<=-HYPS))
-                          (5 5 (:REWRITE DROP-<-HYPS))
-                          (5 5
-                             (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
+                          (9 3 (:REWRITE DEFAULT-<-2))
+                          (9 1
+                             (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
+                          (5 4 (:REWRITE DEFAULT-+-1))
                           (3 3 (:REWRITE NO-ROOM-BETWEEN-INTS-LEMMA))
+                          (3 3 (:REWRITE DROP->-HYPS))
+                          (3 3 (:REWRITE DROP-<=-HYPS))
+                          (3 3 (:REWRITE DROP-<-HYPS))
                           (3 3 (:REWRITE COLLECT-CONSTANTS-OVER-<-2))
+                          (3 3
+                             (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
                           (3 3 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
                           (3 3
                              (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
-                          (3 2
+                          (2 2
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                           (2 2
                              (:REWRITE EXPONENTS-ADD-FOR-NONNEG-EXPONENTS))
                           (2 2 (:REWRITE EXPONENTS-ADD))
                           (2 2 (:REWRITE DEFAULT-*-1))
-                          (2 1 (:REWRITE RATIONALP-OF-+))
                           (2 1 (:DEFINITION FIX))
-                          (1 1
-                             (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-                          (1 1
-                             (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+                          (1 1 (:REWRITE RATIONALP-OF-+))
                           (1 1 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
                           (1 1 (:REWRITE EQUAL-WHEN-<-OF-+)))
-(<-OF-EXPT-CANCEL-LEMMA-3 (118 118 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                          (118 118
+(<-OF-EXPT-CANCEL-LEMMA-3 (113 113 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                          (113 113
                                (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-                          (79 1 (:REWRITE <-*-/-LEFT-COMMUTED))
-                          (51 4 (:REWRITE RATIONALP-WHEN-INTEGERP))
-                          (27 1
-                              (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-                          (23 5 (:REWRITE DEFAULT-<-2))
-                          (20 6 (:REWRITE DEFAULT-+-2))
+                          (29 1 (:REWRITE <-*-/-LEFT-COMMUTED))
+                          (21 3 (:REWRITE DEFAULT-<-2))
+                          (19 6 (:REWRITE DEFAULT-+-2))
                           (19 6 (:REWRITE DEFAULT-+-1))
                           (14 2 (:REWRITE DEFAULT-*-2))
-                          (14 1 (:REWRITE INTEGERP-OF-EXPT-WHEN-NATP))
-                          (11 5 (:REWRITE DEFAULT-<-1))
-                          (10 1
-                              (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
-                          (5 5 (:REWRITE DROP->-HYPS))
-                          (5 5 (:REWRITE DROP-<=-HYPS))
-                          (5 5 (:REWRITE DROP-<-HYPS))
-                          (5 5
-                             (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
-                          (4 3
+                          (9 3 (:REWRITE DEFAULT-<-1))
+                          (9 1
+                             (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
+                          (3 3
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                          (3 3 (:REWRITE DROP->-HYPS))
+                          (3 3 (:REWRITE DROP-<=-HYPS))
+                          (3 3 (:REWRITE DROP-<-HYPS))
                           (3 3 (:REWRITE COLLECT-CONSTANTS-OVER-<))
+                          (3 3
+                             (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
                           (3 3 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
                           (3 3
                              (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
@@ -1024,12 +792,8 @@
                              (:REWRITE EXPONENTS-ADD-FOR-NONNEG-EXPONENTS))
                           (2 2 (:REWRITE EXPONENTS-ADD))
                           (2 2 (:REWRITE DEFAULT-*-1))
-                          (2 1 (:REWRITE RATIONALP-OF-+))
                           (2 1 (:DEFINITION FIX))
-                          (1 1
-                             (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-                          (1 1
-                             (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+                          (1 1 (:REWRITE RATIONALP-OF-+))
                           (1 1 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
                           (1 1 (:REWRITE EQUAL-WHEN-<-OF-+)))
 (<-OF-ONE-MORE)
@@ -1043,7 +807,6 @@
               (3 3 (:REWRITE NUMERATOR-WHEN-INTEGERP))
               (3 3 (:REWRITE DEFAULT-NUMERATOR))
               (3 2 (:REWRITE DEFAULT-UNARY-/))
-              (2 2 (:REWRITE RATIONALP-WHEN-INTEGERP))
               (1 1 (:REWRITE EQUAL-WHEN-<-OF-+-ALT))
               (1 1 (:REWRITE EQUAL-WHEN-<-OF-+))
               (1 1 (:REWRITE EQUAL-OF---WHEN-VARIABLE))

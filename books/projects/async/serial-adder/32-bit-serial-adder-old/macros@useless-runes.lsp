@@ -163,23 +163,23 @@
                      (2 1 (:DEFINITION TRUE-LISTP))
                      (1 1 (:TYPE-PRESCRIPTION ADE::REMOVE-LST)))
 (ADE::REMOVE-LEN-<-2)
-(ADE::GO-GEN (328 4 (:REWRITE LEN-WHEN-PREFIXP))
+(ADE::GO-GEN (312 12 (:REWRITE LEN-WHEN-PREFIXP))
              (296 290 (:REWRITE DEFAULT-CDR))
              (282 54 (:DEFINITION LEN))
              (256 250 (:REWRITE DEFAULT-CAR))
-             (248 8 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+             (232 8 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
              (175 35 (:DEFINITION REMOVE-EQUAL))
              (168 8 (:REWRITE PREFIXP-WHEN-PREFIXP))
              (114 60 (:REWRITE DEFAULT-+-2))
+             (93 55 (:REWRITE DEFAULT-<-1))
              (80 40 (:DEFINITION TRUE-LISTP))
-             (77 47 (:REWRITE DEFAULT-<-1))
+             (67 55 (:REWRITE DEFAULT-<-2))
              (60 60 (:REWRITE DEFAULT-+-1))
-             (52 52 (:LINEAR LEN-WHEN-PREFIXP))
-             (51 47 (:REWRITE DEFAULT-<-2))
-             (26 26
-                 (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-             (20 20 (:TYPE-PRESCRIPTION PREFIXP))
+             (28 28 (:TYPE-PRESCRIPTION PREFIXP))
+             (28 28 (:LINEAR LEN-WHEN-PREFIXP))
              (16 4 (:DEFINITION ADE::IDX->CAR-CDR))
+             (14 14
+                 (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
              (8 8
                 (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
              (8 8
@@ -191,59 +191,56 @@
              (8 8
                 (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
              (4 4 (:REWRITE ZP-OPEN)))
-(ADE::ST-TRANS-GEN
-     (210 1 (:DEFINITION ADE::GO-GEN))
-     (178 12 (:DEFINITION BINARY-APPEND))
-     (90 60 (:REWRITE DEFAULT-CDR))
-     (86 56 (:REWRITE DEFAULT-CAR))
-     (82 1 (:REWRITE LEN-WHEN-PREFIXP))
-     (68 32 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (62 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (42 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
-     (40 8 (:DEFINITION LEN))
-     (30 18
-         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (20 20 (:TYPE-PRESCRIPTION ADE::GO-GEN1))
-     (20 6
-         (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
-     (17 9 (:REWRITE DEFAULT-+-2))
-     (17 1 (:DEFINITION ADE::REMOVE-LEN-<-2))
-     (16 2 (:DEFINITION ADE::REMOVE-LST))
-     (12 12 (:LINEAR LEN-WHEN-PREFIXP))
-     (12 4 (:DEFINITION ADE::GO-GEN1))
-     (11 11 (:REWRITE DEFAULT-SYMBOL-NAME))
-     (11 11
-         (:REWRITE CAR-OF-STRING-LIST-FIX-X-NORMALIZE-CONST-UNDER-STREQV))
-     (11 1 (:DEFINITION ADE::REMOVE-LST-LST))
-     (10 2 (:DEFINITION REMOVE-EQUAL))
-     (9 9 (:REWRITE DEFAULT-+-1))
-     (8 8 (:REWRITE STR::NATSTR-NONEMPTY))
-     (8 2
-        (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
-     (6 6
-        (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-     (6 4 (:REWRITE DEFAULT-<-1))
-     (6 3 (:DEFINITION TRUE-LISTP))
-     (5 5 (:TYPE-PRESCRIPTION PREFIXP))
-     (5 4 (:REWRITE DEFAULT-<-2))
-     (4 4
-        (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
-     (4 4 (:DEFINITION ADE::IDX->CAR-CDR))
-     (4 2
-        (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
-     (2 2
-        (:TYPE-PRESCRIPTION ADE::REMOVE-LST-LST))
-     (2 2 (:TYPE-PRESCRIPTION ADE::REMOVE-LST))
-     (2 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (2 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))
+(ADE::ST-TRANS-GEN (206 1 (:DEFINITION ADE::GO-GEN))
+                   (178 12 (:DEFINITION BINARY-APPEND))
+                   (90 60 (:REWRITE DEFAULT-CDR))
+                   (86 56 (:REWRITE DEFAULT-CAR))
+                   (78 3 (:REWRITE LEN-WHEN-PREFIXP))
+                   (68 32 (:REWRITE STR::CONSP-OF-EXPLODE))
+                   (58 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                   (42 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                   (40 8 (:DEFINITION LEN))
+                   (30 18
+                       (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                   (20 20 (:TYPE-PRESCRIPTION ADE::GO-GEN1))
+                   (20 6
+                       (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                   (17 9 (:REWRITE DEFAULT-+-2))
+                   (17 1 (:DEFINITION ADE::REMOVE-LEN-<-2))
+                   (16 2 (:DEFINITION ADE::REMOVE-LST))
+                   (12 4 (:DEFINITION ADE::GO-GEN1))
+                   (11 11 (:REWRITE DEFAULT-SYMBOL-NAME))
+                   (11 1 (:DEFINITION ADE::REMOVE-LST-LST))
+                   (10 6 (:REWRITE DEFAULT-<-1))
+                   (10 2 (:DEFINITION REMOVE-EQUAL))
+                   (9 9 (:REWRITE DEFAULT-+-1))
+                   (9 6 (:REWRITE DEFAULT-<-2))
+                   (8 8 (:REWRITE STR::NATSTR-NONEMPTY))
+                   (8 2
+                      (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+                   (7 7 (:TYPE-PRESCRIPTION PREFIXP))
+                   (6 6 (:LINEAR LEN-WHEN-PREFIXP))
+                   (6 3 (:DEFINITION TRUE-LISTP))
+                   (4 4
+                      (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+                   (4 4 (:DEFINITION ADE::IDX->CAR-CDR))
+                   (4 2
+                      (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
+                   (3 3
+                      (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
+                   (2 2
+                      (:TYPE-PRESCRIPTION ADE::REMOVE-LST-LST))
+                   (2 2 (:TYPE-PRESCRIPTION ADE::REMOVE-LST))
+                   (2 2
+                      (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                   (2 2
+                      (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                   (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                   (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                   (2 2
+                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                   (2 2
+                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)))
 (ADE::ST-TRANS-LST (3 3 (:REWRITE DEFAULT-CDR))
                    (3 3 (:REWRITE DEFAULT-CAR))
                    (3 3 (:REWRITE DEFAULT-+-2))
@@ -252,83 +249,77 @@
                    (1 1 (:REWRITE DEFAULT-SYMBOL-NAME))
                    (1 1 (:REWRITE DEFAULT-<-2))
                    (1 1 (:REWRITE DEFAULT-<-1)))
-(ADE::ST-TRANS->NUMSTEPS-LST
-     (60 3 (:DEFINITION BINARY-APPEND))
-     (28 12 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (26 14 (:REWRITE DEFAULT-CDR))
-     (26 14 (:REWRITE DEFAULT-CAR))
-     (13 13 (:REWRITE DEFAULT-+-2))
-     (13 13 (:REWRITE DEFAULT-+-1))
-     (10 6
-         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (8 2
-        (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
-     (6 6 (:REWRITE DEFAULT-SYMBOL-NAME))
-     (4 4 (:REWRITE STR::NATSTR-NONEMPTY))
-     (4 4
-        (:REWRITE CAR-OF-STRING-LIST-FIX-X-NORMALIZE-CONST-UNDER-STREQV))
-     (2 2 (:REWRITE ZP-OPEN))
-     (2 2 (:REWRITE DEFAULT-<-2))
-     (2 2 (:REWRITE DEFAULT-<-1)))
-(ADE::ST-TRANS-FN
-     (333 22 (:DEFINITION BINARY-APPEND))
-     (332 1
-          (:DEFINITION ADE::ST-TRANS->NUMSTEPS-LST))
-     (314 1 (:DEFINITION ADE::ST-TRANS-GEN))
-     (206 1 (:DEFINITION ADE::GO-GEN))
-     (141 84 (:REWRITE DEFAULT-CDR))
-     (130 73 (:REWRITE DEFAULT-CAR))
-     (98 62 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (82 1 (:REWRITE LEN-WHEN-PREFIXP))
-     (75 15 (:DEFINITION LEN))
-     (62 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (43 30
-         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (42 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
-     (38 23 (:REWRITE DEFAULT-+-2))
-     (37 37 (:REWRITE DEFAULT-SYMBOL-NAME))
-     (26 18
-         (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
-     (23 23 (:REWRITE DEFAULT-+-1))
-     (20 20 (:TYPE-PRESCRIPTION ADE::GO-GEN1))
-     (20 5
-         (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
-     (18 18
-         (:REWRITE CAR-OF-STRING-LIST-FIX-X-NORMALIZE-CONST-UNDER-STREQV))
-     (17 1 (:DEFINITION ADE::REMOVE-LEN-<-2))
-     (16 2 (:DEFINITION ADE::REMOVE-LST))
-     (12 12
-         (:TYPE-PRESCRIPTION STR::STRINGP-OF-NATSTR))
-     (12 12 (:LINEAR LEN-WHEN-PREFIXP))
-     (12 4 (:DEFINITION ADE::GO-GEN1))
-     (11 1 (:DEFINITION ADE::REMOVE-LST-LST))
-     (10 10
-         (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
-     (10 5
-         (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
-     (10 2 (:DEFINITION REMOVE-EQUAL))
-     (8 1 (:REWRITE ZP-OPEN))
-     (6 6
-        (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
-     (5 5 (:TYPE-PRESCRIPTION PREFIXP))
-     (5 3 (:REWRITE DEFAULT-<-2))
-     (5 3 (:REWRITE DEFAULT-<-1))
-     (4 4 (:REWRITE STR::NATSTR-NONEMPTY))
-     (4 2 (:DEFINITION TRUE-LISTP))
-     (4 1 (:REWRITE REV-WHEN-NOT-CONSP))
-     (3 1 (:REWRITE APPEND-OF-NIL))
-     (2 2
-        (:TYPE-PRESCRIPTION ADE::REMOVE-LST-LST))
-     (2 2 (:TYPE-PRESCRIPTION ADE::REMOVE-LST))
-     (2 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (2 2
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
-     (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-     (2 2
-        (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-     (2 1 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
-     (2 1 (:REWRITE STR::IMPLODE-OF-EXPLODE)))
+(ADE::ST-TRANS->NUMSTEPS-LST (60 3 (:DEFINITION BINARY-APPEND))
+                             (28 12 (:REWRITE STR::CONSP-OF-EXPLODE))
+                             (26 14 (:REWRITE DEFAULT-CDR))
+                             (26 14 (:REWRITE DEFAULT-CAR))
+                             (13 13 (:REWRITE DEFAULT-+-2))
+                             (13 13 (:REWRITE DEFAULT-+-1))
+                             (10 6
+                                 (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                             (8 2
+                                (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                             (6 6 (:REWRITE DEFAULT-SYMBOL-NAME))
+                             (4 4 (:REWRITE STR::NATSTR-NONEMPTY))
+                             (2 2 (:REWRITE ZP-OPEN))
+                             (2 2 (:REWRITE DEFAULT-<-2))
+                             (2 2 (:REWRITE DEFAULT-<-1)))
+(ADE::ST-TRANS-FN (333 22 (:DEFINITION BINARY-APPEND))
+                  (325 1
+                       (:DEFINITION ADE::ST-TRANS->NUMSTEPS-LST))
+                  (307 1 (:DEFINITION ADE::ST-TRANS-GEN))
+                  (202 1 (:DEFINITION ADE::GO-GEN))
+                  (141 84 (:REWRITE DEFAULT-CDR))
+                  (130 73 (:REWRITE DEFAULT-CAR))
+                  (98 62 (:REWRITE STR::CONSP-OF-EXPLODE))
+                  (78 3 (:REWRITE LEN-WHEN-PREFIXP))
+                  (75 15 (:DEFINITION LEN))
+                  (58 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                  (43 30
+                      (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                  (42 2 (:REWRITE PREFIXP-WHEN-PREFIXP))
+                  (38 23 (:REWRITE DEFAULT-+-2))
+                  (37 37 (:REWRITE DEFAULT-SYMBOL-NAME))
+                  (26 18
+                      (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                  (23 23 (:REWRITE DEFAULT-+-1))
+                  (20 20 (:TYPE-PRESCRIPTION ADE::GO-GEN1))
+                  (20 5
+                      (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+                  (17 1 (:DEFINITION ADE::REMOVE-LEN-<-2))
+                  (16 2 (:DEFINITION ADE::REMOVE-LST))
+                  (12 12
+                      (:TYPE-PRESCRIPTION STR::STRINGP-OF-NATSTR))
+                  (12 4 (:DEFINITION ADE::GO-GEN1))
+                  (11 1 (:DEFINITION ADE::REMOVE-LST-LST))
+                  (10 10
+                      (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+                  (10 5
+                      (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
+                  (10 2 (:DEFINITION REMOVE-EQUAL))
+                  (9 5 (:REWRITE DEFAULT-<-2))
+                  (9 5 (:REWRITE DEFAULT-<-1))
+                  (8 1 (:REWRITE ZP-OPEN))
+                  (7 7 (:TYPE-PRESCRIPTION PREFIXP))
+                  (6 6 (:LINEAR LEN-WHEN-PREFIXP))
+                  (4 4 (:REWRITE STR::NATSTR-NONEMPTY))
+                  (4 2 (:DEFINITION TRUE-LISTP))
+                  (4 1 (:REWRITE REV-WHEN-NOT-CONSP))
+                  (3 3
+                     (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
+                  (3 1 (:REWRITE APPEND-OF-NIL))
+                  (2 2
+                     (:TYPE-PRESCRIPTION ADE::REMOVE-LST-LST))
+                  (2 2 (:TYPE-PRESCRIPTION ADE::REMOVE-LST))
+                  (2 2
+                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+                  (2 2
+                     (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                  (2 2 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                  (2 2 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                  (2 2
+                     (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
+                  (2 2
+                     (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                  (2 1 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                  (2 1 (:REWRITE STR::IMPLODE-OF-EXPLODE)))

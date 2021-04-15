@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; This book provides a tool that, given the name of an evaluator, makes a
-;; version of my-sublis-var-and-eval that uses it.
+;; version of instantiate-hyp that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
@@ -170,9 +170,24 @@
 
        (defthm ,(pack$ 'not-equal-of-quote-and-car-of-mv-nth-0-of- instantiate-hyp-name)
          (implies (and ;; free vars remain in the term:
-                   (mv-nth 1 (,instantiate-hyp-name term alist interpreted-function-alist)))
+                   (mv-nth 1 (,instantiate-hyp-name term alist interpreted-function-alist))
+                   ; (consp term)
+                   ; (not (equal 'quote (car term)))
+                   )
                   (not (equal 'quote (car (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist))))))
          :hints (("Goal" :expand ((,instantiate-hyp-name term alist interpreted-function-alist)))))
+
+       (defthm ,(pack$ 'all-axe-treep-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
+         (implies (and (pseudo-termp term)
+                       (all-dargp (strip-cdrs alist))
+                       (consp term) ;guarantees that the result is a consp
+                       (not (equal 'quote (car (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist)))))
+                       ;; ;; free vars remain in the term:
+                       ;; (mv-nth 1 (,instantiate-hyp-name term alist interpreted-function-alist))
+                       )
+                  (all-axe-treep (cdr (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist)))))
+         :hints (("Goal" :use ,(pack$ 'axe-treep-of-mv-nth-0-of- instantiate-hyp-name)
+                  :in-theory (disable ,(pack$ 'axe-treep-of-mv-nth-0-of- instantiate-hyp-name)))))
        )))
 (defmacro make-instantiation-code-simple (suffix
                                          evaluator-base-name)

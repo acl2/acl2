@@ -582,7 +582,7 @@
     (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
     " has been added.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
 
@@ -1159,6 +1159,14 @@
      doublets, is permitted for specifying which @(see definition) rules to
      use.  (3) The tool is more robust when @(see xargs) declaration
      @(':normalize nil') is involved.")
+
+   (xdoc::p
+    "The utility @(tsee install-not-normalized) now takes an additional keyword
+     argument, @(':enable'), specifying whether the generated @(tsee defthm)
+     event is enabled.  In addition to Boolean values, it allows the default
+     value, @(':auto'), specifying that the new rule is enabled if and only if
+     the original defintion is enabled.  This is a change in default behavior,
+     since before, the new rule was always enabled.")
 
    ))
 

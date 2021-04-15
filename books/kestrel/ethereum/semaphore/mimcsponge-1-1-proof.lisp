@@ -11,16 +11,9 @@
 (in-package "ZKSEMAPHORE")
 
 (include-book "json-to-r1cs/load-circom-json")
-(include-book "lift-semaphore-r1cs")
+(include-book "proof-tools")
 (include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/crypto/mimc/mimcsponge-spec-rules" :dir :system)
-
-;; 661 vars
-;; 660 constraints
-
-;; Load the R1CS:
-;; (depends-on "json/mimcsponge-1-1-0k.json")
-(local (acl2::load-circom-json "json/mimcsponge-1-1-0k.json" *baby-jubjub-prime*))
 
 ;;;
 ;;; The spec
@@ -33,24 +26,33 @@
   (equal out (car (mimc::mimcsponge-semaphore 1 1 (list in)))))
 
 ;;;
+;;; Load the R1CS
+;;;
+
+;; 661 vars
+;; 660 constraints
+;; (depends-on "json/mimcsponge-1-1-0k.json")
+(local (acl2::load-circom-json "json/mimcsponge-1-1-0k.json" *baby-jubjub-prime*))
+
+;;;
 ;;; Lift the R1CS
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *mimcsponge-1-1-0k-r1cs-lifted*
-                          (acl2::mimcsponge-1-1-0k-vars)
-                          (acl2::mimcsponge-1-1-0k-constraints)
-                          ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
-                          ))
+ (lift-semaphore-r1cs *mimcsponge-1-1-0k-r1cs-lifted*
+                      (acl2::mimcsponge-1-1-0k-vars)
+                      (acl2::mimcsponge-1-1-0k-constraints)
+                      ;; :extra-rules '(primep-of-baby-jubjub-prime-constant)
+                      ))
 
 ;;;
 ;;; Prove that the spec holds, assuming the R1CS holds
 ;;;
 
-(acl2::prove-implication-with-r1cs-prover
+(verify-semaphore-r1cs
  *mimcsponge-1-1-0k-r1cs-lifted*
- '(mimcsponge-1-1-spec |main.ins[0]| |main.outs[0]|)
- :rule-lists '(;; empty rule set to force substitution, keeping the spec
+ (mimcsponge-1-1-spec |main.ins[0]| |main.outs[0]|)
+ :rule-lists '( ;; empty rule set to force substitution, keeping the spec
                ;; closed to keep the dag small:
                ()
                ;; now open the spec:

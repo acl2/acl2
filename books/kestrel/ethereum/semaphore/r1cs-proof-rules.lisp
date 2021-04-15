@@ -32,6 +32,8 @@
 
 ;todo: file these:
 
+;todo: replace some instances of (expt 2 32) with the number
+
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep k1)
 ;;                              (quotep k2)))
@@ -162,7 +164,7 @@
 ;; specific to the prime because *-1/2^32* is
 (defthmd add-of-mul-normalize-coeffs-2
   (implies (and (equal p PRIMES::*BN-254-GROUP-PRIME*)
-                (< (expt 2 32) p)
+                ;(< (expt 2 32) p)
                 (fep y p) ;drop?
                 )
            (equal (add (mul *-1/2^32* x p) y p)
@@ -177,7 +179,8 @@
 (defthmd bitp-of-add-of-mul-normalize-coeffs
   (implies (and (equal p PRIMES::*BN-254-GROUP-PRIME*) ; (primep p)
                 (fep y p)
-                (< (expt 2 32) p))
+                ;(< (expt 2 32) p)
+                )
            (equal (bitp (add (mul *-1/2^32* x p) y p))
                   (bitp (mul *-1/2^32* (add x (mul (pfield::inv *-1/2^32* p) y p) p) p))))
   :hints (("Goal" :use (:instance add-of-mul-normalize-coeffs-2)
@@ -287,7 +290,8 @@
 (defthmd bitp-of-add-of-mul-normalize-coeffs-alt
   (implies (and (equal p *bn-254-group-prime*)
                 (fep y p)
-                (< (expt 2 32) p))
+                ;(< (expt 2 32) p)
+                )
            (equal (bitp (add y (mul *-1/2^32* x p) p))
                   (bitp (mul *-1/2^32*
                              (add x
@@ -1155,10 +1159,7 @@
            :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP
                                PFIELD::MUL-OF-ADD-ARG2
                                pfield::add-subst-constant-arg1
-                               PFIELD::NEG-WHEN-CONSTANT-ARG1)
-           )))
-
-
+                               PFIELD::NEG-WHEN-CONSTANT-ARG1))))
 
 (defthmd pull-out-inverse-coeff-32
   (implies (and ;(syntaxp (quotep k))
@@ -1238,12 +1239,11 @@
 
 
 (defthmd add-of-mul-of-1048576
-  (implies (and
-            (equal ysize 20)
-            (unsigned-byte-p 12 x)
-            (unsigned-byte-p 20 y)
-            (integerp p)
-            (< (expt 2 32) p))
+  (implies (and (equal ysize 20)
+                (unsigned-byte-p 12 x)
+                (unsigned-byte-p 20 y)
+                (integerp p)
+                (< (expt 2 32) p))
            (equal (add (mul 1048576 x p) y p)
                   (bvcat 12 x 20 y)))
   :hints (("Goal" :in-theory (e/d (add mul bvcat acl2::logapp)

@@ -1,4 +1,0 @@
-(SPLIT-STRING (8 2 (:DEFINITION MV-NTH))
-              (4 2 (:REWRITE DEFAULT-CDR))
-              (1 1 (:REWRITE DEFAULT-COERCE-2))
-              (1 1 (:REWRITE DEFAULT-COERCE-1)))

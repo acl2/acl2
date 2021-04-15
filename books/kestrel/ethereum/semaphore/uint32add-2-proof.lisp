@@ -23,20 +23,16 @@
 ;; (depends-on "json/uint32add-2.json")
 (local (acl2::load-circom-json "json/uint32add-2.json" *BABY-JUBJUB-PRIME*))
 
-;; Print some common numbers more clearly:
-;; TODO: Put in a more central place?  Use #. ?
-(table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
-
 ;;;
 ;;; Unroll the R1CS
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *uint32add-2-r1cs-lifted*
-                          (acl2::uint32add-2-vars)
-                          (acl2::uint32add-2-constraints)
-                          ;; todo: think about this:
-                          :remove-rules '(r1cs::mul-normalize-constant-arg1)))
+ (lift-semaphore-r1cs *uint32add-2-r1cs-lifted*
+                      (acl2::uint32add-2-vars)
+                      (acl2::uint32add-2-constraints)
+                      ;; todo: think about this:
+                      :remove-rules '(r1cs::mul-normalize-constant-arg1)))
 
 (defmacro acl2::make-cons-nest-mac (&rest terms)
   (acl2::make-cons-nest terms))
@@ -122,41 +118,54 @@
                                                                |main.nums_bits[1][1]| |main.nums_bits[1][0]|)))))
 
 ;; TODO: Can we do the unrolling as part of this, instead of separately above?
-(acl2::prove-implication-with-r1cs-prover
- (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
-                                (cons
-                                 (pfield::gen-fe-listp-assumption (acl2::dag-vars *uint32add-2-r1cs-lifted*)
-                                                                ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
-                                 ;; TODO: We probably shouldn't need this:
-                                 (acl2::make-bitp-claims (acl2::dag-vars *uint32add-2-r1cs-lifted*))))
-                               *uint32add-2-r1cs-lifted*)
- `(spec |main.nums_bits[0][0]| |main.nums_bits[0][1]| |main.nums_bits[0][2]| |main.nums_bits[0][3]|
-    |main.nums_bits[0][4]| |main.nums_bits[0][5]| |main.nums_bits[0][6]| |main.nums_bits[0][7]|
-    |main.nums_bits[0][8]| |main.nums_bits[0][9]| |main.nums_bits[0][10]| |main.nums_bits[0][11]|
-    |main.nums_bits[0][12]| |main.nums_bits[0][13]| |main.nums_bits[0][14]| |main.nums_bits[0][15]|
-    |main.nums_bits[0][16]| |main.nums_bits[0][17]| |main.nums_bits[0][18]| |main.nums_bits[0][19]|
-    |main.nums_bits[0][20]| |main.nums_bits[0][21]| |main.nums_bits[0][22]| |main.nums_bits[0][23]|
-    |main.nums_bits[0][24]| |main.nums_bits[0][25]| |main.nums_bits[0][26]| |main.nums_bits[0][27]|
-    |main.nums_bits[0][28]| |main.nums_bits[0][29]| |main.nums_bits[0][30]| |main.nums_bits[0][31]|
-    |main.nums_bits[1][0]| |main.nums_bits[1][1]| |main.nums_bits[1][2]| |main.nums_bits[1][3]|
-    |main.nums_bits[1][4]| |main.nums_bits[1][5]| |main.nums_bits[1][6]| |main.nums_bits[1][7]|
-    |main.nums_bits[1][8]| |main.nums_bits[1][9]| |main.nums_bits[1][10]| |main.nums_bits[1][11]|
-    |main.nums_bits[1][12]| |main.nums_bits[1][13]| |main.nums_bits[1][14]| |main.nums_bits[1][15]|
-    |main.nums_bits[1][16]| |main.nums_bits[1][17]| |main.nums_bits[1][18]| |main.nums_bits[1][19]|
-    |main.nums_bits[1][20]| |main.nums_bits[1][21]| |main.nums_bits[1][22]| |main.nums_bits[1][23]|
-    |main.nums_bits[1][24]| |main.nums_bits[1][25]| |main.nums_bits[1][26]| |main.nums_bits[1][27]|
-    |main.nums_bits[1][28]| |main.nums_bits[1][29]| |main.nums_bits[1][30]| |main.nums_bits[1][31]|
-    |main.out_bits[0]| |main.out_bits[1]| |main.out_bits[2]| |main.out_bits[3]|
-    |main.out_bits[4]| |main.out_bits[5]| |main.out_bits[6]| |main.out_bits[7]|
-    |main.out_bits[8]| |main.out_bits[9]| |main.out_bits[10]| |main.out_bits[11]|
-    |main.out_bits[12]| |main.out_bits[13]| |main.out_bits[14]| |main.out_bits[15]|
-    |main.out_bits[16]| |main.out_bits[17]| |main.out_bits[18]| |main.out_bits[19]|
-    |main.out_bits[20]| |main.out_bits[21]| |main.out_bits[22]| |main.out_bits[23]|
-    |main.out_bits[24]| |main.out_bits[25]| |main.out_bits[26]| |main.out_bits[27]|
-    |main.out_bits[28]| |main.out_bits[29]| |main.out_bits[30]| |main.out_bits[31]|)
- :no-splitp t
- :print t
- :monitor '(ACL2::BVCAT-OF-getbit-AND-getbit-ADJACENT)
+(verify-semaphore-r1cs
+ *uint32add-2-r1cs-lifted*
+ (spec |main.nums_bits[0][0]| |main.nums_bits[0][1]| |main.nums_bits[0][2]| |main.nums_bits[0][3]|
+   |main.nums_bits[0][4]| |main.nums_bits[0][5]| |main.nums_bits[0][6]| |main.nums_bits[0][7]|
+   |main.nums_bits[0][8]| |main.nums_bits[0][9]| |main.nums_bits[0][10]| |main.nums_bits[0][11]|
+   |main.nums_bits[0][12]| |main.nums_bits[0][13]| |main.nums_bits[0][14]| |main.nums_bits[0][15]|
+   |main.nums_bits[0][16]| |main.nums_bits[0][17]| |main.nums_bits[0][18]| |main.nums_bits[0][19]|
+   |main.nums_bits[0][20]| |main.nums_bits[0][21]| |main.nums_bits[0][22]| |main.nums_bits[0][23]|
+   |main.nums_bits[0][24]| |main.nums_bits[0][25]| |main.nums_bits[0][26]| |main.nums_bits[0][27]|
+   |main.nums_bits[0][28]| |main.nums_bits[0][29]| |main.nums_bits[0][30]| |main.nums_bits[0][31]|
+   |main.nums_bits[1][0]| |main.nums_bits[1][1]| |main.nums_bits[1][2]| |main.nums_bits[1][3]|
+   |main.nums_bits[1][4]| |main.nums_bits[1][5]| |main.nums_bits[1][6]| |main.nums_bits[1][7]|
+   |main.nums_bits[1][8]| |main.nums_bits[1][9]| |main.nums_bits[1][10]| |main.nums_bits[1][11]|
+   |main.nums_bits[1][12]| |main.nums_bits[1][13]| |main.nums_bits[1][14]| |main.nums_bits[1][15]|
+   |main.nums_bits[1][16]| |main.nums_bits[1][17]| |main.nums_bits[1][18]| |main.nums_bits[1][19]|
+   |main.nums_bits[1][20]| |main.nums_bits[1][21]| |main.nums_bits[1][22]| |main.nums_bits[1][23]|
+   |main.nums_bits[1][24]| |main.nums_bits[1][25]| |main.nums_bits[1][26]| |main.nums_bits[1][27]|
+   |main.nums_bits[1][28]| |main.nums_bits[1][29]| |main.nums_bits[1][30]| |main.nums_bits[1][31]|
+   |main.out_bits[0]| |main.out_bits[1]| |main.out_bits[2]| |main.out_bits[3]|
+   |main.out_bits[4]| |main.out_bits[5]| |main.out_bits[6]| |main.out_bits[7]|
+   |main.out_bits[8]| |main.out_bits[9]| |main.out_bits[10]| |main.out_bits[11]|
+   |main.out_bits[12]| |main.out_bits[13]| |main.out_bits[14]| |main.out_bits[15]|
+   |main.out_bits[16]| |main.out_bits[17]| |main.out_bits[18]| |main.out_bits[19]|
+   |main.out_bits[20]| |main.out_bits[21]| |main.out_bits[22]| |main.out_bits[23]|
+   |main.out_bits[24]| |main.out_bits[25]| |main.out_bits[26]| |main.out_bits[27]|
+   |main.out_bits[28]| |main.out_bits[29]| |main.out_bits[30]| |main.out_bits[31]|)
+ :bit-inputs '(|main.nums_bits[0][0]| |main.nums_bits[0][1]|
+               |main.nums_bits[0][2]| |main.nums_bits[0][3]| |main.nums_bits[0][4]|
+               |main.nums_bits[0][5]| |main.nums_bits[0][6]| |main.nums_bits[0][7]|
+               |main.nums_bits[0][8]| |main.nums_bits[0][9]| |main.nums_bits[0][10]|
+               |main.nums_bits[0][11]| |main.nums_bits[0][12]| |main.nums_bits[0][13]|
+               |main.nums_bits[0][14]| |main.nums_bits[0][15]| |main.nums_bits[0][16]|
+               |main.nums_bits[0][17]| |main.nums_bits[0][18]| |main.nums_bits[0][19]|
+               |main.nums_bits[0][20]| |main.nums_bits[0][21]| |main.nums_bits[0][22]|
+               |main.nums_bits[0][23]| |main.nums_bits[0][24]| |main.nums_bits[0][25]|
+               |main.nums_bits[0][26]| |main.nums_bits[0][27]| |main.nums_bits[0][28]|
+               |main.nums_bits[0][29]| |main.nums_bits[0][30]| |main.nums_bits[0][31]|
+               |main.nums_bits[1][0]| |main.nums_bits[1][1]| |main.nums_bits[1][2]|
+               |main.nums_bits[1][3]| |main.nums_bits[1][4]| |main.nums_bits[1][5]|
+               |main.nums_bits[1][6]| |main.nums_bits[1][7]| |main.nums_bits[1][8]|
+               |main.nums_bits[1][9]| |main.nums_bits[1][10]| |main.nums_bits[1][11]|
+               |main.nums_bits[1][12]| |main.nums_bits[1][13]| |main.nums_bits[1][14]|
+               |main.nums_bits[1][15]| |main.nums_bits[1][16]| |main.nums_bits[1][17]|
+               |main.nums_bits[1][18]| |main.nums_bits[1][19]| |main.nums_bits[1][20]|
+               |main.nums_bits[1][21]| |main.nums_bits[1][22]| |main.nums_bits[1][23]|
+               |main.nums_bits[1][24]| |main.nums_bits[1][25]| |main.nums_bits[1][26]|
+               |main.nums_bits[1][27]| |main.nums_bits[1][28]| |main.nums_bits[1][29]|
+               |main.nums_bits[1][30]| |main.nums_bits[1][31]| )
  ;; :monitor '(add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
  ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
  ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra

@@ -23,20 +23,16 @@
 ;; (depends-on "json/uint32add-3.json")
 (local (acl2::load-circom-json "json/uint32add-3.json" *BABY-JUBJUB-PRIME*))
 
-;; Print some common numbers more clearly:
-;; TODO: Put in a more central place?  Use #. ?
-(table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
-
 ;;;
 ;;; Unroll the R1CS
 ;;;
 
 (local
- (lift-semaphore-r1cs-new *uint32add-3-r1cs-lifted*
-                          (acl2::uint32add-3-vars)
-                          (acl2::uint32add-3-constraints)
-                          ;; todo: think about this:
-                          :remove-rules '(r1cs::mul-normalize-constant-arg1)))
+ (lift-semaphore-r1cs *uint32add-3-r1cs-lifted*
+                      (acl2::uint32add-3-vars)
+                      (acl2::uint32add-3-constraints)
+                      ;; todo: think about this:
+                      :remove-rules '(r1cs::mul-normalize-constant-arg1)))
 
 (defmacro acl2::make-cons-nest-mac (&rest terms)
   (acl2::make-cons-nest terms))
@@ -148,15 +144,9 @@
                                                                              |main.nums_bits[2][1]| |main.nums_bits[2][0]|))))))
 
 ;; TODO: Can we do the unrolling as part of this, instead of separately above?
-(acl2::prove-implication-with-r1cs-prover
- (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
-                                (cons
-                                 (pfield::gen-fe-listp-assumption (acl2::dag-vars *uint32add-3-r1cs-lifted*)
-                                                                ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
-                                 ;; TODO: We probably shouldn't need this:
-                                 (acl2::make-bitp-claims (acl2::dag-vars *uint32add-3-r1cs-lifted*))))
-                               *uint32add-3-r1cs-lifted*)
- `(spec |main.nums_bits[0][0]| |main.nums_bits[0][1]| |main.nums_bits[0][2]| |main.nums_bits[0][3]|
+(verify-semaphore-r1cs
+ *uint32add-3-r1cs-lifted*
+ (spec |main.nums_bits[0][0]| |main.nums_bits[0][1]| |main.nums_bits[0][2]| |main.nums_bits[0][3]|
     |main.nums_bits[0][4]| |main.nums_bits[0][5]| |main.nums_bits[0][6]| |main.nums_bits[0][7]|
     |main.nums_bits[0][8]| |main.nums_bits[0][9]| |main.nums_bits[0][10]| |main.nums_bits[0][11]|
     |main.nums_bits[0][12]| |main.nums_bits[0][13]| |main.nums_bits[0][14]| |main.nums_bits[0][15]|
@@ -188,12 +178,30 @@
     |main.out_bits[20]| |main.out_bits[21]| |main.out_bits[22]| |main.out_bits[23]|
     |main.out_bits[24]| |main.out_bits[25]| |main.out_bits[26]| |main.out_bits[27]|
     |main.out_bits[28]| |main.out_bits[29]| |main.out_bits[30]| |main.out_bits[31]|)
- :no-splitp t
- :print t
- ;; :monitor '(add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra
- ;;             add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-extra-alt)
+ :bit-inputs '(|main.nums_bits[0][0]| |main.nums_bits[0][1]| |main.nums_bits[0][2]| |main.nums_bits[0][3]|
+               |main.nums_bits[0][4]| |main.nums_bits[0][5]| |main.nums_bits[0][6]| |main.nums_bits[0][7]|
+               |main.nums_bits[0][8]| |main.nums_bits[0][9]| |main.nums_bits[0][10]| |main.nums_bits[0][11]|
+               |main.nums_bits[0][12]| |main.nums_bits[0][13]| |main.nums_bits[0][14]| |main.nums_bits[0][15]|
+               |main.nums_bits[0][16]| |main.nums_bits[0][17]| |main.nums_bits[0][18]| |main.nums_bits[0][19]|
+               |main.nums_bits[0][20]| |main.nums_bits[0][21]| |main.nums_bits[0][22]| |main.nums_bits[0][23]|
+               |main.nums_bits[0][24]| |main.nums_bits[0][25]| |main.nums_bits[0][26]| |main.nums_bits[0][27]|
+               |main.nums_bits[0][28]| |main.nums_bits[0][29]| |main.nums_bits[0][30]| |main.nums_bits[0][31]|
+               |main.nums_bits[1][0]| |main.nums_bits[1][1]| |main.nums_bits[1][2]| |main.nums_bits[1][3]|
+               |main.nums_bits[1][4]| |main.nums_bits[1][5]| |main.nums_bits[1][6]| |main.nums_bits[1][7]|
+               |main.nums_bits[1][8]| |main.nums_bits[1][9]| |main.nums_bits[1][10]| |main.nums_bits[1][11]|
+               |main.nums_bits[1][12]| |main.nums_bits[1][13]| |main.nums_bits[1][14]| |main.nums_bits[1][15]|
+               |main.nums_bits[1][16]| |main.nums_bits[1][17]| |main.nums_bits[1][18]| |main.nums_bits[1][19]|
+               |main.nums_bits[1][20]| |main.nums_bits[1][21]| |main.nums_bits[1][22]| |main.nums_bits[1][23]|
+               |main.nums_bits[1][24]| |main.nums_bits[1][25]| |main.nums_bits[1][26]| |main.nums_bits[1][27]|
+               |main.nums_bits[1][28]| |main.nums_bits[1][29]| |main.nums_bits[1][30]| |main.nums_bits[1][31]|
+               |main.nums_bits[2][0]| |main.nums_bits[2][1]| |main.nums_bits[2][2]| |main.nums_bits[2][3]|
+               |main.nums_bits[2][4]| |main.nums_bits[2][5]| |main.nums_bits[2][6]| |main.nums_bits[2][7]|
+               |main.nums_bits[2][8]| |main.nums_bits[2][9]| |main.nums_bits[2][10]| |main.nums_bits[2][11]|
+               |main.nums_bits[2][12]| |main.nums_bits[2][13]| |main.nums_bits[2][14]| |main.nums_bits[2][15]|
+               |main.nums_bits[2][16]| |main.nums_bits[2][17]| |main.nums_bits[2][18]| |main.nums_bits[2][19]|
+               |main.nums_bits[2][20]| |main.nums_bits[2][21]| |main.nums_bits[2][22]| |main.nums_bits[2][23]|
+               |main.nums_bits[2][24]| |main.nums_bits[2][25]| |main.nums_bits[2][26]| |main.nums_bits[2][27]|
+               |main.nums_bits[2][28]| |main.nums_bits[2][29]| |main.nums_bits[2][30]| |main.nums_bits[2][31]|)
  :global-rules '(;; integerp rules:
                  acl2::integerp-of-bvcat
                  acl2::integerp-of-bitxor

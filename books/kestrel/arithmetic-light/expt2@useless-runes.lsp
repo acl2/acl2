@@ -528,101 +528,105 @@
      (1 1
         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
      (1 1 (:REWRITE |(equal (- x) (- y))|)))
-(EXPT-BOUND-LINEAR (145 145 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                   (145 145
-                        (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-                   (82 82 (:REWRITE DEFAULT-EXPT-2))
-                   (82 82 (:REWRITE DEFAULT-EXPT-1))
-                   (48 33 (:REWRITE SIMPLIFY-SUMS-<))
-                   (48 33
-                       (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-                   (48 33 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-                   (46 22
-                       (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-                   (42 33 (:REWRITE DEFAULT-<-2))
-                   (39 33 (:REWRITE DEFAULT-<-1))
-                   (37 37
-                       (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-                   (35 35
-                       (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-                   (35 35 (:REWRITE NORMALIZE-ADDENDS))
-                   (35 35 (:REWRITE DEFAULT-+-2))
-                   (35 35 (:REWRITE DEFAULT-+-1))
-                   (33 33 (:REWRITE |(< (- x) (- y))|))
-                   (32 4 (:LINEAR EXPT-X->=-X))
-                   (32 4 (:LINEAR EXPT-X->-X))
-                   (26 26 (:REWRITE |(expt x (- n))|))
-                   (26 26 (:REWRITE |(expt 2^i n)|))
-                   (26 26 (:REWRITE |(expt 1/c n)|))
-                   (26 26 (:REWRITE |(expt (- x) n)|))
-                   (21 21 (:REWRITE ZIP-OPEN))
-                   (17 17
-                       (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-                   (17 17 (:REWRITE |(< 0 (- x))|))
-                   (12 12 (:LINEAR EXPT-BOUND-LINEAR-WEAK))
-                   (8 8
-                      (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
-                   (8 8
-                      (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
-                   (8 8
-                      (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
-                   (8 1
-                      (:REWRITE EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
-                   (5 5 (:LINEAR EXPT->-1-TWO))
-                   (5 5 (:LINEAR EXPT-<-1-ONE))
-                   (4 4 (:REWRITE REDUCE-INTEGERP-+))
-                   (4 4 (:REWRITE INTEGERP-MINUS-X))
-                   (4 4 (:META META-INTEGERP-CORRECT))
-                   (3 3
-                      (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-                   (3 3 (:REWRITE |(< (- x) 0)|))
-                   (1 1
-                      (:REWRITE EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
-                   (1 1
-                      (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)))
-(EXPT-INTEGER-HACK (20 20 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-                   (20 20 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-                   (20 20 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-                   (9 1 (:REWRITE |(< d (+ c x))|))
-                   (7 7
-                      (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-                   (7 7 (:REWRITE NORMALIZE-ADDENDS))
-                   (7 7 (:REWRITE DEFAULT-EXPT-2))
-                   (7 7 (:REWRITE DEFAULT-EXPT-1))
-                   (7 7 (:REWRITE DEFAULT-+-2))
-                   (7 7 (:REWRITE DEFAULT-+-1))
-                   (6 1 (:REWRITE ZIP-OPEN))
-                   (5 1 (:REWRITE |(equal (+ c x) d)|))
-                   (4 4 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
-                   (4 4
-                      (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
-                   (4 4
-                      (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-                   (4 4
-                      (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-                   (3 3 (:REWRITE SIMPLIFY-SUMS-<))
-                   (3 3
-                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-                   (3 3 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-                   (3 3 (:REWRITE DEFAULT-<-2))
-                   (3 3 (:REWRITE DEFAULT-<-1))
-                   (3 3 (:REWRITE |(expt x (- n))|))
-                   (3 3 (:REWRITE |(expt 2^i n)|))
-                   (3 3 (:REWRITE |(expt 1/c n)|))
-                   (3 3 (:REWRITE |(expt (- x) n)|))
-                   (3 3 (:REWRITE |(< (- x) (- y))|))
-                   (2 2
-                      (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-                   (2 2 (:REWRITE |(< 0 (- x))|))
-                   (1 1 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-                   (1 1
-                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-                   (1 1 (:REWRITE REDUCE-INTEGERP-+))
-                   (1 1
-                      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-                   (1 1 (:REWRITE INTEGERP-MINUS-X))
-                   (1 1 (:REWRITE |(equal (- x) (- y))|))
-                   (1 1 (:META META-INTEGERP-CORRECT)))
+(EXPT-BOUND-LINEAR
+     (127 127 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+     (127 127
+          (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
+     (127 127
+          (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE))
+     (60 60 (:REWRITE DEFAULT-EXPT-2))
+     (60 60 (:REWRITE DEFAULT-EXPT-1))
+     (37 25 (:REWRITE SIMPLIFY-SUMS-<))
+     (37 25
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (37 25 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (35 17
+         (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+     (30 24 (:REWRITE DEFAULT-<-1))
+     (30 3 (:LINEAR EXPT->-1-ONE))
+     (29 29
+         (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (25 25
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (25 25 (:REWRITE NORMALIZE-ADDENDS))
+     (25 25 (:REWRITE DEFAULT-+-2))
+     (25 25 (:REWRITE DEFAULT-+-1))
+     (25 25 (:REWRITE |(< (- x) (- y))|))
+     (24 24 (:REWRITE DEFAULT-<-2))
+     (24 3 (:LINEAR EXPT-X->=-X))
+     (24 3 (:LINEAR EXPT-X->-X))
+     (18 18 (:REWRITE |(expt x (- n))|))
+     (18 18 (:REWRITE |(expt 2^i n)|))
+     (18 18 (:REWRITE |(expt 1/c n)|))
+     (18 18 (:REWRITE |(expt (- x) n)|))
+     (16 16 (:REWRITE ZIP-OPEN))
+     (13 13
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (13 13 (:REWRITE |(< 0 (- x))|))
+     (8 8 (:LINEAR EXPT-BOUND-LINEAR-WEAK))
+     (8 1
+        (:REWRITE EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
+     (6 6
+        (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
+     (6 6
+        (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
+     (6 6
+        (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
+     (3 3 (:LINEAR EXPT->-1-TWO))
+     (3 3 (:LINEAR EXPT-<-1-ONE))
+     (2 2
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (2 2 (:REWRITE REDUCE-INTEGERP-+))
+     (2 2 (:REWRITE INTEGERP-MINUS-X))
+     (2 2 (:REWRITE |(< (- x) 0)|))
+     (2 2 (:META META-INTEGERP-CORRECT))
+     (1 1
+        (:REWRITE EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
+     (1 1
+        (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)))
+(INTEGERP-OF-*-OF-1/2-AND-EXPT-2
+     (53 53 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+     (53 53
+         (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
+     (53 53
+         (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE))
+     (27 27 (:REWRITE DEFAULT-EXPT-2))
+     (27 27 (:REWRITE DEFAULT-EXPT-1))
+     (26 26
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (26 26 (:REWRITE NORMALIZE-ADDENDS))
+     (26 26 (:REWRITE DEFAULT-+-2))
+     (26 26 (:REWRITE DEFAULT-+-1))
+     (19 19 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (19 19 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (19 19 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (18 6 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (18 6
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (18 6
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (12 12
+         (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (12 12
+         (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+     (8 8 (:REWRITE SIMPLIFY-SUMS-<))
+     (8 8
+        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (8 8 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (8 8 (:REWRITE DEFAULT-<-2))
+     (8 8 (:REWRITE DEFAULT-<-1))
+     (8 8 (:REWRITE |(< (- x) (- y))|))
+     (7 7 (:REWRITE |(expt x (- n))|))
+     (7 7 (:REWRITE |(expt 2^i n)|))
+     (7 7 (:REWRITE |(expt 1/c n)|))
+     (7 7 (:REWRITE |(expt (- x) n)|))
+     (6 6 (:REWRITE |(equal (- x) (- y))|))
+     (4 4
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (4 4 (:REWRITE REDUCE-INTEGERP-+))
+     (4 4 (:REWRITE INTEGERP-MINUS-X))
+     (4 4 (:REWRITE |(< 0 (- x))|))
+     (4 4 (:META META-INTEGERP-CORRECT)))
 (EXPT-DIFF-COLLECT
      (88 88 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
      (88 88
@@ -688,3 +692,56 @@
      (1 1 (:REWRITE |(< (- x) 0)|))
      (1 1 (:LINEAR EXPT->-1-TWO))
      (1 1 (:LINEAR EXPT-<-1-ONE)))
+(EQUAL-OF-EXPT-SAME (113 113 (:TYPE-PRESCRIPTION NATP-OF-EXPT))
+                    (113 113
+                         (:TYPE-PRESCRIPTION INTEGERP-OF-EXPT-TYPE))
+                    (39 39 (:REWRITE DEFAULT-EXPT-1))
+                    (29 11 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+                    (29 11
+                        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+                    (29 11
+                        (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+                    (23 23 (:REWRITE SIMPLIFY-SUMS-<))
+                    (23 23
+                        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+                    (23 23
+                        (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+                    (23 23 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+                    (23 23 (:REWRITE DEFAULT-<-2))
+                    (23 23 (:REWRITE DEFAULT-<-1))
+                    (23 23 (:REWRITE |(< (- x) (- y))|))
+                    (22 19 (:REWRITE |(expt 2^i n)|))
+                    (22 4 (:LINEAR EXPT-<-1-TWO))
+                    (19 19 (:REWRITE |(expt x (- n))|))
+                    (19 19 (:REWRITE |(expt 1/c n)|))
+                    (19 19 (:REWRITE |(expt (- x) n)|))
+                    (17 17
+                        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+                    (17 17 (:REWRITE |(< 0 (- x))|))
+                    (15 15
+                        (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+                    (11 11 (:REWRITE |(equal (- x) (- y))|))
+                    (10 10
+                        (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+                    (10 10 (:REWRITE NORMALIZE-ADDENDS))
+                    (10 10 (:REWRITE DEFAULT-+-2))
+                    (10 10 (:REWRITE DEFAULT-+-1))
+                    (8 8
+                       (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
+                    (8 8
+                       (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
+                    (8 8
+                       (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
+                    (5 5 (:REWRITE REDUCE-INTEGERP-+))
+                    (5 5 (:REWRITE INTEGERP-MINUS-X))
+                    (5 5 (:META META-INTEGERP-CORRECT))
+                    (4 4
+                       (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+                    (4 4 (:REWRITE |(equal (- x) 0)|))
+                    (4 4 (:LINEAR EXPT->-1-TWO))
+                    (4 4 (:LINEAR EXPT-<-1-ONE))
+                    (2 2
+                       (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+                    (2 2 (:REWRITE |(< (- x) 0)|))
+                    (1 1 (:REWRITE ZIP-OPEN))
+                    (1 1 (:REWRITE FOLD-CONSTS-IN-+)))
