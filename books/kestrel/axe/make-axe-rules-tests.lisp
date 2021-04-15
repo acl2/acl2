@@ -40,3 +40,19 @@
 ;;   (must-fail (make-axe-rules '(theorem-with-a-let) (w state))))
 
 ;; TODO: Add tests for syntaxp and axe-syntaxp hyps
+
+(deftest
+  (DEFTHM car-cons2
+    (implies (syntaxp (and (quotep x)
+                           (quotep y)))
+             (equal (car (cons x y))
+                    x)))
+
+  ;; Test involving a syntaxp hyp with multiple conjuncts:
+  ;; Previously, the flattened conjuncts got reversed:
+  ;; TODO: Even better would be to not flatten
+  (assert-equal (make-axe-rules! '(car-cons2) (w state))
+                '(((car (cons x y))
+                   x car-cons2
+                   ((:axe-syntaxp axe-quotep x)
+                    (:axe-syntaxp axe-quotep y))))))

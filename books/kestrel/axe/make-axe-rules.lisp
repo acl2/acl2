@@ -410,7 +410,9 @@
                    ((mv erp hyps)
                     (make-axe-syntaxp-hyps-for-synp-hyp (unquote (farg3 hyp)) bound-vars rule-symbol hyp))
                    ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
-                (mv (erp-nil) hyps
+                (mv (erp-nil)
+                    ;; We reverse this to compensate for the reverse in make-axe-rule-hyps:
+                    (reverse-list hyps)
                     bound-vars ;no extra vars get bound
                     ))
             ;; TODO: Check whether it is a bind-free hyp and print a better message if so:
