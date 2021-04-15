@@ -39,6 +39,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -724,7 +725,7 @@
   :hints (("Goal" :in-theory (enable make-axe-rule-hyps))))
 
 ;;no accumulator
-;; Returns (mv erp processed-hyps bound-vars)
+;; Returns (mv erp processed-hyps bound-vars).
 (defund make-axe-rule-hyps-simple (hyps bound-vars rule-symbol wrld)
   (declare (xargs :guard (and (pseudo-term-listp hyps)
                               (symbol-listp bound-vars)
@@ -813,13 +814,12 @@
 
 (local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP SET-DIFFERENCE-EQUAL)))
 
-;; ;; ;todo: need theorems about expanding lambdas, and the lambdas in the hyp are closed?
 ;; (defthm bound-vars-suitable-for-hypsp-of-mv-nth-1-of-make-axe-rule-hyps-simple
 ;;   (implies (and (not (mv-nth 0 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))
 ;;                 (pseudo-term-listp hyps))
 ;;            (bound-vars-suitable-for-hypsp bound-vars (mv-nth 1 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld))))
 ;;   :hints (("Goal" :in-theory (enable make-axe-rule-hyps-simple
-;;                                      make-axe-rule-hyps-for-hyp
+;;                                      ;;make-axe-rule-hyps-for-hyp
 ;;                                      bound-vars-suitable-for-hypp
 ;;                                      bound-vars-after-hyp))))
 
