@@ -508,3 +508,104 @@
                       :expand ((f4-norm x))
                       :in-theory (theory 'minimal-theory)))))
 )
+
+; Test :enable option, first showing that default of :auto can disable.
+
+(my-test
+
+(defun f5 (x)
+  (cons x x))
+(defun g5 (x)
+  (car (f5 x)))
+(defthm g5-identity
+  (equal (g5 x) x))
+(in-theory (disable f5 g5))
+; Succeeds:
+(thm (equal (g5 a) a))
+(install-not-normalized g5)
+; Succeeds because :enable option is :auto by default.
+(thm (equal (g5 a) a))
+(in-theory (enable g5$not-normalized))
+; Fails now, showing the importance of :auto.
+(must-fail
+ (thm (equal (g5 a) a)))
+)
+
+; Identical to the above, but with explicit :enable :auto.
+
+(my-test
+
+(defun f5 (x)
+  (cons x x))
+(defun g5 (x)
+  (car (f5 x)))
+(defthm g5-identity
+  (equal (g5 x) x))
+(in-theory (disable f5 g5))
+; Succeeds:
+(thm (equal (g5 a) a))
+(install-not-normalized g5 :enable :auto)
+; Succeeds because :enable option is :auto by default.
+(thm (equal (g5 a) a))
+(in-theory (enable g5$not-normalized))
+; Fails now, showing the importance of :auto.
+(must-fail
+ (thm (equal (g5 a) a)))
+)
+
+; Similar to preceding test, but with explicit :enable nil.
+
+(my-test
+
+(defun f5 (x)
+  (cons x x))
+(defun g5 (x)
+  (car (f5 x)))
+(defthm g5-identity
+  (equal (g5 x) x))
+(in-theory (disable f5 g5))
+; Succeeds:
+(thm (equal (g5 a) a))
+(install-not-normalized g5 :enable nil)
+(thm (equal (g5 a) a))
+)
+
+; Similar to preceding test, but with explicit :enable t.
+
+(my-test
+
+(defun f5 (x)
+  (cons x x))
+(defun g5 (x)
+  (car (f5 x)))
+(defthm g5-identity
+  (equal (g5 x) x))
+(in-theory (disable f5 g5))
+; Succeeds:
+(thm (equal (g5 a) a))
+(install-not-normalized g5 :enable t)
+(must-fail ; need g5$not-normalized to be disabled
+ (thm (equal (g5 a) a)))
+)
+
+; This variant of the preceding tests illustrates that it is the disabled
+; status of the original definition of the function that matters, not of
+; other associated runes.
+
+(my-test
+
+(defun f5 (x)
+  (cons x x))
+(defun g5 (x)
+  (car (f5 x)))
+(defthm g5-identity
+  (equal (g5 x) x))
+(in-theory (disable f5 g5))
+; Succeeds:
+(thm (equal (g5 a) a))
+(in-theory (e/d ((:d g5))
+                ((:e g5) (:t g5))))
+(install-not-normalized g5)
+(must-fail ; need g5$not-normalized to be disabled
+ (thm (equal (g5 a) a)))
+)
