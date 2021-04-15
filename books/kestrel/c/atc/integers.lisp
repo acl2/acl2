@@ -51,18 +51,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ atc-def-integer-values (type)
-  (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
+  (declare (xargs :guard (member-eq type '(char short int long llong))))
   :short "Macro to generate the models of the C integer values."
 
   (b* ((type-string (acl2::string-downcase
-                     (if (eq type :llong) "LONG LONG" (symbol-name type))))
+                     (if (eq type 'llong) "LONG LONG" (symbol-name type))))
        (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (type-bits-bound (case type
-                          (:char 8)
-                          (:short 16)
-                          (:int 16)
-                          (:long 32)
-                          (:llong 64)))
+                          (char 8)
+                          (short 16)
+                          (int 16)
+                          (long 32)
+                          (llong 64)))
        (utype (acl2::packn-pos (list "U" type) 'atc))
        (stype (acl2::packn-pos (list "S" type) 'atc))
        (utypep (add-suffix utype "P"))
@@ -246,15 +246,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(atc-def-integer-values :char)
+(atc-def-integer-values char)
 
-(atc-def-integer-values :short)
+(atc-def-integer-values short)
 
-(atc-def-integer-values :int)
+(atc-def-integer-values int)
 
-(atc-def-integer-values :long)
+(atc-def-integer-values long)
 
-(atc-def-integer-values :llong)
+(atc-def-integer-values llong)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
