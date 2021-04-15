@@ -310,8 +310,8 @@
       (xdoc::ul
        (xdoc::li "@(tsee plus-sint)")
        (xdoc::li "@(tsee minus-sint)")
-       (xdoc::li "@(tsee bitnot-sint-sint)")
-       (xdoc::li "@(tsee lognot-sint-sint)")
+       (xdoc::li "@(tsee bitnot-sint)")
+       (xdoc::li "@(tsee lognot-sint)")
        (xdoc::li "@(tsee add-sint-sint)")
        (xdoc::li "@(tsee sub-sint-sint)")
        (xdoc::li "@(tsee mul-sint-sint)")
