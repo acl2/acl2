@@ -483,3 +483,68 @@
         '(:use (:instance
                 acl2::expt-is-weakly-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-sint-max
+    :parents (uchar-max sint-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (uchar-max) (sint-max))
+         '(<= (uchar-max) (sint-max))
+       '(> (uchar-max) (sint-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (sint-max))))
+    :enable (uchar-max sint-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-sint-max
+    :parents (ushort-max sint-max)
+    :short "Relation between
+            @('unsigned short') and @('signed int') maxima."
+    ,(if (<= (ushort-max) (sint-max))
+         '(<= (ushort-max) (sint-max))
+       '(> (ushort-max) (sint-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (sint-max))))
+    :enable (ushort-max sint-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-slong-max
+    :parents (uint-max slong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long') maxima."
+    ,(if (<= (uint-max) (slong-max))
+         '(<= (uint-max) (slong-max))
+       '(> (uint-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((uint-max) (slong-max))))
+    :enable (uint-max slong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-sllong-max
+    :parents (uint-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (uint-max) (sllong-max))
+         '(<= (uint-max) (sllong-max))
+       '(> (uint-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((uint-max) (sllong-max))))
+    :enable (uint-max sllong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ulong-max-vs-sllong-max
+    :parents (ulong-max sllong-max)
+    :short "Relation between
+            @('unsigned long') and @('signed long long') maxima."
+    ,(if (<= (ulong-max) (sllong-max))
+         '(<= (ulong-max) (sllong-max))
+       '(> (ulong-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((ulong-max) (sllong-max))))
+    :enable (ulong-max sllong-max)))
