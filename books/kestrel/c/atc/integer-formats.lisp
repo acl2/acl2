@@ -203,7 +203,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(defrule long-bits-vs-lllong-bits
+ `(defrule long-bits-vs-llong-bits
     :parents (long-bits llong-bits)
     :short "Relation between @('long') and @('long long') sizes."
     ,(if (= (long-bits) (llong-bits))
