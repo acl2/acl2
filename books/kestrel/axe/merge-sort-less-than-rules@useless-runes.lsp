@@ -1,17 +1,58 @@
+(ALL-<-OF-+-OF-1 (734 63 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                 (458 49 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+                 (437 41 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
+                 (325 19 (:REWRITE ALL-<-OF-CDR))
+                 (259 43 (:REWRITE LEN-OF-CDR))
+                 (131 85 (:REWRITE DEFAULT-<-2))
+                 (102 102 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                 (102 85 (:REWRITE DEFAULT-<-1))
+                 (93 87 (:REWRITE USE-ALL-<))
+                 (87 87 (:REWRITE USE-ALL-<-2))
+                 (69 58 (:REWRITE DEFAULT-+-2))
+                 (67 67 (:REWRITE DEFAULT-CDR))
+                 (65 14 (:REWRITE ALL-<=-OF-CDR))
+                 (63 63 (:REWRITE CONSP-WHEN-LEN-GREATER))
+                 (63 63
+                     (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+                 (58 58 (:REWRITE DEFAULT-+-1))
+                 (52 52 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+                 (52 52 (:REWRITE ALL-<-TRANSITIVE-FREE))
+                 (50 50 (:REWRITE ALL-<-TRANSITIVE))
+                 (49 49 (:REWRITE DEFAULT-CAR))
+                 (42 42 (:REWRITE ALL-<=-MONOTONE))
+                 (37 37
+                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                 (36 36
+                     (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+                 (36 34 (:REWRITE USE-ALL-<=))
+                 (34 34 (:REWRITE USE-ALL-<=-2))
+                 (21 7 (:REWRITE FOLD-CONSTS-IN-+))
+                 (18 18 (:REWRITE NOT-ALL-<-WHEN-MEMBERP))
+                 (18 18
+                     (:REWRITE NOT-ALL-<-WHEN-MEMBER-EQUAL))
+                 (11 11 (:REWRITE EQUAL-OF-LEN-AND-0))
+                 (8 8 (:TYPE-PRESCRIPTION MEMBERP))
+                 (7 7
+                    (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
+                 (1 1
+                    (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+                 (1 1
+                    (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1)))
 (PERM-OF-MERGE-SORT-<-2)
 (ALL-<=-ALL-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX
      (1228 113 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (550 38 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (246 38 (:REWRITE ALL-<=-MONOTONE))
      (218 109 (:REWRITE DEFAULT-<-2))
-     (173 52 (:REWRITE DEFAULT-CDR))
+     (180 52 (:REWRITE DEFAULT-CDR))
      (121 109 (:REWRITE DEFAULT-<-1))
      (114 6 (:REWRITE USE-ALL-<=-FOR-CAR))
+     (113 113
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (109 109 (:REWRITE USE-ALL-<-2))
      (109 109 (:REWRITE USE-ALL-<))
      (104 104 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (104 104 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-     (89 34 (:REWRITE DEFAULT-CAR))
+     (91 34 (:REWRITE DEFAULT-CAR))
      (54 54
          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
      (52 6 (:REWRITE USE-ALL-<-FOR-CAR))
@@ -40,19 +81,20 @@
      (3772 115 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (1105 25
            (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX))
-     (1082 242 (:REWRITE DEFAULT-CDR))
+     (1083 242 (:REWRITE DEFAULT-CDR))
      (788 397 (:REWRITE DEFAULT-<-2))
      (444 397 (:REWRITE DEFAULT-<-1))
+     (418 418
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (415 415 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (415 415 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (398 398 (:REWRITE USE-ALL-<-2))
      (398 398 (:REWRITE USE-ALL-<))
-     (290 117 (:REWRITE DEFAULT-CAR))
-     (264 27 (:REWRITE USE-ALL-<-FOR-CAR))
-     (246 117
+     (291 117 (:REWRITE DEFAULT-CAR))
+     (265 117
           (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
+     (264 27 (:REWRITE USE-ALL-<-FOR-CAR))
      (175 93 (:REWRITE DEFAULT-+-2))
-     (123 5 (:DEFINITION MEMBER-EQUAL))
+     (134 5 (:DEFINITION MEMBER-EQUAL))
      (93 93 (:REWRITE DEFAULT-+-1))
      (93 49 (:REWRITE USE-ALL-<=))
      (90 85 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -73,6 +115,10 @@
      (33 33 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (33 33 (:REWRITE ALL-<-TRANSITIVE))
      (18 18 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (9 9
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (9 9
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (5 5 (:TYPE-PRESCRIPTION BOOLEANP))
      (3 3
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
@@ -80,15 +126,16 @@
      (1025 91 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (407 29 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (196 98 (:REWRITE DEFAULT-<-2))
+     (118 43 (:REWRITE DEFAULT-CDR))
      (117 4 (:REWRITE USE-ALL-<-FOR-CAR))
      (116 98 (:REWRITE DEFAULT-<-1))
-     (114 43 (:REWRITE DEFAULT-CDR))
      (98 98 (:REWRITE USE-ALL-<-2))
      (98 98 (:REWRITE USE-ALL-<))
+     (91 91
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (89 4 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (84 29 (:REWRITE DEFAULT-CAR))
      (83 83 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (83 83 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-     (80 29 (:REWRITE DEFAULT-CAR))
      (66 4 (:REWRITE USE-ALL-<=-FOR-CAR))
      (64 32 (:REWRITE DEFAULT-+-2))
      (47 47
@@ -115,13 +162,14 @@
      (4 4 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (4 4 (:REWRITE ALL-<-TRANSITIVE)))
 (ALL-<=-ALL-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX-ARG1
-     (1457 134
+     (1608 134
            (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
-     (1286 33 (:DEFINITION MEMBER-EQUAL))
+     (1389 33 (:DEFINITION MEMBER-EQUAL))
      (979 979 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (560 560
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (478 400 (:REWRITE DEFAULT-<-1))
      (417 417 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (417 417 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (409 244 (:REWRITE DEFAULT-+-2))
      (401 401 (:REWRITE USE-ALL-<-2))
      (401 401 (:REWRITE USE-ALL-<))
@@ -140,6 +188,10 @@
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (66 66 (:TYPE-PRESCRIPTION ALL-<))
      (63 63 (:REWRITE USE-ALL-<=-2))
+     (60 60
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (60 60
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (58 29 (:REWRITE DEFAULT-*-2))
      (57 57
          (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
@@ -166,7 +218,8 @@
      (4 4 (:REWRITE USE-ALL-<))
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (4 4 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (4 4
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (3 3
         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
      (2 2 (:REWRITE DEFAULT-CAR))
@@ -196,7 +249,8 @@
      (4 4 (:REWRITE USE-ALL-<))
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (4 4 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (4 4
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (3 3
         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
      (2 2 (:REWRITE DEFAULT-CAR))
@@ -225,7 +279,8 @@
      (2 2 (:REWRITE USE-ALL-<))
      (2 2 (:REWRITE DEFAULT-<-1))
      (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (2 2 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (2 2
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 1 (:REWRITE DEFAULT-+-2))
      (1 1 (:REWRITE EQUAL-OF-LEN-AND-0))
      (1 1 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -249,7 +304,8 @@
      (4 4 (:REWRITE USE-ALL-<))
      (4 4 (:REWRITE DEFAULT-<-1))
      (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (4 4 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (4 4
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2 (:REWRITE DEFAULT-CAR))
      (2 1 (:REWRITE DEFAULT-+-2))
      (1 1 (:TYPE-PRESCRIPTION ALL-<=))
@@ -268,23 +324,24 @@
                        (426 6 (:DEFINITION BINARY-APPEND))
                        (352 180 (:REWRITE DEFAULT-<-2))
                        (223 223 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                       (213 123 (:REWRITE DEFAULT-CAR))
                        (208 26 (:REWRITE USE-ALL-<-FOR-CAR))
                        (206 180 (:REWRITE DEFAULT-<-1))
-                       (199 123 (:REWRITE DEFAULT-CAR))
+                       (191 65 (:REWRITE DEFAULT-CDR))
+                       (190 50
+                            (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
                        (180 180 (:REWRITE USE-ALL-<-2))
                        (180 180 (:REWRITE USE-ALL-<))
-                       (177 65 (:REWRITE DEFAULT-CDR))
-                       (170 50
-                            (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
+                       (176 176
+                            (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                        (162 6 (:REWRITE CDR-OF-REVERSE-LIST))
                        (162 6 (:REWRITE CAR-OF-REVERSE-LIST))
                        (160 160 (:REWRITE CONSP-WHEN-LEN-GREATER))
                        (156 26 (:REWRITE USE-ALL-<=-FOR-CAR))
                        (144 12 (:REWRITE ZP-OPEN))
-                       (134 134 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                        (132 6 (:DEFINITION TAKE))
                        (132 6 (:DEFINITION NTH))
-                       (110 5 (:DEFINITION MEMBER-EQUAL))
+                       (120 5 (:DEFINITION MEMBER-EQUAL))
                        (90 90
                            (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
                        (90 6 (:REWRITE CONSP-OF-REVERSE-LIST))
@@ -309,35 +366,40 @@
                        (25 25 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                        (14 14
                            (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+                       (10 10
+                           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+                       (10 10
+                           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
                        (10 5 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
                        (6 6 (:TYPE-PRESCRIPTION REVERSE-LIST))
                        (5 5 (:TYPE-PRESCRIPTION BOOLEANP)))
 (ALL-<=-OF-MERGE-<-ARG1
-     (7239 389 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
-     (6005 585 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (1570 197 (:REWRITE LEN-OF-CDR))
+     (7295 389 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
+     (6033 585 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (1598 197 (:REWRITE LEN-OF-CDR))
      (1159 108 (:REWRITE CONSP-OF-MERGE-<))
      (1122 145 (:REWRITE USE-ALL-<-FOR-CAR))
      (1112 597 (:REWRITE DEFAULT-<-2))
-     (885 142
+     (925 142
           (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
      (822 8 (:REWRITE REVAPPEND-OF-CONS))
      (782 22 (:DEFINITION BINARY-APPEND))
      (765 597 (:REWRITE DEFAULT-<-1))
-     (727 8 (:DEFINITION MEMBER-EQUAL))
+     (751 8 (:DEFINITION MEMBER-EQUAL))
      (721 721 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (621 397 (:REWRITE DEFAULT-CDR))
+     (649 397 (:REWRITE DEFAULT-CDR))
      (599 599 (:REWRITE USE-ALL-<-2))
      (599 599 (:REWRITE USE-ALL-<))
+     (585 585
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (570 376 (:REWRITE DEFAULT-CAR))
      (555 237 (:REWRITE USE-ALL-<=))
      (551 551 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (542 376 (:REWRITE DEFAULT-CAR))
-     (443 443 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (389 389
           (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
      (387 387
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-     (330 85 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (358 85 (:REWRITE EQUAL-OF-LEN-AND-0))
      (328 138 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (318 318 (:TYPE-PRESCRIPTION MEMBERP))
      (306 221 (:REWRITE DEFAULT-+-2))
@@ -369,6 +431,10 @@
      (22 22 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (19 19
          (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
+     (16 16
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (16 16
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (16 10
          (:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION))
      (16 4
@@ -394,7 +460,8 @@
      (102 100
           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (100 100 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (100 100 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (100 100
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (88 11 (:REWRITE USE-ALL-<-FOR-CAR))
      (82 82 (:REWRITE DEFAULT-CAR))
      (70 70
@@ -419,11 +486,12 @@
 (ALL-<=-ALL-OF-MERGE-SORT-<
      (185 14 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (121 117 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (120 6 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (121 6 (:REWRITE CONSP-OF-MERGE-SORT-<))
      (104 52 (:REWRITE DEFAULT-<-2))
+     (85 85
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (70 13 (:REWRITE DEFAULT-CAR))
      (65 65 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (64 13 (:REWRITE DEFAULT-CAR))
-     (59 59 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (53 52 (:REWRITE DEFAULT-<-1))
      (52 52 (:REWRITE USE-ALL-<-2))
      (52 52 (:REWRITE USE-ALL-<))
@@ -431,7 +499,7 @@
      (26 26
          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
      (24 4 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
-     (20 1 (:REWRITE USE-ALL-<-FOR-CAR))
+     (21 1 (:REWRITE USE-ALL-<-FOR-CAR))
      (18 2
          (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
      (15 15 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -440,17 +508,17 @@
          (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
      (14 14
          (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
-     (12 1 (:REWRITE ALL-<-OF-CDR))
-     (9 2
-        (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
+     (13 1 (:REWRITE ALL-<-OF-CDR))
+     (10 2
+         (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
      (9 1 (:REWRITE USE-ALL-<=-FOR-CAR))
      (8 4
         (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
      (7 7
         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+     (7 2 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (6 6
         (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
-     (6 2 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (4 4 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (4 4 (:TYPE-PRESCRIPTION ALL-<))
      (3 3 (:REWRITE USE-ALL-<=-2))
@@ -462,15 +530,15 @@
      (2 2 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (2 2 (:REWRITE ALL-<-TRANSITIVE)))
 (ALL-<=-OF-CAR-OF-LAST-WHEN-SORTEDP-<=
-     (1967 105 (:REWRITE USE-ALL-<-FOR-CAR))
-     (1080 130 (:REWRITE ALL-<-OF-CDR))
-     (1033 278 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+     (1971 105 (:REWRITE USE-ALL-<-FOR-CAR))
+     (1085 130 (:REWRITE ALL-<-OF-CDR))
+     (1036 278 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (562 562 (:TYPE-PRESCRIPTION ALL-<))
      (440 197 (:REWRITE DEFAULT-<-2))
-     (347 21 (:REWRITE USE-ALL-<-FOR-CAR-OF-LAST))
+     (348 21 (:REWRITE USE-ALL-<-FOR-CAR-OF-LAST))
      (346 220
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-     (335 278 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (340 278 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (308 301 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (306 278
           (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
@@ -485,7 +553,6 @@
      (128 124 (:REWRITE USE-ALL-<=))
      (124 124 (:REWRITE USE-ALL-<=-2))
      (113 113 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (113 113 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (101 15
           (:REWRITE USE-ALL-<=-FOR-CAR-OF-LAST))
      (88 88 (:TYPE-PRESCRIPTION ALL-<=-ALL))
@@ -496,7 +563,11 @@
      (30 30
          (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
      (22 3 (:REWRITE ALL-<=-OF-LAST))
-     (4 4 (:TYPE-PRESCRIPTION MEMBERP)))
+     (4 4 (:TYPE-PRESCRIPTION MEMBERP))
+     (1 1
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (1 1
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1)))
 (ALL-<=-ALL-REDEF (924 79 (:REWRITE CONSP-FROM-LEN-CHEAP))
                   (396 32 (:REWRITE USE-ALL-<-FOR-CAR))
                   (350 75 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
@@ -512,7 +583,8 @@
                   (88 50 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
                   (84 84 (:REWRITE DEFAULT-CDR))
                   (79 79 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                  (79 79 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+                  (79 79
+                      (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                   (75 75
                       (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
                   (65 65
@@ -531,6 +603,10 @@
                   (31 31
                       (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
                   (18 18 (:TYPE-PRESCRIPTION MEMBERP))
+                  (5 5
+                     (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+                  (5 5
+                     (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
                   (2 2 (:TYPE-PRESCRIPTION BOOLEANP)))
 (<=-ALL-TRANS-1 (138 12 (:REWRITE USE-ALL-<-FOR-CAR))
                 (93 8 (:REWRITE CONSP-FROM-LEN-CHEAP))
@@ -552,7 +628,8 @@
                 (12 12 (:REWRITE DEFAULT-CAR))
                 (11 11 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                 (8 8 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                (8 8 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+                (8 8
+                   (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                 (4 4 (:REWRITE DEFAULT-CDR)))
 (ALL-<=-ALL-WHEN-NOT-CONSP-ARG1
      (12 1 (:REWRITE CONSP-FROM-LEN-CHEAP))
@@ -563,37 +640,39 @@
      (1 1 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (1 1 (:REWRITE DEFAULT-<-1))
      (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (1 1 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (1 1
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (1 1
         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP)))
 (ALL-<=-ALL-WHEN-NOT-CONSP-ARG2
      (20 2 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (10 1
+         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
      (9 9 (:TYPE-PRESCRIPTION LEN))
-     (9 1
-        (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
      (4 2
         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (3 3 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (2 2
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 1 (:REWRITE DEFAULT-<-2))
      (1 1 (:REWRITE USE-ALL-<-2))
      (1 1 (:REWRITE USE-ALL-<))
      (1 1 (:REWRITE DEFAULT-<-1))
      (1 1 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (1 1 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (1 1
         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP)))
-(SORTEDP-<=-OF-APPEND (20237 580 (:REWRITE USE-ALL-<-FOR-CAR))
-                      (12987 1041 (:REWRITE ALL-<-OF-CDR))
-                      (11713 2223 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
-                      (9871 216 (:REWRITE ALL-<-OF-APPEND))
-                      (9704 23 (:REWRITE ALL-<=-OF-APPEND))
-                      (6094 634 (:REWRITE ALL-<=-OF-CDR))
-                      (5527 2153 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+(SORTEDP-<=-OF-APPEND (20249 580 (:REWRITE USE-ALL-<-FOR-CAR))
+                      (12997 1041 (:REWRITE ALL-<-OF-CDR))
+                      (11718 2223 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+                      (9881 216 (:REWRITE ALL-<-OF-APPEND))
+                      (9711 23 (:REWRITE ALL-<=-OF-APPEND))
+                      (6099 634 (:REWRITE ALL-<=-OF-CDR))
+                      (5539 2153 (:REWRITE ALL-<-WHEN-NOT-CONSP))
                       (3957 3957 (:TYPE-PRESCRIPTION ALL-<))
                       (2332 1299 (:REWRITE DEFAULT-<-2))
+                      (2253 2055 (:REWRITE DEFAULT-CDR))
                       (2247 2223
                             (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
-                      (2241 2055 (:REWRITE DEFAULT-CDR))
                       (2223 2223 (:REWRITE ALL-<-TRANSITIVE-FREE))
                       (2223 2223 (:REWRITE ALL-<-TRANSITIVE))
                       (1318 1318 (:REWRITE USE-ALL-<-2))
@@ -604,7 +683,6 @@
                       (1081 1081 (:REWRITE DEFAULT-+-1))
                       (979 979 (:REWRITE ALL-<=-MONOTONE))
                       (822 822 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                      (822 822 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                       (687 19 (:REWRITE ALL-<=-ALL-OF-CDR-ARG1))
                       (658 618 (:REWRITE USE-ALL-<=))
                       (618 618 (:REWRITE USE-ALL-<=-2))
@@ -613,55 +691,61 @@
                       (40 40 (:TYPE-PRESCRIPTION MEMBERP))
                       (24 24
                           (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP)))
-(ALL-<=-OF-REVERSE-LIST-ARG1 (1095 101 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                             (600 36 (:DEFINITION TAKE))
-                             (580 39 (:REWRITE ALL-<=-OF-CDR))
-                             (504 54 (:REWRITE ZP-OPEN))
-                             (403 18 (:REWRITE CDR-OF-REVERSE-LIST))
-                             (403 18 (:REWRITE CAR-OF-REVERSE-LIST))
-                             (350 18 (:REWRITE NOT-<-OF-NTH-WHEN-ALL-<))
-                             (348 64 (:REWRITE LEN-OF-CDR))
-                             (300 18 (:DEFINITION NTH))
-                             (293 182 (:REWRITE DEFAULT-<-2))
-                             (237 73 (:REWRITE FOLD-CONSTS-IN-+))
-                             (231 182 (:REWRITE DEFAULT-<-1))
-                             (223 205 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                             (217 173 (:REWRITE DEFAULT-+-2))
-                             (200 110 (:REWRITE USE-ALL-<=))
-                             (189 46 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
-                             (183 183 (:REWRITE USE-ALL-<-2))
-                             (183 183 (:REWRITE USE-ALL-<))
-                             (173 173 (:REWRITE DEFAULT-+-1))
-                             (141 141 (:REWRITE DEFAULT-CDR))
-                             (115 10 (:REWRITE ALL-<-OF-CDR))
-                             (110 110 (:REWRITE USE-ALL-<=-2))
-                             (101 101 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                             (101 101 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-                             (98 98
-                                 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                             (94 94 (:REWRITE DEFAULT-CAR))
-                             (92 92 (:TYPE-PRESCRIPTION ALL-<))
-                             (90 90 (:TYPE-PRESCRIPTION MEMBERP))
-                             (78 18
-                                 (:REWRITE <=-OF-NTH-WHEN-ALL-<=-FREE))
-                             (72 72 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
-                             (50 50
-                                 (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
-                             (46 46
-                                 (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
-                             (46 46 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-                             (46 46 (:REWRITE ALL-<-TRANSITIVE-FREE))
-                             (46 46 (:REWRITE ALL-<-TRANSITIVE))
-                             (45 5 (:DEFINITION NATP))
-                             (9 9
-                                (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
-                             (7 7 (:REWRITE EQUAL-OF-LEN-AND-0))
-                             (5 5 (:TYPE-PRESCRIPTION NATP))
-                             (5 5 (:REWRITE USE-ALL-NATP-2))
-                             (5 5 (:REWRITE USE-ALL-NATP)))
+(ALL-<=-OF-REVERSE-LIST-ARG1
+     (1095 101 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (600 36 (:DEFINITION TAKE))
+     (580 39 (:REWRITE ALL-<=-OF-CDR))
+     (504 54 (:REWRITE ZP-OPEN))
+     (403 18 (:REWRITE CDR-OF-REVERSE-LIST))
+     (403 18 (:REWRITE CAR-OF-REVERSE-LIST))
+     (350 18 (:REWRITE NOT-<-OF-NTH-WHEN-ALL-<))
+     (348 64 (:REWRITE LEN-OF-CDR))
+     (300 18 (:DEFINITION NTH))
+     (293 182 (:REWRITE DEFAULT-<-2))
+     (237 73 (:REWRITE FOLD-CONSTS-IN-+))
+     (231 182 (:REWRITE DEFAULT-<-1))
+     (223 205 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (217 173 (:REWRITE DEFAULT-+-2))
+     (200 110 (:REWRITE USE-ALL-<=))
+     (189 46 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+     (183 183 (:REWRITE USE-ALL-<-2))
+     (183 183 (:REWRITE USE-ALL-<))
+     (173 173 (:REWRITE DEFAULT-+-1))
+     (141 141 (:REWRITE DEFAULT-CDR))
+     (115 10 (:REWRITE ALL-<-OF-CDR))
+     (110 110 (:REWRITE USE-ALL-<=-2))
+     (101 101 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (101 101
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (98 98
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (94 94 (:REWRITE DEFAULT-CAR))
+     (92 92 (:TYPE-PRESCRIPTION ALL-<))
+     (90 90 (:TYPE-PRESCRIPTION MEMBERP))
+     (78 18
+         (:REWRITE <=-OF-NTH-WHEN-ALL-<=-FREE))
+     (72 72 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (50 50
+         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+     (46 46
+         (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
+     (46 46 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (46 46 (:REWRITE ALL-<-TRANSITIVE-FREE))
+     (46 46 (:REWRITE ALL-<-TRANSITIVE))
+     (45 5 (:DEFINITION NATP))
+     (9 9
+        (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
+     (7 7 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (5 5 (:TYPE-PRESCRIPTION NATP))
+     (5 5 (:REWRITE USE-ALL-NATP-2))
+     (5 5 (:REWRITE USE-ALL-NATP))
+     (3 3
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (3 3
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1)))
 (ALL-<=-ALL-OF-REVERSE-LIST-ARG1
      (912 77 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (319 30
+     (326 30
           (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
      (219 17 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (195 13 (:REWRITE CONSP-OF-REVERSE-LIST))
@@ -670,8 +754,9 @@
      (119 15 (:REWRITE LEN-OF-CDR))
      (114 114 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (108 55 (:REWRITE DEFAULT-<-2))
+     (77 77
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (61 61 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (61 61 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (56 55 (:REWRITE DEFAULT-<-1))
      (55 55 (:REWRITE USE-ALL-<-2))
      (55 55 (:REWRITE USE-ALL-<))
@@ -713,13 +798,14 @@
                          (142 71 (:REWRITE DEFAULT-<-2))
                          (118 118 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                          (117 13 (:REWRITE LEN-OF-CDR))
-                         (103 31
+                         (112 31
                               (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
                          (90 71 (:REWRITE DEFAULT-<-1))
                          (71 71 (:REWRITE USE-ALL-<-2))
                          (71 71 (:REWRITE USE-ALL-<))
+                         (71 71
+                             (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                          (52 52 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                         (52 52 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                          (38 38 (:TYPE-PRESCRIPTION ALL-<))
                          (38 38
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -748,6 +834,7 @@
                          (8 8 (:TYPE-PRESCRIPTION MEMBERP)))
 (<=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR
      (504 25 (:REWRITE USE-ALL-<-FOR-CAR))
+     (347 29 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (238 59 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (183 15 (:REWRITE ALL-<-OF-CDR))
      (120 120 (:TYPE-PRESCRIPTION ALL-<))
@@ -768,7 +855,6 @@
      (36 36 (:REWRITE USE-ALL-<=-2))
      (36 36 (:REWRITE USE-ALL-<=))
      (24 24 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (24 24 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (21 21 (:REWRITE <=-ALL-TRANS-1))
      (14 14 (:TYPE-PRESCRIPTION ALL-<=))
      (14 9 (:REWRITE DEFAULT-+-2))
@@ -784,16 +870,17 @@
                         (15 1 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
                         (12 5
                             (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
-                        (10 2
+                        (11 2
                             (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
                         (9 9 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                         (9 1 (:REWRITE LEN-OF-CDR))
                         (6 3 (:REWRITE DEFAULT-<-2))
+                        (5 5
+                           (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                         (3 3 (:REWRITE USE-ALL-<-2))
                         (3 3 (:REWRITE USE-ALL-<))
                         (3 3 (:REWRITE DEFAULT-<-1))
                         (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                        (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                         (2 2
                            (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
                         (2 1 (:REWRITE DEFAULT-+-2))
@@ -809,7 +896,7 @@
                            (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
                         (1 1 (:REWRITE ALL-<=-MONOTONE)))
 (ALL-<=-ALL-OF-CONS-ARG2 (162 13 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                         (84 8
+                         (87 8
                              (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
                          (75 5 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
                          (69 69 (:TYPE-PRESCRIPTION LEN))
@@ -819,15 +906,16 @@
                          (22 11 (:REWRITE DEFAULT-<-2))
                          (21 21 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                          (18 2 (:REWRITE LEN-OF-CDR))
-                         (16 8
+                         (17 8
                              (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
                          (16 2 (:REWRITE USE-ALL-<-FOR-CAR))
                          (14 2 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
+                         (13 13
+                             (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
                          (13 11 (:REWRITE DEFAULT-<-1))
                          (11 11 (:REWRITE USE-ALL-<-2))
                          (11 11 (:REWRITE USE-ALL-<))
                          (9 9 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                         (9 9 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                          (8 8
                             (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
                          (5 5
@@ -852,13 +940,13 @@
                          (2 2 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
                          (2 2 (:REWRITE ALL-<-TRANSITIVE-FREE))
                          (2 2 (:REWRITE ALL-<-TRANSITIVE)))
-(SORTED-OF-MERGE-< (3049 117 (:REWRITE USE-ALL-<-FOR-CAR))
+(SORTED-OF-MERGE-< (3065 117 (:REWRITE USE-ALL-<-FOR-CAR))
                    (2464 112 (:DEFINITION TAKE))
                    (2328 194 (:REWRITE ZP-OPEN))
-                   (2132 91 (:REWRITE ALL-<-OF-CDR))
+                   (2148 91 (:REWRITE ALL-<-OF-CDR))
                    (1883 111 (:REWRITE USE-ALL-<=-FOR-CAR))
                    (1804 82 (:DEFINITION NTH))
-                   (1607 252 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+                   (1623 252 (:REWRITE ALL-<-WHEN-NOT-CONSP))
                    (1387 16 (:REWRITE ALL-<=-OF-MERGE-<-ARG1))
                    (1232 651 (:REWRITE DEFAULT-<-2))
                    (902 485 (:REWRITE DEFAULT-+-2))
@@ -869,18 +957,17 @@
                    (770 651 (:REWRITE DEFAULT-<-1))
                    (651 651 (:REWRITE USE-ALL-<-2))
                    (651 651 (:REWRITE USE-ALL-<))
-                   (631 457 (:REWRITE DEFAULT-CAR))
+                   (648 457 (:REWRITE DEFAULT-CAR))
                    (588 252 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
-                   (522 416 (:REWRITE DEFAULT-CDR))
+                   (542 416 (:REWRITE DEFAULT-CDR))
                    (504 504 (:TYPE-PRESCRIPTION ALL-<))
-                   (485 485 (:REWRITE DEFAULT-+-1))
-                   (450 50
+                   (500 50
                         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
+                   (485 485 (:REWRITE DEFAULT-+-1))
                    (401 345 (:REWRITE USE-ALL-<=))
                    (381 381 (:REWRITE CONSP-WHEN-LEN-GREATER))
                    (345 345 (:REWRITE USE-ALL-<=-2))
-                   (311 311 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-                   (263 23
+                   (303 23
                         (:REWRITE NOT-ALL-<=-WHEN-<-AND-MEMBER-EQUAL))
                    (256 256
                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -889,12 +976,12 @@
                    (252 252 (:REWRITE ALL-<-TRANSITIVE-FREE))
                    (252 252 (:REWRITE ALL-<-TRANSITIVE))
                    (240 30 (:REWRITE NOT-<-OF-NTH-WHEN-ALL-<))
-                   (220 10 (:DEFINITION MEMBER-EQUAL))
+                   (240 10 (:DEFINITION MEMBER-EQUAL))
                    (190 190
                         (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
                    (190 190 (:REWRITE ALL-<=-MONOTONE))
                    (144 24 (:REWRITE ALL-<=-OF-CDR))
-                   (79 2 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
+                   (85 2 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
                    (64 49 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
                    (62 30
                        (:REWRITE <=-OF-NTH-WHEN-ALL-<=-FREE))
@@ -902,36 +989,41 @@
                    (50 50 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                    (50 50
                        (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
-                   (46 2 (:LINEAR LEN-OF-CDR-LINEAR))
+                   (50 2 (:LINEAR LEN-OF-CDR-LINEAR))
+                   (20 20
+                       (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+                   (20 20
+                       (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
                    (10 10 (:TYPE-PRESCRIPTION BOOLEANP))
                    (6 6
                       (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (SORTEDP-<=-OF-MERGE-SORT-<
-     (680 70 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (227 4 (:REWRITE USE-ALL-<-FOR-CAR))
-     (200 17 (:REWRITE CONSP-OF-MERGE-SORT-<))
-     (195 4 (:REWRITE ALL-<-OF-CDR))
-     (171 8 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (135 24 (:REWRITE DEFAULT-CDR))
-     (114 4 (:REWRITE USE-ALL-<=-FOR-CAR))
-     (94 4 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
+     (684 70 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (232 4 (:REWRITE USE-ALL-<-FOR-CAR))
+     (202 17 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (200 4 (:REWRITE ALL-<-OF-CDR))
+     (176 8 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (144 24 (:REWRITE DEFAULT-CDR))
+     (118 4 (:REWRITE USE-ALL-<=-FOR-CAR))
+     (98 4 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
      (93 87 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (77 40 (:REWRITE DEFAULT-<-2))
+     (70 70
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (54 54 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (44 40 (:REWRITE DEFAULT-<-1))
+     (44 8 (:REWRITE DEFAULT-CAR))
      (40 40 (:REWRITE USE-ALL-<-2))
      (40 40 (:REWRITE USE-ALL-<))
-     (40 8 (:REWRITE DEFAULT-CAR))
-     (37 37 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (35 4
          (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
      (28 14 (:REWRITE DEFAULT-+-2))
-     (22 5
+     (24 5
          (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
+     (20 2
+         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
      (18 9
          (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
-     (18 2
-         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
      (16 16 (:TYPE-PRESCRIPTION ALL-<))
      (16 4 (:REWRITE SORTEDP-<=-OF-CDR))
      (14 14 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -955,11 +1047,12 @@
         (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
      (4 4 (:REWRITE ALL-<=-MONOTONE)))
 (NAT-LISTP-OF-MERGE-<
-     (5347 213 (:REWRITE USE-ALL-<-FOR-CAR))
+     (5830 504 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (5355 213 (:REWRITE USE-ALL-<-FOR-CAR))
      (3056 78 (:REWRITE ALL-NATP-OF-APPEND))
      (2769 72 (:REWRITE ALL-<-OF-APPEND))
-     (2433 378 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (2148 375 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (2441 378 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (2156 375 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
      (1866 72 (:REWRITE CDR-OF-REVERSE-LIST))
      (1866 72 (:REWRITE CAR-OF-REVERSE-LIST))
      (1647 118 (:REWRITE CONSP-OF-REVERSE-LIST))
@@ -974,8 +1067,8 @@
      (857 780 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (762 381
           (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
-     (729 488 (:REWRITE DEFAULT-CAR))
-     (683 430 (:REWRITE DEFAULT-CDR))
+     (739 488 (:REWRITE DEFAULT-CAR))
+     (693 430 (:REWRITE DEFAULT-CDR))
      (611 375
           (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP))
      (610 360 (:REWRITE DEFAULT-+-2))
@@ -984,7 +1077,6 @@
      (513 378
           (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
      (492 492 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (454 454 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (424 424 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (424 424 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (424 424 (:REWRITE ALL-<-TRANSITIVE))
@@ -1024,15 +1116,16 @@
 (NAT-LISTP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX
      (1225 117 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (347 61 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
-     (277 120 (:REWRITE DEFAULT-CDR))
+     (281 120 (:REWRITE DEFAULT-CDR))
      (181 90 (:REWRITE DEFAULT-<-2))
      (157 157 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (133 74 (:REWRITE DEFAULT-CAR))
      (132 13 (:REWRITE ALL-NATP-OF-CDR))
-     (131 74 (:REWRITE DEFAULT-CAR))
      (126 63
           (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
+     (117 117
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (111 111 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (111 111 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (97 90 (:REWRITE DEFAULT-<-1))
      (90 90 (:REWRITE USE-ALL-<-2))
      (90 90 (:REWRITE USE-ALL-<))
@@ -1054,14 +1147,14 @@
      (857 58 (:REWRITE USE-ALL-<-FOR-CAR))
      (346 70 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (312 49 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
-     (290 108 (:REWRITE DEFAULT-CDR))
+     (293 108 (:REWRITE DEFAULT-CDR))
      (255 158 (:REWRITE DEFAULT-<-2))
      (201 201 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (183 158 (:REWRITE DEFAULT-<-1))
      (162 162 (:TYPE-PRESCRIPTION ALL-<))
      (158 158 (:REWRITE USE-ALL-<-2))
      (158 158 (:REWRITE USE-ALL-<))
-     (144 81 (:REWRITE DEFAULT-CAR))
+     (148 81 (:REWRITE DEFAULT-CAR))
      (116 58
           (:REWRITE INTEGERP-OF-CAR-WHEN-ALL-NATP-CHEAP))
      (116 58
@@ -1070,10 +1163,11 @@
      (110 11 (:REWRITE ALL-NATP-OF-CDR))
      (102 51
           (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
+     (101 101
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (101 11 (:REWRITE ALL-<-OF-CDR))
      (98 70 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (94 94 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (94 94 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (79 79 (:REWRITE USE-ALL-<=-2))
      (79 79 (:REWRITE USE-ALL-<=))
      (70 70
@@ -1112,7 +1206,8 @@
      (4 1 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
      (3 3 (:TYPE-PRESCRIPTION ALL-NATP))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
      (2 2 (:REWRITE DEFAULT-CAR))
      (2 1
@@ -1159,7 +1254,8 @@
      (4 1 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
      (3 3 (:TYPE-PRESCRIPTION ALL-NATP))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
      (2 2 (:REWRITE DEFAULT-CAR))
      (2 1
@@ -1188,21 +1284,22 @@
      (1 1 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (1 1 (:REWRITE ALL-<-TRANSITIVE)))
 (NAT-LISTP-OF-MERGE-SORT-<
-     (268 11 (:REWRITE USE-ALL-<-FOR-CAR))
-     (252 9 (:REWRITE USE-ALL-NATP-FOR-CAR))
-     (184 12 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (179 13 (:REWRITE CONSP-OF-MERGE-SORT-<))
-     (152 10 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
-     (109 23 (:REWRITE DEFAULT-CDR))
+     (276 11 (:REWRITE USE-ALL-<-FOR-CAR))
+     (257 9 (:REWRITE USE-ALL-NATP-FOR-CAR))
+     (192 12 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (181 13 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (157 10 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (117 23 (:REWRITE DEFAULT-CDR))
      (89 84 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (83 48 (:REWRITE DEFAULT-<-2))
-     (56 14 (:REWRITE DEFAULT-CAR))
+     (66 66
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (61 14 (:REWRITE DEFAULT-CAR))
      (48 48 (:REWRITE USE-ALL-<-2))
      (48 48 (:REWRITE USE-ALL-<))
      (48 48 (:REWRITE DEFAULT-<-1))
      (47 47 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (40 10 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
-     (34 34 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (31 31 (:TYPE-PRESCRIPTION ALL-NATP))
      (27 3
          (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
@@ -1214,17 +1311,17 @@
      (20 10 (:REWRITE DEFAULT-+-2))
      (20 10
          (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
-     (18 4
+     (20 4
          (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
-     (15 1 (:REWRITE ALL-NATP-OF-CDR))
+     (16 1 (:REWRITE ALL-NATP-OF-CDR))
      (14 14 (:REWRITE USE-ALL-<=-2))
      (14 14 (:REWRITE USE-ALL-<=))
+     (13 1 (:REWRITE ALL-<-OF-CDR))
      (12 12
          (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
      (12 12 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (12 12 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (12 12 (:REWRITE ALL-<-TRANSITIVE))
-     (12 1 (:REWRITE ALL-<-OF-CDR))
      (11 11 (:TYPE-PRESCRIPTION ALL-INTEGERP))
      (10 10 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
      (10 10 (:REWRITE DEFAULT-+-1))
@@ -1242,19 +1339,20 @@
 (PERM-IMPLIES-EQUAL-ALL-<=-ALL-1
      (854 70 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (241 17 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
-     (178 42
+     (195 42
           (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
      (154 67
           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (123 123 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (119 15 (:REWRITE LEN-OF-CDR))
-     (97 13 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
+     (98 13 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
      (86 44 (:REWRITE DEFAULT-<-2))
+     (70 70
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (45 44 (:REWRITE DEFAULT-<-1))
      (44 44 (:REWRITE USE-ALL-<-2))
      (44 44 (:REWRITE USE-ALL-<))
      (44 44 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (44 44 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (42 42
          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
      (26 15 (:REWRITE DEFAULT-+-2))
@@ -1292,22 +1390,23 @@
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (ALL-<=-ALL-OF-MERGE-SORT-<-STRONG)
 (ALL-NATP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX
-     (5560 88 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
-     (5400 59 (:DEFINITION NAT-LISTP))
-     (2994 75 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
-     (1686 38 (:REWRITE USE-ALL-<-FOR-CAR))
+     (5587 88 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
+     (5427 59 (:DEFINITION NAT-LISTP))
+     (3000 75 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (1691 38 (:REWRITE USE-ALL-<-FOR-CAR))
      (1610 51 (:REWRITE USE-ALL-NATP-FOR-CAR))
-     (1413 39 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (1398 293 (:REWRITE DEFAULT-CDR))
+     (1419 293 (:REWRITE DEFAULT-CDR))
+     (1418 39 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (560 309 (:REWRITE DEFAULT-<-2))
      (550 12
           (:REWRITE NAT-LISTP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX))
+     (527 527
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (514 338 (:REWRITE DEFAULT-+-2))
      (490 58
           (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX))
      (468 468 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (468 468 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-     (399 125 (:REWRITE DEFAULT-CAR))
+     (419 125 (:REWRITE DEFAULT-CAR))
      (384 384 (:TYPE-PRESCRIPTION NAT-LISTP))
      (338 338 (:REWRITE DEFAULT-+-1))
      (326 309 (:REWRITE DEFAULT-<-1))
@@ -1361,7 +1460,8 @@
      (5 5 (:REWRITE DEFAULT-CDR))
      (5 5 (:REWRITE DEFAULT-<-1))
      (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (4 4 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (4 4
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (4 2
         (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
@@ -1389,19 +1489,19 @@
      (1 1 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (1 1 (:REWRITE ALL-<-TRANSITIVE)))
 (ALL-NATP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX
-     (1778 25 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
-     (1731 17 (:DEFINITION NAT-LISTP))
+     (1793 25 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
+     (1746 17 (:DEFINITION NAT-LISTP))
      (1154 95 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (765 21 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (773 21 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
      (717 717 (:TYPE-PRESCRIPTION LEN))
      (699 16
           (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX))
      (539 47 (:REWRITE LEN-OF-CDR))
-     (478 17 (:REWRITE USE-ALL-NATP-FOR-CAR))
-     (457 9 (:DEFINITION NATP))
-     (366 10 (:REWRITE USE-ALL-<-FOR-CAR))
-     (289 11 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (216 56 (:REWRITE DEFAULT-CDR))
+     (482 17 (:REWRITE USE-ALL-NATP-FOR-CAR))
+     (461 9 (:DEFINITION NATP))
+     (370 10 (:REWRITE USE-ALL-<-FOR-CAR))
+     (293 11 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (228 56 (:REWRITE DEFAULT-CDR))
      (205 205 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (183 99
           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
@@ -1409,14 +1509,15 @@
      (163 39 (:REWRITE EQUAL-OF-LEN-AND-0))
      (152 4
           (:REWRITE NAT-LISTP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX))
-     (123 27 (:REWRITE DEFAULT-CAR))
+     (135 27 (:REWRITE DEFAULT-CAR))
      (120 120 (:TYPE-PRESCRIPTION NAT-LISTP))
      (116 92 (:REWRITE DEFAULT-<-1))
+     (95 95
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (94 47 (:REWRITE DEFAULT-+-2))
      (92 92 (:REWRITE USE-ALL-<-2))
      (92 92 (:REWRITE USE-ALL-<))
      (71 71 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (71 71 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (50 25
          (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
      (47 47 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -1466,7 +1567,8 @@
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
      (2 2 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (2 2 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (2 2 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (2 2
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2
         (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP))
      (2 2
@@ -1523,7 +1625,8 @@
      (50 50 (:REWRITE USE-ALL-NATP-2))
      (50 50 (:REWRITE USE-ALL-NATP))
      (50 50 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (50 50 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (50 50
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (49 49 (:REWRITE USE-ALL-<=-2))
      (49 49 (:REWRITE USE-ALL-<=))
      (37 37
@@ -1539,9 +1642,10 @@
      (9 9 (:REWRITE EQUAL-OF-LEN-AND-0))
      (3 3 (:REWRITE ALL-INTEGERP-OF-CDR)))
 (<-OF-+-OF-1-AND-CAR-OF-LAST-WHEN-<=-ALL
-     (75 5 (:REWRITE USE-ALL-<-FOR-CAR))
+     (95 5 (:REWRITE USE-ALL-<-FOR-CAR))
+     (91 9 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (60 10 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (46 17 (:REWRITE DEFAULT-+-2))
-     (40 10 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
      (38 38 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (32 20
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -1550,6 +1654,7 @@
      (27 7
          (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
      (20 20 (:TYPE-PRESCRIPTION ALL-<))
+     (20 5 (:REWRITE ALL-<-OF-+-OF-1))
      (20 2 (:LINEAR LEN-OF-CDR-LINEAR-STRONG))
      (18 18 (:TYPE-PRESCRIPTION SORTEDP-<=))
      (17 17 (:REWRITE USE-ALL-<-2))
@@ -1558,6 +1663,7 @@
      (16 15 (:REWRITE DEFAULT-CDR))
      (16 2 (:LINEAR LEN-OF-CDR-LINEAR))
      (15 10 (:REWRITE DEFAULT-CAR))
+     (10 10 (:TYPE-PRESCRIPTION ALL-INTEGERP))
      (10 10 (:REWRITE USE-ALL-<=-2))
      (10 10 (:REWRITE USE-ALL-<=))
      (10 10
@@ -1566,41 +1672,43 @@
      (10 10 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (10 10 (:REWRITE ALL-<-TRANSITIVE))
      (7 7 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (7 7 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (7 7 (:REWRITE <=-ALL-TRANS-1))
      (6 2 (:REWRITE SORTEDP-<=-OF-CDR))
+     (5 5
+        (:REWRITE ALL-INTEGERP-WHEN-NOT-CONSP-CHEAP))
      (1 1 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP)))
-(<=-ALL-OF-MERGE-< (8645 445
+(<=-ALL-OF-MERGE-< (8773 445
                          (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
-                   (6745 188 (:REWRITE SORTEDP-<=-OF-APPEND))
-                   (6120 276 (:REWRITE USE-ALL-<-FOR-CAR))
-                   (3720 73 (:REWRITE ALL-<=-ALL-OF-CONS-ARG2))
-                   (3695 267 (:REWRITE SORTEDP-<=-OF-CDR))
+                   (8352 760 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                   (6873 188 (:REWRITE SORTEDP-<=-OF-APPEND))
+                   (6132 276 (:REWRITE USE-ALL-<-FOR-CAR))
+                   (3756 267 (:REWRITE SORTEDP-<=-OF-CDR))
+                   (3754 73 (:REWRITE ALL-<=-ALL-OF-CONS-ARG2))
                    (3072 87 (:REWRITE ALL-<-OF-APPEND))
-                   (2349 476 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+                   (2361 476 (:REWRITE ALL-<-WHEN-NOT-CONSP))
                    (2307 1078 (:REWRITE DEFAULT-<-1))
-                   (2082 2082 (:TYPE-PRESCRIPTION SORTEDP-<=))
-                   (2072 130
+                   (2164 130
                          (:REWRITE ALL-<=-ALL-OF-REVERSE-LIST-ARG1))
+                   (2082 2082 (:TYPE-PRESCRIPTION SORTEDP-<=))
                    (2014 1078 (:REWRITE DEFAULT-<-2))
                    (1731 67 (:REWRITE CDR-OF-REVERSE-LIST))
                    (1731 67 (:REWRITE CAR-OF-REVERSE-LIST))
-                   (1512 134 (:REWRITE ZP-OPEN))
-                   (1453 185
+                   (1537 185
                          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
+                   (1512 134 (:REWRITE ZP-OPEN))
+                   (1411 242
+                         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
                    (1378 67 (:DEFINITION TAKE))
                    (1378 67 (:DEFINITION NTH))
-                   (1367 242
-                         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
                    (1233 164 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
                    (1142 713
                          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                    (1136 1078 (:REWRITE USE-ALL-<))
                    (1078 1078 (:REWRITE USE-ALL-<-2))
                    (1070 59 (:REWRITE ALL-<-OF-REVERSE-LIST))
-                   (773 491 (:REWRITE DEFAULT-CAR))
+                   (785 491 (:REWRITE DEFAULT-CAR))
+                   (772 451 (:REWRITE DEFAULT-CDR))
                    (763 763 (:TYPE-PRESCRIPTION ALL-<))
-                   (760 451 (:REWRITE DEFAULT-CDR))
                    (748 40
                         (:REWRITE ALL-<=-OF-REVERSE-LIST-ARG1))
                    (700 120 (:REWRITE LEN-OF-CDR))
@@ -1608,7 +1716,6 @@
                    (653 490
                         (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
                    (616 616 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                   (582 582 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                    (549 549 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
                    (549 549 (:REWRITE ALL-<-TRANSITIVE-FREE))
                    (549 549 (:REWRITE ALL-<-TRANSITIVE))
@@ -1620,8 +1727,8 @@
                    (319 319 (:TYPE-PRESCRIPTION ALL-<=))
                    (317 34 (:REWRITE CONSP-OF-MERGE-<))
                    (277 39 (:REWRITE ALL-<-OF-CDR))
+                   (264 24 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
                    (261 29 (:REWRITE ALL-<-OF-CONS))
-                   (252 24 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
                    (245 173 (:REWRITE ALL-<=-MONOTONE))
                    (239 239 (:TYPE-PRESCRIPTION ALL-<=-ALL))
                    (207 185
@@ -1639,13 +1746,13 @@
                    (18 18 (:REWRITE SORTEDP-<=-OF-SINGLETON)))
 (<=-ALL-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX
      (1308 107 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (957 64 (:REWRITE USE-ALL-<-FOR-CAR))
+     (958 64 (:REWRITE USE-ALL-<-FOR-CAR))
      (537 105
           (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
-     (383 82 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (384 82 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (358 358 (:TYPE-PRESCRIPTION SORTEDP-<=))
      (316 159 (:REWRITE DEFAULT-<-2))
-     (293 104 (:REWRITE DEFAULT-CDR))
+     (299 104 (:REWRITE DEFAULT-CDR))
      (230 159 (:REWRITE DEFAULT-<-1))
      (229 13
           (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST-AUX))
@@ -1653,12 +1760,13 @@
      (164 164 (:TYPE-PRESCRIPTION ALL-<))
      (159 159 (:REWRITE USE-ALL-<-2))
      (159 159 (:REWRITE USE-ALL-<))
-     (154 69 (:REWRITE DEFAULT-CAR))
+     (157 69 (:REWRITE DEFAULT-CAR))
      (144 18 (:REWRITE ALL-<-OF-CDR))
      (128 128
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (107 107
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (96 96 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (96 96 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (96 48 (:REWRITE DEFAULT-+-2))
      (82 82
          (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
@@ -1675,23 +1783,25 @@
          (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
 (<=-ALL-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX
      (1177 90 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (964 65 (:REWRITE USE-ALL-<-FOR-CAR))
+     (965 65 (:REWRITE USE-ALL-<-FOR-CAR))
      (525 103
           (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
-     (383 83 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (384 83 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (350 350 (:TYPE-PRESCRIPTION SORTEDP-<=))
      (316 160 (:REWRITE DEFAULT-<-2))
      (240 160 (:REWRITE DEFAULT-<-1))
-     (219 98 (:REWRITE DEFAULT-CDR))
+     (223 98 (:REWRITE DEFAULT-CDR))
      (216 72 (:REWRITE SORTEDP-<=-OF-CDR))
      (166 166 (:TYPE-PRESCRIPTION ALL-<))
      (160 160 (:REWRITE USE-ALL-<-2))
      (160 160 (:REWRITE USE-ALL-<))
-     (151 70 (:REWRITE DEFAULT-CAR))
+     (155 70 (:REWRITE DEFAULT-CAR))
      (144 18 (:REWRITE ALL-<-OF-CDR))
      (130 130
           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (104 52 (:REWRITE DEFAULT-+-2))
+     (90 90
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (83 83 (:REWRITE USE-ALL-<=-2))
      (83 83 (:REWRITE USE-ALL-<=))
      (83 83
@@ -1700,7 +1810,6 @@
      (83 83 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (83 83 (:REWRITE ALL-<-TRANSITIVE))
      (80 80 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (80 80 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (52 52 (:REWRITE DEFAULT-+-1))
      (47 47 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
      (14 14
@@ -1730,7 +1839,8 @@
      (3 3
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (3 3 (:REWRITE <=-ALL-TRANS-1))
      (3 1 (:REWRITE SORTEDP-<=-OF-CDR))
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
@@ -1767,7 +1877,8 @@
      (3 3
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (3 3 (:REWRITE <=-ALL-TRANS-1))
      (3 1 (:REWRITE SORTEDP-<=-OF-CDR))
      (2 2 (:TYPE-PRESCRIPTION ALL-<))
@@ -1784,25 +1895,26 @@
      (1 1 (:REWRITE ALL-<-TRANSITIVE-FREE))
      (1 1 (:REWRITE ALL-<-TRANSITIVE)))
 (<=-ALL-OF-MERGE-SORT-<
-     (884 26
+     (902 26
           (:REWRITE <=-ALL-WHEN-SORTEDP-<=-AND-<=-OF-CAR))
-     (742 23 (:REWRITE USE-ALL-<-FOR-CAR))
-     (539 29 (:REWRITE ALL-<-WHEN-NOT-CONSP))
-     (256 19 (:REWRITE CONSP-OF-MERGE-SORT-<))
-     (238 23 (:REWRITE DEFAULT-CAR))
+     (755 23 (:REWRITE USE-ALL-<-FOR-CAR))
+     (552 29 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (257 19 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (249 23 (:REWRITE DEFAULT-CAR))
      (169 87 (:REWRITE DEFAULT-<-2))
      (155 149 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (117 117
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (115 87 (:REWRITE DEFAULT-<-1))
      (94 94 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (87 87 (:REWRITE USE-ALL-<-2))
      (87 87 (:REWRITE USE-ALL-<))
      (76 8
          (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
-     (75 75 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (66 66 (:TYPE-PRESCRIPTION SORTEDP-<=))
      (58 58 (:TYPE-PRESCRIPTION ALL-<))
+     (53 6 (:REWRITE ALL-<-OF-CDR))
      (52 26 (:REWRITE DEFAULT-+-2))
-     (52 6 (:REWRITE ALL-<-OF-CDR))
      (47 47
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (45 15 (:REWRITE SORTEDP-<=-OF-CDR))
@@ -1821,12 +1933,12 @@
          (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
      (16 16
          (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
+     (11 3
+         (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
      (10 10
          (:REWRITE SORTEDP-<=-OF-MERGE-SORT-<))
      (10 5
          (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
-     (10 3
-         (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
      (5 5 (:TYPE-PRESCRIPTION TRUE-LISTP)))
 (NOT-ALL-NATP-WHEN-NOT-NATP-AND-MEMBER-EQUAL
      (410 22 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
@@ -1849,92 +1961,108 @@
          (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP))
      (21 21 (:REWRITE DEFAULT-CDR))
      (18 18 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (18 18 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (18 18
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (16 16 (:REWRITE USE-ALL-<-2))
      (16 16 (:REWRITE USE-ALL-<))
      (16 16 (:REWRITE DEFAULT-<-1))
      (16 11 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
      (14 14 (:TYPE-PRESCRIPTION MEMBERP))
      (13 7 (:REWRITE DEFAULT-+-2))
+     (7 7
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (7 7
+        (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (7 7 (:REWRITE DEFAULT-+-1))
      (7 7
         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
      (6 6 (:REWRITE EQUAL-OF-LEN-AND-0))
      (5 5 (:TYPE-PRESCRIPTION BOOLEANP)))
-(ALL-NATP-OF-REVAPPEND-STRONG (13948 930 (:REWRITE CONSP-FROM-LEN-CHEAP))
-                              (13870 497 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
-                              (13178 269 (:DEFINITION NAT-LISTP))
-                              (5384 477 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
-                              (3886 590 (:REWRITE LEN-OF-CDR))
-                              (2214 2214 (:TYPE-PRESCRIPTION NAT-LISTP))
-                              (2158 1912
-                                    (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-                              (1830 101 (:DEFINITION TAKE))
-                              (1776 1028 (:REWRITE DEFAULT-<-2))
-                              (1768 174 (:REWRITE ZP-OPEN))
-                              (1599 73 (:REWRITE NATP-OF-NTH-FROM-ALL-NATP))
-                              (1362 939 (:REWRITE DEFAULT-+-2))
-                              (1358 73 (:DEFINITION NTH))
-                              (1279 1273 (:REWRITE DEFAULT-CDR))
-                              (1190 368 (:REWRITE USE-ALL-NATP))
-                              (1092 1086 (:REWRITE DEFAULT-CAR))
-                              (1028 1028 (:REWRITE USE-ALL-<-2))
-                              (1028 1028 (:REWRITE USE-ALL-<))
-                              (1028 1028 (:REWRITE DEFAULT-<-1))
-                              (994 497
-                                   (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
-                              (939 939 (:REWRITE DEFAULT-+-1))
-                              (923 923 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                              (923 923 (:REWRITE CONSP-WHEN-LEN-EQUAL))
-                              (877 261 (:REWRITE FOLD-CONSTS-IN-+))
-                              (852 852
-                                   (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
-                              (822 822 (:TYPE-PRESCRIPTION MEMBERP))
-                              (451 451
-                                   (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
-                              (368 368 (:REWRITE USE-ALL-NATP-2))
-                              (324 162
-                                   (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
-                              (261 261 (:TYPE-PRESCRIPTION BOOLEANP))
-                              (234 234 (:REWRITE EQUAL-OF-LEN-AND-0))
-                              (204 12 (:DEFINITION BINARY-APPEND))
-                              (177 23 (:REWRITE ALL-NATP-OF-TAKE))
-                              (175 175 (:REWRITE USE-ALL-<=-2))
-                              (175 175 (:REWRITE USE-ALL-<=))
-                              (162 162 (:TYPE-PRESCRIPTION BINARY-APPEND))
-                              (59 59
-                                  (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
-                              (6 6 (:REWRITE CDR-CONS))
-                              (6 6 (:REWRITE CAR-CONS)))
+(ALL-NATP-OF-REVAPPEND-STRONG
+     (13948 930 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (13870 497 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
+     (13178 269 (:DEFINITION NAT-LISTP))
+     (5384 477 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (3886 590 (:REWRITE LEN-OF-CDR))
+     (2214 2214 (:TYPE-PRESCRIPTION NAT-LISTP))
+     (2158 1912
+           (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (1830 101 (:DEFINITION TAKE))
+     (1776 1028 (:REWRITE DEFAULT-<-2))
+     (1768 174 (:REWRITE ZP-OPEN))
+     (1599 73 (:REWRITE NATP-OF-NTH-FROM-ALL-NATP))
+     (1362 939 (:REWRITE DEFAULT-+-2))
+     (1358 73 (:DEFINITION NTH))
+     (1283 1283
+           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (1283 1283
+           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
+     (1279 1273 (:REWRITE DEFAULT-CDR))
+     (1190 368 (:REWRITE USE-ALL-NATP))
+     (1092 1086 (:REWRITE DEFAULT-CAR))
+     (1028 1028 (:REWRITE USE-ALL-<-2))
+     (1028 1028 (:REWRITE USE-ALL-<))
+     (1028 1028 (:REWRITE DEFAULT-<-1))
+     (994 497
+          (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
+     (939 939 (:REWRITE DEFAULT-+-1))
+     (930 930
+          (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (923 923 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (877 261 (:REWRITE FOLD-CONSTS-IN-+))
+     (852 852
+          (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (822 822 (:TYPE-PRESCRIPTION MEMBERP))
+     (451 451
+          (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN))
+     (368 368 (:REWRITE USE-ALL-NATP-2))
+     (324 162
+          (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+     (261 261 (:TYPE-PRESCRIPTION BOOLEANP))
+     (234 234 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (204 12 (:DEFINITION BINARY-APPEND))
+     (177 23 (:REWRITE ALL-NATP-OF-TAKE))
+     (175 175 (:REWRITE USE-ALL-<=-2))
+     (175 175 (:REWRITE USE-ALL-<=))
+     (162 162 (:TYPE-PRESCRIPTION BINARY-APPEND))
+     (59 59
+         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
+     (6 6 (:REWRITE CDR-CONS))
+     (6 6 (:REWRITE CAR-CONS)))
 (ALL-NATP-OF-MERGE-<
      (25094 2474 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (19800 198 (:REWRITE REVAPPEND-OF-CONS))
      (19474 586 (:DEFINITION BINARY-APPEND))
-     (12197 233 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
-     (11782 163 (:DEFINITION NAT-LISTP))
+     (12327 233 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
+     (11912 163 (:DEFINITION NAT-LISTP))
      (6336 198 (:REWRITE CAR-OF-REVAPPEND))
      (6138 198 (:REWRITE CDR-OF-REVAPPEND))
-     (5996 378 (:REWRITE USE-ALL-<-FOR-CAR))
+     (6022 378 (:REWRITE USE-ALL-<-FOR-CAR))
      (5940 198 (:DEFINITION BUTLAST))
      (5742 198 (:DEFINITION LAST))
-     (5027 227 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (5079 227 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
+     (4329 2881 (:REWRITE DEFAULT-CAR))
+     (4257 2439 (:REWRITE DEFAULT-CDR))
      (4230 2508 (:REWRITE DEFAULT-<-2))
-     (4127 2881 (:REWRITE DEFAULT-CAR))
-     (4055 2439 (:REWRITE DEFAULT-CDR))
      (3992 640 (:REWRITE LEN-OF-CDR))
      (3966 466 (:REWRITE CONSP-OF-MERGE-<))
      (3564 198 (:REWRITE CONSP-OF-REVAPPEND))
      (3230 3230
            (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (3103 153 (:REWRITE USE-ALL-NATP-FOR-CAR))
+     (3129 153 (:REWRITE USE-ALL-NATP-FOR-CAR))
      (2772 198 (:DEFINITION TAKE))
      (2756 2508 (:REWRITE DEFAULT-<-1))
-     (2711 487 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (2737 487 (:REWRITE ALL-<-WHEN-NOT-CONSP))
      (2508 2508 (:REWRITE USE-ALL-<-2))
      (2508 2508 (:REWRITE USE-ALL-<))
+     (2474 2474
+           (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2256 2256 (:REWRITE CONSP-WHEN-LEN-GREATER))
      (2034 253 (:REWRITE USE-ALL-<=-FOR-CAR))
-     (1790 1790 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (1815 1815
+           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (1815 1815
+           (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (1584 198 (:REWRITE ZP-OPEN))
      (1436 1236 (:REWRITE DEFAULT-+-2))
      (1236 1236 (:REWRITE DEFAULT-+-1))
@@ -1996,21 +2124,21 @@
          (:REWRITE IFF-OF-CAR-WHEN-SYMBOL-TERM-ALISTP-CHEAP))
      (7 7
         (:TYPE-PRESCRIPTION SYMBOL-TERM-ALISTP)))
-(EQLABLE-LISTP-OF-MERGE-< (1650 64 (:REWRITE CDR-OF-REVERSE-LIST))
+(EQLABLE-LISTP-OF-MERGE-< (3917 343 (:REWRITE CONSP-FROM-LEN-CHEAP))
+                          (1650 64 (:REWRITE CDR-OF-REVERSE-LIST))
                           (1650 64 (:REWRITE CAR-OF-REVERSE-LIST))
                           (1440 128 (:REWRITE ZP-OPEN))
                           (1312 64 (:DEFINITION TAKE))
                           (1312 64 (:DEFINITION NTH))
                           (878 64 (:REWRITE CONSP-OF-REVERSE-LIST))
-                          (733 477 (:REWRITE DEFAULT-CAR))
-                          (680 389 (:REWRITE DEFAULT-CDR))
+                          (747 477 (:REWRITE DEFAULT-CAR))
+                          (694 389 (:REWRITE DEFAULT-CDR))
                           (666 589 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
                           (524 140 (:REWRITE FOLD-CONSTS-IN-+))
                           (506 294 (:REWRITE DEFAULT-+-2))
                           (473 473 (:REWRITE USE-ALL-<-2))
                           (473 473 (:REWRITE USE-ALL-<))
                           (325 325 (:REWRITE CONSP-WHEN-LEN-GREATER))
-                          (299 299 (:REWRITE CONSP-WHEN-LEN-EQUAL))
                           (294 294 (:REWRITE DEFAULT-+-1))
                           (256 32 (:REWRITE USE-ALL-<-FOR-CAR))
                           (192 32 (:REWRITE USE-ALL-<=-FOR-CAR))
@@ -2037,14 +2165,15 @@
      (839 64 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (344 344 (:TYPE-PRESCRIPTION LEN))
      (170 18 (:REWRITE LEN-OF-CDR))
-     (117 45 (:REWRITE DEFAULT-CDR))
+     (126 45 (:REWRITE DEFAULT-CDR))
      (101 55
           (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
      (97 97 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
      (92 45 (:REWRITE DEFAULT-<-2))
-     (81 29 (:REWRITE DEFAULT-CAR))
+     (86 29 (:REWRITE DEFAULT-CAR))
+     (64 64
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (50 50 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (50 50 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (45 45 (:REWRITE USE-ALL-<-2))
      (45 45 (:REWRITE USE-ALL-<))
      (45 45 (:REWRITE DEFAULT-<-1))
@@ -2060,17 +2189,18 @@
 (EQLABLE-LISTP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST-AUX
      (736 53 (:REWRITE CONSP-FROM-LEN-CHEAP))
      (110 110 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (102 39 (:REWRITE DEFAULT-CDR))
      (99 51
          (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
-     (95 39 (:REWRITE DEFAULT-CDR))
-     (91 27 (:REWRITE DEFAULT-CAR))
+     (99 27 (:REWRITE DEFAULT-CAR))
      (87 43 (:REWRITE DEFAULT-<-2))
      (55 28 (:REWRITE DEFAULT-+-2))
+     (53 53
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (51 43 (:REWRITE DEFAULT-<-1))
      (43 43 (:REWRITE USE-ALL-<-2))
      (43 43 (:REWRITE USE-ALL-<))
      (38 38 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (38 38 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (28 28 (:REWRITE DEFAULT-+-1))
      (27 27 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
      (10 5 (:REWRITE DEFAULT-*-2))
@@ -2096,7 +2226,8 @@
      (3 3 (:REWRITE USE-ALL-<))
      (3 3 (:REWRITE DEFAULT-<-1))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2 (:REWRITE DEFAULT-CAR))
      (2 1 (:REWRITE DEFAULT-+-2))
      (1 1 (:REWRITE EQUAL-OF-LEN-AND-0))
@@ -2119,7 +2250,8 @@
      (3 3 (:REWRITE USE-ALL-<))
      (3 3 (:REWRITE DEFAULT-<-1))
      (3 3 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (3 3 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (3 3
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (2 2 (:REWRITE DEFAULT-CAR))
      (2 1 (:REWRITE DEFAULT-+-2))
      (1 1 (:REWRITE EQUAL-OF-LEN-AND-0))
@@ -2128,19 +2260,20 @@
      (1 1
         (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
 (EQLABLE-LISTP-OF-MERGE-SORT-<
-     (124 22 (:REWRITE DEFAULT-CDR))
-     (104 6 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (134 22 (:REWRITE DEFAULT-CDR))
+     (105 6 (:REWRITE CONSP-OF-MERGE-SORT-<))
+     (70 14 (:REWRITE DEFAULT-CAR))
      (68 66 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
-     (64 14 (:REWRITE DEFAULT-CAR))
+     (51 51
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (50 25 (:REWRITE DEFAULT-<-2))
      (34 34 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (28 28 (:REWRITE CONSP-WHEN-LEN-EQUAL))
      (25 25 (:REWRITE USE-ALL-<-2))
      (25 25 (:REWRITE USE-ALL-<))
      (25 25 (:REWRITE DEFAULT-<-1))
      (14 7 (:REWRITE DEFAULT-+-2))
-     (9 2
-        (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
+     (10 2
+         (:REWRITE CONSP-OF-MV-NTH-1-OF-SPLIT-LIST-FAST))
      (9 1
         (:REWRITE CONSP-OF-MV-NTH-0-OF-SPLIT-LIST-FAST))
      (7 7 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
@@ -2155,10 +2288,10 @@
      (1 1 (:REWRITE USE-ALL-<=-2))
      (1 1 (:REWRITE USE-ALL-<=)))
 (EQLABLE-LISTP-WHEN-ALL-NATP
-     (313 4
+     (381 4
           (:REWRITE NOT-ALL-NATP-WHEN-NOT-NATP-AND-MEMBER-EQUAL))
+     (319 17 (:DEFINITION MEMBER-EQUAL))
      (286 24 (:REWRITE CONSP-FROM-LEN-CHEAP))
-     (281 17 (:DEFINITION MEMBER-EQUAL))
      (268 10 (:REWRITE ALL-NATP-WHEN-NAT-LISTP))
      (257 5 (:DEFINITION NAT-LISTP))
      (84 4 (:DEFINITION NATP))
@@ -2170,13 +2303,18 @@
      (38 38 (:TYPE-PRESCRIPTION NAT-LISTP))
      (36 8 (:REWRITE ALL-NATP-WHEN-NOT-CONSP))
      (35 35 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (34 34
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (34 34
+         (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
      (30 30 (:REWRITE DEFAULT-CDR))
      (29 29 (:REWRITE USE-ALL-<-2))
      (29 29 (:REWRITE USE-ALL-<))
      (29 29 (:REWRITE DEFAULT-CAR))
      (29 29 (:REWRITE DEFAULT-<-1))
      (24 24 (:REWRITE CONSP-WHEN-LEN-GREATER))
-     (24 24 (:REWRITE CONSP-WHEN-LEN-EQUAL))
+     (24 24
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
      (20 10
          (:REWRITE ALL-NATP-WHEN-NAT-LISTP-CHEAP))
      (17 15
@@ -2208,3 +2346,129 @@
      (2 2 (:TYPE-PRESCRIPTION MEMBERP)))
 (ALL-NATP-OF-MERGE-SORT-<)
 (ALL-<-OF-MERGE-SORT-<)
+(ALL-<=-OF-CAR-OF-LAST-WHEN-SORTEDP-<=-2
+     (2718 117 (:REWRITE USE-ALL-<-FOR-CAR))
+     (1571 232 (:REWRITE ALL-<-WHEN-NOT-CONSP))
+     (732 85 (:REWRITE ALL-<-OF-CDR))
+     (724 34 (:REWRITE SORTEDP-<=-OF-CDR))
+     (626 574 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (618 324 (:REWRITE DEFAULT-<-2))
+     (606 232 (:REWRITE ALL-<-TRANSITIVE-FREE-2))
+     (540 32 (:REWRITE USE-ALL-<-FOR-CAR-OF-LAST))
+     (479 22 (:REWRITE ALL-<=-OF-CAR-OF-LAST))
+     (469 469 (:TYPE-PRESCRIPTION ALL-<))
+     (398 106 (:REWRITE ALL-<=-WHEN-NOT-CONSP))
+     (387 61 (:REWRITE ALL-<=-OF-CDR))
+     (352 244
+          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (325 325 (:REWRITE USE-ALL-<-2))
+     (325 325 (:REWRITE USE-ALL-<))
+     (299 299 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (268 17 (:REWRITE SUBSETP-EQUAL-OF-CDR-ARG1))
+     (262 232
+          (:REWRITE ALL-<-WHEN-NOT-CONSP-CHEAP))
+     (232 232 (:REWRITE ALL-<-TRANSITIVE-FREE))
+     (232 232 (:REWRITE ALL-<-TRANSITIVE))
+     (230 149 (:REWRITE DEFAULT-+-2))
+     (222 34
+          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1))
+     (216 26 (:REWRITE ALL-<-OF-LAST))
+     (159 126 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
+     (149 149 (:REWRITE DEFAULT-+-1))
+     (130 126 (:REWRITE USE-ALL-<=))
+     (128 72
+          (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-2))
+     (126 126 (:REWRITE USE-ALL-<=-2))
+     (120 34
+          (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG2))
+     (106 106
+          (:REWRITE ALL-<=-WHEN-NOT-CONSP-CHEAP))
+     (106 106 (:REWRITE ALL-<=-MONOTONE))
+     (70 35
+         (:REWRITE SUBSETP-EQUAL-WHEN-SUBSETP-EQUAL-OF-CDR-CHEAP))
+     (68 68 (:TYPE-PRESCRIPTION ALL-<=-ALL))
+     (60 10 (:REWRITE ALL-<=-ALL-OF-CDR-ARG1))
+     (37 37
+         (:REWRITE SUBSETP-EQUAL-TRANSITIVE-ALT))
+     (37 37
+         (:REWRITE SUBSETP-EQUAL-TRANSITIVE-2-ALT))
+     (35 35
+         (:REWRITE SUBSETP-EQUAL-WHEN-NOT-CONSP-ARG2-CHEAP))
+     (34 34
+         (:REWRITE ALL-<=-ALL-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (34 3 (:REWRITE ALL-<=-ALL-OF-CDR-ARG2))
+     (33 33 (:TYPE-PRESCRIPTION BOOLEANP))
+     (16 16
+         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN))
+     (4 4 (:TYPE-PRESCRIPTION MEMBERP))
+     (3 3
+        (:REWRITE ALL-<=-OF-CAR-OF-LAST-WHEN-SORTEDP-<=))
+     (2 2 (:REWRITE SUBSETP-EQUAL-SELF)))
+(PERM-IMPLIES-IFF-MEMBER-EQUAL-2)
+(PERM-IMPLIES-EQUAL-SUBSETP-EQUAL-2
+     (540 79
+          (:REWRITE SUBSETP-EQUAL-TRANSITIVE-ALT))
+     (490 41 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (239 79
+          (:REWRITE SUBSETP-EQUAL-TRANSITIVE-2-ALT))
+     (199 21 (:REWRITE SUBSETP-EQUAL-OF-CDR-ARG1))
+     (173 52
+          (:REWRITE MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1))
+     (144 72
+          (:REWRITE SUBSETP-EQUAL-WHEN-SUBSETP-EQUAL-OF-CDR-CHEAP))
+     (78 41 (:REWRITE DEFAULT-<-2))
+     (72 72
+         (:REWRITE SUBSETP-EQUAL-WHEN-NOT-CONSP-ARG2-CHEAP))
+     (57 57 (:REWRITE DEFAULT-CAR))
+     (47 47 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (41 41 (:REWRITE USE-ALL-<-2))
+     (41 41 (:REWRITE USE-ALL-<))
+     (41 41 (:REWRITE DEFAULT-<-1))
+     (41 41 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (41 41
+         (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (40 40 (:REWRITE DEFAULT-CDR))
+     (39 37
+         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (20 20 (:TYPE-PRESCRIPTION BOOLEANP))
+     (20 4 (:REWRITE LEN-OF-CDR))
+     (19 19
+         (:REWRITE PERM-WHEN-NOT-CONSP-ARG2-CHEAP))
+     (19 19
+         (:REWRITE PERM-WHEN-NOT-CONSP-ARG1-CHEAP))
+     (18 18 (:REWRITE PERM-TRANSITIVE-2))
+     (18 18 (:REWRITE PERM-TRANSITIVE-1))
+     (4 4 (:REWRITE DEFAULT-+-2))
+     (4 4 (:REWRITE DEFAULT-+-1))
+     (4 4
+        (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))
+(SUBSETP-EQUAL-OF-MERGE-SORT-<)
+(ALL-<=-OF-CAR-OF-LAST-OF-MERGE-SORT-<)
+(ALL-INTEGERP-OF-MERGE-SORT-<-WHEN-NAT-LISTP)
+(ALL-<-OF-+-OF-1-AND-CAR-OF-LAST-OF-MERGE-SORT-<
+     (67 6 (:REWRITE CONSP-FROM-LEN-CHEAP))
+     (40 1 (:DEFINITION LAST))
+     (15 15 (:TYPE-PRESCRIPTION LAST))
+     (15 1 (:REWRITE DEFAULT-CAR))
+     (14 1 (:REWRITE LEN-OF-CDR))
+     (12 5
+         (:LINEAR LEN-POSITIVE-WHEN-CONSP-LINEAR-CHEAP))
+     (11 9 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+     (11 2 (:REWRITE DEFAULT-CDR))
+     (10 2 (:REWRITE DEFAULT-+-2))
+     (6 6
+        (:REWRITE CONSP-WHEN-LEN-EQUAL-CONSTANT))
+     (6 3 (:REWRITE DEFAULT-<-2))
+     (6 1 (:REWRITE EQUAL-OF-LEN-AND-0))
+     (4 4 (:REWRITE CONSP-WHEN-LEN-GREATER))
+     (4 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (3 3 (:REWRITE USE-ALL-<-2))
+     (3 3 (:REWRITE USE-ALL-<))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (2 1
+        (:REWRITE INTEGERP-OF-CAR-WHEN-ALL-INTEGERP-CHEAP))
+     (1 1 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
+     (1 1
+        (:REWRITE CONSP-OF-CDR-WHEN-LEN-KNOWN)))

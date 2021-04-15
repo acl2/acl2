@@ -17,7 +17,10 @@
         (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
      (1 1 (:REWRITE DEFAULT-+-1)))
 (+-COMBINE-CONSTANTS)
-(EQUAL-OF-+-AND-+-CANCEL-1 (24 24
+(EQUAL-OF-+-CANCEL-SAME (4 4
+                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                        (2 1 (:REWRITE DEFAULT-+-1)))
+(EQUAL-OF-+-AND-+-CANCEL-1 (26 26
                                (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                            (13 8 (:REWRITE DEFAULT-+-1)))
 (EQUAL-OF-+-AND-+-CANCEL-HACK (13 7 (:REWRITE DEFAULT-+-1))

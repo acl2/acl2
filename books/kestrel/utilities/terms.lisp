@@ -1,7 +1,7 @@
 ; Utilities for manipulating terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -477,49 +477,7 @@
   (implies (pseudo-term-listp term)
            (pseudo-termp (car (last term)))))
 
-(mutual-recursion
- (defun lambda-free-termp (term)
-   (declare (xargs :guard (pseudo-termp term)))
-   (if (variablep term)
-       t
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           t
-         (and (symbolp fn) ;excludes a lambda application
-              (lambda-free-termsp (fargs term)))))))
- (defun lambda-free-termsp (terms)
-   (declare (xargs :guard (pseudo-term-listp terms)))
-   (if (endp terms)
-       t
-     (and (lambda-free-termp (first terms))
-          (lambda-free-termsp (rest terms))))))
 
-(defthm lambda-free-termp-of-cdr-of-assoc-equal
-  (implies (lambda-free-termsp (strip-cdrs alist))
-           (lambda-free-termp (cdr (assoc-equal form alist)))))
-
-(defthm-flag-my-sublis-var
-  (defthm lambda-free-termp-of-my-sublis-var
-    (implies (and (lambda-free-termp form)
-                  (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termp (my-sublis-var alist form)))
-    :flag my-sublis-var)
-  (defthm lambda-free-termsp-of-my-sublis-var-lst
-    (implies (and (lambda-free-termsp l)
-                  (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termsp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst))))
-
-(defthm lambda-free-termsp-of-true-list-fix
-  (equal (lambda-free-termsp (true-list-fix terms))
-         (lambda-free-termsp terms)))
-
-(defthmd lambda-free-termsp-when-symbol-listp
-  (implies (symbol-listp terms)
-           (lambda-free-termsp terms))
-  :hints (("Goal" :in-theory (enable lambda-free-termsp))))
 
 
 ;; (thm
@@ -534,18 +492,6 @@
   (implies (equal (len x) (len y))
            (equal (strip-cdrs (pairlis$ x y))
                   (true-list-fix y))))
-
-(defthm-flag-expand-lambdas-in-term
-  (defthm lambda-free-termp-of-expand-lambdas-in-term
-    (implies (pseudo-termp term)
-             (lambda-free-termp (expand-lambdas-in-term term)))
-    :flag expand-lambdas-in-term)
-  (defthm lambda-free-term-listp-of-expand-lambdas-in-terms
-    (implies (pseudo-term-listp terms)
-             (lambda-free-termsp (expand-lambdas-in-terms terms)))
-    :flag expand-lambdas-in-terms)
-  :hints (("Goal" :in-theory (enable expand-lambdas-in-term
-                                     expand-lambdas-in-terms))))
 
 (defthm symbolp-of-car-of-expand-lambdas-in-term
   (implies (and (symbolp (car term))
@@ -663,3 +609,18 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable expand-lambdas-in-term
                               expand-lambdas-in-terms))))
+
+;; (defthm-flag-expand-lambdas-in-term
+;;   (defthm member-equal-of-fns-in-term-of-expand-lambdas-in-term
+;;     (implies (and (pseudo-termp term)
+;;                   (member-equal fn (fns-in-term term)))
+;;              (member-equal fn (fns-in-term (expand-lambdas-in-term term))))
+;;     :flag expand-lambdas-in-term)
+;;   (defthm member-equal-of-fns-in-terms-of-expand-lambdas-in-terms
+;;     (implies (and (pseudo-term-listp terms)
+;;                   (member-equal fn (fns-in-terms terms)))
+;;              (member-equal fn (fns-in-terms (expand-lambdas-in-terms terms))))
+;;     :flag expand-lambdas-in-terms)
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (enable expand-lambdas-in-term
+;;                               expand-lambdas-in-terms))))

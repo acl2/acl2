@@ -1956,31 +1956,36 @@
 (ESIM-SIMPLIFY-UPDATE-FNS-ID)
 (ESIM-PRE-FIXPOINT-PRINT)
 (ESIM-PRE-FIXPOINT-PRINT-DEFAULT)
-(MK-SYMBOL-SUBSTITUTION (443 8 (:REWRITE SUBLISTP-WHEN-PREFIXP))
-                        (330 6 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-                        (222 6 (:REWRITE PREFIXP-WHEN-PREFIXP))
+(MK-SYMBOL-SUBSTITUTION (521 14 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                        (408 9 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+                        (264 9 (:REWRITE PREFIXP-WHEN-PREFIXP))
                         (132 12 (:DEFINITION LEN))
-                        (78 78 (:TYPE-PRESCRIPTION LEN))
-                        (72 72
+                        (96 6
+                            (:REWRITE LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                        (84 84
                             (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-                        (72 42 (:REWRITE STR::CONSP-OF-EXPLODE))
+                        (84 48 (:REWRITE STR::CONSP-OF-EXPLODE))
+                        (69 69 (:TYPE-PRESCRIPTION LEN))
                         (60 24 (:REWRITE DEFAULT-CDR))
-                        (36 36
-                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
-                        (36 36
-                            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
-                        (36 36 (:LINEAR LEN-WHEN-PREFIXP))
-                        (30 6
+                        (42 6 (:REWRITE LEN-WHEN-PREFIXP))
+                        (38 14 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+                        (38 14 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
+                        (33 33 (:TYPE-PRESCRIPTION PREFIXP))
+                        (33 9
                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                        (30 6
+                        (33 9
                             (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
                         (24 12 (:REWRITE DEFAULT-+-2))
-                        (20 8 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                        (20 8 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
-                        (18 18 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+                        (18 18
+                            (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
+                        (18 18
+                            (:LINEAR LISTPOS-UPPER-BOUND-STRONG-2))
+                        (18 18 (:LINEAR LEN-WHEN-PREFIXP))
+                        (18 9 (:REWRITE DEFAULT-<-1))
                         (16 16
                             (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                        (15 15 (:TYPE-PRESCRIPTION PREFIXP))
+                        (16 9 (:REWRITE DEFAULT-<-2))
+                        (14 14 (:REWRITE SUBLISTP-COMPLETE))
                         (14 14 (:REWRITE FN-CHECK-DEF-FORMALS))
                         (12 12 (:REWRITE DEFAULT-+-1))
                         (12 1 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
@@ -1989,16 +1994,14 @@
                             (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP))
                         (10 10
                             (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP))
-                        (8 8 (:REWRITE SUBLISTP-COMPLETE))
-                        (6 6 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                        (6 6 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                        (6 6
+                        (9 9 (:REWRITE PREFIXP-TRANSITIVE . 2))
+                        (9 9 (:REWRITE PREFIXP-TRANSITIVE . 1))
+                        (9 9
                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                        (6 6
+                        (9 9
                            (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                        (6 3 (:REWRITE DEFAULT-<-1))
+                        (9 9 (:LINEAR LEQ-POSITION-EQUAL-LEN))
                         (6 1 (:DEFINITION MEMBER-EQUAL))
-                        (4 3 (:REWRITE DEFAULT-<-2))
                         (2 2 (:REWRITE SUBSETP-MEMBER . 2))
                         (2 2 (:REWRITE SUBSETP-MEMBER . 1))
                         (2 1

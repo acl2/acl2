@@ -2,7 +2,7 @@
 (ONE-4-DEFAULT)
 (|ONE-4-test| (2 2
                  (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
-(|iONE-4| (23 23
+(|iONE-4| (53 53
               (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iONE-4-DOMAIN| (89 77
                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))

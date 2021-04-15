@@ -1,6 +1,3 @@
-(NOT-DIVIDES-WHEN-< (1 1 (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
-                    (1 1 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                    (1 1 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)))
 (DISTRIBUTIVITY-ALT (11 8 (:REWRITE DEFAULT-*-2))
                     (11 8 (:REWRITE DEFAULT-*-1))
                     (10 10

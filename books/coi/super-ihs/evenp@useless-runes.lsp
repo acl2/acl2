@@ -5,7 +5,7 @@
                        (1 1 (:REWRITE INTEGERP-MINUS))
                        (1 1
                           (:REWRITE INTEGERP-*-CONSTANT-MEANS-1)))
-(EVENP-WHEN-NOT-INTEGERP (44 44 (:TYPE-PRESCRIPTION INTEGERP-PROD))
+(EVENP-WHEN-NOT-INTEGERP (32 32 (:TYPE-PRESCRIPTION INTEGERP-PROD))
                          (6 2
                             (:REWRITE INTEGERP-*-CONSTANT-MEANS-1))
                          (3 3

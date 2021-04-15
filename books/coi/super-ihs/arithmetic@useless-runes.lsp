@@ -919,14 +919,14 @@
                    (3 3 (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
                    (3 3
                       (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1)))
-(FLOOR-BOUNDED-BY-/-BETTER (100 100
-                                (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-                           (100 100
-                                (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-                           (100 100
-                                (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-                           (100 100
-                                (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
+(FLOOR-BOUNDED-BY-/-BETTER (96 96
+                               (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
+                           (96 96
+                               (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
+                           (96 96
+                               (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
+                           (96 96
+                               (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
                            (32 12 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
                            (29 19 (:REWRITE DEFAULT-<-2))
                            (20 19 (:REWRITE DEFAULT-<-1))
@@ -1446,13 +1446,13 @@
                         (4 1 (:REWRITE INTEGERP-EXPT-1))
                         (2 1 (:REWRITE INTEGERP-EXPT)))
 (FLOOR-BOUNDED-BY-/-BETTER-1-ALT
-     (79 79
+     (77 77
          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-     (79 79
+     (77 77
          (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-     (79 79
+     (77 77
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-     (79 79
+     (77 77
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
      (29 19 (:REWRITE DEFAULT-<-2))
      (24 12 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
@@ -1484,13 +1484,13 @@
      (1 1 (:REWRITE DEFAULT-+-1))
      (1 1 (:REWRITE <-+-CONSTANT-CONSTANT)))
 (FLOOR-BOUNDED-BY-/-BETTER-2-ALT
-     (260 260
+     (258 258
           (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 2))
-     (260 260
+     (258 258
           (:TYPE-PRESCRIPTION FLOOR-TYPE-3 . 1))
-     (260 260
+     (258 258
           (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 2))
-     (260 260
+     (258 258
           (:TYPE-PRESCRIPTION FLOOR-TYPE-1 . 1))
      (172 137 (:REWRITE DEFAULT-<-2))
      (154 70 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))

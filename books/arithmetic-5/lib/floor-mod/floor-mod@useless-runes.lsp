@@ -3524,7 +3524,7 @@
      (1 1 (:LINEAR ACL2-COUNT-OF-CAR-STRONG)))
 (MOD-+-CANCEL-0-FN)
 (|(equal (mod (+ x y) z) x)|
-     (2135 2135
+     (2132 2132
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
      (824 209
           (:REWRITE |(mod (* x (/ y)) z) rewriting-goal-literal|))

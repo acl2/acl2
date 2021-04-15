@@ -9,11 +9,19 @@
                   (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
                (1 1
                   (:REWRITE PFIELD::NEG-WHEN-CONSTANT-ARG1))
-               (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+               (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
+               (1 1
+                  (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG2))
+               (1 1
+                  (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG1)))
 (ECURVE::RULE4 (40 22
                    (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG2-CHEAP))
                (40 22
                    (:REWRITE PFIELD::ADD-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (36 36
+                   (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG2))
+               (36 36
+                   (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG1))
                (34 34 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
                (26 18
                    (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
@@ -34,12 +42,20 @@
                    (:REWRITE PFIELD::SUB-WHEN-CONSTANTS))
                (12 12
                    (:REWRITE PFIELD::ADD-COMBINE-CONSTANTS))
+               (10 10
+                   (:REWRITE PFIELD::ADD-COMMUTATIVE-WHEN-CONSTANT))
                (9 9 (:REWRITE DEFAULT-<-2))
                (9 9 (:REWRITE DEFAULT-<-1))
                (6 6
                   (:REWRITE PFIELD::MUL-COMBINE-CONSTANTS))
+               (6 6
+                  (:REWRITE PFIELD::ADD-COMMUTATIVE-2-WHEN-CONSTANT))
                (4 4
                   (:REWRITE PFIELD::NEG-OF-MUL-WHEN-CONSTANT))
+               (4 4
+                  (:REWRITE PFIELD::ADD-ASSOCIATIVE-WHEN-CONSTANT))
+               (2 2
+                  (:REWRITE PFIELD::MUL-OF-ADD-OF-MUL-COMBINE-CONSTANTS))
                (2 2 (:REWRITE DEFAULT-CDR))
                (2 2 (:REWRITE DEFAULT-CAR))
                (1 1 (:META CANCEL_IPLUS-EQUAL-CORRECT)))
@@ -54,6 +70,10 @@
                    (:REWRITE PFIELD::MUL-WHEN-CONSTANT-REDUCE-ARG1))
                (22 18
                    (:REWRITE PFIELD::MUL-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+               (21 21
+                   (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG2))
+               (21 21
+                   (:REWRITE PFIELD::ADD-SUBST-CONSTANT-ARG1))
                (19 19 (:REWRITE PFIELD::ADD-OF-CONSTANTS))
                (18 10
                    (:REWRITE PFIELD::NEG-WHEN-NOT-INTEGERP-CHEAP))
@@ -64,12 +84,18 @@
                (6 6 (:REWRITE PFIELD::SUB-WHEN-CONSTANTS))
                (6 6
                   (:REWRITE PFIELD::NEG-OF-MUL-WHEN-CONSTANT))
+               (6 6
+                  (:REWRITE PFIELD::ADD-COMMUTATIVE-WHEN-CONSTANT))
                (5 5 (:REWRITE DEFAULT-<-2))
                (5 5 (:REWRITE DEFAULT-<-1))
+               (2 2
+                  (:REWRITE PFIELD::MUL-OF-ADD-OF-MUL-COMBINE-CONSTANTS))
                (2 2 (:REWRITE DEFAULT-CDR))
                (2 2 (:REWRITE DEFAULT-CAR))
                (2 2 (:REWRITE PFIELD::ADD-COMMUTATIVE-2))
                (2 2
                   (:REWRITE PFIELD::ADD-COMBINE-CONSTANTS))
+               (2 2
+                  (:REWRITE PFIELD::ADD-ASSOCIATIVE-WHEN-CONSTANT))
                (2 2 (:META CANCEL_IPLUS-EQUAL-CORRECT))
                (1 1 (:REWRITE ECURVE::RULE4)))

@@ -298,7 +298,7 @@
                          (127 19 (:REWRITE TAKE-OF-LEN-FREE))
                          (110 84 (:REWRITE DEFAULT-<-1))
                          (109 84 (:REWRITE DEFAULT-<-2))
-                         (96 69 (:REWRITE LEN-WHEN-ATOM))
+                         (98 71 (:REWRITE LEN-WHEN-ATOM))
                          (56 35 (:REWRITE DEFAULT-+-2))
                          (50 43 (:REWRITE DEFAULT-CDR))
                          (48 39 (:REWRITE DEFAULT-CAR))
