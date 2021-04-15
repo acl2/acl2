@@ -166,36 +166,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule char-bits-<=-short-bits
-  :parents (char-bits short-bits)
-  :short "Relation between @('char') and @('short') sizes."
-  (<= (char-bits) (short-bits))
-  :rule-classes :linear
-  :enable (char-bits short-bits))
+(make-event
+ `(defrule char-bits-vs-short-bits
+    :parents (char-bits short-bits)
+    :short "Relation between @('char') and @('short') sizes."
+    ,(if (= (char-bits) (short-bits))
+         '(= (char-bits) (short-bits))
+       '(< (char-bits) (short-bits)))
+    :rule-classes :linear
+    :enable (char-bits short-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule short-bits-<=-int-bits
-  :parents (short-bits int-bits)
-  :short "Relation between @('short') and @('int') sizes."
-  (<= (short-bits) (int-bits))
-  :rule-classes :linear
-  :enable (short-bits int-bits))
+(make-event
+ `(defrule short-bits-vs-int-bits
+    :parents (short-bits int-bits)
+    :short "Relation between @('short') and @('int') sizes."
+    ,(if (= (short-bits) (int-bits))
+         '(= (short-bits) (int-bits))
+       '(< (short-bits) (int-bits)))
+    :rule-classes :linear
+    :enable (short-bits int-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule int-bits-<=-long-bits
-  :parents (int-bits long-bits)
-  :short "Relation between @('int') and @('long') sizes."
-  (<= (int-bits) (long-bits))
-  :rule-classes :linear
-  :enable (int-bits long-bits))
+(make-event
+ `(defrule int-bits-vs-long-bits
+    :parents (int-bits long-bits)
+    :short "Relation between @('int') and @('long') sizes."
+    ,(if (= (int-bits) (long-bits))
+         '(= (int-bits) (long-bits))
+       '(< (int-bits) (long-bits)))
+    :rule-classes :linear
+    :enable (int-bits long-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule long-bits-<=-lllong-bits
-  :parents (long-bits llong-bits)
-  :short "Relation between @('long') and @('long long') sizes."
-  (<= (long-bits) (llong-bits))
-  :rule-classes :linear
-  :enable (long-bits llong-bits))
+(make-event
+ `(defrule long-bits-vs-lllong-bits
+    :parents (long-bits llong-bits)
+    :short "Relation between @('long') and @('long long') sizes."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (long-bits) (llong-bits))
+       '(< (long-bits) (llong-bits)))
+    :rule-classes :linear
+    :enable (long-bits llong-bits)))
