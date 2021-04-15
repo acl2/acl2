@@ -747,7 +747,7 @@
      (6288 726 (:REWRITE FLOOR-X-Y-=-1 . 3))
      (6288 726 (:REWRITE FLOOR-X-Y-=--1 . 3))
      (5720 104 (:REWRITE |(< (logand x y) 0)|))
-     (5500 5500
+     (5499 5499
            (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1))
      (4094 726 (:REWRITE FLOOR-CANCEL-*-CONST))
      (3275 3275 (:REWRITE |(expt 1/c n)|))
@@ -1068,7 +1068,7 @@
      (4 4 (:TYPE-PRESCRIPTION RATIONALP-MOD))
      (3 3 (:REWRITE |(equal (+ (- c) x) y)|)))
 (|(integerp (* 1/2 (mod x (expt 2 n))))|
-     (1267 1267
+     (1263 1263
            (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1))
      (814 407 (:TYPE-PRESCRIPTION MOD-ZERO . 2))
      (814 407 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
@@ -3208,11 +3208,11 @@
            (:REWRITE |(floor x (* y (/ z))) not rewriting-goal-literal|))
      (4842 1338
            (:REWRITE |(floor (* x (/ y)) z) not rewriting-goal-literal|))
-     (4376 4376
+     (4375 4375
            (:TYPE-PRESCRIPTION |(< 0 (logior x y))| . 1))
-     (4376 4376
+     (4375 4375
            (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 2))
-     (4376 4376
+     (4375 4375
            (:TYPE-PRESCRIPTION |(< (logior x y) 0)| . 1))
      (4006 4006 (:REWRITE REDUCE-INTEGERP-+))
      (4006 4006 (:REWRITE INTEGERP-MINUS-X))
@@ -3590,7 +3590,7 @@
         (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
      (3 3 (:REWRITE |(+ x (- x))|))
      (2 2 (:REWRITE FOLD-CONSTS-IN-+)))
-(CROCK-0 (643 643
+(CROCK-0 (639 639
               (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1))
          (364 182 (:TYPE-PRESCRIPTION MOD-ZERO . 2))
          (364 182 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
@@ -3746,7 +3746,7 @@
             (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
          (1 1
             (:REWRITE |(< (* x y) 0) rationalp (* x y)|)))
-(CROCK-1 (647 647
+(CROCK-1 (643 643
               (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1))
          (368 184 (:TYPE-PRESCRIPTION MOD-ZERO . 2))
          (368 184 (:TYPE-PRESCRIPTION MOD-ZERO . 1))

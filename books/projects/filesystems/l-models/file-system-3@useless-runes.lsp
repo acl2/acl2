@@ -211,40 +211,41 @@
 (L3-TO-L2-FS-GUARD-LEMMA-1
      (182 12 (:REWRITE TAKE-OF-LEN-FREE))
      (153 86 (:REWRITE DEFAULT-+-2))
+     (149 107 (:REWRITE DEFAULT-CDR))
      (140 6 (:DEFINITION TAKE))
-     (107 107 (:REWRITE DEFAULT-CDR))
+     (118 76 (:REWRITE DEFAULT-CAR))
      (91 86 (:REWRITE DEFAULT-+-1))
-     (76 76 (:REWRITE DEFAULT-CAR))
+     (73 15
+         (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
+     (69 9 (:REWRITE CONSP-OF-APPEND))
+     (67 47 (:REWRITE DEFAULT-<-1))
      (62 31 (:REWRITE DEFAULT-*-2))
-     (58 38 (:REWRITE DEFAULT-<-1))
+     (61 47 (:REWRITE DEFAULT-<-2))
+     (58 20 (:DEFINITION NATP))
      (54 6
          (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
-     (52 38 (:REWRITE DEFAULT-<-2))
+     (45 24
+         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
      (42 3 (:DEFINITION TRUE-LISTP))
      (37 37 (:LINEAR POSITION-WHEN-MEMBER))
      (37 37
          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
      (36 6 (:DEFINITION STRING-LISTP))
      (31 31 (:REWRITE DEFAULT-*-1))
-     (31 11 (:DEFINITION NATP))
      (30 30 (:TYPE-PRESCRIPTION STRING-LISTP))
-     (28 6
-         (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
      (28 6
          (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-1))
      (27 9 (:DEFINITION BINARY-APPEND))
+     (24 24 (:TYPE-PRESCRIPTION BINARY-APPEND))
      (24 24
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (20 20 (:TYPE-PRESCRIPTION NATP))
      (15 15 (:TYPE-PRESCRIPTION TRUE-LISTP))
      (13 7 (:REWRITE ZP-OPEN))
-     (12 6
-         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
-     (11 11 (:TYPE-PRESCRIPTION NATP))
      (9 3
         (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-1))
      (6 6
         (:TYPE-PRESCRIPTION L3-REGULAR-FILE-ENTRY-P))
-     (6 6 (:TYPE-PRESCRIPTION BINARY-APPEND))
      (4 1 (:REWRITE NFIX-WHEN-ZP))
      (3 1 (:REWRITE NFIX-WHEN-NATP))
      (2 2 (:TYPE-PRESCRIPTION ZP)))
@@ -778,35 +779,35 @@
                        (29 29 (:REWRITE L3-TO-L2-FS-CORRECTNESS-1))
                        (11 11
                            (:TYPE-PRESCRIPTION CHARACTER-LISTP)))
-(L3-STAT-OF-STAT (1222 13
+(L3-STAT-OF-STAT (1246 13
                        (:DEFINITION FETCH-BLOCKS-BY-INDICES))
-                 (918 306
+                 (966 306
                       (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                 (897 26 (:REWRITE NTH-WHEN->=-N-LEN-L))
-                 (808 13 (:DEFINITION UNMAKE-BLOCKS))
-                 (520 13 (:DEFINITION NTH))
-                 (470 26 (:REWRITE TAKE-OF-LEN-FREE))
+                 (921 26 (:REWRITE NTH-WHEN->=-N-LEN-L))
+                 (820 13 (:DEFINITION UNMAKE-BLOCKS))
+                 (532 13 (:DEFINITION NTH))
+                 (482 26 (:REWRITE TAKE-OF-LEN-FREE))
+                 (425 393 (:REWRITE DEFAULT-CDR))
                  (415 83 (:DEFINITION LEN))
-                 (398 396 (:REWRITE DEFAULT-CAR))
-                 (395 393 (:REWRITE DEFAULT-CDR))
-                 (386 64 (:REWRITE ZP-OPEN))
-                 (364 13 (:DEFINITION TAKE))
+                 (413 396 (:REWRITE DEFAULT-CAR))
+                 (398 64 (:REWRITE ZP-OPEN))
+                 (370 13 (:DEFINITION TAKE))
                  (346 24 (:DEFINITION L3-FS-P))
                  (301 13 (:REWRITE DEFAULT-COERCE-3))
-                 (286 26 (:REWRITE NFIX-WHEN-ZP))
+                 (298 26 (:REWRITE NFIX-WHEN-ZP))
                  (264 12
                       (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
-                 (235 47 (:DEFINITION ASSOC-EQUAL))
+                 (259 47 (:DEFINITION ASSOC-EQUAL))
                  (231 135 (:REWRITE DEFAULT-+-2))
                  (194 155 (:REWRITE DEFAULT-<-2))
-                 (175 13 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                 (187 13 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                  (168 155 (:REWRITE DEFAULT-<-1))
                  (148 135 (:REWRITE DEFAULT-+-1))
-                 (117 26 (:REWRITE NFIX-WHEN-NATP))
-                 (110 13 (:DEFINITION MEMBER-EQUAL))
+                 (123 26 (:REWRITE NFIX-WHEN-NATP))
+                 (122 13 (:DEFINITION MEMBER-EQUAL))
                  (96 12
                      (:REWRITE FETCH-BLOCKS-BY-INDICES-CORRECTNESS-2))
-                 (78 13 (:DEFINITION NATP))
+                 (84 13 (:DEFINITION NATP))
                  (70 70 (:LINEAR POSITION-WHEN-MEMBER))
                  (70 70
                      (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
@@ -833,6 +834,7 @@
                  (13 13 (:REWRITE DEFAULT-COERCE-2))
                  (12 12
                      (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P))
+                 (12 12 (:REWRITE CONSP-OF-APPEND))
                  (4 1
                     (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                  (2 1 (:DEFINITION STRING-LISTP))

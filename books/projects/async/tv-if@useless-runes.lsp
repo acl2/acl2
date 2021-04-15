@@ -354,8 +354,8 @@
      (684 18 (:REWRITE ZP-OPEN))
      (620 38 (:DEFINITION ATOM))
      (480 4 (:DEFINITION TAKE))
-     (448 8 (:REWRITE TAKE-OF-TOO-MANY))
      (434 26 (:REWRITE ADE::DISJOINT-COMMUTATIVE))
+     (419 8 (:REWRITE TAKE-OF-TOO-MANY))
      (404 8 (:DEFINITION PAIRLIS$))
      (399 6 (:REWRITE ADE::DISJOINT-TAKE))
      (204 68
@@ -364,66 +364,66 @@
      (184 4 (:REWRITE |(< (+ (- c) x) y)|))
      (170 4
           (:REWRITE ADE::SINGLETON-ASSOC-EQ-VALUES))
-     (168 24 (:DEFINITION LEN))
+     (154 22 (:DEFINITION LEN))
      (147 1
           (:REWRITE ADE::ASSOC-EQ-VALUES-APPEND-WHEN-DISJOINT))
-     (108 1 (:REWRITE LEN-WHEN-PREFIXP))
      (94 2 (:REWRITE ADE::STRIP-CARS-PAIRLIS$))
-     (90 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
-     (85 49 (:REWRITE DEFAULT-PLUS-2))
-     (85 7
+     (81 47 (:REWRITE DEFAULT-PLUS-2))
+     (80 4 (:REWRITE PREFIXP-WHEN-PREFIXP))
+     (79 5
          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (79 2 (:REWRITE LEN-WHEN-PREFIXP))
      (78 78 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (78 39 (:REWRITE DEFAULT-LESS-THAN-2))
      (77 7 (:REWRITE ADE::DISJOINT-NTHCDR))
-     (76 38 (:REWRITE DEFAULT-LESS-THAN-2))
-     (73 61 (:REWRITE DEFAULT-CDR))
-     (66 4 (:REWRITE PREFIXP-WHEN-PREFIXP))
-     (57 49 (:REWRITE DEFAULT-PLUS-1))
-     (57 33
+     (71 59 (:REWRITE DEFAULT-CDR))
+     (67 4 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (60 34
          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (57 33 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (58 34 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (55 47 (:REWRITE DEFAULT-PLUS-1))
      (50 1 (:DEFINITION SUBSETP-EQUAL))
-     (49 40 (:REWRITE NORMALIZE-ADDENDS))
+     (47 38 (:REWRITE NORMALIZE-ADDENDS))
      (46 2 (:DEFINITION TRUE-LISTP))
      (42 42 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+     (42 39 (:REWRITE DEFAULT-LESS-THAN-1))
+     (42 34 (:REWRITE SIMPLIFY-SUMS-<))
      (41 1 (:DEFINITION MEMBER-EQUAL))
-     (40 38 (:REWRITE DEFAULT-LESS-THAN-1))
      (40 7 (:DEFINITION BINARY-APPEND))
+     (39 39 (:REWRITE THE-FLOOR-BELOW))
+     (39 39 (:REWRITE THE-FLOOR-ABOVE))
      (39 39
-         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (39 33 (:REWRITE SIMPLIFY-SUMS-<))
-     (38 38 (:REWRITE THE-FLOOR-BELOW))
-     (38 38 (:REWRITE THE-FLOOR-ABOVE))
-     (38 38
          (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (38 38
+     (39 39
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (38 38
+     (39 39
          (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
-     (34 34
+     (37 37
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (35 35
          (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (34 34 (:REWRITE INTEGERP-<-CONSTANT))
-     (34 34 (:REWRITE CONSTANT-<-INTEGERP))
-     (34 34
+     (35 35 (:REWRITE INTEGERP-<-CONSTANT))
+     (35 35 (:REWRITE CONSTANT-<-INTEGERP))
+     (35 35
          (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (34 34
+     (35 35
          (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (34 34
+     (35 35
          (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (34 34
+     (35 35
          (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (34 34 (:REWRITE |(< c (- x))|))
-     (34 34
+     (35 35 (:REWRITE |(< c (- x))|))
+     (35 35
          (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (34 34
+     (35 35
          (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (34 34
+     (35 35
          (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (34 34
+     (35 35
          (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (34 34 (:REWRITE |(< (/ x) (/ y))|))
-     (34 34 (:REWRITE |(< (- x) c)|))
-     (34 34 (:REWRITE |(< (- x) (- y))|))
+     (35 35 (:REWRITE |(< (/ x) (/ y))|))
+     (35 35 (:REWRITE |(< (- x) c)|))
+     (35 35 (:REWRITE |(< (- x) (- y))|))
      (33 33 (:REWRITE DEFAULT-CAR))
      (32 6 (:REWRITE |(+ y x)|))
      (30 4 (:REWRITE ADE::BV-IS-TRUE-LIST))
@@ -435,42 +435,38 @@
      (28 28 (:REWRITE |(< 0 (* x y))|))
      (24 4 (:REWRITE TAKE-WHEN-PREFIXP))
      (24 1 (:REWRITE |(+ y (+ x z))|))
-     (23 7
-         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (22 22 (:TYPE-PRESCRIPTION PAIRLIS$))
      (22 22 (:LINEAR LEN-WHEN-PREFIXP))
      (20 14 (:REWRITE APPEND-WHEN-NOT-CONSP))
      (20 4 (:REWRITE CAR-OF-TAKE))
      (17 17 (:TYPE-PRESCRIPTION STRIP-CARS))
+     (17 5
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (16 16 (:TYPE-PRESCRIPTION ADE::BVP))
-     (13 6 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (12 12 (:TYPE-PRESCRIPTION ATOM))
      (12 4 (:TYPE-PRESCRIPTION ADE::BVP-NTHCDR))
      (12 2 (:DEFINITION STRIP-CARS))
      (11 11
          (:LINEAR ADE::A-HELPFUL-LEMMA-FOR-TREE-INDUCTIONS))
      (11 3 (:REWRITE ACL2-NUMBERP-X))
-     (9 9 (:TYPE-PRESCRIPTION PREFIXP))
+     (8 8 (:TYPE-PRESCRIPTION PREFIXP))
      (8 8 (:REWRITE TAKE-WHEN-ATOM))
-     (8 7 (:REWRITE |(equal (- x) c)|))
-     (8 7 (:REWRITE |(equal (- x) (- y))|))
-     (7 7
-        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (7 7
-        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (7 7
-        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (7 7 (:REWRITE |(equal c (/ x))|))
-     (7 7 (:REWRITE |(equal c (- x))|))
-     (7 7 (:REWRITE |(equal (/ x) c)|))
-     (7 7 (:REWRITE |(equal (/ x) (/ y))|))
+     (7 4 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (6 5 (:REWRITE |(equal (- x) c)|))
+     (6 5 (:REWRITE |(equal (- x) (- y))|))
      (6 2 (:REWRITE ADE::BVP-NTHCDR))
      (5 5 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (5 5
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (5 5
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (5 5
+        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (5 5 (:REWRITE |(equal c (/ x))|))
+     (5 5 (:REWRITE |(equal c (- x))|))
+     (5 5 (:REWRITE |(equal (/ x) c)|))
+     (5 5 (:REWRITE |(equal (/ x) (/ y))|))
      (4 4 (:REWRITE ADE::SUBSETP-TRANSITIVITY))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-     (4 4
-        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
      (4 4 (:REWRITE PREFIXP-TRANSITIVE . 2))
      (4 4 (:REWRITE PREFIXP-TRANSITIVE . 1))
      (4 4
@@ -483,6 +479,13 @@
      (4 2 (:REWRITE DEFAULT-MINUS))
      (4 2 (:DEFINITION FIX))
      (4 1 (:REWRITE RATIONALP-X))
+     (2 2 (:TYPE-PRESCRIPTION LIST-EQUIV))
+     (2 2
+        (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
+     (2 2
+        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+     (2 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
+     (2 2 (:REWRITE LIST-EQUIV-WHEN-ATOM-LEFT))
      (2 2 (:REWRITE |(equal (+ (- c) x) y)|))
      (2 1 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
      (2 1 (:REWRITE BUBBLE-DOWN-+-MATCH-1))

@@ -79,14 +79,14 @@
        (2 2 (:TYPE-PRESCRIPTION INTEGERP-MOD)))
 (IFLOOR-IND)
 (IMOD-IND)
-(FLOOR-BOUNDS-1 (113 113 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
-                (113 113
+(FLOOR-BOUNDS-1 (109 109 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
+                (109 109
                      (:TYPE-PRESCRIPTION FLOOR-POSITIVEXXX))
-                (113 113
+                (109 109
                      (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVEXXX))
-                (113 113
+                (109 109
                      (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVEXXX))
-                (113 113
+                (109 109
                      (:TYPE-PRESCRIPTION FLOOR-NEGATIVEXXX))
                 (75 2 (:LINEAR FLOOR-BOUNDS-1XXX))
                 (34 2 (:REWRITE FLOOR-ZEROXXX . 1))
@@ -105,27 +105,27 @@
                 (2 2 (:REWRITE FLOOR-COMPLETION))
                 (2 2 (:REWRITE DEFAULT-+-2))
                 (2 2 (:REWRITE DEFAULT-+-1)))
-(FLOOR-BOUNDS-2 (10 10 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
-                (10 10
-                    (:TYPE-PRESCRIPTION FLOOR-POSITIVEXXX))
-                (10 10
-                    (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVEXXX))
-                (10 10
-                    (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVEXXX))
-                (10 10
-                    (:TYPE-PRESCRIPTION FLOOR-NEGATIVEXXX))
+(FLOOR-BOUNDS-2 (8 8 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
+                (8 8
+                   (:TYPE-PRESCRIPTION FLOOR-POSITIVEXXX))
+                (8 8
+                   (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVEXXX))
+                (8 8
+                   (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVEXXX))
+                (8 8
+                   (:TYPE-PRESCRIPTION FLOOR-NEGATIVEXXX))
                 (2 2 (:TYPE-PRESCRIPTION MOD-X-Y-=-XXXX))
                 (2 2 (:TYPE-PRESCRIPTION MOD-POSITIVEXXX))
                 (2 2 (:TYPE-PRESCRIPTION MOD-NEGATIVEXXX))
                 (2 2 (:TYPE-PRESCRIPTION INTEGERP-MOD)))
-(FLOOR-BOUNDS-3 (12 12 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
-                (12 12
+(FLOOR-BOUNDS-3 (10 10 (:TYPE-PRESCRIPTION FLOOR-ZEROXXX))
+                (10 10
                     (:TYPE-PRESCRIPTION FLOOR-POSITIVEXXX))
-                (12 12
+                (10 10
                     (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVEXXX))
-                (12 12
+                (10 10
                     (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVEXXX))
-                (12 12
+                (10 10
                     (:TYPE-PRESCRIPTION FLOOR-NEGATIVEXXX)))
 (MOD-BOUNDS-1 (12 12 (:TYPE-PRESCRIPTION MOD-ZEROXXX))
               (12 12 (:TYPE-PRESCRIPTION MOD-X-Y-=-XXXX))

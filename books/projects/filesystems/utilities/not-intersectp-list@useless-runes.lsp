@@ -10,6 +10,29 @@
                           (7 7 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                           (4 4 (:REWRITE SUBSETP-TRANS2))
                           (4 4 (:REWRITE SUBSETP-TRANS)))
+(LEN-OF-FLATTEN-OF-UPDATE-NTH (252 136 (:REWRITE DEFAULT-+-2))
+                              (171 136 (:REWRITE DEFAULT-+-1))
+                              (141 35 (:REWRITE ZP-OPEN))
+                              (114 16 (:REWRITE NFIX-WHEN-ZP))
+                              (82 67 (:REWRITE DEFAULT-<-2))
+                              (67 67 (:REWRITE DEFAULT-<-1))
+                              (52 52 (:LINEAR POSITION-WHEN-MEMBER))
+                              (52 52
+                                  (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
+                              (49 25 (:REWRITE FOLD-CONSTS-IN-+))
+                              (45 5 (:REWRITE CONSP-OF-NTH-WHEN-ALISTP))
+                              (30 5 (:DEFINITION ALISTP))
+                              (25 25 (:TYPE-PRESCRIPTION ALISTP))
+                              (20 10 (:REWRITE DEFAULT-UNARY-MINUS))
+                              (18 6 (:DEFINITION NFIX))
+                              (18 6 (:DEFINITION NATP))
+                              (16 9
+                                  (:TYPE-PRESCRIPTION TRUE-LISTP-UPDATE-NTH))
+                              (16 4
+                                  (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                              (14 2 (:DEFINITION BINARY-APPEND))
+                              (7 7 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                              (6 6 (:TYPE-PRESCRIPTION NATP)))
 (NOT-INTERSECTP-LIST (18 2
                          (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                      (12 2 (:DEFINITION STRING-LISTP))
@@ -132,27 +155,29 @@
      (14 14
          (:REWRITE INTERSECT-WITH-SUBSET . 1)))
 (NOT-INTERSECTP-LIST-OF-APPEND-1
-     (1546 80 (:DEFINITION SUBSETP-EQUAL))
-     (1492 58 (:REWRITE INTERSECTP-WHEN-SUBSETP))
-     (1480 138 (:DEFINITION MEMBER-EQUAL))
+     (1681 80 (:DEFINITION SUBSETP-EQUAL))
+     (1648 138 (:DEFINITION MEMBER-EQUAL))
+     (1618 58 (:REWRITE INTERSECTP-WHEN-SUBSETP))
      (1073 58 (:REWRITE NO-DUPLICATESP-OF-MEMBER))
      (899 58 (:DEFINITION NO-DUPLICATESP-EQUAL))
+     (435 380 (:REWRITE DEFAULT-CDR))
+     (402 344 (:REWRITE DEFAULT-CAR))
      (400 400 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-     (386 380 (:REWRITE DEFAULT-CDR))
-     (353 344 (:REWRITE DEFAULT-CAR))
      (293 293 (:REWRITE SUBSETP-MEMBER . 2))
      (293 293 (:REWRITE SUBSETP-MEMBER . 1))
      (290 290
           (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
-     (218 58
+     (232 116
+          (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+     (227 58
           (:REWRITE INTERSECT-WITH-SUBSET . 12))
      (218 58 (:REWRITE INTERSECT-WITH-SUBSET . 8))
      (160 160 (:REWRITE SUBSETP-TRANS2))
      (160 160 (:REWRITE SUBSETP-TRANS))
      (138 58 (:REWRITE INTERSECT-WITH-SUBSET . 2))
+     (116 116 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (116 116 (:TYPE-PRESCRIPTION BINARY-APPEND))
      (90 58 (:REWRITE INTERSECT-WITH-SUBSET . 5))
-     (72 36
-         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
      (58 58 (:REWRITE SUBSETP-MEMBER . 4))
      (58 58 (:REWRITE SUBSETP-MEMBER . 3))
      (58 58
@@ -165,8 +190,7 @@
      (58 58 (:REWRITE INTERSECT-WITH-SUBSET . 4))
      (58 58 (:REWRITE INTERSECT-WITH-SUBSET . 3))
      (58 58 (:REWRITE INTERSECT-WITH-SUBSET . 1))
-     (36 36 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (36 36 (:TYPE-PRESCRIPTION BINARY-APPEND)))
+     (21 21 (:REWRITE CONSP-OF-APPEND)))
 (NOT-INTERSECTP-LIST-WHEN-ATOM (5 5 (:REWRITE SUBSETP-TRANS2))
                                (5 5 (:REWRITE SUBSETP-TRANS))
                                (5 5 (:REWRITE DEFAULT-CAR))

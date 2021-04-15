@@ -3,6 +3,8 @@
 (INTEGERP-OF-CAR-WHEN-ALL-INTEGERP (8 2 (:REWRITE ALL-INTEGERP-OF-CDR))
                                    (5 5 (:REWRITE DEFAULT-CAR))
                                    (2 2 (:REWRITE DEFAULT-CDR)))
+(INTEGERP-OF-CAR-OF-LAST-WHEN-ALL-INTEGERP
+     (8 2 (:REWRITE ALL-INTEGERP-OF-CDR)))
 (INTEGERP-OF-CAR-WHEN-ALL-INTEGERP-CHEAP (8 2 (:REWRITE ALL-INTEGERP-OF-CDR))
                                          (5 5 (:REWRITE DEFAULT-CAR))
                                          (2 2 (:REWRITE DEFAULT-CDR)))
@@ -27,6 +29,8 @@
                         (4 4 (:REWRITE ZP-OPEN))
                         (4 4 (:REWRITE DEFAULT-+-2))
                         (4 4 (:REWRITE DEFAULT-+-1)))
+(ALL-INTEGERP-OF-SET-DIFFERENCE-EQUAL (25 25 (:REWRITE DEFAULT-CAR))
+                                      (18 18 (:REWRITE DEFAULT-CDR)))
 (INTEGERP-OF-NTH-WHEN-ALL-INTEGERP
      (18 12 (:REWRITE DEFAULT-<-2))
      (15 9 (:REWRITE DEFAULT-+-2))
@@ -63,3 +67,13 @@
                       (30 30 (:REWRITE DEFAULT-<-2))
                       (20 20 (:REWRITE DEFAULT-+-1))
                       (6 6 (:REWRITE ZP-OPEN)))
+(ALL-INTEGERP-WHEN-NAT-LISTP
+     (11 11 (:REWRITE DEFAULT-CAR))
+     (10 2 (:REWRITE ALL-INTEGERP-OF-CDR))
+     (9 7
+        (:REWRITE INTEGERP-OF-CAR-WHEN-ALL-INTEGERP-CHEAP))
+     (7 7
+        (:REWRITE ALL-INTEGERP-WHEN-NOT-CONSP-CHEAP))
+     (4 4 (:REWRITE DEFAULT-CDR))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1)))

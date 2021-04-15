@@ -87,17 +87,18 @@
                            (9 3 (:DEFINITION CHARACTER-LISTP))
                            (6 3 (:REWRITE DEFAULT-+-2))
                            (3 3 (:REWRITE DEFAULT-+-1)))
-(BLOCK-LISTP-CORRECTNESS-2 (149 128 (:REWRITE DEFAULT-CAR))
-                           (119 113 (:REWRITE DEFAULT-CDR))
-                           (106 53
+(BLOCK-LISTP-CORRECTNESS-2 (234 117
                                 (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+                           (205 128 (:REWRITE DEFAULT-CAR))
+                           (175 113 (:REWRITE DEFAULT-CDR))
+                           (117 117 (:TYPE-PRESCRIPTION BINARY-APPEND))
                            (100 14
                                 (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                            (64 32 (:REWRITE DEFAULT-+-2))
                            (63 14 (:DEFINITION STRING-LISTP))
-                           (53 53 (:TYPE-PRESCRIPTION BINARY-APPEND))
                            (50 50 (:TYPE-PRESCRIPTION STRING-LISTP))
                            (32 32 (:REWRITE DEFAULT-+-1))
+                           (24 24 (:REWRITE CONSP-OF-APPEND))
                            (3 3 (:LINEAR POSITION-WHEN-MEMBER))
                            (3 3
                               (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER)))
@@ -118,9 +119,9 @@
                (31 31 (:LINEAR POSITION-WHEN-MEMBER))
                (31 31
                    (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER)))
-(UNMAKE-BLOCKS-CORRECTNESS-1 (322 322 (:REWRITE DEFAULT-CDR))
+(UNMAKE-BLOCKS-CORRECTNESS-1 (367 322 (:REWRITE DEFAULT-CDR))
                              (319 198 (:REWRITE DEFAULT-+-2))
-                             (251 251 (:REWRITE DEFAULT-CAR))
+                             (296 251 (:REWRITE DEFAULT-CAR))
                              (217 30 (:REWRITE TAKE-OF-LEN-FREE))
                              (198 198 (:REWRITE DEFAULT-+-1))
                              (114 83 (:REWRITE DEFAULT-<-1))
@@ -129,6 +130,8 @@
                                  (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                              (84 43 (:REWRITE DEFAULT-*-2))
                              (83 83 (:REWRITE DEFAULT-<-2))
+                             (75 40
+                                 (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
                              (70 5 (:DEFINITION TRUE-LISTP))
                              (61 61 (:LINEAR POSITION-WHEN-MEMBER))
                              (61 61
@@ -136,11 +139,10 @@
                              (60 10 (:DEFINITION STRING-LISTP))
                              (50 50 (:TYPE-PRESCRIPTION STRING-LISTP))
                              (43 43 (:REWRITE DEFAULT-*-1))
+                             (40 40 (:TYPE-PRESCRIPTION BINARY-APPEND))
+                             (40 15 (:REWRITE CONSP-OF-APPEND))
                              (25 25 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                             (20 10
-                                 (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
                              (11 5 (:REWRITE ZP-OPEN))
-                             (10 10 (:TYPE-PRESCRIPTION BINARY-APPEND))
                              (2 2
                                 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                              (1 1 (:REWRITE NFIX-WHEN-ZP)))
