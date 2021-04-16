@@ -7327,6 +7327,7 @@ e2-e1+1.
          otf-flg guard-debug guard-simplify measure-debug bodies symbol-class
          normalizeps split-types-terms new-lambda$-alist-pairs
          non-executablep
+         type-prescription-lst
          #+:non-standard-analysis std-p
          ctx wrld state)
   (cond
@@ -7374,6 +7375,7 @@ e2-e1+1.
          split-types-terms
          new-lambda$-alist-pairs
          non-executablep
+         type-prescription-lst
          #+:non-standard-analysis std-p
          ctx
          state))))))
@@ -7494,10 +7496,11 @@ e2-e1+1.
                 (split-types-terms (nth 23 tuple))
                 (new-lambda$-alist-pairs (nth 24 tuple))
                 (guard-simplify (nth 25 tuple))
-                (ccms (nth 26 tuple))
-                (verbose (nth 27 tuple))
-                (time-limit (nth 28 tuple))
-                (hierarchy (nth 29 tuple)))
+                (type-prescription-lst (nth 26 tuple))
+                (ccms (nth 27 tuple))
+                (verbose (nth 28 tuple))
+                (time-limit (nth 29 tuple))
+                (hierarchy (nth 30 tuple)))
             (er-let*
              ((pair (ccg-defuns-fn0
                      names
@@ -7527,6 +7530,7 @@ e2-e1+1.
                      split-types-terms
                      new-lambda$-alist-pairs
                      non-executablep
+                     type-prescription-lst
                      #+:non-standard-analysis std-p
                      ctx
                      wrld

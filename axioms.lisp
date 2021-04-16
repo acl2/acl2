@@ -7763,7 +7763,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            :ruler-extenders :mode :non-executable :normalize
            :otf-flg #+:non-standard-analysis :std-hints
            :stobjs :verify-guards :well-founded-relation
-           :split-types :loop$-recursion))
+           :split-types :loop$-recursion :type-prescription))
 
 (defun plausible-dclsp1 (lst)
 
