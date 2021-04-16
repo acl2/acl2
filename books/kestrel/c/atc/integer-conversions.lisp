@@ -66,7 +66,7 @@
     sllong
     ullong))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-integer-type-string (type)
   :guard (member-eq type *atc-integer-types*)
@@ -87,11 +87,21 @@
                           "")))))
     (str::cat "type @('" core "')")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-integer-type-signedp (type)
   :guard (member-eq type *atc-integer-types*)
+  :returns (yes/no booleanp)
+  :short "Check if an integer type is signed."
   (eql (char (symbol-name type) 0) #\S))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-typep (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Predicate name of an integer type."
+  (add-suffix type "P"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,8 +131,8 @@
        (dst-type-string (atc-integer-type-string dst-type))
        (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
        (conv-okp (add-suffix conv "-OKP"))
-       (src-typep (add-suffix src-type "P"))
-       (dst-typep (add-suffix dst-type "P"))
+       (src-typep (atc-integer-typep src-type))
+       (dst-typep (atc-integer-typep dst-type))
        (src-type->get (add-suffix src-type "->GET"))
        (dst-type-integerp (add-suffix dst-type "-INTEGERP"))
        (dst-type-integerp-alt-def (add-suffix dst-type "-INTEGERP-ALT-DEF"))
