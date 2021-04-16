@@ -23,7 +23,7 @@
 (defun |mbt| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (if (mbt (c::sintp |x|))
-      (c::sint-lt |x| (c::sint-const 100))
+      (c::lt-sint-sint |x| (c::sint-const 100))
     (list :this-is-not-translated-to-c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,7 +31,7 @@
 (defun |mbt_dollar| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (if (mbt$ (c::sintp |x|))
-      (c::sint-lt |x| (c::sint-const 100))
+      (c::lt-sint-sint |x| (c::sint-const 100))
     (list :this-is-not-translated-to-c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

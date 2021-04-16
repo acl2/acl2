@@ -45,13 +45,13 @@
                     :guard-hints (("Goal"
                                    :in-theory (enable c::sint-integerp-alt-def
                                                       c::sintp
-                                                      c::sint-add-okp
-                                                      c::sint-sub-okp
-                                                      c::sint-mul-okp
-                                                      c::sint-add
-                                                      c::sint-sub)))))
-    (c::sint-mul (c::sint-add |x| |y|)
-                 (c::sint-sub |z| (c::sint-const 3)))))
+                                                      c::add-sint-sint-okp
+                                                      c::sub-sint-sint-okp
+                                                      c::mul-sint-sint-okp
+                                                      c::add-sint-sint
+                                                      c::sub-sint-sint)))))
+    (c::mul-sint-sint (c::add-sint-sint |x| |y|)
+                      (c::sub-sint-sint |z| (c::sint-const 3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
