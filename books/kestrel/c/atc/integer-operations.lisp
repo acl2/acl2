@@ -277,14 +277,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sint-from-uchar-okp-holds
-  (sint-from-uchar-okp x)
-  :enable (sint-from-uchar-okp sint-integerp-alt-def))
-
-(defrule sint-from-ushort-okp-holds
-  (sint-from-ushort-okp x)
-  :enable (sint-from-ushort-okp sint-integerp-alt-def))
-
 (progn
   (make-event (atc-def-integer-operations-1 'sint))
   (make-event (atc-def-integer-operations-1 'uint))

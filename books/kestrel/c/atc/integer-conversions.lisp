@@ -211,3 +211,65 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (atc-def-integer-conversions)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-integer-conversions-signed-from-unsigned-okp
+  :short "Theorems about certain conversions from unsigned to signed
+          being always allowed for certain integer type sizes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove these theorems in a general way,
+     with hypotheses on the integer type sizes,
+     disabling the rules that may otherwise obviate the hypotheses."))
+
+  (defrule sint-from-uchar-okp-when-uchar-max-<=-sint-max
+    (implies (<= (uchar-max) (sint-max))
+             (sint-from-uchar-okp x))
+    :enable (sint-from-uchar-okp sint-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uint-max-vs-slong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sint-from-ushort-okp-when-ushort-max-<=-sint-max
+    (implies (<= (ushort-max) (sint-max))
+             (sint-from-ushort-okp x))
+    :enable (sint-from-ushort-okp sint-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uint-max-vs-slong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-uint-okp-when-uint-max-<=slong-max
+    (implies (<= (uint-max) (slong-max))
+             (slong-from-uint-okp x))
+    :enable (slong-from-uint-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uint-max-vs-slong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-uint-okp-when-uint-max-<=sllong-max
+    (implies (<= (uint-max) (sllong-max))
+             (slong-from-uint-okp x))
+    :enable (sllong-from-uint-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uint-max-vs-slong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-ulong-okp-when-ulong-max-<=sllong-max
+    (implies (<= (ulong-max) (sllong-max))
+             (sllong-from-ulong-okp x))
+    :enable (sllong-from-ulong-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uint-max-vs-slong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max)))
