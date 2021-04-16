@@ -139,9 +139,10 @@
      the old @(tsee atc-def-integer-operations), which will be removed."))
 
   (b* ((type-string (atc-integer-type-string type))
-       (typep (add-suffix type "P"))
+       (typep (atc-integer-typep type))
        (type-fix (add-suffix type "-FIX"))
        (type->get (add-suffix type "->GET"))
+       (type-mod (add-suffix type "-MOD"))
        (type-integerp (add-suffix type "-INTEGERP"))
        (type-integerp-alt-def (add-suffix type "-INTEGERP-ALT-DEF"))
        (type-const (add-suffix type "-CONST"))
@@ -157,17 +158,16 @@
                 (sshort 'sint)
                 (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
                 (t type)))
-       (rtype-mod (add-suffix rtype "-MOD"))
        (rtype-min (add-suffix rtype "-MIN"))
        (rtype-max (add-suffix rtype "-MAX"))
-       (rtypep (add-suffix rtype "P"))
-       (rtype-integerp-alt-def (add-suffix rtype "-INTEGERP-ALT-DEF"))
+       (rtypep (atc-integer-typep rtype))
        (hirankp (member-eq type '(sint uint slong ulong sllong ullong)))
        (rtype-from-type (acl2::packn-pos (list rtype "-FROM-" type)
                                          'atc))
        (plus-rtype (acl2::packn-pos (list "PLUS-" rtype) 'atc))
        (minus-rtype (acl2::packn-pos (list "MINUS-" rtype) 'atc))
        (minus-rtype-okp (add-suffix minus-rtype "-OKP"))
+       (bitnot-rtype (acl2::packn-pos (list "BITNOT-" rtype) 'atc))
        (type-signedp (atc-integer-type-signedp type))
        (rtype-signedp (atc-integer-type-signedp rtype)))
 
@@ -236,7 +236,7 @@
                            type-string
                            " [C:6.5.3].")
          ,(if hirankp
-              `(,(if type-signedp rtype rtype-mod) (- (,type->get x)))
+              `(,(if type-signedp type type-mod) (- (,type->get x)))
             `(,minus-rtype (,rtype-from-type x)))
          ,@(and rtype-signedp
                 `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp)))))
@@ -249,22 +249,17 @@
          :short ,(str::cat "Bitwise complement of a value of "
                            type-string
                            " [C:6.5.3].")
-         ,(if (member-eq type '(schar sshort sint slong sllong))
-              `(,rtype (lognot (,type->get x)))
-            `(,rtype (mod (lognot (,type->get x))
-                          (1+ (,rtype-max)))))
-         ,@(if (member-eq type '(schar sshort sint slong sllong))
-               `(:guard-hints
-                 (("Goal" :in-theory (enable ,rtype-integerp-alt-def
-                                             ,type-integerp-alt-def
-                                             ,type->get
-                                             ,typep
-                                             (:e ,rtype-min)
-                                             (:e ,rtype-max)))))
-             `(:guard-hints
-               (("Goal" :in-theory (enable ,rtype-integerp-alt-def)))
-               :prepwork
-               ((local (include-book "arithmetic-3/top" :dir :system)))))
+         ,(if hirankp
+              `(,(if type-signedp type type-mod) (lognot (,type->get x)))
+            `(,bitnot-rtype (,rtype-from-type x)))
+         ,@(and hirankp
+                type-signedp
+                `(:guard-hints
+                  (("Goal" :in-theory (enable ,type-integerp-alt-def
+                                              ,type->get
+                                              ,typep
+                                              (:e ,rtype-min)
+                                              (:e ,rtype-max))))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
