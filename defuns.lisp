@@ -7112,7 +7112,12 @@
      ((not (equal (fetch-dcl-field :non-executable all-but-body1)
                   (fetch-dcl-field :non-executable all-but-body2)))
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :non-executable declarations."
+            :non-executable declarations."
+           (car def1)))
+     ((not (equal (fetch-dcl-field :type-prescription all-but-body1)
+                  (fetch-dcl-field :type-prescription all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            :type-prescription declarations."
            (car def1)))
      ((flet ((normalize-value
               (x)
@@ -7131,7 +7136,7 @@
                         (normalize-value
                          (fetch-dcl-field :normalize all-but-body2)))))
       (msg "the proposed and existing definitions for ~x0 differ on the ~
-                values supplied by :normalize declarations."
+            values supplied by :normalize declarations."
            (car def1)))
      ((not (let ((stobjs1 (fetch-dcl-field :stobjs all-but-body1))
                  (stobjs2 (fetch-dcl-field :stobjs all-but-body2)))
@@ -7170,7 +7175,7 @@
 ; that treats 3 as a stobj.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :stobj declarations."
+            :stobj declarations."
            (car def1)))
      ((not (equal (fetch-dcl-field 'type all-but-body1)
                   (fetch-dcl-field 'type all-but-body2)))
@@ -7187,7 +7192,7 @@
 ; was certified, this might not always be the case.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                type declarations."
+            type declarations."
            (car def1)))
      ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
              (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
@@ -7202,8 +7207,8 @@
         (cond ((and guards1-trivial-p guards2-trivial-p)
                nil)
               ((not (equal guards1 guards2))
-               (msg "the proposed and existing definitions for ~x0 differ ~
-                         on their :guard declarations."
+               (msg "the proposed and existing definitions for ~x0 differ on ~
+                     their :guard declarations."
                     (car def1)))
 
 ; So now we know that the guards are equal and non-trivial.  If the types are
@@ -7227,10 +7232,9 @@
               ((not (equal (fetch-dcl-fields '(type :guard) all-but-body1)
                            (fetch-dcl-fields '(type :guard)
                                              all-but-body2)))
-               (msg "although the proposed and existing definitions for ~
-                         ~x0 agree on the their type and :guard declarations, ~
-                         they disagree on the combined orders of those ~
-                         declarations.")))))
+               (msg "although the proposed and existing definitions for ~x0 ~
+                     agree on the their type and :guard declarations, they ~
+                     disagree on the combined orders of those declarations.")))))
      ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
             (split-types2 (fetch-dcl-field :split-types all-but-body2)))
         (or (not (eq (all-nils split-types1) (all-nils split-types2)))
@@ -7241,7 +7245,7 @@
             (and (member-eq nil split-types1)
                  (member-eq t split-types1))))
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :split-types declarations."
+            :split-types declarations."
            (car def1)))
      ((not chk-measure-p)
       nil)
@@ -9813,6 +9817,479 @@
    )
   nil)
 
+; We need some machinery about type-prescriptions, which was in defthm.lisp
+; before April 2021, in support of xargs :type-prescription for defun.
+
+(mutual-recursion
+
+(defun remove-lambdas1 (term)
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (cond ((or (variablep term)
+             (fquotep term))
+         (mv nil term))
+        (t (mv-let (changedp args)
+             (remove-lambdas-lst (fargs term))
+             (let ((fn (ffn-symb term)))
+               (cond ((flambdap fn)
+                      (mv-let (changedp body)
+                        (remove-lambdas1 (lambda-body fn))
+                        (declare (ignore changedp))
+                        (mv t
+                            (subcor-var (lambda-formals fn)
+                                        args
+                                        body))))
+                     (changedp (mv t (cons-term fn args)))
+                     (t (mv nil term))))))))
+
+(defun remove-lambdas-lst (termlist)
+  (declare (xargs :guard (pseudo-term-listp termlist)))
+  (cond ((consp termlist)
+         (mv-let (changedp1 term)
+           (remove-lambdas1 (car termlist))
+           (mv-let (changedp2 rest)
+             (remove-lambdas-lst (cdr termlist))
+             (mv (or changedp1 changedp2)
+                 (cons term rest)))))
+        (t (mv nil nil))))
+)
+
+(defun remove-lambdas (term)
+
+; Remove-lambdas returns the result of applying beta-reductions in term.  This
+; function preserves quote-normal form: if term is in quote-normal form, then
+; so is the result.
+
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (mv-let (changedp ans)
+    (remove-lambdas1 term)
+    (declare (ignore changedp))
+    ans))
+
+(defun type-prescription-disjunctp (var term)
+
+; Warning: Keep this function in sync with
+; subst-nil-into-type-prescription-disjunct.
+
+; Var is a variable and term is a term.  Essentially we are answering
+; the question, ``is term a legal disjunct in the conclusion of a
+; type-prescription about pat'' for some term pat.  However, by this
+; time all occurrences of the candidate pat in the conclusion have
+; been replaced by some new variable symbol and that symbol is var.
+; Furthermore, we will have already checked that the resulting
+; generalized concl contains no variables other than var and the
+; variables occurring in pat.  So what this function actually checks
+; is that term is either (equal var other-var), (equal other-var var),
+; or else is some arbitrary term whose all-vars is identically the
+; singleton list containing var.
+
+; If term is one of the two equality forms above, then we know
+; other-var is a variable in pat and that term is one of the disjuncts
+; that says ``pat sometimes returns this part of its input.''  If term
+; is of the third form, then it might have come from a
+; type-restriction on pat, e.g., (and (rationalp pat) (<= pat 0)) or
+; (compound-recognizerp pat), or it might be some pretty arbitrary
+; term.  However, we at least know that it contains no variables at
+; all outside the occurrences of pat and that means that we can trust
+; type-set-implied-by-term to tell us what this term implies about
+; pat.
+
+  (cond ((variablep term)
+
+; This could be a type-prescription disjunct in the generalized concl
+; only if term is var, i.e., the original disjunct was equivalent to
+; (not (equal pat 'nil)).
+
+         (eq term var))
+        ((fquotep term) nil)
+        ((flambda-applicationp term) nil)
+        (t (or (and (eq (ffn-symb term) 'equal)
+                    (or (and (eq var (fargn term 1))
+                             (variablep (fargn term 2))
+                             (not (eq (fargn term 1) (fargn term 2))))
+                        (and (eq var (fargn term 2))
+                             (variablep (fargn term 1))
+                             (not (eq (fargn term 2) (fargn term 1))))))
+               (equal (all-vars term) (list var))))))
+
+(defun type-prescription-conclp (var concl)
+
+; Warning: Keep this function in sync with
+; subst-nil-into-type-prescription-concl.
+
+; Var is a variable and concl is a term.  We recognize those concl
+; that are the macroexpansion of (or t1 ... tk) where every ti is a
+; type-prescription-disjunctp about var.
+
+; In the grand scheme of things, concl was obtained from the
+; conclusion of an alleged :TYPE-PRESCRIPTION lemma about some term,
+; pat, by replacing all occurrences of pat with some new variable,
+; var.  We also know that concl involves no variables other than var
+; and those that occurred in pat.
+
+  (cond ((variablep concl) (type-prescription-disjunctp var concl))
+        ((fquotep concl) nil)
+        ((flambda-applicationp concl) nil)
+        ((eq (ffn-symb concl) 'if)
+         (cond ((equal (fargn concl 1) (fargn concl 2))
+                (and (type-prescription-disjunctp var (fargn concl 1))
+                     (type-prescription-conclp var (fargn concl 3))))
+               (t (type-prescription-disjunctp var concl))))
+        (t (type-prescription-disjunctp var concl))))
+
+(defun subst-nil-into-type-prescription-disjunct (var term)
+
+; Warning:  Keep this function in sync with type-prescription-disjunctp.
+
+; We assume var and term are ok'd by type-prescription-disjunctp.
+; If term is of the form (equal var other-var) or (equal other-var var)
+; we replace it by nil, otherwise we leave it alone.
+
+  (cond ((variablep term) term)
+
+; The next two cases never happen, but we leave them in just to make
+; sure we copy term modulo this substitution.
+
+        ((fquotep term) term)
+        ((flambda-applicationp term) term)
+        ((and (eq (ffn-symb term) 'equal)
+              (or (and (eq var (fargn term 1))
+                       (variablep (fargn term 2))
+                       (not (eq (fargn term 1) (fargn term 2))))
+                  (and (eq var (fargn term 2))
+                       (variablep (fargn term 1))
+                       (not (eq (fargn term 2) (fargn term 1))))))
+         *nil*)
+        (t term)))
+
+(defun subst-nil-into-type-prescription-concl (var concl)
+
+; Warning:  Keep this function in sync with type-prescription-conclp.
+
+; We know that var and concl are ok'd by type-prescription-conclp.  So
+; concl is a disjunction of terms, some of which are of the form
+; (equal var other-var).  We replace each of those disjuncts in concl
+; with nil so as to produce that part of concl that is a disjunct of
+; type restrictions.  That is, if our answer is basic-term and vars is
+; the list of all the other-vars in concl, then concl is equivalent to
+; basic-term disjoined with the equality between var and each variable
+; in vars.
+
+  (cond
+   ((variablep concl) (subst-nil-into-type-prescription-disjunct var concl))
+
+; The next two cases never happen.
+
+   ((fquotep concl) concl)
+   ((flambda-applicationp concl) concl)
+   ((eq (ffn-symb concl) 'if)
+    (cond ((equal (fargn concl 1) (fargn concl 2))
+           (let ((temp (subst-nil-into-type-prescription-disjunct var
+                                                                  (fargn concl 1))))
+             (fcons-term* 'if
+                          temp
+                          temp
+                          (subst-nil-into-type-prescription-concl var
+                                                                  (fargn concl 3)))))
+          (t (subst-nil-into-type-prescription-disjunct var concl))))
+   (t (subst-nil-into-type-prescription-disjunct var concl))))
+
+(defun unprettyify-tp (term)
+
+; This variant of unprettyify avoids giving special treatment to conjunctions,
+; and hence is suitable for parsing terms into type-prescription rules.  Unlike
+; unprettyify, it returns (mv hyps concl).
+
+  (case-match term
+    (('implies t1 t2)
+     (mv-let (hyps concl)
+             (unprettyify-tp t2)
+             (mv (append? (flatten-ands-in-lit t1)
+                          hyps)
+                 concl)))
+    ((('lambda vars body) . args)
+     (unprettyify-tp (subcor-var vars args body)))
+    (& (mv nil (remove-lambdas term)))))
+
+(defun destructure-type-prescription (name typed-term term ens wrld)
+
+; Warning: Keep this in sync with the :BACKCHAIN-LIMIT-LST case of
+; translate-rule-class-alist.
+
+; Note: This function does more than "destructure" term into a
+; :TYPE-PRESCRIPTION rule, it checks a lot of conditions too and
+; computes type-sets.  However, it doesn't actually cause errors --
+; note that state is not among its arguments -- but may return an
+; error message suitable for printing with ~@.  We return many
+; results.  The first is nil or an error message.  The rest are
+; relevant only if the first is nil and are described below.  We code
+; this way because the destructuring and checking are inextricably
+; intertwined and when we destructure in order to add the rule, we do
+; not have state around.
+
+; We determine whether term is a suitable :TYPE-PRESCRIPTION lemma
+; about the term typed-term.  Term is suitable as a :TYPE-
+; PRESCRIPTION lemma about typed-term if the conclusion of term,
+; concl, is a disjunction of type-prescription disjuncts about
+; typed-term.  Each disjunct must either be an equality between
+; typed-term and one of the variables occurring in typed-term, or else
+; must be some term, such as (and (rationalp typed-term) (<=
+; typed-term 0)) or (compound-recognizerp typed-term), that mentions
+; typed-term and contains no variables outside those occurrences of
+; typed-term.
+
+; If term is unsuitable we return an error msg and nils.  Otherwise we
+; return nil and four more things: the list of hyps, a basic type
+; set, a list of variables, and a ttree.  In that case, term implies
+; that when hyps are true, the type-set of typed-term is the union of the
+; basic type-set together with the type-sets of the variables listed.
+; The ttree records our dependencies on compound recognizers or other
+; type-set lemmas in wrld.  The ttree returned contains no 'assumption
+; tags.
+
+  (let ((term (remove-guard-holders term wrld)))
+    (mv-let
+     (hyps concl)
+     (unprettyify-tp term)
+     (cond
+      ((or (variablep typed-term)
+           (fquotep typed-term)
+           (flambda-applicationp typed-term))
+       (mv (msg "The :TYPED-TERM, ~x0, provided in the :TYPE-PRESCRIPTION ~
+                 rule class for ~x1 is illegal because it is a variable, ~
+                 constant, or lambda application.  See :DOC type-prescription."
+                typed-term name)
+           nil nil nil nil nil))
+      ((dumb-occur-lst typed-term hyps)
+       (mv (msg "The :TYPED-TERM, ~x0, of the proposed :TYPE-PRESCRIPTION ~
+                 rule ~x1 occurs in the hypotheses of the rule.  This would ~
+                 cause ``infinite backchaining'' if we permitted ~x1 as a ~
+                 :TYPE-PRESCRIPTION.  (Don't feel reassured by this check:  ~
+                 infinite backchaining may occur anyway since it can be ~
+                 caused by the combination of several rules.)"
+                typed-term
+                name)
+           nil nil nil nil nil))
+      (t
+       (let ((all-vars-typed-term (all-vars typed-term))
+             (all-vars-concl (all-vars concl)))
+         (cond
+          ((not (subsetp-eq all-vars-concl all-vars-typed-term))
+           (mv (msg "~x0 cannot be used as a :TYPE-PRESCRIPTION rule as ~
+                     described by the given rule class because the ~
+                     :TYPED-TERM, ~x1, does not contain the ~#2~[variable ~&2 ~
+                     which is~/variables ~&2 which are~] mentioned in the ~
+                     conclusion.  See :DOC type-prescription."
+                    name
+                    typed-term
+                    (reverse
+                     (set-difference-eq all-vars-concl all-vars-typed-term)))
+               nil nil nil nil nil))
+          (t (let* ((new-var (genvar (find-pkg-witness typed-term)
+                                     "TYPED-TERM" nil all-vars-typed-term))
+                    (concl1 (subst-expr new-var typed-term concl)))
+               (cond
+                ((not (type-prescription-conclp new-var concl1))
+                 (mv (msg "~x0 is an illegal :TYPE-PRESCRIPTION lemma of the ~
+                           class indicated because its conclusion is not a ~
+                           disjunction of type restrictions about the ~
+                           :TYPED-TERM ~x1.  See :DOC type-prescription."
+                          name typed-term)
+                     nil nil nil nil nil))
+                (t (let ((vars (remove1-eq new-var (all-vars concl1)))
+                         (basic-term
+                          (subst-nil-into-type-prescription-concl new-var concl1)))
+
+; Once upon a time, briefly, we got the type-set implied by (and hyps
+; basic-term), thinking that we might need hyps to extract type
+; information from basic-term.  But the only var in basic-term is new
+; so the hyps don't help much.  The idea was to permit lemmas like
+; (implies (rationalp x) (<= 0 (* x x))).  Note that the guard for <=
+; is satisfied only if we know that the product is rational, which we
+; can deduce from the hyp.  But when we try to process that lemma, the
+; typed-term in generalized away, e.g., (implies (rationalp x) (<= 0
+; Z)).  Thus, the hyps don't help: the only var in basic-term is
+; new-var.  You could conjoin hyps and concl1 and THEN generalize the
+; typed-term to new-var, thereby linking the occurrences of typed-term
+; in the hyps to those in the concl.  But this is very unhelpful
+; because it encourages the creation of lemmas that contain the
+; typed-term in the hyps.  That is bad because type-set then
+; infinitely backchains.  In the face of these difficulties, we have
+; reverted back to the simplest treatment of type-prescription lemmas.
+
+                     (mv-let
+                      (ts ttree)
+                      (type-set-implied-by-term new-var nil basic-term ens wrld
+                                                nil)
+                      (cond ((ts= ts *ts-unknown*)
+                             (mv (msg "~x0 is a useless :TYPE-PRESCRIPTION ~
+                                       lemma because we can deduce no type ~
+                                       restriction about its :TYPED-TERM ~
+                                       (below represented by ~x1) from the ~
+                                       generalized conclusion, ~p2.  See :DOC ~
+                                       type-prescription."
+                                      name
+                                      new-var
+                                      (untranslate concl1 t wrld))
+                                 nil nil nil nil nil))
+                            ((not (assumption-free-ttreep ttree))
+
+; If type-set-implied-by-term requires that we force some assumptions,
+; it is not clear what to do.  For example, it is possible that the
+; assumptions involve new-var, which makes no sense in the context of
+; an application of this rule.  My intuition tells me this error will
+; never arise because for legal concls, basic-term is guard free.  If
+; there are :TYPE-PRESCRIPTION lemmas about the compound recognizers
+; in it, they could have forced hyps.  I think it unlikely, since the
+; recognizers are Boolean.  Well, I guess I could add a
+; :TYPE-PRESCRIPTION lemma that said that under some forced hyp the
+; compound-recognizer was actually t.  In that case, the forced hyp
+; would necessarily involve new-var, since that is the only argument
+; to a compound recognizer.  It would be interesting to see a living
+; example of this situation.
+
+                             (mv
+                              (if (tagged-objectsp 'fc-derivation ttree)
+                                  (er hard 'destructure-type-prescription
+                                      "Somehow an 'fc-derivation, ~x0, has ~
+                                       found its way into the ttree returned ~
+                                       by type-set-implied-by-term."
+                                      (car (tagged-objects 'fc-derivation
+                                                           ttree)))
+                                (msg "~x0 is an illegal :TYPE-PRESCRIPTION ~
+                                      lemma because in determining the ~
+                                      type-set implied for its :TYPED-TERM, ~
+                                      ~x1, by its conclusion the ~
+                                      ~#2~[assumption ~&2 was~/assumptions ~
+                                      ~&2 were~] and our :TYPE-PRESCRIPTION ~
+                                      preprocessor, ~
+                                      CHK-ACCEPTABLE-TYPE-PRESCRIPTION-RULE, ~
+                                      does not know how to handle this ~
+                                      supposedly unusual situation.  It would ~
+                                      be very helpful to report this error to ~
+                                      the authors."
+                                     name typed-term
+                                     (tagged-objects 'assumption ttree)))
+                              nil nil nil nil nil))
+                            (t (mv nil hyps concl ts vars ttree))))))))))))))))
+
+(defun get-xargs-type-prescription-lst (fives ctx state)
+
+; Returns a list corresponding to fives that represents the unique value of the
+; :type-prescription xargs (nil, when not supplied).
+
+  (cond
+   ((endp fives) (value nil))
+   (t
+    (er-let* ((rest (get-xargs-type-prescription-lst (cdr fives) ctx state)))
+      (let* ((five (car fives))
+             (lst (fetch-dcl-fields1 '(:type-prescription) (fourth five))))
+        (cond
+         ((null lst) (value (cons nil rest)))
+         ((cdr lst)
+          (er soft ctx
+              "The :type-prescription keyword for xargs must occur at most ~
+               once in the declare forms for a function."))
+         (t (value (cons (car lst) rest)))))))))
+
+(defun chk-type-prescription-lst (names arglists type-prescription-lst
+                                        ens wrld ctx state)
+
+; Names and type-prescription-lst are true lists of the same length.  We check
+; that each name in names has a type-prescription in wrld that implies (is a
+; subset of) the type-prescription represented by the pair (basic-ts . vars) at
+; the corresponding position in type-prescription-lst, but we skip the check
+; when there is nil rather than a pair at that position.  We issue a warning
+; when thse are not equal.
+
+; Note that wrld is a world constructed during admission of definitions of
+; names, after type-prescriptions for names have been placed into wrld.  So we
+; expect these type-prescriptions to be hypothesis-free.
+
+  (cond
+   ((endp names) (value nil))
+   ((null (car type-prescription-lst))
+    (chk-type-prescription-lst (cdr names)
+                               (cdr arglists)
+                               (cdr type-prescription-lst)
+                               ens wrld ctx state))
+   (t
+    (er-let* ((term (translate (car type-prescription-lst)
+                               t
+                               t ; logic-modep
+                               t ; known-stobjs
+                               ctx wrld state)))
+      (mv-let (erp hyps concl basic-ts vars ttree)
+        (destructure-type-prescription
+         (car names)
+         (cons (car names) (car arglists))
+         term ens wrld)
+        (declare (ignore concl ttree))
+        (cond
+         (erp (er soft ctx
+                  "Illegal :type-prescription specified in xargs for name ~
+                   ~x0.  Here is the error message one would see upon trying ~
+                   to submit it as a :type-prescription rule:~|~%~@1"
+                  (car names)
+                  erp))
+         (hyps (er soft ctx
+                   "Illegal :type-prescription specified in xargs for name ~
+                    ~x0: hypotheses are not allowed."
+                   (car names)))
+         (t
+          (let* ((name (car names))
+                 (old-tp (car (getpropc name 'type-prescriptions nil wrld))))
+            (cond
+             ((null old-tp)
+              (er soft ctx
+                  "It is illegal to specify a non-nil :type-prescription in ~
+                   an xargs declaration for ~x0, because ACL2 computed no ~
+                   built-in type prescription for ~x0."
+                  name))
+             (t
+              (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
+                     (old-vars (access type-prescription old-tp :vars))
+                     (subsetp-vars (subsetp-eq old-vars vars)))
+                (assert$
+                 (null (access type-prescription old-tp :hyps))
+                 (cond
+                  ((and (ts= old-basic-ts basic-ts)
+                        (or (equal vars old-vars) ; optimization
+                            (and subsetp-vars
+                                 (subsetp-eq vars old-vars))))
+                   (chk-type-prescription-lst (cdr names)
+                                              (cdr arglists)
+                                              (cdr type-prescription-lst)
+                                              ens wrld ctx state))
+                  ((and (ts-subsetp old-basic-ts basic-ts)
+                        (subsetp-eq old-vars vars))
+                   (pprogn
+                    (warning$ ctx "Type-prescription"
+                              "The type-prescription specified by the xargs ~
+                               :type-prescription for ~x0 is strictly weaker ~
+                               than the computed type of ~x0~@1."
+                              name
+                              (if (member-eq 'event
+                                             (f-get-global 'inhibit-output-lst
+                                                           state))
+                                  ""
+                                " that is noted above"))
+                    (chk-type-prescription-lst (cdr names)
+                                               (cdr arglists)
+                                               (cdr type-prescription-lst)
+                                               ens wrld ctx state)))
+                  (t (er soft ctx
+                         "The type-prescription specified by the xargs ~
+                          :type-prescription for ~x0 is not implied by the ~
+                          computed type of ~x0~@1."
+                         name
+                         (if (member-eq 'event
+                                        (f-get-global 'inhibit-output-lst
+                                                      state))
+                             ""
+                           " that is noted above"))))))))))))))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -9939,7 +10416,9 @@
         :LOOP$-RECURSION
         fives
         nil ; :loop$-recursion default value
-        ctx state)))
+        ctx state))
+      (type-prescription-lst
+       (get-xargs-type-prescription-lst fives ctx state)))
      (er-progn
       (cond
        ((and (consp (cdr loop$-recursion-lst))
@@ -10280,7 +10759,8 @@
                                                 new-lambda$-alist-pairs
                                                 :new-loop$-alist-pairs
                                                 new-loop$-alist-pairs)
-                                          guard-simplify)))))))))))))))))))
+                                          guard-simplify
+                                          type-prescription-lst)))))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -10369,6 +10849,11 @@
 ;    guard-simplify
 ;               - t or nil, determining whether to simplify while generating
 ;                 the guard conjectures
+
+;    type-prescription-lst
+;               - collect all values of :type-prescription xargs, where each
+;                 value is a type-prescription record derived from the formula
+;                 supplied if any, else nil
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -10598,6 +11083,7 @@
                          bodies symbol-class normalizeps split-types-terms
                          lambda-info
                          non-executablep
+                         type-prescription-lst
                          #+:non-standard-analysis std-p
                          ctx state)
 
@@ -10657,6 +11143,11 @@
                                                      t nil wrld5)
                                        ens wrld5 ttree2 state)
         (er-progn
+
+; We want to defer printing the :type-prescription xargs warning, if any, until
+; after printing the message about the type prescription (see
+; print-defun-msg/type-prescriptions).
+
          (update-w big-mutrec wrld6)
          (let* ((wrld6a
                  (if (access lambda-info
@@ -10742,33 +11233,37 @@
                 (pprogn
                  (print-defun-msg names ttree2 wrld12 col state)
                  (set-w 'extension wrld12 state)
-                 (cond
-                  ((eq symbol-class :common-lisp-compliant)
-                   (er-let*
-                       ((guard-hints (if guard-hints
-                                         (translate-hints
-                                          (cons "Guard for" (car names))
-                                          guard-hints
-                                          ctx wrld12 state)
-                                         (value nil)))
-                        (pair (verify-guards-fn1 names guard-hints otf-flg
-                                                 guard-debug guard-simplify ctx
-                                                 state)))
+                 (er-progn
+                  (chk-type-prescription-lst names arglists
+                                             type-prescription-lst
+                                             ens wrld12 ctx state)
+                  (cond
+                   ((eq symbol-class :common-lisp-compliant)
+                    (er-let*
+                        ((guard-hints (if guard-hints
+                                          (translate-hints
+                                           (cons "Guard for" (car names))
+                                           guard-hints
+                                           ctx wrld12 state)
+                                        (value nil)))
+                         (pair (verify-guards-fn1 names guard-hints otf-flg
+                                                  guard-debug guard-simplify ctx
+                                                  state)))
 
 ; Pair is of the form (wrld . ttree3) and we return a pair of the same
 ; form, but we must combine this ttree with the ones produced by the
 ; termination proofs and type-prescriptions.
 
-                     (value
-                      (cons (car pair)
-                            (cons-tag-trees ttree1
-                                            (cons-tag-trees
-                                             ttree2
-                                             (cdr pair)))))))
-                  (t (value
-                      (cons wrld12
-                            (cons-tag-trees ttree1
-                                            ttree2)))))))))))))))))
+                      (value
+                       (cons (car pair)
+                             (cons-tag-trees ttree1
+                                             (cons-tag-trees
+                                              ttree2
+                                              (cdr pair)))))))
+                   (t (value
+                       (cons wrld12
+                             (cons-tag-trees ttree1
+                                             ttree2))))))))))))))))))
 
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
@@ -10776,6 +11271,7 @@
                          symbol-class normalizeps split-types-terms
                          lambda-info
                          non-executablep
+                         type-prescription-lst
                          #+:non-standard-analysis std-p
                          ctx wrld state)
 
@@ -10824,6 +11320,7 @@
          split-types-terms
          lambda-info
          non-executablep
+         type-prescription-lst
          #+:non-standard-analysis std-p
          ctx
          state))))))
@@ -11267,7 +11764,8 @@
                 (measure-debug (nth 21 tuple))
                 (split-types-terms (nth 22 tuple))
                 (lambda-info (nth 23 tuple))
-                (guard-simplify (nth 24 tuple)))
+                (guard-simplify (nth 24 tuple))
+                (type-prescription-lst (nth 25 tuple)))
             (with-useless-runes
              (car names)
              wrld
@@ -11295,6 +11793,7 @@
                           split-types-terms
                           lambda-info
                           non-executablep
+                          type-prescription-lst
                           #+:non-standard-analysis std-p
                           ctx
                           wrld
