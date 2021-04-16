@@ -12,6 +12,7 @@
 
 (include-book "divides")
 (include-book "primes")
+(include-book "mod-expt-fast")
 (include-book "defprime")
 (include-book "euler2-support")
 (include-book "quadratic-residue")
