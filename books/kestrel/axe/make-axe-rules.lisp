@@ -253,12 +253,14 @@
 
 ;; Returns (mv erp hyps)  More than one hyp can be returned because we
 ;; extract conjuncts and make a separate hyp for each one
-;; TODO: Don't flatten by calling get-conjuncts-of-term, now that axe-syntaxp hyps can be if/not nests
+;; TODO: Simplify because now this can only return a single hyp
 (defund make-axe-syntaxp-hyps-for-synp-hyp (term bound-vars rule-symbol hyp)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol))))
-  (make-axe-syntaxp-hyps-for-synp-conjuncts (get-conjuncts-of-term term) bound-vars rule-symbol hyp))
+  (make-axe-syntaxp-hyps-for-synp-conjuncts (list term)
+                                            ;;(get-conjuncts-of-term term)
+                                            bound-vars rule-symbol hyp))
 
 (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-syntaxp-hyps-for-synp-hyp
   (implies (pseudo-termp term)

@@ -54,5 +54,6 @@
   (assert-equal (make-axe-rules! '(car-cons2) (w state))
                 '(((car (cons x y))
                    x car-cons2
-                   ((:axe-syntaxp axe-quotep x)
-                    (:axe-syntaxp axe-quotep y))))))
+                   ((:AXE-SYNTAXP IF (AXE-QUOTEP X)
+                                  (AXE-QUOTEP Y)
+                                  'NIL))))))
