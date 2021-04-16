@@ -146,7 +146,7 @@
     "This is a new improved macro that will replace
      the old @(tsee atc-def-integer-operations), which will be removed."))
 
-  (b* ((type-string (atc-def-integer-type-string type))
+  (b* ((type-string (atc-integer-type-string type))
        (typep (add-suffix type "P"))
        (type->get (add-suffix type "->GET"))
        (type-integerp (add-suffix type "-INTEGERP"))

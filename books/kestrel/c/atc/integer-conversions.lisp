@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-type-string (type)
+(define atc-integer-type-string (type)
   :guard (member-eq type *atc-integer-types*)
   :returns (string stringp)
   :short "Turn an integer type symbol into a string describing it."
@@ -107,8 +107,8 @@
      asserting that the original value is representable
      in the destination type."))
 
-  (b* ((src-type-string (atc-def-integer-type-string src-type))
-       (dst-type-string (atc-def-integer-type-string dst-type))
+  (b* ((src-type-string (atc-integer-type-string src-type))
+       (dst-type-string (atc-integer-type-string dst-type))
        (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
        (conv-okp (add-suffix conv "-OKP"))
        (src-typep (add-suffix src-type "P"))
