@@ -51,17 +51,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atc-integer-types*
+  :short "Fixtype names of the C integer types supported by ATC."
+  '(schar
+    uchar
+    sshort
+    ushort
+    sint
+    uint
+    slong
+    ulong
+    sllong
+    ullong))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-type-string (type)
-  :guard (member-eq type '(schar
-                           uchar
-                           sshort
-                           ushort
-                           sint
-                           uint
-                           slong
-                           ulong
-                           sllong
-                           ullong))
+  :guard (member-eq type *atc-integer-types*)
   :returns (string stringp)
   :short "Turn an integer type symbol into a string describing it."
   (b* ((core (case type
@@ -82,12 +88,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-conversion (src-type dst-type)
-  :guard (subsetp-eq (list src-type dst-type)
-                     '(:schar :uchar
-                       :sshort :ushort
-                       :sint :uint
-                       :slong :ulong
-                       :sllong :ullong))
+  :guard (and (member-eq src-type *atc-integer-types*)
+              (member-eq dst-type *atc-integer-types*))
   :short "Event to generate a conversion between C integer types."
   :long
   (xdoc::topstring
@@ -107,45 +109,43 @@
      asserting that the original value is representable
      in the destination type."))
 
-  (b* ((src-fixtype (acl2::packn-pos (list src-type) 'atc))
-       (dst-fixtype (acl2::packn-pos (list dst-type) 'atc))
-       (src-type-string (case src-type
-                          (:schar "signed char")
-                          (:uchar "unsigned char")
-                          (:sshort "signed short")
-                          (:ushort "unsigned short")
-                          (:sint "signed int")
-                          (:uint "unsigned int")
-                          (:slong "signed long")
-                          (:ulong "unsigned long")
-                          (:sllong "signed long long")
-                          (:ullong "unsigned long long")
+  (b* ((src-type-string (case src-type
+                          (schar "signed char")
+                          (uchar "unsigned char")
+                          (sshort "signed short")
+                          (ushort "unsigned short")
+                          (sint "signed int")
+                          (uint "unsigned int")
+                          (slong "signed long")
+                          (ulong "unsigned long")
+                          (sllong "signed long long")
+                          (ullong "unsigned long long")
                           (t (impossible))))
        (dst-type-string (case dst-type
-                          (:schar "signed char")
-                          (:uchar "unsigned char")
-                          (:sshort "signed short")
-                          (:ushort "unsigned short")
-                          (:sint "signed int")
-                          (:uint "unsigned int")
-                          (:slong "signed long")
-                          (:ulong "unsigned long")
-                          (:sllong "signed long long")
-                          (:ullong "unsigned long long")
+                          (schar "signed char")
+                          (uchar "unsigned char")
+                          (sshort "signed short")
+                          (ushort "unsigned short")
+                          (sint "signed int")
+                          (uint "unsigned int")
+                          (slong "signed long")
+                          (ulong "unsigned long")
+                          (sllong "signed long long")
+                          (ullong "unsigned long long")
                           (t (impossible))))
        (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
        (conv-okp (add-suffix conv "-OKP"))
-       (src-typep (add-suffix src-fixtype "P"))
-       (dst-typep (add-suffix dst-fixtype "P"))
-       (src-type->get (add-suffix src-fixtype "->GET"))
-       (dst-type-integerp (add-suffix dst-fixtype "-INTEGERP"))
-       (dst-type-mod (add-suffix dst-fixtype "-MOD")))
+       (src-typep (add-suffix src-type "P"))
+       (dst-typep (add-suffix dst-type "P"))
+       (src-type->get (add-suffix src-type "->GET"))
+       (dst-type-integerp (add-suffix dst-type "-INTEGERP"))
+       (dst-type-mod (add-suffix dst-type "-MOD")))
 
     (if (eq src-type dst-type)
 
         '(progn)
 
-      (if (member-eq dst-type '(:schar :sshort :sint :slong :sllong))
+      (if (member-eq dst-type '(schar sshort sint slong sllong))
 
           `(encapsulate ()
 
@@ -169,7 +169,7 @@
                                     "') to @('"
                                     dst-type-string
                                     "').")
-               (,dst-fixtype (,src-type->get x))
+               (,dst-type (,src-type->get x))
                :guard-hints (("Goal" :in-theory (enable ,conv-okp)))
                :hooks (:fix)))
 
@@ -190,12 +190,7 @@
 
 (define atc-def-integer-conversions-loop1 (src-type dst-types)
   :guard (and (true-listp dst-types)
-              (subsetp-eq (cons src-type dst-types)
-                          '(:schar :uchar
-                            :sshort :ushort
-                            :sint :uint
-                            :slong :ulong
-                            :sllong :ullong)))
+              (subsetp-eq (cons src-type dst-types) *atc-integer-types*))
   (cond ((endp dst-types) nil)
         (t (cons
             (atc-def-integer-conversion src-type (car dst-types))
@@ -206,12 +201,7 @@
 (define atc-def-integer-conversions-loop2 (src-types dst-types)
   :guard (and (true-listp src-types)
               (true-listp dst-types)
-              (subsetp-eq (append src-types dst-types)
-                          '(:schar :uchar
-                            :sshort :ushort
-                            :sint :uint
-                            :slong :ulong
-                            :sllong :ullong)))
+              (subsetp-eq (append src-types dst-types) *atc-integer-types*))
   (cond ((endp src-types) nil)
         (t (append
             (atc-def-integer-conversions-loop1 (car src-types) dst-types)
@@ -222,12 +212,8 @@
 
 (defmacro+ atc-def-integer-conversions ()
   :short "Macro to generate all the integer conversions in our model."
-  (b* ((types '(:schar :uchar
-                :sshort :ushort
-                :sint :uint
-                :slong :ulong
-                :sllong :ullong)))
-    `(progn ,@(atc-def-integer-conversions-loop2 types types))))
+  `(progn ,@(atc-def-integer-conversions-loop2 *atc-integer-types*
+                                               *atc-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
