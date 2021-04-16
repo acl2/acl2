@@ -145,18 +145,20 @@
                            ullong))
   :returns (string stringp)
   :short "Turn an integer type symbol into a string describing it."
-  (case type
-    (schar "signed char")
-    (uchar "unsigned char")
-    (sshort "signed short")
-    (ushort "unsigned short")
-    (sint "signed int")
-    (uint "unsigned int")
-    (slong "signed long")
-    (ulong "unsigned long")
-    (sllong "signed long long")
-    (ullong "unsigned long long")
-    (t (prog2$ (raise "Internal error: unknown type ~x0." type) ""))))
+  (b* ((core (case type
+               (schar "signed char")
+               (uchar "unsigned char")
+               (sshort "signed short")
+               (ushort "unsigned short")
+               (sint "signed int")
+               (uint "unsigned int")
+               (slong "signed long")
+               (ulong "unsigned long")
+               (sllong "signed long long")
+               (ullong "unsigned long long")
+               (t (prog2$ (raise "Internal error: unknown type ~x0." type)
+                          "")))))
+    (str::cat "type @('" core "')")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,20 +208,14 @@
           `((define ,type-const ((x natp))
               :guard (,type-integerp x)
               :returns (result ,typep)
-              :short ,(concatenate 'string
-                                   "Integer constant of type @('"
-                                   type-string
-                                   "').")
+              :short ,(str::cat "Integer constant of " type-string ".")
               (,type x))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,type-nonzerop ((x ,typep))
          :returns (yes/no booleanp)
-         :short ,(concatenate 'string
-                              "Check if a value of type @('"
-                              type-string
-                              "') is not 0.")
+         :short ,(str::cat "Check if a value of " type-string " is not 0.")
          (/= (,type->get x) 0)
          :hooks (:fix))
 
@@ -227,10 +223,8 @@
 
        (define ,type-integer-value ((x ,typep))
          :returns (ival integerp)
-         :short ,(concatenate 'string
-                              "Turn a vaue of type @('"
-                              type-string
-                              "') into an ACL2 integer value.")
+         :short ,(str::cat "Turn a vaue of " type-string
+                           " into an ACL2 integer value.")
          (,type->get x)
          :hooks (:fix))
 
@@ -238,10 +232,8 @@
 
        (define ,plus-type ((x ,typep))
          :returns (result ,promotypep)
-         :short ,(concatenate 'string
-                              "Unary plus of a value of type @('"
-                              type-string
-                              "') [C:6.5.3].")
+         :short ,(str::cat "Unary plus of a value of " type-string
+                           " [C:6.5.3].")
          (,promotype (,type->get x))
          :guard-hints (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
          :hooks (:fix))
