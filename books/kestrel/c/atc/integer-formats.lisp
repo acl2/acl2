@@ -74,7 +74,11 @@
      @('long long') is at least 64 bits.
      Furthermore, the ranges are increasing [C:6.2.5/8].")
    (xdoc::p
-    "We do not include any extended integer types."))
+    "For now we only define formats for
+     the standard signed and unsigned integer types except @('_Bool').
+     Note that the plain @('char') type is not covered yet;
+     it is an integer type,
+     but not a standard integer type in C's terminology."))
   :order-subtopics t
   :default-parent t)
 
