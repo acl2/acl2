@@ -163,17 +163,7 @@
           (t val)))
   :guard-hints (("Goal" :in-theory (enable
                                     sint-from-uchar-okp
-                                    sint-from-schar-okp
                                     sint-from-ushort-okp
-                                    sint-from-sshort-okp
-                                    ucharp
-                                    scharp
-                                    ushortp
-                                    sshortp
-                                    uchar->get
-                                    schar->get
-                                    ushort->get
-                                    sshort->get
                                     uchar-integerp-alt-def
                                     schar-integerp-alt-def
                                     ushort-integerp-alt-def
@@ -215,12 +205,12 @@
                      :required :arithmetic
                      :supplied arg)))
        (val (promote-value arg)))
-    (cond ((uintp val) (uint-plus val))
-          ((sintp val) (sint-plus val))
-          ((ulongp val) (ulong-plus val))
-          ((slongp val) (slong-plus val))
-          ((ullongp val) (ullong-plus val))
-          ((sllongp val) (sllong-plus val))
+    (cond ((uintp val) (plus-uint val))
+          ((sintp val) (plus-sint val))
+          ((ulongp val) (plus-ulong val))
+          ((slongp val) (plus-slong val))
+          ((ullongp val) (plus-ullong val))
+          ((sllongp val) (plus-sllong val))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-arithmeticp
@@ -243,12 +233,12 @@
                      :supplied arg)))
        (val (promote-value arg))
        (err (error (list :undefined-minus arg))))
-    (cond ((uintp val) (uint-minus val))
-          ((sintp val) (if (sint-minus-okp val) (sint-minus val) err))
-          ((ulongp val) (ulong-minus val))
-          ((slongp val) (if (slong-minus-okp val) (slong-minus val) err))
-          ((ullongp val) (ullong-minus val))
-          ((sllongp val) (if (sllong-minus-okp val) (sllong-minus val) err))
+    (cond ((uintp val) (minus-uint val))
+          ((sintp val) (if (minus-sint-okp val) (minus-sint val) err))
+          ((ulongp val) (minus-ulong val))
+          ((slongp val) (if (minus-slong-okp val) (minus-slong val) err))
+          ((ullongp val) (minus-ullong val))
+          ((sllongp val) (if (minus-sllong-okp val) (minus-sllong val) err))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-arithmeticp
@@ -270,12 +260,12 @@
                      :required :integer
                      :supplied arg)))
        (val (promote-value arg)))
-    (cond ((uintp val) (uint-bitnot val))
-          ((sintp val) (sint-bitnot val))
-          ((ulongp val) (ulong-bitnot val))
-          ((slongp val) (slong-bitnot val))
-          ((ullongp val) (ullong-bitnot val))
-          ((sllongp val) (sllong-bitnot val))
+    (cond ((uintp val) (bitnot-uint val))
+          ((sintp val) (bitnot-sint val))
+          ((ulongp val) (bitnot-ulong val))
+          ((slongp val) (bitnot-slong val))
+          ((ullongp val) (bitnot-ullong val))
+          ((sllongp val) (bitnot-sllong val))
           (t (error (impossible)))))
   :guard-hints (("Goal"
                  :in-theory (enable value-arithmeticp
@@ -296,16 +286,16 @@
         (error (list :mistype-lognot
                      :required :scalar
                      :supplied arg))))
-    (cond ((ucharp arg) (uchar-lognot arg))
-          ((scharp arg) (schar-lognot arg))
-          ((ushortp arg) (ushort-lognot arg))
-          ((sshortp arg) (sshort-lognot arg))
-          ((uintp arg) (uint-lognot arg))
-          ((sintp arg) (sint-lognot arg))
-          ((ulongp arg) (ulong-lognot arg))
-          ((slongp arg) (slong-lognot arg))
-          ((ullongp arg) (ullong-lognot arg))
-          ((sllongp arg) (sllong-lognot arg))
+    (cond ((ucharp arg) (lognot-uchar arg))
+          ((scharp arg) (lognot-schar arg))
+          ((ushortp arg) (lognot-ushort arg))
+          ((sshortp arg) (lognot-sshort arg))
+          ((uintp arg) (lognot-uint arg))
+          ((sintp arg) (lognot-sint arg))
+          ((ulongp arg) (lognot-ulong arg))
+          ((slongp arg) (lognot-slong arg))
+          ((ullongp arg) (lognot-ullong arg))
+          ((sllongp arg) (lognot-sllong arg))
           ((pointerp arg) (sint01 (pointer-nullp arg)))
           (t (error (impossible)))))
   :guard-hints (("Goal"
@@ -419,22 +409,9 @@
           (t (prog2$ (impossible) (mv val1 val2)))))
   :guard-hints (("Goal"
                  :do-not '(preprocess) ; just for speed
-                 :in-theory (enable slong-from-sint-okp
-                                    slong-from-uint-okp
-                                    sllong-from-sint-okp
-                                    sllong-from-slong-okp
+                 :in-theory (enable slong-from-uint-okp
                                     sllong-from-uint-okp
                                     sllong-from-ulong-okp
-                                    sintp
-                                    slongp
-                                    sllongp
-                                    uintp
-                                    ulongp
-                                    ullongp
-                                    sint->get
-                                    slong->get
-                                    uint->get
-                                    ulong->get
                                     sint-integerp-alt-def
                                     slong-integerp-alt-def
                                     sllong-integerp-alt-def
@@ -539,12 +516,18 @@
        (err (error (list :undefined-mul arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-mul val1 val2))
-     ((sintp val1) (if (sint-mul-okp val1 val2) (sint-mul val1 val2) err))
-     ((ulongp val1) (ulong-mul val1 val2))
-     ((slongp val1) (if (slong-mul-okp val1 val2) (slong-mul val1 val2) err))
-     ((ullongp val1) (ullong-mul val1 val2))
-     ((sllongp val1) (if (sllong-mul-okp val1 val2) (sllong-mul val1 val2) err))
+     ((uintp val1) (mul-uint-uint val1 val2))
+     ((sintp val1) (if (mul-sint-sint-okp val1 val2)
+                       (mul-sint-sint val1 val2)
+                     err))
+     ((ulongp val1) (mul-ulong-ulong val1 val2))
+     ((slongp val1) (if (mul-slong-slong-okp val1 val2)
+                        (mul-slong-slong val1 val2)
+                      err))
+     ((ullongp val1) (mul-ullong-ullong val1 val2))
+     ((sllongp val1) (if (mul-sllong-sllong-okp val1 val2)
+                         (mul-sllong-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -568,12 +551,24 @@
        (err (error (list :undefined-div arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (if (uint-div-okp val1 val2) (uint-div val1 val2) err))
-     ((sintp val1) (if (sint-div-okp val1 val2) (sint-div val1 val2) err))
-     ((ulongp val1) (if (ulong-div-okp val1 val2) (ulong-div val1 val2) err))
-     ((slongp val1) (if (slong-div-okp val1 val2) (slong-div val1 val2) err))
-     ((ullongp val1) (if (ullong-div-okp val1 val2) (ullong-div val1 val2) err))
-     ((sllongp val1) (if (sllong-div-okp val1 val2) (sllong-div val1 val2) err))
+     ((uintp val1) (if (div-uint-uint-okp val1 val2)
+                       (div-uint-uint val1 val2)
+                     err))
+     ((sintp val1) (if (div-sint-sint-okp val1 val2)
+                       (div-sint-sint val1 val2)
+                     err))
+     ((ulongp val1) (if (div-ulong-ulong-okp val1 val2)
+                        (div-ulong-ulong val1 val2)
+                      err))
+     ((slongp val1) (if (div-slong-slong-okp val1 val2)
+                        (div-slong-slong val1 val2)
+                      err))
+     ((ullongp val1) (if (div-ullong-ullong-okp val1 val2)
+                         (div-ullong-ullong val1 val2)
+                       err))
+     ((sllongp val1) (if (div-sllong-sllong-okp val1 val2)
+                         (div-sllong-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -597,12 +592,24 @@
        (err (error (list :undefined-rem arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (if (uint-rem-okp val1 val2) (uint-rem val1 val2) err))
-     ((sintp val1) (if (sint-rem-okp val1 val2) (sint-rem val1 val2) err))
-     ((ulongp val1) (if (ulong-rem-okp val1 val2) (ulong-rem val1 val2) err))
-     ((slongp val1) (if (slong-rem-okp val1 val2) (slong-rem val1 val2) err))
-     ((ullongp val1) (if (ullong-rem-okp val1 val2) (ullong-rem val1 val2) err))
-     ((sllongp val1) (if (sllong-rem-okp val1 val2) (sllong-rem val1 val2) err))
+     ((uintp val1) (if (rem-uint-uint-okp val1 val2)
+                       (rem-uint-uint val1 val2)
+                     err))
+     ((sintp val1) (if (rem-sint-sint-okp val1 val2)
+                       (rem-sint-sint val1 val2)
+                     err))
+     ((ulongp val1) (if (rem-ulong-ulong-okp val1 val2)
+                        (rem-ulong-ulong val1 val2)
+                      err))
+     ((slongp val1) (if (rem-slong-slong-okp val1 val2)
+                        (rem-slong-slong val1 val2)
+                      err))
+     ((ullongp val1) (if (rem-ullong-ullong-okp val1 val2)
+                         (rem-ullong-ullong val1 val2)
+                       err))
+     ((sllongp val1) (if (rem-sllong-sllong-okp val1 val2)
+                         (rem-sllong-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -632,12 +639,18 @@
        (err (error (list :undefined-add arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-add val1 val2))
-     ((sintp val1) (if (sint-add-okp val1 val2) (sint-add val1 val2) err))
-     ((ulongp val1) (ulong-add val1 val2))
-     ((slongp val1) (if (slong-add-okp val1 val2) (slong-add val1 val2) err))
-     ((ullongp val1) (ullong-add val1 val2))
-     ((sllongp val1) (if (sllong-add-okp val1 val2) (sllong-add val1 val2) err))
+     ((uintp val1) (add-uint-uint val1 val2))
+     ((sintp val1) (if (add-sint-sint-okp val1 val2)
+                       (add-sint-sint val1 val2)
+                     err))
+     ((ulongp val1) (add-ulong-ulong val1 val2))
+     ((slongp val1) (if (add-slong-slong-okp val1 val2)
+                        (add-slong-slong val1 val2)
+                      err))
+     ((ullongp val1) (add-ullong-ullong val1 val2))
+     ((sllongp val1) (if (add-sllong-sllong-okp val1 val2)
+                         (add-sllong-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -665,12 +678,18 @@
        (err (error (list :undefined-sub arg1 arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-sub val1 val2))
-     ((sintp val1) (if (sint-sub-okp val1 val2) (sint-sub val1 val2) err))
-     ((ulongp val1) (ulong-sub val1 val2))
-     ((slongp val1) (if (slong-sub-okp val1 val2) (slong-sub val1 val2) err))
-     ((ullongp val1) (ullong-sub val1 val2))
-     ((sllongp val1) (if (sllong-sub-okp val1 val2) (sllong-sub val1 val2) err))
+     ((uintp val1) (sub-uint-uint val1 val2))
+     ((sintp val1) (if (sub-sint-sint-okp val1 val2)
+                       (sub-sint-sint val1 val2)
+                     err))
+     ((ulongp val1) (sub-ulong-ulong val1 val2))
+     ((slongp val1) (if (sub-slong-slong-okp val1 val2)
+                        (sub-slong-slong val1 val2)
+                      err))
+     ((ullongp val1) (sub-ullong-ullong val1 val2))
+     ((sllongp val1) (if (sub-sllong-sllong-okp val1 val2)
+                         (sub-sllong-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -696,12 +715,24 @@
        (val2 (exec-integer val2))
        (err (error (list :undefined-shl arg1 arg2))))
     (cond
-     ((uintp val1) (if (uint-shl-okp val1 val2) (uint-shl val1 val2) err))
-     ((sintp val1) (if (sint-shl-okp val1 val2) (sint-shl val1 val2) err))
-     ((ulongp val1) (if (ulong-shl-okp val1 val2) (ulong-shl val1 val2) err))
-     ((slongp val1) (if (slong-shl-okp val1 val2) (slong-shl val1 val2) err))
-     ((ullongp val1) (if (ullong-shl-okp val1 val2) (ullong-shl val1 val2) err))
-     ((sllongp val1) (if (sllong-shl-okp val1 val2) (sllong-shl val1 val2) err))
+     ((uintp val1) (if (shl-uint-okp val1 val2)
+                       (shl-uint val1 val2)
+                     err))
+     ((sintp val1) (if (shl-sint-okp val1 val2)
+                       (shl-sint val1 val2)
+                     err))
+     ((ulongp val1) (if (shl-ulong-okp val1 val2)
+                        (shl-ulong val1 val2)
+                      err))
+     ((slongp val1) (if (shl-slong-okp val1 val2)
+                        (shl-slong val1 val2)
+                      err))
+     ((ullongp val1) (if (shl-ullong-okp val1 val2)
+                         (shl-ullong val1 val2)
+                       err))
+     ((sllongp val1) (if (shl-sllong-okp val1 val2)
+                         (shl-sllong val1 val2)
+                       err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use ((:instance values-of-promote-value (val arg1))
@@ -731,12 +762,12 @@
        ((when (errorp val2)) val2)
        (err (error (list :undefined-shr arg1 arg2))))
     (cond
-     ((uintp val1) (if (uint-shr-okp val1 val2) (uint-shr val1 val2) err))
-     ((sintp val1) (if (sint-shr-okp val1 val2) (sint-shr val1 val2) err))
-     ((ulongp val1) (if (ulong-shr-okp val1 val2) (ulong-shr val1 val2) err))
-     ((slongp val1) (if (slong-shr-okp val1 val2) (slong-shr val1 val2) err))
-     ((ullongp val1) (if (ullong-shr-okp val1 val2) (ullong-shr val1 val2) err))
-     ((sllongp val1) (if (sllong-shr-okp val1 val2) (sllong-shr val1 val2) err))
+     ((uintp val1) (if (shr-uint-okp val1 val2) (shr-uint val1 val2) err))
+     ((sintp val1) (if (shr-sint-okp val1 val2) (shr-sint val1 val2) err))
+     ((ulongp val1) (if (shr-ulong-okp val1 val2) (shr-ulong val1 val2) err))
+     ((slongp val1) (if (shr-slong-okp val1 val2) (shr-slong val1 val2) err))
+     ((ullongp val1) (if (shr-ullong-okp val1 val2) (shr-ullong val1 val2) err))
+     ((sllongp val1) (if (shr-sllong-okp val1 val2) (shr-sllong val1 val2) err))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use ((:instance values-of-promote-value (val arg1))
@@ -766,12 +797,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-lt val1 val2))
-     ((sintp val1) (sint-lt val1 val2))
-     ((ulongp val1) (ulong-lt val1 val2))
-     ((slongp val1) (slong-lt val1 val2))
-     ((ullongp val1) (ullong-lt val1 val2))
-     ((sllongp val1) (sllong-lt val1 val2))
+     ((uintp val1) (lt-uint-uint val1 val2))
+     ((sintp val1) (lt-sint-sint val1 val2))
+     ((ulongp val1) (lt-ulong-ulong val1 val2))
+     ((slongp val1) (lt-slong-slong val1 val2))
+     ((ullongp val1) (lt-ullong-ullong val1 val2))
+     ((sllongp val1) (lt-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -800,12 +831,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-gt val1 val2))
-     ((sintp val1) (sint-gt val1 val2))
-     ((ulongp val1) (ulong-gt val1 val2))
-     ((slongp val1) (slong-gt val1 val2))
-     ((ullongp val1) (ullong-gt val1 val2))
-     ((sllongp val1) (sllong-gt val1 val2))
+     ((uintp val1) (gt-uint-uint val1 val2))
+     ((sintp val1) (gt-sint-sint val1 val2))
+     ((ulongp val1) (gt-ulong-ulong val1 val2))
+     ((slongp val1) (gt-slong-slong val1 val2))
+     ((ullongp val1) (gt-ullong-ullong val1 val2))
+     ((sllongp val1) (gt-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -834,12 +865,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-le val1 val2))
-     ((sintp val1) (sint-le val1 val2))
-     ((ulongp val1) (ulong-le val1 val2))
-     ((slongp val1) (slong-le val1 val2))
-     ((ullongp val1) (ullong-le val1 val2))
-     ((sllongp val1) (sllong-le val1 val2))
+     ((uintp val1) (le-uint-uint val1 val2))
+     ((sintp val1) (le-sint-sint val1 val2))
+     ((ulongp val1) (le-ulong-ulong val1 val2))
+     ((slongp val1) (le-slong-slong val1 val2))
+     ((ullongp val1) (le-ullong-ullong val1 val2))
+     ((sllongp val1) (le-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -868,12 +899,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-ge val1 val2))
-     ((sintp val1) (sint-ge val1 val2))
-     ((ulongp val1) (ulong-ge val1 val2))
-     ((slongp val1) (slong-ge val1 val2))
-     ((ullongp val1) (ullong-ge val1 val2))
-     ((sllongp val1) (sllong-ge val1 val2))
+     ((uintp val1) (ge-uint-uint val1 val2))
+     ((sintp val1) (ge-sint-sint val1 val2))
+     ((ulongp val1) (ge-ulong-ulong val1 val2))
+     ((slongp val1) (ge-slong-slong val1 val2))
+     ((ullongp val1) (ge-ullong-ullong val1 val2))
+     ((sllongp val1) (ge-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -902,12 +933,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-eq val1 val2))
-     ((sintp val1) (sint-eq val1 val2))
-     ((ulongp val1) (ulong-eq val1 val2))
-     ((slongp val1) (slong-eq val1 val2))
-     ((ullongp val1) (ullong-eq val1 val2))
-     ((sllongp val1) (sllong-eq val1 val2))
+     ((uintp val1) (eq-uint-uint val1 val2))
+     ((sintp val1) (eq-sint-sint val1 val2))
+     ((ulongp val1) (eq-ulong-ulong val1 val2))
+     ((slongp val1) (eq-slong-slong val1 val2))
+     ((ullongp val1) (eq-ullong-ullong val1 val2))
+     ((sllongp val1) (eq-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -934,12 +965,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-ne val1 val2))
-     ((sintp val1) (sint-ne val1 val2))
-     ((ulongp val1) (ulong-ne val1 val2))
-     ((slongp val1) (slong-ne val1 val2))
-     ((ullongp val1) (ullong-ne val1 val2))
-     ((sllongp val1) (sllong-ne val1 val2))
+     ((uintp val1) (ne-uint-uint val1 val2))
+     ((sintp val1) (ne-sint-sint val1 val2))
+     ((ulongp val1) (ne-ulong-ulong val1 val2))
+     ((slongp val1) (ne-slong-slong val1 val2))
+     ((ullongp val1) (ne-ullong-ullong val1 val2))
+     ((sllongp val1) (ne-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal" :use (:instance values-of-uaconvert-values
                               (val1 arg1) (val2 arg2))))
@@ -962,12 +993,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-bitand val1 val2))
-     ((sintp val1) (sint-bitand val1 val2))
-     ((ulongp val1) (ulong-bitand val1 val2))
-     ((slongp val1) (slong-bitand val1 val2))
-     ((ullongp val1) (ullong-bitand val1 val2))
-     ((sllongp val1) (sllong-bitand val1 val2))
+     ((uintp val1) (bitand-uint-uint val1 val2))
+     ((sintp val1) (bitand-sint-sint val1 val2))
+     ((ulongp val1) (bitand-ulong-ulong val1 val2))
+     ((slongp val1) (bitand-slong-slong val1 val2))
+     ((ullongp val1) (bitand-ullong-ullong val1 val2))
+     ((sllongp val1) (bitand-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -992,12 +1023,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-bitxor val1 val2))
-     ((sintp val1) (sint-bitxor val1 val2))
-     ((ulongp val1) (ulong-bitxor val1 val2))
-     ((slongp val1) (slong-bitxor val1 val2))
-     ((ullongp val1) (ullong-bitxor val1 val2))
-     ((sllongp val1) (sllong-bitxor val1 val2))
+     ((uintp val1) (bitxor-uint-uint val1 val2))
+     ((sintp val1) (bitxor-sint-sint val1 val2))
+     ((ulongp val1) (bitxor-ulong-ulong val1 val2))
+     ((slongp val1) (bitxor-slong-slong val1 val2))
+     ((ullongp val1) (bitxor-ullong-ullong val1 val2))
+     ((sllongp val1) (bitxor-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -1022,12 +1053,12 @@
                      :supplied arg2)))
        ((mv val1 val2) (uaconvert-values arg1 arg2)))
     (cond
-     ((uintp val1) (uint-bitior val1 val2))
-     ((sintp val1) (sint-bitior val1 val2))
-     ((ulongp val1) (ulong-bitior val1 val2))
-     ((slongp val1) (slong-bitior val1 val2))
-     ((ullongp val1) (ullong-bitior val1 val2))
-     ((sllongp val1) (sllong-bitior val1 val2))
+     ((uintp val1) (bitior-uint-uint val1 val2))
+     ((sintp val1) (bitior-sint-sint val1 val2))
+     ((ulongp val1) (bitior-ulong-ulong val1 val2))
+     ((slongp val1) (bitior-slong-slong val1 val2))
+     ((ullongp val1) (bitior-ullong-ullong val1 val2))
+     ((sllongp val1) (bitior-sllong-sllong val1 val2))
      (t (error (impossible)))))
   :guard-hints (("Goal"
                  :use (:instance values-of-uaconvert-values
@@ -1185,13 +1216,13 @@
             :uchar (uchar-from-schar arg)
             :schar arg
             :ushort (ushort-from-schar arg)
-            :sshort (if (sshort-from-schar-okp arg) (sshort-from-schar arg) err)
+            :sshort (sshort-from-schar arg)
             :uint (uint-from-schar arg)
-            :sint (if (sint-from-schar-okp arg) (sint-from-schar arg) err)
+            :sint (sint-from-schar arg)
             :ulong (ulong-from-schar arg)
-            :slong (if (slong-from-schar-okp arg) (slong-from-schar arg) err)
+            :slong (slong-from-schar arg)
             :ullong (ullong-from-schar arg)
-            :sllong (if (sllong-from-schar-okp arg) (sllong-from-schar arg) err)
+            :sllong (sllong-from-schar arg)
             :pointer todo))
           ((ushortp arg)
            (type-case
@@ -1217,11 +1248,11 @@
             :ushort (ushort-from-sshort arg)
             :sshort arg
             :uint (uint-from-sshort arg)
-            :sint (if (sint-from-sshort-okp arg) (sint-from-sshort arg) err)
+            :sint (sint-from-sshort arg)
             :ulong (ulong-from-sshort arg)
-            :slong (if (slong-from-sshort-okp arg) (slong-from-sshort arg) err)
+            :slong (slong-from-sshort arg)
             :ullong (ullong-from-sshort arg)
-            :sllong (if (sllong-from-sshort-okp arg) (sllong-from-sshort arg) err)
+            :sllong (sllong-from-sshort arg)
             :pointer todo))
           ((uintp arg)
            (type-case
@@ -1249,9 +1280,9 @@
             :uint (uint-from-sint arg)
             :sint arg
             :ulong (ulong-from-sint arg)
-            :slong (if (slong-from-sint-okp arg) (slong-from-sint arg) err)
+            :slong (slong-from-sint arg)
             :ullong (ullong-from-sint arg)
-            :sllong (if (sllong-from-sint-okp arg) (sllong-from-sint arg) err)
+            :sllong (sllong-from-sint arg)
             :pointer todo))
           ((ulongp arg)
            (type-case
@@ -1281,7 +1312,7 @@
             :ulong (ulong-from-slong arg)
             :slong arg
             :ullong (ullong-from-slong arg)
-            :sllong (if (sllong-from-slong-okp arg) (sllong-from-slong arg) err)
+            :sllong (sllong-from-slong arg)
             :pointer todo))
           ((ullongp arg)
            (type-case

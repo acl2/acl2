@@ -742,10 +742,10 @@
   (case-match term
     ((fn arg)
      (case fn
-       (sint-plus (mv t (unop-plus) arg (type-sint)))
-       (sint-minus (mv t (unop-minus) arg (type-sint)))
-       (sint-bitnot (mv t (unop-bitnot) arg (type-sint)))
-       (sint-lognot (mv t (unop-lognot) arg (type-sint)))
+       (plus-sint (mv t (unop-plus) arg (type-sint)))
+       (minus-sint (mv t (unop-minus) arg (type-sint)))
+       (bitnot-sint (mv t (unop-bitnot) arg (type-sint)))
+       (lognot-sint (mv t (unop-lognot) arg (type-sint)))
        (t (mv nil (irr-unop) nil (irr-type)))))
     (& (mv nil (irr-unop) nil (irr-type))))
   ///
@@ -785,24 +785,24 @@
   (case-match term
     ((fn arg1 arg2)
      (case fn
-       (sint-add (mv t (binop-add) arg1 arg2 (type-sint)))
-       (sint-sub (mv t (binop-sub) arg1 arg2 (type-sint)))
-       (sint-mul (mv t (binop-mul) arg1 arg2 (type-sint)))
-       (sint-div (mv t (binop-div) arg1 arg2 (type-sint)))
-       (sint-rem (mv t (binop-rem) arg1 arg2 (type-sint)))
-       (sint-shl-sint (mv t (binop-shl) arg1 arg2 (type-sint)))
-       (sint-shr-sint (mv t (binop-shr) arg1 arg2 (type-sint)))
-       (sint-lt (mv t (binop-lt) arg1 arg2 (type-sint)))
-       (sint-le (mv t (binop-le) arg1 arg2 (type-sint)))
-       (sint-gt (mv t (binop-gt) arg1 arg2 (type-sint)))
-       (sint-ge (mv t (binop-ge) arg1 arg2 (type-sint)))
-       (sint-eq (mv t (binop-eq) arg1 arg2 (type-sint)))
-       (sint-ne (mv t (binop-ne) arg1 arg2 (type-sint)))
-       (sint-bitand (mv t (binop-bitand) arg1 arg2 (type-sint)))
-       (sint-bitxor (mv t (binop-bitxor) arg1 arg2 (type-sint)))
-       (sint-bitior (mv t (binop-bitior) arg1 arg2 (type-sint)))
-       (sint-logand (mv t (binop-logand) arg1 arg2 (type-sint)))
-       (sint-logor (mv t (binop-logor) arg1 arg2 (type-sint)))
+       (add-sint-sint (mv t (binop-add) arg1 arg2 (type-sint)))
+       (sub-sint-sint (mv t (binop-sub) arg1 arg2 (type-sint)))
+       (mul-sint-sint (mv t (binop-mul) arg1 arg2 (type-sint)))
+       (div-sint-sint (mv t (binop-div) arg1 arg2 (type-sint)))
+       (rem-sint-sint (mv t (binop-rem) arg1 arg2 (type-sint)))
+       (shl-sint-sint (mv t (binop-shl) arg1 arg2 (type-sint)))
+       (shr-sint-sint (mv t (binop-shr) arg1 arg2 (type-sint)))
+       (lt-sint-sint (mv t (binop-lt) arg1 arg2 (type-sint)))
+       (le-sint-sint (mv t (binop-le) arg1 arg2 (type-sint)))
+       (gt-sint-sint (mv t (binop-gt) arg1 arg2 (type-sint)))
+       (ge-sint-sint (mv t (binop-ge) arg1 arg2 (type-sint)))
+       (eq-sint-sint (mv t (binop-eq) arg1 arg2 (type-sint)))
+       (ne-sint-sint (mv t (binop-ne) arg1 arg2 (type-sint)))
+       (bitand-sint-sint (mv t (binop-bitand) arg1 arg2 (type-sint)))
+       (bitxor-sint-sint (mv t (binop-bitxor) arg1 arg2 (type-sint)))
+       (bitior-sint-sint (mv t (binop-bitior) arg1 arg2 (type-sint)))
+       (logand-sint-sint (mv t (binop-logand) arg1 arg2 (type-sint)))
+       (logor-sint-sint (mv t (binop-logor) arg1 arg2 (type-sint)))
        (t (mv nil (irr-binop) nil nil (irr-type)))))
     (& (mv nil (irr-binop) nil nil (irr-type))))
   ///
@@ -1902,7 +1902,7 @@
     (xdoc::li
      "A formal parameter is constrained to be a value by the guard.")
     (xdoc::li
-     "Calls of @(tsee sint-const), @(tsee sint-add), etc.
+     "Calls of @(tsee sint-const), @(tsee add-sint-sint), etc.
       are known to return values.")
     (xdoc::li
      "A @(tsee let) variable is equal to a term that,
@@ -1941,28 +1941,28 @@
                  ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
                  sintp-of-sint-const
                  sintp-of-sint01
-                 sintp-of-sint-plus
-                 sintp-of-sint-minus
-                 sintp-of-sint-bitnot
-                 sintp-of-sint-lognot
-                 sintp-of-sint-add
-                 sintp-of-sint-sub
-                 sintp-of-sint-mul
-                 sintp-of-sint-div
-                 sintp-of-sint-rem
-                 sintp-of-sint-shl-sint
-                 sintp-of-sint-shr-sint
-                 sintp-of-sint-lt
-                 sintp-of-sint-gt
-                 sintp-of-sint-le
-                 sintp-of-sint-ge
-                 sintp-of-sint-eq
-                 sintp-of-sint-ne
-                 sintp-of-sint-bitand
-                 sintp-of-sint-bitxor
-                 sintp-of-sint-bitior
-                 sintp-of-sint-logand
-                 sintp-of-sint-logor
+                 sintp-of-plus-sint
+                 sintp-of-minus-sint
+                 sintp-of-bitnot-sint
+                 sintp-of-lognot-sint
+                 sintp-of-add-sint-sint
+                 sintp-of-sub-sint-sint
+                 sintp-of-mul-sint-sint
+                 sintp-of-div-sint-sint
+                 sintp-of-rem-sint-sint
+                 sintp-of-shl-sint-sint
+                 sintp-of-shr-sint-sint
+                 sintp-of-lt-sint-sint
+                 sintp-of-gt-sint-sint
+                 sintp-of-le-sint-sint
+                 sintp-of-ge-sint-sint
+                 sintp-of-eq-sint-sint
+                 sintp-of-ne-sint-sint
+                 sintp-of-bitand-sint-sint
+                 sintp-of-bitxor-sint-sint
+                 sintp-of-bitior-sint-sint
+                 sintp-of-logand-sint-sint
+                 sintp-of-logor-sint-sint
                  sintp-of-sint-from-uchar
                  ucharp-of-uchar-from-sint
                  ucharp-of-uchar-array-read-sint))
@@ -2153,7 +2153,7 @@
      This is critical to ensure that the symbolic execution of the C operators
      does not split on the error cases:
      the fact that @('fn') is guard-verified
-     ensures that @(tsee sint-add) and similar functions are always called
+     ensures that @(tsee add-sint-sint) and similar functions are always called
      on values such that the exact result fit into the type,
      which is the same condition under which the dynamic semantics
      does not error on the corresponding operators.")

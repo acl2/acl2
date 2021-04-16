@@ -22,16 +22,16 @@
 (defun |f| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|))))
-  (c::sint-lt |x| |y|))
+  (c::lt-sint-sint |x| |y|))
 
 (defun |g| (|z|)
   (declare (xargs :guard (c::sintp |z|)))
-  (|f| |z| (c::sint-bitnot |z|)))
+  (|f| |z| (c::bitnot-sint |z|)))
 
 (defun |h| (|a| |b|)
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|))))
-  (|g| (c::sint-bitand |a| |b|)))
+  (|g| (c::bitand-sint-sint |a| |b|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

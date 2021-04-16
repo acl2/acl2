@@ -318,7 +318,7 @@
    (xdoc::p
     "It may seem surprising that we expand @(tsee sint-const),
      since that corresponds to a C construct;
-     we most certainly do not expand functions like @(tsee sint-add).
+     we most certainly do not expand functions like @(tsee add-sint-sint).
      The reason is that @(tsee sint-const) is used to represent C constants
      in ACL2 functions,
      but in the dynamic semantics,
@@ -341,7 +341,7 @@
      In fact, we want to expose its @(tsee if) structure
      in the symbolic execution.")
    (xdoc::p
-    "We also expand @(tsee sint-logand) and @(tsee sint-logor),
+    "We also expand @(tsee logand-sint-sint) and @(tsee logor-sint-sint),
      which may appear in the ACL2 functions that represent C functions,
      to expose their internal @(tsee if) structure,
      so that it can match the @(tsee if) structure of
@@ -390,12 +390,12 @@
     read-var
     sint01
     sint-const
-    sint-logand
-    sint-logor
-    sint-shl-sint
-    sint-shl-sint-okp
-    sint-shr-sint
-    sint-shr-sint-okp
+    logand-sint-sint
+    logor-sint-sint
+    shl-sint-sint
+    shl-sint-sint-okp
+    shr-sint-sint
+    shr-sint-sint-okp
     top-frame
     type-of-value
     uaconvert-values
@@ -451,7 +451,7 @@
      to @('t') and @('nil'), which further simplifies the @(tsee if)s.")
    (xdoc::p
     "We also have two rules to simplify applications of
-     @(tsee sint-lognot) to @('(sint 0)') and @('(sint 1)').
+     @(tsee lognot-sint) to @('(sint 0)') and @('(sint 1)').
      Terms of this form may arise in the process of simplifying
      C non-strict expressions involving @('&&') and @('||').")
    (xdoc::p
@@ -523,12 +523,12 @@
   (defruled sint-nonzerop-of-0
     (equal (sint-nonzerop (sint 0)) nil))
 
-  (defruled sint-lognot-of-0
-    (equal (sint-lognot (sint 0))
+  (defruled lognot-sint-of-0
+    (equal (lognot-sint (sint 0))
            (sint 1)))
 
-  (defruled sint-lognot-of-1
-    (equal (sint-lognot (sint 1))
+  (defruled lognot-sint-of-1
+    (equal (lognot-sint (sint 1))
            (sint 0)))
 
   (defruled car-of-if
@@ -627,8 +627,8 @@
      not-sintp-when-pointerp
      sint-nonzerop-of-0
      sint-nonzerop-of-1
-     sint-lognot-of-0
-     sint-lognot-of-1
+     lognot-sint-of-0
+     lognot-sint-of-1
      value-result-fix-when-valuep
      value-result-fix-of-if
      errorp-of-if
@@ -676,28 +676,28 @@
      scopep-of-update
      sint-fix-when-sintp
      sintp-of-sint
-     sintp-of-sint-plus
-     sintp-of-sint-minus
-     sintp-of-sint-bitnot
-     sintp-of-sint-lognot
-     sintp-of-sint-add
-     sintp-of-sint-sub
-     sintp-of-sint-mul
-     sintp-of-sint-div
-     sintp-of-sint-rem
-     sintp-of-sint-shl
-     sintp-of-sint-shr
-     sintp-of-sint-shl-sint
-     sintp-of-sint-shr-sint
-     sintp-of-sint-lt
-     sintp-of-sint-gt
-     sintp-of-sint-le
-     sintp-of-sint-ge
-     sintp-of-sint-eq
-     sintp-of-sint-ne
-     sintp-of-sint-bitand
-     sintp-of-sint-bitxor
-     sintp-of-sint-bitior
+     sintp-of-plus-sint
+     sintp-of-minus-sint
+     sintp-of-bitnot-sint
+     sintp-of-lognot-sint
+     sintp-of-add-sint-sint
+     sintp-of-sub-sint-sint
+     sintp-of-mul-sint-sint
+     sintp-of-div-sint-sint
+     sintp-of-rem-sint-sint
+     sintp-of-shl-sint
+     sintp-of-shr-sint
+     sintp-of-shl-sint-sint
+     sintp-of-shr-sint-sint
+     sintp-of-lt-sint-sint
+     sintp-of-gt-sint-sint
+     sintp-of-le-sint-sint
+     sintp-of-ge-sint-sint
+     sintp-of-eq-sint-sint
+     sintp-of-ne-sint-sint
+     sintp-of-bitand-sint-sint
+     sintp-of-bitxor-sint-sint
+     sintp-of-bitior-sint-sint
      sintp-of-sint-from-uchar
      ucharp-of-uchar-array-read-sint
      ucharp-of-uchar-array-read
@@ -734,28 +734,28 @@
      and may therefore be extended as needed."))
   '((:t exec-block-item-list)
     (:t sint)
-    (:t sint-plus)
-    (:t sint-minus)
-    (:t sint-bitnot)
-    (:t sint-lognot)
-    (:t sint-add)
-    (:t sint-sub)
-    (:t sint-mul)
-    (:t sint-div)
-    (:t sint-rem)
-    (:t sint-shl)
-    (:t sint-shr)
-    (:t sint-shl-sint)
-    (:t sint-shr-sint)
-    (:t sint-lt)
-    (:t sint-gt)
-    (:t sint-le)
-    (:t sint-ge)
-    (:t sint-eq)
-    (:t sint-ne)
-    (:t sint-bitand)
-    (:t sint-bitxor)
-    (:t sint-bitior)
+    (:t plus-sint)
+    (:t minus-sint)
+    (:t bitnot-sint)
+    (:t lognot-sint)
+    (:t add-sint-sint)
+    (:t sub-sint-sint)
+    (:t mul-sint-sint)
+    (:t div-sint-sint)
+    (:t rem-sint-sint)
+    (:t shl-sint)
+    (:t shr-sint)
+    (:t shl-sint-sint)
+    (:t shr-sint-sint)
+    (:t lt-sint-sint)
+    (:t gt-sint-sint)
+    (:t le-sint-sint)
+    (:t ge-sint-sint)
+    (:t eq-sint-sint)
+    (:t ne-sint-sint)
+    (:t bitand-sint-sint)
+    (:t bitxor-sint-sint)
+    (:t bitior-sint-sint)
     (:t sint-from-uchar)
     (:t uchar-array-read-sint)
     (:t uchar-array-read)

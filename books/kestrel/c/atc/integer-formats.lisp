@@ -51,8 +51,8 @@
      takes the same storage as the corresponding signed/unsigned type
      [C:6.2.5/6].")
    (xdoc::p
-    "We prove some theorems about the nullary functions,
-     and then disable their definitions, including executable counterparts.
+    "We prove some theorems about the nullary functions.
+     We disable their definitions, including executable counterparts.
      This way, we minimize the dependencies from the exact definitions,
      and we try and define the integer values and operations
      as independently from the exact sizes as possible.
@@ -74,7 +74,11 @@
      @('long long') is at least 64 bits.
      Furthermore, the ranges are increasing [C:6.2.5/8].")
    (xdoc::p
-    "We do not include any extended integer types."))
+    "For now we only define formats for
+     the standard signed and unsigned integer types except @('_Bool').
+     Note that the plain @('char') type is not covered yet;
+     it is an integer type,
+     but not a standard integer type in C's terminology."))
   :order-subtopics t
   :default-parent t)
 
@@ -108,12 +112,7 @@
 
   (defret short-bits-bound
     (>= short-bits 16)
-    :rule-classes :linear)
-
-  (defrule short-bits->=-char-bits
-    (>= (short-bits) (char-bits))
-    :rule-classes :linear
-    :enable char-bits))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,12 +130,7 @@
 
   (defret int-bits-bound
     (>= int-bits 16)
-    :rule-classes :linear)
-
-  (defrule int-bits->=-short-bits
-    (>= (int-bits) (short-bits))
-    :rule-classes :linear
-    :enable short-bits))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,12 +148,7 @@
 
   (defret long-bits-bound
     (>= long-bits 32)
-    :rule-classes :linear)
-
-  (defrule long-bits->=-int-bits
-    (>= (long-bits) (int-bits))
-    :rule-classes :linear
-    :enable int-bits))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,9 +166,52 @@
 
   (defret llong-bits-bound
     (>= llong-bits 64)
-    :rule-classes :linear)
+    :rule-classes :linear))
 
-  (defrule llong-bits->=-long-bits
-    (>= (llong-bits) (long-bits))
-    :rule-classes :linear
-    :enable long-bits))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule char-bits-vs-short-bits
+    :parents (char-bits short-bits)
+    :short "Relation between @('char') and @('short') sizes."
+    ,(if (= (char-bits) (short-bits))
+         '(= (char-bits) (short-bits))
+       '(< (char-bits) (short-bits)))
+    :rule-classes ((:linear :trigger-terms ((char-bits) (short-bits))))
+    :enable (char-bits short-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule short-bits-vs-int-bits
+    :parents (short-bits int-bits)
+    :short "Relation between @('short') and @('int') sizes."
+    ,(if (= (short-bits) (int-bits))
+         '(= (short-bits) (int-bits))
+       '(< (short-bits) (int-bits)))
+    :rule-classes ((:linear :trigger-terms ((short-bits) (int-bits))))
+    :enable (short-bits int-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule int-bits-vs-long-bits
+    :parents (int-bits long-bits)
+    :short "Relation between @('int') and @('long') sizes."
+    ,(if (= (int-bits) (long-bits))
+         '(= (int-bits) (long-bits))
+       '(< (int-bits) (long-bits)))
+    :rule-classes ((:linear :trigger-terms ((int-bits) (long-bits))))
+    :enable (int-bits long-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule long-bits-vs-llong-bits
+    :parents (long-bits llong-bits)
+    :short "Relation between @('long') and @('long long') sizes."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (long-bits) (llong-bits))
+       '(< (long-bits) (llong-bits)))
+    :rule-classes ((:linear :trigger-terms ((long-bits) (llong-bits))))
+    :enable (long-bits llong-bits)))

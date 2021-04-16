@@ -21,17 +21,17 @@
 
 (defun |f| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (let ((|z| (c::sint-lt |x| |y|)))
-    (c::sint-lognot |z|)))
+  (let ((|z| (c::lt-sint-sint |x| |y|)))
+    (c::lognot-sint |z|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |g| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (let* ((|x_lt_y| (c::sint-lt |x| |y|))
-         (|x_eq_y| (c::sint-eq |x| |y|))
-         (|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))
-    (c::sint-lognot |x_le_y|)))
+  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))
+         (|x_eq_y| (c::eq-sint-sint |x| |y|))
+         (|x_le_y| (c::logor-sint-sint |x_lt_y| |x_eq_y|)))
+    (c::lognot-sint |x_le_y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,20 +51,17 @@
                     :guard-hints (("Goal"
                                    :do-not-induct t
                                    :in-theory (enable c::sint-integerp-alt-def
-                                                      c::sint
-                                                      c::sint->get
-                                                      c::sintp
-                                                      c::sint-add-okp
-                                                      c::sint-sub-okp
-                                                      c::sint-mul-okp
-                                                      c::sint-add
-                                                      c::sint-sub
-                                                      c::sint-mul
-                                                      c::sint-ge)))))
-    (if (c::sint-nonzerop (c::sint-ge |x| (c::sint-const 0)))
-        (let ((|z| (c::sint-add |x| |y|)))
-          (c::sint-mul (c::sint-const 2) |z|))
-      (c::sint-sub |y| |x|))))
+                                                      c::add-sint-sint-okp
+                                                      c::sub-sint-sint-okp
+                                                      c::mul-sint-sint-okp
+                                                      c::add-sint-sint
+                                                      c::sub-sint-sint
+                                                      c::mul-sint-sint
+                                                      c::ge-sint-sint)))))
+    (if (c::sint-nonzerop (c::ge-sint-sint |x| (c::sint-const 0)))
+        (let ((|z| (c::add-sint-sint |x| |y|)))
+          (c::mul-sint-sint (c::sint-const 2) |z|))
+      (c::sub-sint-sint |y| |x|))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

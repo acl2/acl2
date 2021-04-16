@@ -14849,6 +14849,7 @@
            (equal (slice 30 2 x)
                   (bvcat 25 (slice 30 6 x) 4 (slice 5 2 free)))))
 
+;slow?
 (defthm bvplus-of-bvcat-constants
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
@@ -16030,6 +16031,7 @@
                                    bvchop-when-top-bit-1-cheap
                                    ) ( slice-becomes-getbit bvchop-1-becomes-getbit)))))
 
+;slow
 ;TODO: Speed this up
 ;can add to both sides when neither value rolls over:
 (defthmd sbvlt-add-to-both-sides-1
@@ -16049,6 +16051,7 @@
                             ;BVCHOP-WHEN-TOP-BIT-1-CHEAP
                             SHA1-LEMMA-0)))))
 
+;slow
 ;TODO: Speed this up
 ;can add to both sides when both sides roll over:
 (defthmd sbvlt-add-to-both-sides-2

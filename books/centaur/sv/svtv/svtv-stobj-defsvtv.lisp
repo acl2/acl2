@@ -544,6 +544,7 @@
        (cycle-phases-p (consp (assoc-keyword :cycle-phases args)))
        (norm-args (list* :name (list 'quote name)
                          :design design
+                         :design-const (list 'quote design)
                          :cycle-phases-p cycle-phases-p
                          (remove-keywords '(:mod :design :stobj) args))))
     (mv stobj norm-args)))

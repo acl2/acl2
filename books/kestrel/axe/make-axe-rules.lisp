@@ -206,7 +206,7 @@
 
 ;; Returns (mv erp hyp).
 ;; process-syntaxp-argument helps catch errors if the rule has unsupported stuff in a syntaxp hyp
-(defund make-axe-syntaxp-hyp-for-synp-conjunct (conjunct bound-vars rule-symbol hyp)
+(defund make-axe-syntaxp-hyp-for-synp-expr (conjunct bound-vars rule-symbol hyp)
   (declare (xargs :guard (and (pseudo-termp conjunct)
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol))))
@@ -214,56 +214,21 @@
        ;;drop?:
        (allowed-vars (cons 'dag-array bound-vars))
        ((when (not (subsetp-eq mentioned-vars allowed-vars)))
-        (er hard? 'make-axe-syntaxp-hyp-for-synp-conjunct "Hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or by preceding hyps."
+        (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or by preceding hyps."
             hyp rule-symbol (set-difference-eq mentioned-vars allowed-vars))
         (mv :bad-vars nil))
        ((mv erp processed-arg)
         (process-syntaxp-argument conjunct rule-symbol))
        ((when erp)
-        (er hard? 'make-axe-syntaxp-hyp-for-synp-conjunct "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
+        (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         (mv erp nil)))
     (mv (erp-nil) `(:axe-syntaxp . ,processed-arg))))
 
-(defthm axe-rule-hypp-of-mv-nth-1-of-make-axe-syntaxp-hyp-for-synp-conjunct
+(defthm axe-rule-hypp-of-mv-nth-1-of-make-axe-syntaxp-hyp-for-synp-expr
   (implies (and (pseudo-termp conjunct)
-                (not (mv-nth 0 (make-axe-syntaxp-hyp-for-synp-conjunct conjunct bound-vars rule-symbol hyp))))
-           (axe-rule-hypp (mv-nth 1 (make-axe-syntaxp-hyp-for-synp-conjunct conjunct bound-vars rule-symbol hyp))))
-  :hints (("Goal" :in-theory (enable make-axe-syntaxp-hyp-for-synp-conjunct axe-rule-hypp))))
-
-;; Returns (mv erp hyps).
-(defund make-axe-syntaxp-hyps-for-synp-conjuncts (conjuncts bound-vars rule-symbol hyp)
-  (declare (xargs :guard (and (pseudo-term-listp conjuncts)
-                              (symbol-listp bound-vars)
-                              (symbolp rule-symbol))))
-  (if (endp conjuncts)
-      (mv (erp-nil) nil)
-    (b* (((mv erp first-res)
-          (make-axe-syntaxp-hyp-for-synp-conjunct (first conjuncts) bound-vars rule-symbol hyp))
-         ((when erp) (mv erp nil))
-         ((mv erp rest-res)
-          (make-axe-syntaxp-hyps-for-synp-conjuncts (rest conjuncts) bound-vars rule-symbol hyp))
-         ((when erp) (mv erp nil)))
-      (mv (erp-nil) (cons first-res rest-res)))))
-
-(defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-syntaxp-hyps-for-synp-conjuncts
-  (implies (pseudo-term-listp conjuncts)
-           (axe-rule-hyp-listp (mv-nth 1 (make-axe-syntaxp-hyps-for-synp-conjuncts conjuncts bound-vars rule-symbol hyp))))
-  :hints (("Goal" :in-theory (enable axe-rule-hyp-listp
-                                     make-axe-syntaxp-hyps-for-synp-conjuncts))))
-
-;; Returns (mv erp hyps)  More than one hyp can be returned because we
-;; extract conjuncts and make a separate hyp for each one
-;; TODO: Don't flatten by calling get-conjuncts-of-term, now that axe-syntaxp hyps can be if/not nests
-(defund make-axe-syntaxp-hyps-for-synp-hyp (term bound-vars rule-symbol hyp)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp bound-vars)
-                              (symbolp rule-symbol))))
-  (make-axe-syntaxp-hyps-for-synp-conjuncts (get-conjuncts-of-term term) bound-vars rule-symbol hyp))
-
-(defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-syntaxp-hyps-for-synp-hyp
-  (implies (pseudo-termp term)
-           (axe-rule-hyp-listp (mv-nth 1 (make-axe-syntaxp-hyps-for-synp-hyp term bound-vars rule-symbol hyp))))
-  :hints (("Goal" :in-theory (enable make-axe-syntaxp-hyps-for-synp-hyp))))
+                (not (mv-nth 0 (make-axe-syntaxp-hyp-for-synp-expr conjunct bound-vars rule-symbol hyp))))
+           (axe-rule-hypp (mv-nth 1 (make-axe-syntaxp-hyp-for-synp-expr conjunct bound-vars rule-symbol hyp))))
+  :hints (("Goal" :in-theory (enable make-axe-syntaxp-hyp-for-synp-expr axe-rule-hypp))))
 
 ;; If the function takes dag-array as its last formal, drop the corresponding arg.
 ;; TODO: Check that dag-array is passed as the arg to the dag-array-formal, if any.
@@ -310,7 +275,7 @@
   :hints (("Goal" :expand (axe-syntaxp-exprp expr)
            :in-theory (enable process-axe-syntaxp-function-application axe-syntaxp-function-applicationp axe-syntaxp-exprp))))
 
-;; Drop dag-array formals passed as the last args to functions
+;; Drops dag-array formals passed as the last args to functions
 (defund process-axe-syntaxp-expr (expr wrld)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-syntaxp-exprp expr)
@@ -373,10 +338,9 @@
 ;;; make-axe-rule-hyps-for-hyp
 ;;;
 
-;; Returns (mv erp hyps bound-vars).  The HYPS returned may have more than one
-;; element if we flatten a syntaxp or axe-syntaxp hyp.  The HYPS returned may
-;; be empty if drop a hyp that is a non-nil constant. The BOUND-VARS returned
-;; is the list of vars bound by the LHS, this hyp, and all previous hyps.
+;; Returns (mv erp hyps bound-vars).  The HYPS returned may be empty if we drop a
+;; hyp that is a non-nil constant. The BOUND-VARS returned is the list of vars
+;; bound by the LHS, this hyp, and all previous hyps.
 (defund make-axe-rule-hyps-for-hyp (hyp bound-vars rule-symbol wrld)
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (symbol-listp bound-vars)
@@ -405,12 +369,17 @@
                    (equal *nil* (farg1 hyp))
                    ;; arg 2 is the untranslated form, which we ignore
                    (myquotep (farg3 hyp))
-                   (pseudo-termp (unquote (farg3 hyp))))
-              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for very simple hyps)
-                   ((mv erp hyps)
-                    (make-axe-syntaxp-hyps-for-synp-hyp (unquote (farg3 hyp)) bound-vars rule-symbol hyp))
+                   (let ((core-term (unquote (farg3 hyp)))) ; example: (IF (QUOTEP X) 'T 'NIL)
+                     (and (pseudo-termp core-term)
+                          (call-of 'if core-term)
+                          (equal *t* (farg2 core-term))
+                          (equal *nil* (farg3 core-term)))))
+              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
+                   ((mv erp hyp)
+                    (make-axe-syntaxp-hyp-for-synp-expr (farg1 (unquote (farg3 hyp))) bound-vars rule-symbol hyp))
                    ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
-                (mv (erp-nil) hyps
+                (mv (erp-nil)
+                    (list hyp)
                     bound-vars ;no extra vars get bound
                     ))
             ;; TODO: Check whether it is a bind-free hyp and print a better message if so:
@@ -431,7 +400,7 @@
                  ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
-                 ;; Drop dag-array formals passed a last args to functions:
+                 ;; Drops dag-array formals passed a last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
                  (mentioned-vars (vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
