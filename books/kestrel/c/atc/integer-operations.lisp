@@ -21,8 +21,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define ACL2 functions that model C operations on integers.
-     We only cover standard unsigned and signed integers, except @('_Bool').")
+    "We define ACL2 functions that model C operations on
+     the integer types supported in our model,
+     namely the standard unsigned and signed integers, except @('_Bool').")
    (xdoc::p
     "We introduce functions @('<type>-const')
      to construct integer constants.
@@ -128,16 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-def-integer-operations-1 (type)
-  :guard (member-eq type '(schar
-                           uchar
-                           sshort
-                           ushort
-                           sint
-                           uint
-                           slong
-                           ulong
-                           sllong
-                           ullong))
+  :guard (member-eq type *atc-integer-types*)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
   :long
@@ -148,6 +140,7 @@
 
   (b* ((type-string (atc-integer-type-string type))
        (typep (add-suffix type "P"))
+       (type-fix (add-suffix type "-FIX"))
        (type->get (add-suffix type "->GET"))
        (type-integerp (add-suffix type "-INTEGERP"))
        (type-integerp-alt-def (add-suffix type "-INTEGERP-ALT-DEF"))
@@ -169,6 +162,10 @@
        (promotypep (add-suffix promotype "P"))
        (promotype-integerp (add-suffix promotype "-INTEGERP"))
        (promotype-integerp-alt-def (add-suffix promotype "-INTEGERP-ALT-DEF"))
+       (hirankp (member-eq type '(sint uint slong ulong sllong ullong)))
+       (promotype-from-type (acl2::packn-pos (list promotype "-FROM-" type)
+                                             'atc))
+       (plus-promotype (acl2::packn-pos (list "PLUS-" promotype) 'atc))
        )
 
     `(progn
@@ -176,7 +173,7 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
-          (member-eq type '(sint uint slong ulong sllong ullong))
+          hirankp
           `((define ,type-const ((x natp))
               :guard (,type-integerp x)
               :returns (result ,typep)
@@ -195,7 +192,8 @@
 
        (define ,type-integer-value ((x ,typep))
          :returns (ival integerp)
-         :short ,(str::cat "Turn a vaue of " type-string
+         :short ,(str::cat "Turn a vaue of "
+                           type-string
                            " into an ACL2 integer value.")
          (,type->get x)
          :hooks (:fix))
@@ -204,10 +202,12 @@
 
        (define ,plus-type ((x ,typep))
          :returns (result ,promotypep)
-         :short ,(str::cat "Unary plus of a value of " type-string
+         :short ,(str::cat "Unary plus of a value of "
+                           type-string
                            " [C:6.5.3].")
-         (,promotype (,type->get x))
-         :guard-hints (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+         ,(if hirankp
+              `(,type-fix x)
+            `(,plus-promotype (,promotype-from-type x)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -217,7 +217,8 @@
           `((define ,minus-type-okp ((x ,typep))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if unary minus of a value of "
-                                type-string " is well-defined.")
+                                type-string
+                                " is well-defined.")
               (,promotype-integerp (- (,type->get x)))
               :hooks (:fix))))
 
@@ -228,7 +229,8 @@
             (member-eq type '(schar sshort sint slong sllong))
             `(:guard (,minus-type-okp x)))
          :returns (result ,promotypep)
-         :short ,(str::cat "Unary minus of a value of " type-string
+         :short ,(str::cat "Unary minus of a value of "
+                           type-string
                            " [C:6.5.3].")
          ,(if (member-eq type '(schar sshort sint slong sllong))
               `(,promotype (- (,type->get x)))
@@ -246,7 +248,8 @@
 
        (define ,bitnot-type ((x ,typep))
          :returns (result ,promotypep)
-         :short ,(str::cat "Bitwise complement of a value of " type-string
+         :short ,(str::cat "Bitwise complement of a value of "
+                           type-string
                            " [C:6.5.3].")
          ,(if (member-eq type '(schar sshort sint slong sllong))
               `(,promotype (lognot (,type->get x)))
@@ -270,19 +273,29 @@
 
        )))
 
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule sint-from-uchar-okp-holds
+  (sint-from-uchar-okp x)
+  :enable (sint-from-uchar-okp sint-integerp-alt-def))
+
+(defrule sint-from-ushort-okp-holds
+  (sint-from-ushort-okp x)
+  :enable (sint-from-ushort-okp sint-integerp-alt-def))
+
 (progn
-  (make-event (atc-def-integer-operations-1 'schar))
-  (make-event (atc-def-integer-operations-1 'uchar))
-  (make-event (atc-def-integer-operations-1 'sshort))
-  (make-event (atc-def-integer-operations-1 'ushort))
   (make-event (atc-def-integer-operations-1 'sint))
   (make-event (atc-def-integer-operations-1 'uint))
   (make-event (atc-def-integer-operations-1 'slong))
   (make-event (atc-def-integer-operations-1 'ulong))
   (make-event (atc-def-integer-operations-1 'sllong))
   (make-event (atc-def-integer-operations-1 'ullong))
+  (make-event (atc-def-integer-operations-1 'schar))
+  (make-event (atc-def-integer-operations-1 'uchar))
+  (make-event (atc-def-integer-operations-1 'sshort))
+  (make-event (atc-def-integer-operations-1 'ushort))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
