@@ -58,6 +58,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atc-integer-types*
+  :short "Fixtype names of the C integer types supported by ATC."
+  '(schar
+    uchar
+    sshort
+    ushort
+    sint
+    uint
+    slong
+    ulong
+    sllong
+    ullong))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-string (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (string stringp)
+  :short "Turn an integer type symbol into a string describing it."
+  (b* ((core (case type
+               (schar "signed char")
+               (uchar "unsigned char")
+               (sshort "signed short")
+               (ushort "unsigned short")
+               (sint "signed int")
+               (uint "unsigned int")
+               (slong "signed long")
+               (ulong "unsigned long")
+               (sllong "signed long long")
+               (ullong "unsigned long long")
+               (t (prog2$ (raise "Internal error: unknown type ~x0." type)
+                          "")))))
+    (str::cat "type @('" core "')")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-signedp (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (yes/no booleanp)
+  :short "Check if an integer type is signed."
+  (eql (char (symbol-name type) 0) #\S))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-typep (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Predicate name of an integer type."
+  (add-suffix type "P"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ atc-def-integer-values (type)
   (declare (xargs :guard (member-eq type '(char short int long llong))))
   :short "Macro to generate the models of the C integer values."
@@ -73,8 +125,8 @@
                           (llong 64)))
        (utype (acl2::packn-pos (list "U" type) 'atc))
        (stype (acl2::packn-pos (list "S" type) 'atc))
-       (utypep (add-suffix utype "P"))
-       (stypep (add-suffix stype "P"))
+       (utypep (atc-integer-typep utype))
+       (stypep (atc-integer-typep stype))
        (utype-list (add-suffix utype "-LIST"))
        (stype-list (add-suffix stype "-LIST"))
        (utype-listp (add-suffix utype "-LISTP"))
