@@ -151,21 +151,21 @@
        (minus-type (acl2::packn-pos (list "MINUS-" type) 'atc))
        (minus-type-okp (add-suffix minus-type "-OKP"))
        (bitnot-type (acl2::packn-pos (list "BITNOT-" type) 'atc))
-       (promotype (case type
-                    (schar 'sint)
-                    (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
-                    (sshort 'sint)
-                    (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
-                    (t type)))
-       (promotype-min (add-suffix promotype "-MIN"))
-       (promotype-max (add-suffix promotype "-MAX"))
-       (promotypep (add-suffix promotype "P"))
-       (promotype-integerp (add-suffix promotype "-INTEGERP"))
-       (promotype-integerp-alt-def (add-suffix promotype "-INTEGERP-ALT-DEF"))
+       (rtype (case type
+                (schar 'sint)
+                (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
+                (sshort 'sint)
+                (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
+                (t type)))
+       (rtype-min (add-suffix rtype "-MIN"))
+       (rtype-max (add-suffix rtype "-MAX"))
+       (rtypep (add-suffix rtype "P"))
+       (rtype-integerp (add-suffix rtype "-INTEGERP"))
+       (rtype-integerp-alt-def (add-suffix rtype "-INTEGERP-ALT-DEF"))
        (hirankp (member-eq type '(sint uint slong ulong sllong ullong)))
-       (promotype-from-type (acl2::packn-pos (list promotype "-FROM-" type)
-                                             'atc))
-       (plus-promotype (acl2::packn-pos (list "PLUS-" promotype) 'atc))
+       (rtype-from-type (acl2::packn-pos (list rtype "-FROM-" type)
+                                         'atc))
+       (plus-rtype (acl2::packn-pos (list "PLUS-" rtype) 'atc))
        )
 
     `(progn
@@ -201,13 +201,13 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,plus-type ((x ,typep))
-         :returns (result ,promotypep)
+         :returns (result ,rtypep)
          :short ,(str::cat "Unary plus of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if hirankp
               `(,type-fix x)
-            `(,plus-promotype (,promotype-from-type x)))
+            `(,plus-rtype (,rtype-from-type x)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -219,7 +219,7 @@
               :short ,(str::cat "Check if unary minus of a value of "
                                 type-string
                                 " is well-defined.")
-              (,promotype-integerp (- (,type->get x)))
+              (,rtype-integerp (- (,type->get x)))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
@@ -228,18 +228,18 @@
          ,@(and
             (member-eq type '(schar sshort sint slong sllong))
             `(:guard (,minus-type-okp x)))
-         :returns (result ,promotypep)
+         :returns (result ,rtypep)
          :short ,(str::cat "Unary minus of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if (member-eq type '(schar sshort sint slong sllong))
-              `(,promotype (- (,type->get x)))
-            `(,promotype (mod (- (,type->get x))
-                              (1+ (,promotype-max)))))
+              `(,rtype (- (,type->get x)))
+            `(,rtype (mod (- (,type->get x))
+                          (1+ (,rtype-max)))))
          ,@(if (member-eq type '(schar sshort sint slong sllong))
                `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp))))
              `(:guard-hints
-               (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+               (("Goal" :in-theory (enable ,rtype-integerp-alt-def)))
                :prepwork
                ((local (include-book "arithmetic-3/top" :dir :system)))))
          :hooks (:fix))
@@ -247,24 +247,24 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,bitnot-type ((x ,typep))
-         :returns (result ,promotypep)
+         :returns (result ,rtypep)
          :short ,(str::cat "Bitwise complement of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if (member-eq type '(schar sshort sint slong sllong))
-              `(,promotype (lognot (,type->get x)))
-            `(,promotype (mod (lognot (,type->get x))
-                              (1+ (,promotype-max)))))
+              `(,rtype (lognot (,type->get x)))
+            `(,rtype (mod (lognot (,type->get x))
+                          (1+ (,rtype-max)))))
          ,@(if (member-eq type '(schar sshort sint slong sllong))
                `(:guard-hints
-                 (("Goal" :in-theory (enable ,promotype-integerp-alt-def
+                 (("Goal" :in-theory (enable ,rtype-integerp-alt-def
                                              ,type-integerp-alt-def
                                              ,type->get
                                              ,typep
-                                             (:e ,promotype-min)
-                                             (:e ,promotype-max)))))
+                                             (:e ,rtype-min)
+                                             (:e ,rtype-max)))))
              `(:guard-hints
-               (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+               (("Goal" :in-theory (enable ,rtype-integerp-alt-def)))
                :prepwork
                ((local (include-book "arithmetic-3/top" :dir :system)))))
          :hooks (:fix))
@@ -272,8 +272,6 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        )))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
