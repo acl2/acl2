@@ -44,7 +44,15 @@
      as ACL2's @(tsee unsigned-byte-p) and @(tsee signed-byte-p) values,
      which is useful for bitwise operations,
      but also as plain integers in certain ranges,
-     which may lead to simpler reasoning about ranges."))
+     which may lead to simpler reasoning about ranges.")
+   (xdoc::p
+    "For the unsigned types,
+     we also introduce ACL2 functions
+     to turn ACL2 integers into values of those types
+     by reducing them modulo one plus the maximum value of the type.
+     These functions are used
+     to define certain integer conversions and operations,
+     which are modular for unsigned types."))
   :order-subtopics t
   :default-parent t)
 
@@ -89,7 +97,8 @@
        (stype->get (add-suffix stype "->GET"))
        (utype->get-upper-bound (add-suffix utype->get "-UPPER-BOUND"))
        (stype->get-lower-bound (add-suffix stype->get "-LOWER-BOUND"))
-       (stype->get-upper-bound (add-suffix stype->get "-UPPER-BOUND")))
+       (stype->get-upper-bound (add-suffix stype->get "-UPPER-BOUND"))
+       (utype-mod (add-suffix utype "-MOD")))
 
     `(encapsulate ()
 
@@ -274,7 +283,19 @@
            :rule-classes :linear
            :enable (,stype->get
                     ,stype-integer-fix
-                    ,stype-integerp-alt-def))))))
+                    ,stype-integerp-alt-def)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,utype-mod ((x integerp))
+         :returns (result ,utypep)
+         (,utype (mod (ifix x) (1+ (,utype-max))))
+         :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
