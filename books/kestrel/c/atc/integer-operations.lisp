@@ -157,16 +157,19 @@
                 (sshort 'sint)
                 (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
                 (t type)))
+       (rtype-mod (add-suffix rtype "-MOD"))
        (rtype-min (add-suffix rtype "-MIN"))
        (rtype-max (add-suffix rtype "-MAX"))
        (rtypep (add-suffix rtype "P"))
-       (rtype-integerp (add-suffix rtype "-INTEGERP"))
        (rtype-integerp-alt-def (add-suffix rtype "-INTEGERP-ALT-DEF"))
        (hirankp (member-eq type '(sint uint slong ulong sllong ullong)))
        (rtype-from-type (acl2::packn-pos (list rtype "-FROM-" type)
                                          'atc))
        (plus-rtype (acl2::packn-pos (list "PLUS-" rtype) 'atc))
-       )
+       (minus-rtype (acl2::packn-pos (list "MINUS-" rtype) 'atc))
+       (minus-rtype-okp (add-suffix minus-rtype "-OKP"))
+       (type-signedp (atc-integer-type-signedp type))
+       (rtype-signedp (atc-integer-type-signedp rtype)))
 
     `(progn
 
@@ -213,35 +216,30 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
-          (member-eq type '(schar sshort sint slong sllong))
+          rtype-signedp
           `((define ,minus-type-okp ((x ,typep))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if unary minus of a value of "
                                 type-string
                                 " is well-defined.")
-              (,rtype-integerp (- (,type->get x)))
+              ,(if hirankp
+                   `(,type-integerp (- (,type->get x)))
+                 `(,minus-rtype-okp (,rtype-from-type x)))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
        (define ,minus-type ((x ,typep))
-         ,@(and
-            (member-eq type '(schar sshort sint slong sllong))
-            `(:guard (,minus-type-okp x)))
+         ,@(and rtype-signedp `(:guard (,minus-type-okp x)))
          :returns (result ,rtypep)
          :short ,(str::cat "Unary minus of a value of "
                            type-string
                            " [C:6.5.3].")
-         ,(if (member-eq type '(schar sshort sint slong sllong))
-              `(,rtype (- (,type->get x)))
-            `(,rtype (mod (- (,type->get x))
-                          (1+ (,rtype-max)))))
-         ,@(if (member-eq type '(schar sshort sint slong sllong))
-               `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp))))
-             `(:guard-hints
-               (("Goal" :in-theory (enable ,rtype-integerp-alt-def)))
-               :prepwork
-               ((local (include-book "arithmetic-3/top" :dir :system)))))
+         ,(if hirankp
+              `(,(if type-signedp rtype rtype-mod) (- (,type->get x)))
+            `(,minus-rtype (,rtype-from-type x)))
+         ,@(and rtype-signedp
+                `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
