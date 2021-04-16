@@ -26,13 +26,7 @@
      In the ACL2 representation of C code for ATC,
      these explicit conversions are necessary,
      because the ACL2 representations of different C integer types
-     are disjoint, i.e. there are no automatic inclusions.
-     However, under appropriate conditions,
-     ATC can translate these conversions in ACL2 to no-ops in C,
-     e.g. if an @('unsigned char') is used as an operand of binary addition,
-     no explicit conversion is necessary in C
-     due to the usual arithmetic conversions [C:6.3.1.8]
-     that happen automatically.")
+     are disjoint, i.e. there are no automatic inclusions.")
    (xdoc::p
     "Conversions between C types are described in [C:6.3].
      Here we define conversions between the integer types in our model;
@@ -54,6 +48,36 @@
      repeated addition or subtraction described in [C:6.3.1.3]."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-type-string (type)
+  :guard (member-eq type '(schar
+                           uchar
+                           sshort
+                           ushort
+                           sint
+                           uint
+                           slong
+                           ulong
+                           sllong
+                           ullong))
+  :returns (string stringp)
+  :short "Turn an integer type symbol into a string describing it."
+  (b* ((core (case type
+               (schar "signed char")
+               (uchar "unsigned char")
+               (sshort "signed short")
+               (ushort "unsigned short")
+               (sint "signed int")
+               (uint "unsigned int")
+               (slong "signed long")
+               (ulong "unsigned long")
+               (sllong "signed long long")
+               (ullong "unsigned long long")
+               (t (prog2$ (raise "Internal error: unknown type ~x0." type)
+                          "")))))
+    (str::cat "type @('" core "')")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

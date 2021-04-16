@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "integers")
+(include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,36 +124,6 @@
     "; these operations depend on the C representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-def-integer-type-string (type)
-  :guard (member-eq type '(schar
-                           uchar
-                           sshort
-                           ushort
-                           sint
-                           uint
-                           slong
-                           ulong
-                           sllong
-                           ullong))
-  :returns (string stringp)
-  :short "Turn an integer type symbol into a string describing it."
-  (b* ((core (case type
-               (schar "signed char")
-               (uchar "unsigned char")
-               (sshort "signed short")
-               (ushort "unsigned short")
-               (sint "signed int")
-               (uint "unsigned int")
-               (slong "signed long")
-               (ulong "unsigned long")
-               (sllong "signed long long")
-               (ullong "unsigned long long")
-               (t (prog2$ (raise "Internal error: unknown type ~x0." type)
-                          "")))))
-    (str::cat "type @('" core "')")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
