@@ -124,6 +124,8 @@
        (dst-type-integerp (add-suffix dst-type "-INTEGERP"))
        (dst-type-integerp-alt-def (add-suffix dst-type "-INTEGERP-ALT-DEF"))
        (dst-type-mod (add-suffix dst-type "-MOD"))
+       (diffp (not (eq src-type dst-type)))
+       (signedp (atc-integer-type-signedp dst-type))
        (guardp (case dst-type
                  (schar t)
                  (sshort (not (eq src-type 'schar)))
@@ -132,46 +134,38 @@
                  (sllong (not (member-eq src-type '(schar sshort sint slong))))
                  (t nil))))
 
-    (if (eq src-type dst-type)
+    `(progn
 
-        '(progn)
+       ,@(and
+          diffp
+          signedp
+          guardp
+          `((define ,conv-okp ((x ,src-typep))
+              :returns (yes/no booleanp)
+              :short ,(str::cat "Check if a conversion from "
+                                src-type-string
+                                " to "
+                                dst-type-string
+                                " is well-defined.")
+              (,dst-type-integerp (,src-type->get x))
+              :hooks (:fix))))
 
-      (if (atc-integer-type-signedp dst-type)
-
-          `(progn
-
-             ,@(and
-                guardp
-                `((define ,conv-okp ((x ,src-typep))
-                    :returns (yes/no booleanp)
-                    :short ,(str::cat "Check if a conversion from "
-                                      src-type-string
-                                      " to "
-                                      dst-type-string
-                                      " is well-defined.")
-                    (,dst-type-integerp (,src-type->get x))
-                    :hooks (:fix))))
-
-             (define ,conv ((x ,src-typep))
-               ,@(and guardp `(:guard (,conv-okp x)))
-               :returns (result ,dst-typep)
-               :short ,(str::cat "Convert from " src-type-string
-                                 " to " dst-type-string "').")
-               (,dst-type (,src-type->get x))
-               :guard-hints
-               (("Goal" :in-theory (enable ,(if guardp
-                                                conv-okp
-                                              dst-type-integerp-alt-def))))
-               :hooks (:fix)))
-
-        `(progn
-
-           (define ,conv ((x ,src-typep))
-             :returns (result ,dst-typep)
-             :short ,(str::cat "Convert from " src-type-string
-                               " to " dst-type-string "').")
-             (,dst-type-mod (,src-type->get x))
-             :hooks (:fix)))))))
+       ,@(and
+          diffp
+          `((define ,conv ((x ,src-typep))
+              ,@(and guardp `(:guard (,conv-okp x)))
+              :returns (result ,dst-typep)
+              :short ,(str::cat "Convert from "
+                                src-type-string
+                                " to "
+                                dst-type-string
+                                "').")
+              (,(if signedp dst-type dst-type-mod) (,src-type->get x))
+              :guard-hints (("Goal"
+                             :in-theory (enable ,(if guardp
+                                                     conv-okp
+                                                   dst-type-integerp-alt-def))))
+              :hooks (:fix)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
