@@ -139,8 +139,7 @@
        (dst-typep (add-suffix dst-fixtype "P"))
        (src-type->get (add-suffix src-fixtype "->GET"))
        (dst-type-integerp (add-suffix dst-fixtype "-INTEGERP"))
-       (dst-type-integer-alt-def (add-suffix dst-fixtype "-INTEGERP-ALT-DEF"))
-       (dst-type-max (add-suffix dst-fixtype "-MAX")))
+       (dst-type-mod (add-suffix dst-fixtype "-MOD")))
 
     (if (eq src-type dst-type)
 
@@ -176,8 +175,6 @@
 
         `(encapsulate ()
 
-           (local (include-book "arithmetic-3/top" :dir :system))
-
            (define ,conv ((x ,src-typep))
              :returns (result ,dst-typep)
              :short ,(concatenate 'string
@@ -186,10 +183,7 @@
                                   "') to @('"
                                   dst-type-string
                                   "').")
-             (,dst-fixtype (mod (,src-type->get x)
-                                (1+ (,dst-type-max))))
-             :guard-hints (("Goal"
-                            :in-theory (enable ,dst-type-integer-alt-def)))
+             (,dst-type-mod (,src-type->get x))
              :hooks (:fix)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
