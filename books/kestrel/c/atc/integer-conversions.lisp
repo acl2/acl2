@@ -172,7 +172,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversionsloop-inner (src-type dst-types)
+(define atc-def-integer-conversions-loop-inner (src-type dst-types)
   :guard (and (true-listp dst-types)
               (subsetp-eq (cons src-type dst-types) *atc-integer-types*))
   :returns (event pseudo-event-form-listp)
@@ -181,7 +181,8 @@
   (cond ((endp dst-types) nil)
         (t (cons
             (atc-def-integer-conversion src-type (car dst-types))
-            (atc-def-integer-conversionsloop-inner src-type (cdr dst-types))))))
+            (atc-def-integer-conversions-loop-inner src-type
+                                                    (cdr dst-types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,8 +195,10 @@
           a list of source types and a list of destination types."
   (cond ((endp src-types) nil)
         (t (append
-            (atc-def-integer-conversionsloop-inner (car src-types) dst-types)
-            (atc-def-integer-conversions-loop-outer (cdr src-types) dst-types))))
+            (atc-def-integer-conversions-loop-inner (car src-types)
+                                                    dst-types)
+            (atc-def-integer-conversions-loop-outer (cdr src-types)
+                                                    dst-types))))
   :prepwork ((local (include-book "std/lists/sets" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
