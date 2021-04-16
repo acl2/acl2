@@ -42,7 +42,7 @@
      (see @(see atc-integer-operations)).")
    (xdoc::p
     "For the case of a conversion to an unsigned integer,
-     we always use @(tsee mod) to ensure it fits.
+     we use @(tsee mod) to ensure it fits.
      If the original value fits, the @(tsee mod) has no effect.
      Otherwise, the @(tsee mod) corresponds to the
      repeated addition or subtraction described in [C:6.3.1.3]."))
@@ -87,6 +87,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-integer-type-signedp (type)
+  :guard (member-eq type *atc-integer-types*)
+  (eql (char (symbol-name type) 0) #\S))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-conversion (src-type dst-type)
   :guard (and (member-eq src-type *atc-integer-types*)
               (member-eq dst-type *atc-integer-types*))
@@ -102,6 +108,7 @@
      while looping through the source and destination types.")
    (xdoc::p
     "If the destination type is signed,
+     and the source type is not included in the destination type,
      we generate not only the conversion,
      but also a function for the guard of the conversion,
      asserting that the original value is representable
@@ -115,33 +122,49 @@
        (dst-typep (add-suffix dst-type "P"))
        (src-type->get (add-suffix src-type "->GET"))
        (dst-type-integerp (add-suffix dst-type "-INTEGERP"))
-       (dst-type-mod (add-suffix dst-type "-MOD")))
+       (dst-type-integerp-alt-def (add-suffix dst-type "-INTEGERP-ALT-DEF"))
+       (dst-type-mod (add-suffix dst-type "-MOD"))
+       (guardp (case dst-type
+                 (schar t)
+                 (sshort (not (eq src-type 'schar)))
+                 (sint (not (member-eq src-type '(schar sshort))))
+                 (slong (not (member-eq src-type '(schar sshort sint))))
+                 (sllong (not (member-eq src-type '(schar sshort sint slong))))
+                 (t nil))))
 
     (if (eq src-type dst-type)
 
         '(progn)
 
-      (if (member-eq dst-type '(schar sshort sint slong sllong))
+      (if (atc-integer-type-signedp dst-type)
 
-          `(encapsulate ()
+          `(progn
 
-             (define ,conv-okp ((x ,src-typep))
-               :returns (yes/no booleanp)
-               :short ,(str::cat "Check if a conversion from " src-type-string
-                                 " to " dst-type-string " is well-defined.")
-               (,dst-type-integerp (,src-type->get x))
-               :hooks (:fix))
+             ,@(and
+                guardp
+                `((define ,conv-okp ((x ,src-typep))
+                    :returns (yes/no booleanp)
+                    :short ,(str::cat "Check if a conversion from "
+                                      src-type-string
+                                      " to "
+                                      dst-type-string
+                                      " is well-defined.")
+                    (,dst-type-integerp (,src-type->get x))
+                    :hooks (:fix))))
 
              (define ,conv ((x ,src-typep))
-               :guard (,conv-okp x)
+               ,@(and guardp `(:guard (,conv-okp x)))
                :returns (result ,dst-typep)
                :short ,(str::cat "Convert from " src-type-string
                                  " to " dst-type-string "').")
                (,dst-type (,src-type->get x))
-               :guard-hints (("Goal" :in-theory (enable ,conv-okp)))
+               :guard-hints
+               (("Goal" :in-theory (enable ,(if guardp
+                                                conv-okp
+                                              dst-type-integerp-alt-def))))
                :hooks (:fix)))
 
-        `(encapsulate ()
+        `(progn
 
            (define ,conv ((x ,src-typep))
              :returns (result ,dst-typep)

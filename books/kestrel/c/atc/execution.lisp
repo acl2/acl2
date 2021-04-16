@@ -163,9 +163,7 @@
           (t val)))
   :guard-hints (("Goal" :in-theory (enable
                                     sint-from-uchar-okp
-                                    sint-from-schar-okp
                                     sint-from-ushort-okp
-                                    sint-from-sshort-okp
                                     uchar-integerp-alt-def
                                     schar-integerp-alt-def
                                     ushort-integerp-alt-def
@@ -411,10 +409,7 @@
           (t (prog2$ (impossible) (mv val1 val2)))))
   :guard-hints (("Goal"
                  :do-not '(preprocess) ; just for speed
-                 :in-theory (enable slong-from-sint-okp
-                                    slong-from-uint-okp
-                                    sllong-from-sint-okp
-                                    sllong-from-slong-okp
+                 :in-theory (enable slong-from-uint-okp
                                     sllong-from-uint-okp
                                     sllong-from-ulong-okp
                                     sint-integerp-alt-def
@@ -1221,13 +1216,13 @@
             :uchar (uchar-from-schar arg)
             :schar arg
             :ushort (ushort-from-schar arg)
-            :sshort (if (sshort-from-schar-okp arg) (sshort-from-schar arg) err)
+            :sshort (sshort-from-schar arg)
             :uint (uint-from-schar arg)
-            :sint (if (sint-from-schar-okp arg) (sint-from-schar arg) err)
+            :sint (sint-from-schar arg)
             :ulong (ulong-from-schar arg)
-            :slong (if (slong-from-schar-okp arg) (slong-from-schar arg) err)
+            :slong (slong-from-schar arg)
             :ullong (ullong-from-schar arg)
-            :sllong (if (sllong-from-schar-okp arg) (sllong-from-schar arg) err)
+            :sllong (sllong-from-schar arg)
             :pointer todo))
           ((ushortp arg)
            (type-case
@@ -1253,11 +1248,11 @@
             :ushort (ushort-from-sshort arg)
             :sshort arg
             :uint (uint-from-sshort arg)
-            :sint (if (sint-from-sshort-okp arg) (sint-from-sshort arg) err)
+            :sint (sint-from-sshort arg)
             :ulong (ulong-from-sshort arg)
-            :slong (if (slong-from-sshort-okp arg) (slong-from-sshort arg) err)
+            :slong (slong-from-sshort arg)
             :ullong (ullong-from-sshort arg)
-            :sllong (if (sllong-from-sshort-okp arg) (sllong-from-sshort arg) err)
+            :sllong (sllong-from-sshort arg)
             :pointer todo))
           ((uintp arg)
            (type-case
@@ -1285,9 +1280,9 @@
             :uint (uint-from-sint arg)
             :sint arg
             :ulong (ulong-from-sint arg)
-            :slong (if (slong-from-sint-okp arg) (slong-from-sint arg) err)
+            :slong (slong-from-sint arg)
             :ullong (ullong-from-sint arg)
-            :sllong (if (sllong-from-sint-okp arg) (sllong-from-sint arg) err)
+            :sllong (sllong-from-sint arg)
             :pointer todo))
           ((ulongp arg)
            (type-case
@@ -1317,7 +1312,7 @@
             :ulong (ulong-from-slong arg)
             :slong arg
             :ullong (ullong-from-slong arg)
-            :sllong (if (sllong-from-slong-okp arg) (sllong-from-slong arg) err)
+            :sllong (sllong-from-slong arg)
             :pointer todo))
           ((ullongp arg)
            (type-case
