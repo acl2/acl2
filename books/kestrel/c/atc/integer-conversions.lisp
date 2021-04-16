@@ -13,6 +13,8 @@
 
 (include-book "integers")
 
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-conversions
@@ -96,6 +98,7 @@
 (define atc-def-integer-conversion (src-type dst-type)
   :guard (and (member-eq src-type *atc-integer-types*)
               (member-eq dst-type *atc-integer-types*))
+  :returns (event pseudo-event-formp)
   :short "Event to generate a conversion between C integer types."
   :long
   (xdoc::topstring
@@ -169,32 +172,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop1 (src-type dst-types)
+(define atc-def-integer-conversionsloop-inner (src-type dst-types)
   :guard (and (true-listp dst-types)
               (subsetp-eq (cons src-type dst-types) *atc-integer-types*))
+  :returns (event pseudo-event-form-listp)
+  :short "Events to generate the integer conversions between
+          a source type and a list of destination types."
   (cond ((endp dst-types) nil)
         (t (cons
             (atc-def-integer-conversion src-type (car dst-types))
-            (atc-def-integer-conversions-loop1 src-type (cdr dst-types))))))
+            (atc-def-integer-conversionsloop-inner src-type (cdr dst-types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop2 (src-types dst-types)
+(define atc-def-integer-conversions-loop-outer (src-types dst-types)
   :guard (and (true-listp src-types)
               (true-listp dst-types)
               (subsetp-eq (append src-types dst-types) *atc-integer-types*))
+  :returns (event pseudo-event-form-listp)
+  :short "Events to generate the integer conversions between
+          a list of source types and a list of destination types."
   (cond ((endp src-types) nil)
         (t (append
-            (atc-def-integer-conversions-loop1 (car src-types) dst-types)
-            (atc-def-integer-conversions-loop2 (cdr src-types) dst-types))))
+            (atc-def-integer-conversionsloop-inner (car src-types) dst-types)
+            (atc-def-integer-conversions-loop-outer (cdr src-types) dst-types))))
   :prepwork ((local (include-book "std/lists/sets" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ atc-def-integer-conversions ()
   :short "Macro to generate all the integer conversions in our model."
-  `(progn ,@(atc-def-integer-conversions-loop2 *atc-integer-types*
-                                               *atc-integer-types*)))
+  `(progn ,@(atc-def-integer-conversions-loop-outer *atc-integer-types*
+                                                    *atc-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
