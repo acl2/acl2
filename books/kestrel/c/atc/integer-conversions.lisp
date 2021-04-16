@@ -95,9 +95,7 @@
   (xdoc::topstring
    (xdoc::p
     "The conversion turns values of the source type
-     into values of the destination type:
-     keywords specifying source and destination type
-     are passed to this macro as inputs.
+     into values of the destination type.
      If the two types are the same, no events are generated;
      we do not have the guard require the types to be different
      so that it is more convenient to call this macro repeatedly
@@ -109,30 +107,8 @@
      asserting that the original value is representable
      in the destination type."))
 
-  (b* ((src-type-string (case src-type
-                          (schar "signed char")
-                          (uchar "unsigned char")
-                          (sshort "signed short")
-                          (ushort "unsigned short")
-                          (sint "signed int")
-                          (uint "unsigned int")
-                          (slong "signed long")
-                          (ulong "unsigned long")
-                          (sllong "signed long long")
-                          (ullong "unsigned long long")
-                          (t (impossible))))
-       (dst-type-string (case dst-type
-                          (schar "signed char")
-                          (uchar "unsigned char")
-                          (sshort "signed short")
-                          (ushort "unsigned short")
-                          (sint "signed int")
-                          (uint "unsigned int")
-                          (slong "signed long")
-                          (ulong "unsigned long")
-                          (sllong "signed long long")
-                          (ullong "unsigned long long")
-                          (t (impossible))))
+  (b* ((src-type-string (atc-def-integer-type-string src-type))
+       (dst-type-string (atc-def-integer-type-string dst-type))
        (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
        (conv-okp (add-suffix conv "-OKP"))
        (src-typep (add-suffix src-type "P"))
@@ -151,24 +127,16 @@
 
              (define ,conv-okp ((x ,src-typep))
                :returns (yes/no booleanp)
-               :short ,(concatenate 'string
-                                    "Check if a conversion from @('"
-                                    src-type-string
-                                    "') to @('"
-                                    dst-type-string
-                                    "') is well-defined.")
+               :short ,(str::cat "Check if a conversion from " src-type-string
+                                 " to " dst-type-string " is well-defined.")
                (,dst-type-integerp (,src-type->get x))
                :hooks (:fix))
 
              (define ,conv ((x ,src-typep))
                :guard (,conv-okp x)
                :returns (result ,dst-typep)
-               :short ,(concatenate 'string
-                                    "Convert from @('"
-                                    src-type-string
-                                    "') to @('"
-                                    dst-type-string
-                                    "').")
+               :short ,(str::cat "Convert from " src-type-string
+                                 " to " dst-type-string "').")
                (,dst-type (,src-type->get x))
                :guard-hints (("Goal" :in-theory (enable ,conv-okp)))
                :hooks (:fix)))
@@ -177,12 +145,8 @@
 
            (define ,conv ((x ,src-typep))
              :returns (result ,dst-typep)
-             :short ,(concatenate 'string
-                                  "Convert from @('"
-                                  src-type-string
-                                  "') to @('"
-                                  dst-type-string
-                                  "').")
+             :short ,(str::cat "Convert from " src-type-string
+                               " to " dst-type-string "').")
              (,dst-type-mod (,src-type->get x))
              :hooks (:fix)))))))
 
