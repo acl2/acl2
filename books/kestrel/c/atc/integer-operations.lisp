@@ -66,15 +66,10 @@
      The function takes an argument of that integer type,
      and returns a result of possibly different type.
      For all the unary integer operators except @('!'),
-     C promotes the operands [C:6.3.1.1/2] to types
-     whose rank is that of @('int') or higher:
-     that is the result type of the operator.
-     Our generated functions perform the promotion internally,
-     for the type of rank lower than @('int'),
-     and then call the function for the promoted type.
-     C does not promote the operand of @('!'),
-     so neither do our generated functions;
-     these always return an @('int').")
+     C promotes operands [C:6.3.1.1/2] to types of rank @('int') or higher,
+     and that is also the result of the operator.
+     C does not promote the operand of @('!');
+     this operator always returns an @('int').")
    (xdoc::p
     "For all the binary integer operators
      except @('<<'), @('>>'), @('&&'), and @('||'),
@@ -185,17 +180,24 @@
        (typep (add-suffix type "P"))
        (type->get (add-suffix type "->GET"))
        (type-integerp (add-suffix type "-INTEGERP"))
+       (type-integerp-alt-def (add-suffix type "-INTEGERP-ALT-DEF"))
        (type-const (add-suffix type "-CONST"))
        (type-nonzerop (add-suffix type "-NONZEROP"))
        (type-integer-value (add-suffix type "-INTEGER-VALUE"))
        (plus-type (acl2::packn-pos (list "PLUS-" type) 'atc))
+       (minus-type (acl2::packn-pos (list "MINUS-" type) 'atc))
+       (minus-type-okp (add-suffix minus-type "-OKP"))
+       (bitnot-type (acl2::packn-pos (list "BITNOT-" type) 'atc))
        (promotype (case type
                     (schar 'sint)
                     (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
                     (sshort 'sint)
                     (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
                     (t type)))
+       (promotype-min (add-suffix promotype "-MIN"))
+       (promotype-max (add-suffix promotype "-MAX"))
        (promotypep (add-suffix promotype "P"))
+       (promotype-integerp (add-suffix promotype "-INTEGERP"))
        (promotype-integerp-alt-def (add-suffix promotype "-INTEGERP-ALT-DEF"))
        )
 
@@ -240,6 +242,62 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       ,@(and
+          (member-eq type '(schar sshort sint slong sllong))
+          `((define ,minus-type-okp ((x ,typep))
+              :returns (yes/no booleanp)
+              :short ,(str::cat "Check if unary minus of a value of "
+                                type-string " is well-defined.")
+              (,promotype-integerp (- (,type->get x)))
+              :hooks (:fix))))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,minus-type ((x ,typep))
+         ,@(and
+            (member-eq type '(schar sshort sint slong sllong))
+            `(:guard (,minus-type-okp x)))
+         :returns (result ,promotypep)
+         :short ,(str::cat "Unary minus of a value of " type-string
+                           " [C:6.5.3].")
+         ,(if (member-eq type '(schar sshort sint slong sllong))
+              `(,promotype (- (,type->get x)))
+            `(,promotype (mod (- (,type->get x))
+                              (1+ (,promotype-max)))))
+         ,@(if (member-eq type '(schar sshort sint slong sllong))
+               `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp))))
+             `(:guard-hints
+               (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+               :prepwork
+               ((local (include-book "arithmetic-3/top" :dir :system)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,bitnot-type ((x ,typep))
+         :returns (result ,promotypep)
+         :short ,(str::cat "Bitwise complement of a value of " type-string
+                           " [C:6.5.3].")
+         ,(if (member-eq type '(schar sshort sint slong sllong))
+              `(,promotype (lognot (,type->get x)))
+            `(,promotype (mod (lognot (,type->get x))
+                              (1+ (,promotype-max)))))
+         ,@(if (member-eq type '(schar sshort sint slong sllong))
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,promotype-integerp-alt-def
+                                             ,type-integerp-alt-def
+                                             ,type->get
+                                             ,typep
+                                             (:e ,promotype-min)
+                                             (:e ,promotype-max)))))
+             `(:guard-hints
+               (("Goal" :in-theory (enable ,promotype-integerp-alt-def)))
+               :prepwork
+               ((local (include-book "arithmetic-3/top" :dir :system)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,8 +338,6 @@
        (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
        (stype (acl2::packn-pos (list "S" type) 'atc))
        (utype (acl2::packn-pos (list "U" type) 'atc))
-       (stype-min (add-suffix stype "-MIN"))
-       (stype-max (add-suffix stype "-MAX"))
        (utype-max (add-suffix utype "-MAX"))
        (stypep (add-suffix stype "P"))
        (utypep (add-suffix utype "P"))
@@ -289,17 +345,11 @@
        (utype->get (add-suffix utype "->GET"))
        (stype-integerp (add-suffix stype "-INTEGERP"))
        (utype-integerp (add-suffix utype "-INTEGERP"))
-       (stype-integerp-alt-def (add-suffix stype-integerp "-ALT-DEF"))
        (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (minus-stype (acl2::packn-pos (list "MINUS-" stype) 'atc))
-       (minus-utype (acl2::packn-pos (list "MINUS-" utype) 'atc))
-       (minus-stype-okp (add-suffix minus-stype "-OKP"))
-       (bitnot-stype (acl2::packn-pos (list "BITNOT-" stype) 'atc))
-       (bitnot-utype (acl2::packn-pos (list "BITNOT-" utype) 'atc))
        (lognot-stype (acl2::packn-pos (list "LOGNOT-" stype) 'atc))
        (lognot-utype (acl2::packn-pos (list "LOGNOT-" utype) 'atc))
        (add-stype-stype (acl2::packn-pos (list "ADD-" stype "-" stype) 'atc))
@@ -393,78 +443,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,minus-stype-okp ((x ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if unary minus of @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (,stype-integerp (- (,stype->get x)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,minus-stype ((x ,stypep))
-              :guard (,minus-stype-okp x)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Unary minus of @('signed "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,stype (- (,stype->get x)))
-              :guard-hints (("Goal" :in-theory (enable ,minus-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,minus-utype ((x ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Unary minus of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,utype (mod (- (,utype->get x))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitnot-stype ((x ,stypep))
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Bitwise complement of @('signed "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,stype (lognot (,stype->get x)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-integerp-alt-def
-                                                       ,stype->get
-                                                       ,stypep
-                                                       (:e ,stype-min)
-                                                       (:e ,stype-max))))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitnot-utype ((x ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise complement of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.3].")
-              (,utype (mod (lognot (,utype->get x))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
