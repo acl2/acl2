@@ -101,14 +101,6 @@
            :in-theory (enable mod
                               floor-when-rationalp-and-complex-rationalp))))
 
-(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
-
-(defthm mod-of-mod-same-arg2
-  (implies (and (rationalp x)
-                (rationalp y))
-           (equal (mod (mod x y) y)
-                  (mod x y))))
-
 (defthm mod-when-not-acl2-numberp-arg1
   (implies (not (acl2-numberp x))
            (equal (mod x y)
@@ -139,13 +131,23 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
+
+(defthm mod-of-mod-same-arg2
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (mod (mod x y) y)
+                  (mod x y)))
+  :hints (("Goal" :in-theory (enable mod))))
+
 (defthm mod-when-<
   (implies (and (< x y)
                 (<= 0 x)
                 (rationalp x))
            (equal (mod x y)
                   x))
-  :hints (("Goal" :cases ((rationalp x)))))
+  :hints (("Goal" :in-theory (enable mod)
+           :cases ((rationalp y)))))
 
 (defthmd equal-of-0-and-mod
   (implies (and (rationalp x)
