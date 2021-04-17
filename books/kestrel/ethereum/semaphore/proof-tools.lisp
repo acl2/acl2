@@ -1,4 +1,4 @@
-; A semaphore-specific R1CS lifter
+; Semaphore-specific versions of R1CS proof tools
 ;
 ; Copyright (C) 2020-2021 Kestrel Institute
 ;
@@ -11,9 +11,7 @@
 (in-package "ZKSEMAPHORE")
 
 (include-book "kestrel/crypto/r1cs/tools/lift-r1cs" :dir :system)
-(include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
-(include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
-(include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
+(include-book "kestrel/crypto/r1cs/tools/verify-r1cs" :dir :system)
 
 ;; A thin wrapper around lift-r1cs-new that sets the prime for semaphore.
 ;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
@@ -26,7 +24,7 @@
                         :package "ZKSEMAPHORE"
                         ,@args))
 
-;;TODO: generalize to verify-r1cs
+;; A wrapper of verify-r1cs that specializes it for the semaphore prime
 (defmacro verify-semaphore-r1cs (lifted-r1cs ; a DAG
                                  spec-term ; a term over the input and output vars, not evaluated
                                  &key
@@ -39,26 +37,14 @@
                                  (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
                                  (monitor 'nil)
                                  (print ':brief))
-  `(encapsulate ()
-     ;; Print the prime more clearly:
-     (table acl2::evisc-table 21888242871839275222246405745257275088548364400416034343698204186575808495617 "<p>") ;a bit scary since it makes p look like a var
-
-     ;; TODO: Suppress printing of error output at the end of failed proofs:
-     (acl2::prove-implication-with-r1cs-prover
-      (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
-                                     (cons
-                                      ;; Assume all vars are field elements:
-                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
-                                                                       ;; bake in baby-jubjub-prime:
-                                                                       ''21888242871839275222246405745257275088548364400416034343698204186575808495617)
-                                      ;; Assume that the inputs are bits:
-                                      (acl2::make-bitp-claims ,bit-inputs)))
-                                    ,lifted-r1cs)
-      ',spec-term
-      :tactic ,tactic
-      :rule-lists ,rule-lists   ;todo: use a default rule-list
-      :global-rules ,global-rules ;todo: add some default global-rules
-      :interpreted-function-alist ,interpreted-function-alist ;todo
-      :no-splitp ,no-splitp
-      :monitor ,monitor
-      :print ,print)))
+  `(r1cs::verify-r1cs ,lifted-r1cs
+                      ,spec-term
+                      21888242871839275222246405745257275088548364400416034343698204186575808495617
+                      :bit-inputs ,bit-inputs
+                      :tactic ,tactic
+                      :rule-lists ,rule-lists
+                      :global-rules ,global-rules
+                      :interpreted-function-alist ,interpreted-function-alist
+                      :no-splitp ,no-splitp
+                      :monitor ,monitor
+                      :print ,print))
