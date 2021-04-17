@@ -53,6 +53,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-integer-type-conv (src-type dst-type)
+  :guard (and (member-eq src-type *atc-integer-types*)
+              (member-eq dst-type *atc-integer-types*))
+  :returns (name symbolp)
+  :short "Name of the conversion between two integer types."
+  (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-conversion (src-type dst-type)
   :guard (and (member-eq src-type *atc-integer-types*)
               (member-eq dst-type *atc-integer-types*))
@@ -77,14 +86,14 @@
 
   (b* ((src-type-string (atc-integer-type-string src-type))
        (dst-type-string (atc-integer-type-string dst-type))
-       (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
+       (conv (atc-integer-type-conv src-type dst-type))
        (conv-okp (add-suffix conv "-OKP"))
        (src-typep (atc-integer-typep src-type))
        (dst-typep (atc-integer-typep dst-type))
-       (src-type->get (add-suffix src-type "->GET"))
-       (dst-type-integerp (add-suffix dst-type "-INTEGERP"))
-       (dst-type-integerp-alt-def (add-suffix dst-type "-INTEGERP-ALT-DEF"))
-       (dst-type-mod (add-suffix dst-type "-MOD"))
+       (src-type->get (atc-integer-type->get src-type))
+       (dst-type-integerp (atc-integer-type-integerp dst-type))
+       (dst-type-integerp-alt-def (atc-integer-type-integerp-alt-def dst-type))
+       (dst-type-mod (atc-integer-type-mod dst-type))
        (diffp (not (eq src-type dst-type)))
        (signedp (atc-integer-type-signedp dst-type))
        (guardp (case dst-type

@@ -76,7 +76,7 @@
 (define atc-integer-type-string (type)
   :guard (member-eq type *atc-integer-types*)
   :returns (string stringp)
-  :short "Turn an integer type symbol into a string describing it."
+  :short "String that describes an integer type."
   (b* ((core (case type
                (schar "signed char")
                (uchar "unsigned char")
@@ -105,8 +105,45 @@
 (define atc-integer-typep (type)
   :guard (member-eq type *atc-integer-types*)
   :returns (name symbolp)
-  :short "Predicate name of an integer type."
+  :short "Name of the recognizer of an integer type."
   (add-suffix type "P"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type->get (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Name of the accessor of an integer type."
+  (add-suffix type "->GET"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-mod (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Name of the modular constructor of an integer type."
+  :long
+  (xdoc::topstring-p
+   "This is only actually used for unsigned integer types.")
+  (add-suffix type "-MOD"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-integerp (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Name of the recognizer of the type of ACL2 integers
+          that form the range of an integer type."
+  (add-suffix type "-INTEGERP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-integerp-alt-def (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (name symbolp)
+  :short "Name of the alternative definition rule of the recognizer of
+          the type of ACL2 integers that form the range of an integer type."
+  (add-suffix (atc-integer-type-integerp type) "-ALT-DEF"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,24 +170,24 @@
        (stype-listp (add-suffix stype "-LISTP"))
        (utype-integer (add-suffix utype "-INTEGER"))
        (stype-integer (add-suffix stype "-INTEGER"))
-       (utype-integerp (add-suffix utype "-INTEGERP"))
-       (stype-integerp (add-suffix stype "-INTEGERP"))
+       (utype-integerp (atc-integer-type-integerp utype))
+       (stype-integerp (atc-integer-type-integerp stype))
        (utype-integer-fix (add-suffix utype "-INTEGER-FIX"))
        (stype-integer-fix (add-suffix stype "-INTEGER-FIX"))
-       (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
-       (stype-integerp-alt-def (add-suffix stype-integerp "-ALT-DEF"))
+       (utype-integerp-alt-def (atc-integer-type-integerp-alt-def utype))
+       (stype-integerp-alt-def (atc-integer-type-integerp-alt-def stype))
        (utype-max (add-suffix utype "-MAX"))
        (utype-max-bound (1- (expt 2 type-bits-bound)))
        (stype-min (add-suffix stype "-MIN"))
        (stype-min-bound (- (expt 2 (1- type-bits-bound))))
        (stype-max (add-suffix stype "-MAX"))
        (stype-max-bound (1- (expt 2 (1- type-bits-bound))))
-       (utype->get (add-suffix utype "->GET"))
-       (stype->get (add-suffix stype "->GET"))
+       (utype->get (atc-integer-type->get utype))
+       (stype->get (atc-integer-type->get stype))
        (utype->get-upper-bound (add-suffix utype->get "-UPPER-BOUND"))
        (stype->get-lower-bound (add-suffix stype->get "-LOWER-BOUND"))
        (stype->get-upper-bound (add-suffix stype->get "-UPPER-BOUND"))
-       (utype-mod (add-suffix utype "-MOD")))
+       (utype-mod (atc-integer-type-mod utype)))
 
     `(encapsulate ()
 
