@@ -105,13 +105,17 @@
         (CASE
           FN
           (SHOULD-REVERSE-EQUALITY
+           ;; For this, only 2 args are given in the call (dag-array has been
+           ;; removed), but we know that it takes dag-array as the final param,
+           ;; so we pass it separately:
            (SHOULD-REVERSE-EQUALITY
             ;; unquote constants, lookup vars:
             (IF (CONSP ARG0) ARG0 (LOOKUP-EQ ARG0 ALIST))
             (IF (CONSP ARG1) ARG1 (LOOKUP-EQ ARG1 ALIST))
-            ;; this one takes that dag-array to:
+            ;; this one takes the dag-array too, which we pass around separately:
             DAG-ARRAY))
           (HEAVIER-DAG-TERM
+           ;; this one does not take a dag-array param:
            (HEAVIER-DAG-TERM
             (IF (CONSP ARG0) ARG0 (LOOKUP-EQ ARG0 ALIST))
             (IF (CONSP ARG1) ARG1 (LOOKUP-EQ ARG1 ALIST))))
