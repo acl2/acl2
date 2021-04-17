@@ -206,23 +206,23 @@
 
 ;; Returns (mv erp hyp).
 ;; process-syntaxp-argument helps catch errors if the rule has unsupported stuff in a syntaxp hyp
-(defund make-axe-syntaxp-hyp-for-synp-expr (conjunct bound-vars rule-symbol hyp)
-  (declare (xargs :guard (and (pseudo-termp conjunct)
+(defund make-axe-syntaxp-hyp-for-synp-expr (expr bound-vars rule-symbol hyp)
+  (declare (xargs :guard (and (pseudo-termp expr)
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol))))
-  (b* ((mentioned-vars (vars-in-term conjunct))
-       ;;drop?:
-       (allowed-vars (cons 'dag-array bound-vars))
-       ((when (not (subsetp-eq mentioned-vars allowed-vars)))
-        (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or by preceding hyps."
-            hyp rule-symbol (set-difference-eq mentioned-vars allowed-vars))
-        (mv :bad-vars nil))
-       ((mv erp processed-arg)
-        (process-syntaxp-argument conjunct rule-symbol))
+  (b* (;; Remove dag-array args from axe-syntaxp functions ('dag-array might remain as an argument to quotep):
+       ((mv erp expr)
+        (process-syntaxp-argument expr rule-symbol))
        ((when erp)
         (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
-        (mv erp nil)))
-    (mv (erp-nil) `(:axe-syntaxp . ,processed-arg))))
+        (mv erp nil))
+       ;; Check that all vars that remain in EXPR are bound:
+       (mentioned-vars (vars-in-term expr))
+       ((when (not (subsetp-eq mentioned-vars bound-vars)))
+        (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or by preceding hyps."
+            hyp rule-symbol (set-difference-eq mentioned-vars bound-vars))
+        (mv :bad-vars nil)))
+    (mv (erp-nil) `(:axe-syntaxp . ,expr))))
 
 (defthm axe-rule-hypp-of-mv-nth-1-of-make-axe-syntaxp-hyp-for-synp-expr
   (implies (and (pseudo-termp conjunct)

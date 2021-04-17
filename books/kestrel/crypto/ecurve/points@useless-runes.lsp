@@ -1,6 +1,8 @@
 (ECURVE::POINTP)
-(ECURVE::POINT-IN-PXP-P (7 7 (:REWRITE DEFAULT-<-2))
-                        (7 7 (:REWRITE DEFAULT-<-1))
-                        (5 5 (:REWRITE DEFAULT-CAR))
-                        (2 2 (:REWRITE DEFAULT-CDR)))
+(ECURVE::POINT-IN-PXP-P
+ (7 7 (:REWRITE DEFAULT-<-2))
+ (7 7 (:REWRITE DEFAULT-<-1))
+ (5 5 (:REWRITE DEFAULT-CAR))
+ (2 2 (:REWRITE DEFAULT-CDR))
+ )
 (ECURVE::POINT-IN-PXP-P-OF-INFINITY)

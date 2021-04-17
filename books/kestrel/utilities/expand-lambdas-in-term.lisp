@@ -130,6 +130,7 @@
                            (vars-in-terms (strip-cdrs alist))))
    :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal vars-in-terms)))))
 
+;move
 (defthm-flag-vars-in-term
   (defthm subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs
     (implies (subsetp-equal (vars-in-term term)
@@ -143,11 +144,15 @@
              (subsetp-equal (vars-in-terms (my-sublis-var-lst alist terms))
                             (vars-in-terms (strip-cdrs alist))))
     :flag vars-in-terms)
-  :hints (("Goal" :in-theory (enable MY-SUBLIS-VAR
-                                     MY-SUBLIS-VAR-lst
+  :hints (("Goal" :in-theory (enable my-sublis-var
+                                     my-sublis-var-lst
                                      vars-in-term
                                      vars-in-terms))))
 
+;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
+;; closed).  Note that expanding lambdas can remove free vars, since some
+;; lambda formals may not appear in the lambda body (so their actuals are
+;; effectively dropped).
 (defthm-flag-expand-lambdas-in-term
   (defthm subsetp-equal-of-vars-in-term-of-expand-lambdas-in-term-and-vars-in-term
     (implies (and (pseudo-termp term)
@@ -168,5 +173,5 @@
            ("Goal" :in-theory (e/d (vars-in-term
                                     expand-lambdas-in-term
                                     expand-lambdas-in-terms
-                                    LAMBDAS-CLOSED-IN-TERMP)
+                                    lambdas-closed-in-termp)
                                    (subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs)))))

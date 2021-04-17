@@ -2646,7 +2646,9 @@
                                       nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                       rule-alist interpreted-function-alist
                                       info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                      prover-depth known-booleans options)
+                                      prover-depth
+                                      result-array-name ;same for each literal
+                                      known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (natp nodenum)
                                      (< nodenum dag-len)
@@ -2663,6 +2665,7 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbolp result-array-name)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))))
          (b* ((- (and (or (eq :verbose print) (eq :verbose2 print))
@@ -2673,17 +2676,12 @@
               ;; Clear out the assumption info from this node, so we don't use it to rewrite this literal to true:
               ;; Note that the index used here may not be in nodenum of the literal:
               (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
-              ;; Make an array to track results in the worklist algorithm:
-              (result-array-name (pack$ 'result-array- prover-depth)) ;don't re-compute for each literal?
-              ;; TODO: Consider using (+ 1 nodenum) for the length of the array
-              ;; here -- to make the array smaller -- but that may prevent
-              ;; re-using the previous raw Lisp array, since the old length is
-              ;; likely to differ. Perhaps we should always use the same array,
-              ;; of length dag-len, and simply write nils to the relevant spots
-              ;; here (but then consider that the array may often reach its
-              ;; maximum length, triggering compress1 calls -- perhaps use a
-              ;; very large maximum?).
-              (result-array (make-empty-array result-array-name dag-len))
+              ;; Make an array to track results in the worklist algorithm.  We
+              ;; expect the raw Lisp array previously allocated in
+              ;; ,rewrite-clause-name to be reused each time, since it will
+              ;; always be big enough:
+              (result-array (make-empty-array result-array-name (+ 1 nodenum) ;dag-len
+                                              ))
               ;; Rewrite this literal:
               ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                ;; TODO: would it make sense to memoize in this?
@@ -2728,6 +2726,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
                        (simple-prover-optionsp options))
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries new-assumption-array)
@@ -2736,7 +2735,7 @@
                                            nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth known-booleans options)
+                                           prover-depth result-array-name known-booleans options)
                     (implies (not erp)
                              (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                   (<= dag-len new-dag-len)
@@ -2767,6 +2766,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
                        (simple-prover-optionsp options))
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
@@ -2775,7 +2775,7 @@
                                            nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth known-booleans options)
+                                           prover-depth result-array-name known-booleans options)
                     (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (natp new-dag-len))))
@@ -2799,6 +2799,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
                        (simple-prover-optionsp options))
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
@@ -2807,7 +2808,7 @@
                                            nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth known-booleans options)
+                                           prover-depth result-array-name known-booleans options)
                     (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
@@ -2831,7 +2832,9 @@
                                        changep ;; whether anything has changed so far
                                        rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
-                                       info tries prover-depth known-booleans options)
+                                       info tries prover-depth
+                                       result-array-name ;same for all literals
+                                       known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp work-list)
                                      (all-< work-list dag-len)
@@ -2850,6 +2853,7 @@
                                      (info-worldp info)
                                      (triesp tries)
                                      (natp prover-depth)
+                                     (symbolp result-array-name)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
@@ -2870,7 +2874,7 @@
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         other-literals
                                         assumption-array assumption-array-num-valid-nodes
-                                        rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth known-booleans options))
+                                        rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth result-array-name known-booleans options))
                 ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" literal-nodenum new-nodenum-or-quotep))
                 ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep))))
@@ -2882,7 +2886,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          assumption-array assumption-array-num-valid-nodes
                                          changep ;; no change to changep
-                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth known-booleans options)
+                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (get-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2906,7 +2910,7 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            assumption-array assumption-array-num-valid-nodes
                                            t ;; something changed
-                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth known-booleans options)))))))
+                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options)))))))
 
        (defthm ,(pack$ rewrite-literals-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2927,6 +2931,7 @@
                        (info-worldp info)
                        (triesp tries)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
@@ -2936,7 +2941,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (booleanp changep)
@@ -2970,6 +2975,7 @@
                        (info-worldp info)
                        (triesp tries)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
@@ -2979,7 +2985,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options)
                     (declare (ignore provedp changep literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
@@ -2997,7 +3003,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options)
                     (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (true-listp literal-nodenums)))
          :rule-classes :type-prescription
@@ -3024,6 +3030,7 @@
                        (info-worldp info)
                        (triesp tries)
                        (natp prover-depth)
+                       (symbolp result-array-name)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
@@ -3033,7 +3040,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options)
                     (declare (ignore provedp changep literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
@@ -3104,6 +3111,10 @@
                    literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, dag-len is ~x2):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
               (hit-count-alist-before (make-hit-count-alist (uniquify-alist-eq info) nil))
+              (result-array-name (pack$ 'result-array- prover-depth))
+              ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
+              ;; doesn't optimize this away:
+              (- (make-empty-array result-array-name dag-len))
               ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                (,rewrite-literals-name literal-nodenums
                                        nil ;initial done-list
@@ -3113,7 +3124,7 @@
                                        nil     ;changep
                                        rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
-                                       info tries prover-depth known-booleans options))
+                                       info tries prover-depth result-array-name known-booleans options))
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))

@@ -588,10 +588,10 @@
   (implies (and (< i j)
                 (>= i 0)
                 (> j 0)
-                (force (rationalp i))
                 (force (rationalp j)))
            (equal (floor i j)
-                  0)))
+                  0))
+  :hints (("Goal" :cases ((rationalp i)))))
 
 (defthm floor-upper-bound-alt-linear
   (implies (and (natp i)

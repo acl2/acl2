@@ -2,7 +2,9 @@
 (INTEGERP-OF-CEILING-OF-LG)
 (NATP-OF-CEILING-OF-LG)
 (<-OF-CEILING-OF-LG-AND-CONSTANT)
-(EQUAL-OF-0-AND-CEILING-OF-LG (4 4 (:REWRITE DEFAULT-<-2))
-                              (4 4 (:REWRITE DEFAULT-<-1))
-                              (2 2 (:REWRITE DEFAULT-+-2))
-                              (2 2 (:REWRITE DEFAULT-+-1)))
+(EQUAL-OF-0-AND-CEILING-OF-LG
+ (4 4 (:REWRITE DEFAULT-<-2))
+ (4 4 (:REWRITE DEFAULT-<-1))
+ (2 2 (:REWRITE DEFAULT-+-2))
+ (2 2 (:REWRITE DEFAULT-+-1))
+ )

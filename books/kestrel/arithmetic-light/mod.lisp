@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -101,14 +101,6 @@
            :in-theory (enable mod
                               floor-when-rationalp-and-complex-rationalp))))
 
-(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
-
-(defthm mod-of-mod-same-arg2
-  (implies (and (rationalp x)
-                (rationalp y))
-           (equal (mod (mod x y) y)
-                  (mod x y))))
-
 (defthm mod-when-not-acl2-numberp-arg1
   (implies (not (acl2-numberp x))
            (equal (mod x y)
@@ -139,13 +131,23 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
+
+(defthm mod-of-mod-same-arg2
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (mod (mod x y) y)
+                  (mod x y)))
+  :hints (("Goal" :in-theory (enable mod))))
+
 (defthm mod-when-<
   (implies (and (< x y)
                 (<= 0 x)
                 (rationalp x))
            (equal (mod x y)
                   x))
-  :hints (("Goal" :cases ((rationalp x)))))
+  :hints (("Goal" :in-theory (enable mod)
+           :cases ((rationalp y)))))
 
 (defthmd equal-of-0-and-mod
   (implies (and (rationalp x)
@@ -419,10 +421,8 @@
                        (mod free p))
                 (syntaxp (not (term-order y free)))
                 (integerp x)
-                (integerp y)
                 (integerp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* x y) p)
                   (mod (* x free) p)))
   :hints (("Goal" :use ((:instance mod-of-*-of-mod
@@ -439,10 +439,8 @@
                        (mod free p))
                 (syntaxp (not (term-order y free)))
                 (integerp x)
-                (integerp y)
                 (integerp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* y x) p)
                   (mod (* free x) p)))
   :hints (("Goal" :use (:instance mod-of-*-subst-arg2)
@@ -563,10 +561,8 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (integerp x)
                 (rationalp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* x y) p)
                   (mod (* free y) p))))
 
@@ -575,10 +571,8 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (integerp x)
                 (rationalp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* y x) p)
                   (mod (* y free) p))))
 

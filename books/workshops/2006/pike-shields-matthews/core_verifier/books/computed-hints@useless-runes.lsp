@@ -5,12 +5,15 @@
 (HINT-LOGHEAD-0)
 (HINT-EXPAND)
 (STABLE-SIMP-ENABLE-HINT2)
-(LOG-REP-HLP (1 1
-                (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|)))
-(LOG-REP (1 1
-            (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|)))
-(NAT-REP-HLP (1 1
-                (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|)))
+(LOG-REP-HLP
+ (1 1 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+ )
+(LOG-REP
+ (1 1 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+ )
+(NAT-REP-HLP
+ (1 1 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
+ )
 (NAT-REP)
 (C-UPDATE-BIT)
 (MEASURE-HINT)

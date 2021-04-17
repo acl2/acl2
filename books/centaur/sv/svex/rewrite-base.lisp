@@ -734,8 +734,9 @@ substitution are left in place."
                     :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
 
   (defthm svex-lookup-of-svex-alist-compose
-    (iff (svex-lookup v (svex-alist-compose x a))
-         (svex-lookup v x))
+    (equal (svex-lookup v (svex-alist-compose x a))
+           (let ((x-look (svex-lookup v x)))
+             (and x-look (svex-compose x-look a))))
     :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
                                    (svex-alist-p))))))
 
