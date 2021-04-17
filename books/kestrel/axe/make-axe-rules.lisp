@@ -40,6 +40,7 @@
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -51,6 +52,13 @@
                     plist-worldp)) ;move
 
 (add-known-boolean memberp) ;move?
+
+;move
+(defthm vars-in-terms-when-equal-of-0-and-len
+  (implies (equal 0 (len terms))
+           (equal (vars-in-terms terms)
+                  nil))
+  :hints (("Goal" :in-theory (enable vars-in-terms))))
 
 ;; (defthm all-vars-of-cons
 ;;   (equal (all-vars (cons fn args))
@@ -176,7 +184,9 @@
       (let ((fn (ffn-symb term)))
         (if (and (eq 'quotep fn) ; (quotep <var>), convert to axe-quotep (why?)
                  (= 1 (len (fargs term)))
-                 (symbolp (first (fargs term))))
+                 (symbolp (first (fargs term)))
+                 ;; (not (eq 'dag-array (first (fargs term)))) ;todo: think about this?
+                 )
             (mv (erp-nil) `(axe-quotep ,(first (fargs term))))
           (if (eq fn 'if)
               (b* (((mv erp processed-test) (process-syntaxp-argument (farg1 term) rule-symbol))
@@ -333,6 +343,19 @@
                 )
            (axe-bind-free-function-applicationp (process-axe-bind-free-function-application expr wrld)))
   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp))))
+
+;zz
+;; (defthm subsetp-equal-of-vars-in-term-of-mv-nth-1-of-process-syntaxp-argument
+;;   (implies (and (not (mv-nth 0 (process-syntaxp-argument term rule-symbol)))
+;;                 (subsetp-equal (vars-in-term term)
+;;                                (cons 'dag-array bound-vars))
+;;                 (pseudo-termp term))
+;;            (subsetp-equal (vars-in-term (mv-nth 1 (process-syntaxp-argument term rule-symbol)))
+;;                           bound-vars))
+;;   :hints (("Goal" :expand (vars-in-terms (cdr term))
+;;            :in-theory (enable process-syntaxp-argument
+;;                               myquotep
+;;                               vars-in-term))))
 
 ;;;
 ;;; make-axe-rule-hyps-for-hyp
@@ -708,8 +731,14 @@
          ((mv erp axe-rule-hyps2 bound-vars) (make-axe-rule-hyps-simple (rest hyps) bound-vars rule-symbol wrld))
          ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
       (mv (erp-nil)
-          (append (reverse-list axe-rule-hyps) axe-rule-hyps2) ;todo: would be good not to need the reverse!
+          (append axe-rule-hyps axe-rule-hyps2)
           bound-vars))))
+
+;;because it returns no hyps or 1 hyp
+(defthm reverse-list-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
+  (equal (reverse-list (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))
+         (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-hyp))))
 
 ;; redefine in terms of the simpler function
 (defthmd make-axe-rule-hyps-redef
@@ -719,7 +748,9 @@
                       (append (reverse-list acc)
                               (mv-nth 1 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))
                       (mv-nth 2 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))))
-  :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple))))
+  :hints (("Goal" :in-theory (enable make-axe-rule-hyps make-axe-rule-hyps-simple
+                                     ;make-axe-rule-hyps-for-hyp ;so we can see it r
+                                     ))))
 
 (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-simple
   (implies (pseudo-term-listp hyps)
@@ -783,11 +814,47 @@
 
 (local (in-theory (disable FNS-IN-TERM MYQUOTEP QUOTED-SYMBOL-LISTP SET-DIFFERENCE-EQUAL)))
 
+;; ;move up
+;; (defthm bound-vars-suitable-for-hypsp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
+;;   (implies (and (not (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))
+;;                 (pseudo-termp hyp)
+;;                 ;(symbol-listp bound-vars)
+;;                 ;(symbolp rule-symbol)
+;;                 ;(plist-worldp wrld)
+;;                 )
+;;            (bound-vars-suitable-for-hypsp bound-vars (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
+;;   :hints (("Goal" ;:expand (EXPAND-LAMBDAS-IN-TERM HYP)
+;;            :expand ((VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
+;;                     (VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+;;                     ;(VARS-IN-TERMS (CDDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+;;                     )
+;;            :in-theory (enable make-axe-rule-hyps-for-hyp
+;;                               bound-vars-suitable-for-hypp
+;;                               MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR
+;;                               PROCESS-SYNTAXP-ARGUMENT))))
+
+;; use rule about (vars-in-terms (expand-lambdas-in-terms terms))
+;; (defthm mv-nth-2-of-make-axe-rule-hyps-for-hyp
+;;   (implies (and (pseudo-termp hyp)
+;;                 (not (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
+;;            (equal (mv-nth 2 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
+;;                   (bound-vars-after-hyp bound-vars hyp)))
+;;   :hints (("Goal" :expand ((FNS-IN-TERM HYP)
+;;                            ;(VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
+;;                            ;(VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+;;                            )
+;;            :in-theory (enable bound-vars-after-hyps
+;;                               bound-vars-after-hyp
+;;                               make-axe-rule-hyps-for-hyp
+;;                               ))))
+
+
 ;; (defthm bound-vars-suitable-for-hypsp-of-mv-nth-1-of-make-axe-rule-hyps-simple
 ;;   (implies (and (not (mv-nth 0 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld)))
 ;;                 (pseudo-term-listp hyps))
 ;;            (bound-vars-suitable-for-hypsp bound-vars (mv-nth 1 (make-axe-rule-hyps-simple hyps bound-vars rule-symbol wrld))))
-;;   :hints (("Goal" :in-theory (enable make-axe-rule-hyps-simple
+;;   :hints (("Goal" ;:expand (EXPAND-LAMBDAS-IN-TERM HYP)
+;;            :in-theory (enable make-axe-rule-hyps-simple
 ;;                                      ;;make-axe-rule-hyps-for-hyp
 ;;                                      bound-vars-suitable-for-hypp
 ;;                                      bound-vars-after-hyp))))
