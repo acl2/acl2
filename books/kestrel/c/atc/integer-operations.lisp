@@ -132,11 +132,6 @@
   :guard (member-eq type *atc-integer-types*)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a new improved macro that will replace
-     the old @(tsee atc-def-integer-operations), which will be removed."))
 
   (b* ((type-string (atc-integer-type-string type))
        (rtype (case type
@@ -395,6 +390,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (progn
+  ;; It is critical to generate the operations for SINT and UINT
+  ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
+  ;; because the latter are defined in terms of the former.
   (make-event (atc-def-integer-operations-1 'sint))
   (make-event (atc-def-integer-operations-1 'uint))
   (make-event (atc-def-integer-operations-1 'slong))
@@ -404,8 +402,7 @@
   (make-event (atc-def-integer-operations-1 'schar))
   (make-event (atc-def-integer-operations-1 'uchar))
   (make-event (atc-def-integer-operations-1 'sshort))
-  (make-event (atc-def-integer-operations-1 'ushort))
-  )
+  (make-event (atc-def-integer-operations-1 'ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
