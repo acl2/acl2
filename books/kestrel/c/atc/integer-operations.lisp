@@ -169,7 +169,8 @@
        (minus-rtype-okp (add-suffix minus-rtype "-OKP"))
        (bitnot-rtype (acl2::packn-pos (list "BITNOT-" rtype) 'atc))
        (type-signedp (atc-integer-type-signedp type))
-       (rtype-signedp (atc-integer-type-signedp rtype)))
+       (rtype-signedp (atc-integer-type-signedp rtype))
+       (lognot-type (acl2::packn-pos (list "LOGNOT-" type) 'atc)))
 
     `(progn
 
@@ -264,7 +265,35 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,lognot-type ((x ,typep))
+         :returns (result sintp)
+         :short ,(concatenate 'string
+                              "Logical complement of a value of "
+                              type-string
+                              " [C:6.5.3].")
+         (sint01 (= (,type->get x) 0))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint01 ((b booleanp))
+  :returns (x sintp)
+  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
+     Together with @(tsee sint-nonzerop) and other @('...-nonzerop') operations,
+     it can be used to represent in ACL2
+     shallowly embedded C logical conjunctions and disjunctions,
+     which must be integers in C,
+     but must be booleans in ACL2 to represent their non-strictness."))
+  (if b (sint 1) (sint 0))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,8 +345,6 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (lognot-stype (acl2::packn-pos (list "LOGNOT-" stype) 'atc))
-       (lognot-utype (acl2::packn-pos (list "LOGNOT-" utype) 'atc))
        (add-stype-stype (acl2::packn-pos (list "ADD-" stype "-" stype) 'atc))
        (add-utype-utype (acl2::packn-pos (list "ADD-" utype "-" utype) 'atc))
        (add-stype-stype-okp (add-suffix add-stype-stype "-OKP"))
@@ -375,36 +402,6 @@
        (logor-utype-utype (acl2::packn-pos (list "LOGOR-" utype "-" utype) 'atc)))
 
     `(progn
-
-       ;; The following operations are defined for all the types.
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,lognot-stype ((x ,stypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical complement of @('signed "
-                              type-string
-                              "') values [C:6.5.3].")
-         (if (= (,stype->get x) 0)
-             (sint 1)
-           (sint 0))
-         :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,lognot-utype ((x ,utypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical complement of @('unsigned "
-                              type-string
-                              "') values [C:6.5.3].")
-         (if (= (,utype->get x) 0)
-             (sint 1)
-           (sint 0))
-         :hooks (:fix))
-
-       ;; The following operations are defined only for the higher-rank types.
 
        ,@(and
           (member-eq type '(:int :long :llong))
@@ -1189,23 +1186,6 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
             )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sint01 ((b booleanp))
-  :returns (x sintp)
-  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
-     Together with @(tsee sint-nonzerop),
-     it can be used to represent in ACL2
-     shallowly embedded C logical conjunctions and disjunctions,
-     which must be integers in C,
-     but must be booleans in ACL2 to represent their non-strictness."))
-  (if b (sint 1) (sint 0))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
