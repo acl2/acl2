@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -419,10 +419,8 @@
                        (mod free p))
                 (syntaxp (not (term-order y free)))
                 (integerp x)
-                (integerp y)
                 (integerp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* x y) p)
                   (mod (* x free) p)))
   :hints (("Goal" :use ((:instance mod-of-*-of-mod
@@ -439,10 +437,8 @@
                        (mod free p))
                 (syntaxp (not (term-order y free)))
                 (integerp x)
-                (integerp y)
                 (integerp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* y x) p)
                   (mod (* free x) p)))
   :hints (("Goal" :use (:instance mod-of-*-subst-arg2)
@@ -563,10 +559,8 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (integerp x)
                 (rationalp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* x y) p)
                   (mod (* free y) p))))
 
@@ -575,10 +569,8 @@
                 (syntaxp (and (quotep free)
                               (not (quotep x))))
                 (integerp y)
-                (integerp x)
                 (rationalp free)
-                (integerp p)
-                (< 0 p))
+                (integerp p))
            (equal (mod (* y x) p)
                   (mod (* y free) p))))
 
