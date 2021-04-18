@@ -15,6 +15,7 @@
 (include-book "unify-tree-and-dag")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; Returns :fail (meaning failure to match) or an alist binding the free vars in HYP.

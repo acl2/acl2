@@ -45,7 +45,9 @@
 ;; see all-vars1 but that one has an accumulator.  also, this works on axe-trees!
 (mutual-recursion
  (defund axe-tree-vars (tree)
-   (declare (xargs :guard (axe-treep tree)))
+   (declare (xargs :guard (axe-treep tree)
+                   :verify-guards nil ; done below
+                   ))
    (if (atom tree)
        (if (symbolp tree)
            (list tree)
@@ -58,8 +60,24 @@
    (declare (xargs :guard (all-axe-treep trees)))
    (if (atom trees)
        nil
-     (append (axe-tree-vars (first trees))
-             (axe-tree-vars-lst (rest trees))))))
+     (union-eq (axe-tree-vars (first trees))
+               (axe-tree-vars-lst (rest trees))))))
+
+(make-flag axe-tree-vars)
+
+(defthm-flag-axe-tree-vars
+  (defthm symbol-listp-of-axe-tree-vars
+    (implies (axe-treep tree)
+             (symbol-listp (axe-tree-vars tree)))
+    :flag axe-tree-vars)
+  (defthm symbol-listp-of-axe-tree-vars-lst
+    (implies (all-axe-treep trees)
+             (symbol-listp (axe-tree-vars-lst trees)))
+    :flag axe-tree-vars-lst)
+  :hints (("Goal" :in-theory (enable axe-tree-vars
+                                     axe-tree-vars-lst))))
+
+(verify-guards axe-tree-vars)
 
 ;doesn't support lambdas
 ;fixme could use a single RV if we used :fail (which is not an alist) to signal failure?
