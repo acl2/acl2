@@ -73,7 +73,7 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
 
-(defthm all-dargp-of-match-hyp-with-nodenum-to-assume-false
+(defthm all-dargp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
@@ -84,7 +84,7 @@
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))
 
-(defthm all-dargp-less-than-of-match-hyp-with-nodenum-to-assume-false
+(defthm all-dargp-less-than-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
@@ -116,3 +116,25 @@
                             (nodenum-or-quotep (nth 0
                                                     (dargs (aref1 'dag-array
                                                                   dag-array nodenum-to-assume-false)))))))))
+
+;; (defthm match-hyp-with-nodenum-to-assume-false-binds
+;;   (implies (and (axe-treep hyp)
+;;                 (consp hyp)
+;;                 (not (equal 'quote (ffn-symb hyp)))
+;;                 (symbol-alistp alist)
+;;                 (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+;;            (perm (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))
+;;                  (axe-tree-vars hyp)))
+;;   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false) (unify-tree-with-dag-node-binds-all-vars))
+;;            :expand ((axe-tree-vars hyp)
+;;                     (axe-tree-vars-lst (cdr hyp)))
+;;            :use ((:instance unify-tree-with-dag-node-binds-all-vars
+;;                             (alist nil)
+;;                             (tree (cadr hyp))
+;;                             (nodenum-or-quotep nodenum-to-assume-false))
+;;                  (:instance unify-tree-with-dag-node-binds-all-vars
+;;                             (tree hyp)
+;;                             (alist nil)
+;;                             (nodenum-or-quotep (nth 0
+;;                                                     (dargs (aref1 'dag-array
+;;                                                                   dag-array nodenum-to-assume-false)))))))))
