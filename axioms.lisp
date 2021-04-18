@@ -12942,6 +12942,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ar
          (in-order t)
          (num 1))
+    (declare (type (unsigned-byte 31) num))
 
     (when (and (null order)
                (> (length l) maximum-length))
@@ -13040,7 +13041,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (cdar tl))))))))
 
     (let (x max-ar)
-      (declare (type (unsigned-byte 31) num))
 
 ;  In one pass, set x to the value to be returned, put defaults into the array
 ;  where the invisible mark still sits, and calculate the length of x.  Except:
