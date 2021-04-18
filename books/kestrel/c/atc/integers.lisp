@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "integer-formats")
+(include-book "pack")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
 
@@ -100,51 +101,6 @@
   :short "Check if an integer type is signed."
   (eql (char (symbol-name type) 0) #\S))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-typep (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (name symbolp)
-  :short "Name of the recognizer of an integer type."
-  (add-suffix type "P"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type->get (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (name symbolp)
-  :short "Name of the accessor of an integer type."
-  (add-suffix type "->GET"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-mod (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (name symbolp)
-  :short "Name of the modular constructor of an integer type."
-  :long
-  (xdoc::topstring-p
-   "This is only actually used for unsigned integer types.")
-  (add-suffix type "-MOD"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-integerp (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (name symbolp)
-  :short "Name of the recognizer of the type of ACL2 integers
-          that form the range of an integer type."
-  (add-suffix type "-INTEGERP"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-integerp-alt-def (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (name symbolp)
-  :short "Name of the alternative definition rule of the recognizer of
-          the type of ACL2 integers that form the range of an integer type."
-  (add-suffix (atc-integer-type-integerp type) "-ALT-DEF"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ atc-def-integer-values (type)
@@ -153,41 +109,41 @@
 
   (b* ((type-string (acl2::string-downcase
                      (if (eq type 'llong) "LONG LONG" (symbol-name type))))
-       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
+       (type-bits (pack type '-bits))
        (type-bits-bound (case type
                           (char 8)
                           (short 16)
                           (int 16)
                           (long 32)
                           (llong 64)))
-       (utype (acl2::packn-pos (list "U" type) 'atc))
-       (stype (acl2::packn-pos (list "S" type) 'atc))
-       (utypep (atc-integer-typep utype))
-       (stypep (atc-integer-typep stype))
-       (utype-list (add-suffix utype "-LIST"))
-       (stype-list (add-suffix stype "-LIST"))
-       (utype-listp (add-suffix utype "-LISTP"))
-       (stype-listp (add-suffix stype "-LISTP"))
-       (utype-integer (add-suffix utype "-INTEGER"))
-       (stype-integer (add-suffix stype "-INTEGER"))
-       (utype-integerp (atc-integer-type-integerp utype))
-       (stype-integerp (atc-integer-type-integerp stype))
-       (utype-integer-fix (add-suffix utype "-INTEGER-FIX"))
-       (stype-integer-fix (add-suffix stype "-INTEGER-FIX"))
-       (utype-integerp-alt-def (atc-integer-type-integerp-alt-def utype))
-       (stype-integerp-alt-def (atc-integer-type-integerp-alt-def stype))
-       (utype-max (add-suffix utype "-MAX"))
+       (utype (pack 'u type))
+       (stype (pack 's type))
+       (utypep (pack utype 'p))
+       (stypep (pack stype 'p))
+       (utype-list (pack utype '-list))
+       (stype-list (pack stype '-list))
+       (utype-listp (pack utype-list 'p))
+       (stype-listp (pack stype-list 'p))
+       (utype-integer (pack utype '-integer))
+       (stype-integer (pack stype '-integer))
+       (utype-integerp (pack utype-integer 'p))
+       (stype-integerp (pack stype-integer 'p))
+       (utype-integer-fix (pack utype-integer '-fix))
+       (stype-integer-fix (pack stype-integer '-fix))
+       (utype-integerp-alt-def (pack utype-integerp '-alt-def))
+       (stype-integerp-alt-def (pack stype-integerp '-alt-def))
+       (utype-max (pack utype '-max))
        (utype-max-bound (1- (expt 2 type-bits-bound)))
-       (stype-min (add-suffix stype "-MIN"))
+       (stype-min (pack stype '-min))
        (stype-min-bound (- (expt 2 (1- type-bits-bound))))
-       (stype-max (add-suffix stype "-MAX"))
+       (stype-max (pack stype '-max))
        (stype-max-bound (1- (expt 2 (1- type-bits-bound))))
-       (utype->get (atc-integer-type->get utype))
-       (stype->get (atc-integer-type->get stype))
-       (utype->get-upper-bound (add-suffix utype->get "-UPPER-BOUND"))
-       (stype->get-lower-bound (add-suffix stype->get "-LOWER-BOUND"))
-       (stype->get-upper-bound (add-suffix stype->get "-UPPER-BOUND"))
-       (utype-mod (atc-integer-type-mod utype)))
+       (utype->get (pack utype '->get))
+       (stype->get (pack stype '->get))
+       (utype->get-upper-bound (pack utype->get '-upper-bound))
+       (stype->get-upper-bound (pack stype->get '-upper-bound))
+       (stype->get-lower-bound (pack stype->get '-lower-bound))
+       (utype-mod (pack utype '-mod)))
 
     `(encapsulate ()
 

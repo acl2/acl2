@@ -53,15 +53,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-conv (src-type dst-type)
-  :guard (and (member-eq src-type *atc-integer-types*)
-              (member-eq dst-type *atc-integer-types*))
-  :returns (name symbolp)
-  :short "Name of the conversion between two integer types."
-  (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-def-integer-conversion (src-type dst-type)
   :guard (and (member-eq src-type *atc-integer-types*)
               (member-eq dst-type *atc-integer-types*))
@@ -86,14 +77,14 @@
 
   (b* ((src-type-string (atc-integer-type-string src-type))
        (dst-type-string (atc-integer-type-string dst-type))
-       (conv (atc-integer-type-conv src-type dst-type))
-       (conv-okp (add-suffix conv "-OKP"))
-       (src-typep (atc-integer-typep src-type))
-       (dst-typep (atc-integer-typep dst-type))
-       (src-type->get (atc-integer-type->get src-type))
-       (dst-type-integerp (atc-integer-type-integerp dst-type))
-       (dst-type-integerp-alt-def (atc-integer-type-integerp-alt-def dst-type))
-       (dst-type-mod (atc-integer-type-mod dst-type))
+       (conv (pack dst-type '-from- src-type))
+       (conv-okp (pack conv '-okp))
+       (src-typep (pack src-type 'p))
+       (dst-typep (pack dst-type 'p))
+       (src-type->get (pack src-type '->get))
+       (dst-type-integerp (pack dst-type '-integerp))
+       (dst-type-integerp-alt-def (pack dst-type-integerp '-alt-def))
+       (dst-type-mod (pack dst-type '-mod))
        (diffp (not (eq src-type dst-type)))
        (signedp (atc-integer-type-signedp dst-type))
        (guardp (case dst-type
