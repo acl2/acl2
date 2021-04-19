@@ -54,16 +54,26 @@
 (defund stored-axe-rulep (item)
   (declare (xargs :guard t))
   (and (<= 3 (len item)) ;the final cdr is the rhs
-       (pseudo-term-listp (stored-rule-lhs-args item)) ;should be lambda-free
-       (axe-rule-hyp-listp (stored-rule-hyps item))
-       (pseudo-termp (stored-rule-rhs item)) ;todo: disallow free vars
-       (symbolp (stored-rule-symbol item))))
+       (let ((lhs-args (stored-rule-lhs-args item))
+             (hyps (stored-rule-hyps item))
+             (rhs (stored-rule-rhs item))
+             (rule-symbol (stored-rule-symbol item)))
+         (and (pseudo-term-listp lhs-args) ;should be lambda-free
+              (axe-rule-hyp-listp hyps)
+              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
+              (pseudo-termp rhs)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
+              (symbolp rule-symbol)))))
 
 (defthm stored-axe-rulep-of-make-stored-rule
   (equal (stored-axe-rulep (make-stored-rule lhs-args hyps rule-symbol rhs))
          (and (pseudo-term-listp lhs-args)
               (axe-rule-hyp-listp hyps)
+              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
               (pseudo-termp rhs)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
               (symbolp rule-symbol)))
   :hints (("Goal" :in-theory (enable make-stored-rule
                                      stored-axe-rulep
