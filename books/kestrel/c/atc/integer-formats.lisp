@@ -19,7 +19,7 @@
 
 (defxdoc+ atc-integer-formats
   :parents (atc-integers)
-  :short "C integer formats for ATC."
+  :short "A model of C integer formats for ATC."
   :long
   (xdoc::topstring
    (xdoc::p

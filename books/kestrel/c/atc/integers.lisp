@@ -33,19 +33,19 @@
     ". As mentioned there, the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "For each of @('char'), @('short'), @('int'), @('long'), and @('long long'),
-     we define ACL2 unsigned and signed integers for them
+    "For each C integer type covered by our model,
+     we define ACL2 signed or unsigned integers corresponding to them
      (via @(tsee fty::defbyte)), and
-     we define C values by wrapping those unsigned and signed integers.
+     we define the C values by wrapping those signed or unsigned integers.
      We also define maximum and (for signed) minimum integers,
      prove some linear rules about them,
      and prove rules that provide alternative definitions
-     of the unsigned and signed ACL2 integers in terms of minima and maxima.
+     of the signed and unsigned ACL2 integers in terms of minima and maxima.
      This way we have the ability to view the integer ranges
-     as ACL2's @(tsee unsigned-byte-p) and @(tsee signed-byte-p) values,
+     as ACL2's @(tsee signed-byte-p) and @(tsee unsigned-byte-p) values,
      which is useful for bitwise operations,
      but also as plain integers in certain ranges,
-     which may lead to simpler reasoning about ranges.")
+     which should lead to simpler reasoning about ranges.")
    (xdoc::p
     "For the unsigned types,
      we also introduce ACL2 functions
