@@ -232,3 +232,10 @@
       (if (eq rule-symbol (stored-rule-symbol stored-axe-rule))
           t
         (rule-is-presentp rule-symbol (rest stored-axe-rules))))))
+
+(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
+  (implies (stored-axe-rulep stored-rule)
+           (bound-vars-suitable-for-hypsp
+            (vars-in-terms (stored-rule-lhs-args stored-rule))
+            (stored-rule-hyps stored-rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep))))

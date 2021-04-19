@@ -46,6 +46,7 @@
 (include-book "get-args-not-done")
 (include-book "tries")
 (include-book "result-array")
+(include-book "alist-suitable-for-hypsp")
 (include-book "make-substitution-code-simple")
 (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
@@ -733,6 +734,7 @@
                                 (not (eq 'quote (ffn-symb hyp))) ;; hyp cannot be a quotep
                                 (natp hyp-num)
                                 (axe-rule-hyp-listp other-hyps)
+                                (alist-suitable-for-hyp-tree-and-hypsp alist hyp other-hyps)
                                 (symbolp rule-symbol)
                                 (equiv-alistp equiv-alist)
                                 (rule-alistp rule-alist)
@@ -831,6 +833,7 @@
           (declare (xargs :guard (and (axe-rule-hyp-listp hyps)
                                       (natp hyp-num)
                                       (symbol-alistp alist)
+                                      (alist-suitable-for-hypsp alist hyps)
                                       (symbolp rule-symbol)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (all-dargp-less-than (strip-cdrs alist) dag-len)
@@ -862,7 +865,7 @@
                    (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 (if (eq :axe-syntaxp fn)
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
-                           (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
+                           (result (and ;(all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!
                                         (,eval-axe-syntaxp-expr-name syntaxp-expr alist dag-array))))
                       (if result
                           (,relieve-rule-hyps-name
@@ -875,7 +878,7 @@
                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
                   (if (eq :axe-bind-free fn)
                       (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
-                             (result (and (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
+                             (result (and ;(all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!
                                           (,eval-axe-bind-free-function-application-name (ffn-symb bind-free-expr) (fargs bind-free-expr) alist dag-array) ;could make a version without dag-array (may be very common?).. fixme use :dag-array?
                                           )))
                         (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
@@ -1793,6 +1796,7 @@
        ;; TODO: Why is this so slow?
        (make-flag ,relieve-free-var-hyp-and-all-others-name)
 
+       ;; The main return type theorem:
        (,(pack$ 'defthm-flag- relieve-free-var-hyp-and-all-others-name)
          (DEFTHM ,(pack$ RELIEVE-FREE-VAR-HYP-AND-ALL-OTHERS-name '-return-type)
            (IMPLIES (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2469,7 +2473,17 @@
                                ,(pack$ simplify-tree-name '-return-type-corollary)
                                ,(pack$ simplify-tree-name '-return-type-corollary-linear)
                                ,(pack$ try-to-apply-rules-name '-return-type-corollary)
-                               ,(pack$ try-to-apply-rules-name '-return-type-corollary-linear))
+                               ,(pack$ try-to-apply-rules-name '-return-type-corollary-linear)
+                               alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
+                               alist-suitable-for-hypsp-when-axe-sytaxp-car
+                               alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free
+                               alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
+                               alist-suitable-for-hypsp-after-matching
+                               alist-suitable-for-hypsp-of-cdr-of-car-when-normal
+                               alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
+                               subsetp-equal-of-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
+                               ,(pack$ 'axe-tree-vars-of- instantiate-hyp-free-vars-name)
+                               )
                   ;; :in-theory (e/d (bounded-axe-treep-when-natp-strong
                   ;;                  <-OF-+-OF-1-STRENGTHEN-2
                   ;;                  ;;<-OF-+-OF-1-WHEN-INTEGERS

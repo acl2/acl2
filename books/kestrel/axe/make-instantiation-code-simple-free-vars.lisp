@@ -18,7 +18,22 @@
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
-(include-book "axe-trees")
+(include-book "axe-tree-vars")
+(include-book "kestrel/utilities/vars-in-term" :dir :system)
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+
+(defthmd assoc-equal-iff-member-equal-of-strip-cars
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (member-equal key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal))))
+
+;move
+(defthm set-difference-equal-of-union-equal-arg1
+  (equal (set-difference-equal (union-equal x y) z)
+         (union-equal (set-difference-equal x z)
+                      (set-difference-equal y z)))
+  :hints (("Goal" :in-theory (enable set-difference-equal union-equal))))
 
 (defun make-instantiation-code-simple-free-vars-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
@@ -182,7 +197,39 @@
                        )
                   (all-axe-treep (cdr (,instantiate-hyp-name term alist interpreted-function-alist))))
          :hints (("Goal" :use ,(pack$ 'axe-treep-of- instantiate-hyp-name)
-                  :in-theory (disable ,(pack$ 'axe-treep-of- instantiate-hyp-name))))))))
+                  :in-theory (disable ,(pack$ 'axe-treep-of- instantiate-hyp-name)))))
+
+       (,(pack$ 'defthm-flag- instantiate-hyp-name)
+        (defthm ,(pack$ 'mv-nth-0-of- instantiate-hyp-lst-name)
+          (iff (mv-nth 0 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))
+               (all-quotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
+          :flag ,instantiate-hyp-lst-name)
+        :skip-others t
+        :hints (("Goal" :in-theory (enable ,instantiate-hyp-name ,instantiate-hyp-lst-name
+                                           all-quotep))))
+
+       (,(pack$ 'defthm-flag- instantiate-hyp-name)
+        (defthm ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name)
+          (implies (and (pseudo-termp term)
+                        (all-dargp (strip-cdrs alist))
+                        (alistp alist))
+                   (equal (axe-tree-vars (,instantiate-hyp-name term alist interpreted-function-alist))
+                          (set-difference-equal (vars-in-term term)
+                                                (strip-cars alist))))
+          :flag ,instantiate-hyp-name)
+        (defthm ,(pack$ 'all-axe-tree-vars-of-mv-nth-1-of- instantiate-hyp-lst-name)
+          (implies (and (pseudo-term-listp terms)
+                        (all-dargp (strip-cdrs alist))
+                        (alistp alist))
+                   (equal (axe-tree-vars-lst (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist)))
+                          (set-difference-equal (vars-in-terms terms)
+                                                (strip-cars alist))))
+          :flag ,instantiate-hyp-lst-name)
+        :hints (("Goal" :expand ((vars-in-terms terms))
+                 :in-theory (enable ,instantiate-hyp-name
+                                           ,instantiate-hyp-lst-name
+                                           assoc-equal-iff-member-equal-of-strip-cars
+                                           axe-tree-vars)))))))
 
 (defmacro make-instantiation-code-simple-free-vars (suffix
                                                     evaluator-base-name)
