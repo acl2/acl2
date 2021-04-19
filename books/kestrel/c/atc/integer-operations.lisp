@@ -468,7 +468,11 @@
        (shl-type1-type2 (pack 'shl- type1 '- type2))
        (shl-type1-type2-okp (pack shl-type1-type2 '-okp))
        (shl-type1 (pack 'shl- type1))
-       (shl-type1-okp (pack shl-type1 '-okp)))
+       (shl-type1-okp (pack shl-type1 '-okp))
+       (shr-type1-type2 (pack 'shr- type1 '- type2))
+       (shr-type1-type2-okp (pack shr-type1-type2 '-okp))
+       (shr-type1 (pack 'shr- type1))
+       (shr-type1-okp (pack shr-type1 '-okp)))
 
     `(progn
 
@@ -704,6 +708,32 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,shr-type1-type2-okp ((x ,type1p) (y ,type2p))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if the right shift of a value of "
+                           type1-string
+                           " by a value of "
+                           type2-string
+                           " is well-defined.")
+         (,shr-type1-okp x (,type2-integer-value y))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,shr-type1-type2 ((x ,type1p) (y ,type2p))
+         :guard (,shr-type1-type2-okp x y)
+         :returns (result ,sh-typep)
+         :short ,(str::cat "Right shift of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.7].")
+         (,shr-type1 x (,type2-integer-value y))
+         :guard-hints (("Goal" :in-theory (enable ,shr-type1-type2-okp)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -786,16 +816,6 @@
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
-       (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
-       (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (shr-stype (acl2::packn-pos (list "SHR-" stype) 'atc))
-       (shr-utype (acl2::packn-pos (list "SHR-" utype) 'atc))
-       (shr-stype-okp (add-suffix shr-stype "-OKP"))
-       (shr-utype-okp (add-suffix shr-utype "-OKP"))
-       (shr-stype-stype (acl2::packn-pos (list "SHR-" stype "-" stype) 'atc))
-       (shr-utype-utype (acl2::packn-pos (list "SHR-" utype "-" utype) 'atc))
-       (shr-stype-stype-okp (add-suffix shr-stype-stype "-OKP"))
-       (shr-utype-utype-okp (add-suffix shr-utype-utype "-OKP"))
        (lt-stype-stype (acl2::packn-pos (list "LT-" stype "-" stype) 'atc))
        (lt-utype-utype (acl2::packn-pos (list "LT-" utype "-" utype) 'atc))
        (gt-stype-stype (acl2::packn-pos (list "GT-" stype "-" stype) 'atc))
@@ -824,62 +844,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shr-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if right shift of @('signed "
-                                   type-string
-                                   "') values by @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (,shr-stype-okp x (,stype-integer-value y))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shr-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,shr-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Right shift of @('signed "
-                                   type-string
-                                   "') values by @('signed "
-                                   type-string
-                                   "') values [C:6.5.7].")
-              (,shr-stype x (,stype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,shr-stype-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shr-utype-utype-okp ((x ,utypep) (y ,utypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if right shift of @('unsigned "
-                                   type-string
-                                   "') values by @('unsigned "
-                                   type-string
-                                   "') values is well-defined.")
-              (,shr-utype-okp x (,utype-integer-value y))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shr-utype-utype ((x ,utypep) (y ,utypep))
-              :guard (,shr-utype-utype-okp x y)
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Left shift of @('unsigned "
-                                   type-string
-                                   "') values by @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.7].")
-              (,shr-utype x (,utype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,shr-utype-utype-okp)))
-              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
