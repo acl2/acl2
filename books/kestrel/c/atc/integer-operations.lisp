@@ -445,6 +445,10 @@
        (add-type1-type2-okp (pack add-type1-type2 '-okp))
        (add-type-type (pack 'add- type '- type))
        (add-type-type-okp (pack add-type-type '-okp))
+       (sub-type1-type2 (pack 'sub- type1 '- type2))
+       (sub-type1-type2-okp (pack sub-type1-type2 '-okp))
+       (sub-type-type (pack 'sub- type '- type))
+       (sub-type-type-okp (pack sub-type-type '-okp))
        )
 
     `(progn
@@ -485,6 +489,44 @@
          ,@(and signedp
                 `(:guard-hints
                   (("Goal" :in-theory (enable ,add-type1-type2-okp)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          signedp
+          `((define ,sub-type1-type2-okp ((x ,type1p) (y ,type2p))
+              :returns (yes/no booleanp)
+              :short ,(str::cat "Check if the subtraction of a value of "
+                                type1-string
+                                " and a value of "
+                                type2-string
+                                " is well-defined.")
+              ,(if samep
+                   `(,type-integerp (- (,type1->get x) (,type2->get y)))
+                 `(,sub-type-type-okp
+                   ,(if (eq type type1) 'x `(,type-from-type1 x))
+                   ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              :hooks (:fix))))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,sub-type1-type2 ((x ,type1p) (y ,type2p))
+         ,@(and signedp `(:guard (,sub-type1-type2-okp x y)))
+         :returns (result ,typep)
+         :short ,(str::cat "Subtraction of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.6].")
+         ,(if samep
+              `(,(if signedp type type-mod) (- (,type1->get x) (,type2->get y)))
+            `(,sub-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         ,@(and signedp
+                `(:guard-hints
+                  (("Goal" :in-theory (enable ,sub-type1-type2-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -575,9 +617,6 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (sub-stype-stype (acl2::packn-pos (list "SUB-" stype "-" stype) 'atc))
-       (sub-utype-utype (acl2::packn-pos (list "SUB-" utype "-" utype) 'atc))
-       (sub-stype-stype-okp (add-suffix sub-stype-stype "-OKP"))
        (mul-stype-stype (acl2::packn-pos (list "MUL-" stype "-" stype) 'atc))
        (mul-utype-utype (acl2::packn-pos (list "MUL-" utype "-" utype) 'atc))
        (mul-stype-stype-okp (add-suffix mul-stype-stype "-OKP"))
@@ -633,46 +672,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,sub-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if subtraction of @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (,stype-integerp (- (,stype->get x) (,stype->get y)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,sub-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,sub-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Subtraction of @('signed "
-                                   type-string
-                                   "') values [C:6.5.6].")
-              (,stype (- (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,sub-stype-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,sub-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Subtraction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.6].")
-              (,utype (mod (- (,utype->get x) (,utype->get y))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
