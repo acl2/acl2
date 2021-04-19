@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function union-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,4 +44,15 @@
          (if (member-equal a y)
              (union-equal x y)
            (cons a (union-equal x y))))
+  :hints (("Goal" :in-theory (enable union-equal))))
+
+(defthm member-equal-of-union-equal
+  (iff (member-equal a (union-equal x y))
+       (or (member-equal a x)
+           (member-equal a y)))
+  :hints (("Goal" :in-theory (enable union-equal add-to-set-equal))))
+
+(defthm union-equal-associative
+  (equal (union-equal (union-equal x y) z)
+         (union-equal x (union-equal y z)))
   :hints (("Goal" :in-theory (enable union-equal))))

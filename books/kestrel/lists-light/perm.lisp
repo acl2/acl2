@@ -1,7 +1,7 @@
 ; Theorems about perm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "subsetp-equal"))
 (local (include-book "remove1-equal"))
+(local (include-book "intersection-equal"))
 
 (local (in-theory (enable member-equal-becomes-memberp)))
 
@@ -78,8 +79,6 @@
   :hints (("Goal" :use (:instance memberp-when-perm (y x-equiv)))))
 
 (defcong perm perm (remove1-equal a x) 2)
-
-;; (defcong perm equal (subsetp-equal x y) 1)
 
 (defthm perm-of-true-list-fix-arg1
   (equal (perm (true-list-fix x) y)
@@ -210,3 +209,39 @@
 
 (defcong perm equal (no-duplicatesp-equal x) 1
   :hints (("Goal" :in-theory (enable perm))))
+
+(defcong perm perm (set-difference-equal x y) 1
+  :hints (("Goal" :in-theory (enable set-difference-equal perm))))
+
+(defcong perm perm (set-difference-equal x y) 2
+  :hints (("Goal" :in-theory (enable set-difference-equal perm))))
+
+(defcong perm equal (subsetp-equal x y) 1
+  :hints (("Goal" :in-theory (enable subsetp-equal
+                                     perm
+                                     subsetp-equal-of-remove1-equal-arg1-irrel))))
+
+(defcong perm equal (subsetp-equal x y) 2
+  :hints (("Goal" :in-theory (enable subsetp-equal
+                                     perm
+                                     subsetp-equal-of-remove1-equal-arg1-irrel))))
+
+(defcong perm perm (intersection-equal x y) 1
+  :hints (("Goal" :in-theory (enable intersection-equal perm))))
+
+(defcong perm perm (intersection-equal x y) 2
+  :hints (("Goal" :in-theory (enable intersection-equal perm))))
+
+(defcong perm iff (intersection-equal x y) 1
+  :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)
+           :in-theory (enable intersection-equal perm))))
+
+(defcong perm iff (intersection-equal x y) 2
+  :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)
+           :in-theory (enable intersection-equal perm))))
+
+(defcong perm perm (union-equal x y) 1
+  :hints (("Goal" :in-theory (enable union-equal perm))))
+
+(defcong perm perm (union-equal x y) 2
+  :hints (("Goal" :in-theory (enable union-equal perm))))
