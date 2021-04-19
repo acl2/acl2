@@ -472,7 +472,19 @@
        (shr-type1-type2 (pack 'shr- type1 '- type2))
        (shr-type1-type2-okp (pack shr-type1-type2 '-okp))
        (shr-type1 (pack 'shr- type1))
-       (shr-type1-okp (pack shr-type1 '-okp)))
+       (shr-type1-okp (pack shr-type1 '-okp))
+       (lt-type1-type2 (pack 'lt- type1 '- type2))
+       (lt-type-type (pack 'lt- type '- type))
+       (gt-type1-type2 (pack 'gt- type1 '- type2))
+       (gt-type-type (pack 'gt- type '- type))
+       (le-type1-type2 (pack 'le- type1 '- type2))
+       (le-type-type (pack 'le- type '- type))
+       (ge-type1-type2 (pack 'ge- type1 '- type2))
+       (ge-type-type (pack 'ge- type '- type))
+       (eq-type1-type2 (pack 'eq- type1 '- type2))
+       (eq-type-type (pack 'eq- type '- type))
+       (ne-type1-type2 (pack 'ne- type1 '- type2))
+       (ne-type-type (pack 'ne- type '- type)))
 
     `(progn
 
@@ -734,6 +746,114 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,lt-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Less-than relation of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (< (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,lt-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,gt-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Greater-than relation of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (> (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,gt-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,le-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Less-than-or-equal-to relation of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (<= (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,le-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,ge-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Greater-than-or-equal-to relation of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (>= (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,ge-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,eq-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Equality of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (= (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,eq-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,ne-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result sintp)
+         :short ,(str::cat "Non-equality of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(if (/= (,type1->get x) (,type2->get y))
+                   (sint 1)
+                 (sint 0))
+            `(,ne-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -816,18 +936,6 @@
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
-       (lt-stype-stype (acl2::packn-pos (list "LT-" stype "-" stype) 'atc))
-       (lt-utype-utype (acl2::packn-pos (list "LT-" utype "-" utype) 'atc))
-       (gt-stype-stype (acl2::packn-pos (list "GT-" stype "-" stype) 'atc))
-       (gt-utype-utype (acl2::packn-pos (list "GT-" utype "-" utype) 'atc))
-       (le-stype-stype (acl2::packn-pos (list "LE-" stype "-" stype) 'atc))
-       (le-utype-utype (acl2::packn-pos (list "LE-" utype "-" utype) 'atc))
-       (ge-stype-stype (acl2::packn-pos (list "GE-" stype "-" stype) 'atc))
-       (ge-utype-utype (acl2::packn-pos (list "GE-" utype "-" utype) 'atc))
-       (eq-stype-stype (acl2::packn-pos (list "EQ-" stype "-" stype) 'atc))
-       (eq-utype-utype (acl2::packn-pos (list "EQ-" utype "-" utype) 'atc))
-       (ne-stype-stype (acl2::packn-pos (list "NE-" stype "-" stype) 'atc))
-       (ne-utype-utype (acl2::packn-pos (list "NE-" utype "-" utype) 'atc))
        (bitand-stype-stype (acl2::packn-pos (list "BITAND-" stype "-" stype) 'atc))
        (bitand-utype-utype (acl2::packn-pos (list "BITAND-" utype "-" utype) 'atc))
        (bitxor-stype-stype (acl2::packn-pos (list "BITXOR-" stype "-" stype) 'atc))
@@ -844,167 +952,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,lt-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
-              (if (< (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,lt-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Less-than relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
-              (if (< (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,gt-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than relation of @('signed "
-                                   type-string
-                                   "') values [C:6.5.8].")
-              (if (> (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,gt-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Greater-than relation of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.8].")
-              (if (> (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,le-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate
-                       'string
-                       "Less-than-or-equal-to relation of @('signed "
-                       type-string
-                       "') values [C:6.5.8].")
-              (if (<= (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,le-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate
-                       'string
-                       "Less-than-or-equal-to relation of @('unsigned "
-                       type-string
-                       "') values [C:6.5.8].")
-              (if (<= (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,ge-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate
-                       'string
-                       "Greater-than-or-equal-to relation of @('signed "
-                       type-string
-                       "') values [C:6.5.8].")
-              (if (>= (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,ge-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate
-                       'string
-                       "Greater-than-or-equal-to relation of @('unsigned "
-                       type-string
-                       "') values [C:6.5.8].")
-              (if (>= (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,eq-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate
-                       'string
-                       "Equality of @('signed "
-                       type-string
-                       "') values [C:6.5.9].")
-              (if (= (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,eq-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Equality of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.9].")
-              (if (= (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,ne-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Non-equality of @('signed "
-                                   type-string
-                                   "') values [C:6.5.9].")
-              (if (/= (,stype->get x) (,stype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,ne-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result sintp)
-              :short ,(concatenate 'string
-                                   "Non-equality of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.9].")
-              (if (/= (,utype->get x) (,utype->get y))
-                  (sint 1)
-                (sint 0))
-              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
