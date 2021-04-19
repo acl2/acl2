@@ -341,7 +341,8 @@
           ;; Vars to be bound now must not already be bound:
           (not (intersection-eq vars-to-bind bound-vars)))))
       ;; a hyp marked with :free-vars must have at least 1 free var:
-      (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+      (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
+                         (hyp-vars (vars-in-term expr))
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
       ;; a hyp not marked with :free-vars must have no free vars:
@@ -362,13 +363,13 @@
     (:axe-bind-free (let ((vars-to-bind (cddr hyp)))
                       ;; some vars get bound:
                       (append vars-to-bind bound-vars)))
-    ;; a hyp marked with :free-vars must have at least 1 free var:
-    (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+    (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
+                       (hyp-vars (vars-in-term expr))
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
+                  ;; some vars get bound:
                   (append free-vars bound-vars)))
-    ;; a hyp not marked with :free-vars must have no free vars:
-    (otherwise bound-vars ;no change
-               )))
+    ;; no vars get bound:
+    (otherwise bound-vars)))
 
 (defthm symbol-listp-of-bound-vars-after-hyp
   (implies (and (axe-rule-hypp hyp)
@@ -474,7 +475,7 @@
          (and (axe-rule-lhsp lhs)
               (pseudo-termp rhs)
               (axe-rule-hyp-listp hyps)
-              ;; (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
-              ;; (subsetp-equal (vars-in-term rhs)
-              ;;                (bound-vars-after-hyps (vars-in-term lhs) hyps))
+              (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-term lhs) hyps))
               ))))
