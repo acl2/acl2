@@ -12,6 +12,7 @@
 
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
 ;; This utility is similiar to all-vars but simpler.
 
@@ -109,3 +110,12 @@
          (union-equal (vars-in-term term)
                       (vars-in-terms terms)))
   :hints (("Goal" :in-theory (enable vars-in-terms))))
+
+(defthm-flag-vars-in-term
+  (defthm no-duplicatesp-of-vars-in-term
+    (no-duplicatesp (vars-in-term term))
+    :flag vars-in-term)
+  (defthm no-duplicatesp-of-vars-in-terms
+    (no-duplicatesp (vars-in-terms terms))
+    :flag vars-in-terms)
+  :hints (("Goal" :in-theory (enable vars-in-term vars-in-terms))))

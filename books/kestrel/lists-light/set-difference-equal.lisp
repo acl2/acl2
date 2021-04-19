@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "member-equal"))
+(local (include-book "remove1-equal"))
 
 (in-theory (disable set-difference-equal))
 
@@ -72,3 +73,34 @@
   (equal (set-difference-equal (set-difference-equal x y) z)
          (set-difference-equal (set-difference-equal x z) y))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthmd set-difference-equal-of-remove1-equal-arg1-irrel
+  (implies (not (member-equal a y))
+           (equal (set-difference-equal (remove1-equal a x) y)
+                  (remove1-equal a (set-difference-equal x y))))
+  :hints (("Goal" :in-theory (enable set-difference-equal
+                                     (:d remove1-equal)
+                                     ))))
+
+(defthmd set-difference-equal-of-remove1-equal-arg2-irrel
+  (implies (not (member-equal a x))
+           (equal (set-difference-equal x (remove1-equal a y))
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal
+                                     remove1-equal))))
+
+(defthmd set-difference-equal-of-cdr-when-not-member-equal-of-car
+  (implies (not (member-equal (car y) x))
+           (equal (set-difference-equal x (cdr y))
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthmd set-difference-equal-redef
+  (implies (and (consp y)
+                (no-duplicatesp-equal x) ;gen?
+                ;;(no-duplicatesp-equal y)
+                )
+           (equal (set-difference-equal x y)
+                  (remove1-equal (car y) (set-difference-equal x (cdr y)))))
+  :hints (("Goal" :in-theory (enable set-difference-equal
+                                     set-difference-equal-of-cdr-when-not-member-equal-of-car))))
