@@ -611,6 +611,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
+ `(defrule uchar-max-vs-slong-max
+    :parents (uchar-max slong-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (uchar-max) (slong-max))
+         '(<= (uchar-max) (slong-max))
+       '(> (uchar-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (slong-max))))
+    :enable (uchar-max slong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-slong-max
+    :parents (ushort-max slong-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (ushort-max) (slong-max))
+         '(<= (ushort-max) (slong-max))
+       '(> (ushort-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (slong-max))))
+    :enable (ushort-max slong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
  `(defrule uint-max-vs-slong-max
     :parents (uint-max slong-max)
     :short "Relation between
@@ -620,6 +646,32 @@
        '(> (uint-max) (slong-max)))
     :rule-classes ((:linear :trigger-terms ((uint-max) (slong-max))))
     :enable (uint-max slong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-sllong-max
+    :parents (uchar-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (uchar-max) (sllong-max))
+         '(<= (uchar-max) (sllong-max))
+       '(> (uchar-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (sllong-max))))
+    :enable (uchar-max sllong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-sllong-max
+    :parents (ushort-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (ushort-max) (sllong-max))
+         '(<= (ushort-max) (sllong-max))
+       '(> (ushort-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (sllong-max))))
+    :enable (ushort-max sllong-max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
