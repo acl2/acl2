@@ -484,7 +484,9 @@
        (eq-type1-type2 (pack 'eq- type1 '- type2))
        (eq-type-type (pack 'eq- type '- type))
        (ne-type1-type2 (pack 'ne- type1 '- type2))
-       (ne-type-type (pack 'ne- type '- type)))
+       (ne-type-type (pack 'ne- type '- type))
+       (bitand-type1-type2 (pack 'bitand- type1 '- type2))
+       (bitand-type-type (pack 'bitand- type '- type)))
 
     `(progn
 
@@ -754,7 +756,8 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (< (,type1->get x) (,type2->get y))
+              `(if (< (,type1->get x)
+                      (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,lt-type-type
@@ -772,7 +775,8 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (> (,type1->get x) (,type2->get y))
+              `(if (> (,type1->get x)
+                      (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,gt-type-type
@@ -790,7 +794,8 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (<= (,type1->get x) (,type2->get y))
+              `(if (<= (,type1->get x)
+                       (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,le-type-type
@@ -808,7 +813,8 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (>= (,type1->get x) (,type2->get y))
+              `(if (>= (,type1->get x)
+                       (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,ge-type-type
@@ -826,7 +832,8 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (= (,type1->get x) (,type2->get y))
+              `(if (= (,type1->get x)
+                      (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,eq-type-type
@@ -844,12 +851,35 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (/= (,type1->get x) (,type2->get y))
+              `(if (/= (,type1->get x)
+                       (,type2->get y))
                    (sint 1)
                  (sint 0))
             `(,ne-type-type
               ,(if (eq type type1) 'x `(,type-from-type1 x))
               ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,bitand-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result ,typep)
+         :short ,(str::cat "Bitwise conjunction of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(,(if signedp type type-mod) (logand (,type1->get x)
+                                                    (,type2->get y)))
+            `(,bitand-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
+         ,@(and samep
+                `(:guard-hints
+                  (("Goal"
+                    :in-theory (enable ,type-integerp ,typep ,type1->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -936,8 +966,6 @@
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
-       (bitand-stype-stype (acl2::packn-pos (list "BITAND-" stype "-" stype) 'atc))
-       (bitand-utype-utype (acl2::packn-pos (list "BITAND-" utype "-" utype) 'atc))
        (bitxor-stype-stype (acl2::packn-pos (list "BITXOR-" stype "-" stype) 'atc))
        (bitxor-utype-utype (acl2::packn-pos (list "BITXOR-" utype "-" utype) 'atc))
        (bitior-stype-stype (acl2::packn-pos (list "BITIOR-" stype "-" stype) 'atc))
@@ -952,38 +980,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitand-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Bitwise conjunction of @('signed "
-                                   type-string
-                                   "') values [C:6.5.10].")
-              (,stype (logand (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-integerp
-                                                       ,stypep
-                                                       ,stype->get)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "ihs/logops-lemmas" :dir :system))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitand-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Bitwise conjunction of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.10].")
-              (,utype (logand (,utype->get x) (,utype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp
-                                                       ,utypep
-                                                       ,utype->get)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "ihs/logops-lemmas" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
