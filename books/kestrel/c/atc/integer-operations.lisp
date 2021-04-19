@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "integer-conversions")
+(include-book "static-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -402,6 +403,146 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-integer-type-fixtype ((type typep))
+  :guard (type-integerp type)
+  :returns (fixtype symbolp)
+  :short "Name of the fixtype of the values of an integer type."
+  (b* ((fixtype (intern$ (symbol-name (type-kind type)) "C")))
+    (if (member-eq fixtype *atc-integer-types*) fixtype 'uchar))
+  ///
+  (defret atc-integer-type-fixtype-in-*atc-integer-types*
+    (member-equal fixtype *atc-integer-types*)
+    :hints (("Goal" :in-theory (enable type-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-operations-2 ((itype1 typep) (itype2 typep))
+  :guard (and (type-integerp itype1) (type-integerp itype2))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-realp)))
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the ACL2 models of
+          the C integer operations that involve two integer types."
+
+  (b* ((itype (uaconvert-types itype1 itype2))
+       (samep (and (equal itype itype1) (equal itype itype2)))
+       (type1 (atc-integer-type-fixtype itype1))
+       (type2 (atc-integer-type-fixtype itype2))
+       (type1p (pack type1 'p))
+       (type2p (pack type2 'p))
+       (type1->get (pack type1 '->get))
+       (type2->get (pack type2 '->get))
+       (type (atc-integer-type-fixtype itype))
+       (type-mod (pack type '-mod))
+       (typep (pack type 'p))
+       (type-integerp (pack type '-integerp))
+       (signedp (type-signed-integerp itype))
+       (type1-string (atc-integer-type-string type1))
+       (type2-string (atc-integer-type-string type2))
+       (type-from-type1 (pack type '-from- type1))
+       (type-from-type2 (pack type '-from- type2))
+       (add-type1-type2 (pack 'add- type1 '- type2))
+       (add-type1-type2-okp (pack add-type1-type2 '-okp))
+       (add-type-type (pack 'add- type '- type))
+       (add-type-type-okp (pack add-type-type '-okp))
+       )
+
+    `(progn
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          signedp
+          `((define ,add-type1-type2-okp ((x ,type1p) (y ,type2p))
+              :returns (yes/no booleanp)
+              :short ,(str::cat "Check if the addition of a value of "
+                                type1-string
+                                " and a value of "
+                                type2-string
+                                " is well-defined.")
+              ,(if samep
+                   `(,type-integerp (+ (,type1->get x) (,type2->get y)))
+                 `(,add-type-type-okp
+                   ,(if (eq type type1) 'x `(,type-from-type1 x))
+                   ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              :hooks (:fix))))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,add-type1-type2 ((x ,type1p) (y ,type2p))
+         ,@(and signedp `(:guard (,add-type1-type2-okp x y)))
+         :returns (result ,typep)
+         :short ,(str::cat "Addition of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.6].")
+         ,(if samep
+              `(,(if signedp type type-mod) (+ (,type1->get x) (,type2->get y)))
+            `(,add-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         ,@(and signedp
+                `(:guard-hints
+                  (("Goal" :in-theory (enable ,add-type1-type2-okp)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-operations-2-loop-same ((types type-listp))
+  :guard (type-integer-listp types)
+  :returns (events pseudo-event-form-listp)
+  (cond ((endp types) nil)
+        (t (cons (atc-def-integer-operations-2 (car types) (car types))
+                 (atc-def-integer-operations-2-loop-same (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-operations-2-loop-inner ((type typep)
+                                                 (types type-listp))
+  :guard (and (type-integerp type)
+              (type-integer-listp types))
+  :returns (events pseudo-event-form-listp)
+  (cond ((endp types) nil)
+        ((equal type (car types)) (atc-def-integer-operations-2-loop-inner
+                                   type (cdr types)))
+        (t (cons (atc-def-integer-operations-2 type (car types))
+                 (atc-def-integer-operations-2-loop-inner type (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-operations-2-loop-outer ((types type-listp)
+                                                 (types1 type-listp))
+  :guard (and (type-integer-listp types)
+              (type-integer-listp types1))
+  :returns (events pseudo-event-form-listp)
+  (cond ((endp types) nil)
+        (t (append
+            (atc-def-integer-operations-2-loop-inner (car types) types1)
+            (atc-def-integer-operations-2-loop-outer (cdr types) types1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ (b* ((types (list (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong)
+                   (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort))))
+   `(progn ,@(atc-def-integer-operations-2-loop-same types)
+           ,@(atc-def-integer-operations-2-loop-outer types types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ atc-def-integer-operations (type)
   (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
   :short "Macro to generate the models of the C integer operations."
@@ -434,9 +575,6 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (add-stype-stype (acl2::packn-pos (list "ADD-" stype "-" stype) 'atc))
-       (add-utype-utype (acl2::packn-pos (list "ADD-" utype "-" utype) 'atc))
-       (add-stype-stype-okp (add-suffix add-stype-stype "-OKP"))
        (sub-stype-stype (acl2::packn-pos (list "SUB-" stype "-" stype) 'atc))
        (sub-utype-utype (acl2::packn-pos (list "SUB-" utype "-" utype) 'atc))
        (sub-stype-stype-okp (add-suffix sub-stype-stype "-OKP"))
@@ -495,46 +633,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,add-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if addition of @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (,stype-integerp (+ (,stype->get x) (,stype->get y)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,add-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,add-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Addition of @('signed "
-                                   type-string
-                                   "') values [C:6.5.6].")
-              (,stype (+ (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,add-stype-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,add-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Addition of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.6].")
-              (,utype (mod (+ (,utype->get x) (,utype->get y))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
