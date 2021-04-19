@@ -11,6 +11,9 @@
 
 (in-package "C")
 
+(include-book "pack")
+
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -84,89 +87,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-bits ()
-  :returns (char-bits posp :rule-classes :type-prescription)
-  :short "Size of unsigned, signed, and plain @('char')s, in bites."
-  8
-  ///
+(defmacro+ atc-def-integer-bits (type size minsize)
+  (declare (xargs :guard (and (member-eq type '(char short int long llong))
+                              (posp size)
+                              (posp minsize)
+                              (>= size minsize))))
+  :short "Macro to generate the nullary functions, and some theorems about them,
+          for the size in bits of the C integer types."
 
-  (in-theory (disable (:e char-bits)))
+  (b* ((type-bits (pack type '-bits))
+       (type-bits-bound (pack type-bits '-bound))
+       (type-bits-multiple-of-char-bits (pack type
+                                              '-bits-multiple-of-char-bits))
+       (short-substring (if (eq type 'char)
+                            "signed, unsigned, and plain"
+                          "signed and unsigned")))
 
-  (defret char-bits-bound
-    (>= char-bits 8)
-    :rule-classes :linear))
+    `(define ,type-bits ()
+       :returns (,type-bits posp :rule-classes :type-prescription)
+       :short ,(str::cat "Size of "
+                         short-substring
+                         " @('"
+                         (str::downcase-string (symbol-name type))
+                         "') values, in bits.")
+       ,size
+       ///
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ,@(and
+          (not (eq type 'char))
+          `((defrule ,type-bits-multiple-of-char-bits
+              (integerp (/ (,type-bits) (char-bits)))
+              :rule-classes :type-prescription
+              :enable char-bits)))
 
-(define short-bits ()
-  :returns (short-bits posp :rule-classes :type-prescription)
-  :short "Size of unsigned and signed @('short')s, in bits."
-  16
-  ///
+       (in-theory (disable (:e ,type-bits)))
 
-  (defrule short-bits-multiple-of-char-bits
-    (integerp (/ (short-bits) (char-bits)))
-    :enable char-bits)
-
-  (in-theory (disable (:e short-bits)))
-
-  (defret short-bits-bound
-    (>= short-bits 16)
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define int-bits ()
-  :returns (int-bits posp :rule-classes :type-prescription)
-  :short "Size of unsigned and signed @('int')s, in bits."
-  32
-  ///
-
-  (defrule int-bits-multiple-of-char-bits
-    (integerp (/ (int-bits) (char-bits)))
-    :enable char-bits)
-
-  (in-theory (disable (:e int-bits)))
-
-  (defret int-bits-bound
-    (>= int-bits 16)
-    :rule-classes :linear))
+       (defret ,type-bits-bound
+         (>= ,type-bits ,minsize)
+         :rule-classes :linear))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-bits ()
-  :returns (long-bits posp :rule-classes :type-prescription)
-  :short "Size of unsigned and signed @('long')s, in bits."
-  64
-  ///
+(atc-def-integer-bits char 8 8)
 
-  (defrule long-bits-multiple-of-char-bits
-    (integerp (/ (long-bits) (char-bits)))
-    :enable char-bits)
+(atc-def-integer-bits short 16 16)
 
-  (in-theory (disable (:e long-bits)))
+(atc-def-integer-bits int 32 16)
 
-  (defret long-bits-bound
-    (>= long-bits 32)
-    :rule-classes :linear))
+(atc-def-integer-bits long 64 32)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define llong-bits ()
-  :returns (llong-bits posp :rule-classes :type-prescription)
-  :short "Size of unsigned and signed @('long long')s, in bits."
-  64
-  ///
-
-  (defrule llong-bits-multiple-of-char-bits
-    (integerp (/ (llong-bits) (char-bits)))
-    :enable char-bits)
-
-  (in-theory (disable (:e llong-bits)))
-
-  (defret llong-bits-bound
-    (>= llong-bits 64)
-    :rule-classes :linear))
+(atc-def-integer-bits llong 64 64)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
