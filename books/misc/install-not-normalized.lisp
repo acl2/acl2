@@ -397,10 +397,16 @@ This comment motivates the macro install-not-normalized, defined below.
  ACL2 !>
  })
 
- <p>That event is of the form @('(equal (fn x1 ... xn) <body>)'), where @('(x1
- ... xn)') is the list of formal parameters of @('fn') and @('<body>') is the
- body of @('fn').  If @(':hints') or @(':rule-classes') are supplied, they will
- be attached to the generated @('defthm') form.</p>
+ <p>The formula of that @('defthm') event is of the form @('(equal (fn x1
+ ... xn) <body>)'), where @('(x1 ... xn)') is the list of formal parameters of
+ @('fn') and @('<body>') is the un@(see normalize)d body of @('fn').  If
+ @(':hints') or @(':rule-classes') are supplied, they will be attached to the
+ generated @('defthm') form.</p>
+
+ <p>Note that the proof of the generated @('defthm') may not follow trivially
+ from the function's @(':')@('definition') rule: by default, that rule is
+ derived from the function's @(see normalize)d body, which may differ from its
+ unnormalized body.</p>
 
  <p>For a somewhat related utility, see @(see install-not-normalized).</p>
 

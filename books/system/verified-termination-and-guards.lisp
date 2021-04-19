@@ -72,6 +72,7 @@
 (verify-termination >=-len) ; and guards
 (verify-termination all->=-len) ; and guards
 (verify-termination strip-cadrs) ; and guards
+(verify-termination strip-caddrs) ; and guards
 (verify-termination alist-to-doublets) ; and guards
 (verify-termination ffnnamep) ; and guards
 (verify-termination world-evisceration-alist) ; and guards
