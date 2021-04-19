@@ -453,6 +453,10 @@
        (mul-type1-type2-okp (pack mul-type1-type2 '-okp))
        (mul-type-type (pack 'mul- type '- type))
        (mul-type-type-okp (pack mul-type-type '-okp))
+       (div-type1-type2 (pack 'div- type1 '- type2))
+       (div-type1-type2-okp (pack div-type1-type2 '-okp))
+       (div-type-type (pack 'div- type '- type))
+       (div-type-type-okp (pack div-type-type '-okp))
        )
 
     `(progn
@@ -469,7 +473,8 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (+ (,type1->get x) (,type2->get y)))
+                   `(,type-integerp (+ (,type1->get x)
+                                       (,type2->get y)))
                  `(,add-type-type-okp
                    ,(if (eq type type1) 'x `(,type-from-type1 x))
                    ,(if (eq type type2) 'y `(,type-from-type2 y))))
@@ -486,7 +491,8 @@
                            type2-string
                            " [C:6.5.6].")
          ,(if samep
-              `(,(if signedp type type-mod) (+ (,type1->get x) (,type2->get y)))
+              `(,(if signedp type type-mod) (+ (,type1->get x)
+                                               (,type2->get y)))
             `(,add-type-type
               ,(if (eq type type1) 'x `(,type-from-type1 x))
               ,(if (eq type type2) 'y `(,type-from-type2 y))))
@@ -507,7 +513,8 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (- (,type1->get x) (,type2->get y)))
+                   `(,type-integerp (- (,type1->get x)
+                                       (,type2->get y)))
                  `(,sub-type-type-okp
                    ,(if (eq type type1) 'x `(,type-from-type1 x))
                    ,(if (eq type type2) 'y `(,type-from-type2 y))))
@@ -524,7 +531,8 @@
                            type2-string
                            " [C:6.5.6].")
          ,(if samep
-              `(,(if signedp type type-mod) (- (,type1->get x) (,type2->get y)))
+              `(,(if signedp type type-mod) (- (,type1->get x)
+                                               (,type2->get y)))
             `(,sub-type-type
               ,(if (eq type type1) 'x `(,type-from-type1 x))
               ,(if (eq type type2) 'y `(,type-from-type2 y))))
@@ -545,7 +553,8 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (* (,type1->get x) (,type2->get y)))
+                   `(,type-integerp (* (,type1->get x)
+                                       (,type2->get y)))
                  `(,mul-type-type-okp
                    ,(if (eq type type1) 'x `(,type-from-type1 x))
                    ,(if (eq type type2) 'y `(,type-from-type2 y))))
@@ -562,13 +571,56 @@
                            type2-string
                            " [C:6.5.6].")
          ,(if samep
-              `(,(if signedp type type-mod) (* (,type1->get x) (,type2->get y)))
+              `(,(if signedp type type-mod) (* (,type1->get x)
+                                               (,type2->get y)))
             `(,mul-type-type
               ,(if (eq type type1) 'x `(,type-from-type1 x))
               ,(if (eq type type2) 'y `(,type-from-type2 y))))
          ,@(and signedp
                 `(:guard-hints
                   (("Goal" :in-theory (enable ,mul-type1-type2-okp)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,div-type1-type2-okp ((x ,type1p) (y ,type2p))
+         ,@(and samep
+                (not signedp)
+                `((declare (ignore x))))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if the division of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " is well-defined.")
+         ,(if samep
+              (if signedp
+                  `(and (not (equal (,type2->get y) 0))
+                        (,type-integerp (truncate (,type1->get x)
+                                                  (,type2->get y))))
+                `(not (equal (,type2->get y) 0)))
+            `(,div-type-type-okp
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,div-type1-type2 ((x ,type1p) (y ,type2p))
+         :guard (,div-type1-type2-okp x y)
+         :returns (result ,typep)
+         :short ,(str::cat "Division of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.6].")
+         ,(if samep
+              `(,(if signedp type type-mod) (truncate (,type1->get x)
+                                                      (,type2->get y)))
+            `(,div-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :guard-hints (("Goal" :in-theory (enable ,div-type1-type2-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -659,10 +711,6 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (div-stype-stype (acl2::packn-pos (list "DIV-" stype "-" stype) 'atc))
-       (div-utype-utype (acl2::packn-pos (list "DIV-" utype "-" utype) 'atc))
-       (div-stype-stype-okp (add-suffix div-stype-stype "-OKP"))
-       (div-utype-utype-okp (add-suffix div-utype-utype "-OKP"))
        (rem-stype-stype (acl2::packn-pos (list "REM-" stype "-" stype) 'atc))
        (rem-utype-utype (acl2::packn-pos (list "REM-" utype "-" utype) 'atc))
        (rem-stype-stype-okp (add-suffix rem-stype-stype "-OKP"))
@@ -711,61 +759,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,div-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if division of @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (and (not (equal (,stype->get y) 0))
-                   (,stype-integerp (truncate (,stype->get x) (,stype->get y))))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,div-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,div-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Division of @('signed "
-                                   type-string
-                                   "') values [C:6.5.5].")
-              (,stype (truncate (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,div-stype-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,div-utype-utype-okp ((x ,utypep) (y ,utypep))
-              :returns (yes/no booleanp)
-              (declare (ignore x))
-              :short ,(concatenate 'string
-                                   "Check if division of @('unsigned "
-                                   type-string
-                                   "') values is well-defined.")
-              (not (equal (,utype->get y) 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,div-utype-utype ((x ,utypep) (y ,utypep))
-              :guard (,div-utype-utype-okp x y)
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Division of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.5].")
-              (,utype (mod (truncate (,utype->get x) (,utype->get y))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,div-utype-utype-okp
-                                          ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
