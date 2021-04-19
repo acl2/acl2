@@ -457,6 +457,10 @@
        (div-type1-type2-okp (pack div-type1-type2 '-okp))
        (div-type-type (pack 'div- type '- type))
        (div-type-type-okp (pack div-type-type '-okp))
+       (rem-type1-type2 (pack 'rem- type1 '- type2))
+       (rem-type1-type2-okp (pack rem-type1-type2 '-okp))
+       (rem-type-type (pack 'rem- type '- type))
+       (rem-type-type-okp (pack rem-type-type '-okp))
        )
 
     `(progn
@@ -569,7 +573,7 @@
                            type1-string
                            " and a value of "
                            type2-string
-                           " [C:6.5.6].")
+                           " [C:6.5.5].")
          ,(if samep
               `(,(if signedp type type-mod) (* (,type1->get x)
                                                (,type2->get y)))
@@ -613,7 +617,7 @@
                            type1-string
                            " and a value of "
                            type2-string
-                           " [C:6.5.6].")
+                           " [C:6.5.5].")
          ,(if samep
               `(,(if signedp type type-mod) (truncate (,type1->get x)
                                                       (,type2->get y)))
@@ -621,6 +625,48 @@
               ,(if (eq type type1) 'x `(,type-from-type1 x))
               ,(if (eq type type2) 'y `(,type-from-type2 y))))
          :guard-hints (("Goal" :in-theory (enable ,div-type1-type2-okp)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,rem-type1-type2-okp ((x ,type1p) (y ,type2p))
+         ,@(and samep
+                (not signedp)
+                `((declare (ignore x))))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if the remainder of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " is well-defined.")
+         ,(if samep
+              (if signedp
+                  `(and (not (equal (,type2->get y) 0))
+                        (,type-integerp (rem (,type1->get x)
+                                             (,type2->get y))))
+                `(not (equal (,type2->get y) 0)))
+            `(,rem-type-type-okp
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,rem-type1-type2 ((x ,type1p) (y ,type2p))
+         :guard (,rem-type1-type2-okp x y)
+         :returns (result ,typep)
+         :short ,(str::cat "Remainder of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.5].")
+         ,(if samep
+              `(,(if signedp type type-mod) (rem (,type1->get x)
+                                                 (,type2->get y)))
+            `(,rem-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :guard-hints (("Goal" :in-theory (enable ,rem-type1-type2-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,22 +745,16 @@
                      (if (eq type :llong) "LONG LONG" (symbol-name type))))
        (stype (acl2::packn-pos (list "S" type) 'atc))
        (utype (acl2::packn-pos (list "U" type) 'atc))
-       (utype-max (add-suffix utype "-MAX"))
        (stypep (add-suffix stype "P"))
        (utypep (add-suffix utype "P"))
        (stype->get (add-suffix stype "->GET"))
        (utype->get (add-suffix utype "->GET"))
        (stype-integerp (add-suffix stype "-INTEGERP"))
        (utype-integerp (add-suffix utype "-INTEGERP"))
-       (utype-integerp-alt-def (add-suffix utype-integerp "-ALT-DEF"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (rem-stype-stype (acl2::packn-pos (list "REM-" stype "-" stype) 'atc))
-       (rem-utype-utype (acl2::packn-pos (list "REM-" utype "-" utype) 'atc))
-       (rem-stype-stype-okp (add-suffix rem-stype-stype "-OKP"))
-       (rem-utype-utype-okp (add-suffix rem-utype-utype "-OKP"))
        (shl-stype (acl2::packn-pos (list "SHL-" stype) 'atc))
        (shl-utype (acl2::packn-pos (list "SHL-" utype) 'atc))
        (shl-stype-okp (add-suffix shl-stype "-OKP"))
@@ -759,66 +799,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,rem-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if remainder of @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (and (not (equal (,stype->get y) 0))
-                   (,stype-integerp (truncate (,stype->get x) (,stype->get y))))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,rem-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,rem-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Remainder of @('signed "
-                                   type-string
-                                   "') values [C:6.5.5].")
-              (,stype (rem (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,rem-stype-stype-okp
-                                                       ,stype-integerp
-                                                       ,stype->get
-                                                       ,stypep)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,rem-utype-utype-okp ((x ,utypep) (y ,utypep))
-              (declare (ignore x))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if remainder of @('unsigned "
-                                   type-string
-                                   "') values is well-defined.")
-              (not (equal (,utype->get y) 0))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,rem-utype-utype ((x ,utypep) (y ,utypep))
-              :guard (,rem-utype-utype-okp x y)
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Remainder of @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.5].")
-              (,utype (mod (rem (,utype->get x) (,utype->get y))
-                           (1+ (,utype-max))))
-              :guard-hints
-              (("Goal" :in-theory (enable ,rem-utype-utype-okp
-                                          ,utype-integerp-alt-def)))
-              :hooks (:fix)
-              :prepwork
-              ((local (include-book "arithmetic-3/top" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
