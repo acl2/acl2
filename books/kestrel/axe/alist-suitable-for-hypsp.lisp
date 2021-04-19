@@ -13,10 +13,47 @@
 (include-book "axe-rules") ;todo: reduce
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, todo: split that out?
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
+(include-book "match-hyp-with-nodenum-to-assume-false")
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable symbol-alistp append)))
+
+;move
+(defcong perm perm (bound-vars-after-hyp bound-vars hyp) 1
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
+
+;move
+(defcong perm equal (bound-vars-suitable-for-hypp bound-vars hyp) 1
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp))))
+
+;move
+(defcong perm equal (bound-vars-suitable-for-hypsp bound-vars hyps) 1
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp))))
+
+;move
+(defthm memberp-of-car-and-strip-cars
+  (implies (memberp a x)
+           (memberp (car a) (strip-cars x)))
+  :hints (("Goal" :in-theory (enable strip-cars
+                                     memberp))))
+
+;move
+(defthm strip-cars-of-remove1-equal-perm
+  (implies (memberp a x)
+           (perm (strip-cars (remove1-equal a x))
+                 (remove1-equal (car a) (strip-cars x))))
+  :hints (("Goal" :in-theory (enable remove1-equal strip-cars memberp))))
+
+;move
+(defcong perm perm (strip-cars x) 1
+  :hints (("Goal" :in-theory (enable strip-cars perm))))
+
+;;;
+;;; alist-suitable-for-hypsp
+;;;
 
 ;; Checks whether the keys of ALIST are suitable upon reaching HYPS and
 ;; attempting to relieve them.
@@ -100,25 +137,31 @@
                        bound-vars-suitable-for-hypp
                        axe-rule-hypp))))
 
-;; ;; Shows that the alist is still good after we extend it
-;; (defthm alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
-;;   (implies (and (eq :free-vars (ffn-symb (first hyps)))
-;;                 (alist-suitable-for-hypsp alist hyps)
-;;                 (axe-rule-hyp-listp hyps)
-;;                 (symbol-alistp alist))
-;;            (alist-suitable-for-hypsp (append result alist) (cdr hyps)))
-;;   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
-;;                                                           hyps)
-;;                            (axe-rule-hyp-listp hyps)
-;;                            (vars-in-term (cadr (car hyps))))
-;;            :in-theory (enable ;all-vars-in-term-bound-in-alistp
-;;                        alist-suitable-for-hypsp
-;;                        bound-vars-suitable-for-hypsp
-;;                        bound-vars-suitable-for-hypp
-;;                        axe-rule-hypp
-;;                        axe-bind-free-function-applicationp
-;;                        BOUND-VARS-AFTER-HYP
-;;                        axe-bind-free-result-okayp-rewrite))))
+
+;; Shows that the alist is still good after we extend it
+(defthm alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
+  (implies (and (eq :free-vars (ffn-symb (first hyps)))
+                (alist-suitable-for-hypsp alist hyps)
+                (axe-rule-hyp-listp hyps)
+                (symbol-alistp alist)
+                (perm (strip-cars result)
+                      (set-difference-equal (vars-in-term (cdr (car hyps)))
+                                            (strip-cars alist)))
+                )
+           (alist-suitable-for-hypsp (append result alist)
+                                     (cdr hyps)))
+  :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
+                                                          hyps)
+                           (axe-rule-hyp-listp hyps)
+                           (vars-in-term (cadr (car hyps))))
+           :in-theory (enable ;all-vars-in-term-bound-in-alistp
+                       alist-suitable-for-hypsp
+                       bound-vars-suitable-for-hypsp
+                       bound-vars-suitable-for-hypp
+                       axe-rule-hypp
+                       axe-bind-free-function-applicationp
+                       BOUND-VARS-AFTER-HYP
+                       axe-bind-free-result-okayp-rewrite))))
 
 (defthm all-vars-in-term-bound-in-alistp-of-cdr-of-car-when-normal
   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
@@ -137,3 +180,40 @@
                        bound-vars-suitable-for-hypsp
                        bound-vars-suitable-for-hypp
                        axe-rule-hypp))))
+
+;;;
+;;; alist-suitable-for-hyp-tree-and-hysp
+;;;
+
+;; Checks whether the keys of ALIST are suitable upon reaching HYPS and
+;; attempting to relieve them.
+(defund alist-suitable-for-hyp-tree-and-hypsp (alist
+                                               hyp ;an axe-tree, partially instantiated
+                                               hyps)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (axe-treep hyp)
+                              (axe-rule-hyp-listp hyps))
+                  :guard-hints (("Goal" :in-theory (enable SYMBOL-ALISTP)))))
+  (and ;; The alist doesn't bind any vars in the hyp:
+   (not (intersection-eq (strip-cars alist) (axe-tree-vars hyp)))
+   ;; After we bind all the vars in the hyp, the alist will be suitable for the remaining hyps:
+   (bound-vars-suitable-for-hypsp (append (axe-tree-vars hyp)
+                                          (strip-cars alist))
+                                  hyps)))
+
+(defthm alist-suitable-for-hypsp-after-matching
+  (implies (and (alist-suitable-for-hyp-tree-and-hypsp alist hyp hyps)
+                (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+                (not (equal 'quote (ffn-symb hyp)))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< nodenum-to-assume-false dag-len)
+                (natp nodenum-to-assume-false)
+                (axe-treep hyp)
+                (consp hyp)
+                (symbol-alistp alist)
+                )
+           (alist-suitable-for-hypsp (append (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)
+                                             alist)
+                                     hyps))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp
+                                     alist-suitable-for-hyp-tree-and-hypsp))))

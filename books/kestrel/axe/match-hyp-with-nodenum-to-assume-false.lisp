@@ -16,6 +16,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; Returns :fail (meaning failure to match) or an alist binding the free vars in HYP.
@@ -96,11 +97,11 @@
 
 ;; All the free vars get bound
 (defthm match-hyp-with-nodenum-to-assume-false-binds-all-vars
-  (implies (and (axe-treep hyp)
-                (consp hyp)
+  (implies (and (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
                 (not (equal 'quote (ffn-symb hyp)))
-                (symbol-alistp alist)
-                (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+                (axe-treep hyp)
+                (consp hyp)
+                (symbol-alistp alist))
            (subsetp-equal (axe-tree-vars hyp)
                           (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false) (unify-tree-with-dag-node-binds-all-vars))
@@ -117,24 +118,29 @@
                                                     (dargs (aref1 'dag-array
                                                                   dag-array nodenum-to-assume-false)))))))))
 
-;; (defthm match-hyp-with-nodenum-to-assume-false-binds
-;;   (implies (and (axe-treep hyp)
-;;                 (consp hyp)
-;;                 (not (equal 'quote (ffn-symb hyp)))
-;;                 (symbol-alistp alist)
-;;                 (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
-;;            (perm (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))
-;;                  (axe-tree-vars hyp)))
-;;   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false) (unify-tree-with-dag-node-binds-all-vars))
-;;            :expand ((axe-tree-vars hyp)
-;;                     (axe-tree-vars-lst (cdr hyp)))
-;;            :use ((:instance unify-tree-with-dag-node-binds-all-vars
-;;                             (alist nil)
-;;                             (tree (cadr hyp))
-;;                             (nodenum-or-quotep nodenum-to-assume-false))
-;;                  (:instance unify-tree-with-dag-node-binds-all-vars
-;;                             (tree hyp)
-;;                             (alist nil)
-;;                             (nodenum-or-quotep (nth 0
-;;                                                     (dargs (aref1 'dag-array
-;;                                                                   dag-array nodenum-to-assume-false)))))))))
+(local (in-theory (disable SYMBOL-ALISTP)))
+
+(local
+ (defthm consp-of-cdr-forward-to-consp
+   (implies (consp (cdr x))
+            (consp x))
+   :rule-classes :forward-chaining))
+
+(defthm match-hyp-with-nodenum-to-assume-false-binds
+  (implies (and (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+                (not (equal 'quote (ffn-symb hyp)))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (< nodenum-to-assume-false dag-len)
+                (natp nodenum-to-assume-false)
+                (axe-treep hyp)
+                (consp hyp)
+                (symbol-alistp alist))
+           (perm (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))
+                 (axe-tree-vars hyp)))
+  :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false)
+                                  (axe-treep
+                                   axe-tree-vars
+                                   unify-tree-with-dag-node-binds-all-vars
+                                   natp))
+           :expand ((axe-tree-vars hyp)
+                    (axe-tree-vars-lst (cdr hyp))))))

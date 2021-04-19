@@ -20,7 +20,10 @@
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 ;; (local (in-theory (enable member-equal-becomes-memberp)))
@@ -78,6 +81,18 @@
                                      axe-tree-vars-lst))))
 
 (verify-guards axe-tree-vars)
+
+(defthm-flag-axe-tree-vars
+  (defthm no-duplicatesp-of-axe-tree-vars
+    (implies (axe-treep tree)
+             (no-duplicatesp (axe-tree-vars tree)))
+    :flag axe-tree-vars)
+  (defthm no-duplicatesp-of-axe-tree-vars-lst
+    (implies (all-axe-treep trees)
+             (no-duplicatesp (axe-tree-vars-lst trees)))
+    :flag axe-tree-vars-lst)
+  :hints (("Goal" :in-theory (enable axe-tree-vars
+                                     axe-tree-vars-lst))))
 
 ;doesn't support lambdas
 ;fixme could use a single RV if we used :fail (which is not an alist) to signal failure?
@@ -269,38 +284,64 @@
                                      axe-tree-vars
                                      axe-tree-vars-lst))))
 
+(local
+ (defthm assoc-equal-iff
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (memberp key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
+
+(defthm union-equal-commutative-under-perm-when-no-duplicatesp
+  (implies (and (no-duplicatesp x)
+                (no-duplicatesp y))
+           (perm (union-equal x y)
+                 (union-equal y x)))
+  :hints (("Goal" :in-theory (enable union-equal perm))))
+
+(defthm union-equal-commutative-2-under-perm-when-no-duplicatesp
+  (implies (and (no-duplicatesp x)
+                (no-duplicatesp y))
+           (perm (union-equal x (union-equal y z))
+                 (union-equal y (union-equal x z))))
+  :hints (("Goal" :use ((:instance union-equal-associative)
+                        (:instance union-equal-associative
+                                   (x y)
+                                   (y x)))
+           :in-theory (disable union-equal-associative))))
+
+
 ;; ;; The alist returned binds exactly the free vars.
-;; (defthm-flag-unify-tree-with-dag-node
-;;   (defthm strip-cars-of-unify-tree-with-dag-node-perm
-;;     (implies (and (not (equal :fail (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist)))
-;;                   (axe-treep tree)
-;;                   ;; (natp dag-len)
-;;                   (dargp nodenum-or-quotep)
-;;                   ;; (dargp-less-than nodenum-or-quotep dag-len)
-;;                   ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-;;                   (symbol-alistp alist))
-;;              (perm (strip-cars (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))
-;;                    (union-equal (axe-tree-vars tree)
-;;                                 (strip-cars alist))))
-;;     :flag unify-tree-with-dag-node)
-;;   (defthm strip-cars-of-unify-trees-with-dag-nodes-perm
-;;     (implies (and (not (equal :fail (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist)))
-;;                   (all-axe-treep tree-lst)
-;;                   ;; (natp dag-len)
-;;                   ;; (true-listp tree-lst)
-;;                   (all-dargp nodenum-or-quotep-lst)
-;;                   ;; (all-dargp-less-than nodenum-or-quotep-lst dag-len)
-;;                   ;; (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-;;                   (symbol-alistp alist)
-;;                   )
-;;              (perm (strip-cars (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))
-;;                    (union-equal (axe-tree-vars-lst tree-lst)
-;;                                 (strip-cars alist))))
-;;     :flag unify-trees-with-dag-nodes)
-;;   :hints (("Goal" :in-theory (enable unify-trees-with-dag-nodes
-;;                                      unify-tree-with-dag-node
-;;                                      axe-tree-vars
-;;                                      axe-tree-vars-lst))))
+(defthm-flag-unify-tree-with-dag-node
+  (defthm strip-cars-of-unify-tree-with-dag-node-perm
+    (implies (and (not (equal :fail (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist)))
+                  (axe-treep tree)
+                  ;; (natp dag-len)
+                  ;(dargp nodenum-or-quotep)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (dargp-less-than nodenum-or-quotep dag-len)
+                  (symbol-alistp alist))
+             (perm (strip-cars (unify-tree-with-dag-node tree nodenum-or-quotep dag-array alist))
+                   (union-equal (axe-tree-vars tree)
+                                (strip-cars alist))))
+    :flag unify-tree-with-dag-node)
+  (defthm strip-cars-of-unify-trees-with-dag-nodes-perm
+    (implies (and (not (equal :fail (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist)))
+                  (all-axe-treep tree-lst)
+                  ;; (natp dag-len)
+                  ;; (true-listp tree-lst)
+                  ;(all-dargp nodenum-or-quotep-lst)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (all-dargp-less-than nodenum-or-quotep-lst dag-len)
+                  (symbol-alistp alist)
+                  )
+             (perm (strip-cars (unify-trees-with-dag-nodes tree-lst nodenum-or-quotep-lst dag-array alist))
+                   (union-equal (axe-tree-vars-lst tree-lst)
+                                (strip-cars alist))))
+    :flag unify-trees-with-dag-nodes)
+  :hints (("Goal" :in-theory (enable unify-trees-with-dag-nodes
+                                     unify-tree-with-dag-node
+                                     axe-tree-vars
+                                     axe-tree-vars-lst))))
 
 (defthm-flag-unify-tree-with-dag-node
   (defthm all-dargp-of-strip-cdrs-of-unify-tree-with-dag-node
