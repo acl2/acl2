@@ -18,6 +18,8 @@
 (local (include-book "subsetp-equal"))
 (local (include-book "remove1-equal"))
 (local (include-book "intersection-equal"))
+(local (include-book "union-equal"))
+(local (include-book "set-difference-equal"))
 
 (local (in-theory (enable member-equal-becomes-memberp)))
 
@@ -213,7 +215,7 @@
 (defcong perm perm (set-difference-equal x y) 1
   :hints (("Goal" :in-theory (enable set-difference-equal perm))))
 
-(defcong perm perm (set-difference-equal x y) 2
+(defcong perm equal (set-difference-equal x y) 2
   :hints (("Goal" :in-theory (enable set-difference-equal perm))))
 
 (defcong perm equal (subsetp-equal x y) 1
@@ -229,7 +231,7 @@
 (defcong perm perm (intersection-equal x y) 1
   :hints (("Goal" :in-theory (enable intersection-equal perm))))
 
-(defcong perm perm (intersection-equal x y) 2
+(defcong perm equal (intersection-equal x y) 2
   :hints (("Goal" :in-theory (enable intersection-equal perm))))
 
 (defcong perm iff (intersection-equal x y) 1
@@ -245,3 +247,86 @@
 
 (defcong perm perm (union-equal x y) 2
   :hints (("Goal" :in-theory (enable union-equal perm))))
+
+(defthm union-equal-commutative-under-perm-when-no-duplicatesp
+  (implies (and (no-duplicatesp x)
+                (no-duplicatesp y))
+           (perm (union-equal x y)
+                 (union-equal y x)))
+  :hints (("Goal" :in-theory (enable union-equal perm))))
+
+(defthm union-equal-commutative-2-under-perm-when-no-duplicatesp
+  (implies (and (no-duplicatesp x)
+                (no-duplicatesp y))
+           (perm (union-equal x (union-equal y z))
+                 (union-equal y (union-equal x z))))
+  :hints (("Goal" :use ((:instance union-equal-associative)
+                        (:instance union-equal-associative
+                                   (x y)
+                                   (y x)))
+           :in-theory (disable union-equal-associative))))
+
+;more like this?
+(defthm perm-of-append-and-append-same-arg1
+  (equal (perm (append x y) (append x z))
+         (perm y z))
+  :hints (("Goal" :in-theory (enable perm append))))
+
+(defthmd not-perm-when-not-equal-of-len-and-len
+  (implies (not (equal (len x) (len y)))
+           (not (perm x y)))
+  :hints (("Goal" :in-theory (enable perm len))))
+
+(defthm perm-of-cdr-same
+  (equal (perm x (cdr x))
+         (not (consp x)))
+  :hints (("Goal" :in-theory (enable not-perm-when-not-equal-of-len-and-len))))
+
+(defthm perm-of-cdr-same-alt
+  (equal (perm (cdr x) x)
+         (not (consp x)))
+  :hints (("Goal" :use (perm-of-cdr-same)
+           :in-theory (disable perm-of-cdr-same))))
+
+(defthm perm-of-remove1-equal-same-arg1
+  (equal (perm (remove1-equal a x) x)
+         (not (memberp a x)))
+  :hints (("Goal" :in-theory (enable remove1-equal perm))))
+
+(defthm perm-of-remove1-equal-same-arg2
+  (equal (perm x (remove1-equal a x))
+         (not (memberp a x)))
+  :hints (("Goal" :in-theory (enable remove1-equal perm))))
+
+(defthm perm-of-set-difference-equal-arg1
+  (equal (perm (set-difference-equal x y) x)
+         (not (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal perm))))
+
+(defthm perm-of-set-difference-equal-arg2
+  (equal (perm x (set-difference-equal x y))
+         (not (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal perm))))
+
+(defthm perm-of-union-equal-when-disjoint
+  (implies (not (intersection-equal x y))
+           (perm (union-equal x y)
+                 (append x y))))
+
+(defthm perm-of-append-of-set-difference-equal-same
+  (implies (and (subsetp-equal y x)
+                (no-duplicatesp-equal x)
+                (no-duplicatesp-equal y) ;gen?
+                )
+           (perm (append (set-difference-equal x y) y)
+                 x))
+  :hints (("Goal" :induct (perm y x)
+           :in-theory (e/d (perm append ;set-difference-equal
+                                 subsetp-equal
+                                 subsetp-equal-of-remove1-equal-arg2-irrel
+                                 set-difference-equal-of-remove1-equal-arg1-irrel
+                                 set-difference-equal-of-remove1-equal-arg2-irrel
+                                 set-difference-equal-redef
+                                 )
+                           ( ;SET-DIFFERENCE-EQUAL
+                            )))))

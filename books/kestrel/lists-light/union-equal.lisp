@@ -56,3 +56,18 @@
   (equal (union-equal (union-equal x y) z)
          (union-equal x (union-equal y z)))
   :hints (("Goal" :in-theory (enable union-equal))))
+
+(defthm union-equal-when-not-consp-arg1-cheap
+  (implies (not (consp x))
+           (equal (union-equal x y)
+                  y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable union-equal))))
+
+(defthm union-equal-when-not-consp-arg2-cheap
+  (implies (not (consp y))
+           (equal (union-equal x y)
+                  ;; note that this can be simplified further:
+                  (append x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable union-equal))))

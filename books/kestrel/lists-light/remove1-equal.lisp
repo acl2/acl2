@@ -65,6 +65,13 @@
   :rule-classes ((:linear :trigger-terms ((len (remove1-equal x l)))))
   :hints (("Goal" :in-theory (enable remove1-equal))))
 
+(defthm len-of-remove1-equal
+  (equal (len (remove1-equal x l))
+         (if (member-equal x l)
+             (+ -1 (len l))
+           (len l)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
+
 (defthm true-listp-of-remove1-equal
   (implies (true-listp l)
            (true-listp (remove1-equal x l))))

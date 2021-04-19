@@ -50,6 +50,13 @@
          nil)
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
+(defthm intersection-equal-when-not-consp-arg1-cheap
+  (implies (not (consp x))
+           (equal (intersection-equal x y)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
 (defthm intersection-equal-when-not-consp-arg2-cheap
   (implies (not (consp y))
            (equal (intersection-equal x y)
@@ -98,3 +105,8 @@
            (equal (intersection-equal x (remove1-equal a y))
                   (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
+
+;enable?
+(defthmd intersection-equal-commutative-iff
+  (iff (intersection-equal x y)
+       (intersection-equal y x)) :hints (("Goal" :in-theory (enable intersection-equal ))))
