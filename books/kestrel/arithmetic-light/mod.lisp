@@ -132,6 +132,7 @@
   :hints (("Goal" :in-theory (enable mod floor))))
 
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
+(local (in-theory (disable INTEGERP-MINUS-X))) ;slow
 
 (defthm mod-of-mod-same-arg2
   (implies (and (rationalp x)
