@@ -135,6 +135,12 @@
       (type-unsigned-integerp type))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-integer-listp (x)
+  :guard (type-listp x)
+  (type-integerp x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-realp ((type typep))
