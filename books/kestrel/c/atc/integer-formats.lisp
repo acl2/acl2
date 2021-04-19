@@ -54,7 +54,7 @@
     "We prove some theorems about the nullary functions.
      We disable their definitions, including executable counterparts.
      This way, we minimize the dependencies from the exact definitions,
-     and we try and define the integer values and operations
+     and we define the integer values, conversions, and operations
      as independently from the exact sizes as possible.
      Thus, it may not be difficult to replace this file
      with another one with different definitions.")
