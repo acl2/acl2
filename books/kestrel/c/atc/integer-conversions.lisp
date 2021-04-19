@@ -188,7 +188,11 @@
     :enable (sint-from-uchar-okp sint-integerp-alt-def)
     :disable (uchar-max-vs-sint-max
               ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
               uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
               uint-max-vs-sllong-max
               ulong-max-vs-sllong-max))
 
@@ -198,7 +202,39 @@
     :enable (sint-from-ushort-okp sint-integerp-alt-def)
     :disable (uchar-max-vs-sint-max
               ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
               uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-uchar-okp-when-uchar-max-<=slong-max
+    (implies (<= (uchar-max) (slong-max))
+             (slong-from-uchar-okp x))
+    :enable (slong-from-uchar-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-ushort-okp-when-ushort-max-<=slong-max
+    (implies (<= (ushort-max) (slong-max))
+             (slong-from-ushort-okp x))
+    :enable (slong-from-ushort-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
               uint-max-vs-sllong-max
               ulong-max-vs-sllong-max))
 
@@ -208,17 +244,53 @@
     :enable (slong-from-uint-okp slong-integerp-alt-def)
     :disable (uchar-max-vs-sint-max
               ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
               uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-uchar-okp-when-uchar-max-<=sllong-max
+    (implies (<= (uchar-max) (sllong-max))
+             (sllong-from-uchar-okp x))
+    :enable (sllong-from-uchar-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-ushort-okp-when-ushort-max-<=sllong-max
+    (implies (<= (ushort-max) (sllong-max))
+             (sllong-from-ushort-okp x))
+    :enable (sllong-from-ushort-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
               uint-max-vs-sllong-max
               ulong-max-vs-sllong-max))
 
   (defrule sllong-from-uint-okp-when-uint-max-<=sllong-max
     (implies (<= (uint-max) (sllong-max))
-             (slong-from-uint-okp x))
+             (sllong-from-uint-okp x))
     :enable (sllong-from-uint-okp sllong-integerp-alt-def)
     :disable (uchar-max-vs-sint-max
               ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
               uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
               uint-max-vs-sllong-max
               ulong-max-vs-sllong-max))
 
@@ -228,6 +300,10 @@
     :enable (sllong-from-ulong-okp sllong-integerp-alt-def)
     :disable (uchar-max-vs-sint-max
               ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
               uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
               uint-max-vs-sllong-max
               ulong-max-vs-sllong-max)))
