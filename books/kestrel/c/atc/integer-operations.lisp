@@ -287,7 +287,7 @@
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if the left shift of a value of "
                            type-string
-                           " is well-defined.")
+                           " by an integer is well-defined.")
          ,(if hirankp
               (if type-signedp
                   `(and (integer-range-p 0 (,type-bits) (ifix y))
@@ -305,7 +305,7 @@
          :returns (result ,rtypep)
          :short ,(str::cat "Left shift of a value of "
                            type-string
-                           " [C:6.5.7].")
+                           " by an integer [C:6.5.7].")
          ,(if hirankp
               `(,(if type-signedp type type-mod) (* (,type->get x)
                                                     (expt 2 (ifix y))))
@@ -325,7 +325,7 @@
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if the right shift of a value of "
                            type-string
-                           " is well-defined.")
+                           " by an integer is well-defined.")
          ,(if hirankp
               (if type-signedp
                   `(and (integer-range-p 0 (,type-bits) (ifix y))
@@ -341,7 +341,7 @@
          :returns (result ,rtypep)
          :short ,(str::cat "Right shift of a value of "
                            type-string
-                           " [C:6.5.7].")
+                           " by an integer C:6.5.7].")
          ,(if hirankp
               `(,(if type-signedp type type-mod) (truncate (,type->get x)
                                                            (expt 2 (ifix y))))
@@ -425,6 +425,7 @@
           the C integer operations that involve two integer types."
 
   (b* ((itype (uaconvert-types itype1 itype2))
+       (sh-itype (promote-type itype1))
        (samep (and (equal itype itype1) (equal itype itype2)))
        (type1 (atc-integer-type-fixtype itype1))
        (type2 (atc-integer-type-fixtype itype2))
@@ -432,9 +433,12 @@
        (type2p (pack type2 'p))
        (type1->get (pack type1 '->get))
        (type2->get (pack type2 '->get))
+       (type2-integer-value (pack type2 '-integer-value))
        (type (atc-integer-type-fixtype itype))
+       (sh-type (atc-integer-type-fixtype sh-itype))
        (type-mod (pack type '-mod))
        (typep (pack type 'p))
+       (sh-typep (pack sh-type 'p))
        (type-integerp (pack type '-integerp))
        (signedp (type-signed-integerp itype))
        (type1-string (atc-integer-type-string type1))
@@ -461,7 +465,10 @@
        (rem-type1-type2-okp (pack rem-type1-type2 '-okp))
        (rem-type-type (pack 'rem- type '- type))
        (rem-type-type-okp (pack rem-type-type '-okp))
-       )
+       (shl-type1-type2 (pack 'shl- type1 '- type2))
+       (shl-type1-type2-okp (pack shl-type1-type2 '-okp))
+       (shl-type1 (pack 'shl- type1))
+       (shl-type1-okp (pack shl-type1 '-okp)))
 
     `(progn
 
@@ -671,6 +678,32 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,shl-type1-type2-okp ((x ,type1p) (y ,type2p))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if the left shift of a value of "
+                           type1-string
+                           " by a value of "
+                           type2-string
+                           " is well-defined.")
+         (,shl-type1-okp x (,type2-integer-value y))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (define ,shl-type1-type2 ((x ,type1p) (y ,type2p))
+         :guard (,shl-type1-type2-okp x y)
+         :returns (result ,sh-typep)
+         :short ,(str::cat "Left shift of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.7].")
+         (,shl-type1 x (,type2-integer-value y))
+         :guard-hints (("Goal" :in-theory (enable ,shl-type1-type2-okp)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -755,18 +788,10 @@
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
        (stype-integer-value (add-suffix stype "-INTEGER-VALUE"))
        (utype-integer-value (add-suffix utype "-INTEGER-VALUE"))
-       (shl-stype (acl2::packn-pos (list "SHL-" stype) 'atc))
-       (shl-utype (acl2::packn-pos (list "SHL-" utype) 'atc))
-       (shl-stype-okp (add-suffix shl-stype "-OKP"))
-       (shl-utype-okp (add-suffix shl-utype "-OKP"))
        (shr-stype (acl2::packn-pos (list "SHR-" stype) 'atc))
        (shr-utype (acl2::packn-pos (list "SHR-" utype) 'atc))
        (shr-stype-okp (add-suffix shr-stype "-OKP"))
        (shr-utype-okp (add-suffix shr-utype "-OKP"))
-       (shl-stype-stype (acl2::packn-pos (list "SHL-" stype "-" stype) 'atc))
-       (shl-utype-utype (acl2::packn-pos (list "SHL-" utype "-" utype) 'atc))
-       (shl-stype-stype-okp (add-suffix shl-stype-stype "-OKP"))
-       (shl-utype-utype-okp (add-suffix shl-utype-utype "-OKP"))
        (shr-stype-stype (acl2::packn-pos (list "SHR-" stype "-" stype) 'atc))
        (shr-utype-utype (acl2::packn-pos (list "SHR-" utype "-" utype) 'atc))
        (shr-stype-stype-okp (add-suffix shr-stype-stype "-OKP"))
@@ -799,62 +824,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shl-stype-stype-okp ((x ,stypep) (y ,stypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if left shift of @('signed "
-                                   type-string
-                                   "') values by @('signed "
-                                   type-string
-                                   "') values is well-defined.")
-              (,shl-stype-okp x (,stype-integer-value y))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shl-stype-stype ((x ,stypep) (y ,stypep))
-              :guard (,shl-stype-stype-okp x y)
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Left shift of @('signed "
-                                   type-string
-                                   "') values by @('signed "
-                                   type-string
-                                   "') values [C:6.5.7].")
-              (,shl-stype x (,stype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,shl-stype-stype-okp)))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shl-utype-utype-okp ((x ,utypep) (y ,utypep))
-              :returns (yes/no booleanp)
-              :short ,(concatenate 'string
-                                   "Check if left shift of @('unsigned "
-                                   type-string
-                                   "') values by @('unsigned "
-                                   type-string
-                                   "') values is well-defined.")
-              (,shl-utype-okp x (,utype-integer-value y))
-              :hooks (:fix))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,shl-utype-utype ((x ,utypep) (y ,utypep))
-              :guard (,shl-utype-utype-okp x y)
-              :returns (result ,utypep)
-              :short ,(concatenate 'string
-                                   "Left shift of @('unsigned "
-                                   type-string
-                                   "') values by @('unsigned "
-                                   type-string
-                                   "') values [C:6.5.7].")
-              (,shl-utype x (,utype-integer-value y))
-              :guard-hints (("Goal" :in-theory (enable ,shl-utype-utype-okp)))
-              :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
