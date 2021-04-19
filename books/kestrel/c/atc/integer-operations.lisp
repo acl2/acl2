@@ -486,7 +486,9 @@
        (ne-type1-type2 (pack 'ne- type1 '- type2))
        (ne-type-type (pack 'ne- type '- type))
        (bitand-type1-type2 (pack 'bitand- type1 '- type2))
-       (bitand-type-type (pack 'bitand- type '- type)))
+       (bitand-type-type (pack 'bitand- type '- type))
+       (bitxor-type1-type2 (pack 'bitxor- type1 '- type2))
+       (bitxor-type-type (pack 'bitxor- type '- type)))
 
     `(progn
 
@@ -884,6 +886,29 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,bitxor-type1-type2 ((x ,type1p) (y ,type2p))
+         :returns (result ,typep)
+         :short ,(str::cat "Bitwise conjunction of a value of "
+                           type1-string
+                           " and a value of "
+                           type2-string
+                           " [C:6.5.8].")
+         ,(if samep
+              `(,(if signedp type type-mod) (logand (,type1->get x)
+                                                    (,type2->get y)))
+            `(,bitxor-type-type
+              ,(if (eq type type1) 'x `(,type-from-type1 x))
+              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+         :prepwork
+         ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+         ,@(and samep
+                `(:guard-hints
+                  (("Goal"
+                    :in-theory (enable ,type-integerp ,typep ,type1->get)))))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -966,8 +991,6 @@
        (utype-integerp (add-suffix utype "-INTEGERP"))
        (stype-nonzerop (add-suffix stype "-NONZEROP"))
        (utype-nonzerop (add-suffix utype "-NONZEROP"))
-       (bitxor-stype-stype (acl2::packn-pos (list "BITXOR-" stype "-" stype) 'atc))
-       (bitxor-utype-utype (acl2::packn-pos (list "BITXOR-" utype "-" utype) 'atc))
        (bitior-stype-stype (acl2::packn-pos (list "BITIOR-" stype "-" stype) 'atc))
        (bitior-utype-utype (acl2::packn-pos (list "BITIOR-" utype "-" utype) 'atc))
        (logand-stype-stype (acl2::packn-pos (list "LOGAND-" stype "-" stype) 'atc))
@@ -980,41 +1003,6 @@
        ,@(and
           (member-eq type '(:int :long :llong))
           `(
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitxor-stype-stype ((x ,stypep) (y ,stypep))
-              :returns (result ,stypep)
-              :short ,(concatenate 'string
-                                   "Bitwise exclusive disjunction of @('signed "
-                                   type-string
-                                   "') values [C:6.5.11].")
-              (,stype (logxor (,stype->get x) (,stype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,stype-integerp
-                                                       ,stypep
-                                                       ,stype->get)))
-              :hooks (:fix)
-              :prepwork
-              ((local
-                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-            (define ,bitxor-utype-utype ((x ,utypep) (y ,utypep))
-              :returns (result ,utypep)
-              :short ,(concatenate
-                       'string
-                       "Bitwise exclusive disjunction of @('unsigned "
-                       type-string
-                       "') values [C:6.5.10].")
-              (,utype (logxor (,utype->get x) (,utype->get y)))
-              :guard-hints (("Goal" :in-theory (enable ,utype-integerp
-                                                       ,utypep
-                                                       ,utype->get)))
-              :hooks (:fix)
-              :prepwork
-              ((local
-                (include-book "centaur/bitops/ihs-extensions" :dir :system))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
