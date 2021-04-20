@@ -16,6 +16,7 @@
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
@@ -161,7 +162,26 @@
                        BOUND-VARS-AFTER-HYP
                        axe-bind-free-result-okayp-rewrite))))
 
-(defthm all-vars-in-term-bound-in-alistp-of-cdr-of-car-when-normal
+;drop?
+;; (defthm all-vars-in-term-bound-in-alistp-of-car-when-normal
+;;   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
+;;                 (not (eq :axe-bind-free (ffn-symb (first hyps))))
+;;                 (not (eq :free-vars (ffn-symb (first hyps))))
+;;                 (consp hyps)
+;;                 (alist-suitable-for-hypsp alist hyps)
+;;                 (axe-rule-hyp-listp hyps)
+;;                 (symbol-alistp alist))
+;;            (all-vars-in-term-bound-in-alistp (first hyps) alist))
+;;   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
+;;                                                           hyps)
+;;                            (axe-rule-hyp-listp hyps))
+;;            :in-theory (enable ;all-vars-in-term-bound-in-alistp
+;;                        alist-suitable-for-hypsp
+;;                        bound-vars-suitable-for-hypsp
+;;                        bound-vars-suitable-for-hypp
+;;                        axe-rule-hypp))))
+
+(defthm subsetp-equal-of-vars-in-term-of-car-and-strip-cars-when-normal
   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
                 (not (eq :axe-bind-free (ffn-symb (first hyps))))
                 (not (eq :free-vars (ffn-symb (first hyps))))
@@ -169,7 +189,7 @@
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)
                 (symbol-alistp alist))
-           (all-vars-in-term-bound-in-alistp (first hyps) alist))
+           (subsetp-equal (vars-in-term (first hyps)) (strip-cars alist)))
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
                            (axe-rule-hyp-listp hyps))
@@ -227,8 +247,7 @@
                 (natp nodenum-to-assume-false)
                 (axe-treep hyp)
                 (consp hyp)
-                (symbol-alistp alist)
-                )
+                (symbol-alistp alist))
            (alist-suitable-for-hypsp (append (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)
                                              alist)
                                      hyps))
