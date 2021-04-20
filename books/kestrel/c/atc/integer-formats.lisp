@@ -140,48 +140,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
- `(defrule char-bits-vs-short-bits
-    :parents (char-bits short-bits)
-    :short "Relation between @('char') and @('short') sizes."
-    ,(if (= (char-bits) (short-bits))
-         '(= (char-bits) (short-bits))
-       '(< (char-bits) (short-bits)))
-    :rule-classes ((:linear :trigger-terms ((char-bits) (short-bits))))
-    :enable (char-bits short-bits)))
+(defmacro+ atc-def-integer-bits-linear-rule (type1 rel type2 &key name disable)
+  (declare (xargs :guard (and (member-eq type1 '(char short int long llong))
+                              (member-eq type2 '(char short int long llong))
+                              (member-eq rel '(= < > <= >=))
+                              (symbolp name)
+                              (booleanp disable))))
+  :short "Macro to generate linear rules about
+          the sizes in bits of C integer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each theorem says that the size in bits of the first type
+     has the specified relation with the size in bits of the second type.")
+   (xdoc::p
+    "Note that we also allow equalities, not just inequalities.
+     Linear rules may use equalities in ACL2."))
+
+  (b* ((type1-bits (pack type1 '-bits))
+       (type2-bits (pack type2 '-bits))
+       (name (or name (pack type1-bits '- rel '- type2-bits)))
+       (type1-string (str::cat
+                      "@('" (str::downcase-string (symbol-name type1)) "')"))
+       (type2-string (str::cat
+                      "@('" (str::downcase-string (symbol-name type2)) "')")))
+
+    `(,(if disable 'defruled 'defrule) ,name
+      :parents (,type1-bits ,type2-bits)
+      :short ,(str::cat "Relation between "
+                        type1-string
+                        " and "
+                        type2-string
+                        " bit sizes.")
+      (,rel (,type1-bits) (,type2-bits))
+      :rule-classes ((:linear :trigger-terms ((,type1-bits) (,type2-bits))))
+      :enable (,type1-bits ,type2-bits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(atc-def-integer-bits-linear-rule char <= short)
+
+(atc-def-integer-bits-linear-rule short <= int)
+
+(atc-def-integer-bits-linear-rule int <= long)
+
+(atc-def-integer-bits-linear-rule long <= llong)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(defrule short-bits-vs-int-bits
-    :parents (short-bits int-bits)
-    :short "Relation between @('short') and @('int') sizes."
-    ,(if (= (short-bits) (int-bits))
-         '(= (short-bits) (int-bits))
-       '(< (short-bits) (int-bits)))
-    :rule-classes ((:linear :trigger-terms ((short-bits) (int-bits))))
-    :enable (short-bits int-bits)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ (b* ((rel (if (= (char-bits) (short-bits)) '= '<)))
+   `(atc-def-integer-bits-linear-rule char ,rel short
+                                      :name char-bits-vs-short-bits
+                                      :disable t)))
 
 (make-event
- `(defrule int-bits-vs-long-bits
-    :parents (int-bits long-bits)
-    :short "Relation between @('int') and @('long') sizes."
-    ,(if (= (int-bits) (long-bits))
-         '(= (int-bits) (long-bits))
-       '(< (int-bits) (long-bits)))
-    :rule-classes ((:linear :trigger-terms ((int-bits) (long-bits))))
-    :enable (int-bits long-bits)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ (b* ((rel (if (= (short-bits) (int-bits)) '= '<)))
+   `(atc-def-integer-bits-linear-rule short ,rel int
+                                      :name short-bits-vs-int-bits
+                                      :disable t)))
 
 (make-event
- `(defrule long-bits-vs-llong-bits
-    :parents (long-bits llong-bits)
-    :short "Relation between @('long') and @('long long') sizes."
-    ,(if (= (long-bits) (llong-bits))
-         '(= (long-bits) (llong-bits))
-       '(< (long-bits) (llong-bits)))
-    :rule-classes ((:linear :trigger-terms ((long-bits) (llong-bits))))
-    :enable (long-bits llong-bits)))
+ (b* ((rel (if (= (int-bits) (long-bits)) '= '<)))
+   `(atc-def-integer-bits-linear-rule int ,rel long
+                                      :name int-bits-vs-long-bits
+                                      :disable t)))
+
+(make-event
+ (b* ((rel (if (= (long-bits) (llong-bits)) '= '<)))
+   `(atc-def-integer-bits-linear-rule long ,rel llong
+                                      :name long-bits-vs-llong-bits
+                                      :disable t)))

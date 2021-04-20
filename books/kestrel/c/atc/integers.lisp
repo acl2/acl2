@@ -365,12 +365,12 @@
          '(= (uchar-max) (ushort-max))
        '(< (uchar-max) (ushort-max)))
     :rule-classes :linear
-    :enable (uchar-max ushort-max)
     ,@(if (= (char-bits) (short-bits))
-          '(:disable char-bits-vs-short-bits
+          '(:enable (uchar-max ushort-max)
             :use char-bits-vs-short-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (uchar-max ushort-max char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -384,12 +384,12 @@
          '(= (ushort-max) (uint-max))
        '(< (ushort-max) (uint-max)))
     :rule-classes :linear
-    :enable (ushort-max uint-max)
     ,@(if (= (short-bits) (int-bits))
-          '(:disable short-bits-vs-int-bits
+          '(:enable (ushort-max uint-max)
             :use short-bits-vs-int-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (ushort-max uint-max short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,12 +403,12 @@
          '(= (uint-max) (ulong-max))
        '(< (uint-max) (ulong-max)))
     :rule-classes :linear
-    :enable (uint-max ulong-max)
     ,@(if (= (int-bits) (long-bits))
-          '(:disable int-bits-vs-long-bits
+          '(:enable (uint-max ulong-max)
             :use int-bits-vs-long-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (uint-max ulong-max int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -422,12 +422,12 @@
          '(= (ulong-max) (ullong-max))
        '(< (ulong-max) (ullong-max)))
     :rule-classes :linear
-    :enable (ulong-max ullong-max)
     ,@(if (= (long-bits) (llong-bits))
-          '(:disable long-bits-vs-llong-bits
+          '(:enable (ulong-max ullong-max)
             :use long-bits-vs-llong-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (ulong-max ullong-max long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -441,12 +441,12 @@
          '(= (schar-min) (sshort-min))
        '(>= (schar-min) (sshort-min)))
     :rule-classes :linear
-    :enable (schar-min sshort-min)
     ,@(if (= (char-bits) (short-bits))
-          '(:disable char-bits-vs-short-bits
+          '(:enable (schar-min sshort-min)
             :use char-bits-vs-short-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (schar-min sshort-min char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -460,12 +460,12 @@
          '(= (sshort-min) (sint-min))
        '(> (sshort-min) (sint-min)))
     :rule-classes :linear
-    :enable (sshort-min sint-min)
     ,@(if (= (char-bits) (short-bits))
-          '(:disable short-bits-vs-int-bits
+          '(:enable (sshort-min sint-min)
             :use short-bits-vs-int-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (sshort-min sint-min short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -479,12 +479,12 @@
          '(= (sint-min) (slong-min))
        '(> (sint-min) (slong-min)))
     :rule-classes :linear
-    :enable (sint-min slong-min)
     ,@(if (= (int-bits) (long-bits))
-          '(:disable int-bits-vs-long-bits
+          '(:enable (sint-min slong-min)
             :use int-bits-vs-long-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (sint-min slong-min int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -498,12 +498,12 @@
          '(= (slong-min) (sllong-min))
        '(> (slong-min) (sllong-min)))
     :rule-classes :linear
-    :enable (slong-min sllong-min)
     ,@(if (= (long-bits) (llong-bits))
-          '(:disable long-bits-vs-llong-bits
+          '(:enable (slong-min sllong-min)
             :use long-bits-vs-llong-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (slong-min sllong-min long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -517,12 +517,12 @@
          '(= (schar-max) (sshort-max))
        '(< (schar-max) (sshort-max)))
     :rule-classes :linear
-    :enable (schar-max sshort-max)
     ,@(if (= (char-bits) (short-bits))
-          '(:disable char-bits-vs-short-bits
+          '(:enable (schar-max sshort-max)
             :use char-bits-vs-short-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (schar-max sshort-max char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -536,12 +536,12 @@
          '(= (sshort-max) (sint-max))
        '(< (sshort-max) (sint-max)))
     :rule-classes :linear
-    :enable (sshort-max sint-max)
     ,@(if (= (char-bits) (short-bits))
-          '(:disable short-bits-vs-int-bits
+          '(:enable (sshort-max sint-max)
             :use short-bits-vs-int-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (sshort-max sint-max short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -555,12 +555,12 @@
          '(= (sint-max) (slong-max))
        '(< (sint-max) (slong-max)))
     :rule-classes :linear
-    :enable (sint-max slong-max)
     ,@(if (= (int-bits) (long-bits))
-          '(:disable int-bits-vs-long-bits
+          '(:enable (sint-max slong-max)
             :use int-bits-vs-long-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (sint-max slong-max int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -574,12 +574,12 @@
          '(= (slong-max) (sllong-max))
        '(< (slong-max) (sllong-max)))
     :rule-classes :linear
-    :enable (slong-max sllong-max)
     ,@(if (= (long-bits) (llong-bits))
-          '(:disable long-bits-vs-llong-bits
+          '(:enable (slong-max sllong-max)
             :use long-bits-vs-llong-bits)
-        '(:use (:instance
-                acl2::expt-is-weakly-increasing-for-base->-1
+        '(:enable (slong-max sllong-max long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -593,7 +593,10 @@
          '(<= (uchar-max) (sint-max))
        '(> (uchar-max) (sint-max)))
     :rule-classes ((:linear :trigger-terms ((uchar-max) (sint-max))))
-    :enable (uchar-max sint-max)))
+    :enable (uchar-max
+             sint-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,7 +609,9 @@
          '(<= (ushort-max) (sint-max))
        '(> (ushort-max) (sint-max)))
     :rule-classes ((:linear :trigger-terms ((ushort-max) (sint-max))))
-    :enable (ushort-max sint-max)))
+    :enable (ushort-max
+             sint-max
+             short-bits-vs-int-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -619,7 +624,11 @@
          '(<= (uchar-max) (slong-max))
        '(> (uchar-max) (slong-max)))
     :rule-classes ((:linear :trigger-terms ((uchar-max) (slong-max))))
-    :enable (uchar-max slong-max)))
+    :enable (uchar-max
+             slong-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,7 +641,10 @@
          '(<= (ushort-max) (slong-max))
        '(> (ushort-max) (slong-max)))
     :rule-classes ((:linear :trigger-terms ((ushort-max) (slong-max))))
-    :enable (ushort-max slong-max)))
+    :enable (ushort-max
+             slong-max
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -645,7 +657,9 @@
          '(<= (uint-max) (slong-max))
        '(> (uint-max) (slong-max)))
     :rule-classes ((:linear :trigger-terms ((uint-max) (slong-max))))
-    :enable (uint-max slong-max)))
+    :enable (uint-max
+             slong-max
+             int-bits-vs-long-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,7 +672,12 @@
          '(<= (uchar-max) (sllong-max))
        '(> (uchar-max) (sllong-max)))
     :rule-classes ((:linear :trigger-terms ((uchar-max) (sllong-max))))
-    :enable (uchar-max sllong-max)))
+    :enable (uchar-max
+             sllong-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -671,7 +690,11 @@
          '(<= (ushort-max) (sllong-max))
        '(> (ushort-max) (sllong-max)))
     :rule-classes ((:linear :trigger-terms ((ushort-max) (sllong-max))))
-    :enable (ushort-max sllong-max)))
+    :enable (ushort-max
+             sllong-max
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,7 +707,10 @@
          '(<= (uint-max) (sllong-max))
        '(> (uint-max) (sllong-max)))
     :rule-classes ((:linear :trigger-terms ((uint-max) (sllong-max))))
-    :enable (uint-max sllong-max)))
+    :enable (uint-max
+             sllong-max
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -697,4 +723,6 @@
          '(<= (ulong-max) (sllong-max))
        '(> (ulong-max) (sllong-max)))
     :rule-classes ((:linear :trigger-terms ((ulong-max) (sllong-max))))
-    :enable (ulong-max sllong-max)))
+    :enable (ulong-max
+             sllong-max
+             long-bits-vs-llong-bits)))
