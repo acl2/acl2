@@ -34,7 +34,7 @@
 ;; makes distinctions between calls of fn
 
 (include-book "coi/syntax/syntax" :dir :system)
-(include-book "ordinals/lexicographic-ordering" :dir :system)
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 (include-book "coi/util/skip-rewrite" :dir :system)
 
 ;; ==================================================================
