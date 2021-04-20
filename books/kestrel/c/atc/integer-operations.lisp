@@ -61,8 +61,11 @@
      because the 0 or 1 are always @('int')
      for operations like @('&&') and @('||').")
    (xdoc::p
-    "We introduce functions for the unary and binary operators,
-     as detailed below.")
+    "We introduce functions for the unary and strict binary operators,
+     as detailed below.
+     We do not introduce functions for the non-strict binary operators,
+     because those are modeled via ACL2's @(tsee and) and @(tsee or),
+     which are also non-strict.")
    (xdoc::p
     "For each unary operator, we introduce a function for each integer type.
      The function takes an argument of that integer type,
@@ -83,18 +86,7 @@
      C also promotes, individually, the operands of @('<<') and @('>>'),
      but without turning them into a common type;
      while the type of the first operand affects the result,
-     only the (mathematical) integer value of the second operand does,
-     and thus we introduce functions
-     that take an ACL2 integer as the second operand.
-     We also have functions
-     that take a C integer as the second operand,
-     of the same type as the first operand;.
-     Although C does not promote the operands of @('&&') and @('||'),
-     note that performing explicit promotions does not affect the result:
-     thus, we only define functions for these operators
-     for operands of equal types of rank @('int') or higher;
-     we may actually remove these functions altogether,
-     and always require their non-strict representation in ACL2.")
+     only the (mathematical) integer value of the second operand does.")
    (xdoc::p
     "When the exact result of an aritmetic operation on signed integers
      is not representable in the signed integer type,
@@ -107,88 +99,71 @@
     "The right operand of a signed shift operator
      must be non-negative and below the bit size of the left operand
      [C:6.5.7/3].
-     The left operand, when signed, must be non-negative.")
+     The left operand, when signed, must be non-negative.
+     These requirements are captured in the guards.")
    (xdoc::p
     "For division and remainder,
      the guard also requires the divisor to be non-zero.")
    (xdoc::p
-    "Note that the relational and equality operators,
+    "The relational and equality operators,
      as well as the logical negation, conjunction, and disjunction operations,
      always return @('int'), regardless of the types of the operands.")
    (xdoc::p
-    "The logical conjunction and disjunction operators defined here
-     are strict versions, because they take two values as inputs.
-     Non-strict versions are represented differently in ACL2.")
-   (xdoc::p
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
-    (xdoc::seetopic "atc-integers" "our model of integer values")
+    (xdoc::seetopic "atc-integer-formats" "our model of integer values")
     "; these operations depend on the C representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *atc-integer-types*
-  '(schar uchar sshort ushort sint uint slong ulong sllong ullong))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule atc-integer-type-fixtype-in-*atc-integer-types*
-  (implies (and (typep type)
-                (type-integerp type)
-                (not (type-case type :char)))
-           (member-equal (atc-integer-type-fixtype type)
-                         *atc-integer-types*))
-  :hints (("Goal" :in-theory (enable atc-integer-type-fixtype
-                                     type-kind
-                                     type-integerp
-                                     type-signed-integerp
-                                     type-unsigned-integerp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-string$ (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (string stringp)
-  :short "Documentation (sub)string that describes a C integer type."
-  (b* ((core (case type
-               (schar "signed char")
-               (uchar "unsigned char")
-               (sshort "signed short")
-               (ushort "unsigned short")
-               (sint "signed int")
-               (uint "unsigned int")
-               (slong "signed long")
-               (ulong "unsigned long")
-               (sllong "signed long long")
-               (ullong "unsigned long long")
-               (t (prog2$ (impossible) "")))))
-    (str::cat "type @('" core "')")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-signedp (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (yes/no booleanp)
-  (equal (char (symbol-name type) 0) #\S))
+(define sint01 ((b booleanp))
+  :returns (x sintp)
+  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
+     Together with @(tsee sint-nonzerop) and other @('...-nonzerop') operations,
+     it can be used to represent in ACL2
+     shallowly embedded C logical conjunctions and disjunctions,
+     which must be integers in C,
+     but must be booleans in ACL2 to represent their non-strictness."))
+  (if b (sint 1) (sint 0))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-1 (type)
-  :guard (member-eq type *atc-integer-types*)
+(define atc-def-integer-operations-1 ((itype typep))
+  :guard (type-integerp itype)
+  :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These include not only the unary operators,
+     but also versions of the shift operators
+     that take ACL2 integers as second operands.
+     The latter are used in the definition of the shift operators
+     whose second operands are C integers;
+     see @(tsee atc-def-integer-operations-2).")
+   (xdoc::p
+    "For unary plus, unary minus, and bitwise complement,
+     we generate different definitions based on whether
+     the type has the rank of @('int') or higher, or not:
+     if it does, we generate a definition that performs a direct computation;
+     if it does not, we generate a definition that
+     converts and then calls the function for the promoted type."))
 
-  (b* ((type-string (atc-integer-type-string$ type))
-       (rtype (case type
-                (schar 'sint)
-                (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
-                (sshort 'sint)
-                (ushort (if (<= (ushort-max) (sint-max)) 'sint 'uint))
-                (t type)))
-       (type-bits (pack (str::implode (cdr (str::explode (symbol-name type))))
-                        '-bits))
+  (b* ((type-string (atc-integer-type-string itype))
+       (type (atc-integer-type-fixtype itype))
+       (irtype (promote-type itype))
+       (rtype (atc-integer-type-fixtype irtype))
+       (type-signedp (type-signed-integerp itype))
+       (rtype-signedp (type-signed-integerp irtype))
+       (type-bits (atc-integer-type-bits itype))
        (typep (pack type 'p))
        (type->get (pack type '->get))
        (type-mod (pack type '-mod))
@@ -211,8 +186,6 @@
        (minus-rtype (pack 'minus- rtype))
        (minus-rtype-okp (pack minus-rtype '-okp))
        (bitnot-rtype (pack 'bitnot- rtype))
-       (type-signedp  (atc-integer-type-signedp type))
-       (rtype-signedp (atc-integer-type-signedp rtype))
        (lognot-type (pack 'lognot- type))
        (shl-type (pack 'shl- type))
        (shl-type-okp (pack shl-type '-okp))
@@ -413,39 +386,35 @@
 
        )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sint01 ((b booleanp))
-  :returns (x sintp)
-  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
-     Together with @(tsee sint-nonzerop) and other @('...-nonzerop') operations,
-     it can be used to represent in ACL2
-     shallowly embedded C logical conjunctions and disjunctions,
-     which must be integers in C,
-     but must be booleans in ACL2 to represent their non-strictness."))
-  (if b (sint 1) (sint 0))
-  :hooks (:fix))
+(define atc-def-integer-operations-1-loop ((types type-listp))
+  :guard (type-integer-listp types)
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the ACL2 models of the C integer operations
+          that involve each one integer type from a list."
+  (cond ((endp types) nil)
+        (t (cons (atc-def-integer-operations-1 (car types))
+                 (atc-def-integer-operations-1-loop (cdr types))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(progn
-  ;; It is critical to generate the operations for SINT and UINT
-  ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
-  ;; because the latter are defined in terms of the former.
-  (make-event (atc-def-integer-operations-1 'sint))
-  (make-event (atc-def-integer-operations-1 'uint))
-  (make-event (atc-def-integer-operations-1 'slong))
-  (make-event (atc-def-integer-operations-1 'ulong))
-  (make-event (atc-def-integer-operations-1 'sllong))
-  (make-event (atc-def-integer-operations-1 'ullong))
-  (make-event (atc-def-integer-operations-1 'schar))
-  (make-event (atc-def-integer-operations-1 'uchar))
-  (make-event (atc-def-integer-operations-1 'sshort))
-  (make-event (atc-def-integer-operations-1 'ushort)))
+(make-event
+ ;; It is critical to generate the operations for SINT and UINT
+ ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
+ ;; because the latter are defined in terms of the former.
+ ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
+ (b* ((types (list (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong)
+                   (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort))))
+   `(progn ,@(atc-def-integer-operations-1-loop types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
