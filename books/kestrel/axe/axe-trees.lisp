@@ -407,14 +407,16 @@
 
 (defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
   (implies (and (all-dargp (strip-cdrs alist))
-                (assoc-equal form alist))
+                ;; (assoc-equal form alist)
+                )
            (axe-treep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
            :in-theory (disable dargp-of-cdr-of-assoc-equal))))
 
 (defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
   (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
-                (assoc-equal form alist))
+                ;; (assoc-equal form alist)
+                )
            (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))
   :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
