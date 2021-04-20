@@ -207,8 +207,8 @@
                     ;; quoteps (which the callers would need to handle -- e.g.,
                     ;; if a literal maps to a quotep).
                     ;; Something changed, so we have to add the new expr to the dag:
-                    (b* (((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                          (add-function-call-expr-to-dag-array (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    (b* (((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                          (add-function-call-expr-to-dag-array2 (ffn-symb expr) new-args dag-array dag-len dag-parent-array dag-constant-alist))
                          ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                       (rebuild-nodes-with-var-subst-aux (rest worklist)
                                                         ;; Record what NODENUM was changed to:

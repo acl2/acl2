@@ -69,8 +69,8 @@
             ;;else, it's a regular function call
             (let* ((args (dargs expr))
                    (renamed-args (rename-args args 'renaming-array renaming-array)))
-              (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                (add-function-call-expr-to-dag-array fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+              (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                (add-function-call-expr-to-dag-array2 fn renamed-args dag-array dag-len dag-parent-array dag-constant-alist)
                 (if erp
                     (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                   (merge-nodes-into-dag-array (rest rev-dag-lst)
