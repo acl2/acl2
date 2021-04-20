@@ -1694,10 +1694,10 @@
                                                             refined-assumption-alist node-replacement-array-num-valid-nodes print
                                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
                       ;; No rule fired, so no simplification can be done.  Add the node to the dag:
-                      (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                            (add-function-call-expr-to-dag-array
+                      (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                            (add-function-call-expr-to-dag-array2
                              fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                             dag-array dag-len dag-parent-array dag-constant-alist
                              ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
                              ;;print
                              ))
