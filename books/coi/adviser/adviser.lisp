@@ -308,7 +308,7 @@
     :rule-classes rule-classes)
  })
 
- <p>where @('name') is a new symbolic name See @(see name), @('term') is a term
+ <p>where @('name') is a new symbolic name See @(see acl2::name), @('term') is a term
  alleged to be a useful piece of advice, and @('rule-classes') describe the
  type of advice being added and when to suggest hints of this nature.</p>
 

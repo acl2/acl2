@@ -1,6 +1,11 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
+(include-book "quantification/quantification")
+(include-book "quantification/quantified-congruence")
+(include-book "quantification/quantified-equivalence")
+(include-book "util/rewrite-equiv")
+(include-book "adviser/adviser")
 
 (defxdoc linear-arithmetic-with-complex-coefficients
   :parents (linear linear-arithmetic)

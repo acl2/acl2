@@ -77,29 +77,30 @@
 ;; will a) add type guards b) add fixing functions and c) generate conruence
 ;; relations.
 ;;
-(defun get-key (key alist)
-  (declare (type (satisfies alistp) alist))
-  (let ((hit (assoc-equal key alist)))
-    (if (not (consp hit)) (coi-debug::fail :message "FTY entry missing key: ~x0~%")
-      (cdr hit))))
+(defun fty::get-key (key entry)
+  (declare (xargs :guard (and (consp entry) (alistp (cdr entry)))))
+  (let ((alist (cdr entry)))
+    (let ((hit (assoc-equal key alist)))
+      (if (not (consp hit)) (coi-debug::fail :message "FTY entry for ~x0 missing key ~x1~%" :parameters ((car entry) key))
+        (cdr hit)))))
 
-(in-theory (disable get-key))
+(in-theory (disable fty::get-key))
 
-(defun get-fty-entry (type alist)
+(defun fty::get-entry (type alist)
   (declare (type (satisfies alistp) alist))
   (let ((hit (assoc-equal type alist)))
     (if (not (consp hit))
-        (coi-debug::fail :message "Unrecognized :fty type name: ~x0~%"
-                         :parameters (type))
-      (let ((entry (cdr hit)))
-        (if (not (alistp entry))
-            (coi-debug::fail :message "Non-alist :fty entry~%")
-          entry)))))
+        (cons nil (coi-debug::fail :message "Unrecognized :fty type name: ~x0~%"
+                                   :parameters (type)))
+      (if (not (alistp (cdr hit)))
+          (cons nil (coi-debug::fail :message "Non-alist :fty entry~%"))
+        hit))))
 
-(defthm alistp-get-fty-entry
-  (alistp (get-fty-entry type alist)))
+(defthm alistp-get-entry
+  (and (consp (fty::get-entry type alist))
+       (alistp (cdr (fty::get-entry type alist)))))
 
-(in-theory (disable get-fty-entry))
+(in-theory (disable fty::get-entry))
 
 (defun make-all-true (list)
   (declare (type t list))
@@ -109,14 +110,18 @@
 (defthm true-listp-make-all-true
   (true-listp (make-all-true x)))
 
+(defthm iff-true-listp-append
+  (iff (true-listp (append x y))
+       (true-listp y)))
+
 (defun fty-arg-specs (fty-args fty-alist)
   (declare (type (satisfies alistp) fty-alist))
   (if (not (consp fty-args)) (mv nil nil nil)
-    (let ((entry (get-fty-entry (car fty-args) fty-alist)))
+    (let ((entry (fty::get-entry (car fty-args) fty-alist)))
       (met ((arg-types arg-congs arg-fixes) (fty-arg-specs (cdr fty-args) fty-alist))
-        (let ((typep (get-key 'fty::pred  entry))
-              (equiv (get-key 'fty::equiv entry))
-              (fixer (get-key 'fty::fix   entry)))
+        (let ((typep (fty::get-key 'fty::pred  entry))
+              (equiv (fty::get-key 'fty::equiv entry))
+              (fixer (fty::get-key 'fty::fix   entry)))
           (mv (cons typep arg-types)
               (cons equiv arg-congs)
               (cons fixer arg-fixes)))))))
@@ -130,8 +135,8 @@
   (declare (type (satisfies alistp) fty-alist))
   (if (not (consp val-specs)) (mv nil nil)
     (met ((val-types val-congs) (fty-val-specs (cdr val-specs) fty-alist))
-      (let ((entry (get-fty-entry (car val-specs) fty-alist)))
-        (let ((typep (get-key 'fty::pred  entry)))
+      (let ((entry (fty::get-entry (car val-specs) fty-alist)))
+        (let ((typep (fty::get-key 'fty::pred  entry)))
           (mv (cons typep  val-types)
               (cons 'equal val-congs)))))))
 
