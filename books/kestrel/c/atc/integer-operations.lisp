@@ -180,19 +180,19 @@
        (plus-<type1> (pack 'plus- <type1>))
        (plus-<type> (pack 'plus- <type>))
        (minus-<type1> (pack 'minus- <type1>))
-       (minus-<type> (pack 'minus- <type>))
        (minus-<type1>-okp (pack minus-<type1> '-okp))
+       (minus-<type> (pack 'minus- <type>))
        (minus-<type>-okp (pack minus-<type> '-okp))
        (bitnot-<type1> (pack 'bitnot- <type1>))
        (bitnot-<type> (pack 'bitnot- <type>))
        (lognot-<type1> (pack 'lognot- <type1>))
        (shl-<type1> (pack 'shl- <type1>))
-       (shl-<type> (pack 'shl- <type>))
        (shl-<type1>-okp (pack shl-<type1> '-okp))
+       (shl-<type> (pack 'shl- <type>))
        (shl-<type>-okp (pack shl-<type> '-okp))
        (shr-<type1> (pack 'shr- <type1>))
-       (shr-<type> (pack 'shr- <type>))
        (shr-<type1>-okp (pack shr-<type1> '-okp))
+       (shr-<type> (pack 'shr- <type>))
        (shr-<type>-okp (pack shr-<type> '-okp)))
 
     `(progn
@@ -418,33 +418,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-2 ((itype1 typep) (itype2 typep))
-  :guard (and (type-integerp itype1) (type-integerp itype2))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-realp)))
+(define atc-def-integer-operations-2 ((type1 typep) (type2 typep))
+  :guard (and (type-integerp type1) (type-integerp type2))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp)))
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve two integer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These include all the strict binary operators;
+     the non-strict ones are represented
+     via ACL2's @(tsee and) and @(tsee or) instead
+     (in combination with other ACL2 functions in our C model)."))
 
-  (b* ((itype (uaconvert-types itype1 itype2))
-       (sh-itype (promote-type itype1))
-       (samep (and (equal itype itype1) (equal itype itype2)))
-       (<type1> (atc-integer-type-fixtype itype1))
-       (<type2> (atc-integer-type-fixtype itype2))
+  (b* ((type1-string (atc-integer-type-string type1))
+       (type2-string (atc-integer-type-string type2))
+       (type (uaconvert-types type1 type2))
+       (samep (and (equal type type1) (equal type type2)))
+       (signedp (type-signed-integerp type))
+       (ptype1 (promote-type type1))
+       (<type1> (atc-integer-type-fixtype type1))
+       (<type2> (atc-integer-type-fixtype type2))
+       (<type> (atc-integer-type-fixtype type))
+       (<ptype1> (atc-integer-type-fixtype ptype1))
        (<type1>p (pack <type1> 'p))
        (<type2>p (pack <type2> 'p))
+       (<type>p (pack <type> 'p))
+       (<ptype1>p (pack <ptype1> 'p))
        (<type1>->get (pack <type1> '->get))
        (<type2>->get (pack <type2> '->get))
-       (<type2>-integer-value (pack <type2> '-integer-value))
-       (<type> (atc-integer-type-fixtype itype))
-       (sh-<type> (atc-integer-type-fixtype sh-itype))
        (<type>-mod (pack <type> '-mod))
-       (<type>p (pack <type> 'p))
-       (sh-<type>p (pack sh-<type> 'p))
+       (<type2>-integer-value (pack <type2> '-integer-value))
        (<type>-integerp (pack <type> '-integerp))
-       (signedp (type-signed-integerp itype))
-       (type1-string (atc-integer-type-string itype1))
-       (type2-string (atc-integer-type-string itype2))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
        (<type>-from-<type2> (pack <type> '-from- <type2>))
        (add-<type1>-<type2> (pack 'add- <type1> '- <type2>))
@@ -509,7 +515,7 @@
                                 " is well-defined.")
               ,(if samep
                    `(,<type>-integerp (+ (,<type1>->get x)
-                                       (,<type2>->get y)))
+                                         (,<type2>->get y)))
                  `(,add-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -527,7 +533,7 @@
                            " [C:6.5.6].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (+ (,<type1>->get x)
-                                               (,<type2>->get y)))
+                                                   (,<type2>->get y)))
             `(,add-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -549,7 +555,7 @@
                                 " is well-defined.")
               ,(if samep
                    `(,<type>-integerp (- (,<type1>->get x)
-                                       (,<type2>->get y)))
+                                         (,<type2>->get y)))
                  `(,sub-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -567,7 +573,7 @@
                            " [C:6.5.6].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (- (,<type1>->get x)
-                                               (,<type2>->get y)))
+                                                   (,<type2>->get y)))
             `(,sub-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -589,7 +595,7 @@
                                 " is well-defined.")
               ,(if samep
                    `(,<type>-integerp (* (,<type1>->get x)
-                                       (,<type2>->get y)))
+                                         (,<type2>->get y)))
                  `(,mul-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -607,7 +613,7 @@
                            " [C:6.5.5].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (* (,<type1>->get x)
-                                               (,<type2>->get y)))
+                                                   (,<type2>->get y)))
             `(,mul-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -632,7 +638,7 @@
               (if signedp
                   `(and (not (equal (,<type2>->get y) 0))
                         (,<type>-integerp (truncate (,<type1>->get x)
-                                                  (,<type2>->get y))))
+                                                    (,<type2>->get y))))
                 `(not (equal (,<type2>->get y) 0)))
             `(,div-<type>-<type>-okp
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
@@ -651,7 +657,7 @@
                            " [C:6.5.5].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (truncate (,<type1>->get x)
-                                                      (,<type2>->get y)))
+                                                          (,<type2>->get y)))
             `(,div-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -674,7 +680,7 @@
               (if signedp
                   `(and (not (equal (,<type2>->get y) 0))
                         (,<type>-integerp (rem (,<type1>->get x)
-                                             (,<type2>->get y))))
+                                               (,<type2>->get y))))
                 `(not (equal (,<type2>->get y) 0)))
             `(,rem-<type>-<type>-okp
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
@@ -693,7 +699,7 @@
                            " [C:6.5.5].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (rem (,<type1>->get x)
-                                                 (,<type2>->get y)))
+                                                     (,<type2>->get y)))
             `(,rem-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -716,7 +722,7 @@
 
        (define ,shl-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :guard (,shl-<type1>-<type2>-okp x y)
-         :returns (result ,sh-<type>p)
+         :returns (result ,<ptype1>p)
          :short ,(str::cat "Left shift of a value of "
                            type1-string
                            " and a value of "
@@ -742,7 +748,7 @@
 
        (define ,shr-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :guard (,shr-<type1>-<type2>-okp x y)
-         :returns (result ,sh-<type>p)
+         :returns (result ,<ptype1>p)
          :short ,(str::cat "Right shift of a value of "
                            type1-string
                            " and a value of "
@@ -877,7 +883,7 @@
                            " [C:6.5.10].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (logand (,<type1>->get x)
-                                                    (,<type2>->get y)))
+                                                        (,<type2>->get y)))
             `(,bitand-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -899,7 +905,7 @@
                            " [C:6.5.11].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (logxor (,<type1>->get x)
-                                                    (,<type2>->get y)))
+                                                        (,<type2>->get y)))
             `(,bitxor-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -922,7 +928,7 @@
                            " [C:6.5.12].")
          ,(if samep
               `(,(if signedp <type> <type>-mod) (logior (,<type1>->get x)
-                                                    (,<type2>->get y)))
+                                                        (,<type2>->get y)))
             `(,bitior-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
