@@ -53,6 +53,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *atc-integer-types*
+  '(schar uchar sshort ushort sint uint slong ulong sllong ullong))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-signedp (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (yes/no booleanp)
+  (equal (char (symbol-name type) 0) #\S))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-string$ (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (string stringp)
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case type
+               (schar "signed char")
+               (uchar "unsigned char")
+               (sshort "signed short")
+               (ushort "unsigned short")
+               (sint "signed int")
+               (uint "unsigned int")
+               (slong "signed long")
+               (ulong "unsigned long")
+               (sllong "signed long long")
+               (ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-conversion (src-type dst-type)
   :guard (and (member-eq src-type *atc-integer-types*)
               (member-eq dst-type *atc-integer-types*))
@@ -75,8 +107,8 @@
      asserting that the original value is representable
      in the destination type."))
 
-  (b* ((src-type-string (atc-integer-type-string src-type))
-       (dst-type-string (atc-integer-type-string dst-type))
+  (b* ((src-type-string (atc-integer-type-string$ src-type))
+       (dst-type-string (atc-integer-type-string$ dst-type))
        (conv (pack dst-type '-from- src-type))
        (conv-okp (pack conv '-okp))
        (src-typep (pack src-type 'p))

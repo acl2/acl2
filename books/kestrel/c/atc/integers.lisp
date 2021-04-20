@@ -12,9 +12,10 @@
 (in-package "C")
 
 (include-book "integer-formats")
-(include-book "pack")
+(include-book "types")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -41,7 +42,7 @@
      prove some linear rules about them,
      and prove rules that provide alternative definitions
      of the signed and unsigned ACL2 integers in terms of minima and maxima.
-     This way we have the ability to view the integer ranges
+     This gives us the ability to view the integer ranges
      as ACL2's @(tsee signed-byte-p) and @(tsee unsigned-byte-p) values,
      which is useful for bitwise operations,
      but also as plain integers in certain ranges,
@@ -52,307 +53,256 @@
      to turn ACL2 integers into values of those types
      by reducing them modulo one plus the maximum value of the type.
      These functions are used
-     to define certain integer conversions and operations,
-     which are modular for unsigned types."))
+     to define certain C integer conversions and operations,
+     which are modular for unsigned integer types."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atc-integer-types*
-  :short "Fixtype names of the C integer types supported by ATC."
-  '(schar
-    uchar
-    sshort
-    ushort
-    sint
-    uint
-    slong
-    ulong
-    sllong
-    ullong))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-string (type)
-  :guard (member-eq type *atc-integer-types*)
+(define atc-integer-type-string ((type typep))
+  :guard (type-integerp type)
   :returns (string stringp)
-  :short "String that describes an integer type."
-  (b* ((core (case type
-               (schar "signed char")
-               (uchar "unsigned char")
-               (sshort "signed short")
-               (ushort "unsigned short")
-               (sint "signed int")
-               (uint "unsigned int")
-               (slong "signed long")
-               (ulong "unsigned long")
-               (sllong "signed long long")
-               (ullong "unsigned long long")
-               (t (prog2$ (raise "Internal error: unknown type ~x0." type)
-                          "")))))
-    (str::cat "type @('" core "')")))
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case (type-kind type)
+               (:char "char")
+               (:schar "signed char")
+               (:uchar "unsigned char")
+               (:sshort "signed short")
+               (:ushort "unsigned short")
+               (:sint "signed int")
+               (:uint "unsigned int")
+               (:slong "signed long")
+               (:ulong "unsigned long")
+               (:sllong "signed long long")
+               (:ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')"))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-signedp (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (yes/no booleanp)
-  :short "Check if an integer type is signed."
-  (eql (char (symbol-name type) 0) #\S))
+(define atc-integer-type-fixtype ((type typep))
+  :guard (type-integerp type)
+  :returns (fixtype symbolp)
+  :short "Name of the fixtype of the values of a C integer type."
+  :long
+  (xdoc::topstring-p
+   "This is the symbol in the @('\"C\"') package
+    with the same name as the keyword kind of the type
+    (e.g. it is @('uchar') for @('(type-uchar)')).")
+  (intern$ (symbol-name (type-kind type)) "C"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-bits ((type typep))
+  :guard (type-integerp type)
+  :returns (bits symbolp)
+  :short "Name of the nullary function that defines
+          the size in bits of a C integer type."
+  :long
+  (xdoc::topstring-p
+   "We take the name of the kind,
+    remove the initial @('s') or @('u'),
+    and add @('-bits') at the end.")
+  (b* ((char/short/int/long/llong
+        (if (type-case type :char)
+            "CHAR"
+          (str::implode (cdr (str::explode (symbol-name (type-kind type))))))))
+    (pack char/short/int/long/llong '-bits))
+  :prepwork
+  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-minbits ((type typep))
+  :guard (type-integerp type)
+  :returns (minbits posp :rule-classes :type-prescription)
+  :short "Minimum number of bits that forms a value of a C integer type."
+  (case (type-kind type)
+    ((:char :schar :uchar) 8)
+    ((:sshort :ushort) 16)
+    ((:sint :uint) 16)
+    ((:slong :ulong) 32)
+    ((:sllong :ullong) 64)
+    (t (prog2$ (impossible) 1)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-def-integer-values (type)
-  (declare (xargs :guard (member-eq type '(char short int long llong))))
-  :short "Macro to generate the models of the C integer values."
+(define atc-def-integer-values ((type typep))
+  :guard (type-integerp type)
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the model of the values of a C integer type."
 
-  (b* ((type-string (acl2::string-downcase
-                     (if (eq type 'llong) "LONG LONG" (symbol-name type))))
-       (type-bits (pack type '-bits))
-       (type-bits-bound (case type
-                          (char 8)
-                          (short 16)
-                          (int 16)
-                          (long 32)
-                          (llong 64)))
-       (utype (pack 'u type))
-       (stype (pack 's type))
-       (utypep (pack utype 'p))
-       (stypep (pack stype 'p))
-       (utype-list (pack utype '-list))
-       (stype-list (pack stype '-list))
-       (utype-listp (pack utype-list 'p))
-       (stype-listp (pack stype-list 'p))
-       (utype-integer (pack utype '-integer))
-       (stype-integer (pack stype '-integer))
-       (utype-integerp (pack utype-integer 'p))
-       (stype-integerp (pack stype-integer 'p))
-       (utype-integer-fix (pack utype-integer '-fix))
-       (stype-integer-fix (pack stype-integer '-fix))
-       (utype-integerp-alt-def (pack utype-integerp '-alt-def))
-       (stype-integerp-alt-def (pack stype-integerp '-alt-def))
-       (utype-max (pack utype '-max))
-       (utype-max-bound (1- (expt 2 type-bits-bound)))
-       (stype-min (pack stype '-min))
-       (stype-min-bound (- (expt 2 (1- type-bits-bound))))
-       (stype-max (pack stype '-max))
-       (stype-max-bound (1- (expt 2 (1- type-bits-bound))))
-       (utype->get (pack utype '->get))
-       (stype->get (pack stype '->get))
-       (utype->get-upper-bound (pack utype->get '-upper-bound))
-       (stype->get-upper-bound (pack stype->get '-upper-bound))
-       (stype->get-lower-bound (pack stype->get '-lower-bound))
-       (utype-mod (pack utype '-mod)))
+  (b* ((type-string (atc-integer-type-string type))
+       (minbits (atc-integer-type-minbits type))
+       (signedp (type-signed-integerp type))
+       (maxbound (if signedp
+                     (1- (expt 2 (1- minbits)))
+                   (1- (expt 2 minbits))))
+       (minbound (if signedp
+                     (- (expt 2 (1- minbits)))
+                   0))
+       (<type>-bits (atc-integer-type-bits type))
+       (<type> (atc-integer-type-fixtype type))
+       (<type>p (pack <type> 'p))
+       (<type>-integer (pack <type> '-integer))
+       (<type>-integerp (pack <type>-integer 'p))
+       (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
+       (<type>-integer-fix (pack <type>-integer '-fix))
+       (<type>-max (pack <type> '-max))
+       (<type>-min (pack <type> '-min))
+       (<type>->get (pack <type> '->get))
+       (<type>-list (pack <type> '-list))
+       (<type>-listp (pack <type>-list 'p))
+       (<type>-mod (pack <type> '-mod)))
 
-    `(encapsulate ()
+    `(progn
+
+       ,@(and (type-case type :char)
+              (raise "Type ~x0 not supported." type))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (fty::defbyte ,utype-integer
-         :short ,(concatenate
-                  'string
-                  "Fixtype of ACL2 integers in the range of @('unsigned "
-                  type-string
-                  "')s.")
-         :size (,type-bits)
-         :signed nil
-         :pred ,utype-integerp)
+       (fty::defbyte ,<type>-integer
+         :short ,(str::cat "Fixtype of ACL2 integers in the range of "
+                           type-string
+                           ".")
+         :size (,<type>-bits)
+         :signed ,signedp
+         :pred ,<type>-integerp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (fty::defbyte ,stype-integer
-         :short ,(concatenate
-                  'string
-                  "Fixtype of ACL2 integers in the range of @('signed "
-                  type-string
-                  "')s.")
-         :size (,type-bits)
-         :signed t
-         :pred ,stype-integerp)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,utype-max ()
-         :returns (,utype-max integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Maximum integer value of C @('unsigned "
-                              type-string
-                              "')s.")
-         (1- (expt 2 (,type-bits)))
+       (define ,<type>-max ()
+         :returns (,<type>-max integerp :rule-classes :type-prescription)
+         :short ,(str::cat "Maximum ACL2 integer value of " type-string ".")
+         (1- (expt 2 ,(if signedp
+                          `(1- (,<type>-bits))
+                        `(,<type>-bits))))
          ///
 
-         (in-theory (disable (:e ,utype-max)))
+         (in-theory (disable (:e ,<type>-max)))
 
-         (defrule ,(add-suffix utype-max "-BOUND")
-           (>= (,utype-max) ,utype-max-bound)
+         (defrule ,(pack <type>-max '-bound)
+           (>= (,<type>-max) ,maxbound)
            :rule-classes :linear
-           :enable ,utype-max
+           :enable ,<type>-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,type-bits-bound) (n (,type-bits)) (x 2))))
+                 (m ,(if signedp (1- minbits) minbits))
+                 (n ,(if signedp `(1- (,<type>-bits)) `(,<type>-bits)))
+                 (x 2))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,stype-min ()
-         :returns (,stype-min integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Minimum integer value of C @('signed "
-                              type-string
-                              "')s.")
-         (- (expt 2 (1- (,type-bits))))
-         ///
+       ,@(and
+          signedp
+          `((define ,<type>-min ()
+              :returns (,<type>-min integerp :rule-classes :type-prescription)
+              :short ,(str::cat
+                       "Minimum ACL2 integer value of " type-string ".")
+              (- (expt 2 (1- (,<type>-bits))))
+              ///
 
-         (in-theory (disable (:e ,stype-min)))
+              (in-theory (disable (:e ,<type>-min)))
 
-         (defrule ,(add-suffix stype-min "-BOUND")
-           (<= (,stype-min) ,stype-min-bound)
-           :rule-classes :linear
-           :enable ,stype-min
-           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,stype-max ()
-         :returns (,stype-max integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Maximumm integer value of C @('signed "
-                              type-string
-                              "')s.")
-         (1- (expt 2 (1- (,type-bits))))
-         ///
-
-         (in-theory (disable (:e ,stype-max)))
-
-         (defrule ,(add-suffix stype-max "-BOUND")
-           (>= (,stype-max) ,stype-max-bound)
-           :rule-classes :linear
-           :enable ,stype-max
-           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2))))
+              (defrule ,(pack <type>-min '-bound)
+                (<= (,<type>-min) ,minbound)
+                :rule-classes :linear
+                :enable ,<type>-min
+                :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                      (m ,(1- minbits))
+                      (n (1- (,<type>-bits)))
+                      (x 2))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defruled ,utype-integerp-alt-def
-         :short ,(concatenate 'string
-                              "Alternative definition of @(tsee "
-                              (acl2::string-downcase
-                               (symbol-name utype-integerp))
-                              ") as integer range.")
-         (equal (,utype-integerp x)
+       (defruled ,<type>-integerp-alt-def
+         :short ,(str::cat "Alternative definition of @(tsee "
+                           (str::downcase-string (symbol-name <type>-integerp))
+                           ") as integer range.")
+         (equal (,<type>-integerp x)
                 (and (integerp x)
-                     (<= 0 x)
-                     (<= x (,utype-max))))
-         :enable (,utype-integerp ,utype-max))
+                     (<= ,(if signedp `(,<type>-min) 0) x)
+                     (<= x (,<type>-max))))
+         :enable (,<type>-integerp ,<type>-max ,@(and signedp `(,<type>-min))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defruled ,stype-integerp-alt-def
-         :short ,(concatenate 'string
-                              "Alternative definition of @(tsee "
-                              (acl2::string-downcase
-                               (symbol-name stype-integerp))
-                              ") as integer range.")
-         (equal (,stype-integerp x)
-                (and (integerp x)
-                     (<= (,stype-min) x)
-                     (<= x (,stype-max))))
-         :enable (,stype-integerp ,stype-min ,stype-max))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::defprod ,utype
-         :short ,(concatenate 'string
-                              "Fixtype of C @('unsigned "
-                              type-string
-                              "') values.")
-         ((get ,utype-integer))
-         :tag ,(intern (symbol-name utype) "KEYWORD")
+       (fty::defprod ,<type>
+         :short ,(str::cat "Fixtype of values of " type-string ".")
+         ((get ,<type>-integer))
+         :tag ,(type-kind type)
          :layout :list
-         :pred ,utypep
+         :pred ,<type>p
          ///
 
-         (defrule ,utype->get-upper-bound
-           (<= (,utype->get x) (,utype-max))
+         (defrule ,(pack <type>->get '-upper-bound)
+           (<= (,<type>->get x) (,<type>-max))
            :rule-classes :linear
-           :enable (,utype->get
-                    ,utype-integer-fix
-                    ,utype-integerp-alt-def)))
+           :enable (,<type>->get
+                    ,<type>-integer-fix
+                    ,<type>-integerp-alt-def))
+
+         ,@(and
+            signedp
+            `((defrule ,(pack <type>->get '-lower-bound)
+                (>= (,<type>->get x) (,<type>-min))
+                :rule-classes :linear
+                :enable (,<type>->get
+                         ,<type>-integer-fix
+                         ,<type>-integerp-alt-def)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (fty::deflist ,utype-list
-         :short ,(concatenate 'string
-                              "Fixtype of lists of C @('unsigned "
-                              type-string
-                              "') values.")
-         :elt-type ,utype
-         :true-listp t
-         :elementp-of-nil nil
-         :pred ,utype-listp)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::defprod ,stype
-         :short ,(concatenate 'string
-                              "Fixtype of C @('signed "
-                              type-string
-                              "') values.")
-         ((get ,stype-integer))
-         :tag ,(intern (symbol-name stype) "KEYWORD")
-         :layout :list
-         :pred ,stypep)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::deflist ,stype-list
-         :short ,(concatenate 'string
-                              "Fixtype of lists of C @('signed "
-                              type-string
-                              "') values.")
-         :elt-type ,stype
-         :true-listp t
-         :elementp-of-nil nil
-         :pred ,stype-listp
-         ///
-
-         (defrule ,stype->get-lower-bound
-           (<= (,stype-min) (,stype->get x))
-           :rule-classes :linear
-           :enable (,stype->get
-                    ,stype-integer-fix
-                    ,stype-integerp-alt-def))
-
-         (defrule ,stype->get-upper-bound
-           (<= (,stype->get x) (,stype-max))
-           :rule-classes :linear
-           :enable (,stype->get
-                    ,stype-integer-fix
-                    ,stype-integerp-alt-def)))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,utype-mod ((x integerp))
-         :returns (result ,utypep)
-         (,utype (mod (ifix x) (1+ (,utype-max))))
-         :guard-hints (("Goal" :in-theory (enable ,utype-integerp-alt-def)))
+       (define ,<type>-mod ((x integerp))
+         :returns (result ,<type>p)
+         (,<type> (mod (ifix x) (1+ (,<type>-max))))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-integerp-alt-def)))
          :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::deflist ,<type>-list
+         :short ,(str::cat "Fixtype of lists of values of " type-string ".")
+         :elt-type ,<type>
+         :true-listp t
+         :elementp-of-nil nil
+         :pred ,<type>-listp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(atc-def-integer-values char)
+(define atc-def-integer-values-loop ((types type-listp))
+  :guard (type-integer-listp types)
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the models of the values of some C integer types."
+  (cond ((endp types) nil)
+        (t (cons (atc-def-integer-values (car types))
+                 (atc-def-integer-values-loop (cdr types))))))
 
-(atc-def-integer-values short)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(atc-def-integer-values int)
-
-(atc-def-integer-values long)
-
-(atc-def-integer-values llong)
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-values-loop types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

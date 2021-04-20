@@ -129,12 +129,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule atc-integer-type-fixtype-in-*atc-integer-types*
+  (implies (and (typep type)
+                (type-integerp type)
+                (not (type-case type :char)))
+           (member-equal (atc-integer-type-fixtype type)
+                         *atc-integer-types*))
+  :hints (("Goal" :in-theory (enable atc-integer-type-fixtype
+                                     type-kind
+                                     type-integerp
+                                     type-signed-integerp
+                                     type-unsigned-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-operations-1 (type)
   :guard (member-eq type *atc-integer-types*)
   :short "Event to generate the ACL2 models of
           the C integer operations that involve one integer type."
 
-  (b* ((type-string (atc-integer-type-string type))
+  (b* ((type-string (atc-integer-type-string$ type))
        (rtype (case type
                 (schar 'sint)
                 (uchar (if (<= (uchar-max) (sint-max)) 'sint 'uint))
@@ -403,19 +417,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-integer-type-fixtype ((type typep))
-  :guard (type-integerp type)
-  :returns (fixtype symbolp)
-  :short "Name of the fixtype of the values of an integer type."
-  (b* ((fixtype (intern$ (symbol-name (type-kind type)) "C")))
-    (if (member-eq fixtype *atc-integer-types*) fixtype 'uchar))
-  ///
-  (defret atc-integer-type-fixtype-in-*atc-integer-types*
-    (member-equal fixtype *atc-integer-types*)
-    :hints (("Goal" :in-theory (enable type-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-def-integer-operations-2 ((itype1 typep) (itype2 typep))
   :guard (and (type-integerp itype1) (type-integerp itype2))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
@@ -441,8 +442,8 @@
        (sh-typep (pack sh-type 'p))
        (type-integerp (pack type '-integerp))
        (signedp (type-signed-integerp itype))
-       (type1-string (atc-integer-type-string type1))
-       (type2-string (atc-integer-type-string type2))
+       (type1-string (atc-integer-type-string itype1))
+       (type2-string (atc-integer-type-string itype2))
        (type-from-type1 (pack type '-from- type1))
        (type-from-type2 (pack type '-from- type2))
        (add-type1-type2 (pack 'add- type1 '- type2))
