@@ -12,27 +12,52 @@
 
 (in-package "ACL2")
 
+;; This book contains a variant of the main tool that skips a check by taking
+;; advantage of a stronger guard: that all vars are bound in the alist:
+
 ;; This book provides a tool that, given the name of an evaluator, makes a hyp
 ;; instantiation for that uses it.  This book is for the case where the hyp has
 ;; no free vars (vars not bound in the alist).
-
-;; TODO: Deprecate this in favor of the "2" version
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
 (include-book "axe-trees")
 
-(defun make-instantiation-code-simple-no-free-vars-fn (suffix evaluator-base-name)
+(defthmd assoc-equal-iff-member-equal-of-strip-cars
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (member-equal key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal))))
+
+(defthm consp-of-assoc-equal
+  (implies (alistp alist)
+           (iff (consp (assoc-equal key alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; (defthm len-of-car-when-alistp-cheap
+;;   (implies (alistp alist)
+;;            (equal (len (car alist))
+;;                   (if (consp alist)
+;;                       1
+;;                     0)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable alistp))))
+
+(defun make-instantiation-code-simple-no-free-vars2-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-base-name))))
-  (let ((instantiate-hyp-name (pack$ 'instantiate-hyp- suffix '-no-free-vars))
-        (instantiate-hyp-lst-name (pack$ 'instantiate-hyp- suffix '-no-free-vars-lst))
+  (let ((instantiate-hyp-name (pack$ 'instantiate-hyp- suffix '-no-free-vars2))
+        (instantiate-hyp-lst-name (pack$ 'instantiate-hyp- suffix '-no-free-vars-lst2))
         (apply-axe-evaluator-to-quoted-args-name (pack$ 'apply- evaluator-base-name '-to-quoted-args)))
     `(encapsulate ()
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/lists-light/cons" :dir :system))
+       (local (include-book "kestrel/alists-light/alistp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
+
+       (local (in-theory (disable alistp symbol-alistp myquotep dargp)))
 
        ;; TERM is from a hyp of a rule and so is a pseudo-term (quoteps and vars at the leaves).
        ;; ALIST binds vars to dargs (nodenums/ quoteps).
@@ -43,12 +68,11 @@
                           :guard (and (pseudo-termp term)
                                       (symbol-alistp alist)
                                       (all-dargp (strip-cdrs alist))
+                                      (subsetp-equal (vars-in-term term) (strip-cars alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
-          (if (variablep term) ;todo: we could mark the var as free or not free (see the "2" version of this tool)
-              (let ((match (assoc-eq term alist)))  ;TODO: in this version of the tool, all vars are bound in the alist, so no need to check this! But adding this check will require knowing the alist is suitable for the hyp
-                (if match
-                    (cdr match)
-                  term))
+          (if (variablep term)
+              (let ((match (assoc-eq term alist))) ; since all vars are bound, we know this is not nil
+                (cdr match))
             (let ((fn (ffn-symb term)))
               (if (eq 'quote fn)
                   term
@@ -75,6 +99,7 @@
           (declare (xargs :guard (and (pseudo-term-listp terms)
                                       (symbol-alistp alist)
                                       (all-dargp (strip-cdrs alist))
+                                      (subsetp-equal (vars-in-terms terms) (strip-cars alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (endp terms)
               (mv t nil)
@@ -112,15 +137,21 @@
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
         (defthm ,(pack$ 'axe-treep-of- instantiate-hyp-name)
           (implies (and (pseudo-termp term)
-                        (all-dargp (strip-cdrs alist)))
+                        (subsetp-equal (vars-in-term term) (strip-cars alist))
+                        (all-dargp (strip-cdrs alist))
+                        (alistp alist))
                    (axe-treep (,instantiate-hyp-name term alist interpreted-function-alist)))
           :flag ,instantiate-hyp-name)
         (defthm ,(pack$ 'all-axe-treep-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (pseudo-term-listp terms)
-                        (all-dargp (strip-cdrs alist)))
+                        (subsetp-equal (vars-in-terms terms) (strip-cars alist))
+                        (all-dargp (strip-cdrs alist))
+                        (alistp alist))
                    (all-axe-treep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
-        :hints (("Goal" :in-theory (enable ,instantiate-hyp-name ,instantiate-hyp-lst-name))))
+        :hints (("Goal" :in-theory (enable ,instantiate-hyp-name
+                                           ,instantiate-hyp-lst-name
+                                           assoc-equal-iff-member-equal-of-strip-cars))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-name)
@@ -141,13 +172,18 @@
         (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (mv-nth 0 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))
                         (pseudo-term-listp terms)
-                        (all-dargp (strip-cdrs alist)))
+                        (subsetp-equal (vars-in-terms terms) (strip-cars alist))
+                        (all-dargp (strip-cdrs alist))
+                        (alistp alist))
                    (all-myquotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :skip-others t
-        :hints (("Goal" :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name) (myquotep)))))
+        :hints (("Goal" :expand (,instantiate-hyp-lst-name terms alist interpreted-function-alist)
+                 :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name) (myquotep)))))
 
-       (verify-guards ,instantiate-hyp-name :hints (("Goal" :in-theory (enable pseudo-termp))))
+       (verify-guards ,instantiate-hyp-name :hints (("Goal" :expand (vars-in-term term)
+                                                     :in-theory (enable pseudo-termp)
+                                                     :do-not-induct t)))
 
        (defthm ,(pack$ 'consp-of- instantiate-hyp-name)
          (implies (consp term)
@@ -174,6 +210,8 @@
 
        (defthm ,(pack$ 'all-axe-treep-of-cdr-of- instantiate-hyp-name)
          (implies (and (pseudo-termp term)
+                       (subsetp-equal (vars-in-term term) (strip-cars alist))
+                       (alistp alist)
                        (all-dargp (strip-cdrs alist))
                        (consp term) ;guarantees that the result is a consp
                        (not (equal 'quote (car (,instantiate-hyp-name term alist interpreted-function-alist))))
@@ -184,7 +222,7 @@
          :hints (("Goal" :use ,(pack$ 'axe-treep-of- instantiate-hyp-name)
                   :in-theory (disable ,(pack$ 'axe-treep-of- instantiate-hyp-name))))))))
 
-(defmacro make-instantiation-code-simple-no-free-vars (suffix
+(defmacro make-instantiation-code-simple-no-free-vars2 (suffix
                                                        evaluator-base-name)
-  (make-instantiation-code-simple-no-free-vars-fn suffix
+  (make-instantiation-code-simple-no-free-vars2-fn suffix
                                                   evaluator-base-name))
