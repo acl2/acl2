@@ -158,43 +158,43 @@
      converts and then calls the function for the promoted type."))
 
   (b* ((type-string (atc-integer-type-string itype))
-       (type (atc-integer-type-fixtype itype))
+       (<type> (atc-integer-type-fixtype itype))
        (irtype (promote-type itype))
-       (rtype (atc-integer-type-fixtype irtype))
+       (<rtype> (atc-integer-type-fixtype irtype))
        (type-signedp (type-signed-integerp itype))
        (rtype-signedp (type-signed-integerp irtype))
-       (type-bits (atc-integer-type-bits itype))
-       (typep (pack type 'p))
-       (type->get (pack type '->get))
-       (type-mod (pack type '-mod))
-       (type-integerp (pack type '-integerp))
-       (type-integerp-alt-def (pack type-integerp '-alt-def))
-       (type-fix (pack type '-fix))
-       (type-const (pack type '-const))
-       (type-nonzerop (pack type '-nonzerop))
-       (type-integer-value (pack type '-integer-value))
-       (plus-type (pack 'plus- type))
-       (minus-type (pack 'minus- type))
-       (minus-type-okp (pack minus-type '-okp))
-       (bitnot-type (pack 'bitnot- type))
-       (rtype-min (pack rtype '-min))
-       (rtype-max (pack rtype '-max))
-       (rtypep (pack rtype 'p))
-       (hirankp (member-eq type '(sint uint slong ulong sllong ullong)))
-       (rtype-from-type (pack rtype '-from- type))
-       (plus-rtype (pack 'plus- rtype))
-       (minus-rtype (pack 'minus- rtype))
-       (minus-rtype-okp (pack minus-rtype '-okp))
-       (bitnot-rtype (pack 'bitnot- rtype))
-       (lognot-type (pack 'lognot- type))
-       (shl-type (pack 'shl- type))
+       (<type>-bits (atc-integer-type-bits itype))
+       (<type>p (pack <type> 'p))
+       (<type>->get (pack <type> '->get))
+       (<type>-mod (pack <type> '-mod))
+       (<type>-integerp (pack <type> '-integerp))
+       (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
+       (<type>-fix (pack <type> '-fix))
+       (<type>-const (pack <type> '-const))
+       (<type>-nonzerop (pack <type> '-nonzerop))
+       (<type>-integer-value (pack <type> '-integer-value))
+       (plus-<type> (pack 'plus- <type>))
+       (minus-<type> (pack 'minus- <type>))
+       (minus-<type>-okp (pack minus-<type> '-okp))
+       (bitnot-<type> (pack 'bitnot- <type>))
+       (<rtype>-min (pack <rtype> '-min))
+       (<rtype>-max (pack <rtype> '-max))
+       (<rtype>p (pack <rtype> 'p))
+       (hirankp (member-eq <type> '(sint uint slong ulong sllong ullong)))
+       (<rtype>-from-<type> (pack <rtype> '-from- <type>))
+       (plus-<rtype> (pack 'plus- <rtype>))
+       (minus-<rtype> (pack 'minus- <rtype>))
+       (minus-<rtype>-okp (pack minus-<rtype> '-okp))
+       (bitnot-<rtype> (pack 'bitnot- <rtype>))
+       (lognot-type (pack 'lognot- <type>))
+       (shl-type (pack 'shl- <type>))
        (shl-type-okp (pack shl-type '-okp))
-       (shl-rtype (pack 'shl- rtype))
-       (shl-rtype-okp (pack shl-rtype '-okp))
-       (shr-type (pack 'shr- type))
+       (shl-<rtype> (pack 'shl- <rtype>))
+       (shl-<rtype>-okp (pack shl-<rtype> '-okp))
+       (shr-type (pack 'shr- <type>))
        (shr-type-okp (pack shr-type '-okp))
-       (shr-rtype (pack 'shr- rtype))
-       (shr-rtype-okp (pack shr-rtype '-okp)))
+       (shr-<rtype> (pack 'shr- <rtype>))
+       (shr-<rtype>-okp (pack shr-<rtype> '-okp)))
 
     `(progn
 
@@ -202,104 +202,104 @@
 
        ,@(and
           hirankp
-          `((define ,type-const ((x natp))
-              :guard (,type-integerp x)
-              :returns (result ,typep)
+          `((define ,<type>-const ((x natp))
+              :guard (,<type>-integerp x)
+              :returns (result ,<type>p)
               :short ,(str::cat "Integer constant of " type-string ".")
-              (,type x))))
+              (,<type> x))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,type-nonzerop ((x ,typep))
+       (define ,<type>-nonzerop ((x ,<type>p))
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if a value of " type-string " is not 0.")
-         (/= (,type->get x) 0)
+         (/= (,<type>->get x) 0)
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,type-integer-value ((x ,typep))
+       (define ,<type>-integer-value ((x ,<type>p))
          :returns (ival integerp)
          :short ,(str::cat "Turn a vaue of "
                            type-string
                            " into an ACL2 integer value.")
-         (,type->get x)
+         (,<type>->get x)
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,plus-type ((x ,typep))
-         :returns (result ,rtypep)
+       (define ,plus-<type> ((x ,<type>p))
+         :returns (result ,<rtype>p)
          :short ,(str::cat "Unary plus of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if hirankp
-              `(,type-fix x)
-            `(,plus-rtype (,rtype-from-type x)))
+              `(,<type>-fix x)
+            `(,plus-<rtype> (,<rtype>-from-<type> x)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           rtype-signedp
-          `((define ,minus-type-okp ((x ,typep))
+          `((define ,minus-<type>-okp ((x ,<type>p))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if the unary minus of a value of "
                                 type-string
                                 " is well-defined.")
               ,(if hirankp
-                   `(,type-integerp (- (,type->get x)))
-                 `(,minus-rtype-okp (,rtype-from-type x)))
+                   `(,<type>-integerp (- (,<type>->get x)))
+                 `(,minus-<rtype>-okp (,<rtype>-from-<type> x)))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,minus-type ((x ,typep))
-         ,@(and rtype-signedp `(:guard (,minus-type-okp x)))
-         :returns (result ,rtypep)
+       (define ,minus-<type> ((x ,<type>p))
+         ,@(and rtype-signedp `(:guard (,minus-<type>-okp x)))
+         :returns (result ,<rtype>p)
          :short ,(str::cat "Unary minus of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if hirankp
-              `(,(if type-signedp type type-mod) (- (,type->get x)))
-            `(,minus-rtype (,rtype-from-type x)))
+              `(,(if type-signedp <type> <type>-mod) (- (,<type>->get x)))
+            `(,minus-<rtype> (,<rtype>-from-<type> x)))
          ,@(and rtype-signedp
-                `(:guard-hints (("Goal" :in-theory (enable ,minus-type-okp)))))
+                `(:guard-hints (("Goal" :in-theory (enable ,minus-<type>-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitnot-type ((x ,typep))
-         :returns (result ,rtypep)
+       (define ,bitnot-<type> ((x ,<type>p))
+         :returns (result ,<rtype>p)
          :short ,(str::cat "Bitwise complement of a value of "
                            type-string
                            " [C:6.5.3].")
          ,(if hirankp
-              `(,(if type-signedp type type-mod) (lognot (,type->get x)))
-            `(,bitnot-rtype (,rtype-from-type x)))
+              `(,(if type-signedp <type> <type>-mod) (lognot (,<type>->get x)))
+            `(,bitnot-<rtype> (,<rtype>-from-<type> x)))
          ,@(and hirankp
                 type-signedp
                 `(:guard-hints
-                  (("Goal" :in-theory (enable ,type-integerp-alt-def
-                                              ,type->get
-                                              ,typep
-                                              (:e ,rtype-min)
-                                              (:e ,rtype-max))))))
+                  (("Goal" :in-theory (enable ,<type>-integerp-alt-def
+                                              ,<type>->get
+                                              ,<type>p
+                                              (:e ,<rtype>-min)
+                                              (:e ,<rtype>-max))))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,lognot-type ((x ,typep))
+       (define ,lognot-type ((x ,<type>p))
          :returns (result sintp)
          :short ,(str::cat "Logical complement of a value of "
                            type-string
                            " [C:6.5.3].")
-         (sint01 (= (,type->get x) 0))
+         (sint01 (= (,<type>->get x) 0))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-type-okp ((x ,typep) (y integerp))
+       (define ,shl-type-okp ((x ,<type>p) (y integerp))
          ,@(and hirankp
                 (not type-signedp)
                 `((declare (ignore x))))
@@ -309,26 +309,26 @@
                            " by an integer is well-defined.")
          ,(if hirankp
               (if type-signedp
-                  `(and (integer-range-p 0 (,type-bits) (ifix y))
-                        (>= (,type->get x) 0)
-                        (,type-integerp (* (,type->get x)
+                  `(and (integer-range-p 0 (,<type>-bits) (ifix y))
+                        (>= (,<type>->get x) 0)
+                        (,<type>-integerp (* (,<type>->get x)
                                            (expt 2 (ifix y)))))
-                `(integer-range-p 0 (,type-bits) (ifix y)))
-            `(,shl-rtype-okp (,rtype-from-type x) (ifix y)))
+                `(integer-range-p 0 (,<type>-bits) (ifix y)))
+            `(,shl-<rtype>-okp (,<rtype>-from-<type> x) (ifix y)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-type ((x ,typep) (y integerp))
+       (define ,shl-type ((x ,<type>p) (y integerp))
          :guard (,shl-type-okp x y)
-         :returns (result ,rtypep)
+         :returns (result ,<rtype>p)
          :short ,(str::cat "Left shift of a value of "
                            type-string
                            " by an integer [C:6.5.7].")
          ,(if hirankp
-              `(,(if type-signedp type type-mod) (* (,type->get x)
+              `(,(if type-signedp <type> <type>-mod) (* (,<type>->get x)
                                                     (expt 2 (ifix y))))
-            `(,shl-rtype (,rtype-from-type x) y))
+            `(,shl-<rtype> (,<rtype>-from-<type> x) y))
          :guard-hints (("Goal" :in-theory (enable ,shl-type-okp)))
          ,@(and (not type-signedp)
                 '(:prepwork
@@ -337,7 +337,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-type-okp ((x ,typep) (y integerp))
+       (define ,shr-type-okp ((x ,<type>p) (y integerp))
          ,@(and hirankp
                 (not type-signedp)
                 `((declare (ignore x))))
@@ -347,31 +347,31 @@
                            " by an integer is well-defined.")
          ,(if hirankp
               (if type-signedp
-                  `(and (integer-range-p 0 (,type-bits) (ifix y))
-                        (>= (,type->get x) 0))
-                `(integer-range-p 0 (,type-bits) (ifix y)))
-            `(,shr-rtype-okp (,rtype-from-type x) (ifix y)))
+                  `(and (integer-range-p 0 (,<type>-bits) (ifix y))
+                        (>= (,<type>->get x) 0))
+                `(integer-range-p 0 (,<type>-bits) (ifix y)))
+            `(,shr-<rtype>-okp (,<rtype>-from-<type> x) (ifix y)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-type ((x ,typep) (y integerp))
+       (define ,shr-type ((x ,<type>p) (y integerp))
          :guard (,shr-type-okp x y)
-         :returns (result ,rtypep)
+         :returns (result ,<rtype>p)
          :short ,(str::cat "Right shift of a value of "
                            type-string
                            " by an integer C:6.5.7].")
          ,(if hirankp
-              `(,(if type-signedp type type-mod) (truncate (,type->get x)
+              `(,(if type-signedp <type> <type>-mod) (truncate (,<type>->get x)
                                                            (expt 2 (ifix y))))
-            `(,shr-rtype (,rtype-from-type x) y))
+            `(,shr-<rtype> (,<rtype>-from-<type> x) y))
          :guard-hints (("Goal"
                         :in-theory (enable ,@(if (and hirankp
                                                       type-signedp)
                                                  (list shr-type-okp
-                                                       type-integerp
-                                                       type->get
-                                                       typep)
+                                                       <type>-integerp
+                                                       <type>->get
+                                                       <type>p)
                                                (list shr-type-okp)))))
          ,@(and
             type-signedp
