@@ -429,70 +429,70 @@
   (b* ((itype (uaconvert-types itype1 itype2))
        (sh-itype (promote-type itype1))
        (samep (and (equal itype itype1) (equal itype itype2)))
-       (type1 (atc-integer-type-fixtype itype1))
-       (type2 (atc-integer-type-fixtype itype2))
-       (type1p (pack type1 'p))
-       (type2p (pack type2 'p))
-       (type1->get (pack type1 '->get))
-       (type2->get (pack type2 '->get))
-       (type2-integer-value (pack type2 '-integer-value))
-       (type (atc-integer-type-fixtype itype))
-       (sh-type (atc-integer-type-fixtype sh-itype))
-       (type-mod (pack type '-mod))
-       (typep (pack type 'p))
-       (sh-typep (pack sh-type 'p))
-       (type-integerp (pack type '-integerp))
+       (<type1> (atc-integer-type-fixtype itype1))
+       (<type2> (atc-integer-type-fixtype itype2))
+       (<type1>p (pack <type1> 'p))
+       (<type2>p (pack <type2> 'p))
+       (<type1>->get (pack <type1> '->get))
+       (<type2>->get (pack <type2> '->get))
+       (<type2>-integer-value (pack <type2> '-integer-value))
+       (<type> (atc-integer-type-fixtype itype))
+       (sh-<type> (atc-integer-type-fixtype sh-itype))
+       (<type>-mod (pack <type> '-mod))
+       (<type>p (pack <type> 'p))
+       (sh-<type>p (pack sh-<type> 'p))
+       (<type>-integerp (pack <type> '-integerp))
        (signedp (type-signed-integerp itype))
        (type1-string (atc-integer-type-string itype1))
        (type2-string (atc-integer-type-string itype2))
-       (type-from-type1 (pack type '-from- type1))
-       (type-from-type2 (pack type '-from- type2))
-       (add-type1-type2 (pack 'add- type1 '- type2))
-       (add-type1-type2-okp (pack add-type1-type2 '-okp))
-       (add-type-type (pack 'add- type '- type))
-       (add-type-type-okp (pack add-type-type '-okp))
-       (sub-type1-type2 (pack 'sub- type1 '- type2))
-       (sub-type1-type2-okp (pack sub-type1-type2 '-okp))
-       (sub-type-type (pack 'sub- type '- type))
-       (sub-type-type-okp (pack sub-type-type '-okp))
-       (mul-type1-type2 (pack 'mul- type1 '- type2))
-       (mul-type1-type2-okp (pack mul-type1-type2 '-okp))
-       (mul-type-type (pack 'mul- type '- type))
-       (mul-type-type-okp (pack mul-type-type '-okp))
-       (div-type1-type2 (pack 'div- type1 '- type2))
-       (div-type1-type2-okp (pack div-type1-type2 '-okp))
-       (div-type-type (pack 'div- type '- type))
-       (div-type-type-okp (pack div-type-type '-okp))
-       (rem-type1-type2 (pack 'rem- type1 '- type2))
-       (rem-type1-type2-okp (pack rem-type1-type2 '-okp))
-       (rem-type-type (pack 'rem- type '- type))
-       (rem-type-type-okp (pack rem-type-type '-okp))
-       (shl-type1-type2 (pack 'shl- type1 '- type2))
-       (shl-type1-type2-okp (pack shl-type1-type2 '-okp))
-       (shl-type1 (pack 'shl- type1))
-       (shl-type1-okp (pack shl-type1 '-okp))
-       (shr-type1-type2 (pack 'shr- type1 '- type2))
-       (shr-type1-type2-okp (pack shr-type1-type2 '-okp))
-       (shr-type1 (pack 'shr- type1))
-       (shr-type1-okp (pack shr-type1 '-okp))
-       (lt-type1-type2 (pack 'lt- type1 '- type2))
-       (lt-type-type (pack 'lt- type '- type))
-       (gt-type1-type2 (pack 'gt- type1 '- type2))
-       (gt-type-type (pack 'gt- type '- type))
-       (le-type1-type2 (pack 'le- type1 '- type2))
-       (le-type-type (pack 'le- type '- type))
-       (ge-type1-type2 (pack 'ge- type1 '- type2))
-       (ge-type-type (pack 'ge- type '- type))
-       (eq-type1-type2 (pack 'eq- type1 '- type2))
-       (eq-type-type (pack 'eq- type '- type))
-       (ne-type1-type2 (pack 'ne- type1 '- type2))
-       (ne-type-type (pack 'ne- type '- type))
-       (bitand-type1-type2 (pack 'bitand- type1 '- type2))
-       (bitand-type-type (pack 'bitand- type '- type))
-       (bitxor-type1-type2 (pack 'bitxor- type1 '- type2))
-       (bitxor-type-type (pack 'bitxor- type '- type))
-       (bitior-type1-type2 (pack 'bitior- type1 '- type2))
-       (bitior-type-type (pack 'bitior- type '- type)))
+       (<type>-from-<type1> (pack <type> '-from- <type1>))
+       (<type>-from-<type2> (pack <type> '-from- <type2>))
+       (add-<type1>-<type2> (pack 'add- <type1> '- <type2>))
+       (add-<type1>-<type2>-okp (pack add-<type1>-<type2> '-okp))
+       (add-<type>-<type> (pack 'add- <type> '- <type>))
+       (add-<type>-<type>-okp (pack add-<type>-<type> '-okp))
+       (sub-<type1>-<type2> (pack 'sub- <type1> '- <type2>))
+       (sub-<type1>-<type2>-okp (pack sub-<type1>-<type2> '-okp))
+       (sub-<type>-<type> (pack 'sub- <type> '- <type>))
+       (sub-<type>-<type>-okp (pack sub-<type>-<type> '-okp))
+       (mul-<type1>-<type2> (pack 'mul- <type1> '- <type2>))
+       (mul-<type1>-<type2>-okp (pack mul-<type1>-<type2> '-okp))
+       (mul-<type>-<type> (pack 'mul- <type> '- <type>))
+       (mul-<type>-<type>-okp (pack mul-<type>-<type> '-okp))
+       (div-<type1>-<type2> (pack 'div- <type1> '- <type2>))
+       (div-<type1>-<type2>-okp (pack div-<type1>-<type2> '-okp))
+       (div-<type>-<type> (pack 'div- <type> '- <type>))
+       (div-<type>-<type>-okp (pack div-<type>-<type> '-okp))
+       (rem-<type1>-<type2> (pack 'rem- <type1> '- <type2>))
+       (rem-<type1>-<type2>-okp (pack rem-<type1>-<type2> '-okp))
+       (rem-<type>-<type> (pack 'rem- <type> '- <type>))
+       (rem-<type>-<type>-okp (pack rem-<type>-<type> '-okp))
+       (shl-<type1>-<type2> (pack 'shl- <type1> '- <type2>))
+       (shl-<type1>-<type2>-okp (pack shl-<type1>-<type2> '-okp))
+       (shl-<type1> (pack 'shl- <type1>))
+       (shl-<type1>-okp (pack shl-<type1> '-okp))
+       (shr-<type1>-<type2> (pack 'shr- <type1> '- <type2>))
+       (shr-<type1>-<type2>-okp (pack shr-<type1>-<type2> '-okp))
+       (shr-<type1> (pack 'shr- <type1>))
+       (shr-<type1>-okp (pack shr-<type1> '-okp))
+       (lt-<type1>-<type2> (pack 'lt- <type1> '- <type2>))
+       (lt-<type>-<type> (pack 'lt- <type> '- <type>))
+       (gt-<type1>-<type2> (pack 'gt- <type1> '- <type2>))
+       (gt-<type>-<type> (pack 'gt- <type> '- <type>))
+       (le-<type1>-<type2> (pack 'le- <type1> '- <type2>))
+       (le-<type>-<type> (pack 'le- <type> '- <type>))
+       (ge-<type1>-<type2> (pack 'ge- <type1> '- <type2>))
+       (ge-<type>-<type> (pack 'ge- <type> '- <type>))
+       (eq-<type1>-<type2> (pack 'eq- <type1> '- <type2>))
+       (eq-<type>-<type> (pack 'eq- <type> '- <type>))
+       (ne-<type1>-<type2> (pack 'ne- <type1> '- <type2>))
+       (ne-<type>-<type> (pack 'ne- <type> '- <type>))
+       (bitand-<type1>-<type2> (pack 'bitand- <type1> '- <type2>))
+       (bitand-<type>-<type> (pack 'bitand- <type> '- <type>))
+       (bitxor-<type1>-<type2> (pack 'bitxor- <type1> '- <type2>))
+       (bitxor-<type>-<type> (pack 'bitxor- <type> '- <type>))
+       (bitior-<type1>-<type2> (pack 'bitior- <type1> '- <type2>))
+       (bitior-<type>-<type> (pack 'bitior- <type> '- <type>)))
 
     `(progn
 
@@ -500,7 +500,7 @@
 
        ,@(and
           signedp
-          `((define ,add-type1-type2-okp ((x ,type1p) (y ,type2p))
+          `((define ,add-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if the addition of a value of "
                                 type1-string
@@ -508,39 +508,39 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (+ (,type1->get x)
-                                       (,type2->get y)))
-                 `(,add-type-type-okp
-                   ,(if (eq type type1) 'x `(,type-from-type1 x))
-                   ,(if (eq type type2) 'y `(,type-from-type2 y))))
+                   `(,<type>-integerp (+ (,<type1>->get x)
+                                       (,<type2>->get y)))
+                 `(,add-<type>-<type>-okp
+                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,add-type1-type2 ((x ,type1p) (y ,type2p))
-         ,@(and signedp `(:guard (,add-type1-type2-okp x y)))
-         :returns (result ,typep)
+       (define ,add-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         ,@(and signedp `(:guard (,add-<type1>-<type2>-okp x y)))
+         :returns (result ,<type>p)
          :short ,(str::cat "Addition of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.6].")
          ,(if samep
-              `(,(if signedp type type-mod) (+ (,type1->get x)
-                                               (,type2->get y)))
-            `(,add-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (+ (,<type1>->get x)
+                                               (,<type2>->get y)))
+            `(,add-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          ,@(and signedp
                 `(:guard-hints
-                  (("Goal" :in-theory (enable ,add-type1-type2-okp)))))
+                  (("Goal" :in-theory (enable ,add-<type1>-<type2>-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           signedp
-          `((define ,sub-type1-type2-okp ((x ,type1p) (y ,type2p))
+          `((define ,sub-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if the subtraction of a value of "
                                 type1-string
@@ -548,39 +548,39 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (- (,type1->get x)
-                                       (,type2->get y)))
-                 `(,sub-type-type-okp
-                   ,(if (eq type type1) 'x `(,type-from-type1 x))
-                   ,(if (eq type type2) 'y `(,type-from-type2 y))))
+                   `(,<type>-integerp (- (,<type1>->get x)
+                                       (,<type2>->get y)))
+                 `(,sub-<type>-<type>-okp
+                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,sub-type1-type2 ((x ,type1p) (y ,type2p))
-         ,@(and signedp `(:guard (,sub-type1-type2-okp x y)))
-         :returns (result ,typep)
+       (define ,sub-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         ,@(and signedp `(:guard (,sub-<type1>-<type2>-okp x y)))
+         :returns (result ,<type>p)
          :short ,(str::cat "Subtraction of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.6].")
          ,(if samep
-              `(,(if signedp type type-mod) (- (,type1->get x)
-                                               (,type2->get y)))
-            `(,sub-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (- (,<type1>->get x)
+                                               (,<type2>->get y)))
+            `(,sub-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          ,@(and signedp
                 `(:guard-hints
-                  (("Goal" :in-theory (enable ,sub-type1-type2-okp)))))
+                  (("Goal" :in-theory (enable ,sub-<type1>-<type2>-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           signedp
-          `((define ,mul-type1-type2-okp ((x ,type1p) (y ,type2p))
+          `((define ,mul-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if the multiplication of a value of "
                                 type1-string
@@ -588,37 +588,37 @@
                                 type2-string
                                 " is well-defined.")
               ,(if samep
-                   `(,type-integerp (* (,type1->get x)
-                                       (,type2->get y)))
-                 `(,mul-type-type-okp
-                   ,(if (eq type type1) 'x `(,type-from-type1 x))
-                   ,(if (eq type type2) 'y `(,type-from-type2 y))))
+                   `(,<type>-integerp (* (,<type1>->get x)
+                                       (,<type2>->get y)))
+                 `(,mul-<type>-<type>-okp
+                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
               :hooks (:fix))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,mul-type1-type2 ((x ,type1p) (y ,type2p))
-         ,@(and signedp `(:guard (,mul-type1-type2-okp x y)))
-         :returns (result ,typep)
+       (define ,mul-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         ,@(and signedp `(:guard (,mul-<type1>-<type2>-okp x y)))
+         :returns (result ,<type>p)
          :short ,(str::cat "Multiplication of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.5].")
          ,(if samep
-              `(,(if signedp type type-mod) (* (,type1->get x)
-                                               (,type2->get y)))
-            `(,mul-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (* (,<type1>->get x)
+                                               (,<type2>->get y)))
+            `(,mul-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          ,@(and signedp
                 `(:guard-hints
-                  (("Goal" :in-theory (enable ,mul-type1-type2-okp)))))
+                  (("Goal" :in-theory (enable ,mul-<type1>-<type2>-okp)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,div-type1-type2-okp ((x ,type1p) (y ,type2p))
+       (define ,div-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
          ,@(and samep
                 (not signedp)
                 `((declare (ignore x))))
@@ -630,37 +630,37 @@
                            " is well-defined.")
          ,(if samep
               (if signedp
-                  `(and (not (equal (,type2->get y) 0))
-                        (,type-integerp (truncate (,type1->get x)
-                                                  (,type2->get y))))
-                `(not (equal (,type2->get y) 0)))
-            `(,div-type-type-okp
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+                  `(and (not (equal (,<type2>->get y) 0))
+                        (,<type>-integerp (truncate (,<type1>->get x)
+                                                  (,<type2>->get y))))
+                `(not (equal (,<type2>->get y) 0)))
+            `(,div-<type>-<type>-okp
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,div-type1-type2 ((x ,type1p) (y ,type2p))
-         :guard (,div-type1-type2-okp x y)
-         :returns (result ,typep)
+       (define ,div-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :guard (,div-<type1>-<type2>-okp x y)
+         :returns (result ,<type>p)
          :short ,(str::cat "Division of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.5].")
          ,(if samep
-              `(,(if signedp type type-mod) (truncate (,type1->get x)
-                                                      (,type2->get y)))
-            `(,div-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
-         :guard-hints (("Goal" :in-theory (enable ,div-type1-type2-okp)))
+              `(,(if signedp <type> <type>-mod) (truncate (,<type1>->get x)
+                                                      (,<type2>->get y)))
+            `(,div-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+         :guard-hints (("Goal" :in-theory (enable ,div-<type1>-<type2>-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,rem-type1-type2-okp ((x ,type1p) (y ,type2p))
+       (define ,rem-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
          ,@(and samep
                 (not signedp)
                 `((declare (ignore x))))
@@ -672,89 +672,89 @@
                            " is well-defined.")
          ,(if samep
               (if signedp
-                  `(and (not (equal (,type2->get y) 0))
-                        (,type-integerp (rem (,type1->get x)
-                                             (,type2->get y))))
-                `(not (equal (,type2->get y) 0)))
-            `(,rem-type-type-okp
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+                  `(and (not (equal (,<type2>->get y) 0))
+                        (,<type>-integerp (rem (,<type1>->get x)
+                                             (,<type2>->get y))))
+                `(not (equal (,<type2>->get y) 0)))
+            `(,rem-<type>-<type>-okp
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,rem-type1-type2 ((x ,type1p) (y ,type2p))
-         :guard (,rem-type1-type2-okp x y)
-         :returns (result ,typep)
+       (define ,rem-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :guard (,rem-<type1>-<type2>-okp x y)
+         :returns (result ,<type>p)
          :short ,(str::cat "Remainder of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.5].")
          ,(if samep
-              `(,(if signedp type type-mod) (rem (,type1->get x)
-                                                 (,type2->get y)))
-            `(,rem-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
-         :guard-hints (("Goal" :in-theory (enable ,rem-type1-type2-okp)))
+              `(,(if signedp <type> <type>-mod) (rem (,<type1>->get x)
+                                                 (,<type2>->get y)))
+            `(,rem-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+         :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-type1-type2-okp ((x ,type1p) (y ,type2p))
+       (define ,shl-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if the left shift of a value of "
                            type1-string
                            " by a value of "
                            type2-string
                            " is well-defined.")
-         (,shl-type1-okp x (,type2-integer-value y))
+         (,shl-<type1>-okp x (,<type2>-integer-value y))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-type1-type2 ((x ,type1p) (y ,type2p))
-         :guard (,shl-type1-type2-okp x y)
-         :returns (result ,sh-typep)
+       (define ,shl-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :guard (,shl-<type1>-<type2>-okp x y)
+         :returns (result ,sh-<type>p)
          :short ,(str::cat "Left shift of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.7].")
-         (,shl-type1 x (,type2-integer-value y))
-         :guard-hints (("Goal" :in-theory (enable ,shl-type1-type2-okp)))
+         (,shl-<type1> x (,<type2>-integer-value y))
+         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-type1-type2-okp ((x ,type1p) (y ,type2p))
+       (define ,shr-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if the right shift of a value of "
                            type1-string
                            " by a value of "
                            type2-string
                            " is well-defined.")
-         (,shr-type1-okp x (,type2-integer-value y))
+         (,shr-<type1>-okp x (,<type2>-integer-value y))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-type1-type2 ((x ,type1p) (y ,type2p))
-         :guard (,shr-type1-type2-okp x y)
-         :returns (result ,sh-typep)
+       (define ,shr-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :guard (,shr-<type1>-<type2>-okp x y)
+         :returns (result ,sh-<type>p)
          :short ,(str::cat "Right shift of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.7].")
-         (,shr-type1 x (,type2-integer-value y))
-         :guard-hints (("Goal" :in-theory (enable ,shr-type1-type2-okp)))
+         (,shr-<type1> x (,<type2>-integer-value y))
+         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp)))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,lt-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,lt-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Less-than relation of a value of "
                            type1-string
@@ -762,18 +762,18 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (< (,type1->get x)
-                      (,type2->get y))
+              `(if (< (,<type1>->get x)
+                      (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,lt-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,lt-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,gt-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,gt-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Greater-than relation of a value of "
                            type1-string
@@ -781,18 +781,18 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (> (,type1->get x)
-                      (,type2->get y))
+              `(if (> (,<type1>->get x)
+                      (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,gt-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,gt-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,le-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,le-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Less-than-or-equal-to relation of a value of "
                            type1-string
@@ -800,18 +800,18 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (<= (,type1->get x)
-                       (,type2->get y))
+              `(if (<= (,<type1>->get x)
+                       (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,le-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,le-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,ge-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,ge-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Greater-than-or-equal-to relation of a value of "
                            type1-string
@@ -819,18 +819,18 @@
                            type2-string
                            " [C:6.5.8].")
          ,(if samep
-              `(if (>= (,type1->get x)
-                       (,type2->get y))
+              `(if (>= (,<type1>->get x)
+                       (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,ge-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,ge-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,eq-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,eq-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Equality of a value of "
                            type1-string
@@ -838,18 +838,18 @@
                            type2-string
                            " [C:6.5.9].")
          ,(if samep
-              `(if (= (,type1->get x)
-                      (,type2->get y))
+              `(if (= (,<type1>->get x)
+                      (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,eq-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,eq-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,ne-type1-type2 ((x ,type1p) (y ,type2p))
+       (define ,ne-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
          :returns (result sintp)
          :short ,(str::cat "Non-equality of a value of "
                            type1-string
@@ -857,81 +857,81 @@
                            type2-string
                            " [C:6.5.9].")
          ,(if samep
-              `(if (/= (,type1->get x)
-                       (,type2->get y))
+              `(if (/= (,<type1>->get x)
+                       (,<type2>->get y))
                    (sint 1)
                  (sint 0))
-            `(,ne-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+            `(,ne-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitand-type1-type2 ((x ,type1p) (y ,type2p))
-         :returns (result ,typep)
+       (define ,bitand-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :returns (result ,<type>p)
          :short ,(str::cat "Bitwise conjunction of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.10].")
          ,(if samep
-              `(,(if signedp type type-mod) (logand (,type1->get x)
-                                                    (,type2->get y)))
-            `(,bitand-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (logand (,<type1>->get x)
+                                                    (,<type2>->get y)))
+            `(,bitand-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
          ,@(and samep
                 `(:guard-hints
                   (("Goal"
-                    :in-theory (enable ,type-integerp ,typep ,type1->get)))))
+                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitxor-type1-type2 ((x ,type1p) (y ,type2p))
-         :returns (result ,typep)
+       (define ,bitxor-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :returns (result ,<type>p)
          :short ,(str::cat "Bitwise exclusive disjunction of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.11].")
          ,(if samep
-              `(,(if signedp type type-mod) (logxor (,type1->get x)
-                                                    (,type2->get y)))
-            `(,bitxor-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (logxor (,<type1>->get x)
+                                                    (,<type2>->get y)))
+            `(,bitxor-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :prepwork
          ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
          ,@(and samep
                 `(:guard-hints
                   (("Goal"
-                    :in-theory (enable ,type-integerp ,typep ,type1->get)))))
+                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitior-type1-type2 ((x ,type1p) (y ,type2p))
-         :returns (result ,typep)
+       (define ,bitior-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
+         :returns (result ,<type>p)
          :short ,(str::cat "Bitwise inclusive disjunction of a value of "
                            type1-string
                            " and a value of "
                            type2-string
                            " [C:6.5.12].")
          ,(if samep
-              `(,(if signedp type type-mod) (logior (,type1->get x)
-                                                    (,type2->get y)))
-            `(,bitior-type-type
-              ,(if (eq type type1) 'x `(,type-from-type1 x))
-              ,(if (eq type type2) 'y `(,type-from-type2 y))))
+              `(,(if signedp <type> <type>-mod) (logior (,<type1>->get x)
+                                                    (,<type2>->get y)))
+            `(,bitior-<type>-<type>
+              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :prepwork
          ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
          ,@(and samep
                 `(:guard-hints
                   (("Goal"
-                    :in-theory (enable ,type-integerp ,typep ,type1->get)))))
+                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
