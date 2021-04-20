@@ -1600,10 +1600,9 @@ ACL2 from scratch.")
 ; NOTE: In order to compile ACL2, checks must first be run on the suitability
 ; of the underlying Common Lisp implementation, by executing
 ; (check-suitability-for-acl2).  Successful compilation should write out file
-; *acl2-status* with the symbol :COMPILED.
-
-; Compiling is a no-op if *suppress-compile-build-time* is non-nil, but we
-; still write :COMPILED as indicated above.
+; *acl2-status* with the symbol :COMPILED unless *suppress-compile-build-time*
+; is non-nil, in which case we skip compilation and write :COMPILE-SKIPPED
+; instead.
 
 (defvar *lisp-extension* "lisp")
 
