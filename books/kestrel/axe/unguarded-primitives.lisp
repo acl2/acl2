@@ -51,6 +51,7 @@
          (binary-* x y))
   :hints (("Goal" :in-theory (enable binary-*-unguarded))))
 
+;; consider defun$inline, and making the rare case separate
 (defund <-unguarded (x y)
   (declare (xargs :guard t))
   (if (and (real/rationalp x)
