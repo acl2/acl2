@@ -10,9 +10,5 @@ Source files (not including doc.lisp):
   261976 lines,  11474407 characters
 ------------------------------------
 Documentation (file books/system/doc/acl2-doc.lisp):
-<<<<<<< HEAD
-  133350 lines,   5899410 characters
-=======
-  133370 lines,   5900654 characters
->>>>>>> remotes/origin/master
+  133378 lines,   5901228 characters
 ------------------------------------
