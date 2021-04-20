@@ -18,7 +18,7 @@
 
 (defxdoc+ atc-integer-operations
   :parents (atc-dynamic-semantics)
-  :short "C integer operations for ATC."
+  :short "A model of C integer operations for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -129,6 +129,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *atc-integer-types*
+  '(schar uchar sshort ushort sint uint slong ulong sllong ullong))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule atc-integer-type-fixtype-in-*atc-integer-types*
   (implies (and (typep type)
                 (type-integerp type)
@@ -140,6 +145,33 @@
                                      type-integerp
                                      type-signed-integerp
                                      type-unsigned-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-string$ (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (string stringp)
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case type
+               (schar "signed char")
+               (uchar "unsigned char")
+               (sshort "signed short")
+               (ushort "unsigned short")
+               (sint "signed int")
+               (uint "unsigned int")
+               (slong "signed long")
+               (ulong "unsigned long")
+               (sllong "signed long long")
+               (ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-type-signedp (type)
+  :guard (member-eq type *atc-integer-types*)
+  :returns (yes/no booleanp)
+  (equal (char (symbol-name type) 0) #\S))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

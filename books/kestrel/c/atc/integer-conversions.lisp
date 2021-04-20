@@ -13,13 +13,11 @@
 
 (include-book "integers")
 
-(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-conversions
   :parents (atc-dynamic-semantics)
-  :short "C integer conversions for ATC."
+  :short "A model of C integer conversions for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -31,7 +29,7 @@
      are disjoint, i.e. there are no automatic inclusions.")
    (xdoc::p
     "Conversions between C types are described in [C:6.3].
-     Here we define conversions between the integer types in our model;
+     Here we define conversions among the integer types supported by our model;
      these conversions are described in [C:6.3.1.3].")
    (xdoc::p
     "For the case of a conversion to a signed integer
@@ -39,12 +37,10 @@
      we use a guard that rules out that case.
      This way, in order to use the conversion,
      it must be provably the case that
-     the value is representable in the new signed integer type.
-     This approach is similar to the one used for signed integer operations
-     (see @(see atc-integer-operations)).")
+     the value is representable in the new signed integer type.")
    (xdoc::p
     "For the case of a conversion to an unsigned integer,
-     we use @(tsee mod) to ensure it fits.
+     we use @(tsee mod) (via the modular constructor) to make it fit.
      If the original value fits, the @(tsee mod) has no effect.
      Otherwise, the @(tsee mod) corresponds to the
      repeated addition or subtraction described in [C:6.3.1.3]."))
@@ -53,154 +49,141 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *atc-integer-types*
-  '(schar uchar sshort ushort sint uint slong ulong sllong ullong))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-signedp (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (yes/no booleanp)
-  (equal (char (symbol-name type) 0) #\S))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-integer-type-string$ (type)
-  :guard (member-eq type *atc-integer-types*)
-  :returns (string stringp)
-  :short "Documentation (sub)string that describes a C integer type."
-  (b* ((core (case type
-               (schar "signed char")
-               (uchar "unsigned char")
-               (sshort "signed short")
-               (ushort "unsigned short")
-               (sint "signed int")
-               (uint "unsigned int")
-               (slong "signed long")
-               (ulong "unsigned long")
-               (sllong "signed long long")
-               (ullong "unsigned long long")
-               (t (prog2$ (impossible) "")))))
-    (str::cat "type @('" core "')")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-def-integer-conversion (src-type dst-type)
-  :guard (and (member-eq src-type *atc-integer-types*)
-              (member-eq dst-type *atc-integer-types*))
+(define atc-def-integer-conversion ((stype typep) (dtype typep))
+  :guard (and (type-integerp stype)
+              (type-integerp dtype)
+              (not (equal stype dtype)))
   :returns (event pseudo-event-formp)
-  :short "Event to generate a conversion between C integer types."
+  :short "Event to generate the conversion between C integer types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The conversion turns values of the source type
-     into values of the destination type.
-     If the two types are the same, no events are generated;
-     we do not have the guard require the types to be different
-     so that it is more convenient to call this macro repeatedly
-     while looping through the source and destination types.")
+    "The conversion turns values of a source type @('stype')
+     into values of the destination type @('dtype').
+     The two types must be different.")
    (xdoc::p
-    "If the destination type is signed,
-     and the source type is not included in the destination type,
+    "Unless the destination type is signed,
+     and the source type is also signed
+     and always included in the destination type
+     (for every possible choice of integer bit sizes),
      we generate not only the conversion,
      but also a function for the guard of the conversion,
      asserting that the original value is representable
-     in the destination type."))
+     in the destination type.
+     Some of the generated guards may be always true
+     for certain choices of integer bit sizes."))
 
-  (b* ((src-type-string (atc-integer-type-string$ src-type))
-       (dst-type-string (atc-integer-type-string$ dst-type))
-       (conv (pack dst-type '-from- src-type))
-       (conv-okp (pack conv '-okp))
-       (src-typep (pack src-type 'p))
-       (dst-typep (pack dst-type 'p))
-       (src-type->get (pack src-type '->get))
-       (dst-type-integerp (pack dst-type '-integerp))
-       (dst-type-integerp-alt-def (pack dst-type-integerp '-alt-def))
-       (dst-type-mod (pack dst-type '-mod))
-       (diffp (not (eq src-type dst-type)))
-       (signedp (atc-integer-type-signedp dst-type))
-       (guardp (case dst-type
-                 (schar t)
-                 (sshort (not (eq src-type 'schar)))
-                 (sint (not (member-eq src-type '(schar sshort))))
-                 (slong (not (member-eq src-type '(schar sshort sint))))
-                 (sllong (not (member-eq src-type '(schar sshort sint slong))))
-                 (t nil))))
+  (b* ((stype-string (atc-integer-type-string stype))
+       (dtype-string (atc-integer-type-string dtype))
+       (signedp (type-signed-integerp dtype))
+       (guardp (and signedp
+                    (case (type-kind dtype)
+                      (:schar t)
+                      (:sshort (not (eq (type-kind stype) :schar)))
+                      (:sint (not (member-eq (type-kind stype)
+                                             '(:schar :sshort))))
+                      (:slong (not (member-eq (type-kind stype)
+                                              '(:schar :sshort :sint))))
+                      (:sllong (not (member-eq (type-kind stype)
+                                               '(:schar :sshort :sint :slong))))
+                      (t (impossible)))))
+       (<stype> (atc-integer-type-fixtype stype))
+       (<dtype> (atc-integer-type-fixtype dtype))
+       (<stype>p (pack <stype> 'p))
+       (<dtype>p (pack <dtype> 'p))
+       (<stype>->get (pack <stype> '->get))
+       (<dtype>-integerp (pack <dtype> '-integerp))
+       (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
+       (<dtype>-mod (pack <dtype> '-mod))
+       (<dtype>-from-<stype> (pack <dtype> '-from- <stype>))
+       (<dtype>-from-<stype>-okp (pack <dtype>-from-<stype> '-okp)))
 
     `(progn
 
        ,@(and
-          diffp
-          signedp
           guardp
-          `((define ,conv-okp ((x ,src-typep))
+          `((define ,<dtype>-from-<stype>-okp ((x ,<stype>p))
               :returns (yes/no booleanp)
               :short ,(str::cat "Check if a conversion from "
-                                src-type-string
+                                stype-string
                                 " to "
-                                dst-type-string
+                                dtype-string
                                 " is well-defined.")
-              (,dst-type-integerp (,src-type->get x))
+              (,<dtype>-integerp (,<stype>->get x))
               :hooks (:fix))))
 
-       ,@(and
-          diffp
-          `((define ,conv ((x ,src-typep))
-              ,@(and guardp `(:guard (,conv-okp x)))
-              :returns (result ,dst-typep)
-              :short ,(str::cat "Convert from "
-                                src-type-string
-                                " to "
-                                dst-type-string
-                                "').")
-              (,(if signedp dst-type dst-type-mod) (,src-type->get x))
-              :guard-hints (("Goal"
-                             :in-theory (enable ,(if guardp
-                                                     conv-okp
-                                                   dst-type-integerp-alt-def))))
-              :hooks (:fix)))))))
+       (define ,<dtype>-from-<stype> ((x ,<stype>p))
+         ,@(and guardp `(:guard (,<dtype>-from-<stype>-okp x)))
+         :returns (result ,<dtype>p)
+         :short ,(str::cat "Convert from "
+                           stype-string
+                           " to "
+                           dtype-string
+                           "').")
+         (,(if signedp <dtype> <dtype>-mod) (,<stype>->get x))
+         :guard-hints (("Goal"
+                        :in-theory (enable ,(if guardp
+                                                <dtype>-from-<stype>-okp
+                                              <dtype>-integerp-alt-def))))
+         :hooks (:fix))))
+
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop-inner (src-type dst-types)
-  :guard (and (true-listp dst-types)
-              (subsetp-eq (cons src-type dst-types) *atc-integer-types*))
-  :returns (event pseudo-event-form-listp)
-  :short "Events to generate the integer conversions between
-          a source type and a list of destination types."
-  (cond ((endp dst-types) nil)
+(define atc-def-integer-conversions-loop-inner ((stype typep)
+                                                (dtypes type-listp))
+  :guard (and (type-integerp stype)
+              (type-integer-listp dtypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the conversions
+          between a source type and each of a list of destination types."
+  :long
+  (xdoc::topstring-p
+   "This is the inner loop for generating conversions
+    for all combinations of source and destination types.")
+  (cond ((endp dtypes) nil)
+        ((equal stype (car dtypes))
+         (atc-def-integer-conversions-loop-inner stype (cdr dtypes)))
         (t (cons
-            (atc-def-integer-conversion src-type (car dst-types))
-            (atc-def-integer-conversions-loop-inner src-type
-                                                    (cdr dst-types))))))
+            (atc-def-integer-conversion stype (car dtypes))
+            (atc-def-integer-conversions-loop-inner stype (cdr dtypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop-outer (src-types dst-types)
-  :guard (and (true-listp src-types)
-              (true-listp dst-types)
-              (subsetp-eq (append src-types dst-types) *atc-integer-types*))
-  :returns (event pseudo-event-form-listp)
-  :short "Events to generate the integer conversions between
-          a list of source types and a list of destination types."
-  (cond ((endp src-types) nil)
+(define atc-def-integer-conversions-loop-outer ((stypes type-listp)
+                                                (dtypes type-listp))
+  :guard (and (type-integer-listp stypes)
+              (type-integer-listp dtypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the conversions
+          between each of a list of source types
+          and each of a list of destination types."
+  :long
+  (xdoc::topstring-p
+   "This is the outer loop for generating conversions
+    for all combinations of source and destination types.")
+  (cond ((endp stypes) nil)
         (t (append
-            (atc-def-integer-conversions-loop-inner (car src-types)
-                                                    dst-types)
-            (atc-def-integer-conversions-loop-outer (cdr src-types)
-                                                    dst-types))))
-  :prepwork ((local (include-book "std/lists/sets" :dir :system))))
+            (atc-def-integer-conversions-loop-inner (car stypes) dtypes)
+            (atc-def-integer-conversions-loop-outer (cdr stypes) dtypes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-def-integer-conversions ()
-  :short "Macro to generate all the integer conversions in our model."
-  `(progn ,@(atc-def-integer-conversions-loop-outer *atc-integer-types*
-                                                    *atc-integer-types*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(atc-def-integer-conversions)
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-conversions-loop-outer types types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
