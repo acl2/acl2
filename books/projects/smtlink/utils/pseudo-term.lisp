@@ -178,6 +178,17 @@
                 (assoc-equal y x))
            (integerp (cdr (assoc-equal y x)))))
 
+(defalist symbol-pseudo-term-alist
+  :key-type symbolp
+  :val-type pseudo-termp
+  :pred symbol-pseudo-term-alistp
+  :true-listp t)
+
+(defthm assoc-equal-of-symbol-pseudo-term-alist
+  (implies (and (symbol-pseudo-term-alistp alst)
+                (assoc-equal x alst))
+           (pseudo-termp (cdr (assoc-equal x alst)))))
+
 ;; -------------------------------------------
 ;; acl2-count theorems
 

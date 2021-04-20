@@ -13,7 +13,6 @@
 
 (include-book "basics")
 (include-book "judgements")
-(include-book "term-substitution")
 
 ;; -------------------------------------------------------------------
 ;;        Functions about path-cond

@@ -14,7 +14,7 @@
        (< (foo x y) '0)
      't)
   )
-stop
+
 (expand-cp (list (term)) (my-hint) state)
 (reorder-hypotheses '(IF (IF (EQUAL X2 (BINARY-+ X0 X1))
                              (IF (EQUAL X1 (RFIX Y))

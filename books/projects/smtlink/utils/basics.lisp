@@ -122,3 +122,6 @@
   :elt-type maybe-integerp
   :pred maybe-integer-listp
   :true-listp t)
+
+(defthm alistp-of-pairlis$
+  (alistp (acl2::pairlis$ a b)))

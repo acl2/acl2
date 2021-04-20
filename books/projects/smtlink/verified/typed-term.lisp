@@ -18,7 +18,6 @@
 
 (include-book "../utils/pseudo-term")
 (include-book "path-cond")
-(include-book "term-substitution")
 
 (encapsulate ()
   (local (in-theory (disable pseudo-termp)))

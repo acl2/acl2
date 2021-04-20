@@ -13,100 +13,94 @@
 (include-book "hint-please")
 (include-book "hint-interface")
 (include-book "computed-hints")
-(include-book "evaluator")
+(include-book "lambda-substitution")
 
-(defsection add-hypo-cp
-  :parents (verified)
-  :short "Verified clause-processor for adding user hypotheses"
+;;-------------------------------------------------------------
+;; (defsection add-hypo-cp
+;;   :parents (verified)
+;;   :short "Verified clause-processor for adding user hypotheses"
 
-  ;; -----------------------------------------------------------------
-  ;; Defines the clause-processor for adding hypotheses
-  ;; H1 and H2 ... and Hn => G
-  ;; H1 or G
-  ;; H2 or G
-  ;; ...
-  ;; Hn or G
+(local (in-theory (disable w)))
 
-  (define add-hypo-subgoals ((hinted-hypos hint-pair-list-p)
-                             (G pseudo-termp))
-    :returns (mv (list-of-H-thm pseudo-term-list-listp)
-                 (list-of-not-Hs pseudo-term-listp))
-    :measure (len hinted-hypos)
-    (b* ((hinted-hypos (hint-pair-list-fix hinted-hypos))
-         (G (pseudo-term-fix G))
-         ((unless (consp hinted-hypos)) (mv nil nil))
-         ((cons first-hinted-H rest-hinted-Hs) hinted-hypos)
-         (H (hint-pair->thm first-hinted-H))
-         (H-hint (hint-pair->hints first-hinted-H))
-         (merged-in-theory (treat-in-theory-hint '(hint-please) H-hint))
-         (first-H-thm `((hint-please ',merged-in-theory) ,H ,G))
-         (first-not-H-clause `(not ,H))
-         ((mv rest-H-thms rest-not-H-clauses)
-          (add-hypo-subgoals rest-hinted-Hs G)))
-      (mv (cons first-H-thm rest-H-thms)
-          (cons first-not-H-clause rest-not-H-clauses)))
-    ///
-    (defthm add-hypo-subgoals-correctness
-      (implies (and (pseudo-termp G)
-                    (alistp b)
-                    (hint-pair-list-p hinted-hypos)
-                    (ev-smtcp
-                     (disjoin
-                      (mv-nth 1 (add-hypo-subgoals hinted-hypos G)))
-                     b)
-                    (ev-smtcp
-                     (conjoin-clauses
-                      (mv-nth 0 (add-hypo-subgoals hinted-hypos G)))
-                     b))
-               (ev-smtcp G b))
-      :hints (("Goal"
-               :induct (add-hypo-subgoals hinted-hypos G)))))
+(local
+ (defthm symbol-pseudo-term-alist-implies-pseudo-term-subst
+   (implies (symbol-pseudo-term-alistp x)
+            (acl2::pseudo-term-substp x))
+   :hints (("Goal"
+            :in-theory (enable acl2::pseudo-term-substp))))
+ )
 
-  (local
-   (defthm crock0
-     (implies (and (pseudo-term-listp x) (pseudo-term-listp cl))
-              (pseudo-term-listp (append x (list (disjoin cl)))))))
+(define get-substed-hypo ((smt-hypo smt-hypo-p)
+                          state)
+  :returns (substed-hypo pseudo-termp)
+  (b* ((smt-hypo (smt-hypo-fix smt-hypo))
+       ((smt-hypo h) smt-hypo)
+       (hypo-thm (acl2::meta-extract-formula-w h.thm (w state)))
+       ((unless (pseudo-termp hypo-thm))
+        (prog2$ (er hard? 'add-hypo-cp=>get-substed-hypo
+                    "Formula returned by meta-extract ~p0 is not a pseudo-termp: ~p1~%"
+                    h.thm hypo-thm)
+                ''t))
+       (hypo-thm-expanded (expand-lambda hypo-thm)))
+    (acl2::substitute-into-term hypo-thm-expanded h.subst)))
 
-  (local
-   (defthm crock1
-     (implies (pseudo-term-listp x)
-              (pseudo-term-listp (append x '('nil))))))
+(local (defthm crock (alistp (ev-smtcp-alist x a))))
 
-  (define add-hypo-cp ((cl pseudo-term-listp)
-                       (smtlink-hint t))
-    :returns (subgoal-lst pseudo-term-list-listp)
-    (b* (((unless (pseudo-term-listp cl)) nil)
-         ((unless (smtlink-hint-p smtlink-hint))
-          (list cl))
-         ((smtlink-hint h) smtlink-hint)
-         (hinted-hypos h.hypotheses)
-         (next-cp (cdr (assoc-equal 'add-hypo *SMT-architecture*)))
-         ((if (null next-cp)) (list cl))
-         ;; this one clause-processor has state, it's a bit ugly
-         (the-hint
-          `(:clause-processor (,next-cp clause ',smtlink-hint state)))
-         (G (disjoin cl))
-         ((mv aux-hypo-clauses list-of-not-Hs)
-          (add-hypo-subgoals hinted-hypos G))
-         (cl0 `((hint-please ',the-hint) ,@list-of-not-Hs ,G)))
-      `(,cl0 ,@aux-hypo-clauses)))
+(defthm correctness-of-get-substed-hypo
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (smt-hypo-p smt-hypo)
+                (alistp a))
+           (ev-smtcp (get-substed-hypo smt-hypo state) a))
+  :hints (("Goal"
+           :in-theory (e/d (get-substed-hypo) (w)))))
 
-  ;; proving correctness of the clause processor
-  (local (in-theory (enable add-hypo-cp)))
+(define add-hypo ((cl pseudo-term-listp)
+                  (smt-hypo-lst smt-hypo-list-p)
+                  state)
+  :returns (new-cl pseudo-term-listp)
+  :measure (len smt-hypo-lst)
+  (b* ((cl (pseudo-term-list-fix cl))
+       (smt-hypo-lst (smt-hypo-list-fix smt-hypo-lst))
+       ((unless (consp smt-hypo-lst)) cl)
+       ((cons smt-hypo-hd smt-hypo-tl) smt-hypo-lst)
+       (res-hd (get-substed-hypo smt-hypo-hd state)))
+    (cons `(not ,res-hd) (add-hypo cl smt-hypo-tl state))))
 
-  (defthm correctness-of-add-hypos
-    (implies (and (pseudo-term-listp cl)
-                  (alistp b)
-                  (ev-smtcp
-                   (conjoin-clauses (add-hypo-cp cl smtlink-hint))
-                   b))
-             (ev-smtcp (disjoin cl) b))
-    :hints (("Goal"
-             :in-theory (disable add-hypo-subgoals-correctness
-                                 ev-smtcp-of-disjoin)
-             :use ((:instance add-hypo-subgoals-correctness
-                              (g (disjoin cl))
-                              (hinted-hypos (smtlink-hint->hypotheses smtlink-hint))
-                              (b b)))))
-    :rule-classes :clause-processor)
-  )
+(defthm correctness-of-add-hypo
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-term-listp cl)
+                (alistp a)
+                (ev-smtcp (disjoin (add-hypo cl hypo-lst state)) a))
+           (ev-smtcp (disjoin cl) a))
+  :hints (("Goal"
+           :in-theory (enable add-hypo))))
+
+(define add-hypo-cp ((cl pseudo-term-listp)
+                     (hints t)
+                     state)
+  (b* (((unless (smtlink-hint-p hints)) (value (list cl)))
+       (cl (pseudo-term-list-fix cl))
+       (next-cp (cdr (assoc-equal 'add-hypo *SMT-architecture*)))
+       ((if (null next-cp)) (value (list cl)))
+       (the-hint `(:clause-processor (,next-cp clause ',hints state)))
+       (new-cl (add-hypo cl (smtlink-hint->hypotheses hints) state)))
+    (value (list `((hint-please ',the-hint) ,@new-cl)))))
+
+(defthm correctness-of-add-hypos
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-term-listp cl)
+                (alistp a)
+                (ev-smtcp
+                 (conjoin-clauses
+                  (acl2::clauses-result
+                   (add-hypo-cp cl smtlink-hint state)))
+                 a))
+           (ev-smtcp (disjoin cl) a))
+  :hints (("Goal"
+           :in-theory (e/d (add-hypo-cp)
+                           (correctness-of-add-hypo))
+           :use ((:instance correctness-of-add-hypo
+                            (a a)
+                            (hypo-lst (smtlink-hint->hypotheses smtlink-hint))))))
+  :rule-classes :clause-processor)
+;; )

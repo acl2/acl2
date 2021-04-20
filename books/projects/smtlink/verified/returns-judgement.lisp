@@ -15,48 +15,15 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
+(include-book "../utils/basics")
 (include-book "typed-term-fns")
 (include-book "judgement-fns")
 (include-book "lambda-substitution")
 
 (set-state-ok t)
 
-(local
- (defthm alistp-of-pairlis$
-   (alistp (acl2::pairlis$ a b)))
- )
-
 ;;-------------------------------------------------------
 ;; Returns judgements
-
-;; (encapsulate ()
-;;   (local (in-theory (disable pseudo-termp
-;;                              assoc-equal
-;;                              symbol-listp)))
-
-;; (define get-formals ((fn symbolp) state)
-;;   :returns (formals symbol-listp)
-;;   :ignore-ok t
-;;   (b* ((fn (symbol-fix fn))
-;;        (formula (acl2::meta-extract-formula-w fn (w state)))
-;;        ((unless (pseudo-termp formula))
-;;         (prog2$
-;;          (er hard? 'returns-judgement=>get-formals
-;;              "Formula got by meta-extract ~p0 is not a pseudo-termp."
-;;              fn)
-;;          nil))
-;;        ((mv ok formals)
-;;         (case-match formula
-;;           (('equal (!fn . formals) &)
-;;            (mv t formals))
-;;           (& (mv nil nil))))
-;;        ((unless (and ok (symbol-listp formals)))
-;;         (prog2$ (er hard? 'returns-judgement=>get-formals
-;;                     "Formula got by meta-extract ~p0 is not an equality ~p1"
-;;                     fn formula)
-;;                 nil)))
-;;     formals))
-;; )
 
 (define get-hypotheses-and-conclusion ((thm pseudo-termp)
                                        (fn symbolp)
@@ -95,25 +62,6 @@
                            (symbol-listp
                             pseudo-term-listp-of-symbol-listp)))))
 
-(define expand-lambda ((thm pseudo-termp))
-  :returns (expanded-thm pseudo-termp)
-  (b* ((thm (pseudo-term-fix thm)))
-    (if (and (not (acl2::variablep thm))
-             (not (acl2::quotep thm))
-             (pseudo-lambdap (car thm)))
-        (lambda-substitution (car thm) (cdr thm))
-      thm)))
-
-(defthm correctness-of-expand-lambda
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp thm)
-                (alistp a)
-                (ev-smtcp thm a))
-           (ev-smtcp (expand-lambda thm) a))
-  :hints (("Goal"
-           :in-theory (e/d () ())
-           :expand (expand-lambda thm))))
-
 (define get-substed-theorem ((respec return-spec-p)
                              (actuals pseudo-term-listp)
                              state)
@@ -148,7 +96,7 @@
                      '(i1 l1)
                      state)
 |#
-
+stop
 (defthm correctness-of-get-substed-theorem
    (implies (and (ev-smtcp-meta-extract-global-facts)
                  (alistp a)

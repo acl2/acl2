@@ -9,7 +9,6 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 
-(include-book "../utils/pseudo-term")
 (include-book "hint-interface")
 
 (defprod type-tuple

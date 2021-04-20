@@ -24,11 +24,6 @@
 (include-book "hint-interface")
 (include-book "evaluator")
 
-(local
-(defthm alistp-of-pairlis$
-  (alistp (acl2::pairlis$ a b)))
-)
-
 (encapsulate ()
 
   (local (defthm pseudo-term-substp-of-pairlis$-for-pseudo-lambda
@@ -81,3 +76,22 @@
             (ev-smtcp (cons fn-call fn-actuals) a)))
   :hints (("Goal"
            :in-theory (enable lambda-substitution))))
+
+(define expand-lambda ((thm pseudo-termp))
+  :returns (expanded-thm pseudo-termp)
+  (b* ((thm (pseudo-term-fix thm)))
+    (if (and (not (acl2::variablep thm))
+             (not (acl2::quotep thm))
+             (pseudo-lambdap (car thm)))
+        (lambda-substitution (car thm) (cdr thm))
+      thm)))
+
+(defthm correctness-of-expand-lambda
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp thm)
+                (alistp a)
+                (ev-smtcp thm a))
+           (ev-smtcp (expand-lambda thm) a))
+  :hints (("Goal"
+           :in-theory (e/d () ())
+           :expand (expand-lambda thm))))

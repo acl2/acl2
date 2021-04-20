@@ -10,22 +10,12 @@
 (include-book "config")
 
 ;; verified
-(include-book "verified/basics")
 (include-book "verified/computed-hints")
-(include-book "verified/extractor")
 (include-book "verified/process")
-(include-book "verified/hint-interface")
-(include-book "verified/hint-please")
-(include-book "verified/type-hyp")
-(include-book "verified/type-inference")
-;; (include-book "verified/term-rectify")
-;; (include-book "verified/term-projection")
 (include-book "verified/add-hypo-cp")
 (include-book "verified/expand-cp")
 (include-book "verified/reorder-hypotheses")
-;; (include-book "verified/type-extract-cp")
-;; (include-book "verified/uninterpreted-fn-cp")
-;; (include-book "verified/fixtypes")
+(include-book "verified/type-inference")
 
 ;; ;; trusted
 ;; (include-book "trusted/prove")

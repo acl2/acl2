@@ -11,7 +11,6 @@
 (include-book "std/util/define" :dir :system)
 
 (include-book "hint-interface")
-(include-book "type-hyp")
 (include-book "basics")
 (include-book "evaluator")
 

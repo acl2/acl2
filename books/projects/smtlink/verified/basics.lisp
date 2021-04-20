@@ -21,11 +21,7 @@
   :short "Basic ACL2 functions supported in Smtlink."
   (append
    '(real/rationalp rationalp realp booleanp integerp symbolp)
-   '(binary-+ binary-* unary-/ unary--
-              equal <
-              implies if not
-              ;; lambda
-              )))
+   '(binary-+ binary-* unary-/ unary-- equal < if not implies)))
 
 (in-theory (disable (:executable-counterpart smt-basics)))
 
@@ -41,17 +37,7 @@
     (<                 . ("_SMT_.lt"         . 2))
     (if                . ("_SMT_.ifx"        . 3))
     (not               . ("_SMT_.notx"       . 1))
-    (lambda            . ("lambda"           . 2))
-    (implies           . ("_SMT_.implies"    . 2))
-    ;; (hint-please       . ("_SMT_.hint_okay"  . 0))
-    ;; This doesn't work right now because Z3's definition is different from ACL2
-    ;; when using types as hypotheses. If X is rationalp in Z3, then it can not
-    ;; be an integerp. We need to first grab a definition in Z3 that can fully
-    ;; capture its ACL2 meaning.
-    ;; (integerp      . ("_SMT_.integerp"   . 1))
-    ;; (rationalp     . ("_SMT_.rationalp"  . 1))
-    ;; (booleanp      . ("_SMT_.booleanp"   . 1))
-    ))
+    (implies           . ("_SMT_.implies"    . 2))))
 
 (define is-basic-function ((opr symbolp))
   :returns (is? stringp)
@@ -72,14 +58,13 @@
 
 ;; current tag . next computed-hint
 (defval *SMT-architecture*
-  '((process-hint          . add-hypo-cp)
-    (add-hypo              . type-judge-cp)
-    (type-judge            . term-rectify-cp)
-    (term-rectify          . expand-cp)
-    (expand                . type-extract-cp)
-    (type-extract          . uninterpreted-fn-cp)
-    (uninterpreted         . smt-trusted-cp)
-    (uninterpreted-custom  . smt-trusted-cp-custom)))
+  '((process-hint             . add-hypo-cp)
+    (add-hypo                 . expand-cp)
+    (expand                   . reorder-cp)
+    (reorder                  . type-inference-cp)
+    (type-inference           . term-transform-cp)
+    (term-transform           . smt-trusted-cp)
+    (term-transform-custom    . smt-trusted-cp-custom)))
 
 ;;----------------------------------------------------------------
 
