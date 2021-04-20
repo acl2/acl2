@@ -78,7 +78,7 @@
             bitp-idiom-with-constant-1
             bitp-idiom-with-constant-2
             mul-normalize-constant-arg1
-            add-of-constant-normalize-to-fep ;todo: normalize to small pos or eg numbers instead
+            add-of-constant-normalize-to-fep ;todo: normalize to small pos or neg numbers instead?
             pfield::mul-of--1-becomes-neg-gen ;todo: be consistent about negative constants
             ;;primes::primep-of-bn-254-group-prime-constant
             ;;bitp-of-add-of-constant-negated-special ;;caused problems, possibly a loop, after adding fns to the evaluator.  TODO: why?

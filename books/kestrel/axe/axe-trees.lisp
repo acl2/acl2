@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,8 +15,9 @@
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;for myquotep
 (include-book "kestrel/utilities/polarity" :dir :system)
-(include-book "all-dargp")
-(include-book "dargp-less-than")
+;(include-book "all-dargp")
+;(include-book "dargp-less-than")
+(include-book "all-dargp-less-than")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -59,6 +60,12 @@
               (all-axe-treep y)))
   :hints (("Goal" :induct (append x y)
            :in-theory (enable all-axe-treep append))))
+
+(defthm axe-treep-when-symbolp-cheap
+  (implies (symbolp tree)
+           (axe-treep tree))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 ;; Pseudo-terms are axe-trees.
 (defthm-flag-axe-treep
@@ -123,6 +130,12 @@
 (defthmd bounded-axe-treep-when-dargp-less-than
   (implies (dargp-less-than tree bound)
            (bounded-axe-treep tree bound))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
+
+(defthm bounded-axe-treep-when-dargp-less-than-cheap
+  (implies (dargp-less-than item bound)
+           (bounded-axe-treep item bound))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
 
 ;; (defthmd bounded-axe-treep-when-not-consp
@@ -398,6 +411,12 @@
            (axe-treep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
            :in-theory (disable dargp-of-cdr-of-assoc-equal))))
+
+(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
+  (implies (and (all-dargp-less-than (strip-cdrs alist) dag-len)
+                (assoc-equal form alist))
+           (bounded-axe-treep (cdr (assoc-equal form alist)) dag-len))
+  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
 (defthm axe-treep-when-not-consp-and-not-symbolp-cheap
   (implies (and (not (consp tree))

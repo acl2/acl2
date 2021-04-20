@@ -493,6 +493,49 @@
                           ,x.xvar)
          x))))
 
+(define visitor-set-measure (type x mrec)
+  (declare (ignorable mrec))
+  (b* (((flexset type))
+       ((visitorspec x)))
+    `(:measure ,(visitor-measure x (if type.count
+                                       `(,type.count ,x.xvar)
+                                     `(len ,x.xvar))
+                                 type.name))))
+
+(define visitor-set-body (type x)
+  (b* (((flexset type))
+       ((visitorspec x))
+       (name (visitor-fnname x type.name))
+       (elt-fnname (visitor-field-fn :elt type.elt-type type.name x))
+       (formal-names (visitor-formal-names x.formals))
+       ((unless elt-fnname)
+        (er hard? 'defvisitor "Nothing to do for set type ~x0 -- use :skip." type.name)))
+    `(b* (((when (atom ,x.xvar))
+           (b* (,@x.initial)
+             ,(visitor-return-values x.returns
+                                     nil
+                                     x)))
+          ,@(if x.reversep
+                `((,(visitor-return-binder x.returns 'cdr t x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+                  (,(visitor-return-binder x.returns 'car nil x)
+                   (,elt-fnname . ,(subst `(car ,x.xvar)
+                                          x.xvar
+                                          formal-names))))
+              `((,(visitor-return-binder x.returns 'car t x)
+                 (,elt-fnname . ,(subst `(car ,x.xvar)
+                                        x.xvar
+                                        formal-names)))
+                (,(visitor-return-binder x.returns 'cdr nil x)
+                 (,name . ,(subst `(cdr ,x.xvar)
+                                  x.xvar
+                                  formal-names)))))
+          ,@x.join)
+       ,(visitor-return-values
+         x.returns `(cons-with-hint car cdr ,x.xvar) x))))
+
 (define visitor-def (type x mrec)
   (b* ((body (with-flextype-bindings type
                (visitor-*-body type x)))

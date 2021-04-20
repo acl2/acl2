@@ -2826,8 +2826,7 @@
 ;;     (make-clusters
 ;;      (implode ac)
 ;;      (cluster-size fat32$c)))))
-;;  :hints (("Goal" :in-theory (enable make-clusters remember-that-time-with-update-nth
-;;                                     append-of-take-and-cons)
+;;  :hints (("Goal" :in-theory (enable make-clusters remember-that-time-with-update-nth)
 ;;           :induct
 ;;           (data-region-string-helper fat32$c len ac))
 ;;          ("Subgoal *1/2.2"
@@ -4288,52 +4287,9 @@
     :hints
     (("goal"
       :induct (induction-scheme fa-table1 fa-table2 pos str)
-      :in-theory (e/d (update-fat-aux)
-                      (equal-of-append-repeat
-                       (:rewrite append-of-take-and-cons)))
-      :expand (update-fat-aux fa-table2 str pos))
-     ("subgoal *1/2"
-      :use
-      ((:instance
-        (:rewrite append-of-take-and-cons)
-        (y nil)
-        (x (combine32u
-            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
-        (l
-         (update-fat-aux
-          (update-nth
-           (+ -1 pos)
-           (combine32u
-            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -4 (* 4 pos)) (explode str))))
-           fa-table1)
-          str (+ -1 pos)))
-        (n (+ -1 pos)))
-       (:instance
-        (:rewrite append-of-take-and-cons)
-        (y nil)
-        (x (combine32u
-            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
-        (l
-         (update-fat-aux
-          (update-nth
-           (+ -1 pos)
-           (combine32u
-            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-            (char-code (nth (+ -4 (* 4 pos)) (explode str))))
-           fa-table2)
-          str (+ -1 pos)))
-        (n (+ -1 pos))))))))
+      :in-theory (e/d (update-fat-aux take-as-append-and-nth)
+                      (equal-of-append-repeat take))
+      :expand (update-fat-aux fa-table2 str pos)))))
 
 (defthm len-of-update-fat-aux
   (equal (len (update-fat-aux fa-table str pos))

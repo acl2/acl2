@@ -53,5 +53,10 @@
 (include-book "projects/execloader/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+(include-book "kestrel/isar/portcullis" :dir :system)
+(include-book "kestrel/crypto/mimc/portcullis" :dir :system)
+(include-book "kestrel/ethereum/semaphore/portcullis" :dir :system)
+(include-book "kestrel/crypto/pfcs/portcullis" :dir :system)
+(include-book "kestrel/zcash/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

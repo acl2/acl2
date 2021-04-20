@@ -133,10 +133,11 @@
           ("Goal"
            :induct (packbv count size bvs)
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (PACKBV) (BVCAT-EQUAL-REWRITE-ALT
-                                     BVCAT-EQUAL-REWRITE
-                                     ;;zp-open ;causes problems?
-                                     )))))
+           :in-theory (e/d (PACKBV bvchop-of-logtail-becomes-slice)
+                           (BVCAT-EQUAL-REWRITE-ALT
+                            BVCAT-EQUAL-REWRITE
+                            ;;zp-open ;causes problems?
+                            )))))
 
 ;drop?
 (defthm slice-of-packbv-1
@@ -303,5 +304,5 @@
                   (equal (bvchop-list size (take n x))
                          (bvchop-list size (take n y)))))
   :hints (("Goal" :induct t
-           :in-theory (e/d (packbv take)
+           :in-theory (e/d (packbv take floor-minus-eric-better)
                            (bvchop-upper-bound)))))

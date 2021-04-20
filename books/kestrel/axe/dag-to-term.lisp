@@ -75,8 +75,6 @@
 
 (make-flag dag-to-term-aux)
 
-(local (in-theory (disable weak-dagp-aux)))
-
 (defthm-flag-dag-to-term-aux
   (defthm pseudo-termp-of-dag-to-term-aux
     (implies (and (pseudo-dagp dag)
@@ -96,6 +94,7 @@
                                           )
            :in-theory (disable dag-exprp0-of-lookup-equal-when-pseudo-dagp
                                dag-exprp0-of-lookup-equal-when-weak-dagp-aux
+                               dag-exprp0-of-lookup-equal-when-weak-dagp
                                dag-exprp-of-lookup-equal-when-pseudo-dagp))
           ("Goal" :in-theory (e/d (symbolp-when-dag-exprp0) (weak-dagp-aux
                                                              bounded-dag-exprp

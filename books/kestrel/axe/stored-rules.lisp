@@ -24,7 +24,10 @@
 
 ;these are what are stored in rule-alists
 (defund make-stored-rule (lhs-args hyps rule-symbol rhs)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (and (pseudo-term-listp lhs-args) ;should be lambda-free
+                              (axe-rule-hyp-listp hyps)
+                              (pseudo-termp rhs) ;todo: disallow free vars
+                              (symbolp rule-symbol))))
   (list* lhs-args ;does not include the leading function symbol (we'll always know it)
          hyps     ;hyps are the next-most-frequenty-accessed part of the rule
          rule-symbol
@@ -51,16 +54,26 @@
 (defund stored-axe-rulep (item)
   (declare (xargs :guard t))
   (and (<= 3 (len item)) ;the final cdr is the rhs
-       (pseudo-term-listp (stored-rule-lhs-args item))
-       (axe-rule-hyp-listp (stored-rule-hyps item))
-       (pseudo-termp (stored-rule-rhs item)) ;todo: disallow free vars
-       (symbolp (stored-rule-symbol item))))
+       (let ((lhs-args (stored-rule-lhs-args item))
+             (hyps (stored-rule-hyps item))
+             (rhs (stored-rule-rhs item))
+             (rule-symbol (stored-rule-symbol item)))
+         (and (pseudo-term-listp lhs-args) ;should be lambda-free
+              (axe-rule-hyp-listp hyps)
+              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
+              (pseudo-termp rhs)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
+              (symbolp rule-symbol)))))
 
 (defthm stored-axe-rulep-of-make-stored-rule
   (equal (stored-axe-rulep (make-stored-rule lhs-args hyps rule-symbol rhs))
          (and (pseudo-term-listp lhs-args)
               (axe-rule-hyp-listp hyps)
+              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
               (pseudo-termp rhs)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
               (symbolp rule-symbol)))
   :hints (("Goal" :in-theory (enable make-stored-rule
                                      stored-axe-rulep
@@ -219,3 +232,10 @@
       (if (eq rule-symbol (stored-rule-symbol stored-axe-rule))
           t
         (rule-is-presentp rule-symbol (rest stored-axe-rules))))))
+
+(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
+  (implies (stored-axe-rulep stored-rule)
+           (bound-vars-suitable-for-hypsp
+            (vars-in-terms (stored-rule-lhs-args stored-rule))
+            (stored-rule-hyps stored-rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep))))

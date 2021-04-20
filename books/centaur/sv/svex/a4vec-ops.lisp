@@ -1691,6 +1691,51 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))
 
+
+
+(define a4vec-?! ((x a4vec-p)
+                 (y a4vec-p)
+                 (z a4vec-p))
+  :short "Symbolic version of @(see 3vec-?*)."
+  :returns (res a4vec-p)
+
+
+  (b* (((a4vec a) x)
+       ((a4vec b) y)
+       ((a4vec c) z)
+       (pick-c (aig-iszero-s (aig-logand-ss a.upper a.lower)))
+
+       (upper (aig-ite-bss pick-c c.upper b.upper))
+       (lower (aig-ite-bss pick-c c.lower b.lower)))
+    (a4vec upper lower))
+  ///
+  (local (in-theory (disable iff not acl2::zip-open)))
+  (local (in-theory (disable bitops::logand-natp-type-2
+                             bitops::logand-natp-type-1
+                             bitops::logior-natp-type
+                             bitops::logand->=-0-linear-2
+                             bitops::logand->=-0-linear-1
+                             bitops::upper-bound-of-logand
+                             aig-list->s
+                             bitops::logbitp-when-bit
+                             bitops::logbitp-nonzero-of-bit
+                             bitops::logbitp-when-bitmaskp
+                             bitops::lognot-negp
+                             bitops::lognot-natp
+                             bitops::logior-<-0-linear-2
+                             bitops::logior-<-0-linear-1
+                             bitops::lognot-<-const
+                             acl2::aig-env-lookup)))
+
+
+  (defthm a4vec-?!-correct
+    (equal (a4vec-eval (a4vec-?! x y z) env)
+           (4vec-?! (a4vec-eval x env)
+                    (a4vec-eval y env)
+                    (a4vec-eval z env)))
+    :hints(("Goal" :in-theory (enable 4vec-?!))
+           (bitops::logbitp-reasoning))))
+
 (define a3vec-bit? ((x a4vec-p)
                     (y a4vec-p)
                     y3p

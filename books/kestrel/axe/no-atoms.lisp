@@ -18,6 +18,8 @@
 ;;; no-atoms
 ;;;
 
+;; TODO: DEPRECATE THIS IN FAVOR OF ALL-CONSP
+
 (defund no-atoms (items)
   (declare (xargs :guard (true-listp items)))
   (if (endp items)

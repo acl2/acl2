@@ -30,7 +30,7 @@
 
 (include-book "arithmetic-5/top" :dir :system)
 
-;; Unfortunately, conflicts exist between arithmetic-5 and RTL that can 
+;; Unfortunately, conflicts exist between arithmetic-5 and RTL that can
 ;; severely slow down some proofs.  Much of this can be avoided by
 ;; disabling the following lemmas:
 
@@ -40,16 +40,6 @@
 	        cancel-mod-+ reduce-additive-constant-< ash-to-floor |(floor x 2)|
                 |(equal x (if a b c))| |(equal (if a b c) x)| |(logior 1 x)|
                 mod-theorem-one-b |(mod (- x) y)|))
-
-(DEFTHM BITS-UPPER-BOUND
-  (IMPLIES (AND (INTEGERP I) (INTEGERP J))
-           (< (BITS X I J) (EXPT 2 (1+ (- I J)))))
-  :INSTRUCTIONS
-  (:PROMOTE
-   (:CLAIM (AND (NATP (BITS X I J))
-                (< (BITS X I J) (EXPT 2 (1+ (- I J)))))
-           :HINTS (("Goal" :USE (:INSTANCE BITS-BOUNDS))))
-   :BASH))
 
 (DEFTHM BITS-UPPER-BOUND-LE
  (IMPLIES (AND (INTEGERP I) (INTEGERP J) (<= 0 I) (>= I J))
@@ -73,7 +63,7 @@
   :hints (("Goal" :in-theory (e/d (bits-mod) ()))))
 
 
-;; Codewalker requires the 'state' parameter to be the first parameter; for the 
+;; Codewalker requires the 'state' parameter to be the first parameter; for the
 ;; rac-generated steps primitive (leg64steps-loop-0) called by leg64steps, the
 ;; state parameter is the last parameter.  Thus, we rewrite leg64steps-loop-0
 ;; slightly, and call the result leg64stepn.

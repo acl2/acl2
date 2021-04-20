@@ -810,12 +810,6 @@
       :use (:instance lemma
                       (ac nil))))))
 
-(defthm append-of-take-and-cons
-  (implies (and (natp n) (equal x (nth n l)))
-           (equal (append (take n l) (cons x y))
-                  (append (take (+ n 1) l) y)))
-  :hints (("Goal" :induct (take n l)) ))
-
 (defthmd take-of-nthcdr
   (equal (take n1 (nthcdr n2 l))
          (nthcdr n2 (take (+ (nfix n1) (nfix n2)) l))))
@@ -971,8 +965,9 @@
                       (+ 1 (len alist))))))
 
 (defthm remove-assoc-when-absent-1
-  (implies (and (not (null x))
-                (atom (assoc-equal x alist)))
+  (implies (and
+            (atom (assoc-equal x alist))
+            (case-split (not (null x))))
            (equal (remove-assoc-equal x alist)
                   (true-list-fix alist))))
 
@@ -1267,20 +1262,6 @@
                 (consp (assoc-equal x1 alist)))
            (consp (remove-assoc-equal x2 alist))))
 
-;; The following is redundant with the eponymous theorem in
-;; books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
-;; discussion with Eric Smith.
-(defthm nthcdr-iff
-  (iff (nthcdr n x)
-       (if (< (nfix n) (len x))
-           t
-         (if (equal (nfix n) (len x))
-             ;; If we know true-listp, this simplifies to nil and get merged
-             ;; with the nil branch below.
-             (not (true-listp x))
-           nil)))
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
 (defthm assoc-of-true-list-fix
   (equal (assoc-equal x (true-list-fix l))
          (assoc-equal x l))
@@ -1545,7 +1526,7 @@
        (remove-equal (car l2)
                      (set-difference-equal l1 (cdr l2)))))
     :hints (("goal" :use (lemma-1 lemma-2)))
-    :rule-classes :definition))
+    :rule-classes ((:definition :install-body nil))))
 
 (defthm len-of-remove-when-member-1
   (implies (member-equal x l)
@@ -1713,10 +1694,8 @@
          (if (zp n)
              nil
              (append (take (- n 1) l)
-                     (list (nth (- n 1) l))))))
-
-(theory-invariant (incompatible (:rewrite take-as-append-and-nth)
-                                (:rewrite append-of-take-and-cons)))
+                     (list (nth (- n 1) l)))))
+  :rule-classes ((:definition :install-body nil)))
 
 (defthm consp-of-assoc-of-nth-of-strip-cars
   (implies (not (null (nth n (strip-cars alist))))
@@ -1793,9 +1772,6 @@
              (take n x)
              (append x (take (- n (len x)) y))))
   :hints (("goal" :induct (take n x))))
-(defthm take-under-iff
-  (iff (take n xs)
-       (not (zp n))))
 
 (encapsulate () (local (in-theory (disable subseq string-append)))
 
@@ -1945,8 +1921,6 @@
          (intersection-equal l1 l2))
   :hints
   (("goal"
-    :induct (intersection-equal l1 l2)
-    :in-theory (e/d nil nil)
     :expand
     (:with
      set-difference$-redefinition
@@ -1987,10 +1961,27 @@
                   (<= y x)))
     :hints (("Goal" :in-theory (enable min))))
 
-  (defthm painful-debugging-lemma-25
+  (defthm painful-debugging-lemma-17
     (zp (+ (- x) (min x y)))
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
+
+(defthmd
+  painful-debugging-lemma-8
+  (implies (not (zp cluster-size))
+           (and
+            (equal (ceiling cluster-size cluster-size) 1)
+            (equal (ceiling 0 cluster-size) 0))))
+
+(defthm painful-debugging-lemma-9
+  (implies (and (not (zp j)) (integerp i) (>= i 0))
+           (>= (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
+
+(defthm painful-debugging-lemma-10
+  (implies (and (not (zp j)) (integerp i) (> i 0))
+           (> (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
 
 (defthm member-of-nth-when-not-intersectp
   (implies (and (not (intersectp-equal l x))
@@ -2020,3 +2011,24 @@
          (cond ((consp y) (last y))
                ((consp x) (cons (car (last x)) y))
                (t y))))
+
+;; This only addresses the linear part, because the integerp part is covered by
+;; integerp-of-nth-when-integer-listp.
+(defthm natp-of-nth-when-nat-listp
+  (implies (nat-listp l) (<= 0 (nth n l)))
+  :hints (("goal" :in-theory (enable nth nat-listp)))
+  :rule-classes :linear)
+
+(defthm acl2-number-listp-when-rational-listp
+  (implies (rational-listp l)
+           (acl2-number-listp l)))
+
+(defthm rational-listp-when-integer-listp
+  (implies (integer-listp l)
+           (rational-listp l)))
+
+(defthm integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l)))
+
+(defthm consp-of-strip-cars (equal (consp (strip-cars x)) (consp x)))

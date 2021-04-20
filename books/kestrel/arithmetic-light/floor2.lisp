@@ -16,6 +16,7 @@
 (include-book "floor")
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
+(local (include-book "minus"))
 (local (include-book "times-and-divides"))
 (local (include-book "plus"))
 (local (include-book "plus-and-minus"))
@@ -174,9 +175,23 @@
   :hints (("Goal" ;:use (:instance floor-unique (n (- (* I (/ J)) (/ (MOD I J) J))))
            :in-theory (e/d (mod
                             ) (floor-unique ;MOD-=-0 ;MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
-                                               )))))
+                               )))))
 
-(local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo: change mentions of floor-bounded-by-/
+;gen
+;move
+(defthm floor-of-*-bound-arg2
+  (IMPLIES (AND (INTEGERP I)
+                (< 0 I)
+                (INTEGERP J1)
+                (< 0 J1)
+                (INTEGERP J2)
+                (< 0 J2))
+           (<= (* J2 (FLOOR I (* J1 J2)))
+               (FLOOR I J1)))
+  :hints (("Goal" :use (:instance my-floor-upper-bound
+                                  (j (* j1 j2))
+                                  )
+           :in-theory (disable my-floor-upper-bound))))
 
 (defthm <=-of-mod-and-mod-of-*-same
   (IMPLIES (AND (INTEGERP I)
@@ -209,8 +224,6 @@
                             mod-sum-cases ;for speed
                             )))))
 
-
-
 (defthm floor-bound-hack2
   (implies (and (posp i)
                 (posp j1)
@@ -223,43 +236,45 @@
            :use (;(:instance floor-bounded-by-/ (x i) (y (* j1 j2)))
                  (:instance my-floor-upper-bound (i i) (j j1))
                  (:instance my-floor-lower-bound (i i) (j (* j1 j2)))
-                 (:instance *-PRESERVES->-FOR-NONNEGATIVES-1 (x2 (* I (/ J1) (/ J2))) (y1 j2) (x1 (+ 1 (FLOOR I (* J1 J2)))) (y2 j2))
+                 ;(:instance *-PRESERVES->-FOR-NONNEGATIVES-1 (x2 (* I (/ J1) (/ J2))) (y1 j2) (x1 (+ 1 (FLOOR I (* J1 J2)))) (y2 j2))
                  )
            :in-theory (e/d (;floor-in-terms-of-mod
                             ;mod
                             )
-                           ( floor-bounded-by-/ floor-bound-lemma2 floor-bound-lemma3
-                                          <-*-/-LEFT
-                                          <-*-/-RIGHT
-                                          <-*-/-RIGHT-commuted
-                                          NORMALIZE-<-MINUS-/
+                           ( ;floor-bounded-by-/
+                            floor-bound-lemma2 floor-bound-lemma3
+                                          ;<-*-/-LEFT
+                                          ;<-*-/-RIGHT
+                                          ;<-*-/-RIGHT-commuted
+                                          ;NORMALIZE-<-MINUS-/
 ;                                          MOD-X-I*J
 ;                                          MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
                                           FLOOR-MINUS-ERIC-BETTER ;bozo looped!
                                           )))))
 
-
-
-(defthm mod-of-floor-equal-rewrite
-  (implies (and (posp n)
-                (posp j)
+(encapsulate
+ ()
+ (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
+ (local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
+ (defthm mod-of-floor-equal-rewrite
+   (implies (and (posp n)
+                 (posp j)
 ;               (equal j 100)
 ;               (equal m 17)
-                (posp m)
-                )
-           (equal (equal (mod (floor n j) m) k)
-                  (and (natp k)
-                       (< k m)
-                       (<= (* k j) (mod n (* m j)))
-                       (< (mod n (* m j)) (* j (+ 1 k))))))
-  :otf-flg t
-  :hints (("Goal" :use (:instance helper-lemmm (m m ;17
-                                                  ))
-           :in-theory (e/d (;mod
-                            natp)
-                           (MOD-=-0 ;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
-                            FLOOR-=-X/Y
-                            FLOOR-WHEN-DIVISIBLE)))))
+                 (posp m)
+                 )
+            (equal (equal (mod (floor n j) m) k)
+                   (and (natp k)
+                        (< k m)
+                        (<= (* k j) (mod n (* m j)))
+                        (< (mod n (* m j)) (* j (+ 1 k))))))
+   :hints (("Goal" :use (:instance helper-lemmm (m m ;17
+                                                   ))
+            :in-theory (e/d ( ;mod
+                             natp)
+                            ( ;MOD-=-0 ;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
+;FLOOR-=-X/Y
+                             FLOOR-WHEN-DIVISIBLE))))))
 
 ;bozo gen the 1/4
 (defthm quotient-is-multiple
@@ -268,7 +283,9 @@
            (equal (equal (mod (* 1/4 i) k) 0)
                   (equal (mod i (* 4 k)) 0)))
   :hints (("Goal" :use (:instance integerp-of-* (x (* 1/4 (/ K) i)) (y k))
-           :in-theory (e/d (mod-=-0) (integerp-of-*)))))
+           :in-theory (e/d (;mod-=-0
+                            EQUAL-OF-0-AND-MOD
+                            ) (integerp-of-*)))))
 
 ;FIXME gen
 (defthm floor-of-plus-of-floor-15-3-4-16
@@ -278,10 +295,11 @@
   :hints (("Goal" :in-theory (e/d (floor-of-sum
                                    mod-sum-cases)
                                   (floor-when-divisible
-                                   mod-bounded-by-modulus
-                                   floor-bounded-by-/
-                                   floor-=-x/y
-                                   mod-=-0)))))
+                                   ;mod-bounded-by-modulus
+                                   ;floor-bounded-by-/
+                                   ;floor-=-x/y
+                                   ;mod-=-0
+                                   )))))
 
 
 ;; (thm

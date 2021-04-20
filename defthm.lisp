@@ -46,53 +46,6 @@
 ; from a term are legal.  We then develop add-rewrite-rule which does
 ; the actual generation and addition of the rules to the world.
 
-(mutual-recursion
-
-(defun remove-lambdas1 (term)
-  (declare (xargs :guard (pseudo-termp term)
-                  :verify-guards nil))
-  (cond ((or (variablep term)
-             (fquotep term))
-         (mv nil term))
-        (t (mv-let (changedp args)
-             (remove-lambdas-lst (fargs term))
-             (let ((fn (ffn-symb term)))
-               (cond ((flambdap fn)
-                      (mv-let (changedp body)
-                        (remove-lambdas1 (lambda-body fn))
-                        (declare (ignore changedp))
-                        (mv t
-                            (subcor-var (lambda-formals fn)
-                                        args
-                                        body))))
-                     (changedp (mv t (cons-term fn args)))
-                     (t (mv nil term))))))))
-
-(defun remove-lambdas-lst (termlist)
-  (declare (xargs :guard (pseudo-term-listp termlist)))
-  (cond ((consp termlist)
-         (mv-let (changedp1 term)
-           (remove-lambdas1 (car termlist))
-           (mv-let (changedp2 rest)
-             (remove-lambdas-lst (cdr termlist))
-             (mv (or changedp1 changedp2)
-                 (cons term rest)))))
-        (t (mv nil nil))))
-)
-
-(defun remove-lambdas (term)
-
-; Remove-lambdas returns the result of applying beta-reductions in term.  This
-; function preserves quote-normal form: if term is in quote-normal form, then
-; so is the result.
-
-  (declare (xargs :guard (pseudo-termp term)
-                  :verify-guards nil))
-  (mv-let (changedp ans)
-    (remove-lambdas1 term)
-    (declare (ignore changedp))
-    ans))
-
 (defun form-of-rewrite-quoted-constant-rule (equiv lhs rhs)
 
 ; The Essay on Rewriting Quoted Constants lists three possible forms, 1, 2, or
@@ -697,31 +650,35 @@
 ; We return a list of all the vars mentioned in hyps or, if there is
 ; a synp hyp whose var-list is 't, we return t.
 
-  (cond ((null hyps)
-         nil)
-        ((variablep (car hyps))
-         (add-to-set-eq (car hyps)
-                        (all-vars-in-hyps (cdr hyps))))
-        ((fquotep (car hyps))
-         (all-vars-in-hyps (cdr hyps)))
-        ((eq (ffn-symb (car hyps)) 'synp)
-         (cond ((equal (fargn (car hyps) 1) *nil*)
-                (all-vars-in-hyps (cdr hyps)))
-               ((equal (fargn (car hyps) 1) *t*)
-                t)
-               ((and (quotep (fargn (car hyps) 1))
-                     (not (collect-non-legal-variableps
-                           (cadr (fargn (car hyps) 1)))))
-                (union-eq (cadr (fargn (car hyps) 1))
-                          (all-vars-in-hyps (cdr hyps))))
-               (t (er hard 'free-vars-in-hyps-considering-bind-free
-                      "We thought the first argument of synp in this context ~
-                       was either 'NIL, 'T, or else a quoted true list of ~
-                       variables, but ~x0 is not!"
-                      (fargn (car hyps) 1)))))
-        (t
-         (union-eq (all-vars (car hyps))
-                   (all-vars-in-hyps (cdr hyps))))))
+  (cond
+   ((null hyps)
+    nil)
+   (t
+    (let ((vars (all-vars-in-hyps (cdr hyps))))
+      (cond
+       ((eq vars t) t)
+       ((variablep (car hyps))
+        (add-to-set-eq (car hyps) vars))
+       ((fquotep (car hyps))
+        vars)
+       ((eq (ffn-symb (car hyps)) 'synp)
+        (cond ((equal (fargn (car hyps) 1) *nil*)
+               vars)
+              ((equal (fargn (car hyps) 1) *t*)
+               t)
+              ((and (quotep (fargn (car hyps) 1))
+                    (not (collect-non-legal-variableps
+                          (cadr (fargn (car hyps) 1)))))
+               (union-eq (cadr (fargn (car hyps) 1))
+                         vars))
+              (t (er hard 'free-vars-in-hyps-considering-bind-free
+                     "We thought the first argument of synp in this context ~
+                      was either 'NIL, 'T, or else a quoted true list of ~
+                      variables, but ~x0 is not!"
+                     (fargn (car hyps) 1)))))
+       (t
+        (union-eq (all-vars (car hyps))
+                  vars)))))))
 
 (defun match-free-value (match-free hyps pat wrld)
   (or match-free
@@ -2214,6 +2171,21 @@
                     hyps (cdr max-terms) final-term name ctx ens wrld
                     state)))))
 
+(defun no-linear-msg (name concl extra ens wrld state)
+  (msg
+   "No :LINEAR rule can be generated from ~x0.  See :DOC linear.~@1~@2"
+   name
+   (mv-let (flg x ttree)
+     (eval-ground-subexpressions concl ens wrld state nil)
+     (declare (ignore flg ttree))
+     (if (quotep x)
+         (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+              (untranslate concl t wrld)
+              (untranslate x t wrld))
+       ""))
+   extra))
+
 (defun chk-acceptable-linear-rule2 (name match-free trigger-terms hyps concl
                                          ctx ens wrld state)
 
@@ -2230,21 +2202,13 @@
 ; term that is a legal (if possibly silly) trigger for each rule.
 
   (let* ((xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state)))
-    (cond ((null lst)
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state))))
+    (cond ((and (null trigger-terms)
+                (null lst))
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
-                linear.~@1"
-               name
-               (mv-let (flg x ttree)
-                 (eval-ground-subexpressions concl ens wrld state nil)
-                 (declare (ignore flg ttree))
-                 (if (quotep x)
-                     (msg "  Note that after ground evaluation, the ~
-                           conclusion, ~x0, was treated as the constant, ~x1."
-                          (untranslate concl t wrld)
-                          (untranslate x t wrld))
-                   ""))))
+               "~@0"
+               (no-linear-msg name concl "" ens wrld state)))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -2258,7 +2222,8 @@
                   (potential-free-vars
                    (free-vars-in-hyps-considering-bind-free hyps nil wrld))
                   (all-vars-in-poly-lst
-                   (all-vars-in-poly-lst (car lst)))
+                   (and (null trigger-terms) ; optimization
+                        (all-vars-in-poly-lst (car lst))))
                   (max-terms
                    (or trigger-terms
                        (maximal-terms all-vars-in-poly-lst
@@ -2280,7 +2245,8 @@
              (cond
               ((null max-terms)
                (cond
-                ((null all-vars-in-poly-lst)
+                ((and (null trigger-terms)
+                      (null all-vars-in-poly-lst))
                  (er soft ctx
                      "No :LINEAR rule can be generated from ~x0 because there ~
                       are no ``maximal terms'' in the inequality produced ~
@@ -2466,7 +2432,8 @@
                               backchain-limit-lst match-free ens wrld state)
   (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
-         (lst (external-linearize xconcl ens wrld state))
+         (lst (and (null trigger-terms) ; optimization
+                   (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (all-vars-in-hyps hyps))
          (max-terms
@@ -2474,8 +2441,22 @@
               (maximal-terms (all-vars-in-poly-lst (car lst))
                              all-vars-hyps
                              (all-vars concl)))))
-    (add-linear-rule3 rune nume hyps xconcl max-terms backchain-limit-lst
-                      match-free nil wrld)))
+    (cond ((and (null trigger-terms)
+                (null lst))
+           (er hard 'add-linear-rule2
+               "~@0"
+               (no-linear-msg (base-symbol rune)
+                              concl
+                              (msg "  This can happen during ~x0 or the ~
+                                    second pass of a call of ~x1, when the ~
+                                    current-theory is different than when the ~
+                                    rule was originally checked.  You can ~
+                                    avoid this error by supplying ~
+                                    :trigger-terms in your :linear rule-class."
+                                   'include-book 'encapsulate)
+                              ens wrld state)))
+          (t (add-linear-rule3 rune nume hyps xconcl max-terms
+                               backchain-limit-lst match-free nil wrld)))))
 
 (defun add-linear-rule1 (rune nume trigger-terms lst
                               backchain-limit-lst match-free ens wrld state)
@@ -5345,313 +5326,6 @@
          (fargn term 1))
         (t term)))
 
-(defun type-prescription-disjunctp (var term)
-
-; Warning: Keep this function in sync with
-; subst-nil-into-type-prescription-disjunct.
-
-; Var is a variable and term is a term.  Essentially we are answering
-; the question, ``is term a legal disjunct in the conclusion of a
-; type-prescription about pat'' for some term pat.  However, by this
-; time all occurrences of the candidate pat in the conclusion have
-; been replaced by some new variable symbol and that symbol is var.
-; Furthermore, we will have already checked that the resulting
-; generalized concl contains no variables other than var and the
-; variables occurring in pat.  So what this function actually checks
-; is that term is either (equal var other-var), (equal other-var var),
-; or else is some arbitrary term whose all-vars is identically the
-; singleton list containing var.
-
-; If term is one of the two equality forms above, then we know
-; other-var is a variable in pat and that term is one of the disjuncts
-; that says ``pat sometimes returns this part of its input.''  If term
-; is of the third form, then it might have come from a
-; type-restriction on pat, e.g., (and (rationalp pat) (<= pat 0)) or
-; (compound-recognizerp pat), or it might be some pretty arbitrary
-; term.  However, we at least know that it contains no variables at
-; all outside the occurrences of pat and that means that we can trust
-; type-set-implied-by-term to tell us what this term implies about
-; pat.
-
-  (cond ((variablep term)
-
-; This could be a type-prescription disjunct in the generalized concl
-; only if term is var, i.e., the original disjunct was equivalent to
-; (not (equal pat 'nil)).
-
-         (eq term var))
-        ((fquotep term) nil)
-        ((flambda-applicationp term) nil)
-        (t (or (and (eq (ffn-symb term) 'equal)
-                    (or (and (eq var (fargn term 1))
-                             (variablep (fargn term 2))
-                             (not (eq (fargn term 1) (fargn term 2))))
-                        (and (eq var (fargn term 2))
-                             (variablep (fargn term 1))
-                             (not (eq (fargn term 2) (fargn term 1))))))
-               (equal (all-vars term) (list var))))))
-
-(defun type-prescription-conclp (var concl)
-
-; Warning: Keep this function in sync with
-; subst-nil-into-type-prescription-concl.
-
-; Var is a variable and concl is a term.  We recognize those concl
-; that are the macroexpansion of (or t1 ... tk) where every ti is a
-; type-prescription-disjunctp about var.
-
-; In the grand scheme of things, concl was obtained from the
-; conclusion of an alleged :TYPE-PRESCRIPTION lemma about some term,
-; pat, by replacing all occurrences of pat with some new variable,
-; var.  We also know that concl involves no variables other than var
-; and those that occurred in pat.
-
-  (cond ((variablep concl) (type-prescription-disjunctp var concl))
-        ((fquotep concl) nil)
-        ((flambda-applicationp concl) nil)
-        ((eq (ffn-symb concl) 'if)
-         (cond ((equal (fargn concl 1) (fargn concl 2))
-                (and (type-prescription-disjunctp var (fargn concl 1))
-                     (type-prescription-conclp var (fargn concl 3))))
-               (t (type-prescription-disjunctp var concl))))
-        (t (type-prescription-disjunctp var concl))))
-
-(defun subst-nil-into-type-prescription-disjunct (var term)
-
-; Warning:  Keep this function in sync with type-prescription-disjunctp.
-
-; We assume var and term are ok'd by type-prescription-disjunctp.
-; If term is of the form (equal var other-var) or (equal other-var var)
-; we replace it by nil, otherwise we leave it alone.
-
-  (cond ((variablep term) term)
-
-; The next two cases never happen, but we leave them in just to make
-; sure we copy term modulo this substitution.
-
-        ((fquotep term) term)
-        ((flambda-applicationp term) term)
-        ((and (eq (ffn-symb term) 'equal)
-              (or (and (eq var (fargn term 1))
-                       (variablep (fargn term 2))
-                       (not (eq (fargn term 1) (fargn term 2))))
-                  (and (eq var (fargn term 2))
-                       (variablep (fargn term 1))
-                       (not (eq (fargn term 2) (fargn term 1))))))
-         *nil*)
-        (t term)))
-
-(defun subst-nil-into-type-prescription-concl (var concl)
-
-; Warning:  Keep this function in sync with type-prescription-conclp.
-
-; We know that var and concl are ok'd by type-prescription-conclp.  So
-; concl is a disjunction of terms, some of which are of the form
-; (equal var other-var).  We replace each of those disjuncts in concl
-; with nil so as to produce that part of concl that is a disjunct of
-; type restrictions.  That is, if our answer is basic-term and vars is
-; the list of all the other-vars in concl, then concl is equivalent to
-; basic-term disjoined with the equality between var and each variable
-; in vars.
-
-  (cond
-   ((variablep concl) (subst-nil-into-type-prescription-disjunct var concl))
-
-; The next two cases never happen.
-
-   ((fquotep concl) concl)
-   ((flambda-applicationp concl) concl)
-   ((eq (ffn-symb concl) 'if)
-    (cond ((equal (fargn concl 1) (fargn concl 2))
-           (let ((temp (subst-nil-into-type-prescription-disjunct var
-                                                                  (fargn concl 1))))
-             (fcons-term* 'if
-                          temp
-                          temp
-                          (subst-nil-into-type-prescription-concl var
-                                                                  (fargn concl 3)))))
-          (t (subst-nil-into-type-prescription-disjunct var concl))))
-   (t (subst-nil-into-type-prescription-disjunct var concl))))
-
-(defun unprettyify-tp (term)
-
-; This variant of unprettyify avoids giving special treatment to conjunctions,
-; and hence is suitable for parsing terms into type-prescription rules.  Unlike
-; unprettyify, it returns (mv hyps concl).
-
-  (case-match term
-    (('implies t1 t2)
-     (mv-let (hyps concl)
-             (unprettyify-tp t2)
-             (mv (append? (flatten-ands-in-lit t1)
-                          hyps)
-                 concl)))
-    ((('lambda vars body) . args)
-     (unprettyify-tp (subcor-var vars args body)))
-    (& (mv nil (remove-lambdas term)))))
-
-(defun destructure-type-prescription (name typed-term term ens wrld)
-
-; Warning: Keep this in sync with the :BACKCHAIN-LIMIT-LST case of
-; translate-rule-class-alist.
-
-; Note: This function does more than "destructure" term into a
-; :TYPE-PRESCRIPTION rule, it checks a lot of conditions too and
-; computes type-sets.  However, it doesn't actually cause errors --
-; note that state is not among its arguments -- but may return an
-; error message suitable for printing with ~@.  We return many
-; results.  The first is nil or an error message.  The rest are
-; relevant only if the first is nil and are described below.  We code
-; this way because the destructuring and checking are inextricably
-; intertwined and when we destructure in order to add the rule, we do
-; not have state around.
-
-; We determine whether term is a suitable :TYPE-PRESCRIPTION lemma
-; about the term typed-term.  Term is suitable as a :TYPE-
-; PRESCRIPTION lemma about typed-term if the conclusion of term,
-; concl, is a disjunction of type-prescription disjuncts about
-; typed-term.  Each disjunct must either be an equality between
-; typed-term and one of the variables occurring in typed-term, or else
-; must be some term, such as (and (rationalp typed-term) (<=
-; typed-term 0)) or (compound-recognizerp typed-term), that mentions
-; typed-term and contains no variables outside those occurrences of
-; typed-term.
-
-; If term is unsuitable we return an error msg and nils.  Otherwise we
-; return nil and four more things: the list of hyps, a basic type
-; set, a list of variables, and a ttree.  In that case, term implies
-; that when hyps are true, the type-set of typed-term is the union of the
-; basic type-set together with the type-sets of the variables listed.
-; The ttree records our dependencies on compound recognizers or other
-; type-set lemmas in wrld.  The ttree returned contains no 'assumption
-; tags.
-
-  (let ((term (remove-guard-holders term wrld)))
-    (mv-let
-     (hyps concl)
-     (unprettyify-tp term)
-     (cond
-      ((or (variablep typed-term)
-           (fquotep typed-term)
-           (flambda-applicationp typed-term))
-       (mv (msg "The :TYPED-TERM, ~x0, provided in the :TYPE-PRESCRIPTION ~
-                 rule class for ~x1 is illegal because it is a variable, ~
-                 constant, or lambda application.  See :DOC type-prescription."
-                typed-term name)
-           nil nil nil nil nil))
-      ((dumb-occur-lst typed-term hyps)
-       (mv (msg "The :TYPED-TERM, ~x0, of the proposed :TYPE-PRESCRIPTION ~
-                 rule ~x1 occurs in the hypotheses of the rule.  This would ~
-                 cause ``infinite backchaining'' if we permitted ~x1 as a ~
-                 :TYPE-PRESCRIPTION.  (Don't feel reassured by this check:  ~
-                 infinite backchaining may occur anyway since it can be ~
-                 caused by the combination of several rules.)"
-                typed-term
-                name)
-           nil nil nil nil nil))
-      (t
-       (let ((all-vars-typed-term (all-vars typed-term))
-             (all-vars-concl (all-vars concl)))
-         (cond
-          ((not (subsetp-eq all-vars-concl all-vars-typed-term))
-           (mv (msg "~x0 cannot be used as a :TYPE-PRESCRIPTION rule as ~
-                     described by the given rule class because the ~
-                     :TYPED-TERM, ~x1, does not contain the ~#2~[variable ~&2 ~
-                     which is~/variables ~&2 which are~] mentioned in the ~
-                     conclusion.  See :DOC type-prescription."
-                    name
-                    typed-term
-                    (reverse
-                     (set-difference-eq all-vars-concl all-vars-typed-term)))
-               nil nil nil nil nil))
-          (t (let* ((new-var (genvar (find-pkg-witness typed-term)
-                                     "TYPED-TERM" nil all-vars-typed-term))
-                    (concl1 (subst-expr new-var typed-term concl)))
-               (cond
-                ((not (type-prescription-conclp new-var concl1))
-                 (mv (msg "~x0 is an illegal :TYPE-PRESCRIPTION lemma of the ~
-                           class indicated because its conclusion is not a ~
-                           disjunction of type restrictions about the ~
-                           :TYPED-TERM ~x1.  See :DOC type-prescription."
-                          name typed-term)
-                     nil nil nil nil nil))
-                (t (let ((vars (remove1-eq new-var (all-vars concl1)))
-                         (basic-term
-                          (subst-nil-into-type-prescription-concl new-var concl1)))
-
-; Once upon a time, briefly, we got the type-set implied by (and hyps
-; basic-term), thinking that we might need hyps to extract type
-; information from basic-term.  But the only var in basic-term is new
-; so the hyps don't help much.  The idea was to permit lemmas like
-; (implies (rationalp x) (<= 0 (* x x))).  Note that the guard for <=
-; is satisfied only if we know that the product is rational, which we
-; can deduce from the hyp.  But when we try to process that lemma, the
-; typed-term in generalized away, e.g., (implies (rationalp x) (<= 0
-; Z)).  Thus, the hyps don't help: the only var in basic-term is
-; new-var.  You could conjoin hyps and concl1 and THEN generalize the
-; typed-term to new-var, thereby linking the occurrences of typed-term
-; in the hyps to those in the concl.  But this is very unhelpful
-; because it encourages the creation of lemmas that contain the
-; typed-term in the hyps.  That is bad because type-set then
-; infinitely backchains.  In the face of these difficulties, we have
-; reverted back to the simplest treatment of type-prescription lemmas.
-
-                     (mv-let
-                      (ts ttree)
-                      (type-set-implied-by-term new-var nil basic-term ens wrld
-                                                nil)
-                      (cond ((ts= ts *ts-unknown*)
-                             (mv (msg "~x0 is a useless :TYPE-PRESCRIPTION ~
-                                       lemma because we can deduce no type ~
-                                       restriction about its :TYPED-TERM ~
-                                       (below represented by ~x1) from the ~
-                                       generalized conclusion, ~p2.  See :DOC ~
-                                       type-prescription."
-                                      name
-                                      new-var
-                                      (untranslate concl1 t wrld))
-                                 nil nil nil nil nil))
-                            ((not (assumption-free-ttreep ttree))
-
-; If type-set-implied-by-term requires that we force some assumptions,
-; it is not clear what to do.  For example, it is possible that the
-; assumptions involve new-var, which makes no sense in the context of
-; an application of this rule.  My intuition tells me this error will
-; never arise because for legal concls, basic-term is guard free.  If
-; there are :TYPE-PRESCRIPTION lemmas about the compound recognizers
-; in it, they could have forced hyps.  I think it unlikely, since the
-; recognizers are Boolean.  Well, I guess I could add a
-; :TYPE-PRESCRIPTION lemma that said that under some forced hyp the
-; compound-recognizer was actually t.  In that case, the forced hyp
-; would necessarily involve new-var, since that is the only argument
-; to a compound recognizer.  It would be interesting to see a living
-; example of this situation.
-
-                             (mv
-                              (if (tagged-objectsp 'fc-derivation ttree)
-                                  (er hard 'destructure-type-prescription
-                                      "Somehow an 'fc-derivation, ~x0, has ~
-                                       found its way into the ttree returned ~
-                                       by type-set-implied-by-term."
-                                      (car (tagged-objects 'fc-derivation
-                                                           ttree)))
-                                (msg "~x0 is an illegal :TYPE-PRESCRIPTION ~
-                                      lemma because in determining the ~
-                                      type-set implied for its :TYPED-TERM, ~
-                                      ~x1, by its conclusion the ~
-                                      ~#2~[assumption ~&2 was~/assumptions ~
-                                      ~&2 were~] and our :TYPE-PRESCRIPTION ~
-                                      preprocessor, ~
-                                      CHK-ACCEPTABLE-TYPE-PRESCRIPTION-RULE, ~
-                                      does not know how to handle this ~
-                                      supposedly unusual situation.  It would ~
-                                      be very helpful to report this error to ~
-                                      the authors."
-                                     name typed-term
-                                     (tagged-objects 'assumption ttree)))
-                              nil nil nil nil nil))
-                            (t (mv nil hyps concl ts vars ttree))))))))))))))))
-
 (defun add-type-prescription-rule (rune nume typed-term term
                                         backchain-limit-lst ens wrld quietp)
   (mv-let
@@ -7107,7 +6781,7 @@
                                   (change pequivs-property prop
                                           :deep new
                                           :deep-pequiv-p t))
-                                 (t 
+                                 (t
                                   (change pequivs-property prop
                                           :deep new))))))))
                (parent-prop
@@ -10878,9 +10552,9 @@
        (cond
         (only-simple
          (warning$ ctx "Monitor"
-                   "The rune~#0~[~/s~] ~&0 name~#1~[s only a~/ only~] simple ~
-                    abbreviation rule~#1~[~/s~].  Monitors can be installed ~
-                    on abbreviation rules, but will not fire during ~
+                   "The rune~#0~[~/s~] ~&0 name~#0~[s~/~] only~#1~[ a~/~] ~
+                    simple abbreviation rule~#1~[~/s~].  Monitors can be ~
+                    installed on abbreviation rules, but will not fire during ~
                     preprocessing, so you may want to supply the hint :DO-NOT ~
                     '(PREPROCESS); see :DOC hints.  For an explanation of ~
                     what a simple abbreviation rule is, see :DOC simple.  ~

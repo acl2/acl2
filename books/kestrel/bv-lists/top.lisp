@@ -25,6 +25,7 @@
 (include-book "bits-to-bytes")
 (include-book "bits-to-bytes2")
 (include-book "bits-to-bytes-little")
+(include-book "bits-to-bytes-little2")
 (include-book "byte-to-bits")
 (include-book "byte-to-bits-little")
 (include-book "bytes-to-bits")
@@ -49,6 +50,8 @@
 (include-book "packbv-and-unpackbv")
 (include-book "map-packbv")
 (include-book "packing")
+
+(include-book "packbv-little")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")

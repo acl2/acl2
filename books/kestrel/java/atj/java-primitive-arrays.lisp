@@ -220,7 +220,7 @@
 
 (define atj-jprimarr-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognize the ACL2 funcion symbols that model
+  :short "Recognize the ACL2 function symbols that model
           Java primitive array operations."
   (and (member-eq fn *atj-jprimarr-fns*) t))
 

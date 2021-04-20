@@ -143,7 +143,7 @@
       if applicable, conditions on the length of the password and salt
       derived as explained above.")
     (xdoc::p
-     "This funcion is constrained to:")
+     "This function is constrained to:")
     (xdoc::ul
      (xdoc::li
       "Return a @(tsee byte-listp)

@@ -147,7 +147,7 @@
                           
                          
 
-(include-book "../defdata/builtin-combinators")
+(include-book "acl2s/defdata/builtin-combinators" :dir :system)
 
 (def make-range-enum-info% (interval integer-p)
   (decl :sig ((non-empty-non-universal-interval-p booleanp) -> enum-info%-p)

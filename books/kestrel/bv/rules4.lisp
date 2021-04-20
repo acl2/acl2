@@ -185,15 +185,13 @@
                   (or (< highval (logtail lowsize x))
                       (and (equal highval (logtail lowsize x))
                            (< (bvchop lowsize lowval) (bvchop lowsize x))))))
-  :otf-flg t
   :hints (("Goal"
            :use (;(:instance plus-of-times-expt-bound2 (hv highval))
                  ;(:instance plus-of-times-expt-bound (lv (BVCHOP LOWSIZE LOWVAL)) (hv highval))
                  )
            :in-theory (e/d (logapp slice) (;plus-of-times-expt-bound2
                                            ;PLUS-OF-TIMES-EXPT-BOUND
-                                           anti-slice bvcat-recombine
-                                           )))))
+                                           anti-slice)))))
 
 (defthm <-of-bvcat
   (implies (and (natp lowsize)
@@ -216,9 +214,8 @@
                                              x))
                                (< (bvchop lowsize lowval)
                                   (bvchop lowsize x))))))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (bvcat slice
-                                         ) (BVCAT-RECOMBINE anti-slice)))))
+                                         ) (anti-slice)))))
 
 (defthm bvlt-of-bvcat-arg2
   (implies (and (equal size (+ lowsize highsize))
@@ -275,7 +272,6 @@
                       (and (equal highval (logtail lowsize x))
                            (< (bvchop lowsize x)
                               (bvchop lowsize lowval))))))
-  :otf-flg t
   :hints (("Goal"
            :use ( ;(:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize)))
                  )
@@ -283,7 +279,6 @@
                            ( ;;plus-of-times-expt-bound2
                             PLUS-OF-TIMES-EXPT-BOUND
                             anti-slice
-                            bvcat-recombine
                             logtail-lessp
                             multiply-both-sides-hack
                             )))))
@@ -307,9 +302,7 @@
                                              x))
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (bvcat slice
-                                         ) (BVCAT-RECOMBINE anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (bvcat slice) (anti-slice)))))
 
 (defthm <-of-bvcat-alt
   (implies (and (natp lowsize)
@@ -328,7 +321,6 @@
                                              x))
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
-  :otf-flg t
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
                         (:instance <-of-bvcat-alt-helper))
            :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
@@ -347,16 +339,6 @@
 ;                                                  <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
-
-(defthm bvchop-of-bvcat-cases-gen
-  (equal (bvchop n (bvcat highsize highval lowsize lowval))
-         (if (not (natp n))
-             0
-           (if (<= n (nfix lowsize))
-               (bvchop n lowval)
-               (bvcat (min (binary-+ n (unary-- (nfix lowsize)))
-                           (nfix highsize))
-                      highval (nfix lowsize) lowval)))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen

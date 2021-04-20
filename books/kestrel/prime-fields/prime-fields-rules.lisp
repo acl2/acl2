@@ -12,6 +12,7 @@
 
 (include-book "prime-fields")
 (local (include-book "support"))
+(local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt"))
@@ -69,6 +70,13 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
+;;less aggressive than the general rule
+(defthm add-associative-when-constant
+  (implies (syntaxp (quotep x))
+           (equal (add (add x y p) z p)
+                  (add x (add y z p) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
 ;; (defthm pow-of-+-of-1
 ;;   (implies (and (fep a)
 ;;                 (natp b))
@@ -76,7 +84,7 @@
 ;;                   (mul a (pow a b))))
 ;;   :hints (("Goal" :in-theory (enable pow))))
 
-;move?
+;move or drop?
 (defthm divides-of-prime-means-0
   (implies (and (fep x p)
                 (posp p))
@@ -100,6 +108,16 @@
                             (a x)
                             (b y)))
            :in-theory (enable mul rtl::divides acl2::equal-of-0-and-mod))))
+
+(defthm equal-of-0-and-mul-gen
+  (implies (primep p)
+           (equal (equal 0 (mul x y p))
+                  (or (equal (mod (ifix x) p) 0)
+                      (equal (mod (ifix y) p) 0))))
+  :hints (("Goal" :use (:instance equal-of-0-and-mul
+                                  (x (mod (ifix x) p))
+                                  (y (mod (ifix y) p)))
+           :in-theory (disable equal-of-0-and-mul))))
 
 ;; Cherry-pick Fermat's Little Theorem
 (encapsulate ()
@@ -293,7 +311,7 @@
          (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm neg-of-*
+(defthmd neg-of-*
   (implies (and (integerp x1)
                 (integerp x2)
                 (posp p))
@@ -649,16 +667,6 @@
          0)
   :hints (("Goal" :in-theory (enable div))))
 
-(defthm mul-of-mod-arg1
-  (equal (mul (mod x p) y p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthm mul-of-mod-arg2
-  (equal (mul x (mod y p) p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;; x=y/z becomes xz=y.
 (defthmd equal-of-div
   (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
@@ -758,11 +766,6 @@
                   x))
   :hints (("Goal" :cases ((rationalp p))
            :in-theory (enable fep))))
-
-(defthm mul-of-1-arg1-gen
-  (equal (mul 1 x p)
-         (mod (ifix x) (pos-fix p)))
-  :hints (("Goal" :in-theory (enable mul))))
 
 ;; (* -1 y) becomes (neg y)
 (defthm mul-becomes-neg
@@ -886,3 +889,222 @@
            (equal (inv (mul x y p) p)
                   (mul (inv x p) (inv y p) p)))
   :hints (("Goal" :in-theory (enable inv POW-OF-MUL-ARG1))))
+
+(defthm equal-of-0-and-add-of-neg
+  (implies (and (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
+                  (equal x y))))
+
+;; Not sure which form is better
+(defthmd add-of-neg-and-neg
+  (implies (posp p)
+           (equal (add (neg x p) (neg y p) p)
+                  (neg (add x y p) p))))
+
+;; In case we only want to move constants to the front
+(defthm add-commutative-when-constant
+  (implies (syntaxp (and (quotep k)
+                         ;; avoid loops:
+                         (not (quotep x))))
+           (equal (add x k p)
+                  (add k x p))))
+
+;; In case we only want to move constants to the front
+(defthm add-commutative-2-when-constant
+  (implies (syntaxp (and (quotep k)
+                         ;; avoid loops:
+                         (not (quotep x))))
+           (equal (add x (add k y p) p)
+                  (add k (add x y p) p))))
+
+;; Commutes the neg forward, which we may occasionally want
+; warning: can loop if there are multiple negs
+(defthmd add-of-neg-commute
+  (equal (add x (neg y p) p)
+         (add (neg y p) x p)))
+
+;; Commutes the neg forward, which we may occasionally want
+; warning: can loop if there are multiple negs
+(defthmd add-of-neg-commute-2
+  (equal (add x (add (neg y p) z p) p)
+         (add (neg y p) (add x z p) p)))
+
+(defthm equal-of-add-same-arg2
+  (implies (and (posp p)
+                (natp x)
+                (integerp y))
+           (equal (equal x (add y x p))
+                  (and (fep x p)
+                       (equal 0 (mod y p)))))
+  :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
+
+;; a bit odd, but we should not usually be calling inv on 0
+(defthm inv-of-0
+  (implies (primep p)
+           (equal (inv 0 p)
+                  (if (equal p 2)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (enable inv))))
+
+(defthm neg-of-2
+  (implies (integerp x)
+           (equal (neg x 2)
+                  (mod x 2)))
+  :hints (("Goal" :in-theory (enable neg))))
+
+(defthm div-of-0-arg2
+  (implies (and (primep p)
+                (integerp x))
+           (equal (div x 0 p)
+                  (if (equal p 2)
+                      (mod x p)
+                    0)))
+  :hints (("Goal" :in-theory (enable div))))
+
+;can loop with other rules?
+(defthmd mul-of-constant-normalize-to-fep
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (not (fep x p)) ; gets computed
+                ;; these two hyps ensure that the mod will return a fep:
+                (integerp x)
+                (posp p))
+           (equal (mul x y p)
+                  ;; the (mod x p) gets computed:
+                  (mul (mod x p) y p))))
+
+;; or just distribute
+(defthm mul-of-add-of-mul-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (posp p))
+           (equal (mul k1 (add (mul k2 x p) y p) p)
+                  (add (mul (mul k1 k2 p) x p)
+                       (mul k1 y p)
+                       p))))
+
+(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp p))
+           (equal (equal 0 (add x (add y (add z (neg w p) p) p) p))
+                  (equal w (add x (add y z p) p)))))
+
+(defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma-alt
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (posp p))
+           (equal (equal 0 (add x (add y (add (neg w p) z p) p) p))
+                  (equal w (add x (add y z p) p)))))
+
+(defthm equal-of-0-and-add-of-add-of-neg-lemma
+  (implies (and (fep w p)
+                (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (equal 0 (add x (add (neg w p) y p) p))
+                  (equal w (add x y p)))))
+
+(defthm equal-of-constant-and-add-of-neg-arg1
+  (implies (and (syntaxp (quotep k))
+                ;(fep k p)
+                (fep x p)
+                (integerp y) ;(fep y p)
+                (posp p))
+           (equal (equal k (add (neg x p) y p))
+                  (and (fep k p)
+                       (equal x (add (- k) y p)))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+(defthm equal-of-constant-and-add-of-neg-arg2
+  (implies (and (syntaxp (quotep k))
+                (fep k p)
+                (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal k (add y (neg x p) p))
+                  (equal x (add (- k) y p))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+(defthm equal-of-add-of-neg
+  (implies (posp p)
+           (equal (equal x (add y (neg z p) p))
+                  (and (fep x p)
+                       (equal (add x z p) (mod (ifix y) p)))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+;;  This version has no mod or ifix in the RHS
+(defthm equal-of-add-of-neg-simple
+  (implies (and (posp p)
+                (fep y p))
+           (equal (equal x (add y (neg z p) p))
+                  (and (fep x p)
+                       (equal (add x z p) y))))
+  :hints (("Goal" :in-theory (enable add neg acl2::mod-sum-cases))))
+
+;; For when the constant is negative.  Not sure which normal form is better.
+(defthmd mul-when-constant-becomes-neg-of-mul
+  (implies (and (syntaxp (quotep k))
+                (< k 0)
+                (integerp k)
+                (posp p))
+           (equal (mul k x p)
+                  (neg (mul (neg k p) x p) p)
+                  ))
+  :hints (("Goal" :in-theory (enable mul neg sub))))
+
+;rename
+;;todo: use an axe-bind-free rule?
+(defthm move-negation-1
+  (implies (and (fep lhs p) ;gen?
+                (integerp x2)
+                (integerp x3)
+                (integerp y)
+                (integerp lhs)
+                (posp p))
+           (equal (equal lhs (add x1 (add x2 (add (neg y p) x3 p) p) p))
+                  (equal (add lhs y p) (add x1 (add x2 x3 p) p))))
+  :hints (("Goal" :use (:instance equal-of-add-of-neg
+                                  (x lhs)
+                                  (z y)
+                                  (y (add x1 (add x2 x3 p) p)))
+           :in-theory (disable equal-of-add-of-neg))))
+
+(defthmd add-of---arg1-fixed
+  (implies (and (syntaxp (not (quotep x))) ;defeat acl2 matching (- x) with a constant
+                (integerp x)
+                (integerp y))
+           (equal (add (- x) y p)
+                  (add (neg x p) y p)))
+  :hints (("Goal" :in-theory (enable neg add))))
+
+(defthmd add-of---arg2-fixed
+  (implies (and (syntaxp (not (quotep y))) ;defeat acl2 matching (- y) with a constant
+                (integerp x)
+                (integerp y))
+           (equal (add x (- y) p)
+                  (add x (neg y p) p)))
+  :hints (("Goal" :in-theory (enable neg add))))
+
+(defthm add-subst-constant-arg1
+  (implies (and (syntaxp (not (quotep x))) ;prevent loops
+                (equal (mod x p) free)
+                (syntaxp (quotep free)) ; put in only constants
+                )
+           (equal (add x y p)
+                  (add free y p))))
+
+(defthm add-subst-constant-arg2
+  (implies (and (syntaxp (not (quotep y))) ;prevent loops
+                (equal (mod y p) free)
+                (syntaxp (quotep free)) ; put in only constants
+                )
+           (equal (add x y p)
+                  (add x free p))))

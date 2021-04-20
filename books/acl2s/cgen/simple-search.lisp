@@ -12,7 +12,7 @@
 (include-book "type")
 
 (include-book "simple-graph-array")
-(include-book "../defdata/random-state")
+(include-book "acl2s/defdata/random-state" :dir :system)
 
 (include-book "infer-enum-shape")
 (include-book "build-enumcalls")

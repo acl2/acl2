@@ -13,9 +13,10 @@
 (in-package "ACL2")
 
 (include-book "sbvrem-rules")
-(include-book "rules8")
+(include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
@@ -59,7 +60,6 @@
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    SBVLT-REWRITE
-                                   BVCAT-RECOMBINE
                                    ;anti-bvplus
                                    )))))
 ;gen
@@ -92,7 +92,6 @@
                 (posp size))
            (equal (sbvdivdown size x y)
                   (sbvdiv size x y)))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvdiv
                                    sbvdivdown
                                    LOGEXT-NEGATIVE
@@ -110,7 +109,6 @@
                                    truncate-becomes-floor-other
                                    ) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;mod-sum-cases
-                                   BVCAT-RECOMBINE
 ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;SBVDIV-rewrite
@@ -129,7 +127,6 @@
                 (posp size))
            (equal (sbvdivdown size x y)
                   (bvplus size -1 (sbvdiv size x y))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sbvdiv
                                    sbvdivdown
                                    LOGEXT-NEGATIVE
@@ -156,7 +153,6 @@
                                    BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
-                                   BVCAT-RECOMBINE
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;anti-bvplus
                                    ;SBVDIV-rewrite
@@ -184,7 +180,6 @@
                             (sbvdiv size x y)
                           ;;sbvdiv rounded up, and we want to round down, so subtract 1
                           (bvplus size -1 (sbvdiv size x y))))))))
-  :otf-flg t
   :hints (("Goal" :cases ((and (SBVLT SIZE X '0) (SBVLT SIZE Y 0))
                           (and (not (SBVLT SIZE X '0)) (SBVLT SIZE Y 0)))
            :in-theory (e/d (sbvlt

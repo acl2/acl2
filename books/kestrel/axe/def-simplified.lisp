@@ -18,10 +18,40 @@
 ;; TODO: Add -basic to the name of this file and the things defined here.
 
 (include-book "rewriter-basic")
-(include-book "rule-lists")
-(include-book "rules-in-rule-lists")
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
+(include-book "kestrel/utilities/ensure-rules-known" :dir :system)
+(include-book "rule-lists")
+;(include-book "rules-in-rule-lists")
+;; The rest of these include-books are to bring in everything included in def-simplified-rules below:
+(include-book "rules1") ; for force-of-non-nil
+(include-book "basic-rules") ;for equal-same
+(include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
+(include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
+(include-book "bv-rules-axe") ;for MYIF-SAME-ARG1-ARG2-WHEN-BOOLEANP-AXE
+(include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
+(include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
+(include-book "kestrel/bv/rules3" :dir :system) ; for ifix-does-nothing
+(include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
+(include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
+(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
+;(include-book "kestrel/axe/rules3" :dir :system) ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
+(include-book "kestrel/axe/rules2" :dir :system) ;for LOOKUP-OF-BVIF -- drop?
+(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
+(include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-ALT
+(include-book "kestrel/arithmetic-light/less-than" :dir :system)
+(include-book "kestrel/arithmetic-light/minus" :dir :system)
+(include-book "kestrel/arithmetic-light/plus" :dir :system)
+(include-book "kestrel/lists-light/update-nth" :dir :system) ;for TRUE-LISTP-OF-UPDATE-NTH-2
+(include-book "kestrel/lists-light/nthcdr" :dir :system)
+(include-book "kestrel/lists-light/take" :dir :system)
+(include-book "kestrel/lists-light/take2" :dir :system) ; for take-of-take
+(include-book "kestrel/lists-light/append" :dir :system)
+(include-book "kestrel/lists-light/len" :dir :system)
+(include-book "kestrel/lists-light/nth" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
+(include-book "kestrel/booleans/booleans" :dir :system)
 
 (defun def-simplified-rules ()
   (append (base-rules)
@@ -30,6 +60,8 @@
           ;; (introduce-bv-array-rules)
           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
           ))
+
+(ensure-rules-known (def-simplified-rules))
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)

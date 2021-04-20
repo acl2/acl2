@@ -19,11 +19,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun |f| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
+  (let ((|z| (c::lt-sint-sint |x| |y|)))
+    (c::lognot-sint |z|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |g| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
+  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))
+         (|x_eq_y| (c::eq-sint-sint |x| |y|))
+         (|x_le_y| (c::logor-sint-sint |x_lt_y| |x_eq_y|)))
+    (c::lognot-sint |x_le_y|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (defun |f| (|x| |y|)
+  (defun |h| (|x| |y|)
     (declare (xargs :guard (and (c::sintp |x|)
                                 (c::sintp |y|)
                                 ;; -10 <= x <= 10:
@@ -34,25 +50,22 @@
                                 (<= (c::sint->get |y|) 10))
                     :guard-hints (("Goal"
                                    :do-not-induct t
-                                   :in-theory (enable sbyte32p
-                                                      c::sint
-                                                      c::sint->get
-                                                      c::sintp
-                                                      c::sint-add-okp
-                                                      c::sint-sub-okp
-                                                      c::sint-mul-okp
-                                                      c::sint-add
-                                                      c::sint-sub
-                                                      c::sint-mul
-                                                      c::sint-ge)))))
-    (if (c::sint-nonzerop (c::sint-ge |x| (c::sint-const 0)))
-        (let ((|z| (c::sint-add |x| |y|)))
-          (c::sint-mul (c::sint-const 2) |z|))
-      (c::sint-sub |y| |x|))))
+                                   :in-theory (enable c::sint-integerp-alt-def
+                                                      c::add-sint-sint-okp
+                                                      c::sub-sint-sint-okp
+                                                      c::mul-sint-sint-okp
+                                                      c::add-sint-sint
+                                                      c::sub-sint-sint
+                                                      c::mul-sint-sint
+                                                      c::ge-sint-sint)))))
+    (if (c::sint-nonzerop (c::ge-sint-sint |x| (c::sint-const 0)))
+        (let ((|z| (c::add-sint-sint |x| |y|)))
+          (c::mul-sint-sint (c::sint-const 2) |z|))
+      (c::sub-sint-sint |y| |x|))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "locvars.c")
+(c::atc |f| |g| |h| :output-file "locvars.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

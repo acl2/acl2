@@ -410,7 +410,7 @@
                               (maybe-memoizationp memoization)
                               (print-intervalp print-interval))
                   :split-types t))
-  (if (no-atoms args) ;; "constant" case  ;;todo: we could keep these separate from the other constant alist
+  (if (all-consp args) ;; "constant" case  ;;todo: we could keep these separate from the other constant alist
       (let* ((expr (cons fn args))
              (possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
         (if possible-index

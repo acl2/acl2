@@ -55,7 +55,7 @@
  ;; strong linear rule about the 0-ary function:
  (defthm my97-prime-linear
    (= (my97-prime) *my97-prime*)
-   :rule-classes :linear))
+   :rule-classes ((:linear :trigger-terms ((my97-prime))))))
 
 (defprime-alias my97-prime-alias my97-prime)
 
@@ -87,7 +87,20 @@
  ;; strong linear rule about the 0-ary function:
  (defthm my97-prime-alias-linear
    (= (my97-prime-alias) *my97-prime-alias*)
-   :rule-classes :linear))
+   :rule-classes ((:linear :trigger-terms ((my97-prime-alias))))))
 
 (defprime-alias my97-prime-alias2 my97-prime) ;second alias of same prime
 (defprime-alias my97-prime-alias2 my97-prime-alias) ;alias of alias
+(defprime-alias acl2::new-name my97-prime) ;new name in different package
+(defprime-alias xdoc::new-name my97-prime) ;new name in different package
+
+;; A test with :doc
+(defprime my97-prime ;; name to use for the prime
+  97 ;; numeric value of the prime
+  ;; Pratt certificate:
+  (5 (2 3)
+     (5 1)
+     (() ()))
+  :short "short doc"
+  ;; Makes sure we can calculate this:
+  :long (concatenate 'string "foo" "bar"))

@@ -279,8 +279,8 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
     (equal (consp (take-leading-dec-digit-chars x))
            (dec-digit-char-p (car x)))))
 
-(define digit-string-p-aux
-  :parents (digit-string-p)
+(define dec-digit-string-p-aux
+  :parents (dec-digit-string-p)
   ((x  stringp             :type string)
    (n  natp                :type unsigned-byte)
    (xl (eql xl (length x)) :type unsigned-byte))
@@ -297,14 +297,14 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
        (if (eql n xl)
            t
          (and (dec-digit-char-p (char x n))
-              (digit-string-p-aux x
-                                  (the unsigned-byte (+ 1 n))
-                                  xl))))
+              (dec-digit-string-p-aux x
+                                      (the unsigned-byte (+ 1 n))
+                                      xl))))
   ///
-  (verify-guards digit-string-p-aux
+  (verify-guards dec-digit-string-p-aux
     :hints(("Goal" :in-theory (enable dec-digit-char-listp)))))
 
-(define digit-string-p
+(define dec-digit-string-p
   :short "Recognizer for strings whose characters are all decimal digits."
   ((x :type string))
   :returns bool
@@ -320,7 +320,7 @@ with CCL:</p>
     ;; 0.48 seconds, no garbage
     (let ((x \"1234\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::digit-string-p x))))
+                   (str::dec-digit-string-p x))))
 
     ;; 0.82 seconds, 640 MB allocated
     (let ((x \"1234\"))
@@ -330,9 +330,9 @@ with CCL:</p>
   :inline t
   :enabled t
   (mbe :logic (dec-digit-char-listp (explode x))
-       :exec (digit-string-p-aux x 0 (length x)))
+       :exec (dec-digit-string-p-aux x 0 (length x)))
   ///
-  (defcong istreqv equal (digit-string-p x) 1))
+  (defcong istreqv equal (dec-digit-string-p x) 1))
 
 
 (define basic-natchars

@@ -215,8 +215,10 @@
                               (mv-nth 2 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))
                               (mv-nth 3 (merge-nodes-into-dag-array rev-dag-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array))))
   :hints (("Goal" :induct t
-           :in-theory (e/d (merge-nodes-into-dag-array BOUNDED-RENAMING-ENTRIESP-OF-ASET1-SPECIAL-GEN CAAR-OF-CDR-WHEN-CONSECUTIVEP-OF-STRIP-CARS)
-                                  (myquotep)))))
+           :in-theory (e/d (merge-nodes-into-dag-array BOUNDED-RENAMING-ENTRIESP-OF-ASET1-SPECIAL-GEN CAAR-OF-CDR-WHEN-CONSECUTIVEP-OF-STRIP-CARS
+                                                       weak-dagp ;why?
+                                                       )
+                           (myquotep)))))
 
 ;move
 (defthm merge-nodes-into-dag-array-bound-lemma

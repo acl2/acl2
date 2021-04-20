@@ -340,7 +340,7 @@
                   :split-types t
                   :guard-hints (("Goal" :do-not-induct t
                                  :in-theory (enable <-of-+-of-minus1-arith-hack)))))
-  (if (no-atoms args) ;; "constant" case
+  (if (all-consp args) ;; "constant" case
       (let* ((expr (cons fn args))
              (possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
         (if possible-index

@@ -15,6 +15,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/isar/defisar" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -68,61 +69,66 @@
      Thus, we formalize a curve as a triple of these numbers,
      via a fixtype product.")
    (xdoc::p
-    "Because @('primep') is slow on large numbers,
-     we do not include this requirement into the fixtype;
-     otherwise, it may take a long time to construct a value of this fixtype
-     for a practical curve.
-     We just require @($p$) to be greater than 2;
-     see @(see montgomery).
-     We express the primality of @($p$) separately.")
+    "We require @($p$) to be a prime greater than 2;
+     see @(see montgomery).")
    (xdoc::p
     "We require @($A$) and @($B$) to be in the prime field of @($p$).
      We also require them to satisfy the condition @(see montgomery).")
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
      we pick 3 for @($p$), 0 for @($A$), and 1 for @($B$)."))
-  ((p nat :reqfix (if (> p 2) p 3))
-   (a :reqfix (if (and (> p 2)
+  ((p :reqfix (if (and (rtl::primep p)
+                       (> p 2))
+                  p
+                3))
+   (a :reqfix (if (and (rtl::primep p)
+                       (> p 2)
                        (fep a p)
                        (not (equal a 2))
                        (not (equal a (mod -2 p))))
                   a
                 0))
-   (b :reqfix (if (and (fep b p)
+   (b :reqfix (if (and (rtl::primep p)
+                       (fep b p)
                        (not (equal b 0)))
                   b
                 1)))
-  :require (and (> p 2)
+  :require (and (rtl::primep p)
+                (> p 2)
                 (fep a p)
                 (fep b p)
                 (not (equal a 2))
                 (not (equal a (mod -2 p)))
                 (not (equal b 0)))
   :pred montgomery-curvep
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+  :prepwork
+  ((local (include-book "arithmetic-3/top" :dir :system))
+   (defrulel primep-of-3 (rtl::primep 3) :enable rtl::primep))
   ///
 
-  (defrule montgomery->p-lower-bound
+  (defrule posp-of-montgomery-curve->p
+    (posp (montgomery-curve->p curve))
+    :rule-classes :type-prescription)
+
+  (defrule montgomery-curve->p-lower-bound
     (> (montgomery-curve->p curve) 2)
-    :rule-classes :linear))
+    :rule-classes :linear)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defrule natp-of-montgomery-curve->a
+    (natp (montgomery-curve->a curve))
+    :rule-classes :type-prescription
+    :use (:instance montgomery-curve-requirements (x curve))
+    :disable montgomery-curve-requirements)
 
-(define montgomery-curve-primep ((curve montgomery-curvep))
-  :returns (yes/no booleanp)
-  :short "Check that the prime of a Montgomery curve is prime."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is in a separate predicate
-     for the reason explained in @(tsee montgomery)."))
-  (rtl::primep (montgomery-curve->p curve))
-  :hooks (:fix))
+  (defrule posp-of-montgomery-curve->b
+    (posp (montgomery-curve->b curve))
+    :rule-classes :type-prescription
+    :use (:instance montgomery-curve-requirements (x curve))
+    :disable montgomery-curve-requirements))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define point-on-montgomery-p ((point pointp) (curve montgomery-curvep))
-  :guard (montgomery-curve-primep curve)
   :returns (yes/no booleanp)
   :short "Check if a point is on a Montgomery curve."
   :long
@@ -158,6 +164,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled montgomery-points-with-same-x-have-same-or-neg-y
+  :short "Theorem about points on the curve with the same abscissa
+          having the same or opposite ordinates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If two points on the curve have the same @($x$),
+     they have either the same or opposite @($y$)."))
+  (implies (and (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve)
+                (equal (point-kind point1) :finite)
+                (equal (point-kind point2) :finite)
+                (equal (point-finite->x point1)
+                       (point-finite->x point2)))
+           (or (equal (point-finite->y point1)
+                      (point-finite->y point2))
+               (equal (point-finite->y point1)
+                      (neg (point-finite->y point2)
+                           (montgomery-curve->p curve)))))
+  :enable point-on-montgomery-p
+  :prep-books ((include-book "prime-field-extra-rules")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule montgomery-only-point-with-y-0-when-aa-minus-4-non-square
   :short "Theorem about the only point with zero ordinate
           for certain Montgomery curves."
@@ -187,13 +217,12 @@
   (b* ((p (montgomery-curve->p curve))
        (a (montgomery-curve->a curve))
        (x (point-finite->x point)))
-    (implies (and (montgomery-curve-primep curve)
-                  (not (pfield-squarep (sub (mul a a p) 4 p) p))
+    (implies (and (not (pfield-squarep (sub (mul a a p) 4 p) p))
                   (not (equal (point-kind point) :infinite))
                   (equal (point-finite->y point) 0))
              (equal (point-on-montgomery-p point curve)
                     (equal x 0))))
-  :enable (point-on-montgomery-p montgomery-curve-primep)
+  :enable point-on-montgomery-p
   :use (lemma)
 
   :prep-lemmas
@@ -244,8 +273,7 @@
      (b* ((p (montgomery-curve->p curve))
           (a (montgomery-curve->a curve))
           (x (point-finite->x point)))
-       (implies (and (montgomery-curve-primep curve)
-                     (not (equal (point-kind point) :infinite))
+       (implies (and (not (equal (point-kind point) :infinite))
                      (point-on-montgomery-p point curve))
                 (implies (equal (mul x
                                      (add (mul x x p)
@@ -263,7 +291,7 @@
                                          p)
                                     0)))))
      :rule-classes nil
-     :enable (point-on-montgomery-p montgomery-curve-primep)
+     :enable point-on-montgomery-p
      :disable pfield::mul-of-add-arg2)
 
    ;; if x^2 + a x + 1 = 0,
@@ -344,8 +372,7 @@
      (b* ((p (montgomery-curve->p curve))
           (a (montgomery-curve->a curve))
           (x (point-finite->x point)))
-       (implies (and (montgomery-curve-primep curve)
-                     (not (pfield-squarep (sub (mul a a p) 4 p) p))
+       (implies (and (not (pfield-squarep (sub (mul a a p) 4 p) p))
                      (not (equal (point-kind point) :infinite))
                      (equal (point-finite->y point) 0)
                      (point-on-montgomery-p point curve))
@@ -395,7 +422,6 @@
        (x (point-finite->x point)))
     (implies (and (equal (point-kind point) :finite)
                   (point-on-montgomery-p point curve)
-                  (montgomery-curve-primep curve)
                   (not (pfield-squarep (div (sub a 2 p) b p) p)))
              (not (equal x (neg 1 p)))))
   :use (lemma (:instance pfield-squarep-suff
@@ -417,13 +443,10 @@
           (y (point-finite->y point)))
        (implies (and (equal (point-kind point) :finite)
                      (point-on-montgomery-p point curve)
-                     (montgomery-curve-primep curve)
                      (equal x (neg 1 p)))
                 (equal (mul y y p)
                        (div (sub a 2 p) b p))))
-     :enable (point-on-montgomery-p
-              montgomery-curve-primep
-              div)
+     :enable (point-on-montgomery-p div)
      :disable (pfield::mul-of-add-arg1
                pfield::mul-of-add-arg2
                pfield::mul-of-1-arg1-gen))))
@@ -433,8 +456,7 @@
 (define montgomery-add ((point1 pointp)
                         (point2 pointp)
                         (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point1 curve)
+  :guard (and (point-on-montgomery-p point1 curve)
               (point-on-montgomery-p point2 curve))
   :returns (point3 pointp)
   :short "Group addition on a Montgomery curve."
@@ -515,9 +537,7 @@
        (y1+l.[x3-x1] (add y1 l.[x3-x1] p))
        (y3 (neg y1+l.[x3-x1] p)))
     (point-finite x3 y3))
-  :guard-hints (("Goal" :in-theory (enable montgomery-curve-primep
-                                           point-on-montgomery-p
-                                           fep)))
+  :guard-hints (("Goal" :in-theory (enable point-on-montgomery-p fep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -547,15 +567,304 @@
      with the only difference that
      it has this nullary predicate as hypothesis."))
   (forall (curve point1 point2)
-          (implies (and (montgomery-curvep curve)
-                        (montgomery-curve-primep curve)
-                        (pointp point1)
-                        (pointp point2)
-                        (point-on-montgomery-p point1 curve)
+          (implies (and (point-on-montgomery-p point1 curve)
                         (point-on-montgomery-p point2 curve))
                    (point-on-montgomery-p (montgomery-add point1 point2 curve)
                                           curve)))
+  :verify-guards nil
   :enabled :thm)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-add-commutativity
+  :short "Commutativity of Montgomery addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is easy when at least one of the points is the one at infinity.
+     When the two points are both finite,
+     there are two cases, according to the definition of addition:
+     either the points have the same @($x$) or not.
+     If they do, we know from theorem
+     @(tsee montgomery-points-with-same-x-have-same-or-neg-y)
+     that the @($y$) are either the same or inverses:
+     if they are inverses, they are still inverses if swapped,
+     and the result is the point at infinite in both cases,
+     so commutativity holds;
+     if they are the same, then the two points are the same
+     and commutativity clearly holds.")
+   (xdoc::p
+    "The more elaborate case is when the two points have different @($x$).
+     Looking at the formula to compute the addition,
+     first note that @($\\lambda$) does not change if the points are swapped,
+     because the swapping negates both dividend and divisor,
+     and the negations simplify away.
+     The @($x$) of the addition is obtained by combining @($\\lambda$)
+     with @($A$) and @($B$) and the two @($x$)s of the points:
+     the latter are both subtracted,
+     and if swapped the final result is the same.
+     So addition commutes at least for the @($x$) coordinate.")
+   (xdoc::p
+    "For the @($y$) of the addition, things are a bit more complex:
+     it is not immediately clear that
+     @($\\lambda (x_1 - x_3) - y_1 = \\lambda (x_2 - x_3) - y_2$),
+     where we write @($\\lambda$) for both because that part commutes,
+     as explained above.
+     If we distribute @($\\lambda$) over @($(x_1 - x_3)$) and @($(x_2 - x_3)$),
+     we see that @($\\lambda x_3$) is the same for both,
+     so we are left with showing
+     @($\\lambda x_1 - y_1 = \\lambda x_2 - y_2$).
+     Expanding @($\\lambda$)
+     and extending the fraction to @($y-1$) and @($y_2$),
+     things simplify and both reduce to the same
+     @($\\frac{x_1 y_2 - x_2 y_1}{x_2 - x_1}$),
+     thus ensuring commutativity.")
+   (xdoc::p
+    "To carry out the argument above for the case of different @($x$)s,
+     we introduce local functions that define
+     @($\\lambda$), @($x_3$), and @($y_2$),
+     show they commute,
+     show them equivalent to @(tsee montgomery-add) under suitable conditions,
+     and thus conclude the commutativity under those conditions,
+     which together with the commutativity theorems under other conditions,
+     allow us to conclude commutativity under all conditions."))
+
+  ;; commutativity of MONTGOMERY-ADD when some point is infinite:
+  (defruledl montgomery-add-commutative-when-infinite
+    (implies (or (equal (point-kind point1) :infinite)
+                 (equal (point-kind point2) :infinite))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add point-kind pointp point-fix))
+
+  ;; commutativity of MONTGOMERY-ADD
+  ;; when the points are finite and have the same x:
+  (defruledl montgomery-add-commutative-when-finite-and-same-x
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (equal (point-finite->x point1)
+                         (point-finite->x point2)))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :use (:instance montgomery-points-with-same-x-have-same-or-neg-y)
+    :enable (montgomery-add point-on-montgomery-p)
+    :prep-lemmas
+    ;; being each other's inverse is symmetric:
+    ((defrule lemma
+       (implies (and (rtl::primep p)
+                     (fep x p)
+                     (fep y p))
+                (equal (equal x (neg y p))
+                       (equal (neg x p) y))))))
+
+  ;; definition of lambda, consistent with MONTGOMERY-ADD:
+  (local
+   (defund l (x1 x2 y1 y2 p)
+     (b* ((y2-y1 (sub y2 y1 p))
+          (x2-x1 (sub x2 x1 p))
+          (l (div y2-y1 x2-x1 p)))
+       l)))
+
+  ;; commutativity of lambda:
+  (defrulel l-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (l x1 x2 y1 y2 p)
+                    (l x2 x1 y2 y1 p)))
+    :enable l
+    :disable (sub div-of-neg-and-neg)
+    :use (:instance div-of-neg-and-neg (a (sub y2 y1 p)) (b (sub x2 x1 p)))
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; definition of x3, consistent with MONTGOMERY-ADD:
+  (local
+   (defund x3 (x1 x2 y1 y2 a b p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (l^2 (mul l l p))
+          (b.l^2 (mul b l^2 p))
+          (b.l^2-a (sub b.l^2 a p))
+          (b.l^2-a-x1 (sub b.l^2-a x1 p))
+          (b.l^2-a-x1-x2 (sub b.l^2-a-x1 x2 p))
+          (x3 b.l^2-a-x1-x2))
+       x3)))
+
+  ;; commutativity of x3:
+  (defrulel x3-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (x3 x1 x2 y1 y2 a b p)
+                    (x3 x2 x1 y2 y1 a b p)))
+    :enable x3)
+
+  ;; definition of y3, consistent with MONTGOMERY-ADD:
+  (local
+   (defund y3 (x1 x2 y1 y2 a b p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (x3 (x3 x1 x2 y1 y2 a b p))
+          (x3-x1 (sub x3 x1 p))
+          (l.[x3-x1] (mul l x3-x1 p))
+          (y1+l.[x3-x1] (add y1 l.[x3-x1] p))
+          (y3 (neg y1+l.[x3-x1] p)))
+       y3)))
+
+  ;; definition of the rest of y3, after removing - lambda * x3:
+  (local
+   (defund y3-rest (x1 x2 y1 y2 p)
+     (b* ((l (l x1 x2 y1 y2 p))
+          (l.x1 (mul l x1 p))
+          (l.x1-y1 (sub l.x1 y1 p)))
+       l.x1-y1)))
+
+  ;; alternative definition of y3, as - lambda * x3 + y3-rest (see above):
+  (defruledl y3-alt-def
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3 x1 x2 y1 y2 a b p)
+                    (add (neg (mul (l x1 x2 y1 y2 p)
+                                   (x3 x1 x2 y1 y2 a b p)
+                                   p)
+                              p)
+                         (y3-rest x1 x2 y1 y2 p)
+                         p)))
+    :enable (y3 y3-rest))
+
+  ;; alternative definition of y3 that extends the fraction and simplifies:
+  (defruledl y3-rest-alt-def
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3-rest x1 x2 y1 y2 p)
+                    (div (sub (mul x1 y2 p)
+                              (mul x2 y1 p)
+                              p)
+                         (sub x2 x1 p)
+                         p)))
+    :enable (y3-rest l)
+    :use (:instance extend-fraction-to-sum
+          (a (sub y2 y1 p))
+          (b (sub x2 x1 p))
+          (c x1)
+          (d (neg y1 p)))
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; commutativity of y3-rest:
+  (defrulel y3-rest-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3-rest x1 x2 y1 y2 p)
+                    (y3-rest x2 x1 y2 y1 p)))
+    :enable (y3-rest-alt-def)
+    ;; we need the following to take the commuting of lambda into account:
+    :use (:instance div-of-neg-and-neg
+          (a (add (mul x1 y2 p)
+                  (neg (mul x2 y1 p) p)
+                  p))
+          (b (add (neg x1 p) x2 p)))
+    :disable div-of-neg-and-neg
+    :prep-books ((include-book "prime-field-extra-rules")))
+
+  ;; commutativity of y3:
+  (defrulel y3-comm
+    (implies (and (rtl::primep p)
+                  (fep x1 p)
+                  (fep x2 p)
+                  (fep y1 p)
+                  (fep y2 p)
+                  (not (equal x1 x2)))
+             (equal (y3 x1 x2 y1 y2 a b p)
+                    (y3 x2 x1 y2 y1 a b p)))
+    :enable y3-alt-def)
+
+  ;; alternative definition of MONTGOMERY-ADD in terms of the functions above,
+  ;; under the assumptions that the two points are finite and have distinct x:
+  (defruledl montgomery-add-alt-def
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (not (equal (point-finite->x point1)
+                              (point-finite->x point2))))
+             (equal (montgomery-add point1 point2 curve)
+                    (point-finite (x3 (point-finite->x point1)
+                                      (point-finite->x point2)
+                                      (point-finite->y point1)
+                                      (point-finite->y point2)
+                                      (montgomery-curve->a curve)
+                                      (montgomery-curve->b curve)
+                                      (montgomery-curve->p curve))
+                                  (y3 (point-finite->x point1)
+                                      (point-finite->x point2)
+                                      (point-finite->y point1)
+                                      (point-finite->y point2)
+                                      (montgomery-curve->a curve)
+                                      (montgomery-curve->b curve)
+                                      (montgomery-curve->p curve)))))
+    :enable (montgomery-add x3 y3 l))
+
+  ;; commutativity of MONTGOMERY-ADD
+  ;; when the points are finite and have distinct x:
+  (defruledl montgomery-add-commutative-when-finite-and-distinct-x
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (not (equal (point-finite->x point1)
+                              (point-finite->x point2))))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add-alt-def point-on-montgomery-p))
+
+  ;; commutativity of MONTGOMERY-ADD when both points are finite:
+  (defruledl montgomery-add-commutative-when-finite
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :cases ((equal (point-finite->x point1)
+                   (point-finite->x point2)))
+    :enable (montgomery-add-commutative-when-finite-and-same-x
+             montgomery-add-commutative-when-finite-and-distinct-x))
+
+  ;; commutativity of MONTGOMERY-ADD (under all conditions):
+  (defruledl montgomery-add-commutative
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))
+    :enable (montgomery-add-commutative-when-infinite
+             montgomery-add-commutative-when-finite)
+    :cases ((equal (point-kind point1) :infinite)
+            (equal (point-kind point2) :infinite)))
+
+  ;; exported theorem, without hints:
+  (defrule montgomery-add-commutative
+    (implies (and (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-add point1 point2 curve)
+                    (montgomery-add point2 point1 curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,17 +893,17 @@
      because it is essentially the associativity theorem,
      which is a good rewrite rule to have enabled,
      with the only difference that
-     it has this nullary predicate as hypothesis.")
+     it has this nullary predicate as hypothesis.
+     That rewrite rules rewrites additions to associate to the right.
+     We also add a disabled associativity rule
+     that rewrites additions to associate to the left instead;
+     this may be occasionally useful in algebraic manipulations.
+     We add a theory invariant preventing both rules from being enabled.")
    (xdoc::p
     "Note that we need to assume the closure of addition, in the guard,
      in order to verify the guards of this function."))
   (forall (curve point1 point2 point3)
-          (implies (and (montgomery-curvep curve)
-                        (montgomery-curve-primep curve)
-                        (pointp point1)
-                        (pointp point2)
-                        (pointp point3)
-                        (point-on-montgomery-p point1 curve)
+          (implies (and (point-on-montgomery-p point1 curve)
                         (point-on-montgomery-p point2 curve)
                         (point-on-montgomery-p point3 curve))
                    (equal (montgomery-add (montgomery-add point1 point2 curve)
@@ -603,7 +912,26 @@
                           (montgomery-add point1
                                           (montgomery-add point2 point3 curve)
                                           curve))))
-  :enabled :thm)
+  :verify-guards nil
+  :thm-name montgomery-add-associative-right
+  :enabled :thm
+  ///
+
+  (defruled montgomery-add-associative-left
+    (implies (and (montgomery-add-associativity)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (point-on-montgomery-p point3 curve))
+             (equal (montgomery-add point1
+                                    (montgomery-add point2 point3 curve)
+                                    curve)
+                    (montgomery-add (montgomery-add point1 point2 curve)
+                                    point3
+                                    curve))))
+
+  (theory-invariant (incompatible
+                     (:rewrite montgomery-add-associative-right)
+                     (:rewrite montgomery-add-associative-left))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,7 +953,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection montogomery-add-zero-identity
+(defsection montogomery-zero-identity
   :short "Left and right identity properties of the neutral point."
 
   (defrule montgomery-add-of-montgomery-zero-left
@@ -641,8 +969,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define montgomery-neg ((point pointp) (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point curve))
+  :guard (point-on-montgomery-p point curve)
   :returns (point1 pointp)
   :short "Negation of a point of the Montgomery curve group."
   :long
@@ -664,23 +991,387 @@
   ///
 
   (defrule point-on-montgomery-p-of-montgomery-neg
-    (implies (and (montgomery-curvep curve)
-                  (montgomery-curve-primep curve)
-                  (pointp point)
-                  (point-on-montgomery-p point curve))
+    (implies (point-on-montgomery-p point curve)
              (point-on-montgomery-p (montgomery-neg point curve)
                                     curve))
     :enable point-on-montgomery-p
     :disable pfield::fep-of-neg
     :use (:instance pfield::fep-of-neg
           (x (point-finite->y point))
-          (p (montgomery-curve->p curve)))))
+          (p (montgomery-curve->p curve))))
+
+  (defrule montgomery-neg-of-zero
+    (equal (montgomery-neg (montgomery-zero) curve)
+           (montgomery-zero))
+    :enable montgomery-zero)
+
+  (defrule montgomery-neg-of-neg
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-neg (montgomery-neg point curve) curve)
+                    (point-fix point)))
+    :enable (point-on-montgomery-p
+             point-kind
+             pointp
+             point-finite
+             point-fix
+             point-finite->x
+             point-finite->y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define montgomery-sub ((point1 pointp) (point2 pointp) (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point1 curve)
+(defsection montgomery-neg-inverse
+  :short "Property that negation is left and right inverse for addition."
+
+  (defrule montgomery-add-of-neg-left
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-add (montgomery-neg point curve) point curve)
+                    (montgomery-zero)))
+    :enable (montgomery-add
+             montgomery-neg
+             montgomery-zero
+             pointp
+             point-fix
+             point-kind))
+
+  (defrule montgomery-add-of-neg-right
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-add point (montgomery-neg point curve) curve)
+                    (montgomery-zero)))
+    :enable (montgomery-add
+             montgomery-neg
+             montgomery-zero
+             point-finite
+             point-finite->x
+             point-finite->y
+             pointp
+             point-kind
+             point-on-montgomery-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-add-inverse-uniqueness
+  :short "Uniqueness of inverse (i.e. negation)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If adding a point @($P$) to a point @($Q$) yields the neutral point,
+     then each point is the inverse of the other.
+     This is a general group property:
+     we prove it based on group properties only,
+     without using the definitions of addition, negation, and zero.
+     We first prove a local lemma saying that,
+     and then we use the lemma to prove two rewrite rules
+     that may be enabled when needed."))
+
+  (local
+   (acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (montgomery-add point1 point2 curve)
+                         (montgomery-zero)))
+             (and (equal (montgomery-neg point2 curve)
+                         point1)
+                  (equal (montgomery-neg point1 curve)
+                         point2)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point1 (and (pointp point1)
+                            (point-on-montgomery-p point1 curve))))
+     (:assume (:point2 (and (pointp point2)
+                            (point-on-montgomery-p point2 curve))))
+     (:assume (:add-is-zero (equal (montgomery-add point1 point2 curve)
+                                   (montgomery-zero))))
+     (:derive (:add-neg-point1 (equal (montgomery-add
+                                       (montgomery-neg point1 curve)
+                                       (montgomery-add point1 point2 curve)
+                                       curve)
+                                      (montgomery-add
+                                       (montgomery-neg point1 curve)
+                                       (montgomery-zero)
+                                       curve)))
+      :from (:add-is-zero))
+     (:derive (:add-neg-point2 (equal (montgomery-add
+                                       (montgomery-add point1 point2 curve)
+                                       (montgomery-neg point2 curve)
+                                       curve)
+                                      (montgomery-add
+                                       (montgomery-zero)
+                                       (montgomery-neg point2 curve)
+                                       curve)))
+      :from (:add-is-zero))
+     (:derive (:point1-is-neg-point2 (equal (montgomery-neg point2 curve)
+                                            point1))
+      :from (:add-neg-point2 :point1 :point2
+             :associativity :closure))
+     (:derive (:point2-is-neg-point1 (equal (montgomery-neg point1 curve)
+                                            point2))
+      :from (:add-neg-point1 :point1 :point2
+             :associativity :closure)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:derive (:conclusion (and (equal (montgomery-neg point2 curve)
+                                       point1)
+                                (equal (montgomery-neg point1 curve)
+                                       point2)))
+      :from (:point1-is-neg-point2 :point2-is-neg-point1))
+     (:qed))))
+
+  (defruled montgomery-add-zero-left-is-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (equal (montgomery-add point1 point2 curve)
+                           (montgomery-zero))
+                    (equal point1
+                           (montgomery-neg point2 curve))))
+    :use lemma
+    :disable lemma)
+
+  (defruled montgomery-add-zero-right-is-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (equal (montgomery-add point1 point2 curve)
+                           (montgomery-zero))
+                    (equal point2
+                           (montgomery-neg point1 curve))))
+    :use lemma
+    :disable lemma)
+
+  (theory-invariant (incompatible (:rewrite montgomery-add-zero-left-is-neg)
+                                  (:rewrite montgomery-add-zero-right-is-neg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule montgomery-add-cancel-left
+  (implies (and (montgomery-add-closure)
+                (montgomery-add-associativity)
+                (point-on-montgomery-p point curve)
+                (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve))
+           (equal (equal (montgomery-add point point1 curve)
+                         (montgomery-add point point2 curve))
+                  (equal (point-fix point1)
+                         (point-fix point2))))
+  :use lemma
+  :disable lemma
+  :prep-lemmas
+  ((acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve)
+                  (equal (montgomery-add point point1 curve)
+                         (montgomery-add point point2 curve)))
+             (equal (point-fix point1)
+                    (point-fix point2)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:point1 (point-on-montgomery-p point1 curve)))
+     (:assume (:point2 (point-on-montgomery-p point2 curve)))
+     (:assume (:equality (equal (montgomery-add point point1 curve)
+                                (montgomery-add point point2 curve))))
+     (:derive (:add-neg (equal
+                         (montgomery-add (montgomery-neg point curve)
+                                         (montgomery-add point point1 curve)
+                                         curve)
+                         (montgomery-add (montgomery-neg point curve)
+                                         (montgomery-add point point2 curve)
+                                         curve)))
+      :from (:equality))
+     (:derive (:same-point (equal (point-fix point1)
+                                  (point-fix point2)))
+      :from (:add-neg :associativity :closure :point :point1 :point2)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-distributivity-of-neg-over-add
+  :short "Distributivity of negation over addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that @($-(P+Q) = (-P)+(-Q)$).
+     It is proved by showing that adding @($(P+Q)$) to @($(-P)+(-Q)$)
+     yields the zero point,
+     and then using @(see montgomery-add-inverse-uniqueness)
+     to show the desired equality.")
+   (xdoc::p
+    "This should be provable automatically via suitably normalizing
+     commutativity and associativity rules,
+     but since we do not have them at the moment,
+     we carry out a more manual, step-wise proof.
+     Those rules, and a general form of this theorem,
+     belong to a generic group library anyhow."))
+
+  (local
+   (acl2::defisar
+    lemma
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+                    (montgomery-add (montgomery-neg point1 curve)
+                                    (montgomery-neg point2 curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:assoc (montgomery-add-associativity)))
+     (:assume (:point1 (point-on-montgomery-p point1 curve)))
+     (:assume (:point2 (point-on-montgomery-p point2 curve)))
+     (:derive
+      (:swap-point1-point2
+       (equal (montgomery-add (montgomery-add point1 point2 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-add (montgomery-add point2 point1 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)))
+      :from (:point1 :point2))
+     (:derive
+      (:assoc-right
+       (equal (montgomery-add (montgomery-add point2 point1 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-add point2
+                              (montgomery-add point1
+                                              (montgomery-add (montgomery-neg
+                                                               point1 curve)
+                                                              (montgomery-neg
+                                                               point2 curve)
+                                                              curve)
+                                              curve)
+                              curve)))
+      :from (:assoc :closure :point1 :point2)
+      :hints (("Goal" :in-theory (disable montgomery-add-commutative))))
+     (:derive
+      (:assoc-left
+       (equal (montgomery-add point2
+                              (montgomery-add point1
+                                              (montgomery-add (montgomery-neg
+                                                               point1 curve)
+                                                              (montgomery-neg
+                                                               point2 curve)
+                                                              curve)
+                                              curve)
+                              curve)
+              (montgomery-add point2
+                              (montgomery-add (montgomery-add point1
+                                                              (montgomery-neg
+                                                               point1 curve)
+                                                              curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)))
+      :from (:assoc :closure :point1 :point2)
+      :hints (("Goal" :in-theory (e/d (montgomery-add-associative-left)
+                                      (montgomery-add-associative-right)))))
+     (:derive
+      (:simplify
+       (equal (montgomery-add point2
+                              (montgomery-add (montgomery-add point1
+                                                              (montgomery-neg
+                                                               point1 curve)
+                                                              curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-zero)))
+      :from (:point1 :point2))
+     (:derive
+      (:inverse
+       (equal (montgomery-add (montgomery-add point1 point2 curve)
+                              (montgomery-add (montgomery-neg point1 curve)
+                                              (montgomery-neg point2 curve)
+                                              curve)
+                              curve)
+              (montgomery-zero)))
+      :from (:swap-point1-point2 :assoc-right :assoc-left :simplify))
+     (:derive
+      (:conclusion
+       (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+              (montgomery-add (montgomery-neg point1 curve)
+                              (montgomery-neg point2 curve)
+                              curve)))
+      :from (:inverse :closure :assoc :point1 :point2)
+      :hints (("Goal" :use (:instance montgomery-add-zero-right-is-neg
+                            (point1 (montgomery-add point1 point2 curve))
+                            (point2 (montgomery-add (montgomery-neg
+                                                     point1 curve)
+                                                    (montgomery-neg
+                                                     point2 curve)
+                                                    curve))))))
+     (:qed))))
+
+  (defrule montgmery-neg-of-add
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point1 curve)
+                  (point-on-montgomery-p point2 curve))
+             (equal (montgomery-neg (montgomery-add point1 point2 curve) curve)
+                    (montgomery-add (montgomery-neg point1 curve)
+                                    (montgomery-neg point2 curve)
+                                    curve)))
+    :hints (("Goal" :by lemma))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled montgomery-points-with-same-x-are-same-or-neg-point
+  :short "Theorem about points on the curve with the same abscissa
+          being the same or opposite points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If two points on the curve have the same @($x$),
+     they are either the same or opposites."))
+  (implies (and (pointp point1)
+                (pointp point2)
+                (point-on-montgomery-p point1 curve)
+                (point-on-montgomery-p point2 curve)
+                (equal (point-kind point1) :finite)
+                (equal (point-kind point2) :finite)
+                (equal (point-finite->x point1)
+                       (point-finite->x point2)))
+           (or (equal point1 point2)
+               (equal point1 (montgomery-neg point2 curve))))
+  :enable (montgomery-neg
+           point-finite
+           point-finite->x
+           point-finite->y
+           pointp)
+  :use montgomery-points-with-same-x-have-same-or-neg-y)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define montgomery-sub ((point1 pointp)
+                        (point2 pointp)
+                        (curve montgomery-curvep))
+  :guard (and (point-on-montgomery-p point1 curve)
               (point-on-montgomery-p point2 curve))
   :returns (point pointp)
   :short "Subtraction of two points of the Montgomery group."
@@ -699,8 +1390,7 @@
 (define montgomery-mul ((scalar integerp)
                         (point pointp)
                         (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point curve))
+  :guard (point-on-montgomery-p point curve)
   :returns (point1 pointp)
   :short "Scalar multiplication in the Montgomery group."
   :long
@@ -738,11 +1428,11 @@
   :hooks (:fix)
 
   :prepwork
+
   ((define montgomery-mul-nonneg ((scalar natp)
                                   (point pointp)
                                   (curve montgomery-curvep))
-     :guard (and (montgomery-curve-primep curve)
-                 (point-on-montgomery-p point curve))
+     :guard (point-on-montgomery-p point curve)
      :returns (point1 pointp)
      (b* (((when (zp scalar)) (montgomery-zero))
           (point1 (montgomery-mul-nonneg (1- scalar) point curve))
@@ -752,24 +1442,57 @@
      :verify-guards nil ; done below
      :hooks (:fix)
      ///
+
      (defret point-on-montgomery-p-of-montgomery-mul-nonneg
        (point-on-montgomery-p point1 curve)
        :hyp (and (montgomery-add-closure)
-                 (montgomery-curvep curve)
-                 (montgomery-curve-primep curve)
-                 (pointp point)
                  (point-on-montgomery-p point curve)))
-     (verify-guards montgomery-mul-nonneg)))
+
+     (verify-guards montgomery-mul-nonneg)
+
+     (defrule montgomery-mul-nonneg-of-0
+       (equal (montgomery-mul-nonneg 0 point curve)
+              (montgomery-zero)))
+
+     (defrule montgomery-mul-nonneg-of-1
+       (equal (montgomery-mul-nonneg 1 point curve)
+              (point-fix point)))
+
+     (defrule montgomery-mul-nonneg-of-zero
+       (equal (montgomery-mul-nonneg scalar (montgomery-zero) curve)
+              (montgomery-zero)))))
 
   ///
 
   (defret point-on-montgomery-p-of-montgomery-mul
     (point-on-montgomery-p point1 curve)
     :hyp (and (montgomery-add-closure)
-              (montgomery-curvep curve)
-              (montgomery-curve-primep curve)
-              (pointp point)
-              (point-on-montgomery-p point curve))))
+              (point-on-montgomery-p point curve)))
+
+  (defrule montgomery-mul-of-0
+    (equal (montgomery-mul 0 point curve)
+           (montgomery-zero)))
+
+  (defrule montgomery-mul-of-1
+    (equal (montgomery-mul 1 point curve)
+           (point-fix point)))
+
+  (defrule montgomery-mul-of-zero
+    (equal (montgomery-mul scalar (montgomery-zero) curve)
+           (montgomery-zero)))
+
+  (defrule montgomery-mul-of-minus1
+    (implies (point-on-montgomery-p point curve)
+             (equal (montgomery-mul -1 point curve)
+                    (montgomery-neg point curve))))
+
+  (defrule montgomery-neg-of-mul
+    (implies (and (montgomery-add-closure)
+                  (point-on-montgomery-p point curve))
+             (equal (montgomery-neg (montgomery-mul scalar point curve) curve)
+                    (montgomery-mul (- (ifix scalar)) point curve)))
+    :enable montgomery-mul
+    :prep-books ((include-book "kestrel/arithmetic-light/minus" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -778,17 +1501,39 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prove it for non-negative scalars initially.
-     We will extend that to negative scalars eventually.
-     We keep these rules disabled,
-     because distribution is not always desired."))
+    "We first prove it on @(tsee montgomery-mul-nonneg) by induction,
+     then we lift it to @(tsee montgomery-mul),
+     but only for non-negative scalars.
+     To extend it to negative scalars, we consider different cases.
+     If both scalars are non-positive,
+     the definition of @(tsee montgomery-mul) is expanded,
+     and the theorem about @(tsee montgomery-mul-nonneg) applies.
+     If one is non-negative and the other non-positive,
+     we consider two subcases:
+     when the sum is non-negative, and when the sum is non-positive.
+     The first subcase requires adding and subtracting the same quantity,
+     and thus we use Isar to explicate this proof strategy.
+     The second subcase is proved by considering the negated scalars
+     and thus applying the theorem for the first subcase;
+     we use Isar, but it might be possible to shorten the proof.
+     Finally, the case in which one is non-positive and the other non-negative
+     is handled by swapping the roles, and implicitly using commutativity.
+     With all the cases in hand, we prove the main theorem,
+     which applies to any integer scalars.
+     We keep the theorem disabled,
+     because distribution is not always desired.")
+   (xdoc::p
+    "Note that we consider non-negative and non-positive cases,
+     which overlap at zero,
+     rather than non-overlapping non-negative and negative cases.
+     The overlap is intentional, so that the cases are more symmetric
+     and it is easy to swap signs, as we do in some of the proofs."))
 
-  (defruled montogomery-mul-nonneg-of-scalar-addition
+  (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+  (defruledl montogomery-mul-nonneg-of-scalar-addition
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
-                  (montgomery-curvep curve)
-                  (montgomery-curve-primep curve)
-                  (pointp point)
                   (point-on-montgomery-p point curve)
                   (natp scalar1)
                   (natp scalar2))
@@ -798,12 +1543,9 @@
                                     curve)))
     :enable montgomery-mul-nonneg)
 
-  (defruled montgomery-mul-of-scalar-addition
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg
     (implies (and (montgomery-add-closure)
                   (montgomery-add-associativity)
-                  (montgomery-curvep curve)
-                  (montgomery-curve-primep curve)
-                  (pointp point)
                   (point-on-montgomery-p point curve)
                   (natp scalar1)
                   (natp scalar2))
@@ -811,15 +1553,353 @@
                     (montgomery-add (montgomery-mul scalar1 point curve)
                                     (montgomery-mul scalar2 point curve)
                                     curve)))
-    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition)))
+    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)
+                    (montgomery-mul (+ scalar1 scalar2) point curve)))
+    :use montgomery-mul-of-scalar-addition-when-nonneg)
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonpos
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (<= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :enable (montgomery-mul
+             montogomery-mul-nonneg-of-scalar-addition))
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (>= (+ scalar1 scalar2) 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (>= (+ scalar1 scalar2) 0)))
+     (:derive (:add-and-sub
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add
+                       (montgomery-mul (+ scalar1 scalar2) point curve)
+                       (montgomery-add
+                        (montgomery-neg (montgomery-mul scalar2 point curve) curve)
+                        (montgomery-mul scalar2 point curve)
+                        curve)
+                       curve)))
+      :from (:point :closure)
+      :hints (("Goal" :in-theory (disable montgomery-neg-of-mul))))
+     (:derive (:simplify
+               (equal (montgomery-add
+                       (montgomery-mul (+ scalar1 scalar2) point curve)
+                       (montgomery-add
+                        (montgomery-neg
+                         (montgomery-mul scalar2 point curve) curve)
+                        (montgomery-mul scalar2 point curve)
+                        curve)
+                       curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:associativity :closure :point :scalar1+2 :scalar1 :scalar2)
+      :hints
+      (("Goal"
+        :in-theory (e/d (montgomery-add-associative-left
+                         montgomery-mul-of-scalar-addition-when-nonneg-converse)
+                        (montgomery-add-associative-right
+                         montgomery-add-commutative)))))
+     (:derive (:conclusion
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:add-and-sub :simplify))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)))
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0)
+                  (<= (+ scalar1 scalar2) 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:scalar1 (and (integerp scalar1) (>= scalar1 0))))
+     (:assume (:scalar2 (and (integerp scalar2) (<= scalar2 0))))
+     (:assume (:scalar1+2 (<= (+ scalar1 scalar2) 0)))
+     (:derive (:swapped-negated
+               (equal (montgomery-mul (+ (- scalar2) (- scalar1)) point curve)
+                      (montgomery-add (montgomery-mul (- scalar2) point curve)
+                                      (montgomery-mul (- scalar1) point curve)
+                                      curve)))
+      :from (:closure :associativity :point :scalar1 :scalar2 :scalar1+2)
+      :hints
+      (("Goal"
+        :in-theory
+        (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum)
+        :use (:instance
+              montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+              (scalar1 (- scalar2))
+              (scalar2 (- scalar1))))))
+     (:derive (:negate-both
+               (equal (montgomery-neg
+                       (montgomery-mul (+ (- scalar2) (- scalar1)) point curve)
+                       curve)
+                      (montgomery-neg
+                       (montgomery-add (montgomery-mul (- scalar2) point curve)
+                                       (montgomery-mul (- scalar1) point curve)
+                                       curve)
+                       curve)))
+      :from (:swapped-negated))
+     (:derive (:conclusion
+               (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                      (montgomery-add (montgomery-mul scalar1 point curve)
+                                      (montgomery-mul scalar2 point curve)
+                                      curve)))
+      :from (:negate-both :closure :associativity :point :scalar1 :scalar2))
+     (:qed))))
+
+  (local
+   (in-theory
+    (disable montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum)))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (>= scalar1 0)
+                  (<= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :cases ((>= (+ scalar1 scalar2) 0))
+    :enable (montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonnegsum
+             montgomery-mul-of-scalar-addition-when-nonneg-nonpos-nonpossum))
+
+  (defruledl montgomery-mul-of-scalar-addition-when-nonpos-nonneg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2)
+                  (<= scalar1 0)
+                  (>= scalar2 0))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :use (:instance montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+          (scalar1 scalar2) (scalar2 scalar1)))
+
+  (defruled montgomery-mul-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :cases ((and (>= scalar1 0) (>= scalar2 0))
+            (and (<= scalar1 0) (<= scalar2 0))
+            (and (>= scalar1 0) (<= scalar2 0))
+            (and (<= scalar1 0) (>= scalar2 0)))
+    :enable (montgomery-mul-of-scalar-addition-when-nonneg
+             montgomery-mul-of-scalar-addition-when-nonpos
+             montgomery-mul-of-scalar-addition-when-nonneg-nonpos
+             montgomery-mul-of-scalar-addition-when-nonpos-nonneg))
+
+  (defruled montgomery-mul-of-scalar-addition-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar1)
+                  (integerp scalar2))
+             (equal (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)
+                    (montgomery-mul (+ scalar1 scalar2) point curve)))
+    :use montgomery-mul-of-scalar-addition)
+
+  (theory-invariant
+   (incompatible (:rewrite montgomery-mul-of-scalar-addition)
+                 (:rewrite montgomery-mul-of-scalar-addition-converse))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection montgomery-mul-associativity
+  :short "Associativity of scalar multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This involves heterogeneous entities,
+     namely two scalars and a point.
+     Multiplying the point by one scalar and the the other
+     is equivalent to multiplying the scalars first and then the point."))
+
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+  (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+  (defrulel montgomery-mul-of-mul-when-nonneg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :induct (acl2::dec-induct scalar)
+    :enable montgomery-mul-of-scalar-addition)
+
+  (local
+   (acl2::defisar
+    montgomery-mul-of-mul-when-neg
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (< scalar 0)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:associativity (montgomery-add-associativity)))
+     (:assume (:scalar (and (integerp scalar) (< scalar 0))))
+     (:assume (:scalar1 (integerp scalar1)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:derive (:lhs-to-intermediate
+               (equal (montgomery-mul scalar
+                                      (montgomery-mul scalar1
+                                                      point
+                                                      curve)
+                                      curve)
+                      (montgomery-neg
+                       (montgomery-mul (- scalar)
+                                       (montgomery-mul scalar1
+                                                       point
+                                                       curve)
+                                       curve)
+                       curve)))
+      :from (:closure :point :scalar)
+      :hints (("Goal"
+               :use (:instance montgomery-neg-of-mul
+                     (scalar (- scalar))
+                     (point (montgomery-mul scalar1 point curve)))
+               :in-theory (disable montgomery-neg-of-mul))))
+     (:derive (:intermediate-to-rhs
+               (equal (montgomery-neg
+                       (montgomery-mul (- scalar)
+                                       (montgomery-mul scalar1
+                                                       point
+                                                       curve)
+                                       curve)
+                       curve)
+                      (montgomery-mul (* scalar scalar1) point curve)))
+      :from (:closure :associativity :point :scalar :scalar1))
+     (:derive (:lhs-to-rhs
+               (equal (montgomery-mul scalar
+                                      (montgomery-mul scalar1
+                                                      point
+                                                      curve)
+                                      curve)
+                      (montgomery-mul (* scalar scalar1) point curve)))
+      :from (:lhs-to-intermediate :intermediate-to-rhs))
+     (:qed))))
+
+  (defrule montgomery-mul-of-mul
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve)
+                    (montgomery-mul (* scalar scalar1) point curve)))
+    :cases ((< scalar 0)))
+
+  (defruled montgomery-mul-of-mul-converse
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (integerp scalar)
+                  (integerp scalar1))
+             (equal (montgomery-mul (* scalar scalar1) point curve)
+                    (montgomery-mul scalar
+                                    (montgomery-mul scalar1
+                                                    point
+                                                    curve)
+                                    curve))))
+
+  (theory-invariant
+   (incompatible (:rewrite montgomery-mul-of-mul)
+                 (:rewrite montgomery-mul-of-mul-converse))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define montgomery-point-orderp ((point pointp)
                                  (order natp)
                                  (curve montgomery-curvep))
-  :guard (and (montgomery-curve-primep curve)
-              (point-on-montgomery-p point curve))
+  :guard (point-on-montgomery-p point curve)
   :returns (yes/no booleanp)
   :short "Check if a point on a Montgomery curve has a certain order."
   :long
@@ -847,8 +1927,7 @@
   ((define-sk montgomery-point-order-leastp ((point pointp)
                                              (order natp)
                                              (curve montgomery-curvep))
-     :guard (and (montgomery-curve-primep curve)
-                 (point-on-montgomery-p point curve))
+     :guard (point-on-montgomery-p point curve)
      (forall (order1)
              (implies (and (natp order1)
                            (< 0 order1)
@@ -861,67 +1940,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled montgomery-points-with-same-x
-  :short "Theorem about points on Montgomery curves with the same abscissa."
+(defrule montgomery-mul-of-mod-order
+  :short "Scalar multiplication modulo order."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If two points on a Montgomey curve have the same abscissa,
-     their squares ordinates must be equal (just use the curve equation),
-     and therefore the two ordinates are equal or opposite.
-     Therefore, the two points are equal or opposite."))
-  (implies (and (montgomery-curve-primep curve)
-                (pointp point1)
-                (pointp point2)
-                (point-on-montgomery-p point1 curve)
-                (point-on-montgomery-p point2 curve)
-                (equal (point-kind point1) :finite)
-                (equal (point-kind point2) :finite)
-                (equal (point-finite->x point1)
-                       (point-finite->x point2)))
-           (or (equal point1 point2)
-               (equal point1 (montgomery-neg point2 curve))))
-  :use (step1 step2)
+    "Multiplication by a scalar is the same as
+     multiplication by the scalar modulo the order of the point.
+     This is for points of non-zero order."))
+  (implies (and (montgomery-add-closure)
+                (montgomery-add-associativity)
+                (integerp scalar)
+                (point-on-montgomery-p point curve)
+                (natp order)
+                (montgomery-point-orderp point order curve))
+           (equal (montgomery-mul (mod scalar order) point curve)
+                  (montgomery-mul scalar point curve)))
 
   :prep-lemmas
 
-  ((defruled step1
-     (implies (and (montgomery-curve-primep curve)
-                   (point-on-montgomery-p point1 curve)
-                   (point-on-montgomery-p point2 curve)
-                   (equal (point-kind point1) :finite)
-                   (equal (point-kind point2) :finite)
-                   (equal (point-finite->x point1)
-                          (point-finite->x point2)))
-              (or (equal (point-finite->y point1)
-                         (point-finite->y point2))
-                  (equal (point-finite->y point1)
-                         (neg (point-finite->y point2)
-                              (montgomery-curve->p curve)))))
-     :enable (point-on-montgomery-p montgomery-curve-primep)
-     :prep-books ((include-book "prime-field-extra-rules")))
+  ((defrule decompose-floor-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (equal x (+ (* (floor x y) y)
+                          (mod x y))))
+     :rule-classes nil
+     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
-   (defruled step2
-     (implies (and (montgomery-curve-primep curve)
-                   (pointp point1)
-                   (pointp point2)
-                   (point-on-montgomery-p point1 curve)
-                   (point-on-montgomery-p point2 curve)
-                   (equal (point-kind point1) :finite)
-                   (equal (point-kind point2) :finite)
-                   (equal (point-finite->x point1)
-                          (point-finite->x point2))
-                   (or (equal (point-finite->y point1)
-                              (point-finite->y point2))
-                       (equal (point-finite->y point1)
-                              (neg (point-finite->y point2)
-                                   (montgomery-curve->p curve)))))
-              (or (equal point1 point2)
-                  (equal point1 (montgomery-neg point2 curve))))
-     :enable (point-on-montgomery-p
-              montgomery-curve-primep
-              montgomery-neg
-              point-finite
-              point-finite->x
-              point-finite->y
-              pointp))))
+   (defrule integerp-of-mod
+     (implies (and (integerp x)
+                   (integerp y))
+              (integerp (mod x y)))
+     :rule-classes :type-prescription
+     :enable mod)
+
+   (acl2::defisar
+    theorem
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (integerp scalar)
+                  (point-on-montgomery-p point curve)
+                  (natp order)
+                  (montgomery-point-orderp point order curve))
+             (equal (montgomery-mul (mod scalar order) point curve)
+                    (montgomery-mul scalar point curve)))
+    :proof
+    ((:assume (:closure (montgomery-add-closure)))
+     (:assume (:assoc (montgomery-add-associativity)))
+     (:assume (:scalar (integerp scalar)))
+     (:assume (:point (point-on-montgomery-p point curve)))
+     (:assume (:order (natp order)))
+     (:assume (:point-order (montgomery-point-orderp point order curve)))
+     (:derive (:order-not-zero (not (equal order 0)))
+      :from (:point-order)
+      :hints (("Goal" :in-theory (enable montgomery-point-orderp))))
+     (:derive (:decompose-scalar
+               (equal (montgomery-mul scalar point curve)
+                      (montgomery-mul (+ (* (floor scalar order) order)
+                                         (mod scalar order))
+                                      point
+                                      curve)))
+      :from (:scalar :order)
+      :hints (("Goal"
+               :use (:instance decompose-floor-mod (x scalar) (y order))
+               :in-theory (disable floor mod))))
+     (:derive (:reduce-to-mod
+               (equal (montgomery-mul (+ (* (floor scalar order) order)
+                                         (mod scalar order))
+                                      point
+                                      curve)
+                      (montgomery-mul (mod scalar order) point curve)))
+      :from (:closure :assoc :point :scalar :order :point-order)
+      :hints (("Goal"
+               :in-theory (e/d (montgomery-mul-of-scalar-addition
+                                montgomery-mul-of-mul-converse
+                                montgomery-point-orderp)
+                               (floor
+                                mod
+                                commutativity-of-*
+                                montgomery-mul-of-mul)))))
+     (:derive (:conclusion
+               (equal (montgomery-mul (mod scalar order) point curve)
+                      (montgomery-mul scalar point curve)))
+      :from (:decompose-scalar :reduce-to-mod))
+     (:qed)))))

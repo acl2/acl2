@@ -59,8 +59,8 @@
              (4v-sexpr-ind-list (cdr x))))))
 
   (flag::make-flag 4v-sexpr-flag 4v-sexpr-ind
-                   :flag-mapping ((4v-sexpr-ind . sexpr)
-                                  (4v-sexpr-ind-list . sexpr-list))))
+                   :flag-mapping ((4v-sexpr-ind sexpr)
+                                  (4v-sexpr-ind-list sexpr-list))))
 
 
 

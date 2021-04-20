@@ -313,7 +313,7 @@
 
 (define atj-jprim-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognize the ACL2 funcion (ymbols that model
+  :short "Recognize the ACL2 function symbols that model
           the Java primitive value constructions, operations, and conversions."
   (and (member-eq fn *atj-jprim-fns*) t))
 

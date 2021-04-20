@@ -150,6 +150,8 @@
           (get-xargs-from-event fn defun)))
         (hard-error 'get-xargs-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
 
+;; Returns the untranslated body provided for FN in EVENT, which should be a DEFUN or MUTUAL-RECURSION.
+;; TODO: Perhaps add support for DEFUNS, which is like MUTUAL-RECURSION.
 (defund get-body-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
@@ -161,9 +163,9 @@
       (if (eq 'mutual-recursion event-type)
           (let ((defun (find-defun-in-mut-rec fn (fargs event))))
             (if (not (defun-formp defun))
-                nil ;TODO error!
+                (er hard? 'get-body-from-event "Failed to find a body for ~x0 in the event ~x1." fn event)
               (get-body-from-event fn defun)))
-        (hard-error 'get-body-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
+        (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
 
 (defun defun-has-explicit-guardp (defun)
   (declare (xargs :guard (defun-formp defun)

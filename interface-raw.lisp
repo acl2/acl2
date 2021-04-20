@@ -2801,8 +2801,10 @@
   (case called-sys-fn
         (rewrite
          (cond ((integerp bkptr)
-                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
-                                                   add-linear-lemma))
+                (cond ((member-eq calling-sys-fn
+                                  '(rewrite-with-lemma
+                                    rewrite-quoted-constant-with-lemma
+                                    add-linear-lemma))
                        (dmr-increment-indent)
                        (format nil " the atom of hypothesis ~s" bkptr))
                       ((eq calling-sys-fn 'simplify-clause)
@@ -2901,7 +2903,7 @@
               (format nil "; argument(s) ~s" (access gframe frame :bkptr)))
              (t
               (format nil "|~s" (access gframe frame :bkptr)))))
-      ((rewrite-with-lemma add-linear-lemma)
+      ((rewrite-with-lemma add-linear-lemma rewrite-quoted-constant-with-lemma)
        (format
         nil
         "~a~s. Applying ~s~%"
@@ -8170,6 +8172,38 @@
         in both *slashable-array* and *slashable-chars*."
        bad))))
 
+(defun check-some-builtins-for-executability ()
+
+; The function logical-defun produces the logical definition of a given
+; function symbol if there is one.  It does so by fetching the event for that
+; symbol, but if that event is verify-termination-boot-strap, then
+; logical-defun uses cltl-def-from-name to fetch the definition.  Now
+; cltl-def-from-name generally returns the logical defun form, but for
+; non-executable functions it returns a defun form intended for use in raw Lisp
+; only (whose body is a call of throw-or-attach).  Here, we make sure that we
+; do not hit that case.
+
+; If we run across an error from this check, we can allow an exception for the
+; offending function(s) provided we deal with those exceptions in the
+; definition of logical-defun.
+
+; This check might be coded more efficiently by walking through the world,, but
+; it has taken only 0.06 seconds, which seems fine.
+
+  (let ((wrld (w *the-live-state*)) ans)
+    (do-symbols (fn (find-package "ACL2"))
+                (when (and (eq (car (get-event fn wrld))
+                               'verify-termination-boot-strap)
+                           (getpropc fn 'non-executablep nil wrld))
+                  (push fn ans)))
+    (or (null ans)
+        (interface-er
+         "The initial ACL2 world has the following non-empty list of ~
+          functions for which get-logical-defun will produce the wrong ~
+          result:~%~x0.~%See ACL2 function check-executable-builtins for an ~
+          explanation, or contact the ACL2 implementors."
+         ans))))
+
 (defun-one-output check-acl2-initialization ()
   (check-built-in-constants)
   (check-out-instantiablep (w *the-live-state*))
@@ -8179,6 +8213,7 @@
       (error "The initial ACL2 world does not satisfy ~
               plist-worldp-with-formals!"))
   (check-slashable)
+  (check-some-builtins-for-executability)
   nil)
 
 (defun set-initial-cbd ()
@@ -8468,6 +8503,13 @@
 ; The next token, :INITIALIZED, is used in GNUmakefile; keep in sync.
 
                                :INITIALIZED))))
+
+     (setq *saved-build-date-lst*
+
+; The call of eval below should avoid a warning in cmucl version 18d.  Note
+; that saved-build-date-string is defined in interface-raw.lisp.
+
+           (list (eval '(saved-build-date-string))))
 
 ; If you want the final image to have infixp = t (and have feature :acl2-infix
 ; set), then put the following form here:
@@ -8831,6 +8873,11 @@
 
   (when args
     (error "LP takes no arguments."))
+
+  (when (not *acl2-default-restart-complete*)
+    (acl2-default-restart t)
+    #+gcl
+    (save-acl2-in-akcl nil nil nil t))
 
   (with-more-warnings-suppressed
 
@@ -9890,9 +9937,11 @@
 (defun-one-output print-list-without-stobj-arrays (lst)
   (loop for x in lst
         collect
-        (or (and (arrayp x)
-                 (stobj-print-symbol x *user-stobj-alist*))
-            x)))
+        (if (eq x *the-live-state*)
+            '|<state>|
+          (or (and (arrayp x)
+                   (stobj-print-symbol x *user-stobj-alist*))
+              x))))
 
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail)
   (and (live-stobjp x)

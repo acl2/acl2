@@ -414,8 +414,10 @@
 
   (fty::deffixequiv rlp-parse-tree
     :hints (("Goal"
-             :in-theory (enable rlp-parse-tree
-                                rlp-parse-tree-list)
+             :in-theory (e/d (rlp-parse-tree
+                              rlp-parse-tree-list)
+                             ((:congruence acl2::byte-list-equiv-implies-byte-list-equiv-nthcdr-2)
+                              (:congruence acl2::byte-list-equiv-implies-byte-list-equiv-take-2)))
              :expand ((rlp-parse-tree encoding)))))
 
   (defrule rlp-parse-tree-extend
@@ -427,7 +429,10 @@
                          (append (mv-nth 2 (rlp-parse-tree encoding))
                                  (byte-list-fix more)))))
     :expand ((rlp-parse-tree encoding)
-             (rlp-parse-tree (append encoding more))))
+             (rlp-parse-tree (append encoding more)))
+    :disable ((:congruence acl2::byte-list-equiv-implies-byte-list-equiv-nthcdr-2)
+              (:congruence acl2::byte-list-equiv-implies-byte-list-equiv-take-2)
+              (:congruence acl2::list-equiv-implies-equal-car-1)))
 
   (defthm-rlp-encode-tree-flag
 
@@ -488,7 +493,11 @@
                               rlp-parse-tree
                               rlp-parse-tree-list
                               bebytes->nat-lt-2^64)
-                             (acl2::nthcdr-of-nthcdr))))))
+                             (acl2::nthcdr-of-nthcdr
+                              (:congruence acl2::byte-list-equiv-implies-byte-list-equiv-nthcdr-2)
+                              (:congruence acl2::byte-list-equiv-implies-byte-list-equiv-take-2)
+                              (:congruence
+                               acl2::cdr-byte-list-equiv-congruence-on-x-under-byte-list-equiv)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

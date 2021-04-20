@@ -1,7 +1,7 @@
 ; Using the dag-parent-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,7 +14,6 @@
 
 (include-book "dag-arrays")
 (include-book "bounded-dag-parent-arrayp")
-(include-book "no-atoms")
 (include-book "shorter-list")
 
 ;; This book deals with populating and using the dag-parent-array.
@@ -95,10 +94,10 @@
 (defthm <-of-mv-nth-0-of-first-atom
   (implies (and (all-dargp-less-than args bound)
                 (natp bound)
-                (not (no-atoms args))
+                (not (all-consp args))
                 )
            (< (mv-nth 0 (first-atom args)) bound))
-  :hints (("Goal" :in-theory (enable first-atom ALL-DARGP-LESS-THAN no-atoms))))
+  :hints (("Goal" :in-theory (enable first-atom ALL-DARGP-LESS-THAN all-consp))))
 
 (defthm true-listp-of-mv-nth-1-of-first-atom
   (implies (true-listp args)
@@ -107,20 +106,20 @@
 
 (defthm natp-of-mv-nth-0-of-first-atom
   (implies (and (all-dargp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (natp (mv-nth 0 (first-atom args))))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable first-atom no-atoms))))
+  :hints (("Goal" :in-theory (enable first-atom all-consp))))
 
 (defthm integerp-of-mv-nth-0-of-first-atom
   (implies (and (all-dargp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (integerp (mv-nth 0 (first-atom args))))
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm <=-of-0-and-mv-nth-0-of-first-atom
   (implies (and (all-dargp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (<= 0 (mv-nth 0 (first-atom args)))))
 
 (defthm all-dargp-of-mv-nth1-of-first-atom
@@ -129,49 +128,49 @@
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm not-<-of-largest-non-quotep-and-mv-nth-0-of-first-atom
-  (implies (and (not (no-atoms items))
+  (implies (and (not (all-consp items))
                 (all-dargp items))
            (not (< (largest-non-quotep items)
                    (mv-nth '0 (first-atom items)))))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom no-atoms))))
+  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
 (defthm first-atom-bound-lemma
   (implies (and (<= (largest-non-quotep items) x)
-                (not (no-atoms items))
+                (not (all-consp items))
                 (all-dargp items))
            (not (< x
                    (mv-nth '0 (first-atom items)))))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom no-atoms))))
+  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
 (defthm all-dargp-less-than-of-plus1-of-largest-non-quotep
- (implies (and (not (no-atoms items))
+ (implies (and (not (all-consp items))
                (all-dargp items))
           (all-dargp-less-than items (+ 1 (largest-non-quotep items))))
- :hints (("Goal" :in-theory (enable largest-non-quotep all-dargp-less-than no-atoms))))
+ :hints (("Goal" :in-theory (enable largest-non-quotep all-dargp-less-than all-consp))))
 
 ;rename
 (defthm all-dargp-less-than-lemma2
-  (implies (and (not (no-atoms items))
+  (implies (and (not (all-consp items))
                 (all-dargp items))
            (not (< (largest-non-quotep items)
                    (largest-non-quotep (mv-nth 1 (first-atom items))))))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable first-atom no-atoms))))
+  :hints (("Goal" :in-theory (enable first-atom all-consp))))
 
 (defthm <-of-largest-non-quotep-and-0
   (implies (all-dargp items)
            (equal (< (largest-non-quotep items) 0)
-                  (no-atoms items)))
-  :hints (("Goal" :in-theory (enable no-atoms))))
+                  (all-consp items)))
+  :hints (("Goal" :in-theory (enable all-consp))))
 
 (defthm all-dargp-less-than-lemma
-  (implies (and (not (no-atoms items))
+  (implies (and (not (all-consp items))
                 (all-dargp items))
            (all-dargp-less-than (mv-nth 1 (first-atom items))
                                            (+ 1 (largest-non-quotep items))))
-  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom no-atoms))))
+  :hints (("Goal" :in-theory (enable largest-non-quotep first-atom all-consp))))
 
 ;;;
 ;;; find-matching-node
@@ -215,7 +214,7 @@
   (declare (xargs :guard (and (symbolp fn)
                               (not (equal 'quote fn))
                               (true-listp args)
-                              (not (no-atoms args)) ;at least one child must be a nodenum so we can look up its parents
+                              (not (all-consp args)) ;at least one child must be a nodenum so we can look up its parents
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (all-dargp-less-than args dag-len)
@@ -248,7 +247,7 @@
                 ;(not (equal 'quote fn))
                 (all-dargp args)
                 ;(true-listp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (iff (integerp (find-expr-using-parents fn args dag-array dag-parent-array dag-len))
                 (find-expr-using-parents fn args dag-array dag-parent-array dag-len)))
   :hints (("Goal" :in-theory (enable find-expr-using-parents))))
@@ -259,7 +258,7 @@
                 ;(not (equal 'quote fn))
                 (all-dargp args)
                 ;(true-listp args)
-                (not (no-atoms args)))
+                (not (all-consp args)))
            (<= 0 (find-expr-using-parents fn args dag-array dag-parent-array dag-len)))
   :hints (("Goal" :in-theory (enable find-expr-using-parents))))
 
@@ -288,7 +287,7 @@
 
 (defthm <-of-find-expr-using-parents
   (implies (and (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                (not (no-atoms args))
+                (not (all-consp args))
                 (all-dargp-less-than args (alen1 'dag-array dag-array))
                 (natp dag-len)
                 (equal (alen1 'dag-array dag-array)

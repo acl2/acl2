@@ -16,9 +16,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ types
+(defxdoc+ atc-types
   :parents (atc-implementation)
-  :short "C types."
+  :short "A model of C types for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -39,12 +39,16 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only model the plain @('char') type and
-     the standard signed and unsigned integer types.")
+     the standard signed and unsigned integer types (except @('_Bool'),
+     as well as pointer types.
+     The referenced type of a pointer type may be any type (that we model),
+     including a pointer type.
+     The recursion bottoms out at the integer types.")
    (xdoc::p
-    "This is currently the same as @(tsee tyspecseq),
-     but we expect that in the future @(tsee tyspecseq)
-     will be generalized to accommodate more sequences of type specifiers,
-     some of which may denote the same type in fact (see @(see types))."))
+    "This semantic model is more general
+     than its syntactic counterpart @(tsee tyname):
+     the latter only allows one level of pointers currently.
+     In any case, initially we make a limited use of pointer types."))
   (:char ())
   (:schar ())
   (:sshort ())
@@ -56,6 +60,7 @@
   (:uint ())
   (:ulong ())
   (:ullong ())
+  (:pointer ((referenced type)))
   :pred typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,6 +107,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  (and (member-eq (type-kind type)
+                  '(:schar :sshort :sint :slong :sllong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  (and (member-eq (type-kind type)
+                  '(:uchar :ushort :uint :ulong :ullong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type [C:6.2.5/17]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-realp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real type [C:6.2.5/18]."
+  (type-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  (type-realp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalarp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  (or (type-arithmeticp type)
+      (type-case type :pointer))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-name-to-type ((tyname tynamep))
   :returns (type typep)
   :short "Turn a type name into a type."
@@ -109,22 +169,23 @@
   (xdoc::topstring
    (xdoc::p
     "A type name denotes a type [C:6.7.7/2].
-     This ACL2 function returns the denoted type.
-     Currently this is essentially an identity (modulo wrappers),
-     but see the discussion in @(see types)."))
-  (b* ((tyspecseq (tyname->specs tyname)))
-    (tyspecseq-case tyspecseq
-                    :char (type-char)
-                    :schar (type-schar)
-                    :sshort (type-sshort)
-                    :sint (type-sint)
-                    :slong (type-slong)
-                    :sllong (type-sllong)
-                    :uchar (type-uchar)
-                    :ushort (type-ushort)
-                    :uint (type-uint)
-                    :ulong (type-ulong)
-                    :ullong (type-ullong)))
+     This ACL2 function returns the denoted type."))
+  (b* ((tyspecseq (tyname->specs tyname))
+       (type (tyspecseq-case tyspecseq
+                             :char (type-char)
+                             :schar (type-schar)
+                             :sshort (type-sshort)
+                             :sint (type-sint)
+                             :slong (type-slong)
+                             :sllong (type-sllong)
+                             :uchar (type-uchar)
+                             :ushort (type-ushort)
+                             :uint (type-uint)
+                             :ulong (type-ulong)
+                             :ullong (type-ullong))))
+    (if (tyname->pointerp tyname)
+        (type-pointer type)
+      type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

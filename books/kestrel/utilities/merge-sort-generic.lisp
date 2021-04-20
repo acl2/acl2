@@ -50,14 +50,6 @@
              0
            (+ -1 (len x)))))
 
-;dup
-;turn around?
-(defthm consp-when-len-equal
-  (implies (and (equal (len x) free)
-                (syntaxp (quotep free)))
-           (equal (consp x) (< 0 free)))
-  :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))
-
 (in-theory (disable len))
 ;add theory invar?
 
@@ -139,7 +131,7 @@
                     (union-theories '(o-p o-finp o< len-of-cdr-better
                                           (:compound-recognizer natp-compound-recognizer)
                                           (:type-prescription len)
-                                          consp-when-len-equal
+                                          consp-when-len-equal-constant
                                           )
                                     (theory 'minimal-theory))))
                   :guard (and (all-generic-predp l1)
@@ -159,7 +151,7 @@
                     (union-theories '(o-p o-finp o< len-of-cdr-better
                                           (:compound-recognizer natp-compound-recognizer)
                                           (:type-prescription len)
-                                          ;;consp-when-len-equal
+                                          ;;consp-when-len-equal-constant
                                           len-of-split-list-fast-bound2
                                           len-of-split-list-fast-bound)
                                     (theory 'minimal-theory))))

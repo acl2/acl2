@@ -20,9 +20,6 @@
 
 (include-book "evaluator-basic")
 (include-book "make-substitution-code-simple")
-(local (include-book "replace-var-rules"))
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
 ;; Make a version of my-sublis-var-and-eval, etc that use the basic evaluator:
 (make-substitution-code-simple basic axe-evaluator-basic)

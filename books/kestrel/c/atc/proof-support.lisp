@@ -98,7 +98,8 @@
      we expect that the simplification will take place there.")
    (xdoc::p
     "We generate opener rules for
-     all the (singly and mutually) recursive @('exec-...') functions,
+     all the (singly and mutually) recursive @('exec-...') functions
+     except @(tsee exec-fun) (more on this below),
      as well as for some other recursive functions.
      The opener rules have hypotheses saying that
      certain arguments are (quoted) constants,
@@ -111,6 +112,13 @@
      during the symbolic execution,
      the list of scopes in a frame has the form of a nest of @(tsee cons)es,
      with some constant and some non-constant parts.")
+   (xdoc::p
+    "We avoid opener rules for @(tsee exec-fun) because
+     we use the correctness theorems of callees
+     in the correctness proofs of callers.
+     Those correctness theorems are expressed in terms of @(tsee exec-fun),
+     so we do not want to expand @(tsee exec-fun).
+     See the proof generation code for more details.")
    (xdoc::p
     "We collect all the openers rules in a ruleset,
      to make it easier to collect them incrementally as they are introduced."))
@@ -140,12 +148,6 @@
       :hyps ((syntaxp (quotep e)))
       :disable t)
     (add-to-ruleset atc-openers (defopeners-names exec-expr-asg)))
-
-  (progn
-    (defopeners exec-fun
-      :hyps ((syntaxp (quotep fun)))
-      :disable t)
-    (add-to-ruleset atc-openers (defopeners-names exec-fun)))
 
   (progn
     (defopeners exec-stmt
@@ -216,21 +218,29 @@
     (:e binop-kind)
     (:e binop-purep)
     (:e binop-strictp)
-    (:e block-item-decl->get)
+    (:e block-item-declon->get)
     (:e block-item-kind)
     (:e block-item-stmt->get)
+    (:e booleanp)
     (:e compustate)
     (:e compustate->frames)
     (:e compustate-fix)
     (:e const-int->get)
     (:e const-kind)
-    (:e decl->init)
-    (:e decl->name)
+    (:e declon->init)
+    (:e declon->declor)
+    (:e declon->type)
+    (:e declor->ident)
+    (:e declor->pointerp)
+    (:e expr-arrsub->arr)
+    (:e expr-arrsub->sub)
     (:e expr-binary->arg1)
     (:e expr-binary->arg2)
     (:e expr-binary->op)
     (:e expr-call->args)
     (:e expr-call->fun)
+    (:e expr-cast->type)
+    (:e expr-cast->arg)
     (:e expr-cond->else)
     (:e expr-cond->test)
     (:e expr-cond->then)
@@ -245,6 +255,7 @@
     (:e fun-env-lookup)
     (:e fun-info->body)
     (:e fun-info->params)
+    (:e fun-info->result)
     (:e iconst->base)
     (:e iconst->type)
     (:e iconst->unsignedp)
@@ -254,16 +265,17 @@
     (:e ident)
     (:e ident-fix)
     (:e identp)
+    (:e init-fun-env)
     (:e len)
     (:e natp)
-    (:e acl2::sbyte32p)
     (:e omap::in)
-    (:e param-decl->name)
-    (:e param-decl-list-fix)
+    (:e param-declon->declor)
+    (:e param-declon->type)
+    (:e param-declon-list-fix)
     (:e scope-list-fix)
     (:e scope-listp)
-    (:e scope-result-kind)
     (:e scopep)
+    (:e sint-integerp)
     (:e stmt-compound->items)
     (:e stmt-expr->get)
     (:e stmt-fix)
@@ -274,13 +286,17 @@
     (:e stmt-ifelse->then)
     (:e stmt-kind)
     (:e stmt-return->value)
+    (:e tyname)
+    (:e type-kind)
+    (:e type-name-to-type)
+    (:e type-pointer)
+    (:e type-uchar)
+    (:e type-sint)
     (:e unop-fix)
     (:e unop-kind)
     (:e valuep)
     (:e value-list-fix)
     (:e value-listp)
-    (:e value-option-result-kind)
-    (:e value-option-result-ok)
     (:e zp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,7 +318,7 @@
    (xdoc::p
     "It may seem surprising that we expand @(tsee sint-const),
      since that corresponds to a C construct;
-     we most certainly do not expand functions like @(tsee sint-add).
+     we most certainly do not expand functions like @(tsee add-sint-sint).
      The reason is that @(tsee sint-const) is used to represent C constants
      in ACL2 functions,
      but in the dynamic semantics,
@@ -325,7 +341,7 @@
      In fact, we want to expose its @(tsee if) structure
      in the symbolic execution.")
    (xdoc::p
-    "We also expand @(tsee sint-logand) and @(tsee sint-logor),
+    "We also expand @(tsee logand-sint-sint) and @(tsee logor-sint-sint),
      which may appear in the ACL2 functions that represent C functions,
      to expose their internal @(tsee if) structure,
      so that it can match the @(tsee if) structure of
@@ -335,23 +351,63 @@
     endp
     enter-scope
     exit-scope
+    exec-iconst
+    exec-const
+    exec-ident
+    exec-plus
+    exec-minus
+    exec-bitnot
+    exec-lognot
+    exec-unary
+    exec-mul
+    exec-div
+    exec-rem
+    exec-add
+    exec-sub
+    exec-shl
+    exec-shr
+    exec-lt
+    exec-gt
+    exec-le
+    exec-ge
+    exec-eq
+    exec-ne
+    exec-bitand
+    exec-bitxor
+    exec-bitior
+    exec-binary-strict-pure
+    exec-test
+    exec-integer
     exec-binary-logand
     exec-binary-logor
     exec-binary-pure
-    exec-binary-strict-pure
-    exec-const
-    exec-iconst
-    exec-ident
-    exec-unary
+    exec-cast
+    exec-arrsub
+    promote-value
     mv-nth
     pop-frame
     push-frame
     read-var
-    sint-const
     sint01
-    sint-logand
-    sint-logor
+    sint-const
+    logand-sint-sint
+    logor-sint-sint
+    shl-sint-sint
+    shl-sint-sint-okp
+    shr-sint-sint
+    shr-sint-sint-okp
     top-frame
+    type-of-value
+    uaconvert-values
+    uchar-array-sint-index-okp
+    uchar-array-read-sint
+    uchar-array-write-sint
+    value-unsigned-integerp
+    value-signed-integerp
+    value-integerp
+    value-realp
+    value-arithmeticp
+    value-scalarp
     write-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,7 +451,7 @@
      to @('t') and @('nil'), which further simplifies the @(tsee if)s.")
    (xdoc::p
     "We also have two rules to simplify applications of
-     @(tsee sint-lognot) to @('(sint 0)') and @('(sint 1)').
+     @(tsee lognot-sint) to @('(sint 0)') and @('(sint 1)').
      Terms of this form may arise in the process of simplifying
      C non-strict expressions involving @('&&') and @('||').")
    (xdoc::p
@@ -406,75 +462,32 @@
      This distribution happens at the goal level,
      but not in the rewriter by default."))
 
-  (defruled scope-result-kind-when-scopep
-    (implies (scopep scope)
-             (equal (scope-result-kind scope)
-                    :ok))
-    :enable scope-result-kind)
-
-  (defruled scope-result-ok->get-when-scopep
-    (implies (scopep scope)
-             (equal (scope-result-ok->get scope)
-                    scope))
-    :enable scope-result-ok->get)
-
-  (defruled value-result-kind-when-valuep
-    (implies (valuep x)
-             (equal (value-result-kind x)
-                    :ok))
-    :enable value-result-kind)
-
-  (defruled value-result-ok->get-when-valuep
-    (implies (valuep x)
-             (equal (value-result-ok->get x)
-                    x))
-    :enable value-result-ok->get)
+  (defruled not-errorp-when-scopep
+    (implies (scopep x)
+             (not (errorp x)))
+    :enable (errorp scopep))
 
   (defruled value-result-fix-when-valuep
     (implies (valuep x)
              (equal (value-result-fix x)
                     x)))
 
-  (defruled value-option-result-kind-when-value-optionp
-    (implies (value-optionp x)
-             (equal (value-option-result-kind x)
-                    :ok))
-    :enable value-option-result-kind)
-
-  (defruled value-option-result-ok->get-when-value-optionp
-    (implies (value-optionp x)
-             (equal (value-option-result-ok->get x)
-                    x))
-    :enable value-option-result-ok->get)
-
-  (defruled value-list-result-kind-when-value-listp
-    (implies (value-listp x)
-             (equal (value-list-result-kind x)
-                    :ok))
-    :enable value-list-result-kind)
-
-  (defruled value-list-result-ok->get-when-value-listp
-    (implies (value-listp x)
-             (equal (value-list-result-ok->get x)
-                    x))
-    :enable value-list-result-ok->get)
-
-  (defruled compustate-result-kind-when-compustatep
-    (implies (compustatep x)
-             (equal (compustate-result-kind x)
-                    :ok))
-    :enable compustate-result-kind)
-
-  (defruled compustate-result-ok->get-when-compustatep
-    (implies (compustatep x)
-             (equal (compustate-result-ok->get x)
-                    x))
-    :enable compustate-result-ok->get)
-
   (defruled not-errorp-when-valuep
     (implies (valuep x)
              (not (errorp x)))
-    :enable (errorp valuep sintp ucharp))
+    :enable (errorp
+             valuep
+             ucharp
+             scharp
+             ushortp
+             sshortp
+             uintp
+             sintp
+             ulongp
+             slongp
+             ullongp
+             sllongp
+             pointerp))
 
   (defruled not-errorp-when-value-listp
     (implies (value-listp x)
@@ -486,16 +499,15 @@
              (not (errorp x)))
     :enable errorp)
 
-  (defruled not-ucharp-when-sintp
-    (implies (sintp x)
-             (not (ucharp x)))
-    :enable (sintp ucharp))
+  (defruled not-errorp-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (not (errorp x)))
+    :enable (errorp uchar-arrayp))
 
-  (defruled value-kind-when-sintp
-    (implies (sintp x)
-             (equal (value-kind x)
-                    :sint))
-    :enable value-kind)
+  (defruled not-errorp-when-booleanp
+    (implies (booleanp x)
+             (not (errorp x)))
+    :enable errorp)
 
   (defruled len-of-cons
     (equal (len (cons x y))
@@ -511,31 +523,17 @@
   (defruled sint-nonzerop-of-0
     (equal (sint-nonzerop (sint 0)) nil))
 
-  (defruled sint-lognot-of-0
-    (equal (sint-lognot (sint 0))
+  (defruled lognot-sint-of-0
+    (equal (lognot-sint (sint 0))
            (sint 1)))
 
-  (defruled sint-lognot-of-1
-    (equal (sint-lognot (sint 1))
+  (defruled lognot-sint-of-1
+    (equal (lognot-sint (sint 1))
            (sint 0)))
 
   (defruled car-of-if
     (equal (car (if a b c))
            (if a (car b) (car c))))
-
-  (defruled value-option-result-kind-of-if
-    (equal (value-option-result-kind (if a b c))
-           (if a (value-option-result-kind b) (value-option-result-kind c))))
-
-  (defruled value-result-kind-of-if
-    (equal (value-result-kind (if a b c))
-           (if a (value-result-kind b) (value-result-kind c)))
-    :enable value-result-kind)
-
-  (defruled value-result-ok->get-of-if
-    (equal (value-result-ok->get (if a b c))
-           (if a (value-result-ok->get b) (value-result-ok->get c)))
-    :enable value-result-ok->get)
 
   (defruled value-result-fix-of-if
     (equal (value-result-fix (if a b c))
@@ -552,6 +550,14 @@
   (defruled ucharp-of-if
     (equal (ucharp (if a b c))
            (if a (ucharp b) (ucharp c))))
+
+  (defruled sintp-of-if
+    (equal (sintp (if a b c))
+           (if a (sintp b) (sintp c))))
+
+  (defruled pointerp-of-if
+    (equal (pointerp (if a b c))
+           (if a (pointerp b) (pointerp c))))
 
   (defruled 1+nat-greater-than-0
     (implies (natp x)
@@ -575,7 +581,7 @@
      and include not only the rules defined in @(see atc-rewrite-rules),
      but also other existing rewrite rules.
      Note that some of them serve to
-     simplify fixtype deconstructs applied to constructors.")
+     simplify fixtype deconstructors applied to constructors.")
    (xdoc::p
     "We take the opportunity here to discuss the general shape
      of the computation state terms during the symbolic execution.
@@ -602,100 +608,110 @@
     "Given the above, it should not be surprising to see
      rules like @('omap::in-of-update'),
      which serves to simplify, during symbolic execution,
-     the finding of a variable in a scope.")
-   (xdoc::p
-    "We also call attention to an ``asymmetry'' between
-     the presence of rules like @('scope-result-kind-when-scopep')
-     and the absence of rules like @('scope-result-kind-when-errorp'),
-     which is a natural dual.
-     The reason is that we expect the generated C code, by construction,
-     to never result in dynamic semantic errors;
-     therefore, we expect that the symbolic execution
-     will never produce actual error values.
-     Instead, it should always produce non-error values."))
-  '(;; introduced in this file (see ATC-REWRITE-RULES):
-    compustate-result-kind-when-compustatep
-    compustate-result-ok->get-when-compustatep
-    len-of-cons
-    1+len-greater-than-0
-    not-errorp-when-valuep
-    not-errorp-when-value-listp
-    not-errorp-when-scope-listp
-    not-ucharp-when-sintp
-    scope-result-kind-when-scopep
-    scope-result-ok->get-when-scopep
-    sint-nonzerop-of-0
-    sint-nonzerop-of-1
-    sint-lognot-of-0
-    sint-lognot-of-1
-    value-kind-when-sintp
-    value-option-result-kind-when-value-optionp
-    value-option-result-kind-of-if
-    value-option-result-ok->get-when-value-optionp
-    value-list-result-kind-when-value-listp
-    value-list-result-ok->get-when-value-listp
-    value-result-fix-when-valuep
-    value-result-kind-when-valuep
-    value-result-ok->get-when-valuep
-    value-result-kind-of-if
-    value-result-ok->get-of-if
-    value-result-fix-of-if
-    errorp-of-if
-    valuep-of-if
-    ucharp-of-if
-    car-of-if
-    1+nat-greater-than-0
-    natp-of-1+
-    natp-of-len
-    ;; introduced elsewhere:
-    car-cons
-    cdr-cons
-    compustate-of-fields
-    compustate->frames-of-compustate
-    compustate-fix-when-compustatep
-    compustatep-of-compustate
-    frame->function-of-frame
-    frame->scopes-of-frame
-    frame-fix-when-framep
-    frame-list-fix-of-cons
-    frame-list-fix-when-frame-listp
-    frame-listp-of-compustate->frames
-    framep-of-frame
-    not-errorp-when-compustatep
-    omap::in-of-update
-    pop-frame-of-push-frame
-    scope-fix-when-scopep
-    scope-list-fix-of-cons
-    scope-listp-of-cons
-    scopep-of-update
-    sint-fix-when-sintp
-    sintp-of-sint
-    sintp-of-sint-plus
-    sintp-of-sint-minus
-    sintp-of-sint-bitnot
-    sintp-of-sint-lognot
-    sintp-of-sint-add
-    sintp-of-sint-sub
-    sintp-of-sint-mul
-    sintp-of-sint-div
-    sintp-of-sint-rem
-    sintp-of-sint-shl-sint
-    sintp-of-sint-shr-sint
-    sintp-of-sint-lt
-    sintp-of-sint-gt
-    sintp-of-sint-le
-    sintp-of-sint-ge
-    sintp-of-sint-eq
-    sintp-of-sint-ne
-    sintp-of-sint-bitand
-    sintp-of-sint-bitxor
-    sintp-of-sint-bitior
-    top-frame-of-push-frame
-    valuep-when-sintp
-    value-fix-when-valuep
-    value-listp-of-cons
-    value-list-fix-of-cons
-    value-optionp-when-valuep))
+     the finding of a variable in a scope."))
+  (append
+   '(;; introduced in this file (see ATC-REWRITE-RULES):
+     len-of-cons
+     1+len-greater-than-0
+     not-errorp-when-booleanp
+     not-errorp-when-scopep
+     not-errorp-when-valuep
+     not-errorp-when-value-listp
+     not-errorp-when-scope-listp
+     not-errorp-when-uchar-arrayp
+     not-sintp-when-ucharp
+     not-pointerp-when-ucharp
+     not-ucharp-when-sintp
+     not-pointerp-when-sintp
+     not-ucharp-when-pointerp
+     not-sintp-when-pointerp
+     sint-nonzerop-of-0
+     sint-nonzerop-of-1
+     lognot-sint-of-0
+     lognot-sint-of-1
+     value-result-fix-when-valuep
+     value-result-fix-of-if
+     errorp-of-if
+     valuep-of-if
+     ucharp-of-if
+     sintp-of-if
+     pointerp-of-if
+     car-of-if
+     1+nat-greater-than-0
+     natp-of-1+
+     natp-of-len
+     ;; introduced elsewhere:
+     booleanp-of-uchar-nonzerop
+     booleanp-of-schar-nonzerop
+     booleanp-of-ushort-nonzerop
+     booleanp-of-sshort-nonzerop
+     booleanp-of-uint-nonzerop
+     booleanp-of-sint-nonzerop
+     booleanp-of-ulong-nonzerop
+     booleanp-of-slong-nonzerop
+     booleanp-of-ullong-nonzerop
+     booleanp-of-sllong-nonzerop
+     car-cons
+     cdr-cons
+     compustate-of-fields
+     compustate->frames-of-compustate
+     compustate->heap-of-compustate
+     compustate-fix-when-compustatep
+     compustatep-of-compustate
+     frame->function-of-frame
+     frame->scopes-of-frame
+     frame-fix-when-framep
+     frame-list-fix-of-cons
+     frame-list-fix-when-frame-listp
+     frame-listp-of-compustate->frames
+     framep-of-frame
+     heap-fix-when-heapp
+     heapp-of-compustate->heap
+     not-errorp-when-compustatep
+     omap::in-of-update
+     pop-frame-of-push-frame
+     scope-fix-when-scopep
+     scope-list-fix-of-cons
+     scope-listp-of-cons
+     scopep-of-update
+     sint-fix-when-sintp
+     sintp-of-sint
+     sintp-of-plus-sint
+     sintp-of-minus-sint
+     sintp-of-bitnot-sint
+     sintp-of-lognot-sint
+     sintp-of-add-sint-sint
+     sintp-of-sub-sint-sint
+     sintp-of-mul-sint-sint
+     sintp-of-div-sint-sint
+     sintp-of-rem-sint-sint
+     sintp-of-shl-sint
+     sintp-of-shr-sint
+     sintp-of-shl-sint-sint
+     sintp-of-shr-sint-sint
+     sintp-of-lt-sint-sint
+     sintp-of-gt-sint-sint
+     sintp-of-le-sint-sint
+     sintp-of-ge-sint-sint
+     sintp-of-eq-sint-sint
+     sintp-of-ne-sint-sint
+     sintp-of-bitand-sint-sint
+     sintp-of-bitxor-sint-sint
+     sintp-of-bitior-sint-sint
+     sintp-of-sint-from-uchar
+     ucharp-of-uchar-array-read-sint
+     ucharp-of-uchar-array-read
+     ucharp-of-uchar-from-sint
+     top-frame-of-push-frame
+     valuep-when-pointerp
+     valuep-when-sintp
+     valuep-when-ucharp
+     value-fix-when-valuep
+     value-listp-of-cons
+     value-list-fix-of-cons
+     value-optionp-when-valuep)
+   ;; also introduced elsewhere:
+   *value-disjoint-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -716,27 +732,34 @@
      that represent shallowly embedded C expressions.
      These are listed here; the list may not be exhaustive,
      and may therefore be extended as needed."))
-  '((:t sint)
-    (:t sint-plus)
-    (:t sint-minus)
-    (:t sint-bitnot)
-    (:t sint-lognot)
-    (:t sint-add)
-    (:t sint-sub)
-    (:t sint-mul)
-    (:t sint-div)
-    (:t sint-rem)
-    (:t sint-shl-sint)
-    (:t sint-shr-sint)
-    (:t sint-lt)
-    (:t sint-gt)
-    (:t sint-le)
-    (:t sint-ge)
-    (:t sint-eq)
-    (:t sint-ne)
-    (:t sint-bitand)
-    (:t sint-bitxor)
-    (:t sint-bitior)))
+  '((:t exec-block-item-list)
+    (:t sint)
+    (:t plus-sint)
+    (:t minus-sint)
+    (:t bitnot-sint)
+    (:t lognot-sint)
+    (:t add-sint-sint)
+    (:t sub-sint-sint)
+    (:t mul-sint-sint)
+    (:t div-sint-sint)
+    (:t rem-sint-sint)
+    (:t shl-sint)
+    (:t shr-sint)
+    (:t shl-sint-sint)
+    (:t shr-sint-sint)
+    (:t lt-sint-sint)
+    (:t gt-sint-sint)
+    (:t le-sint-sint)
+    (:t ge-sint-sint)
+    (:t eq-sint-sint)
+    (:t ne-sint-sint)
+    (:t bitand-sint-sint)
+    (:t bitxor-sint-sint)
+    (:t bitior-sint-sint)
+    (:t sint-from-uchar)
+    (:t uchar-array-read-sint)
+    (:t uchar-array-read)
+    (:t uchar-from-sint)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -754,7 +777,8 @@
      The fact that the type is @(tsee consp) is actually not important;
      what is important is that it does not include @('nil'),
      i.e. it is logically true."))
-  '(consp-when-sintp))
+  '(consp-when-sintp
+    consp-when-ucharp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

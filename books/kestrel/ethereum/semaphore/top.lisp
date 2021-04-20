@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Authors: Eric McCarthy (mccarthy@kestrel.edu)
+;          Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,6 +15,7 @@
 (include-book "base-points-for-pedersen-hash")
 (include-book "pedersen-hash")
 (include-book "prime-field-abbreviations")
+(include-book "printing")
 
 (include-book "json-to-r1cs/top")
 
@@ -42,3 +44,25 @@
     e.g.,
     `[Sema-Spec:5.3.2]' references Section 5.3.2."))
   :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ semaphore-specification
+  :parents (semaphore)
+  :short "Formal specification of Ethereum's Semaphore."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here are specifications of key components of Ethereum's Semaphore.
+     We plan to formally specify the remaining components as well.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ semaphore-proofs
+  :parents (semaphore)
+  :short "Formal proofs of Ethereum's Semaphore."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here are formal proofs of key components of Ethereum's Semaphore.
+     We plan to formally verify the remaining components as well.")))

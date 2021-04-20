@@ -58,3 +58,9 @@
                 (natp element-size))
            (unsigned-byte-p n (bv-array-read element-size len index data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm equal-of-bvchop-of-car-and-bv-array-read
+  (implies (equal len (len x))
+           (equal (equal (bvchop 8 (car x)) (bv-array-read 8 len 0 x))
+                  t))
+  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))

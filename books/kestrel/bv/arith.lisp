@@ -18,6 +18,7 @@
 (include-book "kestrel/arithmetic-light/expt" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/arithmetic-light/times" :dir :system)
+;(include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 
 (defthm commutativity-2-of-*
@@ -36,10 +37,6 @@
 (defthm distributivity-of-minus-over-+
   (equal (- (+ x y))
          (+ (- x) (- y))))
-
-;dup?
-(DEFTHM DISTRIBUTIVITY-OF-/-OVER-*
-  (EQUAL (/ (* X Y)) (* (/ X) (/ Y))))
 
 ;dup
 (DEFTHM FOLD-CONSTS-IN-+
@@ -415,59 +412,6 @@
                 (syntaxp (quotep free))
                 (<= free k1))
            (not (< k1 x))))
-
-;could be expensive
-;dup
-(defthm rationalp-when-integerp
-  (implies (integerp x)
-           (rationalp x)))
-
-;dup
-(defund power-of-2p (x)
-  (declare (xargs :guard t))
-  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
-       (= x (expt 2 (+ -1 (integer-length x))))))
-
-
-(defthm integerp-of-power2-hack
-  (implies (and (syntaxp (quotep k))
-                (power-of-2p k)
-                (integerp n))
-           (equal (integerp (binary-* k (unary-/ (expt '2 n))))
-                  (<= n (+ -1 (integer-length k)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expt-of-+ power-of-2p) (integerp-of-expt-when-natp))
-           :use (:instance integerp-of-expt-when-natp
-                           (r 2)
-                           (i (- (+ -1 (integer-length k)) n))))))
-
-(defthm integerp-of-power2-hack-another-factor
-  (implies (and (syntaxp (quotep k))
-                (power-of-2p k)
-                (<= n (+ -1 (integer-length k)))
-                (Integerp y)
-                (integerp n))
-           (integerp (* k (unary-/ (expt '2 n)) y)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expt-of-+ power-of-2p) ( integerp-of-expt-when-natp))
-           :use ((:instance integerp-of-* (x (* k (unary-/ (expt '2 n)))))
-                 (:instance integerp-of-expt-when-natp
-                            (r 2)
-                            (i (- (+ -1 (integer-length k)) n)))))))
-
-(defthm integerp-of-power2-hack-another-factor-alt
-  (implies (and (syntaxp (quotep k))
-                (power-of-2p k)
-                (<= n (+ -1 (integer-length k)))
-                (Integerp y)
-                (integerp n))
-           (integerp (* k y (unary-/ (expt '2 n)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expt-of-+ power-of-2p) ( integerp-of-expt-when-natp))
-           :use ((:instance integerp-of-* (x (* k (unary-/ (expt '2 n)))))
-                 (:instance integerp-of-expt-when-natp
-                            (r 2)
-                            (i (- (+ -1 (integer-length k)) n)))))))
 
 (defthm <-of-sums-cancel
   (equal (< x (+ x y))

@@ -8,7 +8,7 @@
 )
 
 (include-book "basis")
-(include-book "../defdata/defdata-util")
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 (include-book "utilities")
 
 ;;; For use by testing hints
@@ -239,12 +239,6 @@
                                             (acl2::access acl2::linear-pot pot :positives))
                                     (acl2::access acl2::linear-pot pot :var)))))
 (logic)
-
-; utility fn to print if verbose flag is true
-(defmacro cw? (verbose-flag &rest rst)
-  `(if ,verbose-flag
-     (cw ,@rst)
-     nil))
 
 (defun collect-tau-alist (triples tau-alist type-alist pot-lst ens wrld)
 (declare (xargs :mode :program))

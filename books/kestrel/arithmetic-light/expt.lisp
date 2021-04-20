@@ -48,6 +48,13 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable zip expt))))
 
+(defthm <=-of-0-and-expt
+  (implies (and (<= 0 r)
+                (rationalp r))
+           (<= 0 (expt r i)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable zip expt))))
+
 (defthm equal-of-0-and-expt
   (equal (equal 0 (expt r i))
          (and (equal 0 (fix r))
@@ -125,3 +132,23 @@
   :hints (("Goal" :in-theory (enable ;expt-of-+
                               )))
   :rule-classes :linear)
+
+;gen the 1
+(defthm <-of-1-and-expt
+  (implies (integerp n)
+           (equal (< 1 (expt 2 n))
+                  (< 0 n))))
+
+(defthm floor-of-expt-2-and-2
+  (implies (integerp n)
+           (equal (floor (expt 2 n) 2)
+                  (if (posp n)
+                      (expt 2 (+ -1 n))
+                    0)))
+  :hints (("Goal" :in-theory (e/d (expt) ()))))
+
+(defthm expt-of-*
+  (equal (expt (* r1 r2) i)
+         (* (expt r1 i)
+            (expt r2 i)))
+  :hints (("Goal" :in-theory (enable expt))))

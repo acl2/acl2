@@ -255,7 +255,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "el::execloader"
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
                              "Read and Parse ELF/Mach-O Binary Files"))
 
    (xdoc::p
@@ -644,6 +644,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "ELF reader now gets the contents of all the sections listed in
+    the headers of a given ELF binary. Also, the package name has been
+    changed from @('EL') to @('EXLD').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
 
    (xdoc::p
@@ -863,6 +873,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "rstobj2::defrstobj"
+                             "Record-like Stobjs"))
+
+   (xdoc::p
+    "Add support for defining fields based off child stobjs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
 
    (xdoc::p
@@ -976,6 +994,10 @@
      have been improved to return an additional result,
      namely the updated list of names to avoid.
      This helps making the calling code more concise and less error-prone.")
+
+   (xdoc::p
+    "The utility @(tsee install-not-normalized) now uses the untranslated
+     version of the original body in the generated definition.")
 
    (xdoc::p
     "A new utility @(tsee if-tree-leaf-terms) has been added,
@@ -1123,6 +1145,28 @@
    (xdoc::p
     "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
      suitable for use within @(tsee make-event).")
+
+   (xdoc::p
+    "There are some changes in the utility @(tsee make-flag) (descibed in more
+     detail in its documentation).  (1) The value for keyword argument
+     @(':flag-mapping') is now expected to be a list of doublets, @('(old
+     new)').  The use of a list of cons pairs @('(old . new')) is still
+     permitted for now, but is deprecated and will likely be unsupported with a
+     future ACL2 release.  (2) The keyword argument, @(':last-body'), has been
+     replaced by @(':body'), where: value @('nil') has the same meaning as
+     before; the value @('t') that was supplied to @(':last-body') is supplied
+     as @(':last') to the new keyword, @(':body'); and a new form, a list of
+     doublets, is permitted for specifying which @(see definition) rules to
+     use.  (3) The tool is more robust when @(see xargs) declaration
+     @(':normalize nil') is involved.")
+
+   (xdoc::p
+    "The utility @(tsee install-not-normalized) now takes an additional keyword
+     argument, @(':enable'), specifying whether the generated @(tsee defthm)
+     event is enabled.  In addition to Boolean values, it allows the default
+     value, @(':auto'), specifying that the new rule is enabled if and only if
+     the original defintion is enabled.  This is a change in default behavior,
+     since before, the new rule was always enabled.")
 
    ))
 

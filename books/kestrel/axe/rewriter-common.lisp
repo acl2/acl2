@@ -12,48 +12,19 @@
 
 (in-package "ACL2")
 
-(include-book "all-consp")
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "axe-trees")
 (include-book "all-dargp-less-than")
+(include-book "stored-rules")
+(include-book "unify-term-and-dag-fast")
+(include-book "alist-suitable-for-hypsp")
 (include-book "dags") ;drop
+(local (include-book "unify-term-and-dag-fast-correct"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable quotep)))
-
-;; Check whether ALIST is an alist that binds exactly the symbols in
-;; EXPECTED-SYMBOLS, in that order, to either quoted constants or nodenums less
-;; than DAG-LEN.
-(defund axe-bind-free-result-okayp (alist expected-symbols dag-len)
-  (declare (xargs :guard (and (natp dag-len)
-                              (symbol-listp expected-symbols))))
-  (if (atom alist)
-      (and (null alist)
-           (null expected-symbols))
-    (let ((entry (first alist)))
-      (and (consp entry)
-           (consp expected-symbols)
-           (eq (car entry) (first expected-symbols))
-           (let ((val (cdr entry)))
-             (and (or (myquotep val)
-                      (and (natp val)
-                           (< val dag-len)))
-                  (axe-bind-free-result-okayp (rest alist) (rest expected-symbols) dag-len)))))))
-
-(defthmd axe-bind-free-result-okayp-rewrite
-  (equal (axe-bind-free-result-okayp alist expected-symbols dag-len)
-         (and (alistp alist)
-              (equal expected-symbols (strip-cars alist))
-              (all-dargp-less-than (strip-cdrs alist) dag-len)))
-  :hints (("Goal" :in-theory (e/d (strip-cdrs default-cdr default-car axe-bind-free-result-okayp dargp-less-than)
-                                  (myquotep natp)))))
-
-(defthm axe-bind-free-result-okayp-forward-to-alistp
-  (implies (axe-bind-free-result-okayp alist expected-symbols dag-len)
-           (alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable axe-bind-free-result-okayp))))
 
 ;make tail recursive?
 (defun make-equalities-from-dotted-pairs (pairs)
@@ -104,3 +75,10 @@
          (and (consp a)
               (all-consp x)))
   :hints (("Goal" :in-theory (enable cons-if-not-equal-car))))
+
+(defthm alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
+  (implies (and (stored-axe-rulep stored-rule)
+                (not (equal :fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len))))
+           (alist-suitable-for-hypsp (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len)
+                                     (stored-rule-hyps stored-rule)))
+  :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp))))

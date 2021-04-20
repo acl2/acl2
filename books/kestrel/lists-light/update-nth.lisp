@@ -104,3 +104,26 @@
              t
            (not (< (nfix key) (len l)))))
   :hints (("Goal" :in-theory (enable update-nth))))
+
+(defthm update-nth-0-equal-rewrite
+  (equal (equal (update-nth 0 v1 lst)
+                (cons v2 rst))
+         (and (equal v1 v2)
+              (equal (cdr lst)
+                     rst))))
+
+(defthm equal-of-update-nth-same
+  (implies (natp n)
+           (equal (equal x (update-nth n val x))
+                  (and (< n (len x))
+                       (equal val (nth n x)))))
+  :hints (("Goal" :in-theory (enable update-nth))))
+
+;rename to nth-of-update-nth-safe
+(defthmd nth-update-nth-safe
+  (implies (and (syntaxp (quotep m))
+                (syntaxp (quotep n)))
+           (equal (nth m (update-nth n val l))
+                  (if (equal (nfix m) (nfix n))
+                      val (nth m l))))
+  :hints (("Goal" :in-theory (enable nth))))

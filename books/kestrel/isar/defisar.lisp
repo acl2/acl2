@@ -156,7 +156,10 @@
                         `(implies (and ,@hyps) ,assume-fact)
                       assume-fact))
        (thm-hints '(("Goal" :in-theory nil)))
-       (thm-event `(local (defthm ,thm-name ,thm-formula :hints ,thm-hints)))
+       (thm-event `(local (defthm ,thm-name
+                            ,thm-formula
+                            :hints ,thm-hints
+                            :rule-classes nil)))
        (thm-event (restore-output thm-event))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
@@ -232,7 +235,10 @@
                         `(implies (and ,@thm-hyps) ,derive-fact)
                       derive-fact))
        (thm-hints derive-hints)
-       (thm-event `(local (defthm ,thm-name ,thm-formula :hints ,thm-hints)))
+       (thm-event `(local (defthm ,thm-name
+                            ,thm-formula
+                            :hints ,thm-hints
+                            :rule-classes nil)))
        (thm-event (restore-output thm-event))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
                                "****************************************"
@@ -257,8 +263,7 @@
   (b* ((fact-infos (strip-cdrs facts))
        (fact-thm-names (fact-info-list->thm-name-list fact-infos))
        (hints `(("Goal" :in-theory nil :use ,fact-thm-names)))
-       (local-thm `(local
-                    (defthm ,name ,formula :hints ,hints)))
+       (local-thm `(local (defthm ,name ,formula :hints ,hints)))
        (local-thm (restore-output local-thm))
        (exported-thm `(defthm ,name ,formula))
        (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
@@ -287,7 +292,7 @@
         (value
          (cons `(cw-event "~%~%~%~s0~s1~s0~%"
                           "!!!!!!!!!!!!!!!!!!!!"
-                          "The proof is partial (no :QED).")
+                          " The proof is partial (no :QED). ")
                events)))
        (command (car commands))
        ((unless (and (true-listp command)

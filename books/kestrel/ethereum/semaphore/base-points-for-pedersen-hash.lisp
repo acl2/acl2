@@ -37,7 +37,7 @@
 
 
 (defxdoc+ pedersen-hash-base-points
-  :parents (semaphore)
+  :parents (semaphore-specification)
   :short "Calculation of the ten base points used for the Pedersen hash."
   :long
   (xdoc::topstring

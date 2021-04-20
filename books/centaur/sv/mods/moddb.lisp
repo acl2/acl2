@@ -4336,13 +4336,19 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                                elab-mod$a-ninsts)))
              :rule-classes :linear))
 
-    (local (defthm ninsts-of-add-inst-upper-bound
-             (<= (elab-mod$a-ninsts (elab-mod$a-add-inst inst elab-mod))
-                 (+ 1 (elab-mod$a-ninsts elab-mod)))
-             :hints(("Goal" :in-theory (enable elab-mod$a-add-inst
-                                               elab-mod$a-ninsts
-                                               len)))
-             :rule-classes :linear))
+    (local
+     (defthm
+       ninsts-of-add-inst-upper-bound
+       (<= (elab-mod$a-ninsts (elab-mod$a-add-inst inst elab-mod))
+           (+ 1 (elab-mod$a-ninsts elab-mod)))
+       :hints
+       (("goal"
+         :in-theory
+         (e/d
+          (elab-mod$a-add-inst elab-mod$a-ninsts len)
+          ((:congruence
+            elab-modinst-list-equiv-implies-elab-modinst-list-equiv-append-2)))))
+       :rule-classes :linear))
 
     (local (defthm moddb-modinst-order-ok-of-add-inst-for-existing
              (implies (case-split (< (nfix instidx) (elab-mod$a-ninsts mod)))

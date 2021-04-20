@@ -74,7 +74,7 @@
               (let ((,(car formals) (cons a b)))
                 ,body))
        :hints(("Goal" :in-theory (enable ,accessor))))))
-            
+
 
 (defmacro def-cons-opener (accessor)
   `(make-event
@@ -181,7 +181,7 @@
            (equal (interp-st->cgraph (create-interp-st))
                   nil)
            :hints(("Goal" :in-theory (enable* interp-st-defs)))))
-  
+
 
 
   (local (in-theory (e/d (interp-st-init)
@@ -225,10 +225,7 @@
   ;;                             LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
   ;;                             (pathcond-fix))))))))
 
-  (local (in-theory (disable pathcond-fix-of-pathcond-fix-pathcond-normalize-const
-                             bfr-pathcond-p-fn-of-pathcond-fix-pathcond-normalize-const
-                              LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
-                             (pathcond-fix)
+  (local (in-theory (disable (pathcond-fix)
                              (update-logicman->mode))))
 
   (local (in-theory (enable  interp-st-bfrs-ok
@@ -305,7 +302,7 @@
 
 
 
-  
+
 (define bvar-db-to-bfr-env-aux ((n natp) (env fgl-env-p) bvar-db logicman)
   :guard (and (<= n (next-bvar bvar-db))
               (<= (base-bvar bvar-db) n)
@@ -479,7 +476,7 @@
   ;;            :in-theory (disable fgl-object-eval-when-no-bvars)))
   ;;   :fn fgl-object-eval)
 
-  
+
 
   (local (in-theory (enable bfr-varname-p)))
 
@@ -699,7 +696,7 @@
     (mv "Counterexample." interp-st state))
   ///
 
-  
+
   (set-ignore-ok t)
 
 
@@ -887,7 +884,6 @@
   ///
   (local (in-theory (disable pseudo-term-listp
                              equal-of-booleans-rewrite
-                             ACL2::CONSP-OF-NODE-LIST-FIX-X-NORMALIZE-CONST
                              not
                              (tau-system))))
 
@@ -900,15 +896,3 @@
                           a))
              (fgl-ev (disjoin clause) a))
     :rule-classes :clause-processor))
-
-
-
-
-
-
-            
-
-
-
-
-

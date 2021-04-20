@@ -15,30 +15,10 @@
 ;but my current rules may target integer-length?
 
 (include-book "power-of-2p")
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;include less? for FLOOR-BOUNDED-BY-/
-(local (include-book "kestrel/library-wrappers/arithmetic-equalities" :dir :system))
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-
-(defthm integer-length-of-expt2
-  (implies (integerp n)
-           (equal (integer-length (expt 2 n))
-                  (if (< n 0)
-                      0
-                    (+ 1 n))))
-  :hints
-  (("Goal" :in-theory (e/d (;integer-length*
-                            integer-length expt)
-                           (expt-hack)))))
-
-(defthm integer-length-of-mask
-  (implies (natp size)
-           (equal (integer-length (+ -1 (expt 2 size)))
-                  size))
-  :hints (("Goal" :induct t
-           :expand (integer-length (+ -1 (* 2 (expt 2 (+ -1 size)))))
-           :in-theory (e/d (integer-length expt) (expt-hack)))))
+(local (include-book "integer-length"))
 
 ;for integer-length proofs
 (defun double-floor-by-2-induct (i j)
@@ -185,3 +165,32 @@
            (equal (expt 2 (lg x))
                   x))
   :hints (("Goal" :in-theory (enable power-of-2p lg))))
+
+(defthm <-of-expt-2-of-lg-same
+  (implies (posp n)
+           (equal (< (expt 2 (lg n)) n)
+                  (not (power-of-2p n))))
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm <-of-expt-2-of-lg-same-linear
+  (implies (and (not (power-of-2p n))
+                (posp n))
+           (< (expt 2 (lg n)) n))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm <-of-lg-and-0
+  (implies (integerp i)
+           (equal (< (lg i) 0)
+                  (or (equal i 0)
+                      (equal i -1))))
+  :hints (("Goal" :in-theory (enable lg))))
+
+(defthm lg-of-*-of-1/2
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (lg (* 1/2 x))
+                  (if (equal 0 x)
+                      -1
+                    (+ -1 (lg x)))))
+  :hints (("Goal" :in-theory (enable lg))))

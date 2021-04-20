@@ -228,6 +228,13 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
+(defthm largest-non-quotep-when-all-consp-cheap
+  (implies (all-consp items)
+           (equal (largest-non-quotep items)
+                  -1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable largest-non-quotep))))
+
 (defthm <-of-1-and-len-of-nth-when-all-dargp-less-than
   (implies (and (all-dargp-less-than args bound)
                 (natp n)

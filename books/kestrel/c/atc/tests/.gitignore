@@ -1,5 +1,5 @@
-f.c
-f
+int.c
+int
 
 checksum.c
 checksum
@@ -24,3 +24,9 @@ locvars
 
 assign.c
 assign
+
+conversions.c
+conversions
+
+arrays.c
+arrays

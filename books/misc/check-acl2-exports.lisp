@@ -203,6 +203,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    ALL-ATTACHMENTS
+    LOGICAL-DEFUN
     VERIFY-GUARD-IMPLICATION
   ))
 

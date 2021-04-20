@@ -1,7 +1,7 @@
 ; Utilities dealing with quoted objects
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(local (include-book "equal-of-booleans"))
 
 ;; STATUS: IN-PROGRESS
 
@@ -68,6 +70,18 @@
   (implies (not (consp lst))
            (all-myquotep lst))
   :hints (("Goal" :in-theory (enable all-myquotep))))
+
+(defthmd consp-of-cdr-of-nth-when-all-myquotep
+  (implies (and (all-myquotep args)
+                (natp n))
+           (equal (consp (cdr (nth n args)))
+                  (< n (len args)))))
+
+(defthmd consp-of-nth-when-all-myquotep
+  (implies (and (all-myquotep args)
+                (natp n))
+           (equal (consp (nth n args))
+                  (< n (len args)))))
 
 ;;;
 ;;; unquote-list

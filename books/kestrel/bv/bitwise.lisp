@@ -15,6 +15,8 @@
 (include-book "bvxor")
 (include-book "bvnot")
 (include-book "bvor")
+(include-book "bitxor")
+(include-book "bvcat")
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
@@ -156,3 +158,9 @@
          (bvand n y (bvnot n x)))
   :hints (("Goal" :cases ((natp n))
            :use (:instance bvxor-of-bvand-same-arg2-helper (x (bvchop n x))))))
+
+(defthmd bvxor-of-+-of-1-split
+  (implies (natp n)
+           (equal (bvxor (+ 1 n) x y)
+                  (bvcat 1 (acl2::bitxor (acl2::getbit n x) (acl2::getbit n y))
+                         n (bvxor n x y)))))

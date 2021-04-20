@@ -1,4 +1,4 @@
-; EL (execloader) Library
+; EXLD (execloader) Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -36,8 +36,9 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@gmail.com>
 
-(in-package "EL")
+(in-package "EXLD")
 
+(include-book "std/strings/pad" :dir :system)
 (include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
@@ -45,6 +46,8 @@
 (local (xdoc::set-default-parents elf-reader))
 
 ;; ----------------------------------------------------------------------
+
+;; ELF segments:
 
 (defprod elf64-segment-header
   ((type natp :default 0)
@@ -72,14 +75,21 @@
               :elt-type elf32-segment-header
               :true-listp t)
 
+;; ----------------------------------------------------------------------
+
+;; ELF sections:
+
 (defprod elf-section-header
   ((name-str  stringp :default "")
    (name      natp :default 0)
    (type      natp :default 0)
    (flags     natp :default 0)
-   (addr      natp :default 0)
-   (offset    natp :default 0)
-   (size      natp :default 0)
+   (addr      natp :default 0
+              "The address where this section should be laid in memory")
+   (offset    natp :default 0
+              "The offset in the binary file where this section is located")
+   (size      natp :default 0
+              "The size of the section in terms of number of bytes it occupies")
    (link      natp :default 0)
    (info      natp :default 0)
    (addralign natp :default 0)
@@ -87,6 +97,41 @@
 (fty::deflist elf-section-headers
               :elt-type elf-section-header
               :true-listp t)
+
+(defprod section-info
+  :short "Relevant information about a section of an ELF or Mach-O binary file"
+  ((header elf-section-header-p :default (make-elf-section-header))
+   (bytes byte-listp :default 'nil
+          "The content of this section (least-significant byte first)")))
+(fty::deflist section-info-list :elt-type section-info-p :true-listp t)
+
+(define section-names ((section-info-list section-info-list-p))
+  :short "Get all names from sections in @('section-info-list')"
+  :returns (sec-names string-listp :hyp :guard)
+  (b* (((when (atom section-info-list))
+        nil)
+       ((section-info section-info) (car section-info-list))
+       ((elf-section-header section-info.header)))
+    (cons section-info.header.name-str (section-names (cdr section-info-list)))))
+
+(define get-section-info ((name stringp "Name of a section header; e.g., \".symtab\"")
+                          (section-info-list section-info-list-p))
+  :short "Get a @(tsee section-info-p) in @('section-info-list-p') corresponding to @('name')"
+  :returns (section-info section-info-p :hyp (section-info-list-p section-info-list))
+  (b* (((when (atom section-info-list))
+        (prog2$
+         (raise "Section ~s0 not found! List of sections found: ~x1."
+                name (section-names section-info-list))
+         (make-section-info)))
+       ((section-info section-info) (car section-info-list))
+       ((elf-section-header section-info.header))
+       ((when (equal (str::trim section-info.header.name-str) (str::trim name)))
+        section-info))
+    (get-section-info name (cdr section-info-list))))
+
+;; ----------------------------------------------------------------------
+
+;; ELF header:
 
 (defprod elf-header
   ((magic     byte-listp :default 'nil)
@@ -110,7 +155,10 @@
    (shnum     natp :default 0)
    (shstrndx  natp :default 0)))
 
+;; ----------------------------------------------------------------------
+
 ;; Symbol table entries:
+
 (fty::defbitstruct elf_bits8   8)
 (fty::defbitstruct elf_bits16 16)
 (fty::defbitstruct elf_bits32 32)

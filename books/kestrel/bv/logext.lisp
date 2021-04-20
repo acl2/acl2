@@ -1,7 +1,7 @@
 ; A book about the sign-extending operation logext
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -155,7 +155,6 @@
                 (integerp y))
            (equal (acl2::logext 32 (* x (acl2::logext 32 y)))
                   (acl2::logext 32 (* x y))))
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :cases ((evenp x))
            :in-theory (e/d (LOGEXT
@@ -263,9 +262,7 @@
                                       BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    MOD-EXPT-SPLIT ;bad?
                                    SLICE-BECOMES-GETBIT
-                                   BVCHOP-1-BECOMES-GETBIT
-;                                   BVCAT-RECOMBINE
-                                   )))))
+                                   BVCHOP-1-BECOMES-GETBIT)))))
 
 ;(in-theory (disable logextu-as-bvchop))
 
@@ -445,3 +442,24 @@
                      (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (e/d (logext logapp bvchop)
                                   (logapp-equal-rewrite)))))
+
+(defthm logext-negative
+  (implies (and (integerp x)
+                (< 0 n)
+                (natp n))
+           (equal (< (logext n x) 0)
+                  (equal 1 (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd logext-bound-when-unsigned-byte-p
+  (implies (and (syntaxp (quotep k))
+                (< 0 k)
+                (natp k)
+                (<= k (expt 2 (+ -1 n)))
+                (< x k)
+                (unsigned-byte-p n x)
+                (natp n)
+                (< 0 n))
+           (< (logext n x) k))
+  :hints (("Goal" :in-theory (enable ;logext
+                              ))))

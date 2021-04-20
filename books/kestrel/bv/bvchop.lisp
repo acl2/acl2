@@ -128,7 +128,6 @@
                  (integerp n))
             (equal (bvchop n (* (bvchop n y) x))
                    (bvchop n (* x y))))
-   :otf-flg t
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (enable bvchop))))
 
@@ -138,7 +137,6 @@
                  (integerp n))
             (equal (bvchop n (* x (bvchop n y)))
                    (bvchop n (* x y))))
-   :otf-flg t
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (enable bvchop))))
 

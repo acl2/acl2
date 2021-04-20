@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond1| (|x| |y| |z|)
+(defun |f| (|x| |y| |z|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|)
                               (c::sintp |z|))))
@@ -29,46 +29,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond2| (|x|)
-  (declare (xargs :guard (and (c::sintp |x|)
-                              (>= (c::sint->get |x|) 0))
-                  :guard-hints (("Goal" :in-theory (enable
-                                                    c::sint-nonzerop
-                                                    c::sint-lt
-                                                    c::sint-sub-okp
-                                                    c::sint-mul-okp
-                                                    c::sint->get
-                                                    sbyte32p
-                                                    sbyte32-fix)))))
-  (if (c::sint-nonzerop (c::sint-lt |x| (c::sint-const 1000)))
-      (c::sint-mul |x| (c::sint-const 10))
-    (c::sint-sub |x| (c::sint-const 1000000))))
+(defun |g| (|e|)
+  (declare (xargs :guard (c::sintp |e|)))
+  (if (c::sint-nonzerop (c::ge-sint-sint |e| (c::sint-const 0)))
+      (if (c::sint-nonzerop (c::lt-sint-sint |e| (c::sint-const 1000)))
+          (c::sint-const 1)
+        (c::sint-const 2))
+    (c::sint-const 3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |cond3| (|a| |b|)
+(defun |h| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (c::sintp |y|)
+                              ;; x > 0:
+                              (> (c::sint->get |x|) 0))
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sub-sint-sint-okp
+                                                    c::sint-integerp-alt-def)))))
+  (c::sub-sint-sint |x|
+                    (if (c::sint-nonzerop (c::ge-sint-sint |y| (c::sint-const 18)))
+                        (c::sint-const 0)
+                      (c::sint-const 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |i| (|a| |b|)
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|))
-                  :guard-hints (("Goal" :in-theory (enable
-                                                    c::sint-nonzerop
-                                                    c::sint-gt
-                                                    c::sint-sub-okp
-                                                    c::sint->get
-                                                    sbyte32p
-                                                    sbyte32-fix
-                                                    )))))
-  (if (c::sint-nonzerop (c::sint-gt |a| |b|))
-      (c::sint-sub |a|
-                   (if (c::sint-nonzerop (c::sint-eq |b| (c::sint-const 3)))
-                       (c::sint-const 0)
-                     (c::sint-const 1)))
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sint-nonzerop
+                                                    c::sint-integerp-alt-def
+                                                    c::gt-sint-sint
+                                                    c::sub-sint-sint-okp)))))
+  (if (c::sint-nonzerop (c::gt-sint-sint |a| |b|))
+      (c::sub-sint-sint |a|
+                        (if (c::sint-nonzerop (c::eq-sint-sint |b| (c::sint-const 3)))
+                            (c::sint-const 0)
+                          (c::sint-const 1)))
     |b|))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |j| (|x|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (>= (c::sint->get |x|) 0))
+                  :guard-hints (("Goal"
+                                 :in-theory (enable c::sint-integerp-alt-def
+                                                    c::lt-sint-sint
+                                                    c::sub-sint-sint-okp
+                                                    c::mul-sint-sint-okp)))))
+  (if (c::sint-nonzerop (c::lt-sint-sint |x| (c::sint-const 1000)))
+      (c::mul-sint-sint |x| (c::sint-const 10))
+    (c::sub-sint-sint |x| (c::sint-const 10000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |cond1|
-        |cond2|
-        |cond3|
+(c::atc |f|
+        |g|
+        |h|
+        |i|
+        |j|
         :output-file "conditionals.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +98,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc -o conditionals conditionals.c conditionals-test.c
-  ./conditionals
+gcc -o conditionals conditionals.c conditionals-test.c
+./conditionals
 
 |#

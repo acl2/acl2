@@ -122,7 +122,6 @@
                            (cons :|main.out[1]| yd)
                            (cons :|main.x1_2| x^2)
                            (cons :|main.lamda| lambda)))
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (e/d (precond auxp r1cs::r1cs-valuationp)
                                         ((:e baby-jubjub-prime))))))
 

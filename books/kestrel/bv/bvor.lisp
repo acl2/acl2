@@ -345,7 +345,7 @@
                 (natp n))
            (equal (bvor size (logtail n x) y)
                   (bvor size (slice (+ -1 n size) n x) y)))
-  :hints (("Goal" :in-theory (enable bvor))))
+  :hints (("Goal" :in-theory (enable bvor bvchop-of-logtail-becomes-slice))))
 
 ;drop?
 (defthmd bvor-logtail-arg2
@@ -354,7 +354,7 @@
                 (natp n))
            (equal (bvor size y (logtail n x))
                   (bvor size y (slice (+ -1 n size) n x))))
-  :hints (("Goal" :in-theory (enable bvor))))
+  :hints (("Goal" :in-theory (enable bvor bvchop-of-logtail-becomes-slice))))
 
 ;in case we are not commuting..
 (defthm equal-of-bvor-and-bvor

@@ -19,4 +19,4 @@
 
 (gen-xdoc-for-file "upcase.lisp"
                    ((string-upcase-gen  "Upcase any string (even ones with non-standard characters)."))
-                   (strings))
+                   (strings string-upcase))

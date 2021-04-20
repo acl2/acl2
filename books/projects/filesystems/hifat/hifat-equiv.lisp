@@ -408,7 +408,8 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (hifat-equiv set-equiv)
-                    (hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2))
+                    (hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2
+                     subsetp-when-subsetp))
     :use ((:instance hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2
                      (fs1 (hifat-file-alist-fix fs1))
                      (fs2 (hifat-file-alist-fix fs2)))
@@ -790,6 +791,7 @@
   (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
                            (m1-file-hifat-file-alist-fix-normalisation)))))
 
+;; These are congruences, obviously we're going to keep them.
 (defthm
   abs-pwrite-correctness-lemma-11
   (implies
@@ -1181,7 +1183,6 @@
            (hifat-subsetp x (cons (cons name val) y)))
   :hints (("goal" :in-theory (enable hifat-subsetp append))))
 
-;; Move later.
 (defthm abs-pwrite-correctness-lemma-23
   (implies
    (true-equiv d-e1 d-e2)
@@ -1199,4 +1200,17 @@
                           hifat-file-alist-fix hifat-subsetp)
          (hifat-subsetp-reflexive-lemma-4
           (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)))))
+  :rule-classes :congruence)
+
+(defthm
+  hifat-pwrite-correctness-lemma-1
+  (implies
+   (true-equiv d-e1 d-e2)
+   (equal
+    (mv-nth 1
+            (hifat-place-file fs path (m1-file d-e1 contents)))
+    (mv-nth
+     1
+     (hifat-place-file fs path (m1-file d-e2 contents)))))
+  :hints (("goal" :in-theory (enable hifat-place-file)))
   :rule-classes :congruence)

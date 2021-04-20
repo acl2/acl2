@@ -13,6 +13,7 @@
 
 (include-book "kestrel/sequences/defforall" :dir :system)
 
+;; Checks whether each element of X is less than N.
 (defforall all-< (x n) (< x n) :fixed (n) :declares ((xargs :guard (and (rational-listp x) (rationalp n)))))
 
 (defthm all-<-of-nil

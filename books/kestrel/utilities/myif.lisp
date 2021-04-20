@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,12 @@
 (defund myif (test thenpart elsepart)
   (declare (xargs :guard t))
   (if test thenpart elsepart))
+
+;; This is now a legal rewrite rule.
+(defthmd if-becomes-myif
+  (equal (if x y z)
+         (myif x y z))
+  :hints (("Goal" :in-theory (enable myif))))
 
 ;add myif when non nil?
 (defthm myif-of-t
@@ -217,4 +223,37 @@
 (defthm car-of-myif
   (equal (car (myif test thenpart elsepart))
          (myif test (car thenpart) (car elsepart)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;is this inefficient?
+(defthm true-listp-of-myif-strong
+  (equal (true-listp (myif test a b))
+         (myif test
+               (true-listp a)
+               (true-listp b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd true-listp-of-myif
+  (implies (and (true-listp a)
+                (true-listp b))
+           (true-listp (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm consp-of-myif-strong
+  (equal (consp (myif test a b))
+         (myif test (consp a) (consp b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;strengthen?
+(defthm unsigned-byte-p-of-myif
+  (implies (and (unsigned-byte-p n a)
+                (unsigned-byte-p n b))
+           (equal (unsigned-byte-p n (myif test a b))
+                  t))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;strengthen?
+(defthm acl2-numberp-of-myif
+  (implies (and (acl2-numberp a) (acl2-numberp b))
+           (equal (acl2-numberp (myif test a b)) t))
   :hints (("Goal" :in-theory (enable myif))))

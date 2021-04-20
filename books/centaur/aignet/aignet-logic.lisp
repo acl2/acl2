@@ -740,18 +740,7 @@ This bit is set for @(':reg'), @(':nxst'), and @('xor') nodes, so this returns 1
 
 (fty::deflist node-list :pred node-listp :elt-type node :true-listp t :elementp-of-nil t
   ///
-  (fty::deffixcong node-list-equiv equal (consp x) x)
-  (local
-   (defthm induct-by-list-equiv
-     t
-     :rule-classes ((:induction
-                     :pattern (list-equiv x y)
-                     :scheme (acl2::fast-list-equiv x y)))))
-
-  (local (in-theory (enable (:induction acl2::fast-list-equiv))))
-
-  (defrefinement list-equiv node-list-equiv
-    :hints(("Goal" :in-theory (enable node-list-fix)))))
+  (fty::deffixcong node-list-equiv equal (consp x) x))
 
 (std::deflist proper-node-listp (x)
   (proper-node-p x)
@@ -1023,7 +1012,7 @@ binding for a suffix aignet from a term giving some extension.</p>"
                      (,new))
           (aignet-extension-p ,new ,orig)))
 
-  
+
 
   (defthm fanin-count-when-aignet-extension-bind-inverse
     (implies (aignet-extension-bind-inverse :orig x :new y)
@@ -1117,7 +1106,7 @@ suffix.</p>"
 
   ;; Additional possible strategic thing: keep aignet-modifying functions that
   ;; don't produce an extension in a table and don't bind their inputs.
-  
+
 
 
   (defmacro aignet-extension-binding (&key (new 'new)
@@ -1651,7 +1640,7 @@ suffix.</p>"
 
 ;;   (defthm aignet-litp-of-mk-lit-0
 ;;     (aignet-litp (mk-lit 0 neg) aignet))
-  
+
 ;;   (defthm aignet-litp-implies-id-lte-max-fanin
 ;;     (implies (aignet-litp lit aignet)
 ;;              (<= (lit-id lit)
@@ -1960,7 +1949,7 @@ suffix.</p>"
 ;;       (fanin 0 aignet)
 ;;     (make-lit (fanin-count aignet) 0))
 ;;   ///
-  
+
 ;;   (defret fanin-if-co-id-lte-fanin-count
 ;;     (<= (lit-id lit) (fanin-count aignet))
 ;;     :rule-classes :linear)
@@ -2191,7 +2180,7 @@ suffix.</p>"
 
   (fty::deffixequiv aignet-outputs)
 
-  
+
 
   (defret lookup-stype-of-aignet-outputs
     (equal (lookup-stype k stype outputs)
@@ -2308,7 +2297,7 @@ suffix.</p>"
   (local (defthm foo
            (implies (equal (+ a b) c)
                     (equal (+ a b (- c)) 0))))
-                    
+
 
   (defthm aignet-nxsts-aux-of-cons
     (implies (<= (nfix n) (stype-count :reg x))
@@ -2342,7 +2331,7 @@ suffix.</p>"
 
   (fty::deffixequiv aignet-nxsts)
 
-  
+
 
   (defret lookup-stype-of-aignet-nxsts
     (implies (not (equal (stype-fix stype) :nxst))
@@ -2378,7 +2367,7 @@ suffix.</p>"
                  (t (aignet-nxsts x))))
     :hints(("Goal" :in-theory (enable aignet-nxsts-aux
                                       lookup-reg->nxst)))))
-  
+
 
 (define aignet-norm ((aignet node-listp))
   :returns (norm node-listp)
@@ -2511,5 +2500,3 @@ suffix.</p>"
     :basename reg-id)
   (fty::deffixcong aignet-equiv equal (fanin-count (lookup-stype n :pi x)) x
     :basename pi-id))
-
-

@@ -2369,7 +2369,7 @@
 ; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems))
+         (mv (reverse bad) (reverse macros) (reverse theorems)))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond
@@ -20656,23 +20656,33 @@
                             (guard-pre (subcor-var (formals logic wrld)
                                                    formals
                                                    (guard logic nil wrld))))
-                       (value-cmp
-                        (make absstobj-method
-                              :NAME name
-                              :FORMALS formals
-                              :GUARD-PRE guard-pre
-                              :GUARD-POST nil ; to be filled in later
-                              :GUARD-THM guard-thm
-                              :GUARD-THM-P (if type :SKIP guard-thm-p)
-                              :STOBJS-IN-POSN posn-exec
-                              :STOBJS-IN-EXEC (stobjs-in exec wrld)
-                              :STOBJS-OUT
-                              (substitute st st$c stobjs-out-exec)
-                              :LOGIC logic
-                              :EXEC exec
-                              :CORRESPONDENCE correspondence
-                              :PRESERVED preserved
-                              :PROTECT protect))))))))))))))))))))
+                       (cond
+                        ((member-eq st$c (stobjs-in logic wrld))
+                         (er-cmp ctx
+                                 "the :LOGIC function ~x0 for export ~x1  ~
+                                  declares as a stobj the formal parameter, ~
+                                  ~x2.  This is illegal because ~x2 is the ~
+                                  corresponding concrete stobj for the ~
+                                  proposed abstract stobj, ~x3."
+                                 logic name st$c st))
+                        (t
+                         (value-cmp
+                          (make absstobj-method
+                                :NAME name
+                                :FORMALS formals
+                                :GUARD-PRE guard-pre
+                                :GUARD-POST nil ; to be filled in later
+                                :GUARD-THM guard-thm
+                                :GUARD-THM-P (if type :SKIP guard-thm-p)
+                                :STOBJS-IN-POSN posn-exec
+                                :STOBJS-IN-EXEC (stobjs-in exec wrld)
+                                :STOBJS-OUT
+                                (substitute st st$c stobjs-out-exec)
+                                :LOGIC logic
+                                :EXEC exec
+                                :CORRESPONDENCE correspondence
+                                :PRESERVED preserved
+                                :PROTECT protect))))))))))))))))))))))
 
 (defun simple-translate-absstobj-fields (st st$c fields types protect-default
                                             ld-skip-proofsp)
@@ -21132,26 +21142,28 @@
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
               (mv-let (name formals guard-post logic exec stobjs)
-                      (mv (access absstobj-method method :NAME)
-                          (access absstobj-method method :FORMALS)
-                          (access absstobj-method method :GUARD-POST)
-                          (access absstobj-method method :LOGIC)
-                          (access absstobj-method method :EXEC)
-                          (remove1 st$c (collect-non-x
-                                         nil
-                                         (access absstobj-method method
-                                                 :STOBJS-IN-EXEC))))
-                      `(,name ,formals
-                              (declare (xargs ,@(and stobjs
-                                                     `(:STOBJS ,stobjs))
-                                              :GUARD ,guard-post))
+                (mv (access absstobj-method method :NAME)
+                    (access absstobj-method method :FORMALS)
+                    (access absstobj-method method :GUARD-POST)
+                    (access absstobj-method method :LOGIC)
+                    (access absstobj-method method :EXEC)
+                    (remove1 st$c (collect-non-x
+                                   nil
+                                   (access absstobj-method method
+                                           :STOBJS-IN-EXEC))))
+                `(,name ,formals
+                        (declare (xargs ,@(and stobjs
+                                               `(:STOBJS ,stobjs))
+                                        :GUARD ,guard-post))
 
-; We use mbe, rather than just its :logic component, because we want to track
-; functions that might be called in raw Lisp, in particular for avoiding the
-; violation of important invariants; see put-invariant-risk.
+; We use prog2$ here, rather than just returning its last argument, because we
+; want to track functions that might be called in raw Lisp, in particular for
+; avoiding the violation of important invariants; see put-invariant-risk.
 
-                              (mbe :logic (,logic ,@formals)
-                                   :exec (,exec ,@formals)))))
+; We formerly used mbe, but that caused a soundness bug; see :DOC note-8-4.
+
+                        (prog2$ (,exec ,@formals)
+                                (,logic ,@formals)))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun defabsstobj-raw-def (method)

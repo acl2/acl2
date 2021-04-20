@@ -864,8 +864,8 @@ implementations.")
                                    "parallel-raw.lisp"
                                    "serialize-raw.lisp")))))
 
-(defvar *saved-build-date-lst*)
-(defvar *saved-mode*)
+(defvar *saved-build-date-lst* nil)
+(defvar *saved-mode* nil)
 
 (defun git-commit-hash (&optional quiet)
   (multiple-value-bind
@@ -1458,9 +1458,12 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 (defvar *lp-ever-entered-p* nil)
 
-(defun acl2-default-restart ()
+(defun acl2-default-restart (&optional called-by-lp)
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
+  #+cmu
+  (when *print-startup-banner*
+    (extensions::print-herald t))
   (let (#+hons (produced-by-save-exec-p *lp-ever-entered-p*))
     (proclaim-optimize) ; see comment in proclaim-optimize
     (setq *lp-ever-entered-p* nil)
@@ -1528,17 +1531,20 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     #+allegro (rplacd (assoc 'tpl::*saved-package*
                              tpl:*default-lisp-listener-bindings*)
                       'common-lisp:*package*)
-    #+allegro (lp)
-    #+lispworks (lp)
-    #+ccl (eval '(lp)) ; using eval to avoid compiler warning
-
     (setq *acl2-default-restart-complete* t)
+    (when (not called-by-lp)
+
+; GCL handles (lp) using si::*top-level-hook*.
+; CLISP handles (lp) via write-acl2rc.
+
+      #+allegro (lp)
+      #+lispworks (lp)
+      #+ccl (eval '(lp)) ; using eval to avoid compiler warning
+      )
     nil))
 
 #+cmu
 (defun cmulisp-restart ()
-  (when *print-startup-banner*
-    (extensions::print-herald t))
   (acl2-default-restart)
   (lp))
 
@@ -1971,10 +1977,12 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; notes say that "command-line option "--tls-limit" can be used to alter the
 ; maximum number of thread-local symbols from its default of 4096".  We chose
 ; 8192 because it was sufficient for the book above, but perhaps it can be
-; increased significantly more without bad effect (not sure).
+; increased significantly more without bad effect (not sure).  But then in
+; March 2021, on a Mac, that same book again failed with the same error; so we
+; doubled the tls-limit.
 
-         "~s --tls-limit 8192 --dynamic-space-size ~s --control-stack-size 64 ~
-          --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
+         "~s --tls-limit 16384 --dynamic-space-size ~s --control-stack-size ~
+          64 --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
           --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
          prog
          *sbcl-dynamic-space-size*
@@ -2335,12 +2343,6 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; for the Mac.
 
   (load-acl2 :load-acl2-proclaims *do-proclaims*)
-  (setq *saved-build-date-lst*
-
-; The call of eval below should avoid a warning in cmucl version 18d.  Note
-; that saved-build-date-string is defined in interface-raw.lisp.
-
-        (list (eval '(saved-build-date-string))))
   (eval mode)
   (princ "
 ******************************************************************************

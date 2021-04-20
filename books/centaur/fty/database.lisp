@@ -186,19 +186,39 @@
    )
   :tag :transsum)
 
+(def-primitive-aggregate flexset
+  ;; A single Set type.
+  (name               ;; name of this set type, e.g., fooset
+   pred               ;; preducate function name, e.g., fooset-p
+   fix                ;; fix function name, e.g., fooset-fix
+   equiv              ;; equiv function name, e.g., fooset-equiv
+   count              ;; count function name, e.g., fooset-count
+   elt-type           ;; element type name, e.g., foo
+   elt-fix            ;; element fixing function, e.g., foo-fix
+   elt-equiv          ;; element equiv function, e.g., foo-equiv
+   measure            ;; termination measure, e.g., (two-nats-measure ...)
+   xvar               ;; special x variable name, e.g., mypkg::x
+   ;; non-emptyp         ;; require the set to be non-empty (NYI. sjw: Not sure if it is useful)
+   kwd-alist          ;; alist of options, see *flexset-keywords*
+   elementp-of-nil    ;; t, nil, or :unknown -- for optimizing theorems
+   recp               ;; is .elt-type part of the mutual recursion?
+   already-definedp
+   fix-already-definedp
+   )
+  :tag :set)
+
 (def-primitive-aggregate flextypes
   ;; A top-level entry in the flextypes table.
   ;; May bundle up a group of mutually recursive types.
   ;; Alternately, may contain a singleton type (e.g., from defprod, deflist, etc.)
   (name               ;; wrapper name, often shared by a member type
-   types              ;; member types -- list of flexsum, flexlist, flexalists, or flextranssums
+   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, or flexset
                       ;;  (no flexprods here, they'll be inside flexsums)
    kwd-alist          ;; alist of options, see *flextypes-keywords*
    no-count           ;; boolean -- skip the count function?
    recp               ;; bozo could be inferred from types?
    )
   :tag :flextypes)
-
 
 ; The Global Type Database ----------------------------------------------------
 
@@ -283,12 +303,14 @@
        (listbody     (replace-*-in-symbols-with-str body "LIST"))
        (alistbody    (replace-*-in-symbols-with-str body "ALIST"))
        (transsumbody (replace-*-in-symbols-with-str body "TRANSSUM"))
+       (setbody      (replace-*-in-symbols-with-str body "SET"))
        (cases
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
            (:list ,(if add-binds `(b* (((flexlist ,var) ,var)) ,listbody) listbody))
            (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody))
            (:transsum ,(if add-binds `(b* (((flextranssum ,var) ,var)) ,transsumbody) transsumbody))
+           (:set ,(if add-binds `(b* (((flexset ,var) ,var)) ,setbody) setbody))
            (otherwise ,default))))
     (if (consp binding)
         `(let ((,var ,(cadr binding))) ,cases)

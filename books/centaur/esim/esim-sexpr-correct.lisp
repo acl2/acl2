@@ -2356,9 +2356,9 @@
    (esim-ind-mod (gpl :op x))))
 
 (flag::make-flag esim-flag esim-ind-mod
-                 :flag-mapping ((esim-ind-mod . mod)
-                                (esim-ind-occs . occs)
-                                (esim-ind-occ . occ)))
+                 :flag-mapping ((esim-ind-mod mod)
+                                (esim-ind-occs occs)
+                                (esim-ind-occ occ)))
 
 (defthm-esim-flag
   (defthm esim-sexpr-correct-modp-mods

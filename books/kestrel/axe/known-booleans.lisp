@@ -124,5 +124,6 @@
 (add-known-boolean logbitp)
 (add-known-boolean evenp)
 (add-known-boolean oddp)
+(add-known-boolean bitp)
 
 ;; See tests in known-booleans-tests.lisp

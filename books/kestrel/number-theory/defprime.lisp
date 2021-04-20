@@ -23,6 +23,10 @@
 (include-book "kestrel/utilities/doc" :dir :system)
 (include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "std/util/add-io-pairs" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+
+;; Prevent very expensive calls to primep:
+(in-theory (disable (:e rtl::primep)))
 
 (defund defprime-fn (name
                      number
@@ -60,8 +64,8 @@
                  number))
        ((when (not (natp number)))
         (er hard? 'defprime "Bad value for existing prime: ~x0." number))
-       (defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '*))
-       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '-pratt-cert*))
+       (defconst-name (acl2::pack-in-package-of-symbol name '* name '*))
+       (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol name '* name '-pratt-cert*))
        (parents (if (eq :auto parents)
                     (list 'acl2::number-theory) ;todo: use something better here, perhaps acl2::primes?
                   parents))
@@ -78,8 +82,7 @@
               '((local (include-book "projects/quadratic-reciprocity/pratt" :dir :system))))
 
        ;; Prevent very expensive calls to primep.
-       ;; TODO: Should we drop this?
-       (in-theory (disable (:e rtl::primep)))
+       (local (in-theory (disable (:e rtl::primep))))
 
        ;; A defconst representing the prime.
        (defconst ,defconst-name ,number)
@@ -115,16 +118,14 @@
        ;; 2. n - 1 = (p1^e1)...(pn^en)
        ;; 3. ci is a pratt certificate of pi.
 
-       ,@(and (not existing-prime-name)
-              `((defconst ,pratt-cert-defconst-name
-                  ',pratt-cert)))
+       (defconst ,pratt-cert-defconst-name ',pratt-cert)
 
        ;; Primality theorem for the constant.
        ;; Since primep may often be disabled and this cannot be efficiently executed.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name '-constant)
+       (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)
          (rtl::primep ,defconst-name)
          ,@(if existing-prime-name
-               `(:hints (("Goal" :use (:instance ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- existing-prime-name '-constant))
+               `(:hints (("Goal" :use (:instance ,(acl2::pack-in-package-of-symbol existing-prime-name 'primep-of- existing-prime-name '-constant))
                           :in-theory nil)))
              `(:hints (("Goal" :in-theory (enable (:e rtl::certify-prime))
                         :use (:instance rtl::certification-theorem
@@ -132,19 +133,21 @@
                                         (c ,pratt-cert-defconst-name)))))))
 
        ;; Primality theorem for the 0-ary function.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name)
+       (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name)
          (rtl::primep (,name))
          :hints (("Goal" :in-theory '(,name)
-                  :use (:instance ,(acl2::pack-in-package-of-symbol 'defprime 'primep-of- name '-constant)))))
+                  :use (:instance ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)))))
 
        ;; To allow the :linear rule to be created.
        (local (in-theory (disable (:e ,name))))
 
        ;; A fairly strong linear rule.  Should allow ACL2 to prove that a call
        ;; of the 0-ary function is greater than 2, etc.
-       (defthm ,(acl2::pack-in-package-of-symbol 'defprime name '-linear)
+       (defthm ,(acl2::pack-in-package-of-symbol name name '-linear)
          (= (,name) ,defconst-name)
-         :rule-classes :linear
+         ;; The :trigger-terms here allow the rule to be included in worlds
+         ;; where (:e ,name) is enabled.
+         :rule-classes ((:linear :trigger-terms ((,name))))
          :hints (("Goal" :in-theory (enable (:e ,name)))))
 
        ;; Avoid expensive calls of primep by building in the fact that it is
@@ -166,7 +169,7 @@
                                   (short ':auto)
                                   (long ':auto))
   `(make-event (defprime-fn ',name ',number ',pratt-cert nil ',evisc
-                 ',parents ',short ',long
+                 ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce a prime and related machinery."
@@ -176,7 +179,20 @@
            :evisc "Whether to print occurrences of the prime using its symbolic name."
            :parents "Xdoc :parents for the prime."
            :short "Xdoc :short description for the prime."
-           :long "Xdoc :long section for the prime."))
+           :long "Xdoc :long section for the prime.")
+  :long (xdoc::topstring
+         (xdoc::p "Defprime generates, for a prime named FOO:")
+         (xdoc::ul "A constant, *FOO*, representing the prime."
+                   "A theorem that *FOO* is prime."
+                   "A 0-ary function, FOO, representing the prime.  This is disabled but its :executable-counterpart is not (disable the :executable-counterpart to prevent execution during proofs)."
+                   "A theorem that the function FOO always returns a prime."
+                   "A :linear rule stating that the function FOO is equal to the prime (i.e., its integer value)."
+                   "A utility, eviscerate-FOO, to cause the prime to be printed using a symbolic name.  This is in turn invoked by defprime to turn on evisceration, unless the :evisc argument is nil."
+                   "A utility, uneviscerate-FOO, to turn off the evisceration mentioned just above."
+                   "A constant, *FOO-pratt-cert*, for the Pratt certificate supplied for FOO."
+                   "A @(tsee defxdoc) form for the prime, using the supplied :short, :long, and :parents, or suitable defaults for each."
+                   "A call of @(tsee acl2::add-io-pairs) to cause rtl::primep to be fast when called on the prime."
+                   "A @(tsee table) event that records the call of defprime.")))
 
 ;; Variant of defprime that defines a prime that is numerically equal to an existng prime.
 (acl2::defmacrodoc defprime-alias (name existing-prime-name &key
@@ -185,7 +201,7 @@
                                         (short ':auto)
                                         (long ':auto))
   `(make-event (defprime-fn ',name ',:none ':none ',existing-prime-name ',evisc
-                 ',parents ',short ',long
+                 ',parents ,short ,long
                  (w state)))
   :parents (acl2::number-theory)
   :short "Introduce an alias of an existing prime introduced with defprime."
@@ -194,4 +210,5 @@
            :evisc "Whether to print occurrences of the prime using its symbolic name."
            :parents "Xdoc :parents for the prime."
            :short "Xdoc :short description for the prime."
-           :long "Xdoc :long section for the prime."))
+           :long "Xdoc :long section for the prime.")
+  :long "Defprime-alias generates all of the things generated by @(tsee defprime), except that it omits the call to @(tsee acl2::add-io-pairs), since that has already been done for the existing prime, which has the same numeric value as the new prime.")

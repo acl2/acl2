@@ -199,7 +199,11 @@
     :hints
     (("goal"
       :do-not-induct t
-      :in-theory (disable lofat-mkdir-refinement-lemma-1)
+      :in-theory (disable lofat-mkdir-refinement-lemma-1
+                          (:congruence hifat-pwrite-correctness-lemma-1)
+                          (:congruence m1-file-d-e-equiv-congruence-on-d-e)
+                          (:rewrite m1-file->d-e-under-true-equiv)
+                          (:rewrite-quoted-constant true-fix-under-true-equiv))
       :use
       (:instance lofat-mkdir-refinement-lemma-1
                  (file (make-lofat-file :d-e nil

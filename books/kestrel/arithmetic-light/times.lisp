@@ -11,9 +11,11 @@
 (in-package "ACL2")
 
 (local (include-book "plus"))
+(local (include-book "minus"))
 (local (include-book "less-than"))
 (local (include-book "realpart"))
 (local (include-book "imagpart"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
 ; are built in to ACL2.
@@ -105,6 +107,8 @@
   :hints (("Goal" :cases ((< x1 x2))
            :use ((:instance positive (x (- x2 x1)))
                  (:instance positive (x (- x1 x2)))))))
+
+
 
 (defthm <-of-*-and-*-cancel-arg1-and-arg1
   (implies (and (< 0 y) ;move to conc
@@ -409,3 +413,26 @@
                                   (x (* x y))
                                   (y (* x z))
                                   (z (/ x))))))
+
+(defthm equal-of-*-and-*-cancel-arg2-arg2
+  (equal (equal (* y x) (* z x))
+         (or (equal (fix x) 0)
+             (equal (fix y) (fix z))))
+  :hints (("Goal" :use (:instance *-both-sides
+                                  (x (* x y))
+                                  (y (* x z))
+                                  (z (/ x))))))
+
+(defthm <-of-*-and-*-cancel-gen
+  (implies (and (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* x1 y) (* x2 y))
+                  (if (< 0 y)
+                      (< x1 x2)
+                    (if (equal 0 y)
+                        nil
+                      (< x2 x1)))))
+  :hints (("Goal" :use ((:instance <-of-*-and-*-cancel)
+                        (:instance <-of-*-and-*-cancel (y (- y))))
+           :in-theory (disable <-of-*-and-*-cancel))))

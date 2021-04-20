@@ -54,5 +54,4 @@
 (defthm len-cons-meta-rule
   (equal (lenconsev term alist)
          (lenconsev (len-cons-meta-function term) alist))
-  :otf-flg t
   :rule-classes ((:meta :trigger-fns (len))))

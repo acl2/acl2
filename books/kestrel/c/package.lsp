@@ -17,9 +17,12 @@
 
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
-                                '(byte
+                                '(boolean
+                                  byte
                                   error
+                                  pi
                                   pprint-indent
+                                  schar
                                   type
                                   typep
                                   value))
@@ -36,8 +39,11 @@
                e/d*
                enable*
                er-soft+
+               evmac-generate-defthm
+               evmac-input-print->=
                evmac-input-print-p
                evmac-prepare-proofs
+               evmac-process-input-print
                flatten-ands-in-lit
                get-ruleset
                implode
@@ -52,5 +58,6 @@
                pseudo-event-form-listp
                pseudo-event-formp
                run-when
+               symbol-symbol-alistp
                tuple
                std::defret-mutual)))

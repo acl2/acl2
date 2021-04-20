@@ -1185,11 +1185,12 @@
               (subsetp-equal (take n x)
                              (comparable-mergesort x)))
      :hints (("goal" :induct (dec-induct n)
+              :in-theory (e/d
+                          (take-as-append-and-nth)
+                          (take))
               :expand ((:with comparable-mergesort-is-identity-under-set-equiv-lemma-3
                               (member-equal (nth (+ -1 n) x)
-                                            (comparable-mergesort x)))
-                       (:with take-as-append-and-nth
-                              (take n x)))))))
+                                            (comparable-mergesort x))))))))
 
   (defthm
     comparable-mergesort-is-identity-under-set-equiv
@@ -1550,17 +1551,12 @@
      (("goal"
        :induct (dec-induct n)
        :in-theory (e/d
-                   ((:definition compare<-negation-transitive)
+                   (take-as-append-and-nth
+                    (:definition compare<-negation-transitive)
                     (:definition compare<-strict))
                    (compare<-total-necc
-                    comparable-mergesort-equals-comparable-insertsort))
-       :expand
-       ((:with
-         take-as-append-and-nth
-         (take n (comparable-mergesort (remove-duplicates-equal x))))
-        (:with
-         take-as-append-and-nth
-         (take n (comparable-mergesort (remove-duplicates-equal y))))))
+                    comparable-mergesort-equals-comparable-insertsort
+                    take)))
       ("subgoal *1/2"
        :use (:instance
              compare<-total-necc

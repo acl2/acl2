@@ -10,6 +10,6 @@
 
 (in-package "R1CS")
 
-(include-book "lift-r1cs") ;brings in skip-proofs
-(include-book "lift-r1cs-new")
+;;(include-book "lift-r1cs-old") ;brings in skip-proofs, deprecated
+(include-book "lift-r1cs")
 (include-book "axe-prover-r1cs")

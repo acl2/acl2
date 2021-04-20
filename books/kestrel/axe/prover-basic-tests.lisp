@@ -1,6 +1,6 @@
 ; Tests of the basic prover.
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -403,3 +403,21 @@
 ;; (defthm-with-basic-prover-clause-processor test1
 ;;   (EQUAL (IF C NIL T) (EQUAL NIL C))
 ;;   :rule-classes nil)
+
+(defstub foo (x) t)
+
+(must-fail
+ ;; Replaces the var with the constant '3
+ (defthm-with-basic-prover-clause-processor contra-2d
+   (implies (equal x 3)
+            (foo x))
+   :rule-classes nil))
+
+(deftest
+  (defthm integerp-when-unsigned-byte-p
+    (implies (unsigned-byte-p size x) ;size is a free var
+             (integerp x)))
+  (defthm-with-basic-prover-clause-processor free-1
+    (implies (unsigned-byte-p 16 x)
+             (integerp x))
+    :rules (integerp-when-unsigned-byte-p)))

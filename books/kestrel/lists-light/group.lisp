@@ -1,7 +1,7 @@
 ; A function to divide a list into fixed-sized chunks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -263,9 +263,6 @@
                 (<= n (len x)))
            (equal (firstn (+ (- n) (len x)) (nthcdr n x))
                   (nthcdr n (true-list-fix x)))))
-
-(in-theory (disable ;NOT-<-SELF2 ;expensive!
-                    ))
 
 ;(in-theory (enable LIST::NTH-APPEND))
 

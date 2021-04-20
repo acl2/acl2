@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-abstract-syntax-operations
-  :parents (atc-implementation atc-abstract-syntax)
+  :parents (atc-abstract-syntax)
   :short "Operations on the C abstract syntax for ATC."
   :order-subtopics t
   :default-parent t)
@@ -93,3 +93,25 @@
                         :logor))
        t)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon->tyname ((param param-declonp))
+  :returns (tyname tynamep)
+  :short "Turn a parameter declaration into the corresponding type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is obtained by removing the identifier."))
+  (make-tyname :specs (param-declon->type param)
+               :pointerp (declor->pointerp (param-declon->declor param)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection param-declon-list->tyname-list ((x param-declon-listp))
+  :result-type tyname-listp
+  :short "Lift @(tsee param-declon->tyname) to lists."
+  (param-declon->tyname x)
+  ///
+  (fty::deffixequiv param-declon-list->tyname-list))

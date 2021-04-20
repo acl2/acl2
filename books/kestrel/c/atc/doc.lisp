@@ -49,9 +49,9 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
      "     :proofs      ...  ; default t"
+     "     :const-name  ...  ; default :auto"
      "     :print       ...  ; default :result"
      "  )"))
 
@@ -69,21 +69,20 @@
        `Representation of C Code in ACL2'."))
 
     (xdoc::desc
-     "@(':const-name') &mdash; default @(':auto')"
+     "@(':output-file') &mdash; no default"
      (xdoc::p
-      "Name of the generated ACL2 named constant
-       that holds the abstract syntax tree of the generated C program.")
+      "Path of the file where the generated C code goes.")
      (xdoc::p
-      "This must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('*program*')
-        in the @('\"C\"') package.")
-      (xdoc::li
-       "Any other symbol, to use as the name of the constant."))
+      "This must be an ACL2 string that is a file path.
+       The path may be absolute,
+       or relative to
+       the " (xdoc::seetopic "cbd" "current working directory") ".")
      (xdoc::p
-      "In the rest of this documentation page,
-       let @('*program*') be the symbol specified by this input."))
+      "The directory must exist.
+       The file may or may not exist:
+       if it does not exist, it is created;
+       if it exists, it is overwritten.
+       The file must include a @('.c') extension."))
 
     (xdoc::desc
      "@(':proofs') &mdash; default @('t')"
@@ -102,20 +101,25 @@
        in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
-     "@(':output-file') &mdash; no default"
+     "@(':const-name') &mdash; default @(':auto')"
      (xdoc::p
-      "Path of the file where the generated C code goes.")
+      "Name of the generated ACL2 named constant
+       that holds the abstract syntax tree of the generated C program.")
      (xdoc::p
-      "This must be an ACL2 string that is a file path.
-       The path may be absolute,
-       or relative to
-       the " (xdoc::seetopic "cbd" "current working directory") ".")
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the symbol @('*program*')
+        in the @('\"C\"') package.")
+      (xdoc::li
+       "Any other symbol, to use as the name of the constant."))
      (xdoc::p
-      "The directory must exist.
-       The file may or may not exist:
-       if it does not exist, it is created;
-       if it exists, it is overwritten.
-       The file must include a @('.c') extension."))
+      "This input must be absent if @(':proofs') is @('nil').
+       The named constant is generated only if @(':proofs') is @('t').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('*program*') be the symbol specified by this input,
+       if applicable (i.e. when @(':proofs') is @('t'))."))
 
     (xdoc::evmac-input-print atc))
 
@@ -154,56 +158,68 @@
       the names of the formal parameters of the corresponding C function,
       in the same order.
       Therefore, the formal parameters of each @('fni')
-      must have must have all distinct symbol names;
+      must have all distinct symbol names;
       even if they are in different packages,
       they must have distinct symbol names
       (the package names are ignored).")
 
     (xdoc::p
-     "The guard of each @('fni') must include conjuncts of the form
-      @('(sintp x)') for every formal parameter @('x').
-      The conjuncts may be at any level of nesting,
+     "The guard of each @('fni') must include,
+      for every formal parameter @('x'),
+      a conjunct of one of the following forms,
+      which determines the C type of
+      the corresponding parameter of the C function:")
+    (xdoc::ul
+     (xdoc::li
+      "@('(ucharp x)'), representing @('unsigned char').")
+     (xdoc::li
+      "@('(sintp x)'), representing @('int').")
+     (xdoc::li
+      "@('(uchar-arrayp x)'), representing @('unsigned char *')."))
+    (xdoc::p
+     "The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
       the @(tsee and) structure of the (translated) guard term.
-      Thus, all the formal parameters of the C function represented by @('fni')
-      have type @('int');
-      the rest of the guard (i.e. additional requirements)
-      are not explicitly represented in the C code.
-      The C function returns an @('int') result;
-      that this is the correct return type
-      is guaranteed by the restrictions given below.")
+      The rest of the guard (i.e. other than the conjuncts above)
+      is not explicitly represented in the C code.")
+
+    (xdoc::p
+     "The return type of the C function corresponding to @('fni')
+      is automatically determined from the body.
+      The restrictions on the body, given below,
+      make the determination of the return type possible in all cases.")
 
     (xdoc::p
      "Each function @('fni') must be in logic mode and guard-verified.
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " must be an allowed outer term;
-      this notion is defined in the sequel, along with the notions of
-      allowed non-boolean terms,
-      allowed pure non-boolean terms,
-      and allowed boolean terms.")
+     " must be a statement term;
+      this notion is defined below, along with the notions of
+      C-valued terms,
+      pure C-valued terms,
+      and boolean terms.")
 
     (xdoc::p
-     "An <i>allowed outer term</i> is
+     "A <i>statement term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "An allowed non-boolean term.
-       That is, an allowed non-boolean term is also an allowed outer term.
+      "A C-valued term.
+       That is, a C-valued term is also a statement term.
        This represents a C @('return') statement
        whose expression is represented by the same term,
-       viewed as an allowed non-boolean term.")
+       viewed as a C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is an allowed boolean term and
-       (ii) branches that are allowed outer terms.
+       (i) a test that is a boolean term and
+       (ii) branches that are statement terms.
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an allowed outer term, and
+       (ii) a `then' branch that is a statement term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -218,9 +234,10 @@
       "A term of the form @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('term') is an allowed non-boolean term,
-       and @('body') is an allowed outer term.
-       This represents one of the following:"
+       @('term') is a C-valued term,
+       and @('body') is a statement term.
+       The C type of @('term') must not be a pointer type.
+       This @(tsee let) represents one of the following:"
       (xdoc::ul
        (xdoc::li
         "A declaration of a C local variable represented by @('var'),
@@ -256,14 +273,14 @@
        this is the pattern that ATC looks for."))
 
     (xdoc::p
-     "An <i>allowed non-boolean term</i> is
+     "A <i>C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "An allowed pure non-boolean term.")
+      "A pure C-valued term.")
      (xdoc::li
       "A call of a target function @('fnj'), with @('j < i'),
-       on allowed pure non-boolean terms.
+       on pure C-valued terms.
        The restriction @('j < i') means that
        no (direct or indirect) recursion is allowed
        and the target functions must be specified
@@ -271,7 +288,7 @@
        This represents a call of the corresponding C function."))
 
     (xdoc::p
-     "An <i>allowed pure non-boolean term</i> is
+     "A <i>pure C-valued term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
@@ -289,54 +306,75 @@
        the quoted integer is within the range of type @('int').")
      (xdoc::li
       "A call of one of the following functions
-       on allowed pure non-boolean terms:"
+       on pure C-valued terms:"
       (xdoc::ul
-       (xdoc::li "@(tsee sint-plus)")
-       (xdoc::li "@(tsee sint-minus)")
-       (xdoc::li "@(tsee sint-bitnot)")
-       (xdoc::li "@(tsee sint-lognot)")
-       (xdoc::li "@(tsee sint-add)")
-       (xdoc::li "@(tsee sint-sub)")
-       (xdoc::li "@(tsee sint-mul)")
-       (xdoc::li "@(tsee sint-div)")
-       (xdoc::li "@(tsee sint-rem)")
-       (xdoc::li "@(tsee sint-shl-sint)")
-       (xdoc::li "@(tsee sint-shr-sint)")
-       (xdoc::li "@(tsee sint-lt)")
-       (xdoc::li "@(tsee sint-gt)")
-       (xdoc::li "@(tsee sint-le)")
-       (xdoc::li "@(tsee sint-ge)")
-       (xdoc::li "@(tsee sint-eq)")
-       (xdoc::li "@(tsee sint-ne)")
-       (xdoc::li "@(tsee sint-bitand)")
-       (xdoc::li "@(tsee sint-bitxor)")
-       (xdoc::li "@(tsee sint-bitior)")
-       (xdoc::li "@(tsee sint-logand)")
-       (xdoc::li "@(tsee sint-logor)"))
+       (xdoc::li "@(tsee plus-sint)")
+       (xdoc::li "@(tsee minus-sint)")
+       (xdoc::li "@(tsee bitnot-sint)")
+       (xdoc::li "@(tsee lognot-sint)")
+       (xdoc::li "@(tsee add-sint-sint)")
+       (xdoc::li "@(tsee sub-sint-sint)")
+       (xdoc::li "@(tsee mul-sint-sint)")
+       (xdoc::li "@(tsee div-sint-sint)")
+       (xdoc::li "@(tsee rem-sint-sint)")
+       (xdoc::li "@(tsee shl-sint-sint)")
+       (xdoc::li "@(tsee shr-sint-sint)")
+       (xdoc::li "@(tsee lt-sint-sint)")
+       (xdoc::li "@(tsee gt-sint-sint)")
+       (xdoc::li "@(tsee le-sint-sint)")
+       (xdoc::li "@(tsee ge-sint-sint)")
+       (xdoc::li "@(tsee eq-sint-sint)")
+       (xdoc::li "@(tsee ne-sint-sint)")
+       (xdoc::li "@(tsee bitand-sint-sint)")
+       (xdoc::li "@(tsee bitxor-sint-sint)")
+       (xdoc::li "@(tsee bitior-sint-sint)")
+       (xdoc::li "@(tsee logand-sint-sint)")
+       (xdoc::li "@(tsee logor-sint-sint)"))
       "This represents
        the corresponding C operator applied to C @('int') values.
        The guard verification requirement ensures that
        the operators are always applied to values with a well-defined result,
-       and that result is an @('int') value.
+       and the result is an @('int') value.
        If the operator is @('&&') or @('||'),
        this represents a strict (i.e. not non-strict) use of them;
        see below for how to represent non-strict uses of them,
        but the strict version is slightly simpler when usable.")
      (xdoc::li
-      "A call of @(tsee sint01) on an allowed boolean term.
-       This converts an allowed boolean term
-       to an allowed pure non-boolean term.")
+      "A call of one of the following functions
+       on pure C-valued terms:"
+      (xdoc::ul
+       (xdoc::li "@(tsee sint-from-uchar)")
+       (xdoc::li "@(tsee uchar-from-sint)"))
+      "This represents
+       a cast to the type indicated by the first part of the function name.
+       The guard verification requirement ensures that
+       the conversion is always applied to
+       a value of the type indicated by the last part of the function name
+       and yields a well-defined result.
+       Even though the conversion from @('unsigned char') to @('int')
+       happens automatically under certain common circumstances
+       (e.g. when an @('unsigned char') is used
+       as an operand of an @('int') arithmetic operation),
+       currently ATC always generates explicit casts;
+       this will be improved in future extensions to ATC.")
+     (xdoc::li
+      "A call of @(tsee uchar-array-read-sint) on C-valued terms.
+       This represents an array subscripting expression.")
+     (xdoc::li
+      "A call of @(tsee sint01) on a boolean term.
+       This converts a boolean term
+       to a pure C-valued term.")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test that is an allowed boolean term and
-       (ii) branches that are allowed pure non-boolean terms.
+       (i) a test that is a boolean term and
+       (ii) branches that are pure C-valued terms.
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
        and whose branch expressions are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an allowed pure non-boolean term, and
+       (ii) a `then' branch that is a pure C-valued term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -349,16 +387,16 @@
        these are the patterns that ATC looks for."))
 
     (xdoc::p
-     "An <i>allowed boolean term</i> is
+     "A <i>boolean term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of @(tsee sint-nonzerop) on an allowed pure non-boolean term.
-       This converts an allowed pure non-boolean term
-       to an allowed boolean term.")
+      "A call of @(tsee sint-nonzerop) on a pure C-valued term.
+       This converts a pure C-valued term
+       to a boolean term.")
      (xdoc::li
       "A call of one of the following functions and macros
-       on allowed boolean terms:"
+       on boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
@@ -372,31 +410,29 @@
        these are the patterns that ATC looks for."))
 
     (xdoc::p
-     "Allowed outer terms represent C statements,
-      while allowed non-boolean and boolean terms represent C expressions;
-      the fact that expressions are ``inside'' statements
-      motivates the term `outer'.
-      The allowed boolean terms return ACL2 boolean values,
-      while the allowed outer (including non-boolean) terms return
-      ACL2 non-boolean values that represent C values:
-      the distinction between these two kinds of allowed terms
+     "Statement terms represent C statements,
+      while C-valued and boolean terms represent C expressions.
+      The boolean terms return ACL2 boolean values,
+      while the statement (including C-valued) terms return
+      ACL2 values that represent C values:
+      the distinction between these two kinds of terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
       @('if') statements,
       @('?:') expressions,
       @('&&') expressions, and
       @('||') expressions;
-      C's only non-strict construct is @(tsee if)
+      ACL2's only non-strict construct is @(tsee if)
       (which the macros @(tsee and) and @(tsee or) expand to, see above).
-      Allowed pure non-boolean terms
+      Pure C-valued terms
       represent C expressions without side effects;
       C function calls may be side-effect-free,
       but in general we do not consider them pure,
-      so they are represented by allowed non-boolean terms
-      that are not allowed pure non-boolean terms.
-      Allowed boolean terms are always pure;
+      so they are represented by C-valued terms
+      that are not pure C-valued terms.
+      Boolean terms are always pure;
       so they do not need the explicit designation `pure'
-      because they are the only allowed boolean terms.")
+      because they are the only boolean terms.")
 
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
@@ -408,7 +444,7 @@
       is the compound statement consisting of
       the block items (i.e. statements and declarations)
       represented by the ACL2 function's body
-      (which is an allowed outer term).")
+      (which is a statement term).")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,6 +496,9 @@
        the generated C translation unit,
        which ATC also pretty-prints and writes
        to the file specified by the @(':output-file') input."))
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this constant is not generated.")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,7 +510,7 @@
      (xdoc::codeblock
       "(defthm *program*-well-formed ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('*program*') stating that
+      "where @('...') is an assertion about @('*program*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
        i.e. it compiles according to [C].")
@@ -484,7 +523,7 @@
      (xdoc::codeblock
       "(defthm *program*-fn-correct ...)")
      (xdoc::p
-      "where @('...') is a theorem about @('fn') and @('*program*')
+      "where @('...') is an assertion about @('fn') and @('*program*')
        stating that,
        under the guard of @('fn'),
        executing the C dynamic semantics on
