@@ -400,9 +400,9 @@
 The @('quant::equiv') macro can be used to prove that a universally
 quantified formula satisfies the properties of a parameterized
 equivalence relation.  This macro is similar in nature to @(tsee
-def-universal-equiv) except that parameterized equivalences are
+acl2::def-universal-equiv) except that parameterized equivalences are
 supported.  If no paramaters are specified, however, we prove that the
-quantified formula is in fact a standard @(tsee equivalence) relation.
+quantified formula is in fact a standard @(tsee acl2::equivalence) relation.
 </p> 
 <p>Usage:</p> @({
   (include-book \"coi/quantification/quantified-equivalence\" :dir :system)
