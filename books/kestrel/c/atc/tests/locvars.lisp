@@ -30,7 +30,7 @@
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
   (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))
          (|x_eq_y| (c::eq-sint-sint |x| |y|))
-         (|x_le_y| (c::logor-sint-sint |x_lt_y| |x_eq_y|)))
+         (|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))
     (c::lognot-sint |x_le_y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
