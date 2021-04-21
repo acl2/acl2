@@ -269,23 +269,26 @@
     These operations also apply to other arithmetic types,
     but operands are subjected to promotions and conversions
     that reduce the possible combinations of operand types for each operation.
-    For instance, the addition operation @('+') does not directly apply
-    to @('short') or @('unsigned char') operands:
-    these are promoted to @('int') values before applying the operation,
+    For instance, the addition operation @('+') does not directly add
+    @('short') or @('unsigned char') operands:
+    these are promoted to @('int') values before adding them up,
     according to the integer promotions described in [C:6.3.1.1/2].
-    Similarly, the addition operation @('+') does not directly apply
-    to an @('int') operand and a @('long') operand:
+    Similarly, the addition operation @('+') does not directly add
+    an @('int') operand and a @('long') operand:
     the first operand is converted to @('long') first,
     so that addition is performed on two @('long') values,
     according to the usual arithmetic conversions
     described in [C:6.3.1.8].")
 
   (xdoc::p
-   "This means that there are only certain instances of operations like @('+'),
+   "This means that there are only certain ``interesting'' instances
+    of operations like @('+'),
     i.e. one for @('int') operands, one for @('long') operands etc.
-    There are no instances for @('short') or @('unsigned char') operands,
-    and there is no instance for
-    an @('int') first operand and a @('long') second operand.
+    The instances for @('short') or @('unsigned char') operands,
+    as well the instance for
+    an @('int') first operand and a @('long') second operand,
+    are less interesting because they can be viewed as
+    combinations of conversions with the interesting instances.
     Thus, in the context of this tutorial page,
     we are interested in the instances of the C operations
     that apply to @('int') operands:
@@ -315,7 +318,18 @@
    (xdoc::li "@('^') (binary) &mdash; bitwise exclusive disjunction")
    (xdoc::li "@('|') (binary) &mdash; bitwise inclusive disjunction")
    (xdoc::li "@('&&') (binary) &mdash; logical (short-circuit) conjunction")
-   (xdoc::li "@('||') (binary) &mdash; logical (short-circuit) disjunction"))
+   (xdoc::li "@('||') (binary) &mdash; logical (short-circuit) disjunction")
+   (xdoc::li "@('=') (binary) &mdash; simple assignment")
+   (xdoc::li "@('+=') (binary) &mdash; compound assignment with @('+')")
+   (xdoc::li "@('-=') (binary) &mdash; compound assignment with @('-')")
+   (xdoc::li "@('*=') (binary) &mdash; compound assignment with @('*')")
+   (xdoc::li "@('/=') (binary) &mdash; compound assignment with @('/')")
+   (xdoc::li "@('%=') (binary) &mdash; compound assignment with @('%')")
+   (xdoc::li "@('<<=') (binary) &mdash; compound assignment with @('<<')")
+   (xdoc::li "@('>>=') (binary) &mdash; compound assignment with @('>>')")
+   (xdoc::li "@('&=') (binary) &mdash; compound assignment with @('&')")
+   (xdoc::li "@('^=') (binary) &mdash; compound assignment with @('^')")
+   (xdoc::li "@('|=') (binary) &mdash; compound assignment with @('|')"))
   (xdoc::p
    "These not only take, but also return, @('int') values.
     This uniformity is also due to the fact that C represents booleans
@@ -341,25 +355,25 @@
     (which is the same result prescribed by the Java language specification).")
 
   (xdoc::p
-   "We also note that the last two operations in the list above
+   "The @('&&') and @('||') operations
     are non-strict at the expression level:
     their second operand expression is not executed
     if the result of the first operand expression
     suffices to determine the final result
-    (0 for conjunction, 1 for disjunction).
-    However, here we are concerned about
-    how these operations operate on values,
-    assuming that we have values.
-    The ACL2 representation of non-strict C conjunctions and disjunctions
-    is described elsewhere in this tutorial.")
+    (0 for conjunction, 1 for disjunction).")
+
+  (xdoc::p
+   "The simple and compound assignment operations have side effects.
+    All the other operations are pure, i.e. without side effect.")
 
   (atc-tutorial-section "ACL2 Representation")
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the file @('[books]/kestrel/c/atc/signed-ints.lisp').
-    This is automatically included when ATC is included,
-    but one may want to include that file as part of an APT derivation
+    is in the files @('[books]/kestrel/c/atc/integers.lisp')
+    and @('[books]/kestrel/c/atc/integer-operations.lisp').
+    These are automatically included when ATC is included,
+    but one may want to include those file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
     (see @(see atc-tutorial-approach)),
     and thus before including ATC itself,
@@ -390,7 +404,7 @@
 
   (xdoc::p
    "We also provide ACL2 functions
-    corresponding to the operations listed above:")
+    corresponding to some of the operations listed above:")
   (xdoc::ul
    (xdoc::li "@(tsee plus-sint) &mdash; for unary @('+')")
    (xdoc::li "@(tsee minus-sint) &mdash; for unary @('-')")
@@ -411,9 +425,12 @@
    (xdoc::li "@(tsee ne-sint-sint) &mdash; for @('!=')")
    (xdoc::li "@(tsee bitand-sint-sint) &mdash; for @('&')")
    (xdoc::li "@(tsee bitxor-sint-sint) &mdash; for @('^')")
-   (xdoc::li "@(tsee bitior-sint-sint) &mdash; for @('|')")
-   (xdoc::li "@(tsee logand-sint-sint) &mdash; for @('&&')")
-   (xdoc::li "@(tsee logor-sint-sint) &mdash; for @('||')"))
+   (xdoc::li "@(tsee bitior-sint-sint) &mdash; for @('|')"))
+  (xdoc::p
+   "These are all the strict pure operations;
+    the non-strict or non-pure operations are excluded,
+    because they are represented differently in ACL2,
+    as described elsewhere in this tutorial.")
 
   (xdoc::p
    "These ACL2 functions take @(tsee sint) values as inputs,
@@ -1335,7 +1352,7 @@
     "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
     "  (let ((|x_lt_y| (c::lt-sint-sint |x| |y|)))"
     "    (let ((|x_eq_y| (c::eq-sint-sint |x| |y|)))"
-    "      (let ((|x_le_y| (c::logor-sint-sint |x_lt_y| |x_eq_y|)))"
+    "      (let ((|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
     "        (c::lognot-sint |x_le_y|)))))")
    (xdoc::p
     "represents the C function")
@@ -1354,7 +1371,7 @@
     "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
     "  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))"
     "         (|x_eq_y| (c::eq-sint-sint |x| |y|))"
-    "         (|x_le_y| (c::logor-sint-sint |x_lt_y| |x_eq_y|)))"
+    "         (|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
     "    (c::lognot-sint |x_le_y|)))")
    (xdoc::p
     "This form may be more readable:
