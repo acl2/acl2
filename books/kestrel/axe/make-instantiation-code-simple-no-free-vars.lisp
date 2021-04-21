@@ -16,6 +16,8 @@
 ;; instantiation for that uses it.  This book is for the case where the hyp has
 ;; no free vars (vars not bound in the alist).
 
+;; TODO: Deprecate this in favor of the "2" version
+
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
 (include-book "axe-trees")
@@ -42,7 +44,7 @@
                                       (symbol-alistp alist)
                                       (all-dargp (strip-cdrs alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
-          (if (variablep term) ;todo: we could mark the var as free or not free
+          (if (variablep term) ;todo: we could mark the var as free or not free (see the "2" version of this tool)
               (let ((match (assoc-eq term alist)))  ;TODO: in this version of the tool, all vars are bound in the alist, so no need to check this! But adding this check will require knowing the alist is suitable for the hyp
                 (if match
                     (cdr match)
@@ -53,7 +55,6 @@
                 ;;a function call (previously, we handled IFs specially but that didn't seem worth it):
                 (mv-let (all-quotep args)
                   (,instantiate-hyp-lst-name (fargs term) alist interpreted-function-alist)
-                  ;; todo: consider not doing this for this function, which deals with free vars!
                   (if all-quotep
                       ;; Try to evaluate the ground term:
                       (mv-let (erp res)

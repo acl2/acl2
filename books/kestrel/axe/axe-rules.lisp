@@ -350,9 +350,8 @@
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
       ;; a hyp not marked with :free-vars must have no free vars:
-      (otherwise (let* ((hyp-vars (vars-in-term hyp))
-                        (free-vars (set-difference-eq hyp-vars bound-vars)))
-                   (not free-vars))))))
+      (otherwise (let* ((hyp-vars (vars-in-term hyp)))
+                   (subsetp-equal hyp-vars bound-vars))))))
 
 (defcong perm equal (bound-vars-suitable-for-hypp bound-vars hyp) 1
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp))))

@@ -33,14 +33,14 @@ echo "Making TARGET = $TARGET"
 echo "Using STARTJOB = $STARTJOB"
 
 echo "Making ACL2"
-$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log"
+$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP"
 # Outdated (as of 2020) but maybe relevant comment: If your startjob
 # is just a wrapper for bash, you'll want to use $* to pass in the
 # arguments to startjob
 # As an example of setting a name and establishing a limit to memory and
 # duration for a cluster management system, we leave the old version of this
 # call below:
-# $STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
+# $STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP" \
 #   --name "J_CCL_ACL2" \
 #   --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 

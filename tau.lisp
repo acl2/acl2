@@ -135,7 +135,7 @@
 
 (defun strip-caddrs (x)
   (declare (xargs :guard (all->=-len x 3)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (caddar x) (strip-caddrs (cdr x))))))
 
 ; In forming rules from terms we often strip out individual branches of the

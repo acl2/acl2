@@ -20,6 +20,7 @@
 (include-book "make-instantiation-code-simple")
 (include-book "make-instantiation-code-simple-free-vars")
 (include-book "make-instantiation-code-simple-no-free-vars")
+(include-book "make-instantiation-code-simple-no-free-vars2")
 
 ;; Make a version of instantiate-hyp, etc that use the basic evaluator:
 (make-instantiation-code-simple basic axe-evaluator-basic)
@@ -29,3 +30,6 @@
 
 ;; Make a version for when there are no free vars:
 (make-instantiation-code-simple-no-free-vars basic axe-evaluator-basic)
+
+;; Make a version for when there are no free vars and we assume that in the guard to speed things up:
+(make-instantiation-code-simple-no-free-vars2 basic axe-evaluator-basic)
