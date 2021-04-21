@@ -61,11 +61,13 @@
      because the 0 or 1 are always @('int')
      for operations like @('&&') and @('||').")
    (xdoc::p
-    "We introduce functions for the unary and strict binary operators,
+    "We introduce functions for the unary and strict pure binary operators,
      as detailed below.
      We do not introduce functions for the non-strict binary operators,
      because those are modeled via ACL2's @(tsee and) and @(tsee or),
-     which are also non-strict.")
+     which are also non-strict.
+     We do not introduce functions for the non-pure binary operators
+     (i.e. assignments), because they are modeled differently in ACL2.")
    (xdoc::p
     "For each unary operator, we introduce a function for each integer type.
      The function takes an argument of that integer type,
@@ -427,10 +429,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These include all the strict binary operators;
-     the non-strict ones are represented
-     via ACL2's @(tsee and) and @(tsee or) instead
-     (in combination with other ACL2 functions in our C model).")
+    "These include all the strict pure binary operators.")
    (xdoc::p
     "For all the operations except shifts,
      we treat two cases differently:
