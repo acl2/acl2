@@ -51,6 +51,7 @@
 (include-book "../lint/logicassign")
 (include-book "../lint/check-globalparams")
 (include-book "../lint/ifdef-report")
+(include-book "../lint/unpacked-range")
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/top")
@@ -838,6 +839,7 @@ shown.</p>"
        (design (xf-cwtime (vl-design-check-selfassigns design)))
        (design (xf-cwtime (vl-design-qmarksize-check design)))
        (design (xf-cwtime (vl-design-arith-compare-check design)))
+       (design (xf-cwtime (vl-design-unpacked-range-check design)))
        (sd-probs (xf-cwtime (sd-analyze-design design0)))
 
 ;; Not sure we care abotu this for anything
