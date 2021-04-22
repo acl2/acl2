@@ -15,7 +15,6 @@
 (include-book "function-environments")
 (include-book "computation-states")
 (include-book "integer-operations")
-(include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

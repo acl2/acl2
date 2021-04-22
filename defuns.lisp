@@ -6017,7 +6017,9 @@
    'print-useless-runes
    (er-let* ((accp-info (accp-info state)))
      (state-global-let*
-      ((current-package "ACL2" set-current-package-state))
+      ((current-package "ACL2" set-current-package-state)
+       (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+       (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
       (cond
        ((member-equal (symbol-package-name name) known-pkgs)
         (let* ((useless-runes0 (remove-executable-counterpart-useless-runes
@@ -6028,7 +6030,7 @@
                                 (set-difference-equal-sorted useless-runes0
                                                              bad-tuples))))
           (mv-let (col state)
-            (fmt1 "~@0~Y12"
+            (fmt1 "~@0(~x1~*2"
                   (list (cons #\0 (if bad-tuples
                                       (msg "; Skipping ~#0~[this ~
                                             useless-rune~/these useless ~
@@ -6042,7 +6044,13 @@
                                              "~x*~|"
                                              ,bad-tuples))
                                     ""))
-                        (cons #\1 (cons name useless-runes))
+                        (cons #\1 name)
+                        (cons #\2
+                              `(")~%"          ; when there's nothing to print
+                                "~% ~x*~% )~%" ; print the last element
+                                "~% ~x*"       ; print the 2nd to last element
+                                "~% ~x*"       ; print all other elements
+                                ,useless-runes))
                         (cons #\2 nil))
                   0 channel state nil)
             (declare (ignore col))

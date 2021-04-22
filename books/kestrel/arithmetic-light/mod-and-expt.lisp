@@ -118,7 +118,7 @@
 (defthm mod-of-expt-of-mod
   (implies (and (natp i)
                 (integerp x)
-                (posp y))
+                (integerp y))
            (equal (mod (expt (mod x y) i) y)
                   (mod (expt x i) y)))
   :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
@@ -127,7 +127,7 @@
   (implies (and (natp i)
                 (integerp x1)
                 (integerp x2)
-                (posp y))
+                (integerp y))
            (equal (mod (* x1 (expt (mod x2 y) i)) y)
                   (mod (* x1 (expt x2 i)) y)))
   :hints (("Goal" :in-theory (e/d (mod-of-*-subst-arg2) (mod-of-expt-of-mod))

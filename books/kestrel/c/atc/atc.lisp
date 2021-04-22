@@ -33,6 +33,7 @@
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
@@ -695,28 +696,116 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-const ((term pseudo-termp))
+(define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
-               (val sint-integerp))
-  :short "Check if a term represents an @('int') constant."
+               (part1 symbolp)
+               (part2 symbolp))
+  :short "Check if a symbol consists of two parts separated by dash."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the term is a call of @(tsee sint-const) on a quoted integer constant
-     whose value is non-negative and representable as an @('int'),
-     we return the value.
+    "If the symbol has the form @('<part1>-<part2>'),
+     with @('<part1>') and @('<part2>') non-empty and without dashes,
+     we return an indication of success and the two parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The two returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 2)) (mv nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym)))
+    (mv t part1 part2))
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-symbol-3part ((sym symbolp))
+  :returns (mv (yes/no booleanp)
+               (part1 symbolp)
+               (part2 symbolp)
+               (part3 symbolp))
+  :short "Check if a symbol consists of three parts separated by dash."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the symbol has the form @('<part1>-<part2>-<part3>'),
+     with @('<part1>') and @('<part2>') and @('<part3>')
+     non-empty and without dashes,
+     we return an indication of success and the three parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The three returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 3)) (mv nil nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym))
+       (part3 (intern-in-package-of-symbol (third parts) sym)))
+    (mv t part1 part2 part3))
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-fixtype-to-type ((fixtype symbolp))
+  :returns (type type-optionp)
+  :short "Integer type corresponding to a fixtype name, if any."
+  (case fixtype
+    (schar (type-schar))
+    (uchar (type-uchar))
+    (sshort (type-sshort))
+    (ushort (type-ushort))
+    (sint (type-sint))
+    (uint (type-uint))
+    (slong (type-slong))
+    (ulong (type-ulong))
+    (sllong (type-sllong))
+    (ullong (type-ullong))
+    (t nil))
+  ///
+  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
+    (implies type
+             (type-arithmeticp type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-iconst ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (val natp :rule-classes :type-prescription)
+               (unsignedp booleanp)
+               (suffix iconst-tysuffixp)
+               (type typep))
+  :short "Check if a term represents an integer constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of a function @('<type>-const')
+     on a quoted integer constant,
+     we return the value of the integer constant
+     (which must be non-negative due to guard verification,
+     but here we need to check it because we do not have
+     guard verification as a contextual assumption on the term),
+     along with an indication of unsignedness and type suffix information,
+     and also the C integer type of the constant.
      This way, the caller can generate the appropriate C integer constant."))
   (case-match term
-    (('sint-const ('quote val))
-     (if (and (natp val)
-              (sint-integerp val))
-         (mv t val)
-       (mv nil 0)))
-    (& (mv nil 0)))
-  ///
-  (defret natp-of-atc-check-sint-const
-    (natp val)
-    :rule-classes :type-prescription))
+    ((fn ('quote val))
+     (b* (((when (not (symbolp fn)))
+           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))
+          ((mv okp type const) (atc-check-symbol-2part fn))
+          ((unless (and okp
+                        (eq const 'const)
+                        (natp val)))
+           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))
+       (case type
+         (sint (mv t val nil (iconst-tysuffix-none) (type-sint)))
+         (uint (mv t val t (iconst-tysuffix-none) (type-uint)))
+         (slong (mv t val nil (iconst-tysuffix-long) (type-slong)))
+         (ulong (mv t val t (iconst-tysuffix-long) (type-ulong)))
+         (sllong (mv t val nil (iconst-tysuffix-llong) (type-sllong)))
+         (ullong (mv t val t (iconst-tysuffix-llong) (type-ullong)))
+         (t (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))))
+    (& (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -741,12 +830,17 @@
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg)
-     (case fn
-       (plus-sint (mv t (unop-plus) arg (type-sint)))
-       (minus-sint (mv t (unop-minus) arg (type-sint)))
-       (bitnot-sint (mv t (unop-bitnot) arg (type-sint)))
-       (lognot-sint (mv t (unop-lognot) arg (type-sint)))
-       (t (mv nil (irr-unop) nil (irr-type)))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-unop) nil (irr-type)))
+          ((mv okp op fixtype) (atc-check-symbol-2part fn))
+          ((when (not okp)) (mv nil (irr-unop) nil (irr-type)))
+          (type (atc-integer-fixtype-to-type fixtype))
+          ((when (not type)) (mv nil (irr-unop) nil (irr-type))))
+       (case op
+         (plus (mv t (unop-plus) arg (promote-type type)))
+         (minus (mv t (unop-minus) arg (promote-type type)))
+         (bitnot (mv t (unop-bitnot) arg (promote-type type)))
+         (lognot (mv t (unop-lognot) arg (type-sint)))
+         (t (mv nil (irr-unop) nil (irr-type))))))
     (& (mv nil (irr-unop) nil (irr-type))))
   ///
 
@@ -764,19 +858,15 @@
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a non-side-effecting binary expression."
+  :short "Check if a term represents a strict pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
-     that represent C non-side-effecting binary operators,
+     that represent C strict pure binary operators,
      we return the operator and the argument terms.
      This way, the caller can translate the argument terms to C expressions
      and apply the operator to the expressions.")
-   (xdoc::p
-    "Note that when @('&&') and @('||') are represented this way,
-     their ACL2 representation is strict,
-     which may be acceptable in some cases.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -784,26 +874,31 @@
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg1 arg2)
-     (case fn
-       (add-sint-sint (mv t (binop-add) arg1 arg2 (type-sint)))
-       (sub-sint-sint (mv t (binop-sub) arg1 arg2 (type-sint)))
-       (mul-sint-sint (mv t (binop-mul) arg1 arg2 (type-sint)))
-       (div-sint-sint (mv t (binop-div) arg1 arg2 (type-sint)))
-       (rem-sint-sint (mv t (binop-rem) arg1 arg2 (type-sint)))
-       (shl-sint-sint (mv t (binop-shl) arg1 arg2 (type-sint)))
-       (shr-sint-sint (mv t (binop-shr) arg1 arg2 (type-sint)))
-       (lt-sint-sint (mv t (binop-lt) arg1 arg2 (type-sint)))
-       (le-sint-sint (mv t (binop-le) arg1 arg2 (type-sint)))
-       (gt-sint-sint (mv t (binop-gt) arg1 arg2 (type-sint)))
-       (ge-sint-sint (mv t (binop-ge) arg1 arg2 (type-sint)))
-       (eq-sint-sint (mv t (binop-eq) arg1 arg2 (type-sint)))
-       (ne-sint-sint (mv t (binop-ne) arg1 arg2 (type-sint)))
-       (bitand-sint-sint (mv t (binop-bitand) arg1 arg2 (type-sint)))
-       (bitxor-sint-sint (mv t (binop-bitxor) arg1 arg2 (type-sint)))
-       (bitior-sint-sint (mv t (binop-bitior) arg1 arg2 (type-sint)))
-       (logand-sint-sint (mv t (binop-logand) arg1 arg2 (type-sint)))
-       (logor-sint-sint (mv t (binop-logor) arg1 arg2 (type-sint)))
-       (t (mv nil (irr-binop) nil nil (irr-type)))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-binop) nil nil (irr-type)))
+          ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part fn))
+          ((when (not okp)) (mv nil (irr-binop) nil nil (irr-type)))
+          (type1 (atc-integer-fixtype-to-type fixtype1))
+          ((when (not type1)) (mv nil (irr-binop) nil nil (irr-type)))
+          (type2 (atc-integer-fixtype-to-type fixtype2))
+          ((when (not type2)) (mv nil (irr-binop) nil nil (irr-type))))
+       (case op
+         (add (mv t (binop-add) arg1 arg2 (uaconvert-types type1 type2)))
+         (sub (mv t (binop-sub) arg1 arg2 (uaconvert-types type1 type2)))
+         (mul (mv t (binop-mul) arg1 arg2 (uaconvert-types type1 type2)))
+         (div (mv t (binop-div) arg1 arg2 (uaconvert-types type1 type2)))
+         (rem (mv t (binop-rem) arg1 arg2 (uaconvert-types type1 type2)))
+         (shl (mv t (binop-shl) arg1 arg2 (promote-type type1)))
+         (shr (mv t (binop-shr) arg1 arg2 (promote-type type2)))
+         (lt (mv t (binop-lt) arg1 arg2 (type-sint)))
+         (le (mv t (binop-le) arg1 arg2 (type-sint)))
+         (gt (mv t (binop-gt) arg1 arg2 (type-sint)))
+         (ge (mv t (binop-ge) arg1 arg2 (type-sint)))
+         (eq (mv t (binop-eq) arg1 arg2 (type-sint)))
+         (ne (mv t (binop-ne) arg1 arg2 (type-sint)))
+         (bitand (mv t (binop-bitand) arg1 arg2 (uaconvert-types type1 type2)))
+         (bitxor (mv t (binop-bitxor) arg1 arg2 (uaconvert-types type1 type2)))
+         (bitior (mv t (binop-bitior) arg1 arg2 (uaconvert-types type1 type2)))
+         (t (mv nil (irr-binop) nil nil (irr-type))))))
     (& (mv nil (irr-binop) nil nil (irr-type))))
   ///
 
@@ -836,11 +931,6 @@
      This way, the caller can translate the argument term to a C expression
      and apply a cast with a type name to the expression.")
    (xdoc::p
-    "For now we always generate explicit casts for conversions.
-     Future versions of ATC will avoid generating casts
-     when the conversions happen automatically
-     due to where the argument expression occurs.")
-   (xdoc::p
     "The C type of the conversion can be determined from the returned type name,
      so there is no need to also return a C type here.")
    (xdoc::p
@@ -848,16 +938,38 @@
      we return an indication of failure."))
   (case-match term
     ((fn arg)
-     (case fn
-       (sint-from-uchar (mv t
-                            (make-tyname :specs (tyspecseq-sint)
-                                         :pointerp nil)
-                            arg))
-       (uchar-from-sint (mv t
-                            (make-tyname :specs (tyspecseq-uchar)
-                                         :pointerp nil)
-                            arg))
-       (t (mv nil (irr-tyname) nil))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-tyname) nil))
+          ((mv okp dtype from stype) (atc-check-symbol-3part fn))
+          ((when (not okp)) (mv nil (irr-tyname) nil))
+          ((unless (eq from 'from)) (mv nil (irr-tyname) nil))
+          ((unless (atc-integer-fixtype-to-type stype))
+           (mv nil (irr-tyname) nil))
+          (type (atc-integer-fixtype-to-type dtype))
+          ((when (not type)) (mv nil (irr-tyname) nil))
+          (tyname (case (type-kind type)
+                    (:schar (make-tyname :specs (tyspecseq-schar)
+                                         :pointerp nil))
+                    (:uchar (make-tyname :specs (tyspecseq-uchar)
+                                         :pointerp nil))
+                    (:sshort (make-tyname :specs (tyspecseq-sshort)
+                                          :pointerp nil))
+                    (:ushort (make-tyname :specs (tyspecseq-ushort)
+                                          :pointerp nil))
+                    (:sint (make-tyname :specs (tyspecseq-sint)
+                                        :pointerp nil))
+                    (:uint (make-tyname :specs (tyspecseq-uint)
+                                        :pointerp nil))
+                    (:slong (make-tyname :specs (tyspecseq-slong)
+                                         :pointerp nil))
+                    (:ulong (make-tyname :specs (tyspecseq-ulong)
+                                         :pointerp nil))
+                    (:sllong (make-tyname :specs (tyspecseq-sllong)
+                                          :pointerp nil))
+                    (:ullong (make-tyname :specs (tyspecseq-ullong)
+                                          :pointerp nil))
+                    (t (prog2$ (raise "Internal error: type ~x0" type)
+                               (irr-tyname))))))
+       (mv t tyname arg)))
     (& (mv nil (irr-tyname) nil)))
   ///
 
@@ -1068,7 +1180,7 @@
       "An ACL2 variable is translated to a C variable.
        Its type is looked up in the symbol table passed as input.")
      (xdoc::p
-      "If the term fits the @(tsee sint-const) pattern,
+      "If the term fits the pattern of an integer constant
        we translate it to a C integer constant.")
      (xdoc::p
       "If the term fits the pattern of a unary or binary operation,
@@ -1117,15 +1229,15 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name term)))
                    (type-fix type)))))
-         ((mv okp val) (atc-check-sint-const term))
+         ((mv okp val unsignedp suffix type) (atc-check-iconst term))
          ((when okp)
           (acl2::value
            (list
             (expr-const (const-int (make-iconst :value val
                                                 :base (iconst-base-dec)
-                                                :unsignedp nil
-                                                :type (iconst-tysuffix-none))))
-            (type-sint))))
+                                                :unsignedp unsignedp
+                                                :type suffix)))
+            type)))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
@@ -1244,7 +1356,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is a boolen term,
+      "At the same time, we check that the term is a boolean term,
        as described in the user documentation.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
@@ -1253,7 +1365,7 @@
        and we construct a logical expression
        with the corresponding C operators.")
      (xdoc::p
-      "If the term is a call of @(tsee sint-nonzerop),
+      "If the term is a call of @('<type>-nonzerop'),
        we call the mutually recursive function
        that translates the argument, which must be a C-valued term,
        to an expression, which we return.")
@@ -1298,8 +1410,25 @@
          (acl2::value (make-expr-binary :op (binop-logor)
                                         :arg1 arg1-expr
                                         :arg2 arg2-expr))))
-      (('c::sint-nonzerop arg)
-       (b* (((mv erp (list expr &) state)
+      ((type-nonzerop arg)
+       (b* (((when (not (symbolp type-nonzerop)))
+             (er-soft+ ctx t (irr-expr)
+                       "When generating C code for the function ~x0, ~
+                        at a point where
+                        a boolean ACL2 term is expected, ~
+                        the term ~x1 is encountered instead."
+                       fn term))
+            ((mv okp type nonzerop) (atc-check-symbol-2part type-nonzerop))
+            ((unless (and okp
+                          (atc-integer-fixtype-to-type type)
+                          (eq nonzerop 'nonzerop)))
+             (er-soft+ ctx t (irr-expr)
+                       "When generating C code for the function ~x0, ~
+                        at a point where
+                        a boolean ACL2 term is expected, ~
+                        the term ~x1 is encountered instead."
+                       fn term))
+            ((mv erp (list expr &) state)
              (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
@@ -1746,8 +1875,16 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
+               (scharp (type-schar))
                (ucharp (type-uchar))
+               (sshortp (type-sshort))
+               (ushortp (type-ushort))
                (sintp (type-sint))
+               (uintp (type-uint))
+               (slongp (type-slong))
+               (ulongp (type-ulong))
+               (sllongp (type-sllong))
+               (ullongp (type-ullong))
                (uchar-arrayp (type-pointer (type-uchar)))
                (t nil)))
        ((when (not type))

@@ -157,7 +157,7 @@
 ; file acl2-status.txt that the system has allegedly been compiled, the
 ; following procedure works.
 
-;   # Write :COMPILED to acl2-status.txt.
+;   # Write :COMPILE-SKIPPED to acl2-status.txt.
 ;   make full LISP=ccl
 
 ;   # Next, edit acl2r.lisp with the desired variant of *acl2-optimize-form*,
@@ -1580,7 +1580,9 @@ ACL2 from scratch.")
                               :direction :output)
                          (format str
                                  "~s"
-                                 :compiled))))
+                                 (if *suppress-compile-build-time*
+                                     :compile-skipped
+                                   :compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                       COMPILING and LOADING, PART 1
@@ -1598,10 +1600,9 @@ ACL2 from scratch.")
 ; NOTE: In order to compile ACL2, checks must first be run on the suitability
 ; of the underlying Common Lisp implementation, by executing
 ; (check-suitability-for-acl2).  Successful compilation should write out file
-; *acl2-status* with the symbol :COMPILED.
-
-; Compiling is a no-op if *suppress-compile-build-time* is non-nil, but we
-; still write :COMPILED as indicated above.
+; *acl2-status* with the symbol :COMPILED unless *suppress-compile-build-time*
+; is non-nil, in which case we skip compilation and write :COMPILE-SKIPPED
+; instead.
 
 (defvar *lisp-extension* "lisp")
 
@@ -2252,12 +2253,13 @@ You are using version ~s.~s.~s."
    (unless (and (probe-file *acl2-status-file*)
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
-                                (eq (read str nil)
+                                (member (read str nil)
 
 ; This check is insufficient to avoid running the check twice, but that's OK.
 ; See the comment about ":CHECKED" in check-suitability-for-acl2.
 
-                                    :compiled)))
+                                        '(:compiled
+                                          :compile-skipped))))
      (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit
@@ -2335,15 +2337,15 @@ You are using version ~s.~s.~s."
               )
        do
        (si::allocate-growth type 1 10 50 2)))
-    (cond
-     ((or (not (probe-file *acl2-status-file*))
-          (with-open-file (str *acl2-status-file*
-                               :direction :input)
-                          (not (member (read str nil)
-                                       '(:compiled :initialized)))))
-      (error "Please compile ACL2 using ~s, which will write~%~
-              the token :COMPILED to the file acl2-status.txt."
-             '(compile-acl2))))
+    (when (or (not (probe-file *acl2-status-file*))
+              (with-open-file (str *acl2-status-file*
+                                   :direction :input)
+                (not (member (read str nil)
+                             '(:compiled :compile-skipped :initialized)))))
+      (error "Please run ~s, which will write the token ~s to the file ~
+              acl2-status.txt."
+             '(compile-acl2)
+             (if *suppress-compile-build-time* :COMPILED :COMPILE-SKIPPED)))
     (let ((*readtable* *acl2-readtable*)
           (extension (if *suppress-compile-build-time*
                          *lisp-extension*

@@ -37,10 +37,10 @@
                                 (TRUE-LISTP ARGS)
                                 (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
                                 (NATP ARRAY-DEPTH))))
-    (IF (CONSP FN)
+    (IF (CONSP FN) ; todo: do we sometimes know that things are lambda-free?
         (LET* ((FORMALS (SECOND FN))
                (BODY (THIRD FN))
-               (ALIST (PAIRLIS$-FAST FORMALS ARGS)))
+               (ALIST (PAIRLIS$-FAST FORMALS ARGS))) ;todo: avoid this?
               (EVAL-LEN-EVALUATOR
                ALIST BODY
                INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
@@ -82,11 +82,11 @@
                    (IF
                     (ENDP ARGS-TO-WALK-DOWN)
                     (LET
-                     ((ARG4 (NTH 3 ARGS))
+                     ((ARG4 (NTH 3 ARGS)) ;todo: optimize stuff like this
                       (ARG3 (NTH 2 ARGS))
                       (ARG2 (NTH 1 ARGS))
                       (ARG1 (NTH 0 ARGS)))
-                     (DECLARE (IGNORE ARG4))
+                     (DECLARE (IGNORE ARG4)) ;todo: why?  don't compute
                      (IF
                       (EQ 'APPLY-LEN-EVALUATOR FN)
                       (MV T

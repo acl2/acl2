@@ -16,11 +16,24 @@
 ;; See also unify-term-and-dag-fast.lisp for an optimized version.
 
 (include-book "kestrel/utilities/forms" :dir :system)
+(include-book "kestrel/utilities/vars-in-term" :dir :system)
 (include-book "dag-arrays")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
+;(local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+;dup
+(local
+ (defthm assoc-equal-iff
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (memberp key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
 
 (mutual-recursion
 
@@ -191,3 +204,26 @@
                     (unify-terms-and-dag nil dargs dag-array dag-len alist)
                     (unify-term-and-dag term darg dag-array dag-len alist)
                     (unify-term-and-dag term (cdr (assoc-equal term alist)) dag-array dag-len alist)))))
+
+(defthm-flag-unify-term-and-dag
+  (defthm strip-cars-of-unify-term-and-dag
+    (implies (and (alistp alist)
+                  (pseudo-termp term)
+                  (not (equal :fail (unify-term-and-dag term darg dag-array dag-len alist))))
+             (perm (strip-cars (unify-term-and-dag term darg dag-array dag-len alist))
+                   (union-equal (vars-in-term term)
+                                (strip-cars alist))))
+    :flag unify-term-and-dag)
+  (defthm strip-cars-of-unify-terms-and-dag
+    (implies (and (alistp alist)
+                  (pseudo-term-listp terms)
+                  (not (equal :fail (unify-terms-and-dag terms dargs dag-array dag-len alist))))
+             (perm (strip-cars (unify-terms-and-dag terms dargs dag-array dag-len alist))
+                   (union-equal (vars-in-terms terms)
+                                (strip-cars alist))))
+    :flag unify-terms-and-dag)
+  :hints (("Goal" :expand ((VARS-IN-TERMS TERMS)
+                           (unify-terms-and-dag terms dargs dag-array dag-len alist)
+                           (unify-terms-and-dag nil dargs dag-array dag-len alist)
+                           (unify-term-and-dag term darg dag-array dag-len alist)
+                           (unify-term-and-dag term (cdr (assoc-equal term alist)) dag-array dag-len alist)))))

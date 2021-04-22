@@ -82,7 +82,8 @@
                   (let* ((fn-info (cdr match))
                          (formals (first fn-info))
                          (body (second fn-info))
-                         (alist (pairlis$-fast formals args)))
+                         (alist (pairlis$-fast formals args)) ;todo: avoid this consing?
+                         )
                     (eval-len-evaluator alist body interpreted-function-alist count)))))))))
 
     ;; Returns (mv erp result).

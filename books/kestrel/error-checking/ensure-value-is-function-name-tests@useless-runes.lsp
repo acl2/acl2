@@ -1,1 +1,3 @@
-(G (1 1 (:TYPE-PRESCRIPTION G)))
+(G
+ (1 1 (:TYPE-PRESCRIPTION G))
+ )

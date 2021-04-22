@@ -32,15 +32,15 @@
 
     (xdoc::p
      "This manual page contains user-level reference documentation for ATC.
-      If you are new to ATC, you should start with the "
+      Usera who are new to ATC should start with the "
      (xdoc::seetopic "atc-tutorial" "tutorial")
      ", which provides user-level pedagogical information
       on how ATC works and how to use ATC effectively.")
 
     (xdoc::p
-     "In this manual page,
-      we refer to the official C standard in the manner explained in "
-     (xdoc::seetopic "c" "the top-level XDOC topic of our C library")
+     "This manual page refers to the official C standard
+      in the manner explained in "
+     (xdoc::seetopic "c" "the top-level XDOC topic of this C library")
      "."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,9 +171,25 @@
       the corresponding parameter of the C function:")
     (xdoc::ul
      (xdoc::li
+      "@('(scharp x)'), representing @('signed char').")
+     (xdoc::li
       "@('(ucharp x)'), representing @('unsigned char').")
      (xdoc::li
-      "@('(sintp x)'), representing @('int').")
+      "@('(sshortp x)'), representing @('signed short').")
+     (xdoc::li
+      "@('(ushortp x)'), representing @('unsigned short').")
+     (xdoc::li
+      "@('(sintp x)'), representing @('signed int').")
+     (xdoc::li
+      "@('(uintp x)'), representing @('unsigned int').")
+     (xdoc::li
+      "@('(slongp x)'), representing @('signed long').")
+     (xdoc::li
+      "@('(ulongp x)'), representing @('unsigned long').")
+     (xdoc::li
+      "@('(sllongp x)'), representing @('signed long long').")
+     (xdoc::li
+      "@('(ullongp x)'), representing @('unsigned long long').")
      (xdoc::li
       "@('(uchar-arrayp x)'), representing @('unsigned char *')."))
     (xdoc::p
@@ -300,63 +316,115 @@
        This represents the corresponding C local variable,
        as an expression.")
      (xdoc::li
-      "A call of @(tsee sint-const) on a quoted integer.
-       This represents a C integer constants of type @('int').
-       The guard verification requirement ensures that
-       the quoted integer is within the range of type @('int').")
-     (xdoc::li
-      "A call of one of the following functions
-       on pure C-valued terms:"
+      "A call of a function @('<type>-const') on a quoted integer,
+       where @('<type>') is among"
       (xdoc::ul
-       (xdoc::li "@(tsee plus-sint)")
-       (xdoc::li "@(tsee minus-sint)")
-       (xdoc::li "@(tsee bitnot-sint)")
-       (xdoc::li "@(tsee lognot-sint)")
-       (xdoc::li "@(tsee add-sint-sint)")
-       (xdoc::li "@(tsee sub-sint-sint)")
-       (xdoc::li "@(tsee mul-sint-sint)")
-       (xdoc::li "@(tsee div-sint-sint)")
-       (xdoc::li "@(tsee rem-sint-sint)")
-       (xdoc::li "@(tsee shl-sint-sint)")
-       (xdoc::li "@(tsee shr-sint-sint)")
-       (xdoc::li "@(tsee lt-sint-sint)")
-       (xdoc::li "@(tsee gt-sint-sint)")
-       (xdoc::li "@(tsee le-sint-sint)")
-       (xdoc::li "@(tsee ge-sint-sint)")
-       (xdoc::li "@(tsee eq-sint-sint)")
-       (xdoc::li "@(tsee ne-sint-sint)")
-       (xdoc::li "@(tsee bitand-sint-sint)")
-       (xdoc::li "@(tsee bitxor-sint-sint)")
-       (xdoc::li "@(tsee bitior-sint-sint)")
-       (xdoc::li "@(tsee logand-sint-sint)")
-       (xdoc::li "@(tsee logor-sint-sint)"))
-      "This represents
-       the corresponding C operator applied to C @('int') values.
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "This represents a C integer constants
+       of the C type indicated by the name of the function.
        The guard verification requirement ensures that
-       the operators are always applied to values with a well-defined result,
-       and the result is an @('int') value.
-       If the operator is @('&&') or @('||'),
-       this represents a strict (i.e. not non-strict) use of them;
-       see below for how to represent non-strict uses of them,
-       but the strict version is slightly simpler when usable.")
+       the quoted integer is within the range of the type.")
      (xdoc::li
-      "A call of one of the following functions
-       on pure C-valued terms:"
+      "A call of a function @('<op>-<type>') on a pure C-valued term,
+       where @('<op>') is among"
       (xdoc::ul
-       (xdoc::li "@(tsee sint-from-uchar)")
-       (xdoc::li "@(tsee uchar-from-sint)"))
+       (xdoc::li "@('plus')")
+       (xdoc::li "@('minus')")
+       (xdoc::li "@('bitnot')")
+       (xdoc::li "@('lognot')"))
+      "and @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "This represents the C operator indicated by the name of the function
+       applied to a value of the type indicated by the name of the function.
+       The guard verification requirement ensures that
+       the operator is always applied to values of the right type
+       and yields a well-defined result.
+       These functions covers all the C unary operators
+       (using the nomenclature in [C]).")
+     (xdoc::li
+      "A call of a function @('<op>-<type1>-<type2>') on pure C-valued terms,
+       where @('<op>') is among"
+      (xdoc::ul
+       (xdoc::li "@('add')")
+       (xdoc::li "@('sub')")
+       (xdoc::li "@('mul')")
+       (xdoc::li "@('div')")
+       (xdoc::li "@('rem')")
+       (xdoc::li "@('shl')")
+       (xdoc::li "@('shr')")
+       (xdoc::li "@('lt')")
+       (xdoc::li "@('gt')")
+       (xdoc::li "@('le')")
+       (xdoc::li "@('ge')")
+       (xdoc::li "@('eq')")
+       (xdoc::li "@('ne')")
+       (xdoc::li "@('bitand')")
+       (xdoc::li "@('bitxor')")
+       (xdoc::li "@('bitior')"))
+      "and @('<type1>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
       "This represents
+       the corresponding C operator indicated by the name of the function
+       applied to values of the types indicated by the name of the function.
+       The guard verification requirement ensures that
+       the operator is always applied to values of the right types
+       and yields a well-defined result.
+       These functions covers all the C strict pure binary operators;
+       the non-strict operators @('&&') and @('||'),
+       and the non-pure operatos @('='), @('+='), etc.,
+       are represented differently.")
+     (xdoc::li
+      "A call of a function @('<type1>-from-<type2>')
+       on a pure C-valued term,
+       where @('<type1>') and @('<type2>') are among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "and also differ from each other.
+       This represents
        a cast to the type indicated by the first part of the function name.
        The guard verification requirement ensures that
        the conversion is always applied to
        a value of the type indicated by the last part of the function name
        and yields a well-defined result.
-       Even though the conversion from @('unsigned char') to @('int')
-       happens automatically under certain common circumstances
-       (e.g. when an @('unsigned char') is used
-       as an operand of an @('int') arithmetic operation),
-       currently ATC always generates explicit casts;
-       this will be improved in future extensions to ATC.")
+       Even though conversions
+       happen automatically in certain circumstances in C,
+       these functions always represent explicit casts;
+       implict conversions are represented implicitly,
+       e.g. via the function for a unary operator that promoteds the operand.")
      (xdoc::li
       "A call of @(tsee uchar-array-read-sint) on C-valued terms.
        This represents an array subscripting expression.")
@@ -432,12 +500,12 @@
       that are not pure C-valued terms.
       Boolean terms are always pure;
       so they do not need the explicit designation `pure'
-      because they are the only boolean terms.")
+      because they are the only boolean terms handled by ATC.")
 
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
       i.e. not an @(tsee mv) result.
-      By construction, this result has C type @('int').")
+      By construction, this result has an easily inferred C type.")
 
     (xdoc::p
      "The body of the C function represented by each @('fni')

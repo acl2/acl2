@@ -1,6 +1,8 @@
 (MEASURE)
 (M)
-(EQUATION-1.4 (9 9 (:REWRITE DEFAULT-+-2))
-              (9 9 (:REWRITE DEFAULT-+-1))
-              (7 7 (:REWRITE DEFAULT-<-2))
-              (7 7 (:REWRITE DEFAULT-<-1)))
+(EQUATION-1.4
+ (9 9 (:REWRITE DEFAULT-+-2))
+ (9 9 (:REWRITE DEFAULT-+-1))
+ (7 7 (:REWRITE DEFAULT-<-2))
+ (7 7 (:REWRITE DEFAULT-<-1))
+ )

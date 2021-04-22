@@ -19,8 +19,12 @@
 (include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
 (include-book "kestrel/utilities/vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/perm-def" :dir :system)
+(include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
 ;(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/lists-light/perm" :dir :system))
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
 
@@ -341,13 +345,16 @@
           ;; Vars to be bound now must not already be bound:
           (not (intersection-eq vars-to-bind bound-vars)))))
       ;; a hyp marked with :free-vars must have at least 1 free var:
-      (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+      (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
+                         (hyp-vars (vars-in-term expr))
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
       ;; a hyp not marked with :free-vars must have no free vars:
-      (otherwise (let* ((hyp-vars (vars-in-term hyp))
-                        (free-vars (set-difference-eq hyp-vars bound-vars)))
-                   (not free-vars))))))
+      (otherwise (let* ((hyp-vars (vars-in-term hyp)))
+                   (subsetp-equal hyp-vars bound-vars))))))
+
+(defcong perm equal (bound-vars-suitable-for-hypp bound-vars hyp) 1
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp))))
 
 ;;;
 ;;; bound-vars-after-hyp
@@ -362,13 +369,13 @@
     (:axe-bind-free (let ((vars-to-bind (cddr hyp)))
                       ;; some vars get bound:
                       (append vars-to-bind bound-vars)))
-    ;; a hyp marked with :free-vars must have at least 1 free var:
-    (:free-vars (let* ((hyp-vars (vars-in-term hyp))
+    (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
+                       (hyp-vars (vars-in-term expr))
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
+                  ;; some vars get bound:
                   (append free-vars bound-vars)))
-    ;; a hyp not marked with :free-vars must have no free vars:
-    (otherwise bound-vars ;no change
-               )))
+    ;; no vars get bound:
+    (otherwise bound-vars)))
 
 (defthm symbol-listp-of-bound-vars-after-hyp
   (implies (and (axe-rule-hypp hyp)
@@ -380,6 +387,9 @@
   (implies (true-listp bound-vars)
            (true-listp (bound-vars-after-hyp bound-vars hyp)))
   :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
+
+(defcong perm perm (bound-vars-after-hyp bound-vars hyp) 1
   :hints (("Goal" :in-theory (enable bound-vars-after-hyp))))
 
 ;;;
@@ -437,6 +447,67 @@
            (let* ((new-bound-vars (bound-vars-after-hyp bound-vars hyp)))
              (bound-vars-suitable-for-hypsp new-bound-vars (rest hyps)))))))
 
+(defthm bound-vars-suitable-for-hypsp-when-axe-sytaxp-car
+  (implies (equal :axe-syntaxp (car (car hyps)))
+           (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
+                  (and (subsetp-equal (vars-in-term (cdr (car hyps))) bound-vars)
+                       (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp
+                                     bound-vars-after-hyp
+                                     bound-vars-suitable-for-hypsp))))
+
+(defthm bound-vars-suitable-for-hypsp-when-normal
+  (implies (and (equal :axe-syntaxp (car (car hyps)))
+                (not (equal :axe-bind-free (car (car hyps))))
+                (not (equal :free-vars (car (car hyps)))))
+           (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
+                  (and (subsetp-equal (vars-in-term (cdr (car hyps))) bound-vars)
+                       (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp
+                                     bound-vars-after-hyp
+                                     bound-vars-suitable-for-hypsp))))
+
+(defcong perm equal (bound-vars-suitable-for-hypsp bound-vars hyps) 1
+  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypsp))))
+
+;move
+(defthm not-intersection-equal-of-set-difference-equal-arg1
+  (not (intersection-equal (set-difference-equal x y) y)))
+
+;move
+(defthm not-intersection-equal-of-set-difference-equal-arg2
+  (not (intersection-equal y (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff))))
+
+(defthm bound-vars-suitable-for-hypsp-when-free-vars
+  (implies (and (equal :free-vars (car (car hyps)))
+                (no-duplicatesp-equal bound-vars))
+           (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
+                  (and (set-difference-equal (vars-in-term (cdr (car hyps))) bound-vars) ;at least one free var
+                       (bound-vars-suitable-for-hypsp (union-equal (set-difference-equal (vars-in-term (cdr (car hyps)))
+                                                                                         bound-vars)
+                                                                   bound-vars)
+                                                      (cdr hyps)))))
+  :hints (("Goal" :expand (bound-vars-suitable-for-hypsp bound-vars hyps)
+           :in-theory (e/d (bound-vars-suitable-for-hypp
+                            bound-vars-after-hyp
+                            ;;bound-vars-suitable-for-hypsp
+                            ) (no-duplicatesp-equal)))))
+
+(defthm bound-vars-suitable-for-hypsp-when-free-vars-2
+  (implies (and (equal :free-vars (car (car hyps)))
+;                (no-duplicatesp-equal bound-vars)
+                (bound-vars-suitable-for-hypsp bound-vars hyps))
+           (bound-vars-suitable-for-hypsp (append (set-difference-equal (vars-in-term (cdr (car hyps)))
+                                                                        bound-vars)
+                                                  bound-vars)
+                                          (cdr hyps)))
+  :hints (("Goal" :expand (bound-vars-suitable-for-hypsp bound-vars hyps)
+           :in-theory (e/d (bound-vars-suitable-for-hypp
+                            bound-vars-after-hyp
+                            ;;bound-vars-suitable-for-hypsp
+                            ) (no-duplicatesp-equal)))))
+
 (defthm bound-vars-suitable-for-hypsp-of-append
   (equal (bound-vars-suitable-for-hypsp bound-vars (append hyps1 hyps2))
          (and (bound-vars-suitable-for-hypsp bound-vars hyps1)
@@ -474,7 +545,7 @@
          (and (axe-rule-lhsp lhs)
               (pseudo-termp rhs)
               (axe-rule-hyp-listp hyps)
-              ;; (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
-              ;; (subsetp-equal (vars-in-term rhs)
-              ;;                (bound-vars-after-hyps (vars-in-term lhs) hyps))
+              (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
+              (subsetp-equal (vars-in-term rhs)
+                             (bound-vars-after-hyps (vars-in-term lhs) hyps))
               ))))

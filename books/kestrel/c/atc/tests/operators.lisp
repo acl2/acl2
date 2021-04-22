@@ -292,26 +292,6 @@
 
 (gen-sint-binary-test bitior 4 -77222 -2222)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(gen-sint-binary-test logand 1 0 0)
-
-(gen-sint-binary-test logand 2 0 1)
-
-(gen-sint-binary-test logand 3 1 0)
-
-(gen-sint-binary-test logand 4 1 1)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(gen-sint-binary-test logor 1 0 0)
-
-(gen-sint-binary-test logor 2 0 1)
-
-(gen-sint-binary-test logor 3 1 0)
-
-(gen-sint-binary-test logor 4 1 1)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |plus_sint_test1|
@@ -390,14 +370,6 @@
         |bitior_sint_sint_test2|
         |bitior_sint_sint_test3|
         |bitior_sint_sint_test4|
-        |logand_sint_sint_test1|
-        |logand_sint_sint_test2|
-        |logand_sint_sint_test3|
-        |logand_sint_sint_test4|
-        |logor_sint_sint_test1|
-        |logor_sint_sint_test2|
-        |logor_sint_sint_test3|
-        |logor_sint_sint_test4|
         :output-file "operators.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

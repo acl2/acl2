@@ -1,1 +1,3 @@
-(H (1 1 (:TYPE-PRESCRIPTION H)))
+(H
+ (1 1 (:TYPE-PRESCRIPTION H))
+ )

@@ -1,7 +1,7 @@
 ; Theorems about memberp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -193,6 +193,12 @@
          (and (memberp a x)
               (memberp a y)))
   :hints (("Goal" :in-theory (enable memberp intersection-equal))))
+
+(defthm intersection-equal-when-memberp-and-memberp-same-iff
+  (implies (and (memberp a y) ;a is a free var
+                (memberp a x))
+           (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
 
 (defthm memberp-of-union-equal
   (equal (memberp a (union-equal x y))
