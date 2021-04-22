@@ -250,8 +250,8 @@ tags get rendered into HTML is controlled by, e.g.,
   :short "Encode a single value from an STV line."
   (cond ((4vec-p expansion)
          (revappend (4vec-to-xml-chars expansion) acc))
-
-        ((and (symbolp entry) (member-equal (symbol-name entry) '("_" "-")))
+        
+        ((svtv-dontcare-p entry)
          ;; Just skipping these seems nicest.
          acc)
 
@@ -264,8 +264,21 @@ tags get rendered into HTML is controlled by, e.g.,
               (acc (str::revappend-chars "</b>" acc)))
            acc))
 
-        (t
-         (raise "Bad entry in stv line: ~x0." entry))))
+        ((svtv-condoverride-p entry)
+         ;; BOZO this is probably broken
+         (b* (((svtv-condoverride entry))
+              ((unless (And (symbolp entry.value)
+                            (symbolp entry.test)))
+               acc)
+              (acc (str::revappend-chars "<b>" acc))
+              ((mv ?col acc)
+               (str::html-encode-string-aux (symbol-name entry.value) 0
+                                            (length (symbol-name entry.value))
+                                            0 8 acc))
+              (acc (str::revappend-chars "</b>" acc)))
+           acc))
+
+        (t (raise "Bad entry in stv line: ~x0." entry))))
 
 (define stv-entries-to-xml ((entries "The original entries for this line.")
                             (expansions "The expanded entries for this line."

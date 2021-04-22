@@ -33,6 +33,7 @@
 (include-book "shell")
 (include-book "gather")
 (include-book "zip")
+(include-book "json")
 (include-book "server")
 (include-book "oslib/argv" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
@@ -255,6 +256,11 @@ vl-toolkit-other-command).</p>"
 
        ((when (equal cmd "zip"))
         (b* ((state (vl-zip-top args)))
+          (exit-ok)
+          state))
+
+       ((when (equal cmd "json"))
+        (b* ((state (vl-json-top args)))
           (exit-ok)
           state))
 
