@@ -968,6 +968,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled point-on-montgomery-finite-when-not-zero
+  :short "A non-zero point on a Montgomery curve is finite."
+  (implies (and (pointp point)
+                (point-on-montgomery-p point curve)
+                (not (equal point (montgomery-zero))))
+           (equal (point-kind point) :finite))
+  :enable (point-on-montgomery-p
+           montgomery-zero
+           pointp
+           point-kind))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-neg ((point pointp) (curve montgomery-curvep))
   :guard (point-on-montgomery-p point curve)
   :returns (point1 pointp)
