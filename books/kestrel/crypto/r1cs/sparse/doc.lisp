@@ -14,8 +14,10 @@
 
 (include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
 
-;; Introduced by defaggregate
+;; No longer introduced by defaggregate.
+;; Now attaching to primary r1cs topic generated below with gen-xdoc-for-file.
 (acl2::defxdoc r1cs-constraintp
+  :parents (r1cs)
   :short "Recognize An R1CS constraint"
   :long "An R1CS constraint is a defaggregate with 3 fields, A, B, and C, each of which is a sparse vector.")
 
