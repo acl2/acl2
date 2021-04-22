@@ -2064,10 +2064,10 @@
      by construction;
      thus, we stop with an error if it is any other type,
      but that should never happen currently."))
-  (b* ((pred (case (type-kind type)
-               (:uchar 'ucharp)
-               (:sint 'sintp)
-               (t (raise "Internal error: function return type is ~x0." type))))
+  (b* (((unless (type-integerp type))
+        (prog2$ (raise "Internal error: function return type is ~x0." type)
+                (mv '(_) nil names-to-avoid)))
+       (pred (pack (atc-integer-type-fixtype type) 'p))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
