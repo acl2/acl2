@@ -2064,47 +2064,32 @@
      by construction;
      thus, we stop with an error if it is any other type,
      but that should never happen currently."))
-  (b* ((pred (case (type-kind type)
-               (:uchar 'ucharp)
-               (:sint 'sintp)
-               (t (raise "Internal error: function return type is ~x0." type))))
+  (b* (((unless (type-integerp type))
+        (prog2$ (raise "Internal error: function return type is ~x0." type)
+                (mv '(_) nil names-to-avoid)))
+       (pred (pack (atc-integer-type-fixtype type) 'p))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (formula `(implies ,guard (,pred (,fn ,@formals))))
-       (theory `(,fn
-                 ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
-                 sintp-of-sint-const
-                 sintp-of-sint01
-                 sintp-of-plus-sint
-                 sintp-of-minus-sint
-                 sintp-of-bitnot-sint
-                 sintp-of-lognot-sint
-                 sintp-of-add-sint-sint
-                 sintp-of-sub-sint-sint
-                 sintp-of-mul-sint-sint
-                 sintp-of-div-sint-sint
-                 sintp-of-rem-sint-sint
-                 sintp-of-shl-sint-sint
-                 sintp-of-shr-sint-sint
-                 sintp-of-lt-sint-sint
-                 sintp-of-gt-sint-sint
-                 sintp-of-le-sint-sint
-                 sintp-of-ge-sint-sint
-                 sintp-of-eq-sint-sint
-                 sintp-of-ne-sint-sint
-                 sintp-of-bitand-sint-sint
-                 sintp-of-bitxor-sint-sint
-                 sintp-of-bitior-sint-sint
-                 sintp-of-logand-sint-sint
-                 sintp-of-logor-sint-sint
-                 sintp-of-sint-from-uchar
-                 ucharp-of-uchar-from-sint
-                 ucharp-of-uchar-array-read-sint))
        (hints `(("Goal"
-                 :in-theory ',theory
+                 :in-theory
+                 (append
+                  *atc-integer-ops-1-return-rewrite-rules*
+                  *atc-integer-ops-2-return-rewrite-rules*
+                  *atc-integer-convs-return-rewrite-rules*
+                  '(,fn
+                    ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
+                    sintp-of-sint-const
+                    uintp-of-uint-const
+                    slongp-of-slong-const
+                    ulongp-of-ulong-const
+                    sllongp-of-sllong-const
+                    ullongp-of-ullong-const
+                    sintp-of-sint01
+                    ucharp-of-uchar-array-read-sint))
                  :use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula

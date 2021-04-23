@@ -204,7 +204,8 @@ appropriate, e.g., for @('name') above, you may wish to use a different
 @(':rule-classes') option.</p>
 
 <p>The embedded @(see xdoc) documentation gets incorporated into the
-documentation for the aggregate in a sensible way.</p>
+automatically-created documentation for the aggregate in a sensible way.
+This is overridden by the @(':suppress-xdoc t') option.</p>
 
 <p>The @(':default') value only affects the Make macro (see below).</p>
 
@@ -275,7 +276,14 @@ defined a \"compatible\" recognizer.</dd>
 
 <dd>These options are as in @(see xdoc).  Whatever you supply for @(':long')
 will follow some automatically generated documentation that describes the
-fields of the aggregate.</dd>
+fields of the aggregate.  If you don't want that @(see xdoc), you can
+turn it off with the next option.</dd>
+
+<dt>:suppress-xdoc</dt>
+
+<dd>You can use @(':suppress-xdoc t') to prevent @(see xdoc) from being
+created for this aggregate.  Overrides the automatically generated
+documentation as well as@(':parents'), @(':short'), and @(':long').</dd>
 
 <dt>:extra-field-keywords</dt>
 
@@ -1117,6 +1125,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     :parents
     :short
     :long
+    :suppress-xdoc
     :already-definedp
     :extra-field-keywords
     :verbosep
@@ -1193,6 +1202,8 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        ((unless (or (stringp long) (true-listp long)))
         (mv (raise "~x0: :long must be a string or a true list." name) state))
 
+       (suppress-xdocp (cdr (assoc :suppress-xdoc kwd-alist)))
+
        (pred (cdr (assoc :pred kwd-alist)))
        ((unless (symbolp pred))
         (mv (raise "~x0: :pred must be a symbol." name) state))
@@ -1267,7 +1278,9 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
            (set-inhibit-warnings "theory") ;; implicitly local
            (da-extend-agginfo-table ',agginfo)
-           ,@doc-events
+           ,@(if (not suppress-xdocp)
+                 doc-events
+               '())
 
            ,(if (eq mode :logic)
                 '(logic)
