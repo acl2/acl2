@@ -68,7 +68,7 @@
   :returns (substed-thm pseudo-termp)
   (b* ((respec (return-spec-fix respec))
        (actuals (pseudo-term-list-fix actuals))
-       (returns-name (return-spec->returns-thm respec))
+       (returns-name (return-spec->thm respec))
        (returns-thm-raw
         (acl2::meta-extract-formula-w returns-name (w state)))
        ((unless (pseudo-termp returns-thm-raw))
@@ -91,12 +91,11 @@
            (and (rational-list-p (cons x y))
                 (cons x y))))
 (get-substed-theorem '((FORMALS X Y)
-                       (RETURNS-THM . RETURN-OF-CONS)
-                       (REPLACE-THM . REPLACE-OF-CONS))
+                       (RETURNS-THM . RETURN-OF-CONS))
                      '(i1 l1)
                      state)
 |#
-stop
+
 (defthm correctness-of-get-substed-theorem
    (implies (and (ev-smtcp-meta-extract-global-facts)
                  (alistp a)
@@ -167,8 +166,7 @@ stop
                                       'NIL)
                                   'NIL)
                              '((FORMALS X Y)
-                               (RETURNS-THM . RETURN-OF-CONS)
-                               (REPLACE-THM . REPLACE-OF-CONS))
+                               (RETURNS-THM . RETURN-OF-CONS))
                              '(IF (IF (RATIONAL-LIST-P L1)
                                       (IF (INTEGERP I1) L1 'NIL)
                                       'NIL)
@@ -240,8 +238,7 @@ stop
                            'NIL)
                        'NIL)
                   '(((FORMALS X Y)
-                     (RETURNS-THM . RETURN-OF-CONS)
-                     (REPLACE-THM . REPLACE-OF-CONS)))
+                     (RETURNS-THM . RETURN-OF-CONS)))
                   '(IF (IF (RATIONAL-LIST-P L1)
                            (IF (INTEGERP I1) L1 'NIL)
                            'NIL)
@@ -381,6 +378,7 @@ stop
                         (respec-lst return-spec-list-p)
                         (options type-options-p)
                         state)
+  :ignore-ok t
   :returns (expected-judge-lst pseudo-term-listp)
   :measure (len respec-lst)
   :guard (not (equal fn 'quote))

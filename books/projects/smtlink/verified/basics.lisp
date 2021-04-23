@@ -40,10 +40,7 @@
     (implies           . ("_SMT_.implies"    . 2))))
 
 (define is-basic-function ((opr symbolp))
-  :returns (is? stringp)
-  (if (assoc-equal opr *SMT-functions*)
-      (cadr (assoc-equal opr *SMT-functions*))
-    ""))
+  (assoc-equal opr *SMT-functions*))
 
 (defval *SMT-types*
   :parents (SMT-basics)
@@ -61,10 +58,10 @@
   '((process-hint             . add-hypo-cp)
     (add-hypo                 . expand-cp)
     (expand                   . reorder-cp)
-    (reorder                  . type-inference-cp)
-    (type-inference           . term-transform-cp)
-    (term-transform           . smt-trusted-cp)
-    (term-transform-custom    . smt-trusted-cp-custom)))
+    (reorder                  . type-judge-cp)
+    (type-inference           . term-replacement-cp)
+    (term-replacement         . smt-trusted-cp)
+    (term-replacement-custom  . smt-trusted-cp-custom)))
 
 ;;----------------------------------------------------------------
 

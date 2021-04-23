@@ -37,8 +37,8 @@
        (name (smt-function->name func-hd)))
     (acons name func-hd (construct-function-info func-tl))))
 
-(define construct-type-functions-helper ((func-lst smt-function-list-p)
-                                         (acc symbol-symbol-alistp))
+(define construct-type-related-functions-helper ((func-lst smt-function-list-p)
+                                                 (acc symbol-symbol-alistp))
   :returns (alst symbol-symbol-alistp)
   :measure (len func-lst)
   (b* ((func-lst (smt-function-list-fix func-lst))
@@ -46,10 +46,10 @@
        ((unless (consp func-lst)) nil)
        ((cons func-hd func-tl) func-lst)
        (name (smt-function->name func-hd)))
-    (construct-type-functions-helper func-tl (acons name nil acc))))
+    (construct-type-related-functions-helper func-tl (acons name nil acc))))
 
-(define construct-type-functions ((types smt-type-list-p)
-                                  (acc symbol-symbol-alistp))
+(define construct-type-related-functions ((types smt-type-list-p)
+                                          (acc symbol-symbol-alistp))
   :returns (types symbol-symbol-alistp)
   :measure (len types)
   (b* ((types (smt-type-list-fix types))
@@ -57,16 +57,16 @@
        ((unless (consp types)) nil)
        ((cons types-hd types-tl) types)
        (acc-1 (acons (smt-type->recognizer types-hd) nil
-                     (construct-type-functions-helper
+                     (construct-type-related-functions-helper
                       (smt-type->functions types-hd) acc))))
-    (construct-type-functions types-tl acc-1)))
+    (construct-type-related-functions types-tl acc-1)))
 
 (define construct-expand-options ((hints smtlink-hint-p))
   :returns (eo expand-options-p)
   (b* ((hints (smtlink-hint-fix hints))
        ((smtlink-hint h) hints)
        (functions (construct-function-info h.functions))
-       (types (construct-type-functions h.types nil)))
+       (types (construct-type-related-functions h.types nil)))
     (make-expand-options :functions functions
                          :types types
                          :wrld-fn-len h.wrld-fn-len)))

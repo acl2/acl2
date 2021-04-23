@@ -13,6 +13,7 @@
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (include-book "extractor")
+(include-book "reorder-option")
 
 (defalist symbol-pseudo-term-list-alist
   :key-type symbolp
@@ -33,22 +34,22 @@
   :pred pseudo-term-symbol-list-alistp)
 
 (define filter-type-hypo ((hypo-lst pseudo-term-listp)
-                          (fixinfo smt-fixtype-info-p))
+                          (type-info symbol-symbol-alistp))
   :returns (mv (root-hypo pseudo-term-listp)
                (rest-hypo pseudo-term-listp))
   (b* ((hypo-lst (pseudo-term-list-fix hypo-lst))
-       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (type-info (symbol-symbol-alist-fix type-info))
        ((unless (consp hypo-lst)) (mv nil nil))
        ((cons hypo-hd hypo-tl) hypo-lst)
-       ((mv tl-root tl-rest) (filter-type-hypo hypo-tl fixinfo))
-       ((if (type-decl-p hypo-hd fixinfo))
+       ((mv tl-root tl-rest) (filter-type-hypo hypo-tl type-info))
+       ((if (type-decl-p hypo-hd type-info))
         (mv (cons hypo-hd tl-root) tl-rest)))
     (mv tl-root (cons hypo-hd tl-rest))))
 
 (defthm correctness-of-filter-type-hypo-1
   (implies (and (pseudo-term-listp hypo-lst)
-                (smt-fixtype-info-p fixinfo))
-           (b* (((mv & rest-hypo) (filter-type-hypo hypo-lst fixinfo)))
+                (symbol-symbol-alistp type-info))
+           (b* (((mv & rest-hypo) (filter-type-hypo hypo-lst type-info)))
              (implies (ev-smtcp (conjoin hypo-lst) a)
                       (ev-smtcp (conjoin rest-hypo) a))))
   :hints (("Goal"
@@ -56,8 +57,8 @@
 
 (defthm correctness-of-filter-type-hypo-2
   (implies (and (pseudo-term-listp hypo-lst)
-                (smt-fixtype-info-p fixinfo))
-           (b* (((mv root-hypo &) (filter-type-hypo hypo-lst fixinfo)))
+                (symbol-symbol-alistp type-info))
+           (b* (((mv root-hypo &) (filter-type-hypo hypo-lst type-info)))
              (implies (ev-smtcp (conjoin hypo-lst) a)
                       (ev-smtcp (conjoin root-hypo) a))))
   :hints (("Goal"
@@ -154,11 +155,11 @@
 |#
 
 (define find-resolved-var ((term pseudo-termp)
-                           (fixinfo smt-fixtype-info-p))
+                           (type-info symbol-symbol-alistp))
   :returns (var symbolp)
   (b* ((term (pseudo-term-fix term))
-       (fixinfo (smt-fixtype-info-fix fixinfo))
-       ((unless (hypo-p term fixinfo))
+       (type-info (symbol-symbol-alist-fix type-info))
+       ((unless (hypo-p term type-info))
         (er hard? 'reorder-hypotheses=>find-resolved-var
             "INTERNAL: bad equality: ~q0" term)))
     (cadr term)))
@@ -414,7 +415,7 @@
                         (var-term-alst symbol-pseudo-term-list-alistp)
                         (term-var-alst pseudo-term-symbol-list-alistp)
                         (total-terms pseudo-term-listp)
-                        (fixinfo smt-fixtype-info-p))
+                        (type-info symbol-symbol-alistp))
   :guard (subsetp-equal (strip-cars term-var-alst) total-terms)
   :verify-guards nil
   :returns (sorted pseudo-term-listp)
@@ -429,20 +430,20 @@
        (total-terms (pseudo-term-list-fix total-terms))
        ((unless (mbt (subsetp-equal (strip-cars term-var-alst) total-terms)))
         nil)
-       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (type-info (symbol-symbol-alist-fix type-info))
        ((unless (consp work-lst)) nil)
        ((cons work-hd work-tl) work-lst)
-       (resolved-var (find-resolved-var work-hd fixinfo))
+       (resolved-var (find-resolved-var work-hd type-info))
        (exist? (assoc-equal resolved-var var-term-alst))
        ((unless exist?)
         (cons work-hd
               (order-hypo-lst work-tl var-term-alst term-var-alst
-                              total-terms fixinfo)))
+                              total-terms type-info)))
        ((mv new-term-var-alst new-work-lst)
         (update (cdr exist?) term-var-alst work-tl resolved-var)))
     (cons work-hd
           (order-hypo-lst new-work-lst var-term-alst new-term-var-alst
-                          total-terms fixinfo))))
+                          total-terms type-info))))
 
 (defthm assoc-equal-of-symbol-pseudo-term-list-alist
   (implies (and (symbol-pseudo-term-list-alistp alst)
@@ -455,19 +456,19 @@
   (implies (and (pseudo-term-listp work-lst)
                 (symbol-pseudo-term-list-alistp var-term-alst)
                 (pseudo-term-symbol-list-alistp term-var-alst)
-                (smt-fixtype-info-p fixinfo)
+                (symbol-symbol-alistp type-info)
                 (alistp a))
            (implies (and (ev-smtcp (conjoin work-lst) a)
                          (ev-smtcp (conjoin (strip-cars term-var-alst)) a))
                     (ev-smtcp (conjoin
                                (order-hypo-lst work-lst var-term-alst
                                                term-var-alst total-terms
-                                               fixinfo))
+                                               type-info))
                               a)))
   :hints (("Goal"
            :in-theory (e/d (order-hypo-lst) (pseudo-termp))
            :induct (order-hypo-lst work-lst var-term-alst
-                                   term-var-alst total-terms fixinfo))))
+                                   term-var-alst total-terms type-info))))
 
 #|
 (order-hypo-lst '((integerp x) (rationalp y))
@@ -518,18 +519,17 @@
 |#
 
 (define reorder-hypotheses ((term pseudo-termp)
-                            (hint smtlink-hint-p))
+                            (type-info symbol-symbol-alistp))
   :returns (new-term pseudo-termp)
   (b* ((term (pseudo-term-fix term))
-       (hint (smtlink-hint-fix hint))
-       ((smtlink-hint h) hint)
-       ((mv hypo-lst new-term) (extractor term h.types-info))
-       ((mv root-hypo rest-hypo) (filter-type-hypo hypo-lst h.types-info))
+       (type-info (symbol-symbol-alist-fix type-info))
+       ((mv hypo-lst new-term) (extractor term type-info))
+       ((mv root-hypo rest-hypo) (filter-type-hypo hypo-lst type-info))
        (var-term-alst (make-var-to-terms rest-hypo nil))
        (term-var-alst (make-term-to-vars rest-hypo))
        (ordered-hypo
         (order-hypo-lst root-hypo var-term-alst term-var-alst rest-hypo
-                        h.types-info)))
+                        type-info)))
     (add-hypotheses ordered-hypo new-term)))
 
 #|
@@ -551,44 +551,65 @@
 
 (defthm correctness-of-reorder-hypotheses
   (implies (and (pseudo-termp term)
-                (smtlink-hint-p hint)
+                (symbol-symbol-alistp type-info)
                 (alistp a)
-                (ev-smtcp (reorder-hypotheses term hint) a))
+                (ev-smtcp (reorder-hypotheses term type-info) a))
            (ev-smtcp term a))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (reorder-hypotheses)
                            (correctness-of-extractor
                             correctness-of-add-hypotheses))
-           :use ((:instance correctness-of-extractor
-                            (fixinfo (smtlink-hint->types-info hint)))
+           :use ((:instance correctness-of-extractor)
                  (:instance correctness-of-add-hypotheses
                             (ordered-hypo
                              (order-hypo-lst
                               (mv-nth 0
                                       (filter-type-hypo
-                                       (mv-nth 0
-                                               (extractor term (smtlink-hint->types-info hint)))
-                                       (smtlink-hint->types-info hint)))
+                                       (mv-nth 0 (extractor term type-info))
+                                       type-info))
                               (make-var-to-terms
                                (mv-nth 1
                                        (filter-type-hypo
-                                        (mv-nth 0
-                                                (extractor term (smtlink-hint->types-info hint)))
-                                        (smtlink-hint->types-info hint)))
+                                        (mv-nth 0 (extractor term type-info))
+                                        type-info))
                                nil)
                               (make-term-to-vars
                                (mv-nth 1
                                        (filter-type-hypo
-                                        (mv-nth 0
-                                                (extractor term (smtlink-hint->types-info hint)))
-                                        (smtlink-hint->types-info hint))))
+                                        (mv-nth 0 (extractor term type-info))
+                                        type-info)))
                               (mv-nth 1
                                       (filter-type-hypo
-                                       (mv-nth 0
-                                               (extractor term (smtlink-hint->types-info hint)))
-                                        (smtlink-hint->types-info hint)))
-                              (smtlink-hint->types-info hint)))
-                            (concl
-                             (mv-nth 1
-                                     (extractor term (smtlink-hint->types-info hint)))))))))
+                                       (mv-nth 0 (extractor term type-info))
+                                        type-info))
+                              type-info))
+                            (concl (mv-nth 1 (extractor term type-info))))))))
+
+(define reorder-hypotheses-cp ((cl pseudo-term-listp)
+                               (hints t))
+  (b* (((unless (smtlink-hint-p hints)) (list cl))
+       (cl (pseudo-term-list-fix cl))
+       (goal (disjoin cl))
+       (next-cp (cdr (assoc-equal 'reorder *SMT-architecture*)))
+       ((if (null next-cp)) (list cl))
+       (the-hint `(:clause-processor (,next-cp clause ',hints state)))
+       (new-goal (reorder-hypotheses goal (construct-reorder-option hints))))
+    (list `((hint-please ',the-hint) ,new-goal))))
+
+(defthm correctness-of-reorder-hypotheses-cp
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (ev-smtcp
+                 (conjoin-clauses
+                  (reorder-hypotheses-cp cl hint))
+                 a))
+           (ev-smtcp (disjoin cl) a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (reorder-hypotheses-cp)
+                           (correctness-of-reorder-hypotheses))
+           :use ((:instance correctness-of-reorder-hypotheses
+                            (term (disjoin cl))
+                            (type-info (construct-reorder-option hint))))))
+  :rule-classes :clause-processor)

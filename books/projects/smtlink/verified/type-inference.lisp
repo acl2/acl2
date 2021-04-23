@@ -43,7 +43,7 @@
        (unified-typed-term (unify-type typed-term ''t options names state))
        (unified-judgements (typed-term->judgements unified-typed-term))
        (new-cl `((implies ,unified-judgements ,goal)))
-       (next-cp (cdr (assoc-equal 'type-judge *SMT-architecture*)))
+       (next-cp (cdr (assoc-equal 'type-inference *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint
         `(:clause-processor (,next-cp clause ',h state)))

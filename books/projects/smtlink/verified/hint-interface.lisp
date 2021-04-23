@@ -18,19 +18,11 @@
 ;;   :parents (verified)
 ;;   :short "Define default Smtlink hint interface"
 
-(defprod smt-return
-  ((var symbolp)
-   (thm symbolp)))
-
-(deflist smt-return-list
-  :elt-type smt-return-p
-  :true-listp t)
-
 (defprod smt-function
   :parents (smtlink-hint)
   ((name symbolp :default nil)
    (formals symbol-listp :default nil)
-   (returns smt-return-list-p :default nil)
+   (returns symbol-listp :default nil)
    (uninterpreted-hints true-listp :default nil)
    (replace-thm symbolp :default nil)
    (depth natp :default 0)))
@@ -60,10 +52,20 @@
   :elt-type smt-hypo-p
   :true-listp t)
 
+(defprod smt-sub/supertype
+  ((type symbolp)
+   (formals symbol-listp)
+   (thm symbolp)))
+
+(deflist smt-sub/supertype-list
+  :elt-type smt-sub/supertype-p
+  :true-listp t)
+
 (defprod smt-type
   ((recognizer symbolp)
    (functions smt-function-list-p)
-   (subtypes symbol-listp)))
+   (subtypes smt-sub/supertype-list-p)
+   (supertypes smt-sub/supertype-list-p)))
 
 (deflist smt-type-list
   :elt-type smt-type-p

@@ -920,7 +920,6 @@ state)
 
 ;;-------------------------------------------------------
 ;; Super/subtype judgements
-
 (encapsulate ()
   (local
    (in-theory (disable assoc-equal lambda-of-pseudo-lambdap symbol-listp
@@ -938,14 +937,14 @@ state)
                        pseudo-term-listp-of-cdr-of-pseudo-termp)))
 
 (define construct-one-super/subtype ((type-judge pseudo-termp)
-                                     (type-tuple type-tuple-p)
+                                     (type-tuple smt-sub/supertype-p)
                                      (type-alst type-to-types-alist-p)
                                      (path-cond pseudo-termp)
                                      state)
   :ignore-ok t
   :returns (super/subtype-judge pseudo-termp)
   (b* ((type-judge (pseudo-term-fix type-judge))
-       ((type-tuple tu) (type-tuple-fix type-tuple))
+       ((smt-sub/supertype tu) (smt-sub/supertype-fix type-tuple))
        (path-cond (pseudo-term-fix path-cond))
        (type-thm (acl2::meta-extract-formula-w tu.thm (w state)))
        ((unless (and type-thm (pseudo-termp type-thm)))
@@ -962,12 +961,6 @@ state)
              type-judge)
          ''t))
        ((list root-type term) type-judge)
-       ((unless (equal root-type tu.type))
-        (prog2$
-         (er hard? 'judgement-fns=>construct-one-super/subtype
-             "The judgement's type ~p0 doesn't match the type-tuple's type ~
-             ~p1~%" root-type tu.type)
-         ''t))
        ((unless (equal (len tu.formals) 1))
         (prog2$
          (er hard? 'judgement-fns=>construct-one-super/subtype
@@ -982,8 +975,8 @@ state)
              "Substituted theorem is not pseudo-term ~p0~%" substed-thm)
          ''t)))
     (case-match substed-thm
-      (('implies type-predicates (!tu.neighbour-type !term))
-       (b* (((if (equal tu.neighbour-type 'quote)) ''t)
+      (('implies type-predicates (!tu.type !term))
+       (b* (((if (equal tu.type 'quote)) ''t)
             ((unless (path-test-list `(if ,type-judge ,path-cond 'nil)
                                      type-predicates))
              ''t))
@@ -997,12 +990,12 @@ state)
 (defthm test1 (implies (integerp x) (maybe-integerp x)))
 (defthm test2 (implies (and (maybe-integerp y) y) (integerp y)))
 (construct-one-super/subtype '(maybe-integerp x)
-                             (make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                              :formals '(y)
-                                              :thm 'test2)
-                             `((maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                                                    :formals '(y)
-                                                                    :thm 'test2))))
+                             (make-smt-sub/supertype :type 'integerp
+                                                     :formals '(y)
+                                                     :thm 'test2)
+                             `((maybe-integerp . (,(make-smt-sub/supertype :type 'integerp
+                                                                           :formals '(y)
+                                                                           :thm 'test2))))
                              '(if x 't 'nil) state)
 |#
 
@@ -1039,7 +1032,6 @@ state)
                       type-judge type-tuple type-alst path-cond state)
                      a))
   :hints (("Goal"
-           :do-not-induct t
            :in-theory (e/d (construct-one-super/subtype)
                            (w
                             symbol-listp
@@ -1060,22 +1052,28 @@ state)
            :use ((:instance correctness-of-path-test-list
                             (path-cond `(if ,type-judge ,path-cond 'nil))
                             (expr-conj (cadr (acl2::substitute-into-term
-                                              (meta-extract-formula (type-tuple->thm type-tuple)
-                                                                    state)
-                                              (list (cons (car (type-tuple->formals type-tuple))
-                                                          (cadr type-judge))))))
+                                              (meta-extract-formula
+                                               (smt-sub/supertype->thm type-tuple)
+                                               state)
+                                              (list
+                                               (cons
+                                                (car (smt-sub/supertype->formals type-tuple))
+                                                (cadr type-judge))))))
                             (a a))
                  (:instance crock
                             (term (acl2::substitute-into-term
-                                   (meta-extract-formula (type-tuple->thm type-tuple)
-                                                         state)
-                                   (list (cons (car (type-tuple->formals type-tuple))
-                                               (cadr type-judge)))))
+                                   (meta-extract-formula
+                                    (smt-sub/supertype->thm type-tuple)
+                                    state)
+                                   (list
+                                    (cons
+                                     (car (smt-sub/supertype->formals type-tuple))
+                                     (cadr type-judge)))))
                             (a a))))))
 )
 
 (define construct-closure ((type-judge pseudo-termp)
-                           (super/subtype-tuple type-tuple-list-p)
+                           (super/subtype-tuple smt-sub/supertype-list-p)
                            (type-alst type-to-types-alist-p)
                            (path-cond pseudo-termp)
                            (acc pseudo-termp)
@@ -1084,7 +1082,7 @@ state)
   :measure (len super/subtype-tuple)
   (b* ((acc (pseudo-term-fix acc))
        (type-judge (pseudo-term-fix type-judge))
-       (super/subtype-tuple (type-tuple-list-fix super/subtype-tuple))
+       (super/subtype-tuple (smt-sub/supertype-list-fix super/subtype-tuple))
        (path-cond (pseudo-term-fix path-cond))
        ((unless (consp super/subtype-tuple)) acc)
        ((cons first rest) super/subtype-tuple)
@@ -1098,38 +1096,42 @@ state)
 
 #|
 (construct-closure '(integerp x)
-                   `(,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                       :formals '(x)
-                                       :thm 'test)
-                     ,(make-type-tuple :type 'integerp :neighbour-type
-                                       'maybe-integerp
-                                       :formals '(x)
-                                       :thm 'test1))
-                   `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                                    :formals '(x)
-                                                    :thm 'test)
-                                  ,(make-type-tuple :type 'integerp :neighbour-type
-                                                    'maybe-integerp
-                                                    :formals '(x)
-                                                    :thm 'test1)))
+                   `(,(make-smt-sub/supertype
+                       :type 'rationalp
+                       :formals '(x)
+                       :thm 'test)
+                     ,(make-smt-sub/supertype
+                       :type 'maybe-integerp
+                       :formals '(x)
+                       :thm 'test1))
+                   `((integerp . (,(make-smt-sub/supertype
+                                    :type 'rationalp
+                                    :formals '(x)
+                                    :thm 'test)
+                                  ,(make-smt-sub/supertype
+                                    :type 'maybe-integerp
+                                    :formals '(x)
+                                    :thm 'test1)))
                      (rationalp . nil)
                      (maybe-integerp . nil))
                    ''t ''t state)
 
 (construct-closure '(maybe-integerp x)
-                   `(,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                       :formals '(y)
-                                       :thm 'test2))
-                   `((maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                                          :formals '(y)
-                                                          :thm 'test2))))
+                   `(,(make-smt-sub/supertype
+                       :type 'integerp
+                       :formals '(y)
+                       :thm 'test2))
+                   `((maybe-integerp . (,(make-smt-sub/supertype
+                                          :type 'integerp
+                                          :formals '(y)
+                                          :thm 'test2))))
                    '(if x 't 'nil) ''t state)
 |#
 
 (defthm correctness-of-construct-closure
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-termp type-judge)
-                (type-tuple-list-p super/subtype-tuple)
+                (smt-sub/supertype-list-p super/subtype-tuple)
                 (pseudo-termp path-cond)
                 (pseudo-termp acc)
                 (alistp a)
@@ -1141,7 +1143,7 @@ state)
                       type-alst path-cond acc state)
                      a))
   :hints (("Goal"
-           :in-theory (enable construct-closure))))
+           :in-theory (e/d (construct-closure) ()))))
 
 (defines super/subtype-transitive-closure
   :well-founded-relation l<
@@ -1212,13 +1214,14 @@ state)
 
 #|
 (super/subtype '(integerp x) ''t
-               `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                                :formals '(x)
-                                                :thm 'test)
-                              ,(make-type-tuple :type 'integerp :neighbour-type
-                                                'maybe-integerp
-                                                :formals '(x)
-                                                :thm 'test1)))
+               `((integerp . (,(make-smt-sub/supertype
+                                :type 'rationalp
+                                :formals '(x)
+                                :thm 'test)
+                              ,(make-smt-sub/supertype
+                                :type 'maybe-integerp
+                                :formals '(x)
+                                :thm 'test1)))
                  (rationalp . nil)
                  (maybe-integerp . nil))
                ''t 4 state)
@@ -1226,9 +1229,10 @@ state)
 (super/subtype '(maybe-integerp x) '(if x 't 'nil)
                `((integerp . nil)
                  (rationalp . nil)
-                 (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                                      :formals '(y)
-                                                      :thm 'test2))))
+                 (maybe-integerp . (,(make-smt-sub/supertype
+                                      :type 'integerp
+                                      :formals '(y)
+                                      :thm 'test2))))
                ''t 4 state)
 |#
 
@@ -1336,13 +1340,14 @@ state)
 
 #|
 (super/subtype-judgements-fn '(if (integerp x) 't 'nil) ''t
-                             `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                                              :formals '(x)
-                                                              :thm 'test)
-                                            ,(make-type-tuple :type 'integerp :neighbour-type
-                                                              'maybe-integerp
-                                                              :formals '(x)
-                                                              :thm 'test1)))
+                             `((integerp . (,(make-smt-sub/supertype
+                                              :type 'rationalp
+                                              :formals '(x)
+                                              :thm 'test)
+                                            ,(make-smt-sub/supertype
+                                              :type 'maybe-integerp
+                                              :formals '(x)
+                                              :thm 'test1)))
                                (rationalp . nil)
                                (maybe-integerp . nil))
                              state)
@@ -1350,9 +1355,10 @@ state)
 (super/subtype-judgements-fn '(if (maybe-integerp x) 't 'nil) '(if x 't 'nil)
                              `((integerp . nil)
                                (rationalp . nil)
-                               (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                                                    :formals '(y)
-                                                                    :thm 'test2))))
+                               (maybe-integerp . (,(make-smt-sub/supertype
+                                                    :type 'integerp
+                                                    :formals '(y)
+                                                    :thm 'test2))))
                              state)
 |#
 
@@ -1366,13 +1372,14 @@ state)
 
 #|
 (super/subtype-judgements '(if (integerp x) 't 'nil) ''t
-                          `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                                            :formals '(x)
-                                                            :thm 'test)
-                                          ,(make-type-tuple :type 'integerp :neighbour-type
-                                                            'maybe-integerp
-                                                            :formals '(x)
-                                                            :thm 'test1)))
+                          `((integerp . (,(make-smt-sub/supertype
+                                           :type 'rationalp
+                                           :formals '(x)
+                                           :thm 'test)
+                                         ,(make-smt-sub/supertype
+                                           :type 'maybe-integerp
+                                           :formals '(x)
+                                           :thm 'test1)))
                              (rationalp . nil)
                              (maybe-integerp . nil))
                           state
@@ -1381,9 +1388,10 @@ state)
 (super/subtype-judgements '(if (maybe-integerp x) 't 'nil) '(if x 't 'nil)
                           `((integerp . nil)
                             (rationalp . nil)
-                            (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type 'integerp
-                                                                 :formals '(y)
-                                                                 :thm 'test2))))
+                            (maybe-integerp . (,(make-smt-sub/supertype
+                                                 :type 'integerp
+                                                 :formals '(y)
+                                                 :thm 'test2))))
                           state
                           :which :sub)
 |#

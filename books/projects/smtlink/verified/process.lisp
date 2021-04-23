@@ -16,7 +16,6 @@
 (include-book "hint-please")
 (include-book "basics")
 (include-book "evaluator")
-(include-book "../config")
 
 ;; (defsection Smtlink-process-user-hint
 ;;   :parents (verified)
@@ -30,39 +29,46 @@
 ;;            :clause-processor
 ;;            (SMT::smtlink clause
 ;;                          '(:functions ((f0 :formals (x y)
-;;                                            :return ((r :thm returns-thm)
-;;                                                     (r :thm another-returns-thm))
+;;                                            :return (returns-thm
+;;                                                     another-returns-thm)
 ;;                                            :uninterpreted-hints ((:use lemma))
 ;;                                            :replace replace-thm
 ;;                                            :depth 1))
 ;;                            :hypotheses ((:instance thm1 ((x (1+ (foo a))) (y n)))
 ;;                                         (:instance thm2 ...))
-;;                            :types ((rational-listp
+;;                            :types ((maybe-integer-listp
 ;;                                     :functions
 ;;                                     ((rational-list-fix
 ;;                                       :formals (lst)
-;;                                       :returns (x :thm returns-thm)
+;;                                       :returns (returns-thm)
 ;;                                       :replace replace-thm)
 ;;                                      (rational-list-car
 ;;                                       :formals (lst)
-;;                                       :returns (x :thm returns-thm)
+;;                                       :returns (returns-thm)
 ;;                                       :replace replace-thm)
 ;;                                      (rational-list-cdr
 ;;                                       :formals (lst)
-;;                                       :returns (x :thm returns-thm)
+;;                                       :returns (returns-thm)
 ;;                                       :replace replace-thm)
 ;;                                      (rational-list-cons
 ;;                                       :formals (x lst)
-;;                                       :returns (xlst :thm returns-thm)
+;;                                       :returns (returns-thm)
 ;;                                       :replace replace-thm))
-;;                                     :subtypes (integer-listp)))
+;;                                     :subtypes
+;;                                     ((integer-listp
+;;                                       :formals (x)
+;;                                       :thm maybe-integer-list-canbe-maybe-integer-list))
+;;                                     :supertypes
+;;                                     ((maybe-rational-listp
+;;                                       :formals (x)
+;;                                       :thm maybe-integer-list-is-maybe-rational-list))))
 ;;                            :int-to-ratp (x b)
 ;;                            :under-inductionp t
 ;;                            :smt-fname ""
 ;;                            :rm-file t
 ;;                            :global-hint current-hint
 ;;                            :customp nil))))
-;;   )
+;; )
 
 (defsection hypothesis-list-syntax
   :parents (Smtlink-process-user-hint)
@@ -120,25 +126,6 @@
 (defsection function-option-syntax
   :parents (function-syntax)
 
-  (define return-syntax-p ((term t))
-    :returns (ok booleanp)
-    (case-match term
-      ((var ':thm thm) (and (symbolp var) (symbolp thm)))
-      (& nil)))
-
-  (easy-fix return-syntax '(nil :thm nil))
-
-  (define return-list-syntax-p ((term t))
-    :returns (ok booleanp)
-    :short "Return theorem list syntax."
-    (b* (((unless (or (consp term) (null term))) nil)
-         ((if (null term)) t)
-         ((cons return-hd return-tl) term))
-      (and (return-syntax-p return-hd)
-           (return-list-syntax-p return-tl))))
-
-  (easy-fix return-list-syntax nil)
-
   (define function-option-syntax-p-helper ((term t) (used symbol-listp))
     :returns (ok booleanp)
     :short "Helper function for function-option-syntax."
@@ -152,7 +139,7 @@
          (first-ok
           (case first
             (:formals (symbol-listp second))
-            (:return (return-list-syntax-p second))
+            (:return (symbol-listp second))
             (:uninterpreted-hints (true-listp second))
             (:replace (symbolp second))
             (:depth (natp second))
@@ -170,7 +157,7 @@
                        (implies (equal (car term) :formals)
                                 (symbol-listp (cadr term)))
                        (implies (equal (car term) :return)
-                                (return-list-syntax-p (cadr term)))
+                                (symbol-listp (cadr term)))
                        (implies (equal (car term) :uninterpreted-hints)
                                 (true-listp (cadr term)))
                        (implies (equal (car term) :replace)
@@ -210,7 +197,7 @@
                        (implies (equal (car term) :formals)
                                 (symbol-listp (cadr term)))
                        (implies (equal (car term) :return)
-                                (return-list-syntax-p (cadr term)))
+                                (symbol-listp (cadr term)))
                        (implies (equal (car term) :uninterpreted-hints)
                                 (true-listp (cadr term)))
                        (implies (equal (car term) :replace)
@@ -261,6 +248,102 @@
     :true-listp t)
   )
 
+(defsection sub/supertype-option-syntax
+  :parents (Smtlink-process-user-hint)
+
+(define sub/supertype-option-syntax-p-helper ((term t) (used symbol-listp))
+    :returns (ok booleanp)
+    (b* ((used (symbol-list-fix used))
+         ((unless (consp term)) t)
+         ((unless (and (consp term) (consp (cdr term)))) nil)
+         ((list* first second rest) term)
+         ((if (member-equal first used))
+          (er hard? 'process=>sub/supertype-option-syntax-p-helper
+              "~p0 option is already defined in the hint.~%" first))
+         (first-ok
+          (case first
+            (:formals (symbol-listp second))
+            (:thm (symbolp second))
+            (t (er hard? 'process=>sub/supertype-option-syntax-p-helper
+                   "Smtlink-hint sub/supertype options doesn't include: ~p0.
+                       They are :formals, and :thm.~%" first)))))
+      (and first-ok
+           (sub/supertype-option-syntax-p-helper rest (cons first used))))
+    ///
+    (more-returns
+     (ok (implies (and ok (consp term) (symbol-listp used))
+                  (and (consp (cdr term))
+                       (implies (equal (car term) :formals)
+                                (symbol-listp (cadr term)))
+                       (implies (equal (car term) :thm)
+                                (symbolp (cadr term)))))
+         :hints (("Goal"
+                  :expand (sub/supertype-option-syntax-p-helper term used)))
+         :name definition-of-sub/supertype-option-syntax-p-helper)
+     (ok (implies (and (and ok (consp term) (symbol-listp used))
+                       (not (equal (car term) :formals)))
+                  (equal (car term) :thm))
+         :hints (("Goal"
+                  :expand (sub/supertype-option-syntax-p-helper term used)))
+         :name option-of-sub/supertype-option-syntax-p-helper))
+    (defthm monotonicity-of-sub/supertype-option-syntax-p-helper
+      (implies (and (subsetp used-1 used :test 'equal)
+                    (sub/supertype-option-syntax-p-helper term used))
+               (sub/supertype-option-syntax-p-helper term used-1))))
+
+  (defthm monotonicity-of-sub/supertype-option-syntax-p-helper-corollary
+    (implies (sub/supertype-option-syntax-p-helper term used)
+             (sub/supertype-option-syntax-p-helper term nil))
+    :hints (("Goal"
+             :in-theory (disable monotonicity-of-sub/supertype-option-syntax-p-helper)
+             :use ((:instance monotonicity-of-sub/supertype-option-syntax-p-helper
+                              (used used)
+                              (used-1 nil))))))
+
+  (define sub/supertype-option-syntax-p ((term t))
+    :returns (ok booleanp)
+    (sub/supertype-option-syntax-p-helper term nil)
+    ///
+    (more-returns
+     (ok (implies (and ok (consp term))
+                  (and (consp (cdr term))
+                       (implies (equal (car term) :formals)
+                                (symbol-listp (cadr term)))
+                       (implies (equal (car term) :thm)
+                                (symbolp (cadr term)))))
+         :name definition-of-sub/supertype-option-syntax-p)
+     (ok (implies (and (and ok (consp term))
+                       (not (equal (car term) :formals)))
+                  (equal (car term) :thm))
+         :name option-of-sub/supertype-option-syntax-p)
+     (ok (implies (and ok (consp term))
+                  (sub/supertype-option-syntax-p (cddr term)))
+         :hints (("Goal"
+                  :expand (sub/supertype-option-syntax-p-helper term nil)))
+         :name monotonicity-of-sub/supertype-option-syntax-p)))
+
+  (easy-fix sub/supertype-option-syntax nil)
+  )
+
+(defsection sub/supertype-syntax
+  :parents (Smtlink-process-user-hint)
+
+  (define sub/supertype-syntax-p ((term t))
+    :returns (syntax-good? booleanp)
+    (b* (((unless (true-listp term)) nil)
+         ((unless (consp term)) t)
+         ((cons tname type-options) term))
+      (and (symbolp tname)
+           (sub/supertype-option-syntax-p type-options))))
+
+  (easy-fix sub/supertype-syntax nil)
+
+  (deflist sub/supertype-list-syntax
+    :elt-type sub/supertype-syntax-p
+    :pred sub/supertype-list-syntax-p
+    :true-listp t)
+  )
+
 (defsection type-option-syntax
   :parents (type-syntax)
 
@@ -277,10 +360,12 @@
          (first-ok
           (case first
             (:functions (function-list-syntax-p second))
-            (:subtypes (symbol-listp second))
+            (:subtypes (sub/supertype-list-syntax-p second))
+            (:supertypes (sub/supertype-list-syntax-p second))
             (t (er hard? 'process=>type-option-syntax-p-helper
                    "Smtlink-hint type option doesn't include: ~p0.
-                       They are :functions, and :subtypes.~%" first)))))
+                       They are :functions, :subtypes and :supertypes.~%"
+                   first)))))
       (and first-ok
            (type-option-syntax-p-helper rest (cons first used))))
     ///
@@ -290,13 +375,16 @@
                        (implies (equal (car term) :functions)
                                 (function-list-syntax-p (cadr term)))
                        (implies (equal (car term) :subtypes)
-                                (symbol-listp (cadr term)))))
+                                (sub/supertype-list-syntax-p (cadr term)))
+                       (implies (equal (car term) :supertypes)
+                                (sub/supertype-list-syntax-p (cadr term)))))
          :hints (("Goal"
                   :expand (type-option-syntax-p-helper term used)))
          :name definition-of-type-option-syntax-p-helper)
      (ok (implies (and (and ok (consp term) (symbol-listp used))
-                       (not (equal (car term) :functions)))
-                  (equal (car term) :subtypes))
+                       (not (equal (car term) :functions))
+                       (not (equal (car term) :subtypes)))
+                  (equal (car term) :supertypes))
          :hints (("Goal"
                   :expand (type-option-syntax-p-helper term used)))
          :name option-of-type-option-syntax-p-helper))
@@ -325,11 +413,14 @@
                        (implies (equal (car term) :functions)
                                 (function-list-syntax-p (cadr term)))
                        (implies (equal (car term) :subtypes)
-                                (symbol-listp (cadr term)))))
+                                (sub/supertype-list-syntax-p (cadr term)))
+                       (implies (equal (car term) :supertypes)
+                                (sub/supertype-list-syntax-p (cadr term)))))
          :name definition-of-type-option-syntax-p)
      (ok (implies (and (and ok (consp term))
-                       (not (equal (car term) :functions)))
-                  (equal (car term) :subtypes))
+                       (not (equal (car term) :functions))
+                       (not (equal (car term) :subtypes)))
+                  (equal (car term) :supertypes))
          :name option-of-type-option-syntax-p)
      (ok (implies (and ok (consp term))
                   (type-option-syntax-p (cddr term)))
@@ -531,22 +622,6 @@
                            acl2::true-listp-of-car-when-true-list-listp
                            acl2::pseudo-term-listp-cdr)))
 
-(define construct-return ((return return-syntax-p))
-  :returns (smt-return smt-return-p)
-  :guard-hints (("Goal" :in-theory (enable return-syntax-p)))
-  (b* ((return (return-syntax-fix return)))
-    (make-smt-return :var (car return) :thm (caddr return))))
-
-(define construct-return-list ((return-lst return-list-syntax-p))
-  :returns (smt-return-lst smt-return-list-p)
-  :hints (("Goal" :in-theory (enable return-list-syntax-fix)))
-  :guard-hints (("Goal" :in-theory (enable return-list-syntax-p)))
-  :measure (len return-lst)
-  (b* ((return-lst (return-list-syntax-fix return-lst))
-       ((unless (consp return-lst)) nil)
-       ((cons return-hd return-tl) return-lst))
-    (cons (construct-return return-hd) (construct-return-list return-tl))))
-
 (define construct-function-option-lst ((fun-opt-lst function-option-syntax-p)
                                        (smt-func smt-function-p))
     :returns (func smt-function-p)
@@ -560,8 +635,7 @@
          (new-smt-func
           (case option
             (:formals (change-smt-function smt-func :formals content))
-            (:return (change-smt-function smt-func :returns
-                                          (construct-return-list content)))
+            (:return (change-smt-function smt-func :returns content))
             (:uninterpreted-hints (change-smt-function smt-func
                                                        :uninterpreted-hints content))
             (:replace (change-smt-function smt-func :replace-thm content))
@@ -605,6 +679,40 @@
        ((cons func-hd func-tl) func-lst))
     (cons (construct-function func-hd) (construct-type-functions func-tl))))
 
+(define construct-sub/supertype-option-lst
+  ((sub-opt-lst sub/supertype-option-syntax-p)
+   (smt-sub smt-sub/supertype-p))
+  :returns (new-sub smt-sub/supertype-p)
+  :hints (("Goal" :in-theory (enable sub/supertype-option-syntax-fix)))
+  :measure (len sub-opt-lst)
+  (b* ((sub-opt-lst (sub/supertype-option-syntax-fix sub-opt-lst))
+       (smt-sub (smt-sub/supertype-fix smt-sub))
+       ((unless (consp sub-opt-lst)) smt-sub)
+       ((list* option content rest) sub-opt-lst)
+       (new-smt-sub
+        (case option
+          (:formals (change-smt-sub/supertype smt-sub :formals content))
+          (:thm (change-smt-sub/supertype smt-sub :thm content)))))
+    (construct-sub/supertype-option-lst rest new-smt-sub)))
+
+(define construct-sub/supertype ((sub sub/supertype-syntax-p))
+  :returns (new-sub smt-sub/supertype-p)
+  :guard-hints (("Goal" :in-theory (enable sub/supertype-syntax-fix
+                                           sub/supertype-syntax-p)))
+  (b* ((sub (sub/supertype-syntax-fix sub))
+       ((cons name sub-opt-lst) sub))
+    (construct-sub/supertype-option-lst sub-opt-lst
+                                        (make-smt-sub/supertype :type name))))
+
+(define construct-sub/supertype-list ((sub-lst sub/supertype-list-syntax-p))
+  :returns (new-sub-lst smt-sub/supertype-list-p)
+  :measure (len sub-lst)
+  (b* ((sub-lst (sub/supertype-list-syntax-fix sub-lst))
+       ((unless (consp sub-lst)) nil)
+       ((cons sub-hd sub-tl) sub-lst))
+    (cons (construct-sub/supertype sub-hd)
+          (construct-sub/supertype-list sub-tl))))
+
 (define construct-type-option-lst ((type-opt-lst type-option-syntax-p)
                                    (smt-type smt-type-p))
     :returns (smt-type smt-type-p)
@@ -619,7 +727,12 @@
             (:functions
              (change-smt-type smt-type
                               :functions (construct-type-functions content)))
-            (:subtypes (change-smt-type smt-type :subtypes content)))))
+            (:subtypes
+             (change-smt-type smt-type
+                              :subtypes (construct-sub/supertype-list content)))
+            (:supertypes
+             (change-smt-type smt-type
+                              :supertypes (construct-sub/supertype-list content))))))
       (construct-type-option-lst rest new-smt-type)))
 
   (define construct-type ((type type-syntax-p))
@@ -846,13 +959,13 @@
 
     (defthm correctness-of-process-hint
       (implies (and (pseudo-term-listp cl)
-                    (alistp b)
+                    (alistp a)
                     (ev-smtcp
                      (conjoin-clauses
                       (acl2::clauses-result
                        (process-hint-cp cl hint state)))
-                     b))
-               (ev-smtcp (disjoin cl) b))
+                     a))
+               (ev-smtcp (disjoin cl) a))
       :rule-classes :clause-processor))
 
   (define wrld-fn-len ((cl t) (state))

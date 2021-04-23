@@ -993,7 +993,7 @@
 	       (fn-lvls (sym-int-alist-fix fn-lvls))
 	       (options (expand-options-fix options))
 	       ((expand-options o) options)
-	       (basic? (member-equal fn (SMT-basics)))
+	       (basic? (is-basic-function fn))
 	       (types? (assoc-equal fn o.types))
 	       (lvl (assoc-equal fn fn-lvls))
 	       (functions? (assoc-equal fn o.functions)))
