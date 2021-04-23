@@ -131,6 +131,7 @@ commands.</p>
           (cons "server" *vl-server-help*)
           (cons "shell"  *vl-shell-help*)
           (cons "zip"    *vl-zip-help*)
+          (cons "json"   *vl-json-help*)
           ))
 
   (encapsulate

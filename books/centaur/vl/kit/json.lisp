@@ -49,8 +49,8 @@
 parse a Verilog/SystemVerilog design and then write it out into a @('.json')
 file.  These files are complete(?) snapshots of what VL has parsed.</p>
 
-<p>For detailed usage information, run @('vl json --help') or see @(see
-*vl-json-help*).</p>")
+<p>For detailed usage information, run @('vl json --readme') or see @(see
+*vl-json-readme*).</p>")
 
 (local (xdoc::set-default-parents vl-json))
 
