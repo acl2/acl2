@@ -121,6 +121,7 @@
 (defthm eqlable-listp-of-fn-formals
   (eqlable-listp (fn-formals fun wrld)))
 
+;; TODO: Just call arity, but I guess this one can throw an error:
 (defun fn-arity (name wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
