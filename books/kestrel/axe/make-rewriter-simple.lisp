@@ -1403,26 +1403,18 @@
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; Rewrite TREE repeatedly using REWRITER-RULE-ALIST and REFINED-ASSUMPTION-ALIST and add the result to the DAG-ARRAY, returning a nodenum or a quotep.
-        ;; TREE is a term with nodenums and quoteps and variables at the leaves.
-        ;; TREES-EQUAL-TO-TREE is a list of terms (not vars) equal to TREE (at the bottom is the original term we are rewriting)- when we get the final result, all these terms will be equal to it - BOZO option to turn this off?
-
-        ;;  BOZO can we just keep rewrite-stack empty if we're not doing it for real?
+        ;; TREE is an axe-tree (with nodenums and quoteps and variables at the leaves).
+        ;; TREES-EQUAL-TO-TREE is a list of terms (not vars) equal to TREE (at the bottom is the original term we are rewriting) - when we get the final result, all these terms will be equal to it - TODO: option to turn this off?
 
         ;; BOZO I forget, why would we ever not memoize??  i guess when we know there are no repeated subterms in the tree? could precompute that info for the RHS of each rule...  ;also, memoization may be unsound if we use internal ITE contexts to rewrite - unless we track that info in the memoization
         ;; could still memoize when rewriting a given node..
-        ;; be sure we always handle lambdas early, in case one is hiding an if - bozo - skip this for now?
 
         ;; MEMOIZATION maps functions call exprs (nothing else??) over nodenums and constants (not vars) to the nodenums or quoteps to which they simplify - no, let memoization map any tree!
         ;; memoization can be thought of as part of the DAG (all nodenums mentioned in memoization must be part of the DAG)
 
-        ;; i guess depth2 isn't just the depth of the rewrite stack, since we only use the rewrite-stack if we are adding nodes for real
-        ;; but we may always want depth2 to prevent super deep rewrites during backchaining?  maybe we do want the rewrite stack during backchaining too?
-        ;; old: depth2 is the depth of rewrite-stack? we could alternate depths and values on that stack?
-
         ;;leaves nodes below dag-len untouched..
         ;;BOZO could put in simple loop checking (if the first element of trees-equal-to-tree is tree itself) - or check the first few elements..
         ;;but then we'd be using trees-equal-to-tree in a non-memoizing context
-;had to make this a flag function for tail calls to be removed
 ;fixme the dispatch here requires that there not be a function named nil; enforce that in interpreted-function-alists?
         (defund ,simplify-tree-and-add-to-dag-name (tree
                                                     trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
@@ -1573,6 +1565,8 @@
                               (if (consp fn) ;;tests for lambda
                                   ;; It's a lambda, so we beta-reduce and simplify the result:
                                   ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
+                                  ;; TODO: It's possible that we wasted time above simplifying lambda args (some args may be unneeded if the lambda body is a resolvable if), but
+                                  ;; I'm not sure how to prevent that.
                                   (let* ((formals (second fn))
                                          (body (third fn))
                                          ;;BOZO could optimize this pattern: (my-sublis-... (pairlis$-fast formals args) body)
