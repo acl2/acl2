@@ -1,6 +1,6 @@
 ; A tool to tell whether a file exists
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 ;; to not be the CBD, perhaps it's the directory in which ACL2 was started).
 ;; This calls file-write-date$ and so assumes that a file has a write date if
 ;; and only if it exists.
-(defun file-existsp (absolute-path state)
+(defund file-existsp (absolute-path state)
   (declare (xargs :stobjs state
                   :guard (stringp absolute-path)))
   (mv-let (file-date state)
