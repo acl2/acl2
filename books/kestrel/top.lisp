@@ -28,6 +28,7 @@
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
 (include-book "ethereum/top")
+(include-book "file-io-light/top")
 (include-book "fty/top")
 (include-book "isar/top")
 (include-book "java/top")
