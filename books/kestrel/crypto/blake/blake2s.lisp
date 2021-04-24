@@ -521,8 +521,9 @@
            (all-unsigned-byte-p 8 (blake2s-main d ll kk nn)))
   :hints (("Goal" :in-theory (enable blake2s-main))))
 
-;; Returns the hash, as list of bytes of length NN.
 ;; TODO: Think about the case where we have a max length message and a key
+
+;; Returns the hash, as list of bytes of length NN.
 (defund blake2s (data-bytes
                  key-bytes
                  nn ;; number of hash bytes to produce
@@ -545,10 +546,7 @@
   (let* ((d (d-blocks data-bytes key-bytes))
          (ll (len data-bytes))
          (kk (len key-bytes)))
-    (blake2s-main d
-                  ll
-                  kk
-                  nn)))
+    (blake2s-main d ll kk nn)))
 
 (defthm len-of-blake2s
   (implies (and (posp nn)

@@ -13,7 +13,6 @@
 (include-book "parse-json")
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "../utilities/file-existsp")
-(in-theory (disable file-write-date$))
 
 ;; Returns (mv parsed-value state).
 ;; Example call: (parse-file-as-json "example.json" state)
