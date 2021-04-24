@@ -103,6 +103,18 @@
                 (consp declares))
            (declarep (car declares))))
 
+(defthm all-declarep-of-cons
+  (equal (all-declarep (cons declare declares))
+         (and (declarep declare)
+              (all-declarep declares)))
+  :hints (("Goal" :in-theory (enable all-declarep))))
+
+(defthm all-declarep-of-take
+  (implies (and (all-declarep declares)
+                (<= (nfix n) (len declares)))
+           (all-declarep (take n declares)))
+  :hints (("Goal" :in-theory (enable all-declarep))))
+
 ;;; Extract the xargs from some declares
 
 ;returns a keyword-value-listp
@@ -653,6 +665,13 @@
          1)
   :hints (("Goal" :in-theory (enable add-xarg-in-declares len))))
 
+(defthm all-declarep-of-add-xarg-in-declares
+  (implies (and (keywordp xarg)
+                (true-listp declares)
+                (all-declarep declares))
+           (all-declarep (add-xarg-in-declares xarg val declares)))
+  :hints (("Goal" :in-theory (enable add-xarg-in-declares))))
+
 ;;  Replace the value of XARG with VAL in DECLARES if it's present.  If it's
 ;;  not present, add it with value VAL.
 ;; TODO: Preserve more of the original structure of things?
@@ -667,6 +686,12 @@
          1)
   :hints (("Goal" :in-theory (enable replace-xarg-in-declares))))
 
+(defthm all-declarep-of-replace-xarg-in-declares
+  (implies (and (keywordp xarg)
+                (true-listp declares)
+                (all-declarep declares))
+           (all-declarep (replace-xarg-in-declares xarg val declares)))
+  :hints (("Goal" :in-theory (enable replace-xarg-in-declares))))
 
 
 (defthm get-non-xargs-from-declare-args-of-append
