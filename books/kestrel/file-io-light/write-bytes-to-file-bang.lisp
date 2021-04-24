@@ -15,7 +15,9 @@
 
 (defttag file-io!)
 
-;returns (mv erp state)
+;; Writes the BYTES to file FILENAME, overwriting its previous contents.
+;; Returns (mv erp state).  This version is usable during make-event,
+;; clause-processors, etc. due to the trust tag.
 (defun write-bytes-to-file! (bytes filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (all-bytep bytes)
