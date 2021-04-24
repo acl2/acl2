@@ -17,7 +17,7 @@
 (xdoc::defxdoc
  r1cs-verification-with-axe
  :short "Steps to verify an R1CS using the Axe toolkit."
- :parents (r1cs)
+ :parents (r1cs axe)
  :long
  (xdoc::topstring
   (xdoc::&&
