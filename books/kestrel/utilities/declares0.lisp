@@ -386,6 +386,8 @@
               (xargs ,@xargs-key-vals))))
 
 ;If there is already a "verify-guards t", we remove it from the declares.
+;; TODO: Preserve more of the original order of things?
+;; TODO: Generalize to any xarg
 (defun set-verify-guards-in-declares (declares verify-guards)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares)
@@ -397,6 +399,7 @@
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
 
+;; todo: rename to set-verify-guards-nil
 (defund add-verify-guards-nil (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
@@ -407,6 +410,7 @@
            (all-declarep (add-verify-guards-nil declares)))
   :hints (("Goal" :in-theory (enable add-verify-guards-nil))))
 
+;; todo: rename to set-verify-guards-t
 (defund add-verify-guards-t (declares)
   (declare (xargs :guard (and (true-listp declares)
                               (all-declarep declares))))
@@ -458,8 +462,6 @@
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
 
-
-
 (defun remove-declare-args (type declare-args)
   (declare (xargs :guard (all-declare-argp declare-args)))
   (if (atom declare-args)
@@ -505,7 +507,6 @@
            (declare-args (fargs first-declare))
            (first-declare `(declare ,declare-arg ,@declare-args)))
       (cons first-declare (rest declares)))))
-
 
 (defthm all-declare-argp-of-get-non-xargs-from-declares
   (implies (all-declarep declares)
@@ -654,6 +655,7 @@
 
 ;;  Replace the value of XARG with VAL in DECLARES if it's present.  If it's
 ;;  not present, add it with value VAL.
+;; TODO: Preserve more of the original structure of things?
 (defund replace-xarg-in-declares (xarg val declares)
   (declare (xargs :guard (and (keywordp xarg)
                               (true-listp declares)
