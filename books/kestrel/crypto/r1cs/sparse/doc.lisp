@@ -17,7 +17,7 @@
   :short "Recognize An R1CS constraint"
   :long "An R1CS constraint is a defaggregate with 3 fields, A, B, and C, each of which is a sparse vector.")
 
-;; (depends-on r1cs.lisp")
+;; (depends-on "r1cs.lisp")
 (acl2::gen-xdoc-for-file
  "r1cs.lisp"
  ((pseudo-varp "Recognize a pseudo-variable (a symbol or 1).")

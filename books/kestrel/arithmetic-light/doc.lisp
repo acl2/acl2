@@ -15,4 +15,4 @@
 (defxdoc arithmetic-light
   :short "An arithmetic library developed using a lightweight approach"
   :long "See books/kestrel/arithmetic-light/." ;todo: improve
-  :parents (arithmetic))
+  :parents (arithmetic kestrel-books))

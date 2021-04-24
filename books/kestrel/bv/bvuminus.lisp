@@ -15,7 +15,10 @@
 (include-book "bvplus")
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-;fixme define bvminus in terms of this?
+;; TODO: Consider defining bvminus in terms of bvuminus
+
+;; "bit-vector unary minus"
+;; Compute the (modular) additive inverse of X.
 (defund bvuminus (size x)
   (declare (type (integer 0 *) size))
   (bvminus size 0 x))

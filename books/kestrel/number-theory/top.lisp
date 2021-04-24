@@ -20,5 +20,5 @@
 (include-book "tonelli-shanks")
 
 (defxdoc number-theory
-  :parents (arithmetic)
+  :parents (arithmetic kestrel-books)
   :short "Some utilities related to number theory")
