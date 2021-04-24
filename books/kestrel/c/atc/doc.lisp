@@ -459,8 +459,21 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of @(tsee sint-nonzerop) on a pure C-valued term.
-       This converts a pure C-valued term
+      "A call of a function @('<type>-nonzerop')
+       on a pure C-valued term,
+       where @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "This converts a pure C-valued term
        to a boolean term.")
      (xdoc::li
       "A call of one of the following functions and macros

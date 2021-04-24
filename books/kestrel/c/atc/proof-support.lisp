@@ -371,6 +371,169 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atc-integer-ops-1-conv-definition-rules*
+  :short "List of definition rules for operations
+          that involve one C integer type
+          and that involve conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for operations on types of rank lower than @('int'):
+     these involve conversions in the sense that
+     the operand is promoted prior to being operated upon.
+     We exclude logical negation from the operations here,
+     because that operation does not promote the operand.
+     We include the shift operations with ACL2 integers as second arguments.")
+   (xdoc::p
+    "These functions are all expanded in proofs because
+     they are defined in terms of conversions and
+     of operations on types of rank at least @('int'):
+     this is what the dynamic semantics of C uses."))
+  (b* ((types (list (type-schar)
+                    (type-uchar)
+                    (type-sshort)
+                    (type-ushort))))
+    (atc-integer-ops-1-conv-names-loop-ops '(plus minus bitnot shl shr) types))
+
+  :prepwork
+
+  ((define atc-integer-ops-1-conv-names-loop-types ((op symbolp)
+                                                    (types type-listp))
+     :guard (and (member-eq op '(plus minus bitnot shl shr))
+                 (type-integer-listp types))
+     :returns (name symbol-listp)
+     (cond ((endp types) nil)
+           (t (b* ((type (car types))
+                   (fixtype (atc-integer-type-fixtype type))
+                   (names (if (and (eq op 'minus)
+                                   (type-signed-integerp type))
+                              (list (pack op '- fixtype)
+                                    (pack op '- fixtype '-okp))
+                            (list (pack op '- fixtype))))
+                   (more-names
+                    (atc-integer-ops-1-conv-names-loop-types op (cdr types))))
+                (append names more-names)))))
+
+   (define atc-integer-ops-1-conv-names-loop-ops ((ops symbol-listp)
+                                                  (types type-listp))
+     :guard (and (subsetp-eq ops '(plus minus bitnot shl shr))
+                 (type-integer-listp types))
+     :returns (names symbol-listp)
+     (cond ((endp ops) nil)
+           (t (append
+               (atc-integer-ops-1-conv-names-loop-types (car ops) types)
+               (atc-integer-ops-1-conv-names-loop-ops (cdr ops) types)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-ops-2-conv-definition-rules*
+  :short "List of definition rules for operations
+          that involve two C integer types
+          and that involve conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for operations on types that differ
+     or that have rank lower than @('int'):
+     these involve conversions in the sense that
+     the operands are subjected to the usual arithmetic conversions
+     prior to being operated upon.")
+   (xdoc::p
+    "These functions are all expanded in proofs because
+     they are defined in terms of conversions and
+     of operations on equal types of rank at least @('int'):
+     this is what the dynamic semantics of C uses."))
+  (b* ((ops (list 'add 'sub 'mul 'div 'rem
+                  'lt 'gt 'le 'ge 'eq 'ne
+                  'bitand 'bitxor 'bitior))
+       (types (list (type-schar)
+                    (type-uchar)
+                    (type-sshort)
+                    (type-ushort)
+                    (type-sint)
+                    (type-uint)
+                    (type-slong)
+                    (type-ulong)
+                    (type-sllong)
+                    (type-ullong))))
+    (atc-integer-ops-2-conv-names-loop-ops ops types types))
+
+  :prepwork
+
+  ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
+                                                          (ltype typep)
+                                                          (rtypes type-listp))
+     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+                                     'lt 'gt 'le 'ge 'eq 'ne
+                                     'bitand 'bitxor 'bitior))
+                 (type-integerp ltype)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond
+      ((endp rtypes) nil)
+      (t (b* ((rtype (car rtypes))
+              (type (if (member-eq op '(lt gt le ge eq ne))
+                        (type-sint)
+                      (uaconvert-types ltype rtype)))
+              ((when (and (equal type ltype)
+                          (equal type rtype)))
+               (atc-integer-ops-2-conv-names-loop-right-types op
+                                                              ltype
+                                                              (cdr rtypes)))
+              (lfixtype (atc-integer-type-fixtype ltype))
+              (rfixtype (atc-integer-type-fixtype rtype))
+              (names (if (or (member-eq op '(div rem))
+                             (and (type-signed-integerp type)
+                                  (member-eq op '(add sub mul))))
+                         (list (pack op '- lfixtype '- rfixtype)
+                               (pack op '- lfixtype '- rfixtype '-okp))
+                       (list (pack op '- lfixtype '- rfixtype))))
+              (more-names
+               (atc-integer-ops-2-conv-names-loop-right-types
+                op
+                ltype
+                (cdr rtypes))))
+           (append names more-names))))
+     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
+
+   (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
+                                                         (ltypes type-listp)
+                                                         (rtypes type-listp))
+     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+                                     'lt 'gt 'le 'ge 'eq 'ne
+                                     'bitand 'bitxor 'bitior))
+                 (type-integer-listp ltypes)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond ((endp ltypes) nil)
+           (t (append
+               (atc-integer-ops-2-conv-names-loop-right-types op
+                                                              (car ltypes)
+                                                              rtypes)
+               (atc-integer-ops-2-conv-names-loop-left-types op
+                                                             (cdr ltypes)
+                                                             rtypes)))))
+
+   (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
+                                                  (ltypes type-listp)
+                                                  (rtypes type-listp))
+     :guard (and (subsetp-eq ops (list 'add 'sub 'mul 'div 'rem
+                                       'lt 'gt 'le 'ge 'eq 'ne
+                                       'bitand 'bitxor 'bitior))
+                 (type-integer-listp ltypes)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond ((endp ops) nil)
+           (t (append
+               (atc-integer-ops-2-conv-names-loop-left-types (car ops)
+                                                             ltypes
+                                                             rtypes)
+               (atc-integer-ops-2-conv-names-loop-ops (cdr ops)
+                                                      ltypes
+                                                      rtypes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-definition-rules*
   :short "List of definition rules for the proofs generated by ATC."
   :long
@@ -473,7 +636,9 @@
      value-arithmeticp
      value-scalarp
      write-var)
-   *atc-shift-definition-rules*))
+   *atc-shift-definition-rules*
+   *atc-integer-ops-1-conv-definition-rules*
+   *atc-integer-ops-2-conv-definition-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
