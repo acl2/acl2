@@ -12,6 +12,7 @@
 
 (include-book "xdoc/topics" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
+(include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
 
 (defxdoc bv
   :short "The BV library for reasoning about bit-vectors"
@@ -57,3 +58,17 @@ Bit vectors can also be interpreted as signed numbers using a standard
 twos-complement representation.  A bit vector of size M is taken to
 represent numbers in the range [-2^(M-1), 2^(M-1)-1].  This matches
 the behavior of the ACL2 predicate signed-byte-p.)"))
+
+;; (depends-on bvchop-def.lisp")
+(acl2::gen-xdoc-for-file
+ "bvchop-def.lisp"
+ ((bvchop "Chop a value down to the given size."))
+ (bv))
+
+;; (depends-on bvplus.lisp")
+(acl2::gen-xdoc-for-file
+ "bvplus.lisp"
+ ((bvplus "Bit-vector sum."))
+ (bv))
+
+;; TODO: Document more BV operations!
