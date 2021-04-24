@@ -15,6 +15,7 @@
 
 (include-book "bvchop")
 
+;; Compute the (modular) difference of X and Y.
 (defund bvminus (size x y)
   (declare (type (integer 0 *) size))
   (bvchop size (- (ifix x) (ifix y))))
