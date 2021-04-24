@@ -21,6 +21,8 @@
 ;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
 ;fixme use faster tests than equal in some places below?
 
+;; TODO: Consider making splitting just another tactic.
+
 ;; Consider doing (set-evisc-tuple t :iprint nil :sites :gag-mode) when working
 ;; with calls to make-prover-simple, to prevent printing of enormous induction
 ;; schemes.
