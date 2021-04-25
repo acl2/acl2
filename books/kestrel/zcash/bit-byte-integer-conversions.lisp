@@ -31,8 +31,16 @@
   :short "The function @($\\mathsf{I2LEBSP}$) in [ZPS:5.2]."
   (acl2::nat=>lebits l x)
   ///
+
   (defret len-of-i2lebsp
-    (equal (len bits) (nfix l))))
+    (equal (len bits) (nfix l)))
+
+  (defrule i2lebsp-injectivity
+    (implies (and (< (nfix x1) (expt 2 (nfix l)))
+                  (< (nfix x2) (expt 2 (nfix l))))
+             (equal (equal (i2lebsp l x1)
+                           (i2lebsp l x2))
+                    (equal (nfix x1) (nfix x2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,8 +49,16 @@
   :short "The function @($\\mathsf{I2BEBSP}$) in [ZPS:5.2]."
   (acl2::nat=>bebits l x)
   ///
+
   (defret len-of-i2bebsp
-    (equal (len bits) (nfix l))))
+    (equal (len bits) (nfix l)))
+
+  (defrule i2bebsp-injectivity
+    (implies (and (< (nfix x1) (expt 2 (nfix l)))
+                  (< (nfix x2) (expt 2 (nfix l))))
+             (equal (equal (i2bebsp l x1)
+                           (i2bebsp l x2))
+                    (equal (nfix x1) (nfix x2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,10 +73,19 @@
      Thus, in our formalization we just have one argument."))
   (acl2::lebits=>nat s)
   ///
+
   (local (include-book "arithmetic-3/top" :dir :system))
+
   (defret lebs2ip-upper-bound
     (< x (expt 2 (len s)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defrule lebs2ip-injectivity
+    (implies (equal (len s1) (len s2))
+             (equal (equal (lebs2ip s1)
+                           (lebs2ip s2))
+                    (equal (acl2::bit-list-fix s1)
+                           (acl2::bit-list-fix s2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,13 +100,22 @@
      Thus, in our formalization we just have one argument."))
   (acl2::lebytes=>nat s)
   ///
+
   (local (include-book "arithmetic-3/top" :dir :system))
+
   (defret leos2ip-upper-bound
     (< x (expt 2 (* 8 (len s))))
     :rule-classes :linear
     :hints (("Goal"
              :use (:instance acl2::lebytes=>nat-upper-bound
-                   (acl2::digits s))))))
+                   (acl2::digits s)))))
+
+  (defrule leos2ip-injectivity
+    (implies (equal (len s1) (len s2))
+             (equal (equal (leos2ip s1)
+                           (leos2ip s2))
+                    (equal (acl2::byte-list-fix s1)
+                           (acl2::byte-list-fix s2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
