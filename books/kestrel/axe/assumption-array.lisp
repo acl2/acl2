@@ -13,6 +13,7 @@
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "dags")
+(include-book "all-dargp-less-than")
 (include-book "equivs")
 
 ;; Currently, an assumption always indicates that a node is equal to a
@@ -34,6 +35,19 @@
 (def-typed-acl2-array2 assumption-arrayp
   (or (null val) ;; no information about this node
       (assumption-itemp val)))
+
+(defthm type-of-aref1-when-assumption-arrayp-alt
+  (implies (and (assumption-arrayp array-name array)
+                (< index (alen1 array-name array))
+                (natp index)
+                (aref1 array-name array index))
+           (assumption-itemp (aref1 array-name array index)))
+  :hints (("Goal" :use (:instance type-of-aref1-when-assumption-arrayp)
+           :in-theory (disable type-of-aref1-when-assumption-arrayp))))
+
+;;;
+;;; maybe-replace-nodenum-using-assumption-array
+;;;
 
 ;; Returns NODENUM itself, or a replacement for it (which will be a quoted
 ;; constant known, via the ASSUMPTION-ARRAY, to be equivalent to NODENUM using
@@ -123,11 +137,22 @@
                             myquotep)
                            (natp type-of-aref1-when-assumption-arrayp)))))
 
+(defthm dargp-of-maybe-replace-nodenum-using-assumption-array
+  (implies (and (assumption-arrayp 'assumption-array assumption-array)
+                (natp nodenum)
+;(equivp equiv)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (dargp (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)))
+  :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
+           :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))
+
 (defthm dargp-less-than-of-maybe-replace-nodenum-using-assumption-array
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
                 (< nodenum bound)
-                (equivp equiv)
+                ;(equivp equiv)
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
@@ -136,11 +161,99 @@
   :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
            :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))
 
-(defthm type-of-aref1-when-assumption-arrayp-alt
-  (implies (and (assumption-arrayp array-name array)
-                (< index (alen1 array-name array))
-                (natp index)
-                (aref1 array-name array index))
-           (assumption-itemp (aref1 array-name array index)))
-  :hints (("Goal" :use (:instance type-of-aref1-when-assumption-arrayp)
-           :in-theory (disable type-of-aref1-when-assumption-arrayp))))
+(defthm <-of-maybe-replace-nodenum-using-assumption-array
+  (implies (and (assumption-arrayp 'assumption-array assumption-array)
+                (natp nodenum)
+                (< nodenum bound)
+                ;;(equivp equiv)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (< (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)
+              bound))
+  :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
+           :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))
+
+(defthm len-of-maybe-replace-nodenum-using-assumption-array
+  (implies (and (assumption-arrayp 'assumption-array assumption-array)
+                (natp nodenum)
+                ;(equivp equiv)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (not (equal 1 (len (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)))))
+  :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
+           :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))
+
+;;;
+;;; maybe-replace-args-using-assumption-array
+;;;
+
+;; Returns a list of dargs.  For each arg, we get back either the
+;; arg itself, or a replacement for it (which will be a quoted constant known,
+;; via the ASSUMPTION-ARRAY, to be equivalent to the arg using EQUIV).
+(defund maybe-replace-args-using-assumption-array (args
+                                                   equivs
+                                                   assumption-array
+                                                   assumption-array-num-valid-nodes
+                                                   print)
+  (declare (xargs :guard (and (all-dargp args)
+                              (true-listp args)
+                              (equiv-listp equivs)
+                              (equal (len args) (len equivs))
+                              (assumption-arrayp 'assumption-array assumption-array)
+                              (natp assumption-array-num-valid-nodes)
+                              (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+                  :guard-hints (("Goal" :in-theory (enable equiv-listp)))))
+  (if (endp args)
+      nil
+    (let ((arg (first args)))
+      (cons (if (consp arg) ; test for quotep
+                arg         ; no change to a constant
+              (maybe-replace-nodenum-using-assumption-array arg (first equivs) assumption-array assumption-array-num-valid-nodes print))
+            (maybe-replace-args-using-assumption-array (rest args)
+                                                       (rest equivs)
+                                                       assumption-array
+                                                       assumption-array-num-valid-nodes
+                                                       print)))))
+
+(defthm all-dargp-of-maybe-replace-args-using-assumption-array
+  (implies (and (all-dargp args)
+;(true-listp args)
+;(equiv-listp equivs)
+;(equal (len args) (len equivs))
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (all-dargp (maybe-replace-args-using-assumption-array args
+                                                                 equivs
+                                                                 assumption-array
+                                                                 assumption-array-num-valid-nodes
+                                                                 print)))
+  :hints (("Goal" :in-theory (e/d (maybe-replace-args-using-assumption-array) (dargp)))))
+
+(defthm all-dargp-less-than-of-maybe-replace-args-using-assumption-array
+  (implies (and (all-dargp-less-than args bound)
+                ;(true-listp args)
+                ;(equiv-listp equivs)
+                ;(equal (len args) (len equivs))
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (all-dargp-less-than (maybe-replace-args-using-assumption-array args
+                                                                           equivs
+                                                                           assumption-array
+                                                                           assumption-array-num-valid-nodes
+                                                                           print)
+                                bound))
+  :hints (("Goal" :in-theory (enable maybe-replace-args-using-assumption-array))))
+
+;; use all-consp as the normal form
+(defthm all-myquotep-of-maybe-replace-args-using-assumption-array
+  (implies (and (all-dargp args)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (equal (all-myquotep (maybe-replace-args-using-assumption-array args equivs assumption-array assumption-array-num-valid-nodes print))
+                  (all-consp (maybe-replace-args-using-assumption-array args equivs assumption-array assumption-array-num-valid-nodes print))))
+  :hints (("Goal" :in-theory (enable all-myquotep-when-all-dargp))))
