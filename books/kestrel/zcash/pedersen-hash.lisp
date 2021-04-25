@@ -158,7 +158,9 @@
 
 (define pedersen-enc ((3bits bit-listp))
   :guard (= (len 3bits) 3)
-  :returns (i integerp :hyp (bit-listp 3bits))
+  :returns (i integerp
+              :rule-classes (:type-prescription :rewrite)
+              :hyp (bit-listp 3bits))
   :short "The function @($\\mathsf{enc}$) in [ZPS:5.4.1.7]."
   (b* ((s0 (first 3bits))
        (s1 (second 3bits))
