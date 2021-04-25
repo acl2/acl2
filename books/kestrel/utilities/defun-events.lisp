@@ -166,7 +166,7 @@
           (get-xargs-from-event fn defun)))
         (hard-error 'get-xargs-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
 
-;; Returns the untranslated body provided for FN in EVENT, which should be a DEFUN or MUTUAL-RECURSION.
+;; Returns the *untranslated* body provided for FN in EVENT, which should be a DEFUN or MUTUAL-RECURSION.
 ;; TODO: Perhaps add support for DEFUNS, which is like MUTUAL-RECURSION.
 (defund get-body-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
