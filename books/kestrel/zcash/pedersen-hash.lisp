@@ -182,7 +182,43 @@
   (defret pedersen-enc-not-zero
     (not (equal enc 0))
     :hyp (bit-listp 3bits)
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defrule pedersen-enc-injectivity
+    (implies (and (bit-listp x)
+                  (bit-listp y)
+                  (equal (len x) 3)
+                  (equal (len y) 3))
+             (equal (equal (pedersen-enc x)
+                           (pedersen-enc y))
+                    (equal x y)))
+    :use ((:instance pedersen-enc-injectivity-on-lists-of-3
+           (x0 (first x))
+           (x1 (second x))
+           (x2 (third x))
+           (y0 (first y))
+           (y1 (second y))
+           (y2 (third y)))
+          (:instance rephrase-list-of-3 (l x))
+          (:instance rephrase-list-of-3 (l y)))
+    :prep-lemmas
+    ((defruled pedersen-enc-injectivity-on-lists-of-3
+       (implies (and (bitp x0)
+                     (bitp x1)
+                     (bitp x2)
+                     (bitp y0)
+                     (bitp y1)
+                     (bitp y2))
+                (equal (equal (pedersen-enc (list x0 x1 x2))
+                              (pedersen-enc (list y0 y1 y2)))
+                       (and (equal x0 y0)
+                            (equal x1 y1)
+                            (equal x2 y2)))))
+     (defrule rephrase-list-of-3
+       (implies (and (true-listp l)
+                     (= (len l) 3))
+                (equal l (list (first l) (second l) (third l))))
+       :rule-classes nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
