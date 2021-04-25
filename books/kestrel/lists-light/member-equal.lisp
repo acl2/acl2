@@ -170,3 +170,7 @@
            (iff (member-equal x k)
                 (member-equal x (remove-equal val k))))
   :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-nth-same
+  (implies (< (nfix n) (len x))
+           (member-equal (nth n x) x)))
