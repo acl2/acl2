@@ -1165,6 +1165,7 @@
         ;;                                                                equiv-alist print
         ;;                                                                info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state))))))))))
 
+        ;; Simplify a call of IF or MYIF.  Simplify the test first and, if we can resolve it, only simplify the appropriate branch.
         ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
         (defund ,simplify-if-tree-name (tree
                                         equiv
@@ -1611,6 +1612,7 @@
                                       equivs
                                     :equal ;means use 'equal for all equivs
                                     )))
+                        ;; we could avoid this check if we know that arities were right:
                         ((when (and (not (equal :equal equivs))
                                     (not (= (len equivs) (len args)))))
                          (mv :bad-equivs nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -1683,6 +1685,7 @@
                                       options count)
           (declare (xargs :guard (and (true-listp trees)
                                       (all-axe-treep trees)
+                                      ;; TODO: Consider using nil for the equivs in any case where we can't do better that equal (no entry in the equiv-alist, or even when the remaining args of the call don't need to be treated specially):
                                       (or (eq :equal equivs) ;means use 'equal for all the equivs
                                           (and (equiv-listp equivs)
                                                (equal (len equivs) (len trees))))
@@ -2520,8 +2523,9 @@
        ;; it seems possible for a node to get pushed onto the worklist more than once, but i guess a node cannot be pushed more times than it has parents (so not exponentially many times)?
        ;; todo: watch out for equality assumptions ordered the wrong way! - will they get rewritten the wrong way?
        ;; todo: special handling for if/myif/boolif/bvif/boolor/booland?
-       ;; todo: track the equiv used for each node?
+       ;; todo: Consider whether we can track the equiv used for each node (note that a note may appear in multiple contexts with different equivs).  We currently handle this when we process the parent, and that may be good enough?
        ;; todo: track polarities?
+       ;; todo: use a more modern worklist algorithm where we keep the worklist sorted?
        (defund ,rewrite-nodes-name (worklist ;could track the equivs and polarities?
                                     result-array-name result-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2568,59 +2572,63 @@
                       ;;         (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
-                       (let ((new-nodenum-or-quotep ;;(maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)
-                              (maybe-replace-nodenum-using-assumption-array nodenum 'equal assumption-array assumption-array-num-valid-nodes print)
-                              ))
-                         ;;option to print the number of rule hits?
-                         (,rewrite-nodes-name (rest worklist)
-                                              result-array-name
-                                              (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
+                       ;; Have to use 'equal as the equiv here, unless we track equivs better, but we may do better when we analyze the parent node:
+                       (let ((new-nodenum-or-quotep (maybe-replace-nodenum-using-assumption-array nodenum 'equal assumption-array assumption-array-num-valid-nodes print)))
+                         (,rewrite-nodes-name (rest worklist) result-array-name
+                                              (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; either rewrote to itself or a constant from an equality assumption
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                               nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                               rule-alist
                                               equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
                      (let ((fn (ffn-symb expr)))
-                       (if (eq 'quote fn)
-                           (,rewrite-nodes-name (rest worklist)
-                                                result-array-name
+                       (if (eq 'quote fn) ;; it's a quoted constant, so it rewrites to itself:
+                           (,rewrite-nodes-name (rest worklist) result-array-name
                                                 ;; update the result-array (effectively eliminates the naked constant node):
                                                 (aset1 result-array-name result-array nodenum expr)
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                 rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
                          ;; Regular function call.  First make sure that the args have been processed:
-                         ;; TTODO: Consider adding special handling for if and related operators?!? TODO: Do we at least rewrite the IF-test using an equiv of IFF?
+                         ;; TODO: Consider adding special handling for if and related operators.
+                         ;; TODO: Consider trying to rewrite the IF-test using an equiv of IFF.
                          (let* ((args (dargs expr))
                                 (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
                            (if extended-worklist-or-nil
-                               ;;when the current node is processed again, some work will be redone
+                               ;; Some args are not yet done, so recur on the extended worklist (which has them added to the front).
+                               ;; When the current node is processed again, some analysis will be redone but the outcome will be different.
                                (,rewrite-nodes-name extended-worklist-or-nil result-array-name result-array
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                     rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                                     case-designator prover-depth options (+ -1 count))
-                             ;;all args are simplified (but under what equiv, just 'equal ?):
-                             (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
-                                  (expr (cons fn args)) ; todo: consider cons-with-hint here
+                             ;; All args are simplified (but only under an equiv of 'equal):
+                             (b* ((simplified-args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
+                                  (expr (cons fn simplified-args)) ; todo: consider cons-with-hint here, or avoid this cons
                                   ;; (- (and (member-eq print '(:verbose2 :verbose))
                                   ;;         (cw "(Rewriting node ~x0." nodenum)))
-                                  ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                   ;; TODO: use the fact that we know it's a function call with simplified args?
+                                  ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                   ;; TODO: Calling ,simplify-tree-name here is overkill.  Instead, we should use the fact that we know it's a function call with simplified args: First, replace nodenum args if possible using the assumption-array (if the equiv is better than the 'equal that was used when we processed it).  Then, check for resolvable if/boolif/etc.  Then, check for evaluatable ground term.  Then call ,simplify-fun-call-name (or make a wrapper that handles ground terms first).
                                    (,simplify-tree-name expr
-                                                        'equal ;fixme can we do better?
+                                                        'equal ; can't do better than this unless we pass in an equiv
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         rule-alist
                                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                         equiv-alist print
                                                         info tries interpreted-function-alist monitored-symbols 0 case-designator prover-depth options (+ -1 count)))
                                   ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                                  ;; (-  (and (or ;(eq t print) ;new
-                                  ;;           (member-eq print '(:verbose2 :verbose)))
-                                  ;;          (cw ")~%")))
+                                  ;; ;; See whether the whole simplified node should be replaced using an assumption:
+                                  ;; (new-nodenum-or-quotep
+                                  ;;  (if (consp new-nodenum-or-quotep) ;check for quotep
+                                  ;;      new-nodenum-or-quotep
+                                  ;;    ;; it's a nodenum, so check the assumptions:
+                                  ;;    (maybe-replace-nodenum-using-assumption-array new-nodenum-or-quotep 'equal assumption-array assumption-array-num-valid-nodes print)))
+                                  ;; ;; (-  (and (or ;(eq t print) ;new
+                                  ;; ;;           (member-eq print '(:verbose2 :verbose)))
+                                  ;; ;;          (cw ")~%")))
                                   )
                                ;;option to print the number of rule hits?
                                (,rewrite-nodes-name (rest worklist) result-array-name
-                                                    (aset1 result-array-name result-array nodenum new-nodenum) ;; update the result-array
+                                                    (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                     rule-alist equiv-alist interpreted-function-alist print info tries
