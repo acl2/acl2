@@ -35,7 +35,9 @@
   (or (null val) ;; no information about this node
       (assumption-itemp val)))
 
-;; Returns npdenum itself, or a replacement for it
+;; Returns NODENUM itself, or a replacement for it (which will be a quoted
+;; constant known, via the ASSUMPTION-ARRAY, to be equivalent to NODENUM using
+;; EQUIV).
 (defund maybe-replace-nodenum-using-assumption-array (nodenum
                                                       equiv
                                                       assumption-array
@@ -60,26 +62,30 @@
       (if (not assumption-info)
           nodenum ; no assumption info about nodenum
         (if (eq :non-nil assumption-info)
+            ;; We know the node is non-nil but not which particular, non-nil value it has:
             (if (eq 'iff equiv)
-                *t* ;; We know the node is non-nil and only have to preserve iff
-              ;; Can't rewrite since we are in an 'equal context and only know that nodenum is non-nil:
-              (prog2$ (and print (cw "NOTE: Rewriting non-nil node ~x0 in an equal context.~%" nodenum))
+                *t* ;; We know the node is non-nil, and we only have to preserve iff
+              ;; Can't replace, since we are in an 'equal context and only know that nodenum is non-nil:
+              (prog2$ (and print (cw "NOTE: Node ~x0 is known to be non-nil, but the context is 'equal, not 'iff.~%" nodenum))
                       nodenum))
-          ;; we have a replacement (some constant) for nodenum:
+          ;; We know that NODENUM is equal to the quoted constant ASSUMPTION-INFO:
           (if (eq 'iff equiv)
               ;; If the equiv is 'iff, we go ahead and bool-fix the constant:
-              (enquote (bool-fix (unquote assumption-info)))
-            ;; Return the constant:
+              (let ((unquoted-const (unquote assumption-info)))
+                (if (booleanp unquoted-const)
+                    assumption-info ;avoid re-consing
+                  (enquote (bool-fix unquoted-const))))
+            ;; Equiv is 'equal.  Just return the constant:
             assumption-info))))))
 
 ;; This justifies bool-fixing the constant if the equiv is 'iff:
 (thm (iff (bool-fix x) x))
 
-;; It's either nodenum itself or a constant
+;; We either get back the nodenum itself or a constant.
 (defthm maybe-replace-nodenum-using-assumption-array-return-type
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
-                (equivp equiv)
+                ;; (equivp equiv)
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
@@ -95,6 +101,27 @@
                            (natp
                             myquotep
                             type-of-aref1-when-assumption-arrayp)))))
+
+;; In the equiv is 'iff, we either get back the nodenum itself or a quoted t or nil.
+;; Just a check, because of how we will use the result.
+(defthmd maybe-replace-nodenum-using-assumption-array-of-iff-return-type
+  (implies (and (assumption-arrayp 'assumption-array assumption-array)
+                (natp nodenum)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (or (equal nodenum (maybe-replace-nodenum-using-assumption-array nodenum 'iff assumption-array assumption-array-num-valid-nodes print))
+               (equal *t* (maybe-replace-nodenum-using-assumption-array nodenum 'iff assumption-array assumption-array-num-valid-nodes print))
+               (equal *nil* (maybe-replace-nodenum-using-assumption-array nodenum 'iff assumption-array assumption-array-num-valid-nodes print))))
+  :hints (("Goal" :use (:instance type-of-aref1-when-assumption-arrayp
+                                  (array-name 'assumption-array)
+                                  (array assumption-array)
+                                  (index nodenum))
+           :in-theory (e/d (maybe-replace-nodenum-using-assumption-array
+                            dargp-less-than
+                            booleanp
+                            myquotep)
+                           (natp type-of-aref1-when-assumption-arrayp)))))
 
 (defthm dargp-less-than-of-maybe-replace-nodenum-using-assumption-array
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
