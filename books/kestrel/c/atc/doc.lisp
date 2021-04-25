@@ -328,7 +328,7 @@
       "This represents a C integer constants
        of the C type indicated by the name of the function.
        The guard verification requirement ensures that
-       the quoted integer is within the range of the type.")
+       the quoted integer is non-negative and within the range of the type.")
      (xdoc::li
       "A call of a function @('<op>-<type>') on a pure C-valued term,
        where @('<op>') is among"
