@@ -246,7 +246,9 @@
   (pedersen-segment-scalar-loop 1 segment)
 
   :prepwork
+
   ((local (include-book "arithmetic-3/top" :dir :system))
+
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
      :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
