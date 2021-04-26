@@ -487,7 +487,7 @@
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
        conjunction and disjunctions are represented non-strictly.
        In translated terms, @('(and x y)') and @('(or x y)') are
-       @('(if x y \'nil)') and @('(or x x y)'):
+       @('(if x y \'nil)') and @('(if x x y)'):
        these are the patterns that ATC looks for."))
 
     (xdoc::p

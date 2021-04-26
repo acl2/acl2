@@ -221,7 +221,7 @@
 
        (define ,<type1>-integer-value ((x ,<type1>p))
          :returns (ival integerp)
-         :short ,(str::cat "Turn a vaue of "
+         :short ,(str::cat "Turn a value of "
                            type1-string
                            " into an ACL2 integer value.")
          (,<type1>->get x)
