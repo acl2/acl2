@@ -1,6 +1,6 @@
 ; Utilities for dealing with untranslated terms
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,8 @@
 (include-book "map-symbol-name")
 (include-book "legal-variable-listp")
 (include-book "quote")
+(include-book "lets")
+(include-book "lambdas")
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
@@ -307,34 +309,7 @@
 ;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
 ;ttodo: add support for case, mv-let, and more constructs.
 
-;; Basically the same as lambda-formals, but this one is a function, so we can
-;; disable it.
-(defund ulambda-formals (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)))
-  (farg1 fn))
 
-;; These will be IGNORE or IGNORABLE declares.
-;; I think only untranslated lambdas have them (translated lambdas seem to do it with HIDE).
-(defund ulambda-declares (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)
-                  ))
-  (butlast (rest (fargs fn)) 1))
-
-;; Get the body of an untranslated lambda.  Note that it may be preceeded by
-;; declares.
-(defund ulambda-body (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)
-                  ))
-  (car (last (fargs fn))))
-
-(defthm acl2-count-of-ulambda-body-linear-weak
-  (<= (acl2-count (ulambda-body term))
-      (acl2-count term))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable ulambda-body))))
 
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
@@ -519,16 +494,11 @@
   :hints (("Goal" :expand (untranslated-termp (cons fn args))
            :in-theory (enable member-equal))))
 
-
 (defthm untranslated-termp-of-ulambda-body
   (implies (untranslated-lambda-exprp lambda)
            (untranslated-termp (ulambda-body lambda)))
   :hints (("Goal" :expand (untranslated-lambda-exprp lambda)
            :in-theory (enable ulambda-body untranslated-lambda-exprp))))
-
-(defund make-ulambda (formals declares body)
-  (declare (xargs :guard (true-listp declares))) ;strengthen?
-  `(lambda ,formals ,@declares ,body))
 
 (defthm untranslated-lambda-exprp-of-make-ulambda
   (equal (untranslated-lambda-exprp (make-ulambda formals declares body))
@@ -631,12 +601,6 @@
 (defthm UNTRANSLATED-TERM-LISTP-of-remove
   (implies (UNTRANSLATED-TERM-LISTP x)
            (UNTRANSLATED-TERM-LISTP (REMOVE-EQUAL a x))))
-
-;; Returns a possibly-empty list of declares
-;; TODO: Also make a let-bindings and a let-body?
-(defun let-declares (term)
-  (declare (xargs :guard (true-listp term)))
-  (butlast (rest (fargs term)) 1))
 
 (local (in-theory (disable symbol-alistp)))
 

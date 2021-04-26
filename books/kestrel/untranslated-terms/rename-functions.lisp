@@ -12,9 +12,12 @@
 
 (include-book "kestrel/axe/make-var-names" :dir :system) ;todo: move
 (include-book "std/util/bstar" :dir :system)
+(include-book "../utilities/lets")
+(include-book "../utilities/lambdas")
+(include-book "../utilities/doublets2")
 (include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
-(include-book "kestrel/utilities/untranslated-terms" :dir :system) ;for let-declares, todo
+;(include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
+(include-book "kestrel/utilities/terms" :dir :system) ;for rename-fns, todo
 (include-book "kestrel/std/system/macro-namep" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand1-dollar" :dir :system)
 
@@ -80,12 +83,13 @@
  (defun rename-functions-in-untranslated-term-aux (term
                                                    alist ; the renaming to apply
                                                    permissivep ;whether, when TERM fails to translate, we should simply return it unchanged (used when applying a heuristic)
-                                                   count wrld
+                                                   count
+                                                   wrld ;this may have fake function entries in it, so it may be different from (w state)
                                                    state ; needed for magic-macroexpand (why?)
                                                    )
    (declare (xargs :guard (and ;; no guard on term, though below we try to translate it
                            (symbol-alistp alist) ;; TODO: Should not rename QUOTE?
-                           )
+                           (plist-worldp wrld))
                    :mode :program ; because we call translate-term-with-defaults
                    :stobjs state))
    (if (zp count)
@@ -115,7 +119,7 @@
                        (binding-terms (strip-cadrs bindings))
                        (declares (let-declares term))
                        (body (car (last (fargs term)))))
-                  `(,fn ,(make-doublets binding-vars (rename-functions-in-untranslated-terms2-aux binding-terms alist permissivep (+ -1 count) wrld state))
+                  `(,fn ,(make-doublets binding-vars (rename-functions-in-untranslated-terms-aux binding-terms alist permissivep (+ -1 count) wrld state))
                         ,@declares ;; These can only be IGNORE, IGNORABLE, and TYPE.  TODO: What about (type (satisfies PRED) x) ?
                         ,(rename-functions-in-untranslated-term-aux body alist permissivep (+ -1 count) wrld state))))
                (b* ;; (b* (...bindings...) ...result-forms...)
@@ -125,14 +129,14 @@
                           (expressions (strip-cadrs bindings)) ;FIXME: These are not necessarily pairs
                           )
                      `(,fn ,(make-doublets binders ;do nothing to these (TODO: might some have function calls?)
-                                           (rename-functions-in-untranslated-terms2-aux expressions alist permissivep (+ -1 count) wrld state))
-                           ,@(rename-functions-in-untranslated-terms2-aux result-forms alist permissivep (+ -1 count) wrld state))))
+                                           (rename-functions-in-untranslated-terms-aux expressions alist permissivep (+ -1 count) wrld state))
+                           ,@(rename-functions-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state))))
                (cond ;;(cond <clauses>) ;; TODO: Handle clauses of length 1
                 (let* ((clauses (fargs term))
                        (conditions (strip-cars clauses))
                        (vals-to-return (strip-cadrs clauses)))
-                  `(cond ,@(make-doublets (rename-functions-in-untranslated-terms2-aux conditions alist permissivep (+ -1 count) wrld state)
-                                          (rename-functions-in-untranslated-terms2-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
+                  `(cond ,@(make-doublets (rename-functions-in-untranslated-terms-aux conditions alist permissivep (+ -1 count) wrld state)
+                                          (rename-functions-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
                ((case case-match)
                 (let* ((expr (farg1 term))
                        (cases (rest (fargs term)))
@@ -140,7 +144,7 @@
                        (vals-to-return (strip-cadrs cases)))
                   `(,fn ,(rename-functions-in-untranslated-term-aux expr alist permissivep (+ -1 count) wrld state)
                         ,@(make-doublets vals-to-match
-                                         (rename-functions-in-untranslated-terms2-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
+                                         (rename-functions-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
                ;; TODO: Consider FLET (watch for capture!)
                (otherwise
                 (if (macro-namep fn wrld)
@@ -152,7 +156,7 @@
                         term
                       ;; Some replacement does need to be done:
                       (b* ( ;; We seek an untranslated term that translates to this but is nicer:
-                           (translated-term-after-replacement (rename-functions-in-untranslated-term-aux translated-term alist permissivep (+ -1 count) wrld state))
+                           (translated-term-after-replacement (rename-fns translated-term alist))
                            ;; Heuristic #1: See if we can just dumbly replace symbols in the macro call (this may often work, but not if a function name to be replaced occurs as a variable or a piece of other syntax passed to a macro, or if a macro hides a function call):
                            (dumb-replacement (replace-symbols-in-tree term alist))
                            ((mv ctx translated-dumb-replacement) (translate-term-with-defaults dumb-replacement 'rename-functions-in-untranslated-term-aux wrld)))
@@ -162,7 +166,7 @@
                             dumb-replacement
                           ;; Heuristic #2: Try treating the macro args as terms and process them recursively.  Then see if the new macro call translates to the right thing.
                           (b* ((term-with-translated-args
-                                (cons fn (rename-functions-in-untranslated-terms2-aux (fargs term) alist
+                                (cons fn (rename-functions-in-untranslated-terms-aux (fargs term) alist
                                                                                       t ;be permissive, since the macro args may not translate
                                                                                       (+ -1 count) wrld state)))
                                ((mv erp translated-term-with-translated-args) (translate-term-with-defaults term-with-translated-args 'rename-functions-in-untranslated-term-aux wrld)))
@@ -178,7 +182,7 @@
                                 (rename-functions-in-untranslated-term-aux term-expanded-one-step alist permissivep (+ -1 count) wrld state)))))))
                   ;; It's a function or lambda application:
                   (let* ((args (fargs term))
-                         (args (rename-functions-in-untranslated-terms2-aux args alist permissivep (+ -1 count) wrld state))
+                         (args (rename-functions-in-untranslated-terms-aux args alist permissivep (+ -1 count) wrld state))
                          (fn (if (consp fn)
                                  ;; ((lambda (...vars...) ...declares... body) ...args...)
                                  ;;if it's a lambda application, replace calls in the body:
@@ -199,17 +203,17 @@
                     (cons fn args)))))))))))
 
  ;;rename all functions calls in TERMS according to ALIST
- (defun rename-functions-in-untranslated-terms2-aux (terms alist permissivep count wrld state)
+ (defun rename-functions-in-untranslated-terms-aux (terms alist permissivep count wrld state)
    (declare (xargs :guard (and ;(untranslated-term-listp terms)
                            ;;(true-listp terms)
                            (symbol-alistp alist))
                    :stobjs state))
    (if (zp count)
-       (er hard? 'rename-functions-in-untranslated-terms2-aux "Count reached.")
+       (er hard? 'rename-functions-in-untranslated-terms-aux "Count reached.")
      (if (atom terms) ;should be nil, but we don't check
          nil
        (cons (rename-functions-in-untranslated-term-aux (first terms) alist permissivep (+ -1 count) wrld state)
-             (rename-functions-in-untranslated-terms2-aux (rest terms) alist permissivep (+ -1 count) wrld state))))))
+             (rename-functions-in-untranslated-terms-aux (rest terms) alist permissivep (+ -1 count) wrld state))))))
 
 (defun rename-functions-in-untranslated-term (term
                                               renaming ; the renaming to apply
