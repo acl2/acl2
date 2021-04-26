@@ -264,7 +264,8 @@
          the symbol names of all the other ACL2 variables in scope
          (function parameters and variables bound in enclosing @(tsee let)s).")
        (xdoc::li
-        "An assignment to the C local variable represented by @('var'),
+        "An assignment to the C local variable or function parameter
+         represented by @('var'),
          with the C expression represented by @('term'),
          and followed by the C code represented by @('body').
          This @(tsee let) must be in the scope of
@@ -275,7 +276,11 @@
          In this case, the value bound to the outer @('var') must have
          the same C type as the value bound to the inner @('var').
          However, there must be no @(tsee if) ``between''
-         this @(tsee let) and the one of the outer @('var'),
+         this @(tsee let) and
+         either the one of the outer @('var')
+         (if @('var') is a local variable)
+         or the start of the function body
+         (if @('var') is a function parameter),
          i.e. the two variables must be in the same C scope
          (as represented in ACL2)."))
       "The two situations are distinguished by whether
