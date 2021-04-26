@@ -98,10 +98,10 @@
      not maximum requirements:
      other than practical considerations,
      mathematically nothing prevents some integer types
-     to consists of thousands of millions of bits.")
+     to consists of thousands or millions of bits.")
    (xdoc::p
     "Because of all of the above,
-     our model of C arrays puts no length constraints on arrays.
+     our model of C arrays puts no maximum length constraints on arrays.
      (This is in contrast with Java,
      where arrays have a bounded length and may be also empty.)
      We model arrays as (wrappers of) lists of arbitrary positive length.")
