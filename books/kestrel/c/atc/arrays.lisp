@@ -148,11 +148,6 @@
   :returns (yes/no booleanp)
   :short "Check if a C @('int') is a valid index (i.e. in range)
           for a C @('unsigned char') array."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-index-okp array (sint-integer-value index))
   :hooks (:fix))
 
@@ -190,11 +185,6 @@
   :returns (element ucharp)
   :short "Read an element in an @('unsigned char') array,
           using an @('int') index."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-read array (sint-integer-value index))
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
   :hooks (:fix))
