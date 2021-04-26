@@ -16,11 +16,18 @@
 (include-book "symbol-term-alistp")
 (include-book "tools/flag" :dir :system)
 
-;This version is simpler than sublis-var and, unlike sublis-var, doesn't evaluate ground terms.
-;we could change this to not build ground terms (instead just evaluate the function on its constant arguments)
-;also, if the test for an if is a ground term (which evals to a constant), don't build both branches of the if..
-;well, now we have my-sublis-var-and-eval...
-;if there are variables in form that are not bound in alist, they are left alone (for some uses it may be better to throw an error?)
+;; See also the built-in function sublis-var.  It evaluates ground applications of certain functions:
+;; (sublis-var (acons 'a ''3 nil) '(binary-+ a a)) = '6
+;; It does not resolve IFs when the test is a constant:
+;; (sublis-var (acons 'a ''3 nil) '(if (equal '3 a) x y)) = (IF 'T X Y)
+
+;; See also Axe functions like my-sublis-var-and-eval-basic, which can evaluate
+;; certain ground function applications and simplify IFs with constant tests.
+
+;; Apply ALIST to replace free variables in FORM.  Free variables not bound in ALIST are left alone.
+;; This function is simpler than sublis-var and, unlike sublis-var, doesn't evaluate functions applied to constant arguments.
+;; TODO: Consider simplifying IFs whose tests are constants (i.e., don't build both branches of such an IF).
+;; TODO: Rename sublis-var-simple?
 (mutual-recursion
  (defund my-sublis-var (alist form) ;todo: call this 'term'?
    (declare (xargs :measure (acl2-count form)
@@ -43,6 +50,7 @@
      (cons (my-sublis-var alist (car l))
            (my-sublis-var-lst alist (cdr l))))))
 
+;; TODO: Deprecate since we have make-flag?
 (defun my-sublis-var-induction (flg alist form)
   (if (atom form)
       (list flg alist form)
