@@ -242,8 +242,7 @@
         (cdr res)
       sym)))
 
-;todo: guard could be (function-renamingp function-renaming)
-;Rename all functions called in TERM that are mapped to new names by ALIST.
+;; Renames function symbols in TERM if indicated by ALIST.  Functions not mapped to anything ALIST are left alone.  Does not support renaming lambdas but does support introducing lambdas.
 ;; (RENAME-FNs  '(foo '1 (baz (foo x y))) '((foo . bar)))
 ;; This is similar to sublis-fn-lst-simple but does not evaluate ground terms for primitives, etc.
 (mutual-recursion
@@ -267,7 +266,7 @@
                     (replace-if-bound fn alist))))
          (fcons-term fn (rename-fns-lst (fargs term) alist))))))
 
-;Rename all functions called in TERMS according that are mapped to new names by ALIST.
+ ;;Renames function symbols in TERMS if indicated by ALIST.
  (defun rename-fns-lst (terms alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp alist))))
