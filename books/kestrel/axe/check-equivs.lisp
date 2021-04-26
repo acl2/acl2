@@ -12,7 +12,7 @@
 
 (include-book "equivs")
 
-(include-book "make-var-names")
+(include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "kestrel/utilities/substitution" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))

@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/make-var-names" :dir :system) ;todo: move
+(include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "../utilities/lets")
 (include-book "../utilities/lambdas")
