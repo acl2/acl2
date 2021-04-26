@@ -244,7 +244,7 @@
        @('(mbt x)') is
        @('(return-last \'acl2::mbe1-raw \'t x)'), and
        @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
        these are the patterns that ATC looks for.")
      (xdoc::li
       "A term of the form @('(let ((var term)) body)'),
@@ -456,7 +456,7 @@
        @('(mbt x)') is
        @('(return-last \'acl2::mbe1-raw \'t x)'), and
        @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
        these are the patterns that ATC looks for."))
 
     (xdoc::p
