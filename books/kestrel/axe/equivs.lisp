@@ -91,8 +91,8 @@
 ;;;
 
 ;; Recognize an equiv-alist, which is used by the Axe Prover to decide which equivs to use when rewriting.
-;; To use such a table, you look up the equivalence to preserve and, in the result of that, you look up the function being
-;; rewritten.  The result is the list of equivalences to use for rewriting the function's arguments.
+;; To use such a table, you look up the outer equivalence to preserve and, in the result of that, you look up the function being
+;; rewritten.  The result is the list of equivalences to maintain when rewriting each of the function's arguments.
 (defund equiv-alistp (equiv-alist)
   (declare (xargs :guard t))
   (and (symbol-alistp equiv-alist)
@@ -103,13 +103,13 @@
 ;;; get-equivs
 ;;;
 
-;; equiv-alist maps equivs to alists from function names to the equiv-lists to maintain for their args
-(defund get-equivs (equiv fn equiv-alist)
+;; Get the equivs that should be used when rewriting the args of FN, if we are to preserve OUTER-EQUIV on the call of FN.
+(defund get-equivs (outer-equiv fn equiv-alist)
   (declare (xargs :guard (equiv-alistp equiv-alist)
                   :guard-hints (("Goal" :in-theory (enable equiv-alistp)))))
-  (lookup-eq fn (lookup-eq equiv equiv-alist)))
+  (lookup-eq fn (lookup-eq outer-equiv equiv-alist)))
 
 (defthm equiv-listp-of-get-equivs
   (implies (equiv-alistp equiv-alist)
-           (equiv-listp (get-equivs equiv fn equiv-alist)))
+           (equiv-listp (get-equivs outer-equiv fn equiv-alist)))
   :hints (("Goal" :in-theory (enable get-equivs equiv-alistp))))
