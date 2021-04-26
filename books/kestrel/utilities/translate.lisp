@@ -12,7 +12,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; Returns (mv ctx msg-or-val), a context-message-pair.
+;; Returns (mv ctx msg-or-val), a context-message-pair.  When CTX is nil,
+;; translation succeeded and msg-or-val is the result.  When CTX is non-nil,
+;; translation failed and msg-or-val is a msgp indicating the error.
 (defun translate-term-with-defaults (term ctx wrld)
   (declare (xargs :mode :program
                   ;; todo: guard
