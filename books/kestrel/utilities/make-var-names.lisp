@@ -67,36 +67,69 @@
 ;;                   :guard t))
 ;;   (reverse (make-var-names-aux 'x 1 namecount)))
 
+;; ;;;
+;; ;;; make-var-names
+;; ;;;
+
+;; ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
+;; ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
+;; ;; 0 through BASE-SYMBOL with a suffix of COUNT minus 1.
+;; (defund make-var-names (count base-name)
+;;   (declare (xargs :guard (and (natp count)
+;;                               (symbolp base-name))))
+;;   (make-var-names-aux base-name 0 (+ -1 count)))
+
+;; (defthm symbol-listp-of-make-var-names
+;;   (symbol-listp (make-var-names count base-name))
+;;   :hints (("Goal" :in-theory (enable make-var-names))))
+
+;; (defthm true-listp-of-make-var-names
+;;   (true-listp (make-var-names count base-name))
+;;   :rule-classes :type-prescription
+;;   :hints (("Goal" :in-theory (enable make-var-names))))
+
+;; (defthm len-of-make-var-names
+;;   (implies (natp count)
+;;            (equal (len (make-var-names count base-name))
+;;                   count))
+;;   :hints (("Goal" :in-theory (enable make-var-names))))
+
+;; (defthm consp-of-make-var-names
+;;   (implies (natp count)
+;;            (equal (consp (make-var-names count base-name))
+;;                   (posp count)))
+;;   :hints (("Goal" :in-theory (enable make-var-names))))
+
 ;;;
-;;; make-var-names
+;;; rev-make-var-names (TODO: deprecate?)
 ;;;
 
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
 ;; COUNT minus 1, through BASE-SYMBOL with a suffix of 0.
 ;; TODO: Consider not reversing!
-(defund make-var-names (count base-name)
+(defund rev-make-var-names (count base-name)
   (declare (xargs :guard (and (natp count)
                               (symbolp base-name))))
   (reverse (make-var-names-aux base-name 0 (+ -1 count))))
 
-(defthm symbol-listp-of-make-var-names
-  (symbol-listp (make-var-names count base-name))
-  :hints (("Goal" :in-theory (enable make-var-names))))
+(defthm symbol-listp-of-rev-make-var-names
+  (symbol-listp (rev-make-var-names count base-name))
+  :hints (("Goal" :in-theory (enable rev-make-var-names))))
 
-(defthm true-listp-of-make-var-names
-  (true-listp (make-var-names count base-name))
+(defthm true-listp-of-rev-make-var-names
+  (true-listp (rev-make-var-names count base-name))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable make-var-names))))
+  :hints (("Goal" :in-theory (enable rev-make-var-names))))
 
-(defthm len-of-make-var-names
+(defthm len-of-rev-make-var-names
   (implies (natp count)
-           (equal (len (make-var-names count base-name))
+           (equal (len (rev-make-var-names count base-name))
                   count))
-  :hints (("Goal" :in-theory (enable make-var-names))))
+  :hints (("Goal" :in-theory (enable rev-make-var-names))))
 
-(defthm consp-of-make-var-names
+(defthm consp-of-rev-make-var-names
   (implies (natp count)
-           (equal (consp (make-var-names count base-name))
+           (equal (consp (rev-make-var-names count base-name))
                   (posp count)))
-  :hints (("Goal" :in-theory (enable make-var-names))))
+  :hints (("Goal" :in-theory (enable rev-make-var-names))))
