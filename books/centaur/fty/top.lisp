@@ -745,6 +745,8 @@ in their own topics.  So far, the supported type generators are:</p>
 <li>@(see deflist): a list of elements of a particular type</li>
 <li>@(see defprod): a product (AKA record, aggregate, struct) type</li>
 <li>@(see defalist): an alist mapping keys of some type to values of some type</li>
+<li>@(see defset): an oset of elements of a particular type</li>
+<li>@(see defomap): an omap mapping keys of some type to values of some type</li>
 <li>@(see deftagsum): a sum-of-products (AKA tagged union) type</li>
 <li>@(see defflexsum): a very flexible (and not as automated) sum-of-products
 type used to implement @(see defprod) and @(see deftagsum).</li>

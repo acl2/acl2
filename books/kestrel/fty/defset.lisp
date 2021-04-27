@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (in-package "FTY")
 
-;; defset has been moved to centaur/fty/deftypes.lisp so that it can be used resursively in fty::deftypes
+;; defset has been moved to centaur/fty/deftypes.lisp so that it can be used recursively in fty::deftypes
 ;; the implementation has been moved to fty-set.lisp
 (include-book "centaur/fty/top" :dir :system)
 
