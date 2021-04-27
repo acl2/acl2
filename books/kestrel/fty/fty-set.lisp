@@ -418,6 +418,40 @@
   :ignore-ok t
   :irrelevant-formals-ok t
   ;; sjw: The list versions do not carry over. I don't know what might be useful here.
+  ;; (b* (((flexset x))
+  ;;      ;; std::defprojection-compatible variable names
+  ;;      (stdx              (intern-in-package-of-symbol "X" x.pred))
+  ;;      (stda              (intern-in-package-of-symbol "A" x.pred))
+  ;;      (foo-fix-of-insert (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-INSERT") x.fix))
+  ;;      (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
+  ;;      (foo-fix-of-union  (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-UNION") x.fix)))
+  ;;   `(
+
+  ;;     (defthm ,foo-fix-of-insert
+  ;;       ;; bozo make sure this is compatible with defprojection
+  ;;       (equal (,x.fix (set::insert ,stda ,stdx))
+  ;;              (set::insert (,x.elt-fix ,stda)
+  ;;                           (,x.fix ,stdx)))
+  ;;       :hints (("goal" :Expand ((:free (a b) (,x.fix (set::insert a b)))))))
+
+  ;;     (defthm ,len-of-foo-fix
+  ;;       (equal (len (,x.fix x))
+  ;;              (len x))
+  ;;       :hints (("goal" :induct (len x)
+  ;;                :expand ((,x.fix x))
+  ;;                :in-theory (enable len))))
+
+  ;;     (defthm ,foo-fix-of-union
+  ;;       (equal (,x.fix (set::union std::a std::b))
+  ;;              (set::union (,x.fix std::a) (,x.fix std::b)))
+  ;;       :hints (("goal" :induct (set::union std::a std::b)
+  ;;                :expand ((,x.fix std::a)
+  ;;                         (:free (a b) (,x.fix (set::insert a b)))
+  ;;                         (,x.fix nil)
+  ;;                         (:free (b) (set::union std::a b))
+  ;;                         (:free (b) (set::union nil b))
+  ;;                         (:free (a b c) (set::union (set::insert a b) c)))
+  ;;                :in-theory (enable (:i set::union)))))))
   ())
 
 (define flexset-fix-when-pred-thm (x flagp)
@@ -466,9 +500,9 @@
        ;; ((when (not eltcount)) nil)
        (foo-count-of-insert (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-INSERT") x.count))
        (foo-count-of-head  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-HEAD") x.count))
-       (foo-count-of-tail  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-TAIL") x.count))
-       (foo-count-when-empty  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-EMPTY") x.count))
-       (foo-count-when-not-empty  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-NOT-EMPTY") x.count)))
+       (foo-count-of-tail  (intern-in-package-of-symbol (cat (symbol-name eltcount) "-OF-TAIL") x.count))
+       (foo-count-when-empty  (intern-in-package-of-symbol (cat (symbol-name eltcount) "-WHEN-EMPTY") x.count))
+       (foo-count-when-not-empty  (intern-in-package-of-symbol (cat (symbol-name eltcount) "-WHEN-NOT-EMPTY") x.count)))
     `((defthm ,foo-count-when-empty
         (implies (empty ,x.xvar)
                  (equal (,x.count ,x.xvar)
@@ -479,8 +513,7 @@
         (implies (and (not (empty ,x.xvar))
                       (,x.pred ,x.xvar))
                  (equal (,x.count ,x.xvar)
-                        (+ 1
-                           ,@(and eltcount `((,eltcount (set::head ,x.xvar))))
+                        (+ 1 (,eltcount (head ,x.xvar))
                            (,x.count (tail ,x.xvar)))))
         :hints (("Goal" :in-theory (enable ,x.count))))
 
@@ -507,5 +540,5 @@
                              (+ 1 (,eltcount a) (,x.count b)))
                     `(> (,x.count (set::insert a b))
                         (,x.count b))))
-        :hints (("Goal" :expand ((:free (a b) (,x.count (set::insert a b))))))
+        :hints (("goal" :expand ((:free (a b) (,x.count (set::insert a b))))))
         :rule-classes :linear))))

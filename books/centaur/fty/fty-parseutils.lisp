@@ -106,8 +106,7 @@
      deflist
      defalist
      defmap
-     defset
-     defomap))
+     defset))
 
 (define flextype-form->fixtype (user-level-form)
   "Create the new fixtype binding for a new type we're going to introduce."
