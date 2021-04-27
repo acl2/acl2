@@ -294,8 +294,8 @@ TAGS-acl2-doc: $(ACL2_DEPS)
 
 .PHONY: acl2r
 acl2r:
-	rm -f acl2r.lisp
-	$(MAKE) acl2r.lisp
+	@rm -f acl2r.lisp
+	@$(MAKE) --no-print-directory acl2r.lisp
 
 acl2r.lisp:
 # The various "startup" code below can be loaded as a first step in
