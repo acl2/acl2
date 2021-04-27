@@ -12,7 +12,7 @@
 
 (include-book "equivs")
 
-(include-book "make-var-names")
+(include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "kestrel/utilities/substitution" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -56,7 +56,7 @@
            (fn (car pair))
            (arg-equivs (cdr pair))
            (arity (len arg-equivs))
-           (args (reverse (make-var-names arity 'x))))
+           (args (reverse (rev-make-var-names arity 'x))))
       (append (equiv-alist-thms-aux-aux args arg-equivs fn args outer-equiv)
               (equiv-alist-thms-aux outer-equiv (rest fn-to-arg-equivs-alist))))))
 
