@@ -1,5 +1,5 @@
 # ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2020, Regents of the University of Texas
+# Copyright (C) 2021, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -459,7 +459,7 @@ copy-distribution: acl2r.lisp
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
+# We build acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
 TAGS:   $(ACL2_DEPS)
 	$(MAKE) acl2r
 	rm -f TAGS
@@ -683,8 +683,11 @@ distclean: clean-all
 # make documentation).
 .NOTPARALLEL:
 
+# Warning: Be careful about adding quotes on "echo" commands below.
+# Those don't seem to work well with the "-n" option in a Makefile on
+# at least one Mac.
 .PHONY: large
-large:
+large: acl2r
 ifeq ($(ACL2_MAKE_LOG),NONE)
 	$(MAKE) full init
 else
@@ -698,12 +701,12 @@ else
 	if [ "$$acl2_compile_status" = :COMPILED ] ; then \
 	echo " done." ;\
 	elif [ "$$acl2_compile_status" = :COMPILE-SKIPPED ] ; then \
-	echo " skipped." ;\
+	echo " not performed for this host Lisp." ;\
 	else \
 	echo " incomplete." ;\
 	exit 1 ;\
 	fi
-	@echo -n Initializing ...
+	@echo -n Bootstrapping, then saving executable \(may take a few minutes\) ...
 	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
 	@echo " done."
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."

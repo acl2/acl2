@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -410,21 +410,6 @@
               (list `(cons 'ld-user-stobjs-modified-warning
                            ,ld-user-stobjs-modified-warning))
             nil)))))))
-
-(defun legal-constantp1 (name)
-
-; This function should correctly distinguish between variables and
-; constants for symbols that are known to satisfy
-; legal-variable-or-constant-namep.  Thus, if name satisfies this
-; predicate then it cannot be a variable.
-
-  (declare (xargs :guard (symbolp name)))
-  (or (eq name t)
-      (eq name nil)
-      (let ((s (symbol-name name)))
-        (and (not (= (length s) 0))
-             (eql (char s 0) #\*)
-             (eql (char s (1- (length s))) #\*)))))
 
 (defun lambda-keywordp (x)
   (and (symbolp x)
@@ -7910,15 +7895,6 @@
                      0)
                   0)))
     (mv major minor incrl rest)))
-
-#-acl2-loop-only
-(defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl rest)
-    (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore rest))
-    (if (zerop incrl)
-        (format nil "note-~s-~s" major minor)
-      (format nil "note-~s-~s-~s" major minor incrl))))
 
 (defun pcd2 (n channel state)
   (declare (xargs :guard (integerp n)))

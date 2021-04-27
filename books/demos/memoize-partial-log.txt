@@ -1352,13 +1352,11 @@ ACL2 !>>(WITH-OUTPUT
  XX-WORSE-THAN-LST*
 ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
                                                  '(MEM (CAR (DEL A X)) Y))
-                                 NIL))
-            :EXPECTED :HARD)
+                                 NIL)))
 
 
-ACL2 Error in HARD-ERROR-TO-SOFT-ERROR:  ACL2 cannot ev the call of
-non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
-list:
+ACL2 Error in ASSERT-EVENT:  ACL2 cannot ev the call of non-executable
+function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument list:
 
 ((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
 

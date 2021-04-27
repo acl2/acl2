@@ -109,9 +109,8 @@
 
 ; Code for saving an image.
 
-(setq *saved-mode*
-      "toothbrush mechanism.
-    SO PLEASE NOTE: This executable contains only a part of ACL2")
+(setenv$ "ACL2_SNAPSHOT_INFO"
+         "PLEASE NOTE: This \"toothbrush\" contains only a part of ACL2")
 
 (setq *saved-build-date-lst*
       (list (saved-build-date-string)))
