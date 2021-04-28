@@ -781,9 +781,23 @@ function datLongTopic(key)
     }
 
     var from = xdata[key][XD_FROM];
-    var fromp = (from == "Unknown")
-                   ? "<p class='from'>Unknown Origin</p>"
-                   : "<p class='from'>" + from + "</p>";
+    var fromp;
+    if (from == "Unknown") {
+        fromp = "<p class='from'>Unknown Origin</p>";
+    }
+    else if (from == "ACL2 Sources") {
+        // link to main ACL2 sources dir:
+        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
+    }
+    else if (from.startsWith("[books]")) {
+        // link to the specific file on GitHub:
+        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books"
+            + from.substring(7) // strip "[books]" from front
+            + "\">" + from + "</a></p>";
+    }
+    else {
+        fromp = "<p class='from'>" + from + "</p>";
+    }
 
     var basepkg = htmlEncode(xdata[key][XD_BASEPKG]);
     var basediv = (basepkg == "ACL2")
