@@ -19,6 +19,7 @@
 (include-book "pattern-matching-ext")
 (include-book "print-specifiers")
 (include-book "set-stobjs-in-declares-to-match")
+(include-book "transformation-prologue")
 (include-book "transformation-table")
 (include-book "untranslate-specifiers")
 (include-book "xdoc-constructors")
