@@ -47,7 +47,8 @@
     (let* ((pair (first name-to-arity-alist))
            (fn (car pair))
            (arity (cdr pair))
-           (wrld (putprop fn 'formals (rev-make-var-names arity 'fake-formal) wrld)))
+           ;; the names of the formals don't matter:
+           (wrld (putprop fn 'formals (make-var-names arity 'fake-formal) wrld)))
       (add-fake-fns-to-world (rest name-to-arity-alist) wrld))))
 
 ;; ;; RENAMING is an alist mapping old-fns to new-fns.  We add fake items to WRLD
