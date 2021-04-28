@@ -12,6 +12,7 @@
 
 (include-book "defaults-table")
 (include-book "defun-variant")
+(include-book "function-renamingp")
 (include-book "input-processing")
 (include-book "input-processing-soft")
 (include-book "pattern-matching")
