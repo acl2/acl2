@@ -13,10 +13,10 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "misc/total-order" :dir :system)
-(include-book "std/lists/acl2-count" :dir :system)
-(include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+(local (include-book "misc/total-order" :dir :system))
+(local (include-book "std/lists/acl2-count" :dir :system))
+(local (include-book "tools/rulesets" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,7 +158,7 @@
              (alistp x))
     :rule-classes (:rewrite :forward-chaining))
 
-  (defrule consp-when-non-empty-mapp
+  (defruled consp-car-when-non-empty-mapp
     (implies (and map (mapp map))
              (consp (car map))))
 )
@@ -600,7 +600,7 @@
     (implies (not (empty map))
              (< (acl2-count (in key map))
                 (acl2-count map)))
-    :enable (mv-nth head empty mfix))
+    :enable (mv-nth head empty mfix consp-car-when-non-empty-mapp))
 
   (defrule in-of-update
     (equal (in key1 (update key val map))
