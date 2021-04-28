@@ -591,8 +591,10 @@
 
 (define reorder-hypotheses-cp ((cl pseudo-term-listp)
                                (hints t))
-  (b* (((unless (smtlink-hint-p hints)) (list cl))
-       (cl (pseudo-term-list-fix cl))
+  :returns (new-cl pseudo-term-list-listp
+                   :hints (("Goal" :in-theory (enable pseudo-termp))))
+  (b* ((cl (pseudo-term-list-fix cl))
+       ((unless (smtlink-hint-p hints)) (list cl))
        (goal (disjoin cl))
        (next-cp (cdr (assoc-equal 'reorder *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
