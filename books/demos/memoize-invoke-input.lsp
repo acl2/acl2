@@ -24,10 +24,6 @@
 ; This now succeeds.
 (memoize 'f1 :invoke 'g1)
 (trace$ g1)
-; The following produces trace$ output showing that g1 is indeed called.
-; Note: When certifying memoize-invoke-book.lisp, for some reason the "1>" and
-; "<1" are still going to the .cert.out file, a problem to be solved another
-; day....
 (f1 3)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,8 +71,6 @@
 (trace$ g2)
 ; Still fails with guard violation:
 (f2 3)
-; The following produces trace$ output showing that g2 is indeed called
-; (with "1>" and "<1" missing as noted in an earlier comment).
 (f2 '(a b c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,6 +86,4 @@
 ; value-triple to be generated.
   (memoize 'f3 :invoke 'g3 :commutative t))
 (trace$ g3)
-; The following produces trace$ output showing that g2 is indeed called
-; (with "1>" and "<1" missing as noted in an earlier comment).
 (f3 3 4)

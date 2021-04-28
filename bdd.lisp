@@ -1152,6 +1152,19 @@
                 :lhs (fcons-term* 'equal 'x *nil*)
                 :var-info t
                 :rhs (fcons-term* 'if 'x *nil* *t*))))
+   ((eq fn 'consp)
+
+; (defthm consp-cons (consp (cons x y)))
+
+    (list (make rewrite-rule
+                :nume nil :hyps nil :equiv 'equal
+                :subclass 'backchain
+                :heuristic-info nil
+                :backchain-limit-lst *initial-default-backchain-limit*
+                :rune *fake-rune-for-anonymous-enabled-rule*
+                :lhs (fcons-term* 'consp (fcons-term* 'cons 'x 'y))
+                :var-info t
+                :rhs *t*)))
    ((equivalence-relationp fn wrld)
 
 ; We do not need to include reflexivity when fn is 'equal, because it is

@@ -30316,20 +30316,22 @@
         (state-global-let*
          ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
                                                     state))))
-         (let ((wrld (w state))
-               (skip-check-expansion
-                (and (consp check-expansion)
-                     (let ((info (f-get-global 'certify-book-info state)))
-                       (and info
-                            (access certify-book-info info
-                                    :include-book-phase))))))
+         (let* ((wrld (w state))
+                (include-book-phase-p
+                 (let ((info (f-get-global 'certify-book-info state)))
+                   (and info
+                        (access certify-book-info info :include-book-phase))))
+                (skip-check-expansion
+                 (and (consp check-expansion)
+                      include-book-phase-p)))
            (er-let*
                ((debug-depth (make-event-debug-pre form on-behalf-of state))
                 (expansion0/new-kpa/new-ttags-seen
                  (cond
                   ((and expansion?
                         (eq (ld-skip-proofsp state) 'include-book)
-                        (not (f-get-global 'including-uncertified-p state))
+                        (or (not (f-get-global 'including-uncertified-p state))
+                            include-book-phase-p)
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
