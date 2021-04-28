@@ -1200,7 +1200,7 @@
        on the recursively generated expressions.
        The type is the array's element type.")
      (xdoc::p
-      "If the term is a call of @(tsee c::sint01),
+      "If the term is a call of @(tsee c::sint-from-boolean),
        we call the mutually recursive ACL2 function
        that translates the argument (which must be a boolean term)
        to an expression, which we return.
@@ -1289,7 +1289,7 @@
                                                  :sub sub-expr)
                                type)))))
       (case-match term
-        (('c::sint01 arg)
+        (('c::sint-from-boolean arg)
          (b* (((mv erp expr state)
                (atc-gen-expr-bool arg vars fn ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
@@ -1365,7 +1365,7 @@
        and we construct a logical expression
        with the corresponding C operators.")
      (xdoc::p
-      "If the term is a call of @('<type>-nonzerop'),
+      "If the term is a call of @('boolean-from-<type>'),
        we call the mutually recursive function
        that translates the argument, which must be a C-valued term,
        to an expression, which we return.")
@@ -1410,18 +1410,20 @@
          (acl2::value (make-expr-binary :op (binop-logor)
                                         :arg1 arg1-expr
                                         :arg2 arg2-expr))))
-      ((type-nonzerop arg)
-       (b* (((when (not (symbolp type-nonzerop)))
+      ((boolean-from-type arg)
+       (b* (((when (not (symbolp boolean-from-type)))
              (er-soft+ ctx t (irr-expr)
                        "When generating C code for the function ~x0, ~
                         at a point where
                         a boolean ACL2 term is expected, ~
                         the term ~x1 is encountered instead."
                        fn term))
-            ((mv okp type nonzerop) (atc-check-symbol-2part type-nonzerop))
+            ((mv okp boolean from type)
+             (atc-check-symbol-3part boolean-from-type))
             ((unless (and okp
-                          (atc-integer-fixtype-to-type type)
-                          (eq nonzerop 'nonzerop)))
+                          (eq boolean 'boolean)
+                          (eq from 'from)
+                          (atc-integer-fixtype-to-type type)))
              (er-soft+ ctx t (irr-expr)
                        "When generating C code for the function ~x0, ~
                         at a point where
@@ -2088,7 +2090,7 @@
                     ulongp-of-ulong-const
                     sllongp-of-sllong-const
                     ullongp-of-ullong-const
-                    sintp-of-sint01
+                    sintp-of-sint-from-boolean
                     ucharp-of-uchar-array-read-sint))
                  :use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name

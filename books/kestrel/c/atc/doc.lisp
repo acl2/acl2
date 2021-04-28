@@ -434,7 +434,7 @@
       "A call of @(tsee uchar-array-read-sint) on C-valued terms.
        This represents an array subscripting expression.")
      (xdoc::li
-      "A call of @(tsee sint01) on a boolean term.
+      "A call of @(tsee sint-from-boolean) on a boolean term.
        This converts a boolean term
        to a pure C-valued term.")
      (xdoc::li
@@ -464,7 +464,7 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of a function @('<type>-nonzerop')
+      "A call of a function @('boolean-from-<type>')
        on a pure C-valued term,
        where @('<type>') is among"
       (xdoc::ul

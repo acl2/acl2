@@ -1528,12 +1528,13 @@
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
     The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
-    provides a function @(tsee sint-nonzerop)
+    provides a function @(tsee boolean-from-sint)
     the converts (the ACL2 representation of) a C @('int')
     into an ACL2 boolean:
     it returns @('t') if the @('int') is not 0;
     it returns @('nil') if the @('int') is 0.
-    This @(tsee sint-nonzerop) must be used as the test of an ACL2 @(tsee if),
+    This @(tsee boolean-from-sint) must be used
+    as the test of an ACL2 @(tsee if),
     applied to an ACL2 term representing an @('int') expression:
     it represents a C @('if') test consisting of the argument expression.")
 
@@ -1544,7 +1545,7 @@
    "  (declare (xargs :guard (and (c::sintp |x|)"
    "                              (c::sintp |y|)"
    "                              (c::sintp |z|))))"
-   "  (if (c::sint-nonzerop |x|)"
+   "  (if (c::boolean-from-sint |x|)"
    "      |y|"
    "    |z|))")
   (xdoc::p
@@ -1563,8 +1564,8 @@
   (xdoc::codeblock
    "(defun |g| (|e|)"
    "  (declare (xargs :guard (c::sintp |e|)))"
-   "  (if (c::sint-nonzerop (c::ge-sint-sint |e| (c::sint-const 0)))"
-   "      (if (c::sint-nonzerop (c::lt-sint-sint |e| (c::sint-const 1000)))"
+   "  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-const 0)))"
+   "      (if (c::boolean-from-sint (c::lt-sint-sint |e| (c::sint-const 1000)))"
    "          (c::sint-const 1)"
    "        (c::sint-const 2))"
    "    (c::sint-const 3)))"
@@ -1585,10 +1586,10 @@
    "}")
 
   (xdoc::p
-   "The arguments of @(tsee sint-nonzerop) in @(tsee if) tests
+   "The arguments of @(tsee boolean-from-sint) in @(tsee if) tests
     may be the same ones used to describe the expressions
     returned by @('int')-valued functions.
-    The @(tsee sint-nonzerop) just serves
+    The @(tsee boolean-from-sint) just serves
     to turn C @('int')s into ACL2 booleans;
     it is not explicitly represented in the C code,
     as shown in the examples above."))
@@ -1635,7 +1636,7 @@
    "                                                    c::sint->get)))))"
    "  (c::sub-sint-sint"
    "   |x|"
-   "   (if (c::sint-nonzerop (c::ge-sint-sint |y| (c::sint-const 18)))"
+   "   (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-const 18)))"
    "       (c::sint 0)"
    "     (c::sint 1))))")
   (xdoc::p
@@ -1652,15 +1653,15 @@
    "  (declare (xargs :guard (and (c::sintp |a|)"
    "                              (c::sintp |b|))"
    "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable c::sint-nonzerop"
+   "                                 :in-theory (enable c::boolean-from-sint"
    "                                                    c::sint-integerp-alt-def"
    "                                                    c::sint-integer-fix"
    "                                                    c::gt-sint-sint"
    "                                                    c::sub-sint-sint-okp"
    "                                                    c::sint->get)))))"
-   "  (if (c::sint-nonzerop (c::gt-sint-sint |a| |b|))"
+   "  (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))"
    "      (c::sub-sint-sint |a|"
-   "                        (if (c::sint-nonzerop"
+   "                        (if (c::boolean-from-sint"
         "                        (c::eq-sint-sint |b| (c::sint-const 3)))"
    "                            (c::sint-const 0)"
    "                          (c::sint-const 1)))"
@@ -1686,7 +1687,7 @@
     must return ACL2 booleans,
     in the same way as the @(tsee if)s that represent conditional statements.
     As explained in @(see atc-tutorial-conditional-statements),
-    the function @(tsee sint-nonzerop) is used
+    the function @(tsee boolean-from-sint) is used
     to convert C @('int')s to ACL2 booleans in the tests."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

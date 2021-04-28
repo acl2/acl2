@@ -570,7 +570,8 @@
      we enable rules that simplify
      applications of deconstructors to constructors.")
    (xdoc::p
-    "We expand @(tsee sint01), because it is really just an abbreviation.
+    "We expand @(tsee sint-from-boolean),
+     because it is really just an abbreviation.
      In fact, we want to expose its @(tsee if) structure
      in the symbolic execution."))
   (append
@@ -616,7 +617,7 @@
      pop-frame
      push-frame
      read-var
-     sint01
+     sint-from-boolean
      sint-const
      uint-const
      slong-const
@@ -672,10 +673,10 @@
      so it is not a lot of duplication.")
    (xdoc::p
     "We also have two rules to simplify applications of
-     @(tsee sint-nonzerop) to @('(sint 0)') and @('(sint 1)').
+     @(tsee boolean-from-sint) to @('(sint 0)') and @('(sint 1)').
      These applications appear during symbolic execution,
      because in C certain ``boolean'' expressions produce those @('int') values,
-     and @(tsee sint-nonzerop) is used to turn those into ACL2 booleans,
+     and @(tsee boolean-from-sint) is used to turn those into ACL2 booleans,
      which are uses in @(tsee if)s,
      and thus we clearly want to simplify those application
      to @('t') and @('nil'), which further simplifies the @(tsee if)s.")
@@ -747,11 +748,11 @@
   (defruled 1+len-greater-than-0
     (> (1+ (len x)) 0))
 
-  (defruled sint-nonzerop-of-0
-    (equal (sint-nonzerop (sint 0)) nil))
+  (defruled boolean-from-sint-of-0
+    (equal (boolean-from-sint (sint 0)) nil))
 
-  (defruled sint-nonzerop-of-1
-    (equal (sint-nonzerop (sint 1)) t))
+  (defruled boolean-from-sint-of-1
+    (equal (boolean-from-sint (sint 1)) t))
 
   (defruled lognot-sint-of-0
     (equal (lognot-sint (sint 0))
@@ -1060,8 +1061,8 @@
      not-errorp-when-booleanp
      len-of-cons
      1+len-greater-than-0
-     sint-nonzerop-of-0
-     sint-nonzerop-of-1
+     boolean-from-sint-of-0
+     boolean-from-sint-of-1
      lognot-sint-of-0
      lognot-sint-of-1
      car-of-if
@@ -1083,16 +1084,16 @@
      natp-of-1+
      natp-of-len
      ;; introduced elsewhere:
-     booleanp-of-uchar-nonzerop
-     booleanp-of-schar-nonzerop
-     booleanp-of-ushort-nonzerop
-     booleanp-of-sshort-nonzerop
-     booleanp-of-uint-nonzerop
-     booleanp-of-sint-nonzerop
-     booleanp-of-ulong-nonzerop
-     booleanp-of-slong-nonzerop
-     booleanp-of-ullong-nonzerop
-     booleanp-of-sllong-nonzerop
+     booleanp-of-boolean-from-uchar
+     booleanp-of-boolean-from-schar
+     booleanp-of-boolean-from-ushort
+     booleanp-of-boolean-from-sshort
+     booleanp-of-boolean-from-uint
+     booleanp-of-boolean-from-sint
+     booleanp-of-boolean-from-ulong
+     booleanp-of-boolean-from-slong
+     booleanp-of-boolean-from-ullong
+     booleanp-of-boolean-from-sllong
      car-cons
      cdr-cons
      compustate-of-fields
