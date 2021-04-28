@@ -18,6 +18,8 @@
 ;;   :parents (verified)
 ;;   :short "Define default Smtlink hint interface"
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 (defprod smt-function
   :parents (smtlink-hint)
   ((name symbolp :default nil)

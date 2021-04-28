@@ -22,7 +22,8 @@
 
 (set-state-ok t)
 
-(local (in-theory (disable (:executable-counterpart typed-term))))
+(local (in-theory (disable (:executable-counterpart typed-term)
+                           pseudo-termp pseudo-term-listp)))
 
 ;; choose-judge leaves only one type-predicate-of-term in the judgements
 (encapsulate ()
@@ -168,7 +169,7 @@
        ((unless (is-judgements? expected tt.term to.supertype))
         (prog2$
          (er hard? 'type-inference-topdown=>unify-variable
-             "Expected ~p0 is not a conjunct list.~%" expected)
+             "Expected ~p0 is not a conjunct list for ~p1.~%" expected tt.term)
          tterm)))
     (make-typed-term :term tt.term
                      :path-cond tt.path-cond

@@ -20,6 +20,8 @@
 
 (set-state-ok t)
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 ;;-------------------------------------------------------
 ;;  Intersect judgements
 (define intersect-judgements-acc ((judge1 pseudo-termp)
@@ -158,7 +160,9 @@
 (define substitute-term-in-args ((args pseudo-term-listp)
                                  (term pseudo-termp)
                                  (new-var symbolp))
-  :returns (new-args pseudo-term-listp)
+  :returns (new-args pseudo-term-listp
+                     :hints (("Goal" :in-theory (enable pseudo-termp
+                                                        pseudo-term-listp))))
   (b* ((args (pseudo-term-list-fix args))
        (new-var (symbol-fix new-var))
        ((unless (consp args)) nil)
@@ -214,7 +218,8 @@
                                   (term pseudo-termp)
                                   (new-var symbolp)
                                   (supertype-alst type-to-types-alist-p))
-  :returns (new-judge pseudo-termp)
+  :returns (new-judge pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
   :guard (judgement-of-term single-judge term supertype-alst)
   (b* ((single-judge (pseudo-term-fix single-judge))
        (new-var (symbol-fix new-var)))
@@ -734,7 +739,6 @@
               (acl2-numberp . (,(make-type-tuple)))))
 |#
 
-;; It takes a while
 (defthm correctness-of-commute-if
   (implies (and (pseudo-termp judge)
                 (pseudo-termp then-term)
@@ -744,66 +748,15 @@
                 (ev-smtcp judge a))
            (ev-smtcp (commute-if judge then-term else-term supertype-alst) a))
   :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (commute-if)
-                           (correctness-of-is-judgements?
-                            correctness-of-path-test-list
-                            correctness-of-path-test
-                            consp-of-pseudo-lambdap
-                            pseudo-lambdap-of-fn-call-of-pseudo-termp
-                            symbolp-of-car-when-member-equal-of-type-to-types-alist-p
-                            ev-smtcp-of-booleanp-call
-                            ev-smtcp-of-lambda
-                            pseudo-termp
-                            symbol-listp
-                            pseudo-term-listp
+           :in-theory (e/d (commute-if ev-smtcp-of-fncall-args)
+                           (symbol-listp
+                            correctness-of-is-judgements?
                             pseudo-term-listp-of-symbol-listp
-                            acl2::pseudo-termp-list-cdr
+                            acl2::symbolp-of-car-when-symbol-listp
+                            symbolp-of-car-when-member-equal-of-type-to-types-alist-p
+                            acl2::symbol-listp-of-cdr-when-symbol-listp
                             consp-of-is-conjunct?
-                            ev-smtcp-of-fncall-args
-                            correctness-of-commute-if-for-args-cond
-                            correctness-of-commute-if-for-args-notcond
-                            lambda-of-pseudo-lambdap
-                            pseudo-term-listp-of-cdr-of-pseudo-termp
-                            ev-smtcp-of-return-last-call
-                            ev-smtcp-of-rationalp-call
-                            ev-smtcp-of-not-call
-                            ev-smtcp-of-integerp-call
-                            ev-smtcp-of-implies-call
-                            ev-smtcp-of-iff-call
-                            ev-smtcp-of-hint-please-call
-                            ev-smtcp-of-equal-call
-                            ev-smtcp-of-cons-call
-                            ev-smtcp-of-binary-+-call
-                            acl2::pseudo-lambdap-of-car-when-pseudo-lambda-listp))
-           :use ((:instance ev-smtcp-of-fncall-args
-                            (x (cons (car (caddr judge))
-                                     (commute-if-for-args (cadr judge)
-                                                          (cdr (caddr judge))
-                                                          (cdr (cadddr judge)))))
-                            (a a))
-                 (:instance ev-smtcp-of-fncall-args
-                            (x (caddr judge))
-                            (a a))
-                 (:instance ev-smtcp-of-fncall-args
-                            (x (cons (car (cadddr judge))
-                                     (commute-if-for-args (cadr judge)
-                                                          (cdr (caddr judge))
-                                                          (cdr (cadddr judge)))))
-                            (a a))
-                 (:instance ev-smtcp-of-fncall-args
-                            (x (cadddr judge))
-                            (a a))
-                 (:instance correctness-of-commute-if-for-args-cond
-                            (if-cond (cadr judge))
-                            (then-args (cdr (caddr judge)))
-                            (else-args (cdr (cadddr judge)))
-                            (a a))
-                 (:instance correctness-of-commute-if-for-args-notcond
-                            (if-cond (cadr judge))
-                            (then-args (cdr (caddr judge)))
-                            (else-args (cdr (cadddr judge)))
-                            (a a))))))
+                            pseudo-lambdap-of-fn-call-of-pseudo-termp)))))
 
 (define merge-if-judgements ((judge pseudo-termp)
                              (then-term pseudo-termp)
@@ -883,7 +836,10 @@
            (ev-smtcp (union-judgements-acc judge acc state) a))
   :hints (("Goal"
            :in-theory (e/d (union-judgements-acc is-conjunct?)
-                           ()))))
+                           (symbol-listp
+                            consp-of-is-conjunct?
+                            acl2::symbolp-of-car-when-symbol-listp
+                            default-cdr)))))
 
 (define union-judgements ((judge1 pseudo-termp)
                           (judge2 pseudo-termp)
@@ -943,6 +899,8 @@ state)
                                      state)
   :ignore-ok t
   :returns (super/subtype-judge pseudo-termp)
+  :guard-hints (("Goal"
+                 :in-theory (enable pseudo-termp)))
   (b* ((type-judge (pseudo-term-fix type-judge))
        ((smt-sub/supertype tu) (smt-sub/supertype-fix type-tuple))
        (path-cond (pseudo-term-fix path-cond))

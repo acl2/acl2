@@ -30,7 +30,7 @@
         (list cl))
        ((smtlink-hint h) smtlink-hint)
        (goal (disjoin cl))
-       (options (construct-type-options smtlink-hint))
+       (options (construct-type-options smtlink-hint goal))
        (names (acl2::simple-term-vars goal))
        (type-judgements (type-judgement goal ''t options names state))
        (typed-term (make-typed-term :term goal :path-cond ''t
@@ -74,16 +74,17 @@
                             pseudo-termp
                             symbol-listp))
            :use ((:instance correctness-of-unify-type
-                            (options (construct-type-options hint))
+                            (options (construct-type-options hint (disjoin cl)))
                             (names (acl2::simple-term-vars (disjoin cl)))
                             (expected ''t)
-                            (tterm (typed-term
-                                    (disjoin cl)
-                                    ''t
-                                    (type-judgement (disjoin cl)
-                                                    ''t
-                                                    (construct-type-options hint)
-                                                    (acl2::simple-term-vars (disjoin cl))
-                                                    state)))
+                            (tterm
+                             (typed-term
+                              (disjoin cl)
+                              ''t
+                              (type-judgement (disjoin cl)
+                                              ''t
+                                              (construct-type-options hint (disjoin cl))
+                                              (acl2::simple-term-vars (disjoin cl))
+                                              state)))
                             (a a)))))
   :rule-classes :clause-processor)

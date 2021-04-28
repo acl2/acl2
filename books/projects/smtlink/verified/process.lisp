@@ -57,7 +57,7 @@
 ;;                                     :subtypes
 ;;                                     ((integer-listp
 ;;                                       :formals (x)
-;;                                       :thm maybe-integer-list-canbe-maybe-integer-list))
+;;                                       :thm maybe-integer-list-canbe-integer-list))
 ;;                                     :supertypes
 ;;                                     ((maybe-rational-listp
 ;;                                       :formals (x)
@@ -69,6 +69,8 @@
 ;;                            :global-hint current-hint
 ;;                            :customp nil))))
 ;; )
+
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
 
 (defsection hypothesis-list-syntax
   :parents (Smtlink-process-user-hint)
@@ -612,7 +614,6 @@
 ;;   :parents (Smtlink-process-user-hint)
 
 (local (in-theory (disable symbol-listp
-                           pseudo-term-listp
                            true-list-listp
                            pseudo-term-listp-of-symbol-listp
                            pseudo-term-listp-of-cdr-of-pseudo-termp
@@ -917,7 +918,8 @@
               (find-hint the-hint state))))
 
   (define process-hint ((cl pseudo-term-listp) (user-hint t) state)
-    :returns (subgoal-lst pseudo-term-list-listp)
+    :returns (subgoal-lst pseudo-term-list-listp
+                          :hints (("Goal" :in-theory (enable pseudo-termp))))
     (b* ((cl (pseudo-term-list-fix cl))
          ((unless (smtlink-hint-syntax-p user-hint))
           (prog2$ (cw "User provided Smtlink hint can't be applied because of ~

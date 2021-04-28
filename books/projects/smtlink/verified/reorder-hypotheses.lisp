@@ -15,6 +15,8 @@
 (include-book "extractor")
 (include-book "reorder-option")
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 (defalist symbol-pseudo-term-list-alist
   :key-type symbolp
   :val-type pseudo-term-listp
@@ -157,6 +159,7 @@
 (define find-resolved-var ((term pseudo-termp)
                            (type-info symbol-symbol-alistp))
   :returns (var symbolp)
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp)))
   (b* ((term (pseudo-term-fix term))
        (type-info (symbol-symbol-alist-fix type-info))
        ((unless (hypo-p term type-info))
@@ -594,7 +597,8 @@
        (next-cp (cdr (assoc-equal 'reorder *SMT-architecture*)))
        ((if (null next-cp)) (list cl))
        (the-hint `(:clause-processor (,next-cp clause ',hints state)))
-       (new-goal (reorder-hypotheses goal (construct-reorder-option hints))))
+       (options (construct-reorder-option hints))
+       (new-goal (reorder-hypotheses goal options)))
     (list `((hint-please ',the-hint) ,new-goal))))
 
 (defthm correctness-of-reorder-hypotheses-cp

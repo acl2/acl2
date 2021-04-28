@@ -22,6 +22,8 @@
 
 (set-state-ok t)
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 ;;-------------------------------------------------------
 ;; Returns judgements
 
@@ -406,9 +408,8 @@
        ;; if returns-judge includes the conclusion of returns-thm-substed
        ;; and actuals-judge satisfy the hypotheses of returns-thm-substed
        ((unless (and ok1 ok2))
-        (cons ''t
-              (choose-returns returns-judge fn actuals actuals-judge path-cond
-                              respec-tl options state)))
+        (choose-returns returns-judge fn actuals actuals-judge path-cond
+                        respec-tl options state))
        (judges (filter-judges actuals-judge hypo supertypes ''t))
        (judge-alst (generate-judge-alist judges actuals nil)))
     (strip-cdrs judge-alst)))

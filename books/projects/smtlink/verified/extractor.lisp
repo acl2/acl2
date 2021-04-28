@@ -17,6 +17,8 @@
 ;; (defsection SMT-extract
 ;;   :parents (verified)
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 (define type-decl-p ((term pseudo-termp)
                      (type-info symbol-symbol-alistp))
   :returns (ok booleanp)

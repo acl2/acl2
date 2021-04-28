@@ -33,22 +33,22 @@
   (implies (rational-integer-cons-p x) (maybe-rational-integer-consp x)))
 
 (defun supertype ()
-  `((integerp . (,(make-type-tuple :type 'integerp :neighbour-type 'rationalp
-                                   :formals '(x)
-                                   :thm 'integerp-implies-rationalp)
-                 ,(make-type-tuple :type 'integerp :neighbour-type
-                                   'maybe-integerp
-                                   :formals '(x)
-                                   :thm 'integerp-implies-maybe-integerp)))
+  `((integerp . (,(make-smt-sub/supertype
+                   :type 'rationalp
+                   :formals '(x)
+                   :thm 'integerp-implies-rationalp)
+                 ,(make-smt-sub/supertype
+                   :type 'maybe-integerp
+                   :formals '(x)
+                   :thm 'integerp-implies-maybe-integerp)))
     (rationalp . nil)
     (symbolp . nil)
     (booleanp . nil)
-    (rational-integer-cons-p . (,(make-type-tuple :type 'rational-integer-cons-p
-                                                  :neighbour-type
-                                                  'maybe-rational-integer-consp
-                                                  :formals '(x)
-                                                  :thm
-                                                  'rational-integer-cons-p-implies-maybe-rational-integer-consp)))
+    (rational-integer-cons-p . (,(make-smt-sub/supertype
+                                  :type 'maybe-rational-integer-consp
+                                  :formals '(x)
+                                  :thm
+                                  'rational-integer-cons-p-implies-maybe-rational-integer-consp)))
     (rational-integer-alistp . nil)
     (maybe-integerp . nil)
     (maybe-rational-integer-consp . nil)
@@ -65,19 +65,18 @@
 
 (defun subtype ()
   `((rationalp . nil)
-    (maybe-integerp . (,(make-type-tuple :type 'maybe-integerp :neighbour-type
-                                         'integerp
-                                         :formals '(x)
-                                         :thm 'maybe-integerp-can-be-integerp)))
+    (maybe-integerp . (,(make-smt-sub/supertype
+                         :type 'integerp
+                         :formals '(x)
+                         :thm 'maybe-integerp-can-be-integerp)))
     (integerp . nil)
     (symbolp . nil)
     (booleanp . nil)
-    (maybe-rational-integer-consp . (,(make-type-tuple :type 'maybe-rational-integer-consp
-                                                       :neighbour-type
-                                                       'rational-integer-cons-p
-                                                       :formals '(x)
-                                                       :thm
-                                                       'maybe-rational-integer-consp-can-be-rational-integer-cons-p)))
+    (maybe-rational-integer-consp . (,(make-smt-sub/supertype
+                                       :type 'rational-integer-cons-p
+                                       :formals '(x)
+                                       :thm
+                                       'maybe-rational-integer-consp-can-be-rational-integer-cons-p)))
     (rational-integer-alistp . nil)
     (rational-integer-cons-p . nil)
     (rational-list-p . nil)
@@ -200,130 +199,77 @@
 (defun functions ()
   `((acons . (,(make-return-spec
                 :formals '(x y z)
-                :returns-thm 'return-of-acons)))
+                :thm 'return-of-acons)))
     (assoc-equal . (,(make-return-spec
                       :formals '(y x)
-                      :returns-thm 'return-of-assoc-equal)))
+                      :thm 'return-of-assoc-equal)))
     (car . (,(make-return-spec
               :formals '(x)
-              :returns-thm 'return-of-car-rlistp
-              :replace-thm 'replace-of-car)))
+              :thm 'return-of-car-rlistp)))
     (cdr . (,(make-return-spec
               :formals '(x)
-              :returns-thm 'return-of-cdr-maybe)
+              :thm 'return-of-cdr-maybe)
             ,(make-return-spec
               :formals '(x)
-              :returns-thm 'return-of-cdr)
+              :thm 'return-of-cdr)
             ,(make-return-spec
               :formals '(x)
-              :returns-thm 'return-of-cdr-rlistp)))
+              :thm 'return-of-cdr-rlistp)))
     (cons . (,(make-return-spec
                :formals '(x y)
-               :returns-thm 'return-of-cons
-               :replace-thm 'replace-of-cons)))
+               :thm 'return-of-cons)))
     (< . (,(make-return-spec
             :formals '(x y)
-            :returns-thm 'return-of-<)))
+            :thm 'return-of-<)))
     (binary-+ . (,(make-return-spec
                    :formals '(x y)
-                   :returns-thm 'return-of-binary-+)
+                   :thm 'return-of-binary-+)
                  ,(make-return-spec
                    :formals '(x y)
-                   :returns-thm 'return-of-binary-+-rationalp)))
+                   :thm 'return-of-binary-+-rationalp)))
     (binary-* . (,(make-return-spec
                    :formals '(x y)
-                   :returns-thm 'return-of-binary-*)))
+                   :thm 'return-of-binary-*)))
     (unary-- . (,(make-return-spec
                   :formals '(x)
-                  :returns-thm 'return-of-unary--)
+                  :thm 'return-of-unary--)
                 ,(make-return-spec
                   :formals '(x)
-                  :returns-thm 'return-of-unary---rationalp)))
+                  :thm 'return-of-unary---rationalp)))
     (not . (,(make-return-spec
               :formals '(x)
-              :returns-thm 'return-of-not)))
+              :thm 'return-of-not)))
     (rational-integer-alistp . (,(make-return-spec
                                   :formals '(x)
-                                  :returns-thm
+                                  :thm
                                   'return-of-rational-integer-alistp)))
     (rational-list-p . (,(make-return-spec
                           :formals '(x)
-                          :returns-thm 'return-of-rational-list-p)))
+                          :thm 'return-of-rational-list-p)))
     (rationalp . (,(make-return-spec
                     :formals '(x)
-                    :returns-thm 'return-of-rationalp)))
+                    :thm 'return-of-rationalp)))
     (integerp . (,(make-return-spec
                    :formals '(x)
-                   :returns-thm 'return-of-integerp)))
+                   :thm 'return-of-integerp)))
     (ifix . (,(make-return-spec
                :formals '(x)
-               :returns-thm 'return-of-ifix)))
+               :thm 'return-of-ifix)))
     (rfix . (,(make-return-spec
                :formals '(x)
-               :returns-thm 'return-of-rfix)))
+               :thm 'return-of-rfix)))
     (equal . (,(make-return-spec
                 :formals '(x y)
-                :returns-thm 'return-of-equal)
+                :thm 'return-of-equal)
               ,(make-return-spec
                 :formals '(x y)
-                :returns-thm 'return-of-equal-integer)))))
-
-(defun symbol-nil () nil)
-(defun boolean-nil () nil)
-(defun rational-integer-alist-nil () nil)
-(defun maybe-integer-nil () nil)
-(defun maybe-rational-integer-cons-nil () nil)
-(defun rational-list-nil () nil)
-
-(defun nil-alst ()
-  '((symbolp . symbol-nil)
-    (booleanp . boolean-nil)
-    (rational-integer-alistp . rational-integer-alist-nil)
-    (maybe-integerp . maybe-integer-nil)
-    (maybe-rational-integer-consp . maybe-rational-integer-cons-nil)
-    (rational-list-p . rational-list-nil)))
-
-;; (defthm alist-to-array-equiv-of-rational-integer-alist
-;;   (implies (and (rational-integer-alistp a)
-;;                 (equal b (rational-integer-alist-to-array a)))
-;;            (alist-array-equiv a b)))
-
-(defun alist ()
-  nil
-  ;; `((rational-integer-alistp
-  ;;    . ,(make-a2a-info :a2a-fn 'rational-integer-alist-to-array
-  ;;                      :formals '(a b)
-  ;;                      :thm 'alist-to-array-equiv-of-rational-integer-alist)))
-  )
-
-;; (defthm assoc-equal-of-rational-integer-alist
-;;   (implies (and (rational-integer-alistp al)
-;;                 (rational-integer-arrayp ar)
-;;                 (alist-array-equiv al ar)
-;;                 (rationalp k))
-;;            (and (alist-array-equiv (assoc-equal k al)
-;;                                    (rational-integer-assoc-equal k ))
-;;                 ())))
-
-(defun aa-map ()
-  nil
-  ;; `((assoc-equal
-  ;;    . ,(make-equiv :formal-map '((al . al) (ar . ar) (k . k))
-  ;;                   :thm assoc-equal-of-rational-integer-alist))
-  ;;   (rational-integer-alistp
-  ;;    . ,(make-equiv :formal-map '((al . al) (ar . ar))
-  ;;                   :thm rational-integer-alistp-of-rational-integer-alist)))
-  )
+                :thm 'return-of-equal-integer)))))
 
 (defun options ()
   (b* ((supertype (supertype))
        (subtype (subtype))
-       (functions (functions))
-       (nil-alst (nil-alst)))
+       (functions (functions)))
     (make-type-options
      :supertype supertype
      :subtype subtype
-     :functions functions
-     :nil-alst nil-alst
-     :alist nil
-     :aa-map nil)))
+     :functions functions)))

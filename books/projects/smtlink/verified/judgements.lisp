@@ -14,6 +14,8 @@
 (include-book "type-options")
 (include-book "evaluator")
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 (define only-one-var-acc ((term-lst pseudo-term-listp)
                           (term pseudo-termp)
                           (count natp))
@@ -50,6 +52,15 @@
                      (pseudo-termp (cadr judge))))
        :name implies-of-type-predicate-p)))
 
+(local
+ (defthm crock
+   (implies (and (pseudo-termp term)
+                 (consp term)
+                 (cdr term))
+            (consp (cdr term)))
+   :hints (("Goal"
+            :in-theory (enable pseudo-termp)))))
+
 (define type-predicate-of-term ((judge pseudo-termp)
                                 (term pseudo-termp)
                                 (supertype-alst type-to-types-alist-p))
@@ -71,10 +82,7 @@
                         (consp (cdr judge))
                         (equal (cadr judge) term)
                         (not (cddr judge))))
-       :hints (("Goal" :in-theory (enable len)))
        :name implies-of-type-predicate-of-term)))
-
-;; (in-theory (disable implies-of-type-predicate-of-term))
 
 (defthm correctness-of-type-predicate-of-term
   (implies (and (pseudo-termp judge)
@@ -222,6 +230,7 @@
                         (supertype-alst type-to-types-alist-p))
   :returns (ok booleanp)
   :measure (acl2-count (pseudo-term-fix judges))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp)))
   :hints (("Goal"
            :in-theory (e/d (pseudo-term-fix)
                            (symbol-listp

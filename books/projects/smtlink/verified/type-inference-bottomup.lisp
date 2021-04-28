@@ -24,6 +24,8 @@
 
 (set-state-ok t)
 
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
+
 ;;-------------------------------------------------------
 ;; quoted judgements
 ;; nil judgements
@@ -91,6 +93,8 @@
                                state)
   :guard (and (not (acl2::variablep term))
               (acl2::fquotep term))
+  :guard-hints (("Goal"
+                 :in-theory (enable pseudo-termp pseudo-term-listp)))
   :returns (judgements pseudo-termp)
   (b* ((term (pseudo-term-fix term))
        (options (type-options-fix options))
@@ -115,7 +119,14 @@
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
                   (alistp a))
-             (ev-smtcp (type-judgement-quoted term options state) a))))
+             (ev-smtcp (type-judgement-quoted term options state) a))
+    :hints (("Goal"
+             :in-theory (e/d (pseudo-termp pseudo-term-listp)
+                             (correctness-of-path-test-list-corollary
+                              consp-of-is-conjunct?
+                              acl2::symbol-listp-when-not-consp
+                              correctness-of-path-test-list
+                              ev-smtcp-of-variable))))))
 
 ;; ------------------------------------------------------------------
 ;;    Variable judgements
@@ -186,10 +197,12 @@
                      a))
   :hints (("Goal"
            :in-theory (e/d (type-judgement-if-top)
-                           (correctness-of-path-test-list
+                           (CORRECTNESS-OF-PATH-TEST-LIST-COROLLARY
+                            correctness-of-path-test-list
                             correctness-of-path-test
                             consp-of-pseudo-lambdap
-                            pseudo-termp)))))
+                            symbol-listp
+                            EV-SMTCP-OF-VARIABLE)))))
 
 (define generate-judge-from-equality-acc ((lhs symbolp)
                                           (rhs pseudo-termp)
@@ -214,7 +227,8 @@
     (generate-judge-from-equality-acc lhs rhs judge-tl supertype-alst
                                       new-acc)))
 
-(verify-guards generate-judge-from-equality-acc)
+(verify-guards generate-judge-from-equality-acc
+  :hints (("Goal" :in-theory (enable pseudo-termp))))
 
 (defthm correctness-of-generate-judge-from-equality-acc
   (implies (and (symbolp lhs)
@@ -231,12 +245,24 @@
   :hints (("Goal"
            :induct (generate-judge-from-equality-acc
                     lhs rhs judge supertype-alst acc)
-           :in-theory (e/d (generate-judge-from-equality-acc is-conjunct?)
-                           (implies-of-is-conjunct?
-                            member-equal symbol-listp
-                            consp-of-is-conjunct?
-                            correctness-of-path-test-list
+           :in-theory (e/d (generate-judge-from-equality-acc
+                            is-conjunct?
+                            pseudo-termp
+                            pseudo-term-listp)
+                           (correctness-of-path-test-list
                             correctness-of-path-test
+                            symbol-listp
+                            implies-of-is-conjunct?
+                            consp-of-is-conjunct?
+                            pseudo-term-listp-of-symbol-listp
+                            symbolp-of-fn-call-of-pseudo-termp
+                            correctness-of-is-judgements?
+                            acl2::symbolp-of-car-when-symbol-listp
+                            pseudo-term-listp-of-cdr-of-pseudo-termp
+                            lambda-of-pseudo-lambdap
+                            default-car
+                            default-cdr
+                            length
                             consp-of-pseudo-lambdap)))))
 
 (define generate-judge-from-equality ((lhs symbolp)
@@ -257,7 +283,6 @@
                                                    supertype-alst)
                      a))
   :hints (("Goal"
-           :do-not-induct t
            :in-theory (e/d (generate-judge-from-equality) ()))))
 
 (define augment-path-cond ((cond pseudo-termp)
@@ -334,7 +359,12 @@
                             acl2::symbol-listp-when-not-consp
                             ev-smtcp-of-variable
                             consp-of-is-conjunct?
-                            acl2::pseudo-termp-opener)))))
+                            acl2::pseudo-termp-opener
+                            consp-of-pseudo-lambdap
+                            ev-smtcp-of-booleanp-call
+                            alistp
+                            implies-of-is-conjunct?
+                            implies-of-type-predicate-of-term)))))
 
 (defines type-judgements
   :flag-local nil
@@ -491,6 +521,27 @@
 ;; ------------------------------------------------
 ;; Correctness theorems for type-judgement
 
+(encapsulate ()
+(local (in-theory (disable pseudo-termp
+                              correctness-of-path-test-list
+                              correctness-of-path-test-list-corollary
+                              symbol-listp
+                              correctness-of-path-test
+                              acl2::symbol-listp-when-not-consp
+                              consp-of-is-conjunct?
+                              acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                              acl2::symbolp-of-car-when-symbol-listp
+                              pseudo-term-listp-of-symbol-listp
+                              acl2::pseudo-termp-opener
+                              ev-smtcp-of-booleanp-call
+                              type-judgement-t
+                              pseudo-term-listp-of-cdr-of-pseudo-termp
+                              acl2::pseudo-lambdap-of-car-when-pseudo-lambda-listp
+                              default-cdr
+                              default-car
+                              implies-of-type-predicate-of-term
+                              ev-smtcp-of-lambda)))
+
 (defthm-type-judgements-flag
   (defthm correctness-of-type-judgement-if
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -501,19 +552,8 @@
              (ev-smtcp (type-judgement-if term path-cond options names state) a))
     :flag type-judgement-if
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (disable
-                               pseudo-termp
-                               correctness-of-path-test-list
-                               symbol-listp
-                               correctness-of-path-test
-                               acl2::symbol-listp-when-not-consp
-                               consp-of-is-conjunct?
-                               acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                               acl2::symbolp-of-car-when-symbol-listp
-                               pseudo-term-listp-of-symbol-listp
-                               acl2::pseudo-termp-opener)
-                              :expand (type-judgement-if term path-cond options
-                                                         names state)))))
+                 '(:expand (type-judgement-if term path-cond options names
+                                              state)))))
   (defthm correctness-of-type-judgement-fn
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
@@ -547,30 +587,21 @@
     :hints ((and stable-under-simplificationp
                  '(:expand ((type-judgement-list term-lst path-cond options
                                                  names state)
-                            (type-judgement-list nil path-cond options names state)))))
-    :flag type-judgement-list)
-  :hints(("Goal"
-          :in-theory (disable pseudo-termp
-                              correctness-of-path-test-list
-                              symbol-listp
-                              correctness-of-path-test
-                              acl2::symbol-listp-when-not-consp
-                              consp-of-is-conjunct?
-                              acl2::pseudo-termp-cadr-from-pseudo-term-listp
-                              acl2::symbolp-of-car-when-symbol-listp
-                              pseudo-term-listp-of-symbol-listp
-                              acl2::pseudo-termp-opener))))
+                            (type-judgement-list nil path-cond options names
+                                                 state)))))
+    :flag type-judgement-list))
+)
 
 ;; -------------------------------------------------------
 
 (define type-judge-bottomup-cp ((cl pseudo-term-listp)
                                 (hints t)
                                 state)
-  (b* (((unless (type-inference-hints-p hints))
+  (b* (((unless (type-options-p hints))
         (value (list cl)))
-       ((type-inference-hints h) hints)
+       ((type-options h) hints)
        (goal (disjoin cl))
-       (judges (type-judgement goal ''t h.type-options h.names state)))
+       (judges (type-judgement goal ''t hints h.names state)))
     (value (list (list `(implies ,judges ,goal))))))
 
 (local (in-theory (enable type-judge-bottomup-cp)))
