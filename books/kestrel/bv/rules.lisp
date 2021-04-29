@@ -64,10 +64,11 @@
 (local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "floor-mod-expt"))
-(local (include-book "arith")) ;todo for <-of-expt-and-expt
+(local (include-book "arith")) ;todo for integerp-squeeze
 ;(local (include-book "arith2"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
@@ -4841,7 +4842,8 @@
            :induct (floor-2-sub-1-induct x size)
            :in-theory (e/d (logand expt zip)
                            (expt-hack
-                            EXPT-COLLECT-HACK)))))
+                            ;EXPT-COLLECT-HACK
+                            )))))
 
 ;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
 ;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..
