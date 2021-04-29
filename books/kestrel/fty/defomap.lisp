@@ -9,7 +9,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "FTY")
+;; defomap has been moved to centaur/fty/deftypes.lisp so that it can be used recursively in fty::deftypes
+;; the implementation has been moved to fty-omap.lisp
+(include-book "centaur/fty/top" :dir :system)
 
+#|
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/omaps/core" :dir :system)
 
@@ -379,3 +383,4 @@
                    ,short
                    ,long
                    state))))
+|#

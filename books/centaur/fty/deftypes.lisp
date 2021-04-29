@@ -37,6 +37,7 @@
 (include-book "fty-list")
 (include-book "fty-transsum")
 (include-book "kestrel/fty/fty-set" :dir :system)
+(include-book "kestrel/fty/fty-omap" :dir :system)
 (include-book "fty-sugar")
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
@@ -155,6 +156,7 @@
                                                     our-fixtypes fixtypes state)))
                            (change-flexalist al :strategy :drop-keys)))
             (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
+            (defomap     (parse-flexomap (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -1077,3 +1079,25 @@
 (defmacro defset (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defset-fn ',form state)))
+
+
+(defun defomap-fn (whole state)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexomap (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexomap x :count nil)))
+       ((flexomap x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist (flextypes-kwd-alist-from-specialized-kwd-alist x.kwd-alist)
+                                  :recp x.recp)))
+    (deftypes-events flextypes state)))
+
+(defmacro defomap (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (defomap-fn ',form state)))
+
