@@ -274,15 +274,7 @@
          is distinct from and shadows the one in scope in ACL2,
          it represents the same variable in C.
          In this case, the value bound to the outer @('var') must have
-         the same C type as the value bound to the inner @('var').
-         However, there must be no @(tsee if) ``between''
-         this @(tsee let) and
-         either the one of the outer @('var')
-         (if @('var') is a local variable)
-         or the start of the function body
-         (if @('var') is a function parameter),
-         i.e. the two variables must be in the same C scope
-         (as represented in ACL2)."))
+         the same C type as the value bound to the inner @('var')."))
       "The two situations are distinguished by whether
        there is no outer @('var') in scope,
        in which case the @(tsee let) represents a declaration,
