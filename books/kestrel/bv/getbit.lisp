@@ -358,3 +358,17 @@
                   bit2))
   :hints (("Goal" :in-theory (e/d (bitp)
                                   (bitp-becomes-unsigned-byte-p)))))
+
+(defthm getbit-when-not-1
+  (implies (not (equal 1 (getbit n x)))
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm getbit-when-not-0
+  (implies (not (equal 0 (getbit n x)))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))

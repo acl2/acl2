@@ -463,3 +463,13 @@
            (< (logext n x) k))
   :hints (("Goal" :in-theory (enable ;logext
                               ))))
+
+;for axe
+(defthmd logext-not-nil1
+  (equal (equal (logext n x) nil)
+         nil))
+
+;for axe
+(defthm logext-not-nil2
+  (equal (equal nil (logext n x))
+         nil))

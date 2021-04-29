@@ -89,3 +89,43 @@
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
+
+(local
+ (defthmd bvnot-1-becomes-bitnot
+   (implies (unsigned-byte-p 1 x)
+            (equal (bvnot 1 x)
+                   (bitnot x)))
+   :hints (("Goal" :cases ((equal 0 x)
+                           (equal 1 x))
+            :in-theory (enable bvnot bitnot)))))
+
+(defthm bvnot-1-of-getbit-0
+   (equal (bvnot 1 (getbit 0 x))
+          (bvnot 1 x))
+   :hints (("Goal" :use ((:instance usb1-cases (x (getbit 0 x)))
+                         (:instance bvchop-lognot-bvchop-1))
+;            :expand ((BVCHOP 1 X))
+            :in-theory (e/d (getbit
+                             bvnot ;bozo
+                             ) (getbit-when-equal-of-constant-and-bvchop-constant-version
+                                bvchop-lognot-bvchop-1
+                                bvchop-lognot-bvchop
+                                bvchop-1-becomes-getbit
+                                slice-becomes-getbit
+                                GETBIT-TYPE
+                                UNSIGNED-BYTE-P-OF-GETBIT)))))
+
+;fixme redo things to go to bitnot and bitxor and redo rules to trigger on those?
+(defthm bvnot-1-becomes-bitnot-better
+  (equal (bvnot 1 x)
+         (bitnot x))
+  :hints (("Goal" :use (:instance bvnot-1-becomes-bitnot (x (getbit 0 x)))
+           :in-theory (disable bvnot-1-becomes-bitnot
+                               BITNOT-OF-GETBIT-0))))
+
+(defthmd bitnot-becomes-bvnot
+  (equal (bitnot x)
+         (bvnot 1 x))
+  :hints (("Goal" :use (:instance bvnot-1-becomes-bitnot-better))))
+
+(theory-invariant (incompatible (:rewrite bitnot-becomes-bvnot) (:rewrite bvnot-1-becomes-bitnot-better)))

@@ -25,13 +25,6 @@
 
 (local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
 
-;this helps a lot
-(defthm expt-of-one-less-linear
-  (implies (integerp size)
-           (equal (expt 2 size)
-                  (* 2 (expt 2 (+ -1 size)))))
-  :rule-classes :linear)
-
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
 ;we'd like.

@@ -281,3 +281,9 @@
              1
            0))
   :hints (("Goal" :in-theory (enable logtail zp))))
+
+;move
+(defthm logtail-non-negative-linear
+  (implies (<= 0 x)
+           (<= 0 (logtail n x)))
+  :rule-classes ((:linear)))
