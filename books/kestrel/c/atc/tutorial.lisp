@@ -1416,7 +1416,7 @@
 
   (xdoc::p
    "A C local variable assignment is represented by an ACL2 @(tsee let)
-    that binds a variable already bound in the same scope.
+    that binds a variable already bound, i.e. already in scope.
     For example, the ACL2 function")
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
@@ -1491,7 +1491,7 @@
   (xdoc::p
    "In general, ATC treats a @(tsee let) as
     either a local variable declaration or a local variable assignment
-    based on whether the variable is already in the same scope or not.
+    based on whether the variable is already in scope or not.
     This description is still an over-approximation,
     which will be refined in upcoming tutorial pages."))
 

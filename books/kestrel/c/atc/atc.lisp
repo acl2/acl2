@@ -1672,8 +1672,7 @@
      from the term that the variable is bound to,
      which also determines the type of the variable;
      the type must not be a pointer type (code generation fails if it is).
-     Otherwise, we check whether a variable with the same symbol
-     is in the innermost scope (only the innermost):
+     Otherwise, a variable with the same symbol is in scope:
      in that case, we ensure that the type of the existing variable
      matches the one of the term bound to the inner variable,
      and we generate an assignment to the C variable,
@@ -1784,7 +1783,7 @@
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
-             (prev-type (atc-get-var-innermost var vars))
+             (prev-type (atc-get-var var vars))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
                     (atc-gen-expr-cval val vars fn prec-fns ctx state))
@@ -1795,8 +1794,7 @@
                                assigned to the LET variable ~x2 ~
                                of the function ~x3 ~
                                differs from the type ~x4 ~
-                               of a variable with the same symbol ~
-                               in the same innermost scope."
+                               of a variable with the same symbol in scope."
                               rhs-type val var fn prev-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
@@ -1812,13 +1810,10 @@
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit)))))
-          (er-soft+ ctx t (list nil (irr-type) 0)
-                    "When generating C code for the function ~x0, ~
-                     the LET variable ~x1 has the same symbol name as ~
-                     another variable (formal parameter or LET variable) ~
-                     that is in an outer scope; ~
-                     this is disallowed, even if the package names differ."
-                    fn var)))
+          (mv (raise "Internal error: variable ~x0 is not new but has no type."
+                     var)
+              (list nil (irr-type) 0)
+              state)))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term vars fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
