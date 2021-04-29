@@ -53,9 +53,22 @@
          (|a| (c::bitand-sint-sint |a| |b|)))
     (c::lt-sint-sint |a| |b|)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |i| (|p| |q|)
+  (declare (xargs :guard (and (c::sintp |p|)
+                              (c::sintp |q|))))
+  (let ((|x| (c::bitand-sint-sint |p| |q|)))
+    (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-const 33)))
+        (let ((|x| (c::bitnot-sint |x|)))
+          (c::bitior-sint-sint |q| |x|))
+      (let* ((|x| (c::lognot-sint |x|))
+             (|x| (c::bitand-sint-sint |p| |x|)))
+        (c::bitxor-sint-sint |x| |q|)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
