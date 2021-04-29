@@ -164,16 +164,26 @@
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type>-list 'p))
        (<type>-list-fix (pack <type>-list '-fix))
-       (<type>-list-to-<type>-integer-list (pack <type>-list
-                                                 '-to-
-                                                 <type>-integer-list))
-       (<type>-integer-list-to-<type>-list (pack <type>-integer-list
-                                                 '-to-
-                                                 <type>-list))
-       (<type>-list-to-integer-list-to-list
-        (pack <type> '-list-to-integer-list-to-list))
-       (<type>-integer-list-to-list-to-integer-list
-        (pack <type> '-integer-list-to-list-to-integer-list))
+       (<type>-integer-list-from-<type>-list (pack <type>-integer-list
+                                                   '-from-
+                                                   <type>-list))
+       (<type>-list-from-<type>-integer-list (pack <type>-list
+                                                   '-from-
+                                                   <type>-integer-list))
+       (<type>-list-from-<type>-integer-list-from-<type>-list
+        (pack <type>
+              '-list-from-
+              <type>
+              '-integer-list-from-
+              <type>
+              '-list))
+       (<type>-integer-list-from-<type>-list-from-<type>-integer-list
+        (pack <type>
+              '-integer-list-from-
+              <type>
+              '-list-from-
+              <type>
+              '-integer-list))
        (<type>-mod (pack <type> '-mod)))
 
     `(progn
@@ -302,7 +312,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (std::defprojection ,<type>-list-to-<type>-integer-list
+       (std::defprojection ,<type>-integer-list-from-<type>-list
          ((x ,<type>-listp))
          :returns (result ,<type>-integer-listp)
          :short ,(str::cat "Lift @(tsee "
@@ -310,11 +320,11 @@
                            ") to lists.")
          (,<type>->get x)
          ///
-         (fty::deffixequiv ,<type>-list-to-<type>-integer-list))
+         (fty::deffixequiv ,<type>-integer-list-from-<type>-list))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (std::defprojection ,<type>-integer-list-to-<type>-list
+       (std::defprojection ,<type>-list-from-<type>-integer-list
          ((x ,<type>-integer-listp))
          :returns (result ,<type>-listp)
          :short ,(str::cat "Lift @(tsee "
@@ -322,25 +332,25 @@
                            ") to lists.")
          (,<type> x)
          ///
-         (fty::deffixequiv ,<type>-integer-list-to-<type>-list))
+         (fty::deffixequiv ,<type>-list-from-<type>-integer-list))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defrule ,<type>-integer-list-to-list-to-integer-list
-         (equal (,<type>-list-to-<type>-integer-list
-                 (,<type>-integer-list-to-<type>-list x))
-                (,<type>-integer-list-fix x))
-         :enable (,<type>-list-to-<type>-integer-list
-                  ,<type>-integer-list-to-<type>-list))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (defrule ,<type>-list-to-integer-list-to-list
-         (equal (,<type>-integer-list-to-<type>-list
-                 (,<type>-list-to-<type>-integer-list x))
+       (defrule ,<type>-list-from-<type>-integer-list-from-<type>-list
+         (equal (,<type>-list-from-<type>-integer-list
+                 (,<type>-integer-list-from-<type>-list x))
                 (,<type>-list-fix x))
-         :enable (,<type>-list-to-<type>-integer-list
-                  ,<type>-integer-list-to-<type>-list))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,<type>-integer-list-from-<type>-list-from-<type>-integer-list
+         (equal (,<type>-integer-list-from-<type>-list
+                 (,<type>-list-from-<type>-integer-list x))
+                (,<type>-integer-list-fix x))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
