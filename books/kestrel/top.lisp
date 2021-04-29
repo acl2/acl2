@@ -33,6 +33,7 @@
 (include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")
+(include-book "lists-light/doc")
 (include-book "number-theory/top")
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
