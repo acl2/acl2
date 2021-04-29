@@ -560,21 +560,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-get-var-innermost ((var symbolp)
-                               (vars atc-symbol-type-alist-listp))
-  :returns (type? type-optionp
-                  :hyp (atc-symbol-type-alist-listp vars)
-                  :hints (("Goal" :in-theory (enable type-optionp))))
-  :short "Obtain the type of a variable
-          from the innermost scope of the symbol table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This only looks at the innermost scope; it ignores the others."))
-  (cdr (assoc-eq var (car vars))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-add-var ((var symbolp)
                      (type typep)
                      (vars atc-symbol-type-alist-listp))
