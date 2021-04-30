@@ -1604,8 +1604,8 @@
     "The check succeeds when the term is a call of
      an @(tsee if) or a lambda expression."))
   (case-match term
-    ((if/lambda &) (or (eq if/lambda 'if)
-                       (consp if/lambda)))
+    ((if/lambda . &) (or (eq if/lambda 'if)
+                         (consp if/lambda)))
     (& nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1693,7 +1693,8 @@
      The first case is that the term bound in the @(tsee let)
      must be a statement term that is not a C-valued term:
      then this is a term transforming the variable bound in the @(tsee let),
-     which will be supported soon.
+     and thus we generate the transforming block items
+     followed by the body block items.
      The second case is that the term bound in the @(tsee let)
      must be a C-valued term:
      in that case, we ensure that the type of the existing variable
@@ -1706,6 +1707,9 @@
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
+     For the case of the transforming term, we add up the two limits;
+     this may need refinement.
+     For the other cases, we have one block item followed by block items.
      First, we need 1 to go from @(tsee exec-block-item-list)
      to @(tsee exec-block-item).
      Then we take the maximum of the limit for the first block item
@@ -1721,6 +1725,12 @@
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
      to go from @(tsee exec-block-item-list) to its recursive call.")
+   (xdoc::p
+    "If the term is a single variable
+     and @('xforming') is a singleton list with that variable,
+     then we return nothing.
+     This is the end of a list of block items that transforms that variable.
+     See the user documentation.")
    (xdoc::p
     "If the term is neither an @(tsee if) nor a @(tsee let),
      we treat it as a C-valued term.
@@ -1820,10 +1830,14 @@
                                    limit))))
              (stmt-not-cval (atc-must-be-stmt-term-not-cval val))
              ((when stmt-not-cval)
-              (er-soft+ ctx t (list nil (irr-type) 0)
-                        "Statement term ~x0 transforming variable ~x1 ~
-                         not supported yet; will be supported soon."
-                        val var))
+              (b* (((er (list xform-items & xform-limit))
+                    (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+                   (items (append xform-items body-items))
+                   (type body-type)
+                   (limit (+ xform-limit body-limit)))
+                (acl2::value (list items type limit))))
              (prev-type (atc-get-var var inscope))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
@@ -1855,6 +1869,9 @@
                      var)
               (list nil (irr-type) 0)
               state)))
+       ((when (and (symbolp term)
+                   (equal xforming (list term))))
+        (acl2::value (list nil nil 0)))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
@@ -1874,6 +1891,9 @@
              (true-listp val))
         :name cons-true-listp-of-atc-gen-stmt-val
         :rule-classes :type-prescription))
+  (defret true-listp-of-atc-gen-stmt.items
+    (true-listp (car val))
+    :rule-classes :type-prescription)
   (defret natp-of-atc-gen-stmt.limit
     (natp (caddr val))
     :rule-classes :type-prescription)
