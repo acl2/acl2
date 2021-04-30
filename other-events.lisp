@@ -30916,7 +30916,7 @@
                          (trans-eval-no-warning form ctx state t)))))))))
     (let* ((stobjs-out (car stobjs-out/replaced-val))
            (replaced-val (cdr stobjs-out/replaced-val))
-           (error-triple-p (equal stobjs-out '(nil nil state)))
+           (error-triple-p (equal stobjs-out *error-triple-sig*))
            (val0 (cond (error-triple-p
                         (cadr replaced-val))
                        ((cdr stobjs-out)
@@ -30927,7 +30927,7 @@
        ((not (or (eq stobjs-out0 :auto)
                  (equal stobjs-out stobjs-out0)
                  (and (equal stobjs-out0 '(nil))
-                      (equal stobjs-out '(nil nil state)))))
+                      (equal stobjs-out *error-triple-sig*))))
         (flet ((output-msg (stobjs-out)
                            (cond
                             ((equal stobjs-out '(nil))
@@ -31820,12 +31820,15 @@
                                                       wrld))))))))))))
 
 (defun partial-functions-table-guard (fn val wrld)
-  (let ((msg (partial-functions-table-guard-msg fn val wrld)))
-    (cond (msg (er hard 'partial-functions-table-guard
-                   "Illegal partial-functions-table key and value (see :DOC ~
-                    memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
-                   fn val msg))
-          (t t))))
+  (let ((msg0 ; nil if fn/val is OK as a key/value pair, else a msg
+         (partial-functions-table-guard-msg fn val wrld)))
+    (cond
+     (msg0 (mv nil
+               (msg
+                "Illegal partial-functions-table key and value (see :DOC ~
+                 memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
+                fn val msg0)))
+     (t (mv t nil)))))
 
 (table partial-functions-table nil nil
        :guard

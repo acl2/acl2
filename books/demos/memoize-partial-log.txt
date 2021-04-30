@@ -1526,7 +1526,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{USES-LIMIT}))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = BAD{USES-LIMIT}-LIMIT
 value  = ((BAD{USES-LIMIT} BAD{USES-LIMIT}-LIMIT
@@ -1541,25 +1541,6 @@ The limit variable LIMIT fails to occur free exactly where expected
 in the body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
 as the last argument of each recursive call).
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key BAD{USES-LIMIT}-LIMIT and value
-((BAD{USES-LIMIT} BAD{USES-LIMIT}-LIMIT
-                  BAD{USES-LIMIT}-LIMIT-CHANGE
-                  BAD{USES-LIMIT}-LIMIT-STABLE
-                  (DEFUN BAD{USES-LIMIT} (N)
-                         (DECLARE (IGNORABLE N))
-                         (DECLARE (TYPE INTEGER N))
-                         (FLET (#) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -1585,7 +1566,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{ONE-FORMAL}))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = BAD{ONE-FORMAL}-LIMIT
 value  = ((BAD{ONE-FORMAL} BAD{ONE-FORMAL}-LIMIT
@@ -1598,24 +1579,6 @@ Reason:
 The key is a guard-verified function symbol but it needs at least two
 formal parameters.
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key BAD{ONE-FORMAL}-LIMIT and value
-((BAD{ONE-FORMAL} BAD{ONE-FORMAL}-LIMIT
-                  BAD{ONE-FORMAL}-LIMIT-CHANGE
-                  BAD{ONE-FORMAL}-LIMIT-STABLE
-                  (DEFUN BAD{ONE-FORMAL}
-                         NIL (DECLARE (IGNORABLE))
-                         (FLET (#) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -1660,7 +1623,7 @@ ACL2 !>>(MF
              (ODDLP{DIFFERENT-LIMIT-VARS} ODDLP{DIFFERENT-LIMIT-VARS}-BDD))))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = EVENLP{DIFFERENT-LIMIT-VARS}-BDD
 value  = ((EVENLP{DIFFERENT-LIMIT-VARS}
@@ -1682,31 +1645,6 @@ The formal parameter lists for function symbols
 EVENLP{DIFFERENT-LIMIT-VARS}-BDD and ODDLP{DIFFERENT-LIMIT-VARS}-BDD
 have different final elements (of BOUND and BOUND2, respectively).
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key EVENLP{DIFFERENT-LIMIT-VARS}-BDD
-and value 
-((EVENLP{DIFFERENT-LIMIT-VARS} EVENLP{DIFFERENT-LIMIT-VARS}-BDD
-                               EVENLP{DIFFERENT-LIMIT-VARS}-BDD-CHANGE
-                               EVENLP{DIFFERENT-LIMIT-VARS}-BDD-STABLE
-                               (DEFUN EVENLP{DIFFERENT-LIMIT-VARS} (X)
-                                      (DECLARE (IGNORABLE X))
-                                      (FLET (# #) (DECLARE #) (LET # # #))))
- (ODDLP{DIFFERENT-LIMIT-VARS} ODDLP{DIFFERENT-LIMIT-VARS}-BDD
-                              ODDLP{DIFFERENT-LIMIT-VARS}-BDD-CHANGE
-                              ODDLP{DIFFERENT-LIMIT-VARS}-BDD-STABLE
-                              (DEFUN ODDLP{DIFFERENT-LIMIT-VARS} (X)
-                                     (DECLARE (IGNORABLE X))
-                                     (FLET (# #) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -1852,7 +1790,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{NON-REC}))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = BAD{NON-REC}-LIMIT
 value  = ((BAD{NON-REC} BAD{NON-REC}-LIMIT
@@ -1864,24 +1802,6 @@ value  = ((BAD{NON-REC} BAD{NON-REC}-LIMIT
 Reason:
 The key is a non-recursive function symbol.
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key BAD{NON-REC}-LIMIT and value
-((BAD{NON-REC} BAD{NON-REC}-LIMIT
-               BAD{NON-REC}-LIMIT-CHANGE
-               BAD{NON-REC}-LIMIT-STABLE
-               (DEFUN BAD{NON-REC} (X)
-                      (DECLARE (IGNORABLE X))
-                      (FLET (#) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -1898,7 +1818,7 @@ ACL2 !>>(UNMEMOIZE 'ODDLP)
 ACL2 !>>(MF (MEMOIZE-PARTIAL ((EVENLP EVENLP-BDD))))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = EVENLP-BDD
 value  = ((EVENLP EVENLP-BDD
@@ -1914,23 +1834,6 @@ list of functions is (EVENLP-BDD ODDLP-BDD).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key EVENLP-BDD and value 
-((EVENLP EVENLP-BDD
-         EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-         (DEFUN EVENLP (X)
-                (DECLARE (IGNORABLE X))
-                (FLET (#) (DECLARE #) (LET # # #)))))
-could not be evaluated.
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
 ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
 
 Summary
@@ -1940,7 +1843,7 @@ Rules: NIL
 ACL2 !>>(MF (MEMOIZE-PARTIAL ((ODDLP ODDLP-BDD))))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = ODDLP-BDD
 value  = ((ODDLP ODDLP-BDD
@@ -1956,23 +1859,6 @@ list of functions is (EVENLP-BDD ODDLP-BDD).
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key ODDLP-BDD and value 
-((ODDLP ODDLP-BDD
-        ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
-        (DEFUN ODDLP (X)
-               (DECLARE (IGNORABLE X))
-               (FLET (#) (DECLARE #) (LET # # #)))))
-could not be evaluated.
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
 ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  See :DOC failure.
 
 Summary
@@ -1983,7 +1869,7 @@ ACL2 !>>(MF (MEMOIZE-PARTIAL ((ODDLP ODDLP-BDD)
                               (EVENLP EVENLP-BDD))))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = ODDLP-BDD
 value  = ((ODDLP ODDLP-BDD
@@ -2001,28 +1887,6 @@ The strip-cadrs of the proposed value is not the list of function symbols,
 in order, defined by mutual-recursion with the key.  That expected
 list of functions is (EVENLP-BDD ODDLP-BDD).
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key ODDLP-BDD and value 
-((ODDLP ODDLP-BDD
-        ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
-        (DEFUN ODDLP (X)
-               (DECLARE (IGNORABLE X))
-               (FLET (# #) (DECLARE #) (LET # # #))))
- (EVENLP EVENLP-BDD
-         EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-         (DEFUN EVENLP (X)
-                (DECLARE (IGNORABLE X))
-                (FLET (# #) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -2125,7 +1989,7 @@ ACL2 !>>(MF
           (MEMOIZE 'ODDLP2 :TOTAL 'ODDLP2-BDD)))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = EVENLP2-BDD
 value  = ((EVENLP2 EVENLP2-BDD
@@ -2148,28 +2012,6 @@ The following event is missing:
        (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
 
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key EVENLP2-BDD and value 
-((EVENLP2 EVENLP2-BDD
-          EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
-          (DEFUN EVENLP2 (X)
-                 (DECLARE (IGNORABLE X))
-                 (FLET (# #) (DECLARE #) (LET # # #))))
- (ODDLP2 ODDLP2-BDD
-         ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
-         (DEFUN ODDLP2 (X)
-                (DECLARE (IGNORABLE X))
-                (FLET (# #) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
@@ -2253,7 +2095,7 @@ ACL2 !>>(MF
                                                NIL)))))))))
 
 
-HARD ACL2 ERROR in PARTIAL-FUNCTIONS-TABLE-GUARD:  Illegal partial-
+ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
 functions-table key and value (see :DOC memoize-partial):
 key = EVENLP2-BDD
 value  = ((EVENLP2 EVENLP2-BDD
@@ -2282,28 +2124,6 @@ The following events are missing:
        (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
 
 
-(See :DOC set-iprint to be able to see elided values in this message.)
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Evaluation aborted.
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  The TABLE :guard
-for PARTIAL-FUNCTIONS-TABLE on the key EVENLP2-BDD and value 
-((EVENLP2 EVENLP2-BDD
-          EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
-          (DEFUN EVENLP2 (X)
-                 (DECLARE (IGNORABLE X))
-                 (FLET (# #) (DECLARE #) (LET # # #))))
- (ODDLP2 ODDLP2-BDD
-         ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
-         (DEFUN ODDLP2 (X)
-                (DECLARE (IGNORABLE X))
-                (FLET (# #) (DECLARE #) (LET # # #)))))
-could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
