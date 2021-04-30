@@ -84,7 +84,7 @@
 
   "@('fns') is @('fn1...fnp') or a suffix of it."
 
-  "@('vars') is a list of alists from ACL2 variable symbols to C types.
+  "@('inscope') is a list of alists from ACL2 variable symbols to C types.
    These are the variables in scope
    for the ACL2 term whose code is being generated,
    organized in nested scopes from innermost to outermost.
@@ -542,8 +542,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-get-var ((var symbolp) (vars atc-symbol-type-alist-listp))
-  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp vars))
+(define atc-get-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
   :short "Obtain the type of a variable from the symbol table."
   :long
   (xdoc::topstring
@@ -553,29 +553,29 @@
      so any lookup order would give the same result.")
    (xdoc::p
     "Return @('nil') if the variable is not in scope."))
-  (if (endp vars)
+  (if (endp inscope)
       nil
-    (or (cdr (assoc-eq var (car vars)))
-        (atc-get-var var (cdr vars)))))
+    (or (cdr (assoc-eq var (car inscope)))
+        (atc-get-var var (cdr inscope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-add-var ((var symbolp)
                      (type typep)
-                     (vars atc-symbol-type-alist-listp))
-  :returns (new-vars atc-symbol-type-alist-listp :hyp :guard)
+                     (inscope atc-symbol-type-alist-listp))
+  :returns (new-inscope atc-symbol-type-alist-listp :hyp :guard)
   :short "Add a variable with a type to the symbol table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is added to the innermost scope.
      The symbol table has always at least one scope."))
-  (cons (acons var type (car vars))
-        (cdr vars)))
+  (cons (acons var type (car inscope))
+        (cdr inscope)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-var-newp ((var-name stringp) (vars atc-symbol-type-alist-listp))
+(define atc-var-newp ((var-name stringp) (inscope atc-symbol-type-alist-listp))
   :returns (yes/no booleanp)
   :short "Check if a variable name is not already in the symbol table."
   :long
@@ -587,10 +587,10 @@
      is ignored for the purpose of representing C variables:
      only the symbol name is used,
      and thus all the symbol names must be distinct."))
-  (or (endp vars)
+  (or (endp inscope)
       (and (not (member-equal var-name
-                              (symbol-name-lst (strip-cars (car vars)))))
-           (atc-var-newp var-name (cdr vars)))))
+                              (symbol-name-lst (strip-cars (car inscope)))))
+           (atc-var-newp var-name (cdr inscope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1141,7 +1141,7 @@
      and for boolean terms (which are always pure)."))
 
   (define atc-gen-expr-cval-pure ((term pseudo-termp)
-                                  (vars atc-symbol-type-alist-listp)
+                                  (inscope atc-symbol-type-alist-listp)
                                   (fn symbolp)
                                   ctx
                                   state)
@@ -1206,7 +1206,7 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (b* ((type (atc-get-var term vars))
+          (b* ((type (atc-get-var term inscope))
                ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
@@ -1226,7 +1226,7 @@
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
-                                                               vars
+                                                               inscope
                                                                fn
                                                                ctx
                                                                state)))
@@ -1235,12 +1235,12 @@
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-cval-pure arg1
-                                                                vars
+                                                                inscope
                                                                 fn
                                                                 ctx
                                                                 state))
                ((er (list arg2-expr &)) (atc-gen-expr-cval-pure arg2
-                                                                vars
+                                                                inscope
                                                                 fn
                                                                 ctx
                                                                 state)))
@@ -1251,7 +1251,7 @@
          ((mv okp tyname arg) (atc-check-conv term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
-                                                               vars
+                                                               inscope
                                                                fn
                                                                ctx
                                                                state)))
@@ -1261,12 +1261,12 @@
          ((mv okp arr sub type) (atc-check-array-read term))
          ((when okp)
           (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
-                                                               vars
+                                                               inscope
                                                                fn
                                                                ctx
                                                                state))
                ((er (list sub-expr &)) (atc-gen-expr-cval-pure sub
-                                                               vars
+                                                               inscope
                                                                fn
                                                                ctx
                                                                state)))
@@ -1276,37 +1276,37 @@
       (case-match term
         (('c::sint-from-boolean arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg vars fn ctx state))
+               (atc-gen-expr-bool arg inscope fn ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
            (mv nil (list expr (type-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
               ((when mbtp) (atc-gen-expr-cval-pure then
-                                                   vars
+                                                   inscope
                                                    fn
                                                    ctx
                                                    state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
               ((when mbt$p) (atc-gen-expr-cval-pure then
-                                                    vars
+                                                    inscope
                                                     fn
                                                     ctx
                                                     state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                           vars
+                                                           inscope
                                                            fn
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state))
               ((er (list then-expr then-type)) (atc-gen-expr-cval-pure
                                                 then
-                                                vars
+                                                inscope
                                                 fn
                                                 ctx
                                                 state))
               ((er (list else-expr else-type)) (atc-gen-expr-cval-pure
                                                 else
-                                                vars
+                                                inscope
                                                 fn
                                                 ctx
                                                 state))
@@ -1330,7 +1330,7 @@
                      fn term)))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (vars atc-symbol-type-alist-listp)
+                             (inscope atc-symbol-type-alist-listp)
                              (fn symbolp)
                              ctx
                              state)
@@ -1362,19 +1362,19 @@
     (case-match term
       (('not arg)
        (b* (((er arg-expr) (atc-gen-expr-bool arg
-                                              vars
+                                              inscope
                                               fn
                                               ctx
                                               state)))
          (acl2::value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state)))
@@ -1383,12 +1383,12 @@
                                         :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state)))
@@ -1416,7 +1416,7 @@
                         the term ~x1 is encountered instead."
                        fn term))
             ((mv erp (list expr &) state)
-             (atc-gen-expr-cval-pure arg vars fn ctx state)))
+             (atc-gen-expr-cval-pure arg inscope fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -1447,7 +1447,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-cval-pure-list ((terms pseudo-term-listp)
-                                     (vars atc-symbol-type-alist-listp)
+                                     (inscope atc-symbol-type-alist-listp)
                                      (fn symbolp)
                                      ctx
                                      state)
@@ -1461,13 +1461,13 @@
      However, we do not return the C types of the expressions."))
   (b* (((when (endp terms)) (acl2::value nil))
        ((mv erp (list expr &) state) (atc-gen-expr-cval-pure (car terms)
-                                                             vars
+                                                             inscope
                                                              fn
                                                              ctx
                                                              state))
        ((when erp) (mv erp nil state))
        ((er exprs) (atc-gen-expr-cval-pure-list (cdr terms)
-                                                vars
+                                                inscope
                                                 fn
                                                 ctx
                                                 state)))
@@ -1476,7 +1476,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-cval ((term pseudo-termp)
-                           (vars atc-symbol-type-alist-listp)
+                           (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
                            ctx
@@ -1523,7 +1523,7 @@
         (atc-check-callable-fn term prec-fns))
        ((when okp)
         (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
-                                                                    vars
+                                                                    inscope
                                                                     fn
                                                                     ctx
                                                                     state))
@@ -1535,7 +1535,7 @@
                         type
                         (1+ limit))))))
     (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-cval-pure term vars fn ctx state))
+          (atc-gen-expr-cval-pure term inscope fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
       (acl2::value (list expr type 1))))
   ///
@@ -1589,7 +1589,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
-                      (vars atc-symbol-type-alist-listp)
+                      (inscope atc-symbol-type-alist-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       ctx
@@ -1700,19 +1700,19 @@
   (b* (((mv okp test then else) (acl2::check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (acl2::check-mbt-call test))
-             ((when mbtp) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((when mbtp) (atc-gen-stmt then inscope fn prec-fns ctx state))
              ((mv mbt$p &) (acl2::check-mbt$-call test))
-             ((when mbt$p) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((when mbt$p) (atc-gen-stmt then inscope fn prec-fns ctx state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                          vars
+                                                          inscope
                                                           fn
                                                           ctx
                                                           state))
              ((when erp) (mv erp (list nil (irr-type) 0) state))
              ((er (list then-items then-type then-limit))
-              (atc-gen-stmt then (cons nil vars) fn prec-fns ctx state))
+              (atc-gen-stmt then (cons nil inscope) fn prec-fns ctx state))
              ((er (list else-items else-type else-limit))
-              (atc-gen-stmt else (cons nil vars) fn prec-fns ctx state))
+              (atc-gen-stmt else (cons nil inscope) fn prec-fns ctx state))
              ((unless (equal then-type else-type))
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
@@ -1742,9 +1742,9 @@
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
-             ((when (atc-var-newp var-name vars))
+             ((when (atc-var-newp var-name inscope))
               (b* (((mv erp (list init-expr init-type init-limit) state)
-                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1759,19 +1759,19 @@
                                                   (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
-                   (vars (atc-add-var var init-type vars))
+                   (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 init-limit)
                                     (+ 1 body-limit)))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
-             (prev-type (atc-get-var var vars))
+             (prev-type (atc-get-var var inscope))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1788,7 +1788,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 1 1 rhs-limit)
                                     body-limit))))
@@ -1800,7 +1800,7 @@
               (list nil (irr-type) 0)
               state)))
        ((mv erp (list expr type limit) state)
-        (atc-gen-expr-cval term vars fn prec-fns ctx state))
+        (atc-gen-expr-cval term inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
        (limit (+ 1 1 1 limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
@@ -1946,7 +1946,7 @@
                                    state)
   :returns (mv erp
                (val (tuple (params param-declon-listp)
-                           (vars atc-symbol-type-alist-listp)
+                           (inscope atc-symbol-type-alist-listp)
                            (pointers symbol-listp)
                            val))
                state)
@@ -1977,12 +1977,12 @@
        ((mv erp (list param type pointerp) state)
         (atc-gen-param-declon formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
-       ((er (list params vars pointers))
+       ((er (list params inscope pointers))
         (atc-gen-param-declon-list (cdr formals)
                                    fn guard-conjuncts guard
                                    ctx state)))
     (acl2::value (list (cons param params)
-                       (atc-add-var formal type vars)
+                       (atc-add-var formal type inscope)
                        (if pointerp (cons formal pointers) pointers))))
 
   :verify-guards nil ; done below
@@ -2595,11 +2595,11 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params vars pointers))
+       ((er (list params inscope pointers))
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
-                                                   vars
+                                                   inscope
                                                    fn
                                                    prec-fns
                                                    ctx
