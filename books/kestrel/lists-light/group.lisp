@@ -34,7 +34,6 @@
 (local (include-book "nthcdr"))
 (local (include-book "firstn"))
 (local (include-book "true-list-fix"))
-(local (include-book "memberp"))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for FLOOR-BOUNDed-by-/
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
