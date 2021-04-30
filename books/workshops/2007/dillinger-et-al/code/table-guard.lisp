@@ -89,4 +89,3 @@
 
 (set-termination-method :foo)
 |#
-
