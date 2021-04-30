@@ -1613,7 +1613,8 @@
      as described in the user documentation.")
    (xdoc::p
     "The @('xforming') parameter of this ACL2 function
-     is the list of variables being transformed by this statement.")
+     is the list of variables being transformed by this statement.
+     This is denoted @('vars') in the user documentation at @(tsee atc).")
    (xdoc::p
     "Besides the generated block items,
      we also return an optional C type.
