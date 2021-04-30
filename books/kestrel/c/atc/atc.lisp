@@ -1588,6 +1588,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-must-be-stmt-term-not-cval ((term pseudo-termp))
+  :returns (yes/no booleanp)
+  :short "Perform a shallow check that a term is a statement term
+          that is not a C-valued term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atc-gen-stmt) to distinguish two cases
+     in the treatment of @(tsee let) terms where the variable is in scope.
+     The check just serves to distinguish the two cases,
+     each of which performs a complete validation of the term;
+     so it is fine for the check to be shallow.")
+   (xdoc::p
+    "The check succeeds when the term is a call of
+     an @(tsee if) or a lambda expression."))
+  (case-match term
+    ((if/lambda &) (or (eq if/lambda 'if)
+                       (consp if/lambda)))
+    (& nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
                       (inscope atc-symbol-type-alist-listp)
                       (xforming symbol-listp)
@@ -1666,17 +1688,21 @@
      from the term that the variable is bound to,
      which also determines the type of the variable;
      the type must not be a pointer type (code generation fails if it is).
-     Otherwise, a variable with the same symbol is in scope:
+     Otherwise, a variable with the same symbol is in scope,
+     and there are two case to consider.
+     The first case is that the term bound in the @(tsee let)
+     must be a statement term that is not a C-valued term:
+     then this is a term transforming the variable bound in the @(tsee let),
+     which will be supported soon.
+     The second case is that the term bound in the @(tsee let)
+     must be a C-valued term:
      in that case, we ensure that the type of the existing variable
-     matches the one of the term bound to the inner variable,
+     matches the one of the term bound in the @(tsee let),
      and we generate an assignment to the C variable,
      with the expression obtained
      from the term that the inner variable is bound to.
-     In both cases, we recursively generate the block items for the body
-     and we put those just after the variable declaration or assignment.
-     If neither case applies,
-     it means that a variable with the same symbol is in an outer scope:
-     we stop with an error.")
+     In all cases, we recursively generate the block items for the body
+     and we put those just after the variable declaration or assignment.")
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
@@ -1792,6 +1818,12 @@
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
+             (stmt-not-cval (atc-must-be-stmt-term-not-cval val))
+             ((when stmt-not-cval)
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "Statement term ~x0 transforming variable ~x1 ~
+                         not supported yet; will be supported soon."
+                        val var))
              (prev-type (atc-get-var var inscope))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
