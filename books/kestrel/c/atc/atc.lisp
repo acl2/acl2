@@ -1140,11 +1140,11 @@
     "These are for pure C-valued terms
      and for boolean terms (which are always pure)."))
 
-  (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
-                                     (vars atc-symbol-type-alist-listp)
-                                     (fn symbolp)
-                                     ctx
-                                     state)
+  (define atc-gen-expr-cval-pure ((term pseudo-termp)
+                                  (vars atc-symbol-type-alist-listp)
+                                  (fn symbolp)
+                                  ctx
+                                  state)
     :returns (mv erp
                  (val (tuple (expr exprp)
                              (type typep)
@@ -1225,51 +1225,51 @@
             type)))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
+                                                               vars
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-unary :op op :arg arg-expr)
                                type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr &)) (atc-gen-expr-pure-nonbool arg1
-                                                                   vars
-                                                                   fn
-                                                                   ctx
-                                                                   state))
-               ((er (list arg2-expr &)) (atc-gen-expr-pure-nonbool arg2
-                                                                   vars
-                                                                   fn
-                                                                   ctx
-                                                                   state)))
+          (b* (((er (list arg1-expr &)) (atc-gen-expr-cval-pure arg1
+                                                                vars
+                                                                fn
+                                                                ctx
+                                                                state))
+               ((er (list arg2-expr &)) (atc-gen-expr-cval-pure arg2
+                                                                vars
+                                                                fn
+                                                                ctx
+                                                                state)))
             (acl2::value (list (make-expr-binary :op op
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
                                type))))
          ((mv okp tyname arg) (atc-check-conv term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
+                                                               vars
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
                                (type-name-to-type tyname)))))
          ((mv okp arr sub type) (atc-check-array-read term))
          ((when okp)
-          (b* (((er (list arr-expr &)) (atc-gen-expr-pure-nonbool arr
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-               ((er (list sub-expr &)) (atc-gen-expr-pure-nonbool sub
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
+                                                               vars
+                                                               fn
+                                                               ctx
+                                                               state))
+               ((er (list sub-expr &)) (atc-gen-expr-cval-pure sub
+                                                               vars
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
                                type)))))
@@ -1281,30 +1281,30 @@
            (mv nil (list expr (type-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-pure-nonbool then
-                                                      vars
-                                                      fn
-                                                      ctx
-                                                      state))
+              ((when mbtp) (atc-gen-expr-cval-pure then
+                                                   vars
+                                                   fn
+                                                   ctx
+                                                   state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-pure-nonbool then
-                                                       vars
-                                                       fn
-                                                       ctx
-                                                       state))
+              ((when mbt$p) (atc-gen-expr-cval-pure then
+                                                    vars
+                                                    fn
+                                                    ctx
+                                                    state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
                                                            vars
                                                            fn
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state))
-              ((er (list then-expr then-type)) (atc-gen-expr-pure-nonbool
+              ((er (list then-expr then-type)) (atc-gen-expr-cval-pure
                                                 then
                                                 vars
                                                 fn
                                                 ctx
                                                 state))
-              ((er (list else-expr else-type)) (atc-gen-expr-pure-nonbool
+              ((er (list else-expr else-type)) (atc-gen-expr-cval-pure
                                                 else
                                                 vars
                                                 fn
@@ -1416,7 +1416,7 @@
                         the term ~x1 is encountered instead."
                        fn term))
             ((mv erp (list expr &) state)
-             (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
+             (atc-gen-expr-cval-pure arg vars fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -1432,45 +1432,45 @@
   ///
 
   (defret-mutual consp-of-atc-gen-expr-pure
-    (defret typeset-of-atc-gen-expr-pure-nonbool
+    (defret typeset-of-atc-gen-expr-cval-pure
       (and (consp val)
            (true-listp val))
       :rule-classes :type-prescription
-      :fn atc-gen-expr-pure-nonbool)
+      :fn atc-gen-expr-cval-pure)
     (defret true-of-atc-gen-expr-bool
       t
       :rule-classes nil
       :fn atc-gen-expr-bool))
 
-  (verify-guards atc-gen-expr-pure-nonbool))
+  (verify-guards atc-gen-expr-cval-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
-                                        (vars atc-symbol-type-alist-listp)
-                                        (fn symbolp)
-                                        ctx
-                                        state)
+(define atc-gen-expr-cval-pure-list ((terms pseudo-term-listp)
+                                     (vars atc-symbol-type-alist-listp)
+                                     (fn symbolp)
+                                     ctx
+                                     state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure C-valued terms."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee atc-gen-expr-pure-nonbool) to lists.
+    "This lifts @(tsee atc-gen-expr-cval-pure) to lists.
      However, we do not return the C types of the expressions."))
   (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp (list expr &) state) (atc-gen-expr-pure-nonbool (car terms)
-                                                                vars
-                                                                fn
-                                                                ctx
-                                                                state))
+       ((mv erp (list expr &) state) (atc-gen-expr-cval-pure (car terms)
+                                                             vars
+                                                             fn
+                                                             ctx
+                                                             state))
        ((when erp) (mv erp nil state))
-       ((er exprs) (atc-gen-expr-pure-nonbool-list (cdr terms)
-                                                   vars
-                                                   fn
-                                                   ctx
-                                                   state)))
+       ((er exprs) (atc-gen-expr-cval-pure-list (cdr terms)
+                                                vars
+                                                fn
+                                                ctx
+                                                state)))
     (acl2::value (cons expr exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1522,11 +1522,11 @@
   (b* (((mv okp called-fn args type limit)
         (atc-check-callable-fn term prec-fns))
        ((when okp)
-        (b* (((mv erp arg-exprs state) (atc-gen-expr-pure-nonbool-list args
-                                                                       vars
-                                                                       fn
-                                                                       ctx
-                                                                       state))
+        (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
+                                                                    vars
+                                                                    fn
+                                                                    ctx
+                                                                    state))
              ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
           (acl2::value (list
                         (make-expr-call :fun (make-ident
@@ -1535,7 +1535,7 @@
                         type
                         (1+ limit))))))
     (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-pure-nonbool term vars fn ctx state))
+          (atc-gen-expr-cval-pure term vars fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
       (acl2::value (list expr type 1))))
   ///
@@ -1754,9 +1754,9 @@
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
-                                                  (make-ident
-                                                   :name
-                                                    (symbol-name var)))
+                                                 (make-ident
+                                                  :name
+                                                  (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
                    (vars (atc-add-var var init-type vars))
