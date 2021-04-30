@@ -12,6 +12,9 @@
 (defthm return-of-integerp
   (booleanp (integerp x)))
 
+(defthm return-of-rationalp
+  (booleanp (rationalp x)))
+
 (defthm return-of-ifix
   (integerp (ifix x)))
 
@@ -20,6 +23,9 @@
 
 (defthm return-of-equal
   (booleanp (equal x y)))
+
+(defthm return-of-not
+  (booleanp (not x)))
 
 (defthm return-of-equal-integer
   (implies (and (integerp x) (integerp y))
@@ -34,6 +40,16 @@
   (implies (and (rationalp x)
                 (rationalp y))
            (rationalp (binary-+ x y))))
+
+(defthm return-of-binary-*
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (binary-* x y))))
+
+(defthm return-of-binary-*-rationalp
+  (implies (and (rationalp x)
+                (rationalp y))
+           (rationalp (binary-* x y))))
 
 (defthm return-of-<
   (implies (and (rationalp x)
@@ -67,9 +83,19 @@
       :returns '(return-of-equal return-of-equal-integer)
       :depth 0)
     ,(make-smt-function
+      :name 'not
+      :formals '(x)
+      :returns '(return-of-not)
+      :depth 0)
+    ,(make-smt-function
       :name 'binary-+
       :formals '(x y)
       :returns '(return-of-binary-+ return-of-binary-+-rationalp)
+      :depth 0)
+    ,(make-smt-function
+      :name 'binary-*
+      :formals '(x y)
+      :returns '(return-of-binary-* return-of-binary-*-rationalp)
       :depth 0)
     ,(make-smt-function
       :name '<

@@ -1574,7 +1574,7 @@
 		                (subsetp-equal (acl2::simple-term-vars-lst term-lst) avoid))
 	             (mv-let (new-term-lst new-alst new-avoid)
 		             (expand-term-list term-lst options fn-lvls alst avoid clock state)
-		             (declare (ignore  new-avoid))
+		             (declare (ignore new-avoid))
 		             (equal (ev-smtcp-lst new-term-lst (new-env new-alst env))
 			                  (ev-smtcp-lst term-lst (new-env alst env)))))
       :hints('(
@@ -1586,7 +1586,6 @@
            ("Goal" :in-theory (enable ev-smtcp-of-fncall-args
 				                              acl2::simple-term-vars
 				                              acl2::simple-term-vars-lst)))))
-
 
 (defsection generate-equalities
   (pseudo-useless)
