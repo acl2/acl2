@@ -1590,6 +1590,7 @@
 
 (define atc-gen-stmt ((term pseudo-termp)
                       (inscope atc-symbol-type-alist-listp)
+                      (xforming symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       ctx
@@ -1610,6 +1611,9 @@
    (xdoc::p
     "At the same time, we check that the term is a statement term,
      as described in the user documentation.")
+   (xdoc::p
+    "The @('xforming') parameter of this ACL2 function
+     is the list of variables being transformed by this statement.")
    (xdoc::p
     "Besides the generated block items list,
      we also return the C type of the value it returns.
@@ -1700,9 +1704,11 @@
   (b* (((mv okp test then else) (acl2::check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (acl2::check-mbt-call test))
-             ((when mbtp) (atc-gen-stmt then inscope fn prec-fns ctx state))
+             ((when mbtp)
+              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
              ((mv mbt$p &) (acl2::check-mbt$-call test))
-             ((when mbt$p) (atc-gen-stmt then inscope fn prec-fns ctx state))
+             ((when mbt$p)
+              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           inscope
                                                           fn
@@ -1710,9 +1716,21 @@
                                                           state))
              ((when erp) (mv erp (list nil (irr-type) 0) state))
              ((er (list then-items then-type then-limit))
-              (atc-gen-stmt then (cons nil inscope) fn prec-fns ctx state))
+              (atc-gen-stmt then
+                            (cons nil inscope)
+                            xforming
+                            fn
+                            prec-fns
+                            ctx
+                            state))
              ((er (list else-items else-type else-limit))
-              (atc-gen-stmt else (cons nil inscope) fn prec-fns ctx state))
+              (atc-gen-stmt else
+                            (cons nil inscope)
+                            xforming
+                            fn
+                            prec-fns
+                            ctx
+                            state))
              ((unless (equal then-type else-type))
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
@@ -1761,7 +1779,7 @@
                    (item (block-item-declon declon))
                    (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 init-limit)
                                     (+ 1 body-limit)))))
@@ -1788,7 +1806,7 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 1 1 rhs-limit)
                                     body-limit))))
@@ -2600,6 +2618,7 @@
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
                                                    inscope
+                                                   nil
                                                    fn
                                                    prec-fns
                                                    ctx
