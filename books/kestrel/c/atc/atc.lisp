@@ -1638,7 +1638,8 @@
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
-     we ensure that the two branches have the same type.
+     we ensure that the two branches have the same type
+     (if @('xforming') is non-@('nil'), those types are both @('nil')).
      When we process the branches,
      we extend the symbol table with a new empty scope for each branch.
      The calculation of the limit result is a bit more complicated in this case:
@@ -1758,14 +1759,15 @@
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
-             ((unless (atc-ident-stringp var-name))
-              (er-soft+ ctx t (list nil (irr-type) 0)
-                        "The symbol name ~s0 of ~
-                         the LET variable ~x1 of the function ~x2 ~
-                         must be a portable ASCII C identifier, but it is not."
-                        var-name var fn))
              ((when (atc-var-newp var-name inscope))
-              (b* (((mv erp (list init-expr init-type init-limit) state)
+              (b* (((unless (atc-ident-stringp var-name))
+                    (er-soft+ ctx t (list nil (irr-type) 0)
+                              "The symbol name ~s0 of ~
+                               the LET variable ~x1 of the function ~x2 ~
+                               must be a portable ASCII C identifier, ~
+                               but it is not."
+                              var-name var fn))
+                   ((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((when (type-case init-type :pointer))
