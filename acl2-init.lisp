@@ -1919,7 +1919,26 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
             (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
       (str sysout-name :direction :output)
-      (let* ((prog (our-truename (car sb-ext:*posix-argv*) t)))
+      (let ((prog
+
+; This is the program that will be invoked when starting ACL2.  We prefer an
+; absolute pathname, rather than just "sbcl" or a relative pathname, so that
+; ACL2 is invoked successfully even by those for whom "sbcl" points elsewhere
+; (because of a different PATH).  At one point, between Versions 8.3 and 8.4,
+; we applied our-truename to (car sb-ext:*posix-argv*).  But Andrew Walter
+; reported a problem on 4/30/2021 (GitHub Issue #1254) that was due to nil
+; being returned by that our-truename call, because (car sb-ext:*posix-argv*)
+; is "sbcl" in his environment.  He suggested using undocumented SBCL global
+; sb-ext:*runtime-pathname*, and we took that suggestion.
+
+             (or (our-truename sb-ext:*runtime-pathname* t)
+
+; If somehow the value above is nil, then we go with the called program.  We
+; avoid calling our-truename in that case, since if "make LISP=sbcl" invokes a
+; different sbcl than ./sbcl because "." is not at the front of the PATH at
+; build time, then (our-truename "sbcl" t) would return the wrong path.
+
+                 (car sb-ext:*posix-argv*))))
         (write-exec-file
          str
          ("~a~a~%"
