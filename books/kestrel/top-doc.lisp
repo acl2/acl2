@@ -29,10 +29,12 @@
 
 (in-package "ACL2")
 
+;; This book exports all the xdoc topics for the kestrel books (whatever comes
+;; in via the local include of doc.lisp) but not all the definitions, theorems, etc.
+
 (include-book "xdoc/archive-matching-topics" :dir :system)
-(local
- (progn
-   (include-book "top")))
+
+(local (include-book "doc"))
 
 (xdoc::archive-matching-topics
  (str::strprefixp "[books]/kestrel/" (cdr (assoc :from x))))
