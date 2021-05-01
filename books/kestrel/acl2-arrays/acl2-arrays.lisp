@@ -279,7 +279,6 @@
 
 ;; Get the length of a 1-d array.  We prefer this to (car (dimensions ...))
 ;; because car in many cases get rewritten to a call of nth.
-;todo: consider not even passing in name here
 (defund alen1 (name l)
   (declare (xargs :guard (array1p name l)))
   (car (dimensions name l)))

@@ -34,7 +34,6 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/all-equal-dollar2" :dir :system)) ;for ALL-EQUAL$-WHEN-TRUE-LISTP
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
@@ -1143,7 +1142,7 @@
 (defund bind-var-to-bv-array-length (var term)
   (declare (xargs :guard (and (symbolp var)
                               (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable memberp-of-cons-when-constant)))))
+                  :guard-hints (("Goal" :in-theory (enable)))))
   (if (variablep term)
       nil ;fail
     (if (and (quotep term)
@@ -1159,7 +1158,7 @@
 (defund bind-var-to-bv-array-element-size (var term)
   (declare (xargs :guard (and (symbolp var)
                               (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable memberp-of-cons-when-constant)))))
+                  :guard-hints (("Goal" :in-theory (enable)))))
   (if (variablep term)
       nil ;fail
     (if (and (quotep term)
