@@ -281,7 +281,7 @@
 (define pedersen-segment-scalar-bound ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
   :returns (bound natp)
-  :short "Bound on the value of @(tsee pedersern-segment-scalar)."
+  :short "Bound on the value of @(tsee pedersen-segment-scalar)."
   :long
   (xdoc::topstring
    (xdoc::p
