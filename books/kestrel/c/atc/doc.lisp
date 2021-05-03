@@ -286,8 +286,8 @@
       "A term @('(let ((var term)) body)'),
        where @('var') is the same as some ACL2 variable in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
-       @('term') is a C-valued term whose C type is
-       the same as the C local variable represented by
+       @('term') is a C-valued term that differs from @('var')
+       and whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
        @('body') is a statement term transforming variables @('vars').
        This represents an assignment to
@@ -306,7 +306,7 @@
        where @('var') is the same as some ACL2 variable in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
        @('term') is a statement term transforming @('var')
-       that is not just the C-valued term @('var'), and
+       that is not a C-valued term, and
        @('body') is a statement term transforming variables @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
