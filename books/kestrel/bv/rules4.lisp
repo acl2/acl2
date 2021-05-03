@@ -15,8 +15,9 @@
 (include-book "getbit")
 (include-book "repeatbit")
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-(local (include-book "arith"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
@@ -124,10 +125,6 @@
                   (< (bvchop size x) y)))
   :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
            :in-theory (disable bvchop-plus-times-expt-logtail))))
-
-(defthm distributivity-alt
-  (equal (* (+ y z) x)
-         (+ (* y x) (* z x))))
 
 (defthm low-bits-dont-matter
   (implies (and (< x y)

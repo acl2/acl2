@@ -71,7 +71,7 @@
                   (bool-fix x)))
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm booland-of-nil
+(defthm booland-of-nil-arg1
   (equal (booland nil x)
          nil)
   :hints (("Goal" :in-theory (enable booland))))

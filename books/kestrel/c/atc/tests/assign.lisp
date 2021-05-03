@@ -53,9 +53,41 @@
          (|a| (c::bitand-sint-sint |a| |b|)))
     (c::lt-sint-sint |a| |b|)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |i| (|p| |q|)
+  (declare (xargs :guard (and (c::sintp |p|)
+                              (c::sintp |q|))))
+  (let ((|x| (c::bitand-sint-sint |p| |q|)))
+    (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-const 33)))
+        (let ((|x| (c::bitnot-sint |x|)))
+          (c::bitior-sint-sint |q| |x|))
+      (let* ((|x| (c::lognot-sint |x|))
+             (|x| (c::bitand-sint-sint |p| |x|)))
+        (c::bitxor-sint-sint |x| |q|)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following function is translated to correct C,
+; but the proof seems to take a very long time
+; (it has not even been observed to complete).
+; So no code is generated for this for now;
+; the slowness of its proof must be investigated.
+
+(defun |j| (|x|)
+  (declare (xargs :guard (c::sintp |x|)))
+  (let ((|y| (c::sint-const 0)))
+    (let ((|y| (if (c::boolean-from-sint
+                    (c::lt-sint-sint |x| (c::sint-const 100)))
+                   (let ((|y| (c::bitior-sint-sint |y| (c::sint-const 6666))))
+                     |y|)
+                 (let ((|y| (c::bitxor-sint-sint |y| (c::sint-const 7777))))
+                   |y|))))
+      (c::bitand-sint-sint |x| |y|))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

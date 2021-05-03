@@ -344,3 +344,40 @@
 ;generic rule for all bvops? what if the size isn't a constant?
 (defthm bvplus-not-negative
   (not (< (bvplus size x y) 0)))
+
+(defthmd bvplus-of-plus
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvplus 32 x (+ y z))
+                  (bvplus 32 x (bvplus 32 y z))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthmd bvplus-of-plus2
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvplus 32 (+ y z) x)
+                  (bvplus 32 (bvplus 32 y z) x)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+;fixme kill these?
+(theory-invariant (incompatible (:rewrite bvplus-of-plus) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-plus2) (:definition bvplus)))
+
+(defthmd bvplus-of-plus-arg3
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bvplus size x (+ y z))
+                  (bvplus size x (bvplus size y z))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthmd bvplus-of-plus-arg2
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bvplus size (+ y z) x)
+                  (bvplus size (bvplus size y z) x)))
+  :hints (("Goal" :use (:instance bvplus-of-plus-arg3))))
+
+(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG3) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG2) (:definition bvplus)))

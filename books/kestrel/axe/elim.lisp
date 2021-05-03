@@ -16,7 +16,7 @@
 (include-book "make-dag-variable-alist")
 (include-book "worklists")
 (include-book "axe-trees")
-(include-book "make-var-names")
+(include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "dag-array-printing")
 (include-book "supporting-vars")
 (include-book "rebuild-literals")

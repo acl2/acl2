@@ -32,6 +32,11 @@
                   (bvchop size x)))
   :hints (("Goal" :in-theory (enable bvminus))))
 
+(defthm bvminus-when-size-is-0
+  (equal (bvminus 0 x y)
+         0)
+  :hints (("Goal" :in-theory (enable bvminus))))
+
 (defthm bvminus-when-size-is-not-positive
   (implies (<= size 0)
            (equal (bvminus size x y)

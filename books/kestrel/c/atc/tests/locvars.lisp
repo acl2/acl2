@@ -58,7 +58,7 @@
                                                       c::sub-sint-sint
                                                       c::mul-sint-sint
                                                       c::ge-sint-sint)))))
-    (if (c::sint-nonzerop (c::ge-sint-sint |x| (c::sint-const 0)))
+    (if (c::boolean-from-sint (c::ge-sint-sint |x| (c::sint-const 0)))
         (let ((|z| (c::add-sint-sint |x| |y|)))
           (c::mul-sint-sint (c::sint-const 2) |z|))
       (c::sub-sint-sint |y| |x|))))

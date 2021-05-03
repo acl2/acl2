@@ -395,15 +395,6 @@
            (equal (equal (+ k x) (+ x y))
                   (equal k y))))
 
-(defthm <-of-expt-and-expt
-  (implies (and (< 1 r)
-                (rationalp r)
-                (integerp i)
-                (integerp j))
-           (equal (< (expt r i) (expt r j))
-                  (< i j)))
-  :hints (("Goal" :use (:instance expt-is-increasing-for-base>1))))
-
 ;should be cheap
 ;complete set of these?!
 (defthm <-of-constant-when-<=-of-free

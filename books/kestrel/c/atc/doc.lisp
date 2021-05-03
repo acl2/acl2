@@ -209,33 +209,52 @@
      "Each function @('fni') must be in logic mode and guard-verified.
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " must be a statement term;
-      this notion is defined below, along with the notions of
+     " must be a statement term transforming variables @('nil');
+      the notion of statement term transforming variables @('vars')
+      is defined below, along with the notions of
       C-valued terms,
       pure C-valued terms,
       and boolean terms.")
 
     (xdoc::p
-     "A <i>statement term</i> is
-      inductively defined as one of the following:")
+     "A <i>statement term transforming variables</i> @('vars'),
+      where @('vars') is a list of distinct symbols,
+      is inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A C-valued term.
-       That is, a C-valued term is also a statement term.
+      "A C-valued term, when @('vars') is @('nil').
+       That is, a C-valued term is also
+       a statement term transforming variables @('nil').
        This represents a C @('return') statement
        whose expression is represented by the same term,
        viewed as a C-valued term.")
      (xdoc::li
+      "A term @('var'), when @('vars') is the singleton list @('(var)').
+       This represents no actual C code,
+       because it just serves to conclude
+       preceding statements that may modify @('var'),
+       but since ACL2 is functional,
+       the possibly modified variable must be returned by the term.")
+     (xdoc::li
+      "A term @('(mv var1 ... varn)'),
+       when @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       This represents no actual C code,
+       because it just serves to conclude
+       preceding statements that may modify @('var1'), ..., @('varn'),
+       but since ACL2 is functional,
+       the possibly modified variables must be returned by the term.")
+     (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is a boolean term and
-       (ii) branches that are statement terms.
+       (ii) branches that are statement terms transforming variables @('vars').
        This represents a C @('if') conditional statement
        whose test expression is represented by the test term
        and whose branch blocks are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is a statement term, and
+       (ii) a `then' branch that is
+       a statement term transforming variables @('vars'), and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -247,51 +266,81 @@
        @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
        these are the patterns that ATC looks for.")
      (xdoc::li
-      "A term of the form @('(let ((var term)) body)'),
+      "A term @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('term') is a C-valued term,
-       and @('body') is a statement term.
-       The C type of @('term') must not be a pointer type.
-       This @(tsee let) represents one of the following:"
-      (xdoc::ul
-       (xdoc::li
-        "A declaration of a C local variable represented by @('var'),
-         initialized with the C expression represented by @('term'),
-         and followed by the C code represented by @('body').
-         The C type of the variable is determined from the initializer.
-         The symbol name of @('var') must be distinct from
-         the symbol names of all the other ACL2 variables in scope
-         (function parameters and variables bound in enclosing @(tsee let)s).")
-       (xdoc::li
-        "An assignment to the C local variable or function parameter
-         represented by @('var'),
-         with the C expression represented by @('term'),
-         and followed by the C code represented by @('body').
-         This @(tsee let) must be in the scope of
-         an ACL2 variable with the same symbol @('var');
-         while the @('var') in this @(tsee let)
-         is distinct from and shadows the one in scope in ACL2,
-         it represents the same variable in C.
-         In this case, the value bound to the outer @('var') must have
-         the same C type as the value bound to the inner @('var').
-         However, there must be no @(tsee if) ``between''
-         this @(tsee let) and
-         either the one of the outer @('var')
-         (if @('var') is a local variable)
-         or the start of the function body
-         (if @('var') is a function parameter),
-         i.e. the two variables must be in the same C scope
-         (as represented in ACL2)."))
-      "The two situations are distinguished by whether
-       there is no outer @('var') in scope,
-       in which case the @(tsee let) represents a declaration,
-       or there is one (subject to the scope restriction above),
-       in which case the @(tsee let) represents an assignment.
-       In any case, the @(tsee let) must have exactly one variable.
+       the symbol name of @('var') is distinct from
+       the symbol names of all the other ACL2 variables in scope
+       (function parameters and variables bound in enclosing @(tsee let)s),
+       @('term') is a C-valued term whose C type is not a pointer type, and
+       @('body') is a statement term transforming variables @('vars').
+       This represents a declaration of
+       a C local variable represented by @('var'),
+       initialized with the C expression represented by @('term'),
+       followed by the C code represented by @('body').
+       The C type of the variable is determined from the initializer.
        In translated terms,
        @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A term @('(let ((var term)) body)'),
+       where @('var') is the same as some ACL2 variable in scope
+       (function parameters and variables bound in enclosing @(tsee let)s),
+       @('term') is a C-valued term whose C type is
+       the same as the C local variable represented by
+       the aforementioned ACL2 variable in scope, and
+       @('body') is a statement term transforming variables @('vars').
+       This represents an assignment to
+       the C local variable or function parameter
+       represented by @('var'),
+       with the C expression represented by @('term') as right-hand side,
+       followed by the C code represented by @('body').
+       While in ACL2 the @('var') in this term
+       is distinct from and shadows the one in scope,
+       it represents the same variable in C.
+       In translated terms,
+       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A term @('(let ((var term)) body)'),
+       where @('var') is the same as some ACL2 variable in scope
+       (function parameters and variables bound in enclosing @(tsee let)s),
+       @('term') is a statement term transforming @('var')
+       that is not just the C-valued term @('var'), and
+       @('body') is a statement term transforming variables @('vars').
+       This represents the C code represented by @('term'),
+       which may modify the variable represented by @('var'),
+       followed by the C code represented by @('body').
+       In translated terms,
+       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
+       this is the pattern that ATC looks for.")
+     (xdoc::li
+      "A term @('(mv-let (var1 ... varn) term body)'),
+       where @('n') &gt; 1,
+       each @('vari') is the same as some ACL2 variable in scope
+       (function parameters and variables bound in enclosing @(tsee let)s),
+       @('term') is a statement term transforming @('(var1 ... varn)'), and
+       @('body') is a statement term transforming variables @('vars').
+       This represents the C code represented by @('term'),
+       which may modify the variables represented by @('var1'), ..., @('varn'),
+       followed by the C code represented by @('body').
+       In translated terms,
+       @('(mv-let (var1 ... varn) body)') is
+       @('((lambda (mv)
+                   ((lambda (var1 ... varn) body)
+                    (mv-nth \'0 mv)
+                    ...
+                    (mv-nth \'n-1 mv)))
+           term)');
        this is the pattern that ATC looks for."))
+    (xdoc::p
+     "Currently there is no actual support for @(tsee mv-let) above,
+      but support will be added soon.
+      Also, an example involving the third form of @(tsee let) above
+      generates a theorem that takes a long time to process,
+      and has not even been observed to complete;
+      thus, for the time being one may want to use @(':proofs nil')
+      when using a @(tsee let) of that form.")
 
     (xdoc::p
      "A <i>C-valued term</i> is
@@ -434,7 +483,7 @@
       "A call of @(tsee uchar-array-read-sint) on C-valued terms.
        This represents an array subscripting expression.")
      (xdoc::li
-      "A call of @(tsee sint01) on a boolean term.
+      "A call of @(tsee sint-from-boolean) on a boolean term.
        This converts a boolean term
        to a pure C-valued term.")
      (xdoc::li
@@ -464,7 +513,7 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of a function @('<type>-nonzerop')
+      "A call of a function @('boolean-from-<type>')
        on a pure C-valued term,
        where @('<type>') is among"
       (xdoc::ul

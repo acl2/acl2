@@ -40,7 +40,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-;(include-book "../library-wrappers/flag")
+;(include-book "kestrel/library-wrappers/my-make-flag" :dir :system)
 (include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
 (local (include-book "std/lists/last" :dir :system))
 (local (include-book "std/lists/union" :dir :system))

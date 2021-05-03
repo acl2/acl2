@@ -360,3 +360,35 @@
 (defthm equal-of-bvor-and-bvor
   (equal (equal (bvor size x y) (bvor size y x))
          t))
+
+;weird rule
+(defthm unsigned-byte-p-of-bvor-2
+  (implies (and (unsigned-byte-p n x)
+                (unsigned-byte-p n y)
+                (natp n))
+           (unsigned-byte-p n (bvor m x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+;use trim?
+(defthm bvor-of-bvor-tighten
+  (implies (and (< size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvor size (bvor size2 x y) z)
+                  (bvor size (bvor size x y) z)))
+  :hints (("Goal" :in-theory (e/d (bvor) ( BVCHOP-1-BECOMES-GETBIT)))))
+
+;use trim?
+(defthm bvor-of-bvor-tighten-2
+  (implies (and (< size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (bvor size z (bvor size2 x y))
+                  (bvor size z (bvor size x y))))
+  :hints (("Goal" :in-theory (e/d (bvor) ( BVCHOP-1-BECOMES-GETBIT)))))

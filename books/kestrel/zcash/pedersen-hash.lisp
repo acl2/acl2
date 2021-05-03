@@ -276,6 +276,140 @@
 
      (verify-guards pedersen-segment-scalar-loop))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-segment-scalar-bound ((segment bit-listp))
+  :guard (integerp (/ (len segment) 3))
+  :returns (bound natp)
+  :short "Bound on the value of @(tsee pedersen-segment-scalar)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Theorem 5.4.1 in [ZPS:5.4.1.7] defines @$(\\Delta$) as
+     a bound on the value of the encoding function @($\\langle\\cdot\\rangle$):
+     the value of the function is between @($-\\Delta$) and @($\\Delta$).
+     In [ZPS], @($\\Delta$) is a constant because @($\\langle\\cdot\\rangle$)
+     is defined over segments of maximum size @($3c$).
+     However, our @(tsee pedersen-segment-scalar) is more generally defined
+     over segments of any length that is a multiple of 3.
+     Accordingly, we define a function that expresses @($\\Delta$)
+     in terms of (the length of) the segment.
+     Since @(tsee pedersen-segment-scalar) is defined in terms of
+     an auxiliary recursive function that is defined even more generally
+     over not only a segment of length multiple of 3
+     but also the index @($j$) of the chunk of 3 bits,
+     we also introduce a function that expresses
+     the bound on the recursive function.")
+   (xdoc::p
+    "Based on the summation that defines @($\\Delta$) in [ZPS],
+     we define the bound for the recursive function
+     by recursively adding @($4\\cdot2^{4\\cdot(j-1)}$)
+     while @($j$) is incremented until there is no 3-bit chunk left.
+     The bound for @(tsee pedersen-segment-scalar) is obtained from that
+     by setting @($j$) to 1.")
+   (xdoc::p
+    "To prove that these are actual bounds,
+     we start with a proof by induction for the recursive function and bound.
+     We need a lemma about the length of @('(nthcdr 3 x)') being a multiple of 3
+     when the length of @('x') is:
+     this serves to relieve the hypothesis of the induction hypothesis.
+     We also need a lemma saying that @('(take 3 segment)') is a list of bits
+     under the hypothesis of the theorem:
+     this is needed for the base case,
+     to relieve the hypothesis of the bound rules of @(tsee pedersen-enc).
+     We also need a few arithmetic lemmas
+     to nudge the proof in the right direction.
+     With linear bound rules for the recursive function in hand,
+     the bound proofs for @(tsee pedersen-segment-scalar) are automatic."))
+  (pedersen-segment-scalar-loop-bound 1 segment)
+
+  :prepwork
+  ((define pedersen-segment-scalar-loop-bound ((j posp) (segment bit-listp))
+     :guard (integerp (/ (len segment) 3))
+     :returns (bound natp :hyp (posp j))
+     :parents nil
+     (if (consp segment)
+         (+ (* 4 (expt 2 (* 4 (1- j))))
+            (pedersen-segment-scalar-loop-bound (1+ j) (nthcdr 3 segment)))
+       0)
+     :measure (len segment)
+     :prepwork ((local (include-book "std/lists/nthcdr" :dir :system))
+                (local (include-book "arithmetic-3/top" :dir :system)))))
+
+  ///
+
+  (defrulel len-of-nthcdr-multiple-of-3
+    (implies (and (integerp (* 1/3 (len x)))
+                  (consp x))
+             (integerp (* 1/3 (len (nthcdr 3 x)))))
+    :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
+
+  (defrulel bit-listp-of-take-3
+    (implies (and (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (bit-listp (take 3 segment)))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)
+                 (include-book "std/lists/top" :dir :system)))
+
+  (defruledl arith-lemma1
+    (implies (<= x y)
+             (<= (* x (expt 2 a))
+                 (* y (expt 2 a))))
+    :prep-books ((include-book "arithmetic/top" :dir :system)))
+
+  (defruledl arith-lemma2
+    (implies (and (<= a b)
+                  (<= x y))
+             (<= (+ a x)
+                 (+ y b))))
+
+  (defruledl arith-lemma3
+    (equal (- (* 4 x))
+           (* -4 x)))
+
+  (defrule pedersen-segment-scalar-loop-upper-bound
+    (implies (and (posp j)
+                  (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (<= (pedersen-segment-scalar-loop j segment)
+                 (pedersen-segment-scalar-loop-bound j segment)))
+    :rule-classes :linear
+    :enable (pedersen-segment-scalar-loop
+             pedersen-segment-scalar-loop-bound
+             arith-lemma1 arith-lemma2))
+
+  (defrule pedersen-segment-scalar-loop-lower-bound
+    (implies (and (posp j)
+                  (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (<= (- (pedersen-segment-scalar-loop-bound j segment))
+                 (pedersen-segment-scalar-loop j segment)))
+    :rule-classes :linear
+    :enable (pedersen-segment-scalar-loop
+             pedersen-segment-scalar-loop-bound
+             arith-lemma1 arith-lemma2 arith-lemma3))
+
+  (defrule pedersen-segment-scalar-upper-bound
+    (implies (and (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (<= (pedersen-segment-scalar segment)
+                 (pedersen-segment-scalar-bound segment)))
+    :rule-classes :linear
+    :enable (pedersen-segment-scalar pedersen-segment-scalar-bound))
+
+  (defrule pedersen-segment-scalar-lower-bound
+    (implies (and (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (<= (- (pedersen-segment-scalar-bound segment))
+                 (pedersen-segment-scalar segment)))
+    :rule-classes :linear
+    :enable (pedersen-segment-scalar pedersen-segment-scalar-bound)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pedersen-segment-point ((d byte-listp) (i posp))

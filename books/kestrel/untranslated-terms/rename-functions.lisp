@@ -10,9 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/make-var-names" :dir :system) ;todo: move
+(include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "../utilities/lets")
+(include-book "../utilities/fake-worlds")
 (include-book "../utilities/lambdas")
 (include-book "../utilities/doublets2")
 (include-book "kestrel/utilities/translate" :dir :system)
@@ -26,29 +27,7 @@
 
 ;; TODO: Add tests
 
-(defun fn-arities (names wrld)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (plist-worldp-with-formals wrld))))
-  (if (endp names)
-      nil
-    (cons (nfix (arity (first names) wrld)) ;todo: drop the nfix (would require everything to be defined)
-          (fn-arities (rest names) wrld))))
 
-;; Extends WRLD with a fake entry for each function in the ALIST, giving it a
-;; 'FORMALS property.  ALIST maps function symbols to arities.  The length of
-;; each new fake 'FORMALS property is the arity associated with the function in
-;; the ALIST.
-(defun add-fake-fns-to-world (name-to-arity-alist wrld)
-  (declare (xargs :guard (and (symbol-alistp name-to-arity-alist)
-                              (nat-listp (strip-cdrs name-to-arity-alist))
-                              (plist-worldp wrld))))
-  (if (endp name-to-arity-alist)
-      wrld
-    (let* ((pair (first name-to-arity-alist))
-           (fn (car pair))
-           (arity (cdr pair))
-           (wrld (putprop fn 'formals (make-var-names arity 'fake-formal) wrld)))
-      (add-fake-fns-to-world (rest name-to-arity-alist) wrld))))
 
 ;; ;; RENAMING is an alist mapping old-fns to new-fns.  We add fake items to WRLD
 ;; ;; for each new-fn, giving it the arity of the corresponding old-fn.

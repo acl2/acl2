@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7332,30 +7332,36 @@
 
   (let ((er-msg "The proposed designation of a trusted clause-processor is ~
                  illegal because ~@0.  See :DOC ~
-                 define-trusted-clause-processor.")
-        (ctx 'trusted-cl-proc-table-guard))
+                 define-trusted-clause-processor."))
     (cond
      ((not (or (ttag wrld)
                (global-val 'boot-strap-flg wrld)))
-      (er hard ctx er-msg
-          "there is not an active ttag (also see :DOC ttag)"))
+      (mv nil
+          (msg er-msg
+               "there is not an active ttag (also see :DOC ttag)")))
      ((not (symbolp key))
-      (er hard ctx er-msg
-          (msg "the clause-processor must be a symbol, unlike ~x0"
-               key)))
+      (mv nil
+          (msg er-msg
+               (msg "the clause-processor must be a symbol, unlike ~x0"
+                    key))))
      ((not (function-symbolp key wrld))
-      (er hard ctx er-msg
-          (msg "the clause-processor must be a function symbol, unlike ~x0"
-               key)))
+      (mv nil
+          (msg er-msg
+               (msg "the clause-processor must be a function symbol, unlike ~
+                     ~x0"
+                    key))))
      ((not (all-function-symbolps val wrld))
       (cond ((not (symbol-listp val))
-             (er hard ctx er-msg
-                 "the indicated supporters list is not a true list of symbols"))
-            (t (er hard ctx er-msg
-                   (msg "the indicated supporter~#0~[ ~&0 is not a function ~
-                         symbol~/s ~&0 are not function symbols~] in the ~
-                         current ACL2 world"
-                        (non-function-symbols val wrld))))))
+             (mv nil
+                 (msg er-msg
+                      "the indicated supporters list is not a true list of ~
+                       symbols")))
+            (t (mv nil
+                   (msg er-msg
+                        (msg "the indicated supporter~#0~[ ~&0 is not a ~
+                              function symbol~/s ~&0 are not function ~
+                              symbols~] in the current ACL2 world"
+                             (non-function-symbols val wrld)))))))
      (t
       (let ((failure-msg (tilde-@-illegal-clause-processor-sig-msg
                           key
@@ -7363,8 +7369,9 @@
                           (stobjs-out key wrld))))
         (cond
          (failure-msg
-          (er hard ctx er-msg failure-msg))
-         (t t)))))))
+          (mv nil
+              (msg er-msg failure-msg)))
+         (t (mv t nil))))))))
 
 (table trusted-cl-proc-table nil nil
        :guard
