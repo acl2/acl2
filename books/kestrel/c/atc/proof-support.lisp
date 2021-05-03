@@ -1346,19 +1346,21 @@
   (xdoc::topstring
    (xdoc::p
     "In the dynamic semantics, the execution of statements and other entities
-     returns optional values, i.e. values or @('nil').
-     Thus, the dynamic semantics sometimes checks whether such results
-     are values or @('nil'), unsurprisingly.
-     During symbolic execution, these results, when they are values,
-     have the form of shallowly embedded C expressions.
-     Thus, in order to establish that they are not @('nil'),
-     the simplest way is to take advantage of the type prescription rules
-     that ACL2 automatically generates for the functions
-     that represent shallowly embedded C expressions.
-     These are listed here; the list may not be exhaustive,
-     and may therefore be extended as needed."))
+     returns @(tsee mv) values, which logically satisfy @(tsee consp);
+     the negated application of @(tsee consp) to those execution functions
+     comes up in certain subgoals,
+     so a simple way to discharge those subgoals
+     is to use the type prescription rules for those execution functions.")
+   (xdoc::p
+    "We also need rules about the constructors of C integer values
+     and the C functions that represent C operations and conversions,
+     including array read operations."))
   (append
-   '((:t exec-block-item-list)
+   '((:t exec-expr-call-or-pure)
+     (:t exec-fun)
+     (:t exec-stmt)
+     (:t exec-block-item)
+     (:t exec-block-item-list)
      (:t schar)
      (:t uchar)
      (:t sshort)
