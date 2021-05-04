@@ -335,12 +335,7 @@
        this is the pattern that ATC looks for."))
     (xdoc::p
      "Currently there is no actual support for @(tsee mv-let) above,
-      but support will be added soon.
-      Also, an example involving the third form of @(tsee let) above
-      generates a theorem that takes a long time to process,
-      and has not even been observed to complete;
-      thus, for the time being one may want to use @(':proofs nil')
-      when using a @(tsee let) of that form.")
+      but support will be added soon.")
 
     (xdoc::p
      "A <i>C-valued term</i> is
