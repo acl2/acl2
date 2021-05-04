@@ -410,6 +410,105 @@
     :rule-classes :linear
     :enable (pedersen-segment-scalar pedersen-segment-scalar-bound)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection pedersen-segment-scalar-not-zero-proof
+  :short "Proof that @(tsee pedersen-segment-scalar) is not 0."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is proved by first proving that
+     the loop function is outside the interval
+     between @($-2^{4\\cdot(j-1)}$) to @($2^{4\\cdot(j-1)}$)
+     both exclusive.
+     Setting @($j=1$), we have that @(tsee pedersen-segment-scalar)
+     is outside the interval from -1 to 1 exclusive, i.e. it is not 0.
+     To prove the lemma about the loop function,
+     to avoid dealing with a disjunction of inequalities,
+     we introduce a predicate for being outside the interval
+     and we prove some theorems about it.
+     Some of these theorems are currently somewhat specific;
+     perhaps there is a way to improve the form of the proof."))
+
+  (local
+   (define outsidep (x b)
+     (or (<= x (- b))
+         (<= b x))
+     :verify-guards nil))
+
+  (defruledl outsidep-lemma1
+    (implies (posp c)
+             (equal (outsidep (* c x) c)
+                    (outsidep x 1)))
+    :enable outsidep
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defruledl outsidep-lemma2
+    (implies (and (posp c)
+                  (outsidep x (* c b))
+                  (integerp y)
+                  (< (- c) y)
+                  (< y c))
+             (outsidep (+ x (* y b)) b))
+    :enable outsidep
+    :prep-books ((include-book "arithmetic-5/top" :dir :system)
+                 (set-default-hints '((acl2::nonlinearp-default-hint
+                                       stable-under-simplificationp
+                                       hist
+                                       pspv)))))
+
+  (defruledl outsidep-lemma3
+    (implies (and (posp j)
+                  (outsidep x (expt 2 (* 4 j)))
+                  (integerp y)
+                  (< -16 y)
+                  (< y 16))
+             (outsidep (+ x (* y (expt 2 (+ -4 (* 4 j)))))
+                       (expt 2 (+ -4 (* 4 j)))))
+    :use (:instance outsidep-lemma2 (c 16) (b (expt 2 (+ -4 (* 4 j)))))
+    :prep-books ((include-book "arithmetic/top" :dir :system)))
+
+  (defruledl posp-of-bound
+    (implies (posp j)
+             (posp (expt 2 (+ -4 (* 4 j)))))
+    :rule-classes :type-prescription
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrulel len-of-nthcdr-multiple-of-3
+    (implies (and (integerp (* 1/3 (len x)))
+                  (consp x))
+             (integerp (* 1/3 (len (nthcdr 3 x)))))
+    :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
+
+  (defrulel bit-listp-of-take-3
+    (implies (and (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (bit-listp (take 3 segment)))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)
+                 (include-book "std/lists/top" :dir :system)))
+
+  (defruledl outsidep-of-pedersen-segment-scalar-loop
+    (implies (and (posp j)
+                  (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (outsidep (pedersen-segment-scalar-loop j segment)
+                       (expt 2 (+ -4 (* 4 j)))))
+    :enable (pedersen-segment-scalar-loop
+             outsidep-lemma1
+             outsidep-lemma3
+             posp-of-bound))
+
+  (defrule pedersen-segment-scalar-not-zero
+    (implies (and (bit-listp segment)
+                  (integerp (/ (len segment) 3))
+                  (consp segment))
+             (not (equal (pedersen-segment-scalar segment) 0)))
+    :rule-classes :type-prescription
+    :enable pedersen-segment-scalar
+    :use (:instance outsidep-of-pedersen-segment-scalar-loop (j 1))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pedersen-segment-point ((d byte-listp) (i posp))
