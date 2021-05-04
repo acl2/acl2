@@ -1,6 +1,6 @@
-; cert-flags for prover-tests-basic.lisp
+; cert-flags for instantiate-hyp.lisp
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,4 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :TTAGS :ALL
+; cert-flags: ? T :SKIP-PROOFS-OKP T
