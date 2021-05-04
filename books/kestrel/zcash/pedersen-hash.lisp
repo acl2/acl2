@@ -17,6 +17,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Two somewhat specific theorems, but more general than Pedersen hash.
+
+(defrulel len-of-nthcdr-multiple-of-3
+  (implies (and (integerp (* 1/3 (len x)))
+                (consp x))
+           (integerp (* 1/3 (len (nthcdr 3 x)))))
+  :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
+
+(defrulel bit-listp-of-take-3
+  (implies (and (bit-listp segment)
+                (integerp (/ (len segment) 3))
+                (consp segment))
+           (bit-listp (take 3 segment)))
+  :prep-books ((include-book "arithmetic-3/top" :dir :system)
+               (include-book "std/lists/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ pedersen-hash
   :parents (zcash)
   :short "A formalization of Zcash's Pedersen hash."
@@ -338,20 +356,6 @@
 
   ///
 
-  (defrulel len-of-nthcdr-multiple-of-3
-    (implies (and (integerp (* 1/3 (len x)))
-                  (consp x))
-             (integerp (* 1/3 (len (nthcdr 3 x)))))
-    :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
-
-  (defrulel bit-listp-of-take-3
-    (implies (and (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (bit-listp (take 3 segment)))
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)
-                 (include-book "std/lists/top" :dir :system)))
-
   (defruledl arith-lemma1
     (implies (<= x y)
              (<= (* x (expt 2 a))
@@ -473,20 +477,6 @@
              (posp (expt 2 (+ -4 (* 4 j)))))
     :rule-classes :type-prescription
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
-
-  (defrulel len-of-nthcdr-multiple-of-3
-    (implies (and (integerp (* 1/3 (len x)))
-                  (consp x))
-             (integerp (* 1/3 (len (nthcdr 3 x)))))
-    :prep-books ((include-book "std/lists/nthcdr" :dir :system)))
-
-  (defrulel bit-listp-of-take-3
-    (implies (and (bit-listp segment)
-                  (integerp (/ (len segment) 3))
-                  (consp segment))
-             (bit-listp (take 3 segment)))
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)
-                 (include-book "std/lists/top" :dir :system)))
 
   (defruledl outsidep-of-pedersen-segment-scalar-loop
     (implies (and (posp j)
