@@ -18,7 +18,7 @@
 ;; (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "acl2pl/top")
 (include-book "apt/top")
-(include-book "axe/doc") ;todo: make an axe/top
+(include-book "axe/top")
 (include-book "arithmetic-light/top")
 (include-book "bv/top")
 (in-theory (disable collect-constants-<-/ collect-constants-<-/-two)) ; avoid theory-invariant errors in books that include this book
@@ -38,7 +38,7 @@
 (include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")
-;(include-book "lists-light/top") ; TODO: Conflict on take-opener
+;(include-book "lists-light/top") ; TODO: Name clash on take-opener
 (include-book "number-theory/top")
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
