@@ -35,7 +35,7 @@
      Each takes a natural number as argument,
      which the guard further constrains to be representable in the type.")
    (xdoc::p
-    "We introduce functions @('<type>-nonzerop')
+    "We introduce functions @('boolean-from-<type>')
      to turn C integers into ACL2 booleans,
      i.e. to test whether the integers are not zero.
      These are used to represent shallowly embedded tests.
@@ -52,7 +52,7 @@
      having a separate function provides more abstraction,
      should the fixtype representation be changed in the future.")
    (xdoc::p
-    "We introduce a single function @(tsee sint01)
+    "We introduce a single function @(tsee sint-from-boolean)
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
      This function is used in the ACL2 representation of
      non-strict C conjunctions @('&&') and disjunctions @('||'),
@@ -120,14 +120,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sint01 ((b booleanp))
+(define sint-from-boolean ((b booleanp))
   :returns (x sintp)
   :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
-     Together with @(tsee sint-nonzerop) and other @('...-nonzerop') operations,
+    "This is essentially (but not exactly)
+     the inverse of @(tsee boolean-from-sint).
+     Together with @(tsee boolean-from-sint)
+     and other @('boolean-from-...') operations,
      it can be used to represent in ACL2
      shallowly embedded C logical conjunctions and disjunctions,
      which must be integers in C,
@@ -172,7 +174,7 @@
        (<type1>-integerp-alt-def (pack <type1>-integerp '-alt-def))
        (<type1>-fix (pack <type1> '-fix))
        (<type1>-const (pack <type1> '-const))
-       (<type1>-nonzerop (pack <type1> '-nonzerop))
+       (boolean-from-<type1> (pack 'boolean-from- <type1>))
        (<type1>-integer-value (pack <type1> '-integer-value))
        (<type> (atc-integer-type-fixtype type))
        (<type>p (pack <type> 'p))
@@ -211,7 +213,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type1>-nonzerop ((x ,<type1>p))
+       (define ,boolean-from-<type1> ((x ,<type1>p))
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if a value of " type1-string " is not 0.")
          (/= (,<type1>->get x) 0)
@@ -221,7 +223,7 @@
 
        (define ,<type1>-integer-value ((x ,<type1>p))
          :returns (ival integerp)
-         :short ,(str::cat "Turn a vaue of "
+         :short ,(str::cat "Turn a value of "
                            type1-string
                            " into an ACL2 integer value.")
          (,<type1>->get x)
@@ -296,7 +298,7 @@
          :short ,(str::cat "Logical complement of a value of "
                            type1-string
                            " [C:6.5.3].")
-         (sint01 (= (,<type1>->get x) 0))
+         (sint-from-boolean (= (,<type1>->get x) 0))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1035,67 +1037,3 @@
                    (type-ushort))))
    `(progn ,@(atc-def-integer-operations-2-loop-same types)
            ,@(atc-def-integer-operations-2-loop-outer types types))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; The following is temporary, and will be removed.
-
-(defmacro+ atc-def-integer-operations (type)
-  (declare (xargs :guard (member-eq type '(:int :long :llong))))
-
-  (b* ((type-string (acl2::string-downcase
-                     (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (stype (acl2::packn-pos (list "S" type) 'atc))
-       (utype (acl2::packn-pos (list "U" type) 'atc))
-       (stypep (add-suffix stype "P"))
-       (utypep (add-suffix utype "P"))
-       (stype-nonzerop (add-suffix stype "-NONZEROP"))
-       (utype-nonzerop (add-suffix utype "-NONZEROP"))
-       (logand-stype-stype (acl2::packn-pos (list "LOGAND-" stype "-" stype) 'atc))
-       (logand-utype-utype (acl2::packn-pos (list "LOGAND-" utype "-" utype) 'atc))
-       (logor-stype-stype (acl2::packn-pos (list "LOGOR-" stype "-" stype) 'atc))
-       (logor-utype-utype (acl2::packn-pos (list "LOGOR-" utype "-" utype) 'atc)))
-
-    `(progn
-
-       (define ,logand-stype-stype ((x ,stypep) (y ,stypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical conjunction of @('signed "
-                              type-string
-                              "') values [C:6.5.13].")
-         (sint01 (and (,stype-nonzerop x) (,stype-nonzerop y)))
-         :hooks (:fix))
-
-       (define ,logand-utype-utype ((x ,utypep) (y ,utypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical conjunction of @('unsigned "
-                              type-string
-                              "') values [C:6.5.13].")
-         (sint01 (and (,utype-nonzerop x) (,utype-nonzerop y)))
-         :hooks (:fix))
-
-       (define ,logor-stype-stype ((x ,stypep) (y ,stypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical disjunction of @('signed "
-                              type-string
-                              "') values [C:6.5.14].")
-         (sint01 (or (,stype-nonzerop x) (,stype-nonzerop y)))
-         :hooks (:fix))
-
-       (define ,logor-utype-utype ((x ,utypep) (y ,utypep))
-         :returns (result sintp)
-         :short ,(concatenate 'string
-                              "Logical disjunction of @('unsigned "
-                              type-string
-                              "') values [C:6.5.14].")
-         (sint01 (or (,utype-nonzerop x) (,utype-nonzerop y)))
-         :hooks (:fix)))))
-
-(atc-def-integer-operations :int)
-
-(atc-def-integer-operations :long)
-
-(atc-def-integer-operations :llong)

@@ -15,6 +15,7 @@
 
 (include-book "bvchop")
 
+;; Compute the (modular) difference of X and Y.
 (defund bvminus (size x y)
   (declare (type (integer 0 *) size))
   (bvchop size (- (ifix x) (ifix y))))
@@ -29,6 +30,11 @@
   (implies (not (integerp y))
            (equal (bvminus size x y)
                   (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-when-size-is-0
+  (equal (bvminus 0 x y)
+         0)
   :hints (("Goal" :in-theory (enable bvminus))))
 
 (defthm bvminus-when-size-is-not-positive

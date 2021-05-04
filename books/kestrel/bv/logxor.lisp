@@ -69,6 +69,15 @@
                           (mod j (expt 2 n)))))
   :hints (("Goal" :in-theory (enable logxor logeqv logorc1))))
 
+(defthm mod-of-logxor-by-2
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (mod (logxor i j) 2)
+                  (logxor (mod i 2) (mod j 2))))
+  :hints (("Goal" :use (:instance mod-of-logxor-and-expt
+                                  (n 1))
+           :in-theory (disable mod-of-logxor-and-expt))))
+
 (defthm logxor-same
   (equal (logxor i i)
          0)

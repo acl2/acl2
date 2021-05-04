@@ -149,3 +149,14 @@
 (defthmd unsigned-byte-p-1-of-bitand
   (unsigned-byte-p 1 (bitand x y))
   :hints (("Goal" :in-theory (enable bitand))))
+
+(defthm unsigned-byte-p-of-bitand
+  (implies (posp size)
+           (unsigned-byte-p size (bitand x y)))
+  :hints (("Goal" :in-theory (e/d (bitand) nil))))
+
+(defthm bvchop-of-bitand
+  (implies (and (< 0 n)
+                (natp n))
+           (equal (bvchop n (bitand x y))
+                  (bitand x y))))

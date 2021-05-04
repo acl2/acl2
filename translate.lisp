@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4030,35 +4030,42 @@
 
 (defun unknown-constraints-table-guard (key val wrld)
   (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate.")
-        (ctx 'unknown-constraints-table-guard))
-    (and (eq key :supporters)
-         (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                            (global-val 'embedded-event-lst wrld))))
-           (cond
-            ((null ee-entries)
-             (er hard ctx er-msg
-                 "it is not being made in the scope of a non-trivial ~
-                  encapsulate"))
-            ((cdr ee-entries)
-             (er hard ctx er-msg
-                 (msg "it is being made in the scope of nested non-trivial ~
-                       encapsulates.  In particular, an enclosing encapsulate ~
-                       introduces function ~x0, while an encapsulate superior ~
-                       to that one introduces function ~x1"
-                      (caar (cadr (car ee-entries)))
-                      (caar (cadr (cadr ee-entries))))))
-            ((not (all-function-symbolps val wrld))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, is not a list of known function symbols"
-                      val)))
-            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                                 val))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, does not include all of the signature ~
-                       functions of the partial-encapsulate"
-                      val)))
-            (t t))))))
+                 because ~@0.  See :DOC partial-encapsulate."))
+    (cond
+     ((eq key :supporters)
+      (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                         (global-val 'embedded-event-lst wrld))))
+        (cond
+         ((null ee-entries)
+          (mv nil
+              (msg er-msg
+                   "it is not being made in the scope of a non-trivial ~
+                    encapsulate")))
+         ((cdr ee-entries)
+          (mv nil
+              (msg er-msg
+                   (msg "it is being made in the scope of nested non-trivial ~
+                         encapsulates.  In particular, an enclosing ~
+                         encapsulate introduces function ~x0, while an ~
+                         encapsulate superior to that one introduces function ~
+                         ~x1"
+                        (caar (cadr (car ee-entries)))
+                        (caar (cadr (cadr ee-entries)))))))
+         ((not (all-function-symbolps val wrld))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, is not a list of known function ~
+                         symbols"
+                        val))))
+         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                              val))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, does not include all of the ~
+                         signature functions of the partial-encapsulate"
+                        val))))
+         (t (mv t nil)))))
+     (t (mv nil nil)))))
 
 (table unknown-constraints-table nil nil
        :guard

@@ -108,3 +108,8 @@
 (defmacro xdoc::ol-from-string (str)
   (declare (xargs :guard (stringp str)))
   `(xdoc::ol (xdoc::topparas ,str)))
+
+;; Make an unordered list, given a string, interpreting blank lines as separators between list items
+(defmacro xdoc::ul-from-string (str)
+  (declare (xargs :guard (stringp str)))
+  `(xdoc::ul (xdoc::topparas ,str)))

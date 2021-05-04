@@ -270,3 +270,15 @@
                 (<= size free)
                 (natp free))
            (not (unsigned-byte-p size x))))
+
+;restrict to when size is not a quoted constant?
+(defthm integerp-from-unsigned-byte-p-size-param-fw
+  (implies (unsigned-byte-p size free)
+           (integerp size))
+  :rule-classes (:forward-chaining))
+
+;restrict to when size is not a quoted constant?
+(defthm non-negative-from-unsigned-byte-p-size-param-fw
+  (implies (unsigned-byte-p size free)
+           (not (< size 0)))
+  :rule-classes (:forward-chaining))

@@ -12,7 +12,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; Returns (mv ctx msg-or-val), a context-message-pair.
+;; Returns (mv ctx msg-or-val), a context-message-pair.  When CTX is nil,
+;; translation succeeded and msg-or-val is the result.  When CTX is non-nil,
+;; translation failed and msg-or-val is a msgp indicating the error.
 (defun translate-term-with-defaults (term ctx wrld)
   (declare (xargs :mode :program
                   ;; todo: guard
@@ -47,3 +49,13 @@
       nil
     (cons (translate-term (first terms) ctx wrld)
           (translate-terms (rest terms) ctx wrld))))
+
+;; Checks whether UNTRANSLATED-TERM can be translated in world WRLD.
+(defun translatable-termp (untranslated-term wrld)
+  (declare (xargs :mode :program
+                  :guard (plist-worldp wrld)))
+  (mv-let (ctx msg-or-val)
+    (translate-term-with-defaults untranslated-term 'translatable-termp wrld)
+    (declare (ignore msg-or-val)) ; ignore the translation
+    (not ctx) ; ctx means an error occurred
+    ))

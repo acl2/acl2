@@ -125,3 +125,11 @@
          0)
   :hints (("Goal" :in-theory (e/d (bvsx bvcat)
                                   ()))))
+
+(defthm bvsx-when-sizes-match
+  (implies (and (equal new-size old-size)
+                (natp new-size)
+                (< 0 new-size))
+           (equal (bvsx new-size old-size val)
+                  (bvchop new-size val)))
+  :hints (("Goal" :in-theory (enable repeatbit bvsx))))

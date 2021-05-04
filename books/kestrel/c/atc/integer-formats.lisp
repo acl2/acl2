@@ -88,11 +88,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-def-integer-bits (type size minsize)
+(defmacro+ atc-def-integer-bits (type bits minbits)
   (declare (xargs :guard (and (member-eq type '(char short int long llong))
-                              (posp size)
-                              (posp minsize)
-                              (>= size minsize))))
+                              (posp bits)
+                              (posp minbits)
+                              (>= bits minbits))))
   :short "Macro to generate the nullary functions, and some theorems about them,
           for the size in bits of the C integer types."
 
@@ -111,7 +111,7 @@
                          " @('"
                          (str::downcase-string (symbol-name type))
                          "') values, in bits.")
-       ,size
+       ,bits
        ///
 
        ,@(and
@@ -124,7 +124,7 @@
        (in-theory (disable (:e ,type-bits)))
 
        (defret ,type-bits-bound
-         (>= ,type-bits ,minsize)
+         (>= ,type-bits ,minbits)
          :rule-classes :linear))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

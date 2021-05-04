@@ -1349,3 +1349,19 @@
   (equal (bvchop 32 x)
          (bvcat 1 (getbit 31 x)
                 31 (bvchop 31 x))))
+
+(defthm bvcat-trim-constant-arg2
+  (implies (and (syntaxp (and (quotep highval)
+                              (quotep highsize)))
+                (not (unsigned-byte-p highsize highval))
+                (natp highsize))
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvcat highsize (bvchop highsize highval) lowsize lowval))))
+
+(defthm bvcat-trim-constant-arg4
+  (implies (and (syntaxp (and (quotep lowval)
+                              (quotep lowsize)))
+                (not (unsigned-byte-p lowsize lowval))
+                (natp lowsize))
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvcat highsize highval lowsize (bvchop lowsize lowval)))))

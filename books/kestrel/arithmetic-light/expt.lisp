@@ -152,3 +152,31 @@
          (* (expt r1 i)
             (expt r2 i)))
   :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-monotone-strong
+  (implies (and (< i j)
+                (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (< (expt r i) (expt r j))))
+
+(defthmd <-of-expt-and-expt-helper
+  (implies (and (< (expt r i) (expt r j))
+                (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (< i j)))
+
+(defthm <-of-expt-and-expt
+  (implies (and (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (equal (< (expt r i) (expt r j))
+                  (< i j)))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-helper
+                                  (i 0)
+                                  (j (+ (- I) J)))
+           :in-theory (enable expt-monotone-strong))))

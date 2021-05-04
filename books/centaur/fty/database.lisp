@@ -111,7 +111,7 @@
 (def-primitive-aggregate flexlist
   ;; A single List type.
   (name               ;; name of this list type, e.g., foolist
-   pred               ;; preducate function name, e.g., foolist-p
+   pred               ;; predicate function name, e.g., foolist-p
    fix                ;; fix function name, e.g., foolist-fix
    equiv              ;; equiv function name, e.g., foolist-equiv
    count              ;; count function name, e.g., foolist-count
@@ -188,14 +188,14 @@
 
 (def-primitive-aggregate flexset
   ;; A single Set type.
-  (name               ;; name of this set type, e.g., fooset
-   pred               ;; preducate function name, e.g., fooset-p
-   fix                ;; fix function name, e.g., fooset-fix
-   equiv              ;; equiv function name, e.g., fooset-equiv
-   count              ;; count function name, e.g., fooset-count
-   elt-type           ;; element type name, e.g., foo
-   elt-fix            ;; element fixing function, e.g., foo-fix
-   elt-equiv          ;; element equiv function, e.g., foo-equiv
+  (name               ;; name of this set type, e.g., myset
+   pred               ;; predicate function name, e.g., myset-p
+   fix                ;; fix function name, e.g., myset-fix
+   equiv              ;; equiv function name, e.g., myset-equiv
+   count              ;; count function name, e.g., myset-count
+   elt-type           ;; element type name, e.g., my
+   elt-fix            ;; element fixing function, e.g., my-fix
+   elt-equiv          ;; element equiv function, e.g., my-equiv
    measure            ;; termination measure, e.g., (two-nats-measure ...)
    xvar               ;; special x variable name, e.g., mypkg::x
    ;; non-emptyp         ;; require the set to be non-empty (NYI. sjw: Not sure if it is useful)
@@ -207,12 +207,36 @@
    )
   :tag :set)
 
+(def-primitive-aggregate flexomap
+  ;; A single OMap type.
+  (name               ;; name of this omap type, e.g., mymap
+   pred               ;; predicate function name, e.g., mymap-p
+   fix                ;; fix function name, e.g., mymap-fix
+   equiv              ;; equiv function name, e.g., mymap-equiv
+   count              ;; count function name, e.g., mymap-count
+   key-type           ;; key type name, e.g., mykey-p
+   key-fix            ;; key fixing function, e.g., mykey-fix
+   key-equiv          ;; key equiv function, e.g., mykey-equiv
+   val-type           ;; value type name, e.g., myval-p
+   val-fix            ;; value fixing function, e.g., myval-fix
+   val-equiv          ;; value equiv function, e.g., myval-equiv
+   ;strategy           ;; fixing strategy: :fixkeys or :dropkeys. sjw: Maybe only dropkeys makes sense?
+   measure            ;; termination measure, e.g., (two-nats-measure ...)
+   xvar               ;; special x variable name, e.g., mypkg::x
+   kwd-alist          ;; alist of options, see *flexalist-keywords*
+   keyp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
+   valp-of-nil        ;; t, nil, or :unknown -- for optimizing theorems
+   recp               ;; is this map type part of the mutual recursion?
+   already-definedp
+   fix-already-definedp)
+  :tag :omap)
+
 (def-primitive-aggregate flextypes
   ;; A top-level entry in the flextypes table.
   ;; May bundle up a group of mutually recursive types.
   ;; Alternately, may contain a singleton type (e.g., from defprod, deflist, etc.)
   (name               ;; wrapper name, often shared by a member type
-   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, or flexset
+   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, flexomap or flexset
                       ;;  (no flexprods here, they'll be inside flexsums)
    kwd-alist          ;; alist of options, see *flextypes-keywords*
    no-count           ;; boolean -- skip the count function?
@@ -304,6 +328,7 @@
        (alistbody    (replace-*-in-symbols-with-str body "ALIST"))
        (transsumbody (replace-*-in-symbols-with-str body "TRANSSUM"))
        (setbody      (replace-*-in-symbols-with-str body "SET"))
+       (omapbody     (replace-*-in-symbols-with-str body "OMAP"))
        (cases
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
@@ -311,6 +336,7 @@
            (:alist ,(if add-binds `(b* (((flexalist ,var) ,var)) ,alistbody) alistbody))
            (:transsum ,(if add-binds `(b* (((flextranssum ,var) ,var)) ,transsumbody) transsumbody))
            (:set ,(if add-binds `(b* (((flexset ,var) ,var)) ,setbody) setbody))
+           (:omap ,(if add-binds `(b* (((flexomap ,var) ,var)) ,omapbody) omapbody))
            (otherwise ,default))))
     (if (consp binding)
         `(let ((,var ,(cadr binding))) ,cases)

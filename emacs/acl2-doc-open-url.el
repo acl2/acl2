@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Matt Kaufmann
+; Copyright (C) 2021, Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This is an extension to emacs/acl2-doc.el that defines the key, U,

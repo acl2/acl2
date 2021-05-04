@@ -108,13 +108,8 @@
     (setq ccl::*inhibit-greeting* t))
   #+hons (funcall 'hons-init)
   (format t *saved-string*
-          *copy-of-acl2-version*
-          *saved-build-date*
-          (cond (*saved-mode*
-                 (format nil "~% Initialized with ~a." *saved-mode*))
-                (t ""))
-          (eval '(latest-release-note-string)) ; avoid possible warning
-          )
+          (acl2-version+)
+          *saved-build-date*)
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
@@ -141,7 +136,7 @@
 
 #+openmcl
 (defun save-acl2-in-openmcl (sysout-name &optional mode core-name)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (eval `(in-package ,*startup-package-name*))
   #-acl2-mv-as-values (proclaim-files)
 ; We do the following load when *suppress-compile* in save-acl2, but it's

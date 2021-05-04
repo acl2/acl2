@@ -14,6 +14,12 @@
 (include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
 (include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system) ;for make-bitp-claims
+(include-book "kestrel/axe/known-booleans" :dir :system)
+
+;todo: not sure where these should go:
+(acl2::add-known-boolean rtl::primep)
+(acl2::add-known-boolean pfield::fep)
+(acl2::add-known-boolean pfield::fe-listp)
 
 ;; Note that this only does the "forward" direction of the proof
 (acl2::defmacrodoc verify-r1cs (lifted-r1cs

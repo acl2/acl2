@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -410,7 +410,7 @@
 ; make ACL2_DEVEL=t
 ; make clean-books
 ; cd books
-; (time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/devel-check)
+; (time ./build/cert.pl -j 16 --acl2 `pwd`/../saved_acl2d system/devel-check)
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
@@ -501,7 +501,6 @@
     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
     (LATEST-BODY)
     (LEGAL-CONSTANTP)
-    (LEGAL-CONSTANTP1)
     (LEGAL-INITP)
     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
     (LEGAL-VARIABLEP)

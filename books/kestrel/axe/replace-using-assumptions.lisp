@@ -278,6 +278,7 @@
            (bounded-axe-treep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) dag-len))
   :hints (("Goal" :use (:instance myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))))
 
+;; Deprecate?
 ;;Returns a nodenum or quotep.
 (defund maybe-replace-nodenum-using-assumptions-for-axe-prover (nodenum equiv
                                                                         nodenums-to-assume-false

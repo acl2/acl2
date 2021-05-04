@@ -536,6 +536,74 @@
        ,(visitor-return-values
          x.returns `(cons-with-hint car cdr ,x.xvar) x))))
 
+(define visitor-omap-measure (type x mrec)
+  (declare (ignorable mrec))
+  (b* (((flexomap type))
+       ((visitorspec x)))
+    `(:measure ,(visitor-measure x (if type.count
+                                       `(,type.count ,x.xvar)
+                                     `(len ,x.xvar))
+                                 type.name))))
+
+(define visitor-omap-body (type x)
+  (b* (((flexomap type))
+       ((visitorspec x))
+       (name (visitor-fnname x type.name))
+       (key-fnname (visitor-field-fn :key type.key-type type.name x))
+       (val-fnname (visitor-field-fn :val type.val-type type.name x))
+       (formal-names (visitor-formal-names x.formals))
+       ((unless (or key-fnname val-fnname))
+        (er hard? 'defvisitor "Nothing to do for omap type ~x0 -- use :skip." type.name)))
+    `(b* ((,x.xvar (,type.fix ,x.xvar))
+          ((when (atom ,x.xvar))
+           (b* (,@x.initial)
+             ,(visitor-return-values x.returns nil x)))
+          ,@(if x.reversep
+                `((,(visitor-return-binder x.returns 'cdr t x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+
+
+                  ,@(and val-fnname
+                         `((,(visitor-return-binder x.returns 'val nil x)
+                            (,val-fnname . ,(subst `(cdar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@x.join))
+
+                  ,@(and key-fnname
+                         `((,(visitor-return-binder x.returns 'key nil x)
+                            (,key-fnname . ,(subst `(caar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@x.join)))
+
+              `(,@(and key-fnname
+                       `((,(visitor-return-binder x.returns 'key t x)
+                          (,key-fnname . ,(subst `(caar ,x.xvar)
+                                                 x.xvar
+                                                 formal-names)))))
+                  ,@(and val-fnname
+                         `((,(visitor-return-binder x.returns 'val (not key-fnname) x)
+                            (,val-fnname . ,(subst `(cdar ,x.xvar)
+                                                   x.xvar
+                                                   formal-names)))
+                           ,@(and key-fnname x.join)))
+                  (,(visitor-return-binder x.returns 'cdr nil x)
+                   (,name . ,(subst `(cdr ,x.xvar)
+                                    x.xvar
+                                    formal-names)))
+                  ,@x.join)))
+       ,(visitor-return-values
+         x.returns
+         `(cons-with-hint (cons-with-hint ,(if key-fnname 'key `(caar ,x.xvar))
+                                          ,(if val-fnname 'val `(cdar ,x.xvar))
+                                          (car ,x.xvar))
+                          cdr
+                          ,x.xvar)
+         x))))
+
 (define visitor-def (type x mrec)
   (b* ((body (with-flextype-bindings type
                (visitor-*-body type x)))

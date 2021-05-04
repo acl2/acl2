@@ -32,6 +32,8 @@
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))
 (local (include-book "pretty-defs-aux"))
+;; bring in the OMAP package:
+(local (include-book "kestrel/utilities/omaps/portcullis" :dir :system))
 
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)

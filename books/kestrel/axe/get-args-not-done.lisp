@@ -97,3 +97,8 @@
 ;;   (implies (and (all-natp acc)
 ;;                 (all-natp args))
 ;;            (all-natp (get-args-not-done args result-array-name result-array acc untagged-foundp))))
+
+(defthm get-args-not-done-when-consp-and-untagged-foundp
+  (implies (consp acc)
+           (get-args-not-done args result-array-name result-array acc t))
+  :hints (("Goal" :in-theory (enable get-args-not-done))))

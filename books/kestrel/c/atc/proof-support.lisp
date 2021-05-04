@@ -371,6 +371,169 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atc-integer-ops-1-conv-definition-rules*
+  :short "List of definition rules for operations
+          that involve one C integer type
+          and that involve conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for operations on types of rank lower than @('int'):
+     these involve conversions in the sense that
+     the operand is promoted prior to being operated upon.
+     We exclude logical negation from the operations here,
+     because that operation does not promote the operand.
+     We include the shift operations with ACL2 integers as second arguments.")
+   (xdoc::p
+    "These functions are all expanded in proofs because
+     they are defined in terms of conversions and
+     of operations on types of rank at least @('int'):
+     this is what the dynamic semantics of C uses."))
+  (b* ((types (list (type-schar)
+                    (type-uchar)
+                    (type-sshort)
+                    (type-ushort))))
+    (atc-integer-ops-1-conv-names-loop-ops '(plus minus bitnot shl shr) types))
+
+  :prepwork
+
+  ((define atc-integer-ops-1-conv-names-loop-types ((op symbolp)
+                                                    (types type-listp))
+     :guard (and (member-eq op '(plus minus bitnot shl shr))
+                 (type-integer-listp types))
+     :returns (name symbol-listp)
+     (cond ((endp types) nil)
+           (t (b* ((type (car types))
+                   (fixtype (atc-integer-type-fixtype type))
+                   (names (if (and (eq op 'minus)
+                                   (type-signed-integerp type))
+                              (list (pack op '- fixtype)
+                                    (pack op '- fixtype '-okp))
+                            (list (pack op '- fixtype))))
+                   (more-names
+                    (atc-integer-ops-1-conv-names-loop-types op (cdr types))))
+                (append names more-names)))))
+
+   (define atc-integer-ops-1-conv-names-loop-ops ((ops symbol-listp)
+                                                  (types type-listp))
+     :guard (and (subsetp-eq ops '(plus minus bitnot shl shr))
+                 (type-integer-listp types))
+     :returns (names symbol-listp)
+     (cond ((endp ops) nil)
+           (t (append
+               (atc-integer-ops-1-conv-names-loop-types (car ops) types)
+               (atc-integer-ops-1-conv-names-loop-ops (cdr ops) types)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-integer-ops-2-conv-definition-rules*
+  :short "List of definition rules for operations
+          that involve two C integer types
+          and that involve conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for operations on types that differ
+     or that have rank lower than @('int'):
+     these involve conversions in the sense that
+     the operands are subjected to the usual arithmetic conversions
+     prior to being operated upon.")
+   (xdoc::p
+    "These functions are all expanded in proofs because
+     they are defined in terms of conversions and
+     of operations on equal types of rank at least @('int'):
+     this is what the dynamic semantics of C uses."))
+  (b* ((ops (list 'add 'sub 'mul 'div 'rem
+                  'lt 'gt 'le 'ge 'eq 'ne
+                  'bitand 'bitxor 'bitior))
+       (types (list (type-schar)
+                    (type-uchar)
+                    (type-sshort)
+                    (type-ushort)
+                    (type-sint)
+                    (type-uint)
+                    (type-slong)
+                    (type-ulong)
+                    (type-sllong)
+                    (type-ullong))))
+    (atc-integer-ops-2-conv-names-loop-ops ops types types))
+
+  :prepwork
+
+  ((define atc-integer-ops-2-conv-names-loop-right-types ((op symbolp)
+                                                          (ltype typep)
+                                                          (rtypes type-listp))
+     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+                                     'lt 'gt 'le 'ge 'eq 'ne
+                                     'bitand 'bitxor 'bitior))
+                 (type-integerp ltype)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond
+      ((endp rtypes) nil)
+      (t (b* ((rtype (car rtypes))
+              (type (if (member-eq op '(lt gt le ge eq ne))
+                        (type-sint)
+                      (uaconvert-types ltype rtype)))
+              ((when (and (equal type ltype)
+                          (equal type rtype)))
+               (atc-integer-ops-2-conv-names-loop-right-types op
+                                                              ltype
+                                                              (cdr rtypes)))
+              (lfixtype (atc-integer-type-fixtype ltype))
+              (rfixtype (atc-integer-type-fixtype rtype))
+              (names (if (or (member-eq op '(div rem))
+                             (and (type-signed-integerp type)
+                                  (member-eq op '(add sub mul))))
+                         (list (pack op '- lfixtype '- rfixtype)
+                               (pack op '- lfixtype '- rfixtype '-okp))
+                       (list (pack op '- lfixtype '- rfixtype))))
+              (more-names
+               (atc-integer-ops-2-conv-names-loop-right-types
+                op
+                ltype
+                (cdr rtypes))))
+           (append names more-names))))
+     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))
+
+   (define atc-integer-ops-2-conv-names-loop-left-types ((op symbolp)
+                                                         (ltypes type-listp)
+                                                         (rtypes type-listp))
+     :guard (and (member-eq op (list 'add 'sub 'mul 'div 'rem
+                                     'lt 'gt 'le 'ge 'eq 'ne
+                                     'bitand 'bitxor 'bitior))
+                 (type-integer-listp ltypes)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond ((endp ltypes) nil)
+           (t (append
+               (atc-integer-ops-2-conv-names-loop-right-types op
+                                                              (car ltypes)
+                                                              rtypes)
+               (atc-integer-ops-2-conv-names-loop-left-types op
+                                                             (cdr ltypes)
+                                                             rtypes)))))
+
+   (define atc-integer-ops-2-conv-names-loop-ops ((ops symbol-listp)
+                                                  (ltypes type-listp)
+                                                  (rtypes type-listp))
+     :guard (and (subsetp-eq ops (list 'add 'sub 'mul 'div 'rem
+                                       'lt 'gt 'le 'ge 'eq 'ne
+                                       'bitand 'bitxor 'bitior))
+                 (type-integer-listp ltypes)
+                 (type-integer-listp rtypes))
+     :returns (names symbol-listp)
+     (cond ((endp ops) nil)
+           (t (append
+               (atc-integer-ops-2-conv-names-loop-left-types (car ops)
+                                                             ltypes
+                                                             rtypes)
+               (atc-integer-ops-2-conv-names-loop-ops (cdr ops)
+                                                      ltypes
+                                                      rtypes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-definition-rules*
   :short "List of definition rules for the proofs generated by ATC."
   :long
@@ -407,7 +570,8 @@
      we enable rules that simplify
      applications of deconstructors to constructors.")
    (xdoc::p
-    "We expand @(tsee sint01), because it is really just an abbreviation.
+    "We expand @(tsee sint-from-boolean),
+     because it is really just an abbreviation.
      In fact, we want to expose its @(tsee if) structure
      in the symbolic execution."))
   (append
@@ -453,7 +617,7 @@
      pop-frame
      push-frame
      read-var
-     sint01
+     sint-from-boolean
      sint-const
      uint-const
      slong-const
@@ -473,7 +637,9 @@
      value-arithmeticp
      value-scalarp
      write-var)
-   *atc-shift-definition-rules*))
+   *atc-shift-definition-rules*
+   *atc-integer-ops-1-conv-definition-rules*
+   *atc-integer-ops-2-conv-definition-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,10 +673,10 @@
      so it is not a lot of duplication.")
    (xdoc::p
     "We also have two rules to simplify applications of
-     @(tsee sint-nonzerop) to @('(sint 0)') and @('(sint 1)').
+     @(tsee boolean-from-sint) to @('(sint 0)') and @('(sint 1)').
      These applications appear during symbolic execution,
      because in C certain ``boolean'' expressions produce those @('int') values,
-     and @(tsee sint-nonzerop) is used to turn those into ACL2 booleans,
+     and @(tsee boolean-from-sint) is used to turn those into ACL2 booleans,
      which are uses in @(tsee if)s,
      and thus we clearly want to simplify those application
      to @('t') and @('nil'), which further simplifies the @(tsee if)s.")
@@ -582,11 +748,11 @@
   (defruled 1+len-greater-than-0
     (> (1+ (len x)) 0))
 
-  (defruled sint-nonzerop-of-0
-    (equal (sint-nonzerop (sint 0)) nil))
+  (defruled boolean-from-sint-of-0
+    (equal (boolean-from-sint (sint 0)) nil))
 
-  (defruled sint-nonzerop-of-1
-    (equal (sint-nonzerop (sint 1)) t))
+  (defruled boolean-from-sint-of-1
+    (equal (boolean-from-sint (sint 1)) t))
 
   (defruled lognot-sint-of-0
     (equal (lognot-sint (sint 0))
@@ -599,6 +765,14 @@
   (defruled car-of-if
     (equal (car (if a b c))
            (if a (car b) (car c))))
+
+  (defruled mv-nth-of-if
+    (equal (mv-nth n (if a b c))
+           (if a (mv-nth n b) (mv-nth n c))))
+
+  (defruled len-of-if
+    (equal (len (if a b c))
+           (if a (len b) (len c))))
 
   (defruled value-result-fix-of-if
     (equal (value-result-fix (if a b c))
@@ -655,6 +829,10 @@
   (defruled pointerp-of-if
     (equal (pointerp (if a b c))
            (if a (pointerp b) (pointerp c))))
+
+  (defruled compustate->frames-of-if
+    (equal (compustate->frames (if a b c))
+           (if a (compustate->frames b) (compustate->frames c))))
 
   (defruled 1+nat-greater-than-0
     (implies (natp x)
@@ -895,11 +1073,13 @@
      not-errorp-when-booleanp
      len-of-cons
      1+len-greater-than-0
-     sint-nonzerop-of-0
-     sint-nonzerop-of-1
+     boolean-from-sint-of-0
+     boolean-from-sint-of-1
      lognot-sint-of-0
      lognot-sint-of-1
      car-of-if
+     mv-nth-of-if
+     len-of-if
      value-result-fix-of-if
      errorp-of-if
      valuep-of-if
@@ -914,20 +1094,21 @@
      sllongp-of-if
      ullongp-of-if
      pointerp-of-if
+     compustate->frames-of-if
      1+nat-greater-than-0
      natp-of-1+
      natp-of-len
      ;; introduced elsewhere:
-     booleanp-of-uchar-nonzerop
-     booleanp-of-schar-nonzerop
-     booleanp-of-ushort-nonzerop
-     booleanp-of-sshort-nonzerop
-     booleanp-of-uint-nonzerop
-     booleanp-of-sint-nonzerop
-     booleanp-of-ulong-nonzerop
-     booleanp-of-slong-nonzerop
-     booleanp-of-ullong-nonzerop
-     booleanp-of-sllong-nonzerop
+     booleanp-of-boolean-from-uchar
+     booleanp-of-boolean-from-schar
+     booleanp-of-boolean-from-ushort
+     booleanp-of-boolean-from-sshort
+     booleanp-of-boolean-from-uint
+     booleanp-of-boolean-from-sint
+     booleanp-of-boolean-from-ulong
+     booleanp-of-boolean-from-slong
+     booleanp-of-boolean-from-ullong
+     booleanp-of-boolean-from-sllong
      car-cons
      cdr-cons
      compustate-of-fields
@@ -1180,19 +1361,21 @@
   (xdoc::topstring
    (xdoc::p
     "In the dynamic semantics, the execution of statements and other entities
-     returns optional values, i.e. values or @('nil').
-     Thus, the dynamic semantics sometimes checks whether such results
-     are values or @('nil'), unsurprisingly.
-     During symbolic execution, these results, when they are values,
-     have the form of shallowly embedded C expressions.
-     Thus, in order to establish that they are not @('nil'),
-     the simplest way is to take advantage of the type prescription rules
-     that ACL2 automatically generates for the functions
-     that represent shallowly embedded C expressions.
-     These are listed here; the list may not be exhaustive,
-     and may therefore be extended as needed."))
+     returns @(tsee mv) values, which logically satisfy @(tsee consp);
+     the negated application of @(tsee consp) to those execution functions
+     comes up in certain subgoals,
+     so a simple way to discharge those subgoals
+     is to use the type prescription rules for those execution functions.")
+   (xdoc::p
+    "We also need rules about the constructors of C integer values
+     and the C functions that represent C operations and conversions,
+     including array read operations."))
   (append
-   '((:t exec-block-item-list)
+   '((:t exec-expr-call-or-pure)
+     (:t exec-fun)
+     (:t exec-stmt)
+     (:t exec-block-item)
+     (:t exec-block-item-list)
      (:t schar)
      (:t uchar)
      (:t sshort)

@@ -58,6 +58,133 @@
   :hints (("Goal" :use (:instance type-of-aref1-when-result-arrayp)
            :in-theory (disable type-of-aref1-when-result-arrayp))))
 
+;;;
+;;; lookup-arg-in-result-array
+;;;
+
+;does this already exist?
+(defund lookup-arg-in-result-array (arg result-array-name result-array)
+  (declare (xargs :guard (and ;; (result-arrayp result-array-name result-array dag-len) ;we don't have dag-len
+                          (array1p result-array-name result-array)
+                          (dargp-less-than arg (alen1 result-array-name result-array)))))
+  (if (consp arg) ;check for quotep
+      arg
+    (aref1 result-array-name result-array arg)))
+
+(defthm dargp-of-lookup-arg-in-result-array
+  (implies (and (lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (dargp (lookup-arg-in-result-array arg result-array-name result-array)))
+  :hints (("Goal" :in-theory (e/d (lookup-arg-in-result-array) (dargp
+                                                                natp
+                                                                type-of-aref1-when-result-arrayp))
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index arg)))))
+
+(defthm dargp-of-lookup-arg-in-result-array-alt
+  (implies (and (or (consp arg)
+                    (aref1 result-array-name result-array arg)) ; ensures it's not nil
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (dargp (lookup-arg-in-result-array arg result-array-name result-array)))
+  :hints (("Goal" :in-theory (e/d (lookup-arg-in-result-array) (dargp
+                                                                natp
+                                                                type-of-aref1-when-result-arrayp))
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index arg)))))
+
+(defthm not-equal-of-1-and-len-of-lookup-arg-in-result-array
+  (implies (and ;(lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (not (equal 1 (len (lookup-arg-in-result-array arg result-array-name result-array)))))
+  :hints (("Goal" :use (:instance dargp-of-lookup-arg-in-result-array)
+           :in-theory (e/d (dargp-less-than len)
+                           (dargp-of-lookup-arg-in-result-array-alt
+                            dargp-of-lookup-arg-in-result-array)))))
+
+(defthm dargp-less-than-of-lookup-arg-in-result-array
+  (implies (and (lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (dargp-less-than (lookup-arg-in-result-array arg result-array-name result-array) bound))
+  :hints (("Goal" :in-theory (e/d (lookup-arg-in-result-array) (dargp
+                                                                natp
+                                                                type-of-aref1-when-result-arrayp))
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index arg)))))
+
+(defthm dargp-less-than-of-lookup-arg-in-result-array-alt
+  (implies (and (or (consp arg)
+                    (aref1 result-array-name result-array arg)) ; ensures it's not nil
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (dargp-less-than (lookup-arg-in-result-array arg result-array-name result-array) bound))
+  :hints (("Goal" :in-theory (e/d (lookup-arg-in-result-array) (dargp
+                                                                natp
+                                                                type-of-aref1-when-result-arrayp))
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index arg)))))
+
+(defthm <-of-lookup-arg-in-result-array
+  (implies (and (lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                (not (consp (lookup-arg-in-result-array arg result-array-name result-array)))
+                (result-arrayp result-array-name result-array bound) ;bound is a free var
+                (dargp-less-than arg (alen1 result-array-name result-array))
+                )
+           (< (lookup-arg-in-result-array arg result-array-name result-array) bound))
+  :hints (("Goal" :in-theory (e/d (lookup-arg-in-result-array) (dargp
+                                                                natp
+                                                                type-of-aref1-when-result-arrayp))
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index arg)))))
+
+;drop?
+(defthm <=-of-0-and-lookup-arg-in-result-array
+  (implies (and (lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                (not (consp (lookup-arg-in-result-array arg result-array-name result-array)))
+                (result-arrayp result-array-name result-array bound)
+                (dargp-less-than arg (alen1 result-array-name result-array)))
+           (<= 0 (lookup-arg-in-result-array arg result-array-name result-array)))
+  :hints (("Goal" :use (:instance dargp-of-lookup-arg-in-result-array)
+           :in-theory (disable dargp-of-lookup-arg-in-result-array))))
+
+(defthm natp-of-lookup-arg-in-result-array
+  (implies (and (result-arrayp result-array-name result-array bound)
+                (dargp-less-than arg (alen1 result-array-name result-array)))
+           (equal (natp (lookup-arg-in-result-array arg result-array-name result-array))
+                  (and (lookup-arg-in-result-array arg result-array-name result-array) ; ensures it's not nil
+                       (not (consp (lookup-arg-in-result-array arg result-array-name result-array))))))
+  :hints (("Goal" :use (:instance dargp-of-lookup-arg-in-result-array)
+           :in-theory (disable dargp-of-lookup-arg-in-result-array))))
+
+;drop?
+(defthm bounded-axe-treep-of-lookup-arg-in-result-array
+  (implies (and (result-arrayp result-array-name result-array bound)
+                (dargp-less-than arg (alen1 result-array-name result-array)))
+           (bounded-axe-treep (lookup-arg-in-result-array arg result-array-name result-array) bound))
+  :hints (("Goal" :use (:instance dargp-less-than-of-lookup-arg-in-result-array)
+           :in-theory (disable dargp-less-than-of-lookup-arg-in-result-array))))
+
+;;;
+;;; lookup-args-in-result-array
+;;;
 
 ;; see also translate-args
 (defund lookup-args-in-result-array (args result-array-name result-array)
@@ -68,41 +195,41 @@
                               (< (largest-non-quotep args) (alen1 result-array-name result-array)))))
   (if (endp args)
       nil
-    (let ((arg (car args)))
-      (if (consp arg) ;check for quotep
-          (cons arg
-                (lookup-args-in-result-array (cdr args) result-array-name result-array))
-        (cons (aref1 result-array-name result-array arg)
-              (lookup-args-in-result-array (cdr args) result-array-name result-array))))))
+    ;; TODO: Consider cons-with-hint here:
+    (cons (lookup-arg-in-result-array (first args) result-array-name result-array)
+          (lookup-args-in-result-array (cdr args) result-array-name result-array))))
+
+(defthm len-of-lookup-args-in-result-array
+  (equal (len (lookup-args-in-result-array args result-array-name result-array))
+         (len args))
+  :hints (("Goal" :in-theory (enable lookup-args-in-result-array))))
+
+(defthm lookup-args-in-result-array-of-nil
+  (equal (lookup-args-in-result-array nil result-array-name result-array)
+         nil)
+  :hints (("Goal" :in-theory (enable lookup-args-in-result-array))))
 
 (defthm all-axe-treep-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                ;(all-dargp-less-than args dag-len)
-                (all-dargp args)
+                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                ;(all-dargp args)
                 )
            ;; works because nil is an axe-tree but it would be better not to rely on that
            (all-axe-treep (lookup-args-in-result-array args result-array-name result-array)))
   :hints (("Goal" :in-theory (enable axe-treep lookup-args-in-result-array))
-          ("subgoal *1/5"
-           :expand (LOOKUP-ARGS-IN-RESULT-ARRAY ARGS RESULT-ARRAY-NAME RESULT-ARRAY)
-           :use (:instance TYPE-OF-AREF1-WHEN-RESULT-ARRAYP
-                           (array-name result-array-name)
-                           (array result-array)
-                           (index (car args)))
-           :in-theory (disable TYPE-OF-AREF1-WHEN-RESULT-ARRAYP))))
+          ("subgoal *1/3"
+           :expand (lookup-args-in-result-array args result-array-name result-array)
+           :use (:instance dargp-of-lookup-arg-in-result-array
+                           ;(array-name result-array-name)
+                           ;(array result-array)
+                           (arg (car args)))
+           :in-theory (e/d (;lookup-args-in-result-array ;gross
+                            ) (dargp-of-lookup-arg-in-result-array)))))
 
 (defthm all-bounded-axe-treep-of-lookup-args-in-result-array
   (implies (and (result-arrayp result-array-name result-array bound)
-                ;(all-dargp-less-than args dag-len)
-                (all-dargp args)
+                (all-dargp-less-than args (alen1 result-array-name result-array)) ;new
+                ;(all-dargp args)
                 )
            (all-bounded-axe-treep (lookup-args-in-result-array args result-array-name result-array) bound))
-  :hints (("Goal" :in-theory (enable axe-treep lookup-args-in-result-array))
-          ("subgoal *1/5"
-           :expand (lookup-args-in-result-array args result-array-name result-array)
-           :use (:instance type-of-aref1-when-result-arrayp
-                           (array-name result-array-name)
-                           (array result-array)
-                           (index (car args)))
-           :in-theory (e/d (bounded-axe-treep-when-dargp-less-than)
-                           (type-of-aref1-when-result-arrayp)))))
+  :hints (("Goal" :in-theory (enable LOOKUP-ARGS-IN-RESULT-ARRAY))))

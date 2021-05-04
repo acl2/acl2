@@ -83,15 +83,18 @@
 
 ;; Find the block of lines (surrounded by blank lines) that contains the definition of the given name.
 (defund get-block-for-name (name-string ;lowercase
-                            lines current-block-lines-rev)
+                            lines current-block-lines-rev
+                            filename ; just for use in error messages
+                            )
   (declare (xargs :guard (and (stringp name-string)
                               (string-listp lines)
-                              (string-listp current-block-lines-rev))))
+                              (string-listp current-block-lines-rev)
+                              (stringp filename))))
   (if (endp lines)
-      (er hard? 'get-block-for-name "No block of lines found for ~s0." name-string)
+      (er hard? 'get-block-for-name "No block of lines found for ~s0 in ~s1." name-string filename)
     (let ((line (first lines)))
       (if (equal line "") ;; empty string (line with only a newline) divides blocks
-          (get-block-for-name name-string (rest lines) nil)
+          (get-block-for-name name-string (rest lines) nil filename)
         (let* ((downcase-line (str::downcase-string line)) ;todo: try case-insensitive searches below, but adding :test 'char-equal there required standard chars
                )
           (if (and (search name-string downcase-line) ;; ensure the line contains the name (fail fast if not)
@@ -107,13 +110,13 @@
               ;; This block contains the definition of name, so get the rest of the lines in the block and return:
               (rev (get-non-empty-lines (rest lines) (cons line current-block-lines-rev)))
             ;; This line doesn't contain the definition of name, but it may come later in this block
-            (get-block-for-name name-string (rest lines) (cons line current-block-lines-rev))))))))
+            (get-block-for-name name-string (rest lines) (cons line current-block-lines-rev) filename)))))))
 
 (defthm string-listp-of-get-block-for-name
   (implies (and (stringp name-string)
                 (string-listp lines)
                 (string-listp current-block-lines-rev))
-           (string-listp (get-block-for-name name-string lines current-block-lines-rev)))
+           (string-listp (get-block-for-name name-string lines current-block-lines-rev filename)))
   :hints (("Goal" :in-theory (enable get-block-for-name))))
 
 (defun append-string-lines (lines)
@@ -125,19 +128,22 @@
                  (newline-string)
                  (append-string-lines (rest lines)))))
 
-(defun gen-xdoc-form-for-item (item lines parents)
+(defun gen-xdoc-form-for-item (item lines parents
+                                    filename ; just for use in error messages
+                                    )
   (declare (xargs :guard (and (true-listp item)
                               (eql (len item) 2)
                               ;; (doubletp item)
                               (string-listp lines)
-                              (symbol-listp parents))))
+                              (symbol-listp parents)
+                              (stringp filename))))
   (let ((name (first item))
         (short (second item)))
     (if (not (symbolp name))
         (er hard? 'gen-xdoc-form-for-item "Bad name: ~x0." name)
       (if (not (stringp short))
           (er hard? 'gen-xdoc-form-for-item "Bad short description, ~x0, for ~x1." short name)
-        (let ((block (get-block-for-name (str::downcase-string (symbol-name name)) lines nil)))
+        (let ((block (get-block-for-name (str::downcase-string (symbol-name name)) lines nil filename)))
           `(defxdoc ,name
              :parents ,parents
              :short ,short
@@ -146,14 +152,17 @@
                            (append-string-lines block)
                            "})")))))))
 
-(defun gen-xdoc-forms-for-items (items lines parents)
+(defun gen-xdoc-forms-for-items (items lines parents
+                                       filename ; just for use in error messages
+                                       )
   (declare (xargs :guard (and (doublet-listp items)
                               (string-listp lines)
-                              (symbol-listp parents))))
+                              (symbol-listp parents)
+                              (stringp filename))))
   (if (endp items)
       nil
-    (cons (gen-xdoc-form-for-item (first items) lines parents)
-          (gen-xdoc-forms-for-items (rest items) lines parents))))
+    (cons (gen-xdoc-form-for-item (first items) lines parents filename)
+          (gen-xdoc-forms-for-items (rest items) lines parents filename))))
 
 ;; Returns (mv erp form state).
 (defun gen-xdoc-for-file-fn (filename
@@ -175,7 +184,7 @@
             (er hard? 'gen-xdoc-for-file "Error reading file ~x0." full-filename)
             state)))
     (mv nil ;no error
-        `(progn ,@(gen-xdoc-forms-for-items items lines parents))
+        `(progn ,@(gen-xdoc-forms-for-items items lines parents full-filename))
         state)))
 
 ;; Generate xdoc topics for the given ITEMS, each of which is a doublet of a

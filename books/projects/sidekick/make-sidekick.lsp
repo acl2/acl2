@@ -60,13 +60,8 @@
   (when *print-startup-banner*
     (format t
             *saved-string*
-            *copy-of-acl2-version*
-            (saved-build-dates :terminal)
-            (cond (*saved-mode*
-                   (format nil "~% Initialized with ~a." *saved-mode*))
-                  (t ""))
-            (eval '(latest-release-note-string)) ; avoid possible warning
-            ))
+            (acl2-version+)
+            (saved-build-dates :terminal)))
   (format t "~%")
   (sidekick::start))
 

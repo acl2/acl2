@@ -109,9 +109,19 @@
 
 ; Code for saving an image.
 
-(setq *saved-mode*
-      "toothbrush mechanism.
-    SO PLEASE NOTE: This executable contains only a part of ACL2")
+; For SBCL, it seems a bit challenging to get setenv$ defined.  I tried what's
+; below, and some variants of it, but kept getting errors.  If anyone gets
+; serious about using the toothbrush, it would be good to fix this.
+#-sbcl
+(setenv$ "ACL2_SNAPSHOT_INFO"
+         "PLEASE NOTE: This \"toothbrush\" contains only a part of ACL2")
+#||
+#+sbcl
+(require :sb-posix)
+#+sbcl
+(funcall (intern "PUTENV" "SB-POSIX")
+         "ACL2_SNAPSHOT_INFO=PLEASE NOTE: This \"toothbrush\" contains only a part of ACL2")
+||#
 
 (setq *saved-build-date-lst*
       (list (saved-build-date-string)))

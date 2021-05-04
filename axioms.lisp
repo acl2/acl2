@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -6501,47 +6501,87 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(mv nil ,x state))
 
-(defun value-triple-fn (form on-skip-proofs check ctx)
-  (declare (xargs :guard t))
-  `(cond ((and ,(not on-skip-proofs)
-               (f-get-global 'ld-skip-proofsp state))
-          (value :skipped))
-         ((and (eq ,on-skip-proofs :interactive)
-               (eq (f-get-global 'ld-skip-proofsp state)
-                   'include-book))
-          (value :skipped))
-         (t ,(let ((form
-                    `(let ((check ,check)
-                           (ctx ,ctx))
-                       (cond (check
-                              (cond
-                               ((check-vars-not-free
-                                 (check)
-                                 ,form)
-                                :passed)
-                               ((tilde-@p check)
-                                (er hard ctx
-                                    "Assertion failed:~%~@0~|"
-                                    check))
-                               (t
-                                (er hard ctx
-                                    "Assertion failed on form:~%~x0~|"
-                                    ',form))))
-                             (t ,form)))))
-               `(state-global-let*
-                 ((safe-mode (not (f-get-global 'boot-strap-flg state))))
-                 (value ,form))))))
+(defun legal-constantp1 (name)
+
+; This function should correctly distinguish between variables and
+; constants for symbols that are known to satisfy
+; legal-variable-or-constant-namep.  Thus, if name satisfies this
+; predicate then it cannot be a variable.
+
+  (declare (xargs :guard (symbolp name)))
+  (or (eq name t)
+      (eq name nil)
+      (let ((s (symbol-name name)))
+        (and (not (= (length s) 0))
+             (eql (char s 0) #\*)
+             (eql (char s (1- (length s))) #\*)))))
 
 #+acl2-loop-only
-(defmacro value-triple (form &key on-skip-proofs check (ctx ''value-triple))
-  (value-triple-fn form on-skip-proofs check ctx))
+(defmacro value-triple (form &key
+                             on-skip-proofs
+                             check
+                             (safe-mode ':same)
+                             (stobjs-out 'nil)
+                             (ctx ''value-triple))
 
-(defmacro assert-event (form &key on-skip-proofs msg)
-  (declare (xargs :guard (booleanp on-skip-proofs)))
-  `(value-triple ,form
-                 :on-skip-proofs ,on-skip-proofs
-                 :check ,(or msg t)
-                 :ctx 'assert-event))
+; Value-triple is used in mutual-recursion, which is called in axioms.lisp
+; before the definition of state-global-let*, which is used in value-triple-fn.
+; So we avoid calling value-triple-fn in some of the most common cases, which
+; also aids efficiency in those cases.
+
+; Warning: The checks below should be at least as strong as those in
+; chk-value-triple.
+
+  `(let ((form ',form)
+         (on-skip-proofs ,on-skip-proofs)
+         (check ,check)
+         (safe-mode ,safe-mode)
+         (stobjs-out ,stobjs-out))
+     (cond ((and (not on-skip-proofs)
+                 (f-get-global 'ld-skip-proofsp state))
+            (value :skipped))
+           ((and (eq on-skip-proofs :interactive)
+                 (eq (f-get-global 'ld-skip-proofsp state) 'include-book))
+            (value :skipped))
+           ((and (null check)
+                 (eq safe-mode :same)
+                 (or (null stobjs-out)
+                     (equal stobjs-out '(nil)))
+                 (or (booleanp on-skip-proofs)
+                     (eq on-skip-proofs :interactive))
+                 (cond ((consp form)
+                        (and (eq (car form) 'QUOTE)
+                             (consp (cdr form))
+                             (null (cddr form))))
+                       ((symbolp form)
+                        (or (legal-constantp1 form) ; includes t, nil, and constants *c*
+                            (keywordp form)))
+                       (t (or (acl2-numberp form)
+                              (stringp form)))))
+            (value (if (consp form) (cadr form) form)))
+           (t (value-triple-fn form
+                               on-skip-proofs check safe-mode
+                               stobjs-out ,ctx state)))))
+
+(defmacro assert-event (assertion &key
+                                  event
+                                  on-skip-proofs
+                                  msg
+                                  (safe-mode ':same)
+                                  (stobjs-out 'nil)
+                                  (ctx ''assert-event))
+  (let ((ev `(value-triple ,assertion
+                           :on-skip-proofs ,on-skip-proofs
+                           :check ,(or msg t)
+                           :safe-mode ,safe-mode
+                           :stobjs-out ,stobjs-out
+                           :ctx ,ctx)))
+    (cond (event `(with-output
+                    :stack :push
+                    :off (summary event)
+                    (progn ,ev
+                           (with-output :stack :pop ,event))))
+          (t ev))))
 
 (defun event-keyword-name (event-type name)
   (declare (xargs :guard (member-eq event-type
@@ -15711,9 +15751,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-error-triples . t)
     (ld-error-action . :continue)
     (ld-query-control-alist . nil)
-    (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|System books ~
-                   directory ~xb.~|Type :help for help.~%Type (good-bye) to ~
-                   quit completely out of ACL2.~|~%")
+    (ld-verbose . "System books directory ~xb.~|Type :help for help.~%Type ~
+                   (quit) to quit completely out of ACL2.~|~%")
     (ld-user-stobjs-modified-warning . nil)))
 
 (defun always-boundp-global (x)

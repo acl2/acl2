@@ -154,12 +154,36 @@
        (<type>-integer (pack <type> '-integer))
        (<type>-integerp (pack <type>-integer 'p))
        (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
+       (<type>-integer-list (pack <type>-integer '-list))
+       (<type>-integer-listp (pack <type>-integer-list 'p))
+       (<type>-integer-list-fix (pack <type>-integer-list '-fix))
        (<type>-integer-fix (pack <type>-integer '-fix))
        (<type>-max (pack <type> '-max))
        (<type>-min (pack <type> '-min))
        (<type>->get (pack <type> '->get))
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type>-list 'p))
+       (<type>-list-fix (pack <type>-list '-fix))
+       (<type>-integer-list-from-<type>-list (pack <type>-integer-list
+                                                   '-from-
+                                                   <type>-list))
+       (<type>-list-from-<type>-integer-list (pack <type>-list
+                                                   '-from-
+                                                   <type>-integer-list))
+       (<type>-list-from-<type>-integer-list-from-<type>-list
+        (pack <type>
+              '-list-from-
+              <type>
+              '-integer-list-from-
+              <type>
+              '-list))
+       (<type>-integer-list-from-<type>-list-from-<type>-integer-list
+        (pack <type>
+              '-integer-list-from-
+              <type>
+              '-list-from-
+              <type>
+              '-integer-list))
        (<type>-mod (pack <type> '-mod)))
 
     `(progn
@@ -176,6 +200,17 @@
          :size (,<type>-bits)
          :signed ,signedp
          :pred ,<type>-integerp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::deflist ,<type>-integer-list
+         :short ,(str::cat "Fixtype of lists of ACL2 integers in the range of "
+                           type-string
+                           ".")
+         :elt-type ,<type>-integer
+         :true-listp t
+         :elementp-of-nil nil
+         :pred ,<type>-integer-listp)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,6 +309,48 @@
          :true-listp t
          :elementp-of-nil nil
          :pred ,<type>-listp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (std::defprojection ,<type>-integer-list-from-<type>-list
+         ((x ,<type>-listp))
+         :returns (result ,<type>-integer-listp)
+         :short ,(str::cat "Lift @(tsee "
+                           (str::downcase-string (symbol-name <type>->get))
+                           ") to lists.")
+         (,<type>->get x)
+         ///
+         (fty::deffixequiv ,<type>-integer-list-from-<type>-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (std::defprojection ,<type>-list-from-<type>-integer-list
+         ((x ,<type>-integer-listp))
+         :returns (result ,<type>-listp)
+         :short ,(str::cat "Lift @(tsee "
+                           (str::downcase-string (symbol-name <type>))
+                           ") to lists.")
+         (,<type> x)
+         ///
+         (fty::deffixequiv ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,<type>-list-from-<type>-integer-list-from-<type>-list
+         (equal (,<type>-list-from-<type>-integer-list
+                 (,<type>-integer-list-from-<type>-list x))
+                (,<type>-list-fix x))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,<type>-integer-list-from-<type>-list-from-<type>-integer-list
+         (equal (,<type>-integer-list-from-<type>-list
+                 (,<type>-list-from-<type>-integer-list x))
+                (,<type>-integer-list-fix x))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

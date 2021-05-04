@@ -159,3 +159,10 @@
   (equal (equal (expt 2 n) 2)
          (equal 1 n))
   :hints (("Goal" :in-theory (e/d (expt zip expt-of-+) ()))))
+
+;this helps a lot
+(defthm expt-of-one-less-linear
+  (implies (integerp size)
+           (equal (expt 2 size)
+                  (* 2 (expt 2 (+ -1 size)))))
+  :rule-classes :linear)
