@@ -1,3 +1,17 @@
+; Number Theory Library
+; Tonelli-Shanks Square Root
+;
+; Copyright (C) 2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Main Author: Jagadish Bapanapally (jagadishb285@gmail.com)
+; Contributing Authors:
+;   Eric McCarthy (mccarthy@kestrel.edu)
+;   Alessandro Coglio (coglio@kestrel.edu),
+;   Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "PRIMES")
 
@@ -7,9 +21,9 @@
 
 (defxdoc+ tonelli-shanks-algorithm-is-correct
   :parents (tonelli-shanks-modular-sqrt-algorithm)
-  :short "Proof of correctness of the Tonelli-Shanks Modular Square Root Algorithm "
+  :short "Proof of correctness of the Tonelli-Shanks Modular Square Root Algorithm."
   :long "<b> <h3> Overview </h3> </b>
-<p> Below are the key lemmas and proof of soundness and correctness of the Tonelli-Shanks algorithm. </p>
+<p> Below are the key lemmas and proof of correctness of the Tonelli-Shanks modular square root algorithm. </p>
 <h3>Theorems </h3>
 <p>Key lemmas:</p>
 @(thm y^2=1modp)
@@ -20,13 +34,13 @@
 @(thm t-s-aux-loop-invariants)
 <p>Base case theorem:</p>
 @(thm t-s-aux-base-case)
-<p> Assuming some properties about the loop invariants and using loop invariants theorem and the base case, we can prove the following theorem about t-s-aux function of the Tonelli-Shanks algorithm. </p>
+<p> Assuming some properties about the loop invariants and using the theorems t-s-aux-loop-invariants, t-s-aux-base-case, we can prove the following theorem about t-s-aux function of the Tonelli-Shanks algorithm. </p>
 @(thm t-s-aux-equiv)
-<p> Soundness theorem: </p>
+<p> Proof of soundness of the algorithm: </p>
 @(thm tonelli-shanks-sqrt-aux-is-sqrt-modp)
-<p> key lemma required to prove correctness theorem: </p>
+<p> Key lemma required to prove that the algorithm is correct: </p>
 @(thm modx^2-y^2)
-<p> Proof of Tonelli-Shanks algorithm is correct: </p>
+<p> Proof that the Tonelli-Shanks modular square root algorithm is correct: </p>
 @(thm tonelli-shanks-sqrt-aux-is-correct)")
 
 (local
@@ -67,9 +81,8 @@
                    (<= 0 j)
                    (integerp i)
                    (integerp j))
-              (equal 
-               (* (expt r i)
-                  (expt r j)) (expt r (+ i j)))))
+              (equal (* (expt r i) (expt r j))
+                     (expt r (+ i j)))))
 
    (defthm expt-half-linear
      (implies (natp i)
@@ -369,13 +382,8 @@
                    (natp m)
                    (natp p)
                    (< 2 p)
-                   (not (equal (least-repeated-square-aux i
-                                                          tt^2^i
-                                                          m p)
-                               0)))
-              (< x (least-repeated-square-aux i
-                                              tt^2^i
-                                              m p)))
+                   (not (equal (least-repeated-square-aux i tt^2^i m p) 0)))
+              (< x (least-repeated-square-aux i tt^2^i m p)))
      :hints (("goal"
               :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
               ))))
@@ -392,9 +400,7 @@
            (equal (mod (expt (mod (* tt tt) p)
                              (expt 2
                                    (+ (- i)
-                                      (least-repeated-square-aux (+ 1 i)
-                                                                 (mod (* tt tt) p)
-                                                                 m p))))
+                                      (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p))))
                        p)
                   1)
            (< (+ 1 i) m)
@@ -405,24 +411,15 @@
            (<= 0 p)
            (< 0 i)
            (< 2 p)
-           (not (equal (least-repeated-square-aux (+ 1 i)
-                                                  (mod (* tt tt) p)
-                                                  m p)
-                       0)))
+           (not (equal (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p) 0)))
       (equal (mod (expt tt
                         (expt 2
                               (+ 1 (- i)
-                                 (least-repeated-square-aux (+ 1 i)
-                                                            (mod (* tt tt) p)
-                                                            m p))))
+                                 (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p))))
                   p)
              1))
      :hints (("goal"
-              :use (
-                    (:instance expt-half-linear (i (+ (- i)
-                                                      (least-repeated-square-aux (+ 1 i)
-                                                                                 (mod (* tt tt) p)
-                                                                                 m p) 1)))
+              :use ((:instance expt-half-linear (i (+ (- i) (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p) 1)))
                     (:instance least-repeated-square-aux-lemma1 (i (+ i 1)) (x i)
                                (m m) (p p) (tt^2^i (mod (* tt tt) p))))
               :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
@@ -441,8 +438,7 @@
                   (< i m)))
     :hints (("goal"
              :use ((:instance least-repeated-square-aux-lemma2))
-             :in-theory (e/d (acl2::expt) (y^2=1modp primep-implies
-                                                     mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
+             :in-theory (e/d (acl2::expt) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
              )))
   
   (local
@@ -459,8 +455,7 @@
      :hints (("goal"
               :use (:instance least-repeated-square-aux-lemma3 (i 1) (tt tt) (m m)
                               (p p) (lrs (least-repeated-square-aux 1 tt m p)))
-              :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies
-                                                               mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))))
+              :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))))
      ))
   
   (defthm least-repeated-square-equiv
@@ -522,8 +517,7 @@
                                (r tt))
                     (:instance exponents-add-for-nonneg-exponents (i 1)
                                (r 2)
-                               (j (expt 2 (+ -1 (- i) (least-repeated-square-aux (+ 1 i)
-                                                                                 (mod (* tt tt) p) m p)))))       
+                               (j (expt 2 (+ -1 (- i) (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p)))))       
                     (:instance least-repeated-square-aux-lemma3 (tt tt) (m m) (p p)
                                (i i) (lrs (least-repeated-square-aux i tt m p))))
               :in-theory (e/d (acl2::mod-expt-fast least-repeated-square-aux) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))))))
@@ -733,23 +727,13 @@
                     (:instance natp-2^x (x (+ -1 m (- (least-repeated-square tt m p)))))
                     (:instance exponents-add-for-nonneg-exponents
                                (r c)
-                               (i (expt 2
-                                        (+ -1
-                                           m (- (least-repeated-square tt m p)))))
-                               (j (expt 2
-                                        (+ -1
-                                           m (- (least-repeated-square tt m p))))))
+                               (i (expt 2 (+ -1 m (- (least-repeated-square tt m p)))))
+                               (j (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
                     (:instance expt-half-linear (i  (+ m (- (least-repeated-square tt m p)))))
                     
                     (:instance mod-*mod-a*mod-b=
-                               (a (expt c
-                                        (expt 2
-                                              (+ -1
-                                                 m (- (least-repeated-square tt m p))))))
-                               (b (expt c
-                                        (expt 2
-                                              (+ -1
-                                                 m (- (least-repeated-square tt m p))))))
+                               (a (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
+                               (b (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
                                (c p))
                     (:instance least-repeated-square-less-than-m (m m) (tt tt) (p p)))
               :in-theory (e/d (acl2::mod-expt-fast repeated-square) (y^2=1modp mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux t-s-aux-n-is-residue t-s-aux-z-is-non-residue least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 mod-times-mod))
@@ -765,22 +749,14 @@
       ()
       (local (include-book "arithmetic-5/top" :dir :system))
       
-
       (defthm lemma1
         (implies (and (natp tt)
                       (posp m)
                       (natp c)
                       (rtl::primep p)
                       (< 2 p))
-                 (natp (mod (* tt
-                               (expt c
-                                     (expt 2
-                                           (+ -1
-                                              m (- (least-repeated-square tt m p)))))
-                               (expt c
-                                     (expt 2
-                                           (+ -1
-                                              m (- (least-repeated-square tt m p))))))
+                 (natp (mod (* tt (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p)))))
+                               (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
                             p))))
 
       (defthm lemma2
@@ -798,18 +774,10 @@
                       (< 2 p))
                  (equal
                   (mod
-                   (expt (mod (* tt
-                                 (expt c
-                                       (expt 2
-                                             (+ -1
-                                                m (- (least-repeated-square tt m p)))))
-                                 (expt c
-                                       (expt 2
-                                             (+ -1
-                                                m (- (least-repeated-square tt m p))))))
+                   (expt (mod (* tt (expt c (expt 2 (+ -1  m (- (least-repeated-square tt m p)))))
+                                 (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
                               p)
-                         (expt 2
-                               (+ -1 (least-repeated-square tt m p))))
+                         (expt 2 (+ -1 (least-repeated-square tt m p))))
                    p)
                   1))
         :hints (("goal"
@@ -889,9 +857,7 @@
                      (:instance mod-*mod-a*mod-b= (a -1) (b -1) (c p))
                      (:instance mod-*a-b= (c p)
                                 (a (expt c (expt 2 (+ -1 m))))
-                                (b (expt tt
-                                         (expt 2
-                                               (+ -1 (least-repeated-square tt m p)))))))
+                                (b (expt tt (expt 2 (+ -1 (least-repeated-square tt m p)))))))
                :in-theory (e/d (acl2::mod-expt-fast) ( repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux t-s-aux-n-is-residue t-s-aux-z-is-non-residue least-repeated-square-is-least least-repeated-square-tt^2^lrs=1))
                :do-not-induct t
                )
@@ -1179,8 +1145,8 @@
                   (natp y)
                   (< y p)
                   (= (mod (* y y) p) n))
-             (or (= (tonelli-shanks-sqrt n p z) y)
-                 (= (tonelli-shanks-sqrt n p z) (- p y))))
+             (or (= (tonelli-shanks-sqrt-aux n p z) y)
+                 (= (tonelli-shanks-sqrt-aux n p z) (- p y))))
     :hints (("goal"
              :use ((:instance tonelli-shanks-sqrt-aux-is-sqrt-modp (n n) (z z) (p p) (y (tonelli-shanks-sqrt-aux n p z)))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt-aux n p z)) (y y) (p p))
