@@ -12,6 +12,15 @@
 
 (include-book "xdoc/archive-matching-topics" :dir :system)
 
+;; Returns a list of the XDOC resource directories registered in WRLD.
+;;move?
+(defun get-xdoc-resource-dirs (wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (let ((alist (table-alist 'xdoc::xdoc wrld)))
+    (if (not (alistp alist))
+        (er hard? 'get-xdoc-resource-dirs "Bad alist.")
+      (cdr (assoc-eq 'xdoc::resource-dirs alist)))))
+
 ;; Generate a call to archive-matching-topics that archives all topics in the
 ;; indicated subtree of books/.
 ;; TREE-PATH should not start or end in "/".
