@@ -1,46 +1,22 @@
-; Copyright (C) 2018 Centaur Technology
+; Extract and export only Kestrel xdoc material
 ;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2021 Kestrel Institute
 ;
-; License: (An MIT/X11-style license)
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-;   Permission is hereby granted, free of charge, to any person obtaining a
-;   copy of this software and associated documentation files (the "Software"),
-;   to deal in the Software without restriction, including without limitation
-;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-;   and/or sell copies of the Software, and to permit persons to whom the
-;   Software is furnished to do so, subject to the following conditions:
-;
-;   The above copyright notice and this permission notice shall be included in
-;   all copies or substantial portions of the Software.
-;
-;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;   DEALINGS IN THE SOFTWARE.
-;
-; Original author (this file): Sol Swords <sswords@centtech.com>
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
-;; This book exports all the xdoc topics for the kestrel books (whatever comes
-;; in via the local include of doc.lisp) but not all the definitions, theorems, etc.
+(include-book "kestrel/utilities/xdoc-archiving" :dir :system)
 
-(include-book "xdoc/archive-matching-topics" :dir :system)
+;; This book exports all the xdoc topics for the kestrel books (topics that
+;; come in via the local include of doc.lisp and that were introduced in the
+;; books/kestrel/ subtree).  It does not export definitions, theorems, etc.
 
 (local (include-book "doc"))
 
-(xdoc::archive-matching-topics
- (str::strprefixp "[books]/kestrel/" (cdr (assoc :from x))))
-
-(make-event
- #!xdoc
- `(table xdoc 'resource-dirs
-    (append ',(cdr (assoc 'resource-dirs (table-alist 'xdoc (w state))))
-            (cdr (assoc 'resource-dirs (table-alist 'xdoc world))))))
+(xdoc::archive-topics-for-books-tree "kestrel")
+(xdoc::archive-current-resource-dirs)
