@@ -771,8 +771,7 @@
      but here we need to check it because we do not have
      guard verification as a contextual assumption on the term),
      along with an indication of unsignedness and type suffix information,
-     and also the C integer type of the constant.
-     This way, the caller can generate the appropriate C integer constant."))
+     and also the C integer type of the constant."))
   (case-match term
     ((fn ('quote val))
      (b* (((when (not (symbolp fn)))
@@ -799,15 +798,13 @@
                (op unopp)
                (arg pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a unary expression."
+  :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C unary operators,
-     we return the operator and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply the operator to the expression.")
+     we return the operator and the argument term.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -843,15 +840,13 @@
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a strict pure binary expression."
+  :short "Check if a term may represent a strict pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C strict pure binary operators,
-     we return the operator and the argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and apply the operator to the expressions.")
+     we return the operator and the argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -905,16 +900,14 @@
   :returns (mv (yes/no booleanp)
                (tyname tynamep)
                (arg pseudo-termp :hyp :guard))
-  :short "Check if a term represents a conversion."
+  :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represents C integer conversions,
      we return the C type name for the destination type
-     and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply a cast with a type name to the expression.")
+     and the argument term.")
    (xdoc::p
     "The C type of the conversion can be determined from the returned type name,
      so there is no need to also return a C type here.")
@@ -971,16 +964,14 @@
                (arr pseudo-termp :hyp :guard)
                (sub pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents an array read."
+  :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C array read operations
      (currently just @(tsee uchar-array-read-sint)),
-     we return the two argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and form a C array subscripting expression.")
+     we return the two argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -1015,7 +1006,7 @@
                (args pseudo-term-listp :hyp (pseudo-termp term))
                (type typep)
                (limit natp :rule-classes :type-prescription))
-  :short "Check if a term represents a call to a callable target function."
+  :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1051,8 +1042,10 @@
                (var symbolp :hyp :guard)
                (init pseudo-termp :hyp :guard)
                (body pseudo-termp :hyp :guard))
-  :short "Check if a term represents
-          a local variable declaration or an assignment
+  :short "Check if a term may represent
+          a local variable declaration
+          or assignment
+          or single-variable transformation,
           followed by more code."
   :long
   (xdoc::topstring
@@ -1060,7 +1053,7 @@
     "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, these are terms @('((lambda (var) body) init)').
      However, if @('body') has other free variables in addition to @('var'),
-     those appear as both formal paramaters and actual arguments, e.g.
+     those appear as both formal parameters and actual arguments, e.g.
      @('((lambda (var x y) body<var,x,y>) init x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
      so ACL2 adds formal parameters and actual arguments to make that happen.
