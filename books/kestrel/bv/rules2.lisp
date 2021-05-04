@@ -23,7 +23,7 @@
   (implies (and (equal size (+ lowsize highsize))
                 (posp highsize)
                 (natp lowsize))
-           (equal (SBVLT SIZE (BVCAT highsize highval lowsize lowval) 0)
+           (equal (sbvlt size (bvcat highsize highval lowsize lowval) 0)
                   (equal 1 (getbit (+ -1 highsize) highval))))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
 

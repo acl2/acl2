@@ -129,3 +129,8 @@
   :hints (("Goal" :use (:instance bvnot-1-becomes-bitnot-better))))
 
 (theory-invariant (incompatible (:rewrite bitnot-becomes-bvnot) (:rewrite bvnot-1-becomes-bitnot-better)))
+
+(defthm bitnot-not-equal-constant
+  (implies (and (syntaxp (quotep k))
+                (not (unsigned-byte-p 1 k)))
+           (not (equal (bitnot x) k))))

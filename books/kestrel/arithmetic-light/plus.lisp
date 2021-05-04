@@ -89,6 +89,10 @@
          (< y z))
   :hints (("Goal" :cases ((< y z)))))
 
+(defthm <-of-+-arg2-same-arg2
+  (equal (< y (+ x y))
+         (< 0 x)))
+
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
                          (quotep k1)))
@@ -156,3 +160,9 @@
                 (integerp y))
            (equal (< x (+ 1 y))
                   (<= x y))))
+
+;; Needed?
+(defthmd binary-+-bring-constant-forward
+  (implies (syntaxp (quotep x))
+           (equal (+ y x)
+                  (+ x y))))

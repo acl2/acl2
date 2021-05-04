@@ -113,3 +113,11 @@
          (bvminus size y x))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvminus))))
+
+(defthm bvminus-trim-leading-constant
+  (implies (and (syntaxp (quotep k))
+                (not (unsigned-byte-p size k))
+                (natp size))
+           (equal (bvminus size k x)
+                  (bvminus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvminus))))

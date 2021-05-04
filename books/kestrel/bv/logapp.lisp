@@ -215,3 +215,9 @@
   (equal (loghead n x)
          (bvchop n x))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm logapp-minus-1-negative
+  (implies (integerp x)
+           (< (logapp n x -1) 0))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable logapp))))
