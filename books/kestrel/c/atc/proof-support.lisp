@@ -766,6 +766,14 @@
     (equal (car (if a b c))
            (if a (car b) (car c))))
 
+  (defruled mv-nth-of-if
+    (equal (mv-nth n (if a b c))
+           (if a (mv-nth n b) (mv-nth n c))))
+
+  (defruled len-of-if
+    (equal (len (if a b c))
+           (if a (len b) (len c))))
+
   (defruled value-result-fix-of-if
     (equal (value-result-fix (if a b c))
            (if a (value-result-fix b) (value-result-fix c))))
@@ -821,6 +829,10 @@
   (defruled pointerp-of-if
     (equal (pointerp (if a b c))
            (if a (pointerp b) (pointerp c))))
+
+  (defruled compustate->frames-of-if
+    (equal (compustate->frames (if a b c))
+           (if a (compustate->frames b) (compustate->frames c))))
 
   (defruled 1+nat-greater-than-0
     (implies (natp x)
@@ -1066,6 +1078,8 @@
      lognot-sint-of-0
      lognot-sint-of-1
      car-of-if
+     mv-nth-of-if
+     len-of-if
      value-result-fix-of-if
      errorp-of-if
      valuep-of-if
@@ -1080,6 +1094,7 @@
      sllongp-of-if
      ullongp-of-if
      pointerp-of-if
+     compustate->frames-of-if
      1+nat-greater-than-0
      natp-of-1+
      natp-of-len
