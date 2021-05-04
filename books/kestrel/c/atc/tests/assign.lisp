@@ -68,12 +68,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following function is translated to correct C,
-; but the proof seems to take a very long time
-; (it has not even been observed to complete).
-; So no code is generated for this for now;
-; the slowness of its proof must be investigated.
-
 (defun |j| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (let ((|y| (c::sint-const 0)))
@@ -87,7 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| |i| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| |j| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
