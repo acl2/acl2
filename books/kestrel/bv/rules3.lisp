@@ -518,16 +518,6 @@
                   (bvnot n val)))
   :hints (("Goal" :in-theory (enable trim))))
 
-;move
-(defthm bvchop-identity-cheap
-  (implies (and (unsigned-byte-p freesize i)
-                (<= freesize size)
-                (integerp size))
-           (equal (bvchop size i)
-                  i))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
-
 (defthmd mod-becomes-bvmod-better-free-and-free
   (implies (and (unsigned-byte-p xsize x) ;xsize is a freevar
                 (unsigned-byte-p ysize y)) ;ysize is a freevar
@@ -537,11 +527,6 @@
            :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
            :in-theory (enable ;mod-becomes-bvmod-core
                        unsigned-byte-p-forced))))
-
-(defthm bitnot-not-equal-constant
-  (implies (and (syntaxp (quotep k))
-                (not (unsigned-byte-p 1 k)))
-           (not (EQUAL (BITNOT x) k))))
 
 (defthm recollapse-hack-helper
   (implies (and (equal free1 (bvchop size x))
@@ -555,21 +540,6 @@
   :hints (("Goal" :in-theory (disable ;TRIM-TO-N-BITS-META-RULE-FOR-BVCAT
 ;                                      GETBIT-EQUAL-0-POLARITY
                                       ))))
-(defthm bitxor-of-bvxor-arg1
-  (implies (posp size)
-           (equal (bitxor (bvxor size x y) z)
-                  (bitxor (bitxor x y) z)))
-  :hints (("Goal" ;:cases ((equal size 1))
-           :in-theory (e/d (;bitxor
-                            ) (;BVXOR-1-BECOMES-BITXOR
-                               bitxor-commutative
-                               bitxor-commutative
-                               bitxor-associative)))))
-
-(defthm bitxor-of-bvxor-arg2
-  (implies (posp size)
-           (equal (bitxor z (bvxor size x y))
-                  (bitxor z (bitxor x y)))))
 
 ;or we could rewrite the < into a bvlt or sbvlt...
 ; this may loop when k=2^32 since this backchains from < to unsigned-byte-p?
@@ -837,13 +807,6 @@
            (equal (getbit n (bvor size y x))
                   (getbit n y))))
 
-(defthmd floor-when-evenp
-  (implies (and (evenp x)
-                (integerp x))
-           (equal (floor x 2)
-                  (/ x 2)))
-  :hints (("Goal" :in-theory (enable floor evenp))))
-
 ;; (skip -proofs
 ;;  (defthmd floor-when-not-evenp
 ;;    (implies (and (not (evenp x))
@@ -952,16 +915,6 @@
 ;;                                     LOGNOT-OF-LOGAND
 ;;                                 ))))))
 
-(defthm equal-x-times-2-floor-x
-  (implies (rationalp x)
-           (equal (EQUAL X (* 2 (FLOOR X 2)))
-                  (evenp x)))
-  :hints (("Goal" :in-theory (enable evenp floor))))
-
-;helps us apply bvshl-of-logext-arg2
-(defthm <-cancel-lemma
-  (equal (< y (binary-+ x y))
-         (< 0 x)))
 
 (DEFTHM natp-of-myif2
   (IMPLIES (AND (natp A)
@@ -974,12 +927,6 @@
            (equal (< (BVCAT 31 x 1 0) 64)
                   (< (bvchop 31 x) 32)))
   :hints (("Goal" :in-theory (e/d (bvcat logapp) ()))))
-
-(defthm logapp-minus-1-negative
-  (IMPLIES (INTEGERP X)
-           (< (LOGAPP n X -1) 0))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable logapp))))
 
 (defthm logext-64-bound-hack
   (implies (integerp x)
@@ -1047,8 +994,7 @@
   (implies (and (< size n)
                 (natp size)
                 (natp n))
-           (equal (signed-byte-p n (bvif size test a b))
-                  t))
+           (signed-byte-p n (bvif size test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;bbozo more like this
@@ -1555,11 +1501,6 @@
            (equal (bvif size test k y)
                   (bvif (integer-length k) test k y)))
   :hints (("Goal" :in-theory (enable myif bvif unsigned-byte-p-of-integer-length-gen))))
-
-(defthmd binary-+-bring-constant-forward
-  (implies (syntaxp (quotep x))
-           (equal (binary-+ y x)
-                  (binary-+ x y))))
 
 (defthm bvplus-disjoint-ones-32-24-8 ;bbozo gen!
   (equal (BVPLUS 32 (BVCAT 24 x 8 0) (BVCHOP 8 y))

@@ -199,16 +199,6 @@
                   (BVMINUS SIZE (TRIM SIZE X) Y)))
   :HINTS (("Goal" :IN-THEORY (ENABLE TRIM))))
 
-;move
-(DEFTHM BVMINUS-TRIM-LEADING-CONSTANT
-  (IMPLIES (AND (SYNTAXP (QUOTEP K))
-                (NOT (UNSIGNED-BYTE-P SIZE K))
-                (NATP SIZE))
-           (EQUAL (BVMINUS SIZE K X)
-                  (BVMINUS SIZE (BVCHOP SIZE K) X)))
-  :HINTS (("Goal" :IN-THEORY (E/D (BVMINUS) NIL)
-           :CASES ((NATP SIZE)))))
-
 (defthm not-signed-addition-overflowsp-when-signed-addition-underflowsp-cheap
   (implies (and (signed-addition-underflowsp size x y)
                 (posp size))

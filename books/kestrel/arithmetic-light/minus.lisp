@@ -59,3 +59,8 @@
   (equal (< (- x) (- y))
          (< (fix y) (fix x)))
   :hints (("Goal" :cases ((< (- x) (- y))))))
+
+(defthm x-less-than-minus-x
+  (equal (< x (- x))
+         (< x 0))
+  :hints (("Goal" :cases ((< x 0)))))

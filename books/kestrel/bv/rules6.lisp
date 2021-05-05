@@ -107,21 +107,6 @@
   :hints (("Goal" :use (:instance logand-of-minus-of-expt2 (n 5))
            :in-theory (e/d (logtail)( logand-of-minus-of-expt2)))))
 
-;move
-;rename?
-(defthm bvxor-of-negative-constant
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep x)
-                              (not (unsigned-byte-p (unquote size) (unquote x)))))
-                (integerp size)
-                (< 0 size)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (BVXOR size x y)
-                  (bvxor size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
 ;use trim?
 (defthm bvand-logapp-lemma
   (implies (and (< lowsize size1) ;bozo gen
@@ -192,27 +177,6 @@
                          lowsize
                          (bvxor lowsize x z)))))
 
-(defthm bvxor-of-bvchop-tighten-2
-   (implies (and (< size1 size2)
-                 (natp size1)
-                 (natp size2)
-                 (integerp y)
-                 (integerp x))
-            (equal (Bvxor size1 x (BVCHOP size2 y))
-                   (Bvxor size1 x (BVCHOP size1 y))))
-   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                    ) (LOGXOR-BVCHOP-BVCHOP)))))
-
-(defthm bvxor-of-bvchop-tighten-1
-   (implies (and (< size1 size2)
-                 (natp size1)
-                 (natp size2)
-                 (integerp y)
-                 (integerp x))
-            (equal (Bvxor size1 (BVCHOP size2 y) x)
-                   (Bvxor size1 (BVCHOP size1 y) x)))
-   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                    ) (LOGXOR-BVCHOP-BVCHOP)))))
 
 ;; ;use trim
 ;; (defthm bvxor-of-bvcat-tighten-low
@@ -329,9 +293,6 @@
   :hints (("Goal" :in-theory (e/d (bvxor) (LOGXOR-BVCHOP-BVCHOP)))))
 
 (in-theory (disable integer-length))
-
-
-
 
 (defthm getbit-of-bvmult-tighten
   (implies (and (< (+ 1 SIZE1) SIZE2)

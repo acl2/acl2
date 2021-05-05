@@ -1148,6 +1148,13 @@
                                         (+ 1/2 (/ i 2)))))
                         (:instance split-low-bit)))))
 
+(defthmd floor-when-evenp
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (floor x 2)
+                  (/ x 2)))
+  :hints (("Goal" :in-theory (enable floor evenp))))
+
 ;; this one uses evenp
 (defthmd floor-of-2-cases-2
    (implies (integerp i)
@@ -1182,3 +1189,10 @@
                        (< (/ i j) (+ 1 val)))))
   :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG1
                                       <-OF-*-OF-/-ARG1-alt))))
+
+;disable?
+(defthm equal-x-times-2-floor-x
+  (implies (rationalp x)
+           (equal (equal x (* 2 (floor x 2)))
+                  (evenp x)))
+  :hints (("Goal" :in-theory (enable evenp floor))))
