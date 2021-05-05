@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "evmac-input-hints-p")
-(include-book "evmac-input-print-p")
+(include-book "screen-printing")
 
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/try-event" :dir :system)
