@@ -140,7 +140,7 @@
       the order of the inputs @('fn1'), ..., @('fnp').")
 
     (xdoc::p
-     "The name of the symbol @('fni')
+     "The name of each symbol @('fni')
       must be a portable ASCII C identifier
       as defined in Section `Portable ASCII C Identifiers' below.
       The name of the symbol is used as
@@ -200,7 +200,7 @@
       is not explicitly represented in the C code.")
 
     (xdoc::p
-     "The return type of the C function corresponding to @('fni')
+     "The return type of the C function corresponding to each @('fni')
       is automatically determined from the body.
       The restrictions on the body, given below,
       make the determination of the return type possible in all cases.")
