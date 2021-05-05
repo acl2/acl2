@@ -138,31 +138,28 @@
            (no-duplicatesp-equal (merge-<-and-remove-dups l1 l2)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
-;(verify-termination strip-caddrs) ;todo: have matt fix the termination
-
-;dup
-(defund my-strip-caddrs (x)
-  (declare (xargs :guard (all->=-len x 3)))
-  (cond ((endp x) nil)
-	(t (cons (caddr (car x))
-		 (my-strip-caddrs (cdr x))))))
-
-(defthm consp-of-my-strip-caddrs
-  (equal (consp (my-strip-caddrs x))
+;move
+(local
+ (defthm consp-of-strip-caddrs
+  (equal (consp (strip-caddrs x))
          (consp x))
-  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+  :hints (("Goal" :in-theory (enable strip-caddrs)))))
 
+;move
 ;can expose the cdr to other rules
-(defthm my-strip-caddrs-of-cdr
-  (equal (my-strip-caddrs (cdr x))
-         (cdr (my-strip-caddrs x)))
-  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+(local
+ (defthm strip-caddrs-of-cdr
+  (equal (strip-caddrs (cdr x))
+         (cdr (strip-caddrs x)))
+  :hints (("Goal" :in-theory (enable strip-caddrs)))))
 
-(defthm my-strip-caddrs-of-cons
-  (equal (my-strip-caddrs (cons x y))
+;move
+(local
+ (defthm strip-caddrs-of-cons
+  (equal (strip-caddrs (cons x y))
          (cons (caddr x)
-               (my-strip-caddrs y)))
-  :hints (("Goal" :in-theory (enable my-strip-caddrs))))
+               (strip-caddrs y)))
+  :hints (("Goal" :in-theory (enable strip-caddrs)))))
 
 (defthmd <-of-car-of-car-when-all-<-of-strip-cars
   (implies (and (all-< (strip-cars x) bound)
@@ -532,17 +529,17 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable subst-candidates))))
 
-(defthmd subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
-                 (append literal-nodenums (my-strip-caddrs acc)))
-  :hints (("Goal" :in-theory (e/d (MY-STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL2)))))
+(defthmd subsetp-equal-of-strip-caddrs-of-subst-candidates-helper
+  (subsetp-equal (strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim acc))
+                 (append literal-nodenums (strip-caddrs acc)))
+  :hints (("Goal" :in-theory (e/d (STRIP-CADDRS subst-candidates) (CHECK-FOR-VAR-SUBST-LITERAL2)))))
 
 (local
- (defthm subsetp-equal-of-my-strip-caddrs-of-subst-candidates
-  (subsetp-equal (my-strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim nil))
+ (defthm subsetp-equal-of-strip-caddrs-of-subst-candidates
+  (subsetp-equal (strip-caddrs (subst-candidates literal-nodenums dag-array dag-len lim nil))
                  literal-nodenums)
-  :hints (("Goal" :use (:instance subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper (acc nil))
-           :in-theory (disable subsetp-equal-of-my-strip-caddrs-of-subst-candidates-helper)))))
+  :hints (("Goal" :use (:instance subsetp-equal-of-strip-caddrs-of-subst-candidates-helper (acc nil))
+           :in-theory (disable subsetp-equal-of-strip-caddrs-of-subst-candidates-helper)))))
 
 ;very slow
 (defthm <-of-largest-non-quotep-of-strip-cadrs-of-subst-candidates
@@ -916,10 +913,10 @@
                                      STRIP-CADRS
                                      ))))
 
-(defthm SUBSETP-EQUAL-of-my-strip-caddrs-of-find-simultaneous-subst-candidates
-  (implies (and (subsetp-equal (my-strip-caddrs subst-candidates) set)
-                (subsetp-equal (my-strip-caddrs subst-candidates-acc) set))
-           (SUBSETP-EQUAL (my-strip-caddrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
+(defthm SUBSETP-EQUAL-of-strip-caddrs-of-find-simultaneous-subst-candidates
+  (implies (and (subsetp-equal (strip-caddrs subst-candidates) set)
+                (subsetp-equal (strip-caddrs subst-candidates-acc) set))
+           (SUBSETP-EQUAL (strip-caddrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
                           set))
   :hints (("Goal" :in-theory (enable find-simultaneous-subst-candidates))))
 
@@ -1130,7 +1127,7 @@
                ;; Remove the literals for any equalities we using to substitute (todo: make use of the fact that each item appears only once?):
                ;; todo: optimize (avoid the strip-caddrs, maybe even sort?):
                (literal-nodenums (set-difference-equal ;todo: optimize for ints?
-                                  literal-nodenums (my-strip-caddrs subst-candidates)))
+                                  literal-nodenums (strip-caddrs subst-candidates)))
                ((when (not literal-nodenums))
                 (cw "NOTE: All literals dropped during substitution.  Clause is unprovable.")
                 (mv (erp-nil) nil t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
