@@ -8684,6 +8684,57 @@
              wrld)))
       (cond
        (bad
+
+; Before eliminating the error below, think carefully!  In particular, consider
+; the following problem involving trans-eval.  A related concern, which points
+; to the comment below, may be found in a comment in the definition of
+; magic-ev-fncall.
+
+; Sol Swords wondered whether there might be an issue when function takes and
+; returns both a user-defined stobj and state, calling trans-eval to change the
+; stobj even though the function doesn't actually change it.  Below
+; investigating whether Sol's idea can be exploited to destroy, perhaps with
+; bad consequences, some sort of invariant related to the user-stobj-alist of
+; the state.  The answer seems to be no, but only because (as Sol pointed out,
+; if memory serves) trans-eval is in :program mode -- and it stays there
+; because trans-eval calls ev-for-trans-eval, which calls ev, which belongs to
+; the list *initial-program-fns-with-raw-code* (and because :logic mode
+; functions can't call :program mode functions).  Below is an example that
+; illustrates what could go wrong if trans-eval were in :logic mode.
+
+;   (defstobj st fld)
+;
+;   (set-state-ok t)
+;
+;   (defun f (st state)
+;     (declare (xargs :stobjs (st state)
+;                     :mode :program))
+;     (let ((st (update-fld 2 st)))
+;       (mv-let (erp val state)
+;               (trans-eval '(update-fld 3 st) 'f state nil)
+;               (declare (ignore erp val))
+;               (mv state (fld st) st))))
+;
+;   ; Logically, f sets (fld st) to 2, so the return value should be (mv _ 2
+;   ; _).  But we get (mv _ 3 _).  The only thing that saves us is that
+;   ; trans-eval is in :program mode, hence f is in :program mode.  This gives
+;   ; us a good reason to be very cautious before allowing :program mode
+;   ; functions to be called from :logic mode functions.  Note that even if we
+;   ; were to allow the return state to be somehow undefined, still the middle
+;   ; return value would be a problem logically!
+;
+;   ; Succeeds
+;   (mv-let (state val st)
+;           (f st state)
+;           (assert$ (equal val 3)
+;                    (mv state val st)))
+;
+;   ; Fails
+;   (mv-let (state val st)
+;           (f st state)
+;           (assert$ (equal val 2)
+;                    (mv state val st)))
+
         (er
          soft ctx
          "The ~@0 for ~x1 calls the :program function~#2~[ ~&2~/s ~&2~].  We ~

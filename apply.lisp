@@ -69,8 +69,8 @@
 ;    congruence relation for APPLY$.  Defwarrant will prove the appropriate
 ;    congruence rules for each :FN formal of newly badged functions.
 
-; 8. DEFWARRANT
-;    Define DEFWARRANT.
+; 8. DEFWARRANT and DEFBADGE
+;    Define DEFWARRANT and DEFBADGE.
 
 ; 9. DEFUN$
 ;    Define DEFUN$.
@@ -2086,7 +2086,7 @@
    (t (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn)))))
 
 ; -----------------------------------------------------------------
-; 8. DEFWARRANT
+; 8. DEFWARRANT and DEFBADGE
 
 ; Suppose AP is defined (with defun$) to be a tame function of two arguments
 ; returning one result.  Then defun$ will also do something equivalent to the
