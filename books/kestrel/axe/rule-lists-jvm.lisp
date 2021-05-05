@@ -752,6 +752,8 @@
 
             jvm::field-id-type-constant-opener
 
+            myif-of-sbvlt-of-0-and-not-sbvlt-of-0 ;; useful for the LCMP instruction
+
             ;; acl2::return-last-rewrite
 
             ;; call stacks:

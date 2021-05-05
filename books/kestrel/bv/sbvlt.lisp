@@ -14,6 +14,7 @@
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
 (include-book "kestrel/booleans/boolor" :dir :system) ;todo
+(include-book "kestrel/utilities/myif-def" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -292,4 +293,41 @@
 (defthmd <-of-logext-and-0-alt
   (equal (< (logext 32 x) 0)
          (sbvlt 32 x 0))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-subst-constant
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k)
+                (syntaxp (quotep k))
+                (<= size free)
+                (posp size)
+                (integerp free))
+           (equal (sbvlt size x y)
+                  (sbvlt size k y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-subst-constant-alt
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k)
+                (syntaxp (quotep k))
+                (<= size free)
+                (posp size)
+                (integerp free))
+           (equal (sbvlt size y x)
+                  (sbvlt size y k)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-subst-constant-same-arg2
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop size x) k)
+                (syntaxp (quotep k))
+                (posp size)
+                )
+           (equal (sbvlt size x y)
+                  (sbvlt size k y)))
+  :hints (("Goal" ;:cases ((posp size))
+           :in-theory (enable sbvlt))))
+
+(defthm size-of--1-and-0
+  (sbvlt size -1 0)
   :hints (("Goal" :in-theory (enable sbvlt))))

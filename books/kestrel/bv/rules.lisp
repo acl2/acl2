@@ -6288,29 +6288,6 @@
   :hints (("Goal" :in-theory (e/d (logext) (;LOGBITP-BVCHOP
                                             )))))
 
-;move?
-(defthm sbvlt-subst-constant
-  (implies (and (syntaxp (not (quotep x)))
-                (equal (bvchop free x) k)
-                (syntaxp (quotep k))
-                (<= size free)
-                (posp size)
-                (integerp free))
-           (equal (sbvlt size x y)
-                  (sbvlt size k y)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm sbvlt-subst-constant-alt
-  (implies (and (syntaxp (not (quotep x)))
-                (equal (bvchop free x) k)
-                (syntaxp (quotep k))
-                (<= size free)
-                (posp size)
-                (integerp free))
-           (equal (sbvlt size y x)
-                  (sbvlt size y k)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
 (defthm getbit-when-slice-is-known-constant
   (implies (and (equal free (slice high low x)) ;reversed the equality
                 (syntaxp (quotep free))
@@ -8493,3 +8470,24 @@
                             2147483647)))
            (not (EQUAL 2147483647 (BVCHOP 32 x))))
   :hints (("Goal" :in-theory (enable SBVLT))))
+
+;move
+(defthm svblt-trichotomy
+  (or (sbvlt size x y)
+      (sbvlt size y x)
+      (equal (bvchop size x) (bvchop size y)))
+  :rule-classes nil
+  :hints (("Goal" :cases ((posp size))
+           :in-theory (enable sbvlt
+                              EQUAL-OF-LOGEXT-AND-LOGEXT))))
+
+;; This idiom can arise from the JVM LCMP instruction
+(defthm myif-of-sbvlt-of-0-and-not-sbvlt-of-0
+  (implies (posp size)
+           (equal (myif (sbvlt size 0 x)
+                        nil
+                        (not (sbvlt size x 0)))
+                  (equal 0 (bvchop size x))))
+  :hints (("Goal"
+           :use (:instance svblt-trichotomy (y 0))
+           :in-theory (enable myif))))
