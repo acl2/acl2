@@ -7332,7 +7332,9 @@ e2-e1+1.
          ctx wrld state)
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+    (defuns-fn-short-cut
+      nil nil ; loop$-recursion-checkedp and loop$-recursion
+      names docs pairs guards measures split-types-terms
       bodies
       non-executablep ; not sure about this, but seems plausible
       ctx wrld state))

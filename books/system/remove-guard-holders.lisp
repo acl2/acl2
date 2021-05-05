@@ -17,7 +17,7 @@
 
 (local (include-book "remove-guard-holders-lemmas"))
 
-(verify-termination weak-apply$-badge-alistp) ; and guards
+(verify-termination weak-badge-userfn-structure-alistp) ; and guards
 
 (verify-termination ilks-plist-worldp) ; and guards
 

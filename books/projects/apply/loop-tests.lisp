@@ -123,7 +123,9 @@
                  (DECLARE (IGNORABLE LOOP$-IVAR))
                  (RETURN-LAST 'PROGN
                               '(LAMBDA$ (LOOP$-IVAR)
-                                        (LET ((X LOOP$-IVAR)) (* X X)))
+                                        (LET ((X LOOP$-IVAR))
+                                          (DECLARE (IGNORABLE X))
+                                          (* X X)))
                               ((LAMBDA (X) (BINARY-* X X))
                                LOOP$-IVAR)))
         '(1 2 3 4))))
@@ -173,7 +175,9 @@
                    (DECLARE (IGNORABLE LOOP$-IVAR))
                    (RETURN-LAST 'PROGN
                                 '(LAMBDA$ (LOOP$-IVAR)
-                                          (LET ((X LOOP$-IVAR)) (* X X)))
+                                          (LET ((X LOOP$-IVAR))
+                                            (DECLARE (IGNORABLE X))
+                                            (* X X)))
                                 ((LAMBDA (X) (BINARY-* X X))
                                  LOOP$-IVAR)))
           LST))))
@@ -295,7 +299,9 @@
                       (RETURN-LAST 'PROGN
                                    '(LAMBDA$ (LOOP$-IVAR)
                                              (DECLARE (TYPE INTEGER LOOP$-IVAR))
-                                             (LET ((I LOOP$-IVAR)) (SQUARE I)))
+                                             (LET ((I LOOP$-IVAR))
+                                               (DECLARE (IGNORABLE I))
+                                               (SQUARE I)))
                                    ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
              (FROM-TO-BY LOWER UPPER '1))))
 

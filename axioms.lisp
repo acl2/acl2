@@ -1048,6 +1048,11 @@
 ; single-threaded object names with their live ones.  It does NOT contain an
 ; entry for STATE, which is not user-defined.
 
+; Historical Note: Through Version_8.2, for a stobj named st, (the-live-var st)
+; was a special variable whose value was the live object.  E.g., if you
+; did (defstobj st ...) then in raw Lisp *the-live-st* held the actual
+; vector or hash-table.  Now it's (cdr (assoc 'st *user-stobj-alist*)).
+
   nil)
 
 (defvar *non-executable-user-stobj-lst*

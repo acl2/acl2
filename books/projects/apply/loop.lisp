@@ -10,13 +10,6 @@
 (include-book "base")
 (include-book "system/apply/loop-scions" :dir :system)
 
-; We don't need mempos warranted, but a user might.
-(defun$ mempos (e lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) 0)
-        ((equal e (car lst)) 0)
-        (t (+ 1 (mempos e (cdr lst))))))
-
 ; Lemmas for Relieving Routine Loop$ Guards
 
 ; Preservation of true-list-listp

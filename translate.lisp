@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2021, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2628,19 +2628,35 @@
     (append (flatten-ands-in-lit (car x))
             (flatten-ands-in-lit-lst (cdr x)))))
 
+; See the comment in Syntactically-Plausible-Lambda-Objectp (from which this
+; record gets its name) for an explanation of the fields.
+
+(defrec splo-extracts-tuple ((gflg . satisfies-exprs) . (guard . body)) t)
+
 (mutual-recursion
 
-(defun syntactically-plausible-lambda-objectp (x)
+(defun syntactically-plausible-lambda-objectp (gflg x)
 
 ; This function takes a purported lambda expression and determines if it is
 ; syntactically well-formed -- at least as far as that can be determined
-; without access to the world.  The result is either nil or a list of 3-tuples,
-; called the ``extracts'' of the lambda object.  Each 3-tuple is of the form
-; (satisfies-exprs guard . body).  Critically, the first such 3-tuple in the
-; extracts contains the satisfies-exprs, guard, and body of x itself; the
-; remaining 3-tuples are from lambda objects properly within x.  To confirm
+; without access to the world.  The result is either nil or a list, called the
+; ``extracts'' from the lambda object.  The extracts is a list of
+; splo-extracts-tuples, where the gflg field indicates whether the tuple comes
+; from a guard or not and the other fields, satisfies-exprs, guard, and body
+; are the corresponding parts of the TYPE, :GUARD, and body of the lambda
+; object.  (More on gflg below.)  Critically, the first splo-extracts-tuple in
+; the extracts contains the gflg, satisfies-exprs, guard, and body of x itself;
+; the remaining tuples are from lambda objects properly within x.  To confirm
 ; well-formedness all of the extracts must be checked for certain properties
-; wrt the world.
+; wrt the world.  The point of collecting these tuples is so that the lambda
+; cache can determine whether the lambda object is well-formed in a subsequent
+; world, without having to re-parse the object.  (It is possible a lambda
+; object was added to the cache even before every ``function'' symbol in it was
+; defined, or before they're all :logic mode, or before they're all guard
+; verified, or was added when it was perfectly well-formed but the world has
+; been undone since rendering it ill-formed.)  Roughly speaking, if a lambda
+; object is syntactically plausible and all the components of the
+; splo-extracts-tuples are terms in the world, the object is well-formed.
 
 ; We would like to believe that if x is syntactically plausible then there is
 ; some world in which it is well-formed.  But our plausibility check, which
@@ -2684,6 +2700,37 @@
 ; makes body and guard terms.  Any lambda that fails the vars checks will be
 ; correctly classed as :UGLY.
 
+; Now we discuss the gflg.  It was introduced for V8.4.  Prior to that,
+; syntactically-plausible-lambda-objectp built 3-tuples.  But then we allowed
+; :program mode functions to be badged.  This meant that well-formed lambda
+; objects no longer had to be in :logic mode.  However, their bodies have to be
+; badged.  Given that background, consider the (slightly cleaned-up)
+; translation of the loop$ below, where gp and mog are :program mode functions
+; and mog has been badged.
+
+; (loop$ for e in lst collect :guard (gp e) (mog e))
+
+; translates to
+
+; (COLLECT$
+;  '(LAMBDA (LOOP$-IVAR)
+;           (DECLARE (XARGS :GUARD ((LAMBDA (E) (GP E)) LOOP$-IVAR)
+;                           :SPLIT-TYPES T)
+;                    (IGNORABLE LOOP$-IVAR))
+;           ((LAMBDA (E) (MOG E)) LOOP$-IVAR))
+;  LST)
+
+; where we're removed the return-last cruft normally around the body.  Note
+; there are two interior lambdas, one for the :guard and one for the body.  For
+; the body, we will ultimately require that MOG be badged, though we can't
+; check that syntactically (it may become badged).  You might think we need GP
+; to be badged.  But you would be wrong!  In truth, these are two different
+; kinds of lambdas.  The one in the guard is an ACL2 lambda expression, but the
+; one in the body is interpreted by EV$ each time the outer lambda is applied
+; to an element of LST.  So both (GP E) and (MOG E) need to be :logic terms if
+; proofs are done with them, but MOG needs a badge and GP doesn't.  The role of
+; the gflg is to mark the tuples that come from :guards.
+
   (case-match x
     (('LAMBDA formals body)
      (if (and (arglistp formals)
@@ -2700,11 +2747,20 @@
 ; the lambda.
 
                 (subsetp-eq used-vars formals)))
-         (let ((ans (syntactically-plausible-lambda-objectsp-within body)))
+         (let ((ans (syntactically-plausible-lambda-objectsp-within gflg body)))
            (cond
             ((null ans) nil)
-            ((eq ans t) (list (list* nil *t* body)))
-            (t (cons (list* nil *t* body) ans))))
+            ((eq ans t) (list (make splo-extracts-tuple
+                                    :gflg gflg
+                                    :satisfies-exprs nil
+                                    :guard *t*
+                                    :body body)))
+            (t (cons (make splo-extracts-tuple
+                           :gflg gflg
+                           :satisfies-exprs nil
+                           :guard *t*
+                           :body body)
+                     ans))))
          nil))
     (('LAMBDA formals ('DECLARE . edcls) body)
      (if (arglistp formals)
@@ -2730,61 +2786,93 @@
                                         ignores)
                                        ignorables))))
                (let* ((ans1 (syntactically-plausible-lambda-objectsp-within
+                             t
                              guard))
                       (ans2 (if ans1
                                 (syntactically-plausible-lambda-objectsp-within
+                                 gflg
                                  body)
                                 nil)))
                  (cond
                   ((null ans2) nil)
                   ((eq ans1 t)
                    (if (eq ans2 t)
-                       (list (list* satisfies-exprs guard body))
-                       (cons (list* satisfies-exprs guard body) ans2)))
+                       (list (make splo-extracts-tuple
+                                   :gflg gflg
+                                   :satisfies-exprs satisfies-exprs
+                                   :guard guard
+                                   :body body))
+                       (cons (make splo-extracts-tuple
+                                   :gflg gflg
+                                   :satisfies-exprs satisfies-exprs
+                                   :guard guard
+                                   :body body)
+                             ans2)))
                   ((eq ans2 t)
-                   (cons (list* satisfies-exprs guard body) ans1))
-                  (t (cons (list* satisfies-exprs guard body)
+                   (cons (make splo-extracts-tuple
+                               :gflg gflg
+                               :satisfies-exprs satisfies-exprs
+                               :guard guard
+                               :body body)
+                         ans1))
+                  (t (cons (make splo-extracts-tuple
+                                 :gflg gflg
+                                 :satisfies-exprs satisfies-exprs
+                                 :guard guard
+                                 :body body)
                            (append ans1 ans2)))))
                nil))
          nil))
     (& nil)))
 
-(defun syntactically-plausible-lambda-objectsp-within (body)
+(defun syntactically-plausible-lambda-objectsp-within (gflg body)
 
 ; Body is a pseudo-termp and we call syntactically-plause-lambda-objectsp on
 ; every quoted lambda-like object in it and return one of nil (meaning we found
 ; a syntactically illegal quoted lambda-like object), t (meaning there were no
-; quoted lambda-like objects found), or a list of all the 4-tuples that need
-; further checking by well-formed-lambda-objectp1.
+; quoted lambda-like objects found), or a list of all the splo-extracts-tuples
+; that need further checking by well-formed-lambda-objectp1.
 
   (cond
    ((variablep body) t)
    ((fquotep body)
     (cond ((and (consp (unquote body))
                 (eq (car (unquote body)) 'lambda))
-           (syntactically-plausible-lambda-objectp (unquote body)))
+           (syntactically-plausible-lambda-objectp gflg (unquote body)))
           (t t)))
    ((flambda-applicationp body)
-    (let* ((ans1 (syntactically-plausible-lambda-objectp (ffn-symb body)))
-           (ans2 (if ans1
-                     (syntactically-plausible-lambda-objectsp-within-lst
-                      (fargs body))
-                     nil)))
+    (let* ((ans1
+            (syntactically-plausible-lambda-objectp
+             gflg
+             (ffn-symb body)))
+           (ans2
+            (if ans1
+                (syntactically-plausible-lambda-objectsp-within-lst
+                 gflg
+                 (fargs body))
+                nil)))
       (cond
        ((null ans2) nil) ; = (or (null ans1) (null ans2))
        ((eq ans1 t) ans2)
        ((eq ans2 t) ans1)
        (t (append ans1 ans2)))))
-   (t (syntactically-plausible-lambda-objectsp-within-lst (fargs body)))))
+   (t (syntactically-plausible-lambda-objectsp-within-lst
+       gflg
+       (fargs body)))))
 
-(defun syntactically-plausible-lambda-objectsp-within-lst (args)
+(defun syntactically-plausible-lambda-objectsp-within-lst (gflg args)
   (cond
    ((null args) t)
-   (t (let* ((ans1 (syntactically-plausible-lambda-objectsp-within (car args)))
-             (ans2 (if ans1
-                       (syntactically-plausible-lambda-objectsp-within-lst
-                        (cdr args))
-                       nil)))
+   (t (let* ((ans1
+              (syntactically-plausible-lambda-objectsp-within
+               gflg
+               (car args)))
+             (ans2
+              (if ans1
+                  (syntactically-plausible-lambda-objectsp-within-lst
+                   gflg
+                   (cdr args))
+                  nil)))
         (cond
          ((null ans2) nil)
          ((eq ans1 t) ans2)
@@ -2828,10 +2916,253 @@
 (defmacro all-fnnames-lst (lst)
   `(all-fnnames1 t ,lst nil))
 
+; Essay on the Badge-Table
+
+; The badge-table is a table.  It's :guard is badge-table-guard and the table
+; is initialized in apply.lisp.  The table has only one entry, named
+; :badge-userfn-structure.  (Once upon a time it had another entry but that
+; that was eliminated and we never simplified its structure.)  The
+; :badge-userfn-structure is an alist with entries of the form
+; (fn warrantp badge), where fn is a function symbol, warrantp is t or nil
+; indicating whether there is a warrant for fn, and badge is the apply$-badge
+; record for fn.
+
+; Note: As documented in apply-constraints.lisp, there are three categories of
+; function symbols known to apply$: primitives like CONS and BINARY-+, boot
+; functions like TAMEP and APPLY$ itself, and user-defined functions.
+; (Functions in the last category were necessarily defined by the user -- the
+; user might have taken a system function and converted it to :logic mode and
+; then successfully called defwarrant on it -- but we call the last category
+; ``user-defined'' because mostly they are!)  Badges for primitives and boot
+; functions are built-in.  The badge-table's job is to tell us the badges of
+; user-defined functions.
+
+; As of Version 8.3, every badged user-defined function had a warrant.  See
+; Badges versus Warrants in apply-constraints.lisp.  But this may change and
+; should not be assumed in the source code.  For example, currently defwarrant
+; insists that warrantable functions have a restricted form of measure,
+; permitting us to show that a model of apply$ could be admitted.  But we see
+; no reason why such a function couldn't be given a badge but no warrant.  Such
+; a function couldn't be apply$d but could be used in a function that is
+; apply$d.  (We once disallowed multi-valued functions to have warrants but
+; permitted them to be used in functions that did; but now apply$ handles
+; multi-valued functions.)  Or, perhaps we'll permit :program mode functions to
+; have badges so they can be handled by apply$ in the evaluation theory; they
+; would then have badges but not warrants (since warrants are necessarily
+; logical).  To allow such eventual extensions the :badge-userfn-structure
+; includes not just the badge but a flag indicating whether fn has been issued
+; a warrant.  If the warrantp flag is set for fn then its warrant function is
+; named APPLY$-WARRANT-fn.  See warrant-name.
+
+; On Why Warrantp is not in the Badge:
+
+; We decided not to put the warrantp flag into the badge because we didn't want
+; to change the structure of badges because there are places where car/cdr
+; nests are used instead of the record accessors in certain theorems.  Here is
+; a comment from books/apply-model-2/apply-prim.lisp:
+
+; ; Note: Unfortunately, record accessors translate into lambda applications.
+; ; :Rewrite rules handle this appropriately by beta reducing the lambda
+; ; applications in the conclusion.  But :linear rules do not.  So we've written
+; ; all the rules in terms of car/cdr nests rather than access terms. FTR:
+
+; ; (access apply$-badge x :arity) = (car (cdr x))
+; ; (access apply$-badge x :out-arity) = (car (cdr (cdr x)))
+; ; (access apply$-badge x :ilks) = (cdr (cdr (cdr x)))
+
+; The same violation of the record abstraction is known to occur in
+; books/projects/apply-model-2/ex1/doppelgangers.lisp
+; books/projects/apply-model-2/ex2/doppelgangers.lisp
+
+; In addition, there are numerous books where explicit badges are quoted,
+; as in books/projects/apply-model-2/ex2/defattach-demo.lisp where we show
+
+; (expected-to :succeed :evaluation
+;              (badge 'expt-5)
+;              '(APPLY$-BADGE 1 1 . T))
+
+; And explicit badges are displayed about a dozen times in
+; books/system/doc/acl2-doc.lisp.
+
+; On a more principled level, the idea of :program mode functions having badges
+; encourages the view that badges are a syntactic property having nothing to do
+; with logical justification and just recording whether a function maintains
+; the discipline that :FN arguments are treated exclusively as functions and
+; not sometimes as data.  Warrants, on the other hand, connect such functions
+; to the logic.
+
+; In any case, we decided not to put the warrantp flag into the badge!
+
+; The entries in the :badge-userfn-structure are tuples as built and accessed below.
+; You can think of them as though we defined
+
+; (defrec badge-userfn-structure-tuple (fn warrantp badge) t)
+
+; so that the fn is in the car, allowing lists of these tuples to be an alist
+; with function symbols as keys.  We define our own ``make'' and ``access''
+; macros, mainly so that we can use those macros in rewrite rules.  The defrec
+; access macros expand into let-forms which make them unsuitable for use in the
+; lhs.
+
+(defun make-badge-userfn-structure-tuple (fn warrantp badge)
+; Keep this function in sync with badge-table-guard and the recognizer below.
+; WARNING: keep fn in the car, as noted above.
+
+  (list fn warrantp badge))
+
+(defun put-badge-userfn-structure-tuple-in-alist (tuple alist)
+
+; This is the way we put a new tuple into the badge-table -- or change the
+; fields of an existing tuple for the fn.  However, if we know that fn is not
+; already bound in the alist, we can just cons the tuple on instead of using
+; this function.
+
+  (if (assoc-eq (car tuple) alist)
+      (put-assoc-eq (car tuple) (cdr tuple) alist)
+      (cons tuple alist)))
+
+(defun weak-badge-userfn-structure-tuplep (x)
+
+; We check that x is of the form (& & & . &) so that we can access the fn,
+; warrantp, and badge in guard-verified ways after checking this predicate.
+
+  (declare (xargs :mode :logic :guard t))
+  (and (consp x)
+       (consp (cdr x))
+       (consp (cddr x))))
+
+(defmacro access-badge-userfn-structure-tuple-warrantp (x)
+  `(cadr ,x))
+
+(defmacro access-badge-userfn-structure-tuple-badge (x)
+  `(caddr ,x))
+
+; On some occasions we may want to know both if a function has a badge and
+; whether it is warranted.  So we provide three accessors.
+
+; WARNING: These macros only recover badges for user-defined functions!  To get
+; the badge of any badged function, use executable-badge.  To get the warrant
+; name of any warranted function, use find-warrant-function-name.
+
+(defmacro get-warrantp (fn wrld)
+
+; Warning: This macro expects fn to be a userfn.  It fais for apply$ primitives
+; and boot functions!  To determine whether a given symbol has or needs a
+; warrant, use find-warrant-function-name.
+
+  `(access-badge-userfn-structure-tuple-warrantp
+    (assoc-eq ,fn
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table ,wrld))))))
+
 (defmacro get-badge (fn wrld)
-  `(cdr (assoc-eq ,fn
-                  (cdr (assoc-eq :badge-userfn-structure
-                                 (table-alist 'badge-table ,wrld))))))
+
+; Warning: This macro expects fn to be a userfn.  It fails for apply$
+; primitives and boot functions!  To find the badge, if any, of any symbol, use
+; executable-badge.
+
+  `(access-badge-userfn-structure-tuple-badge
+    (assoc-eq ,fn
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table ,wrld))))))
+
+(defmacro get-badge-and-warrantp (fn wrld)
+
+; Warning: This macro expects fn to be a userfn.  It fails for apply$
+; primitives and boot functions!
+
+  `(let ((temp (assoc-eq ,fn
+                         (cdr (assoc-eq :badge-userfn-structure
+                                        (table-alist 'badge-table ,wrld))))))
+     (mv (access-badge-userfn-structure-tuple-badge temp)
+         (access-badge-userfn-structure-tuple-warrantp temp))))
+
+(defun warrant-name (fn)
+
+; Warning: Keep this in sync with warrant-name-inverse.  This function is
+; purely syntactic.  There is no guarantee that the returned symbol is actually
+; the defwarrant-created warrant function of fn!  Fn may have no warrant!
+
+; From fn generate the name APPLY$-WARRANT-fn.
+
+  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
+                  :guard (symbolp fn)))
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "APPLY$-WARRANT-"
+                (symbol-name fn))
+   fn))
+
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
+
+; We return a result propositionally equivalent to
+;   (and (<= (length root) (length string))
+;        (equal root (subseq string 0 (length root))))
+; but, unlike subseq, without allocating memory.
+
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
+
+(defun warrant-name-inverse (warrant-fn)
+
+; Warning: Keep this in sync with warrant-name (q.v.).
+
+  (declare (xargs :guard (symbolp warrant-fn)))
+  (let ((warrant-fn-name (symbol-name warrant-fn)))
+    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+         (intern-in-package-of-symbol
+          (subseq warrant-fn-name
+                  15 ; (length "APPLY$-WARRANT-")
+                  (length warrant-fn-name))
+          warrant-fn))))
+
+; Matt:  The following function used to be called warrantp.
+(defun warrant-function-namep (warrant-fn wrld)
+
+; We check whether warrant-fn is the warrant function of some function, fn.  If
+; fn has a warrant, its name is APPLY$-WARRANT-fn.  But having a name of that
+; shape is no guarantee that the function is the warrant function for fn.  (Fn
+; may have no warrant function and apply$-warrant-fn might have been --
+; maliciously! -- defined by the user.)  Thus, we answer this question by
+; recovering fn from warrant-fn and then looking in the badge-userfn-structure
+; to see whether fn has a warrant.
+
+; Note: We allow the user to define functions named APPLY$-WARRANT-fn
+; independently of warrants, but that would preclude the subsequent warranting
+; of fn.  We considered allowing the user to supply the name of the warrant
+; function for fn, instead of using the purely syntactic convention of
+; APPLY$-WARRANT-fn.  However, it would then be impossible to provide the macro
+; (warrant fn).  The table guard for badge-table, badge-table-guard, actually
+; confirms that if the warrantp flag is set by the user, indicating that fn has
+; a warrant, then the name of the warrant is indeed APPLY$-WARRANT-fn and that
+; that symbol is properly constrained as by defwarrant.
+
+  (declare (xargs :guard (and (symbolp warrant-fn)
+                              (plist-worldp wrld))))
+  (let ((fn (warrant-name-inverse warrant-fn)))
+    (and fn
+         (get-warrantp fn wrld))))
 
 ; We originally defined the apply$-badge and the commonly used generic badges in
 ; apply-prim.lisp but they're needed earlier now.
@@ -2857,6 +3188,14 @@
 
   `(cadr ,x))
 
+(defun weak-apply$-badge-p (x)
+  (declare (xargs :mode :logic :guard t))
+  (and (consp x)
+       (eq (car x) 'APPLY$-BADGE)
+       (let ((x (cdr x)))
+         (and (consp x)
+              (let ((x (cdr x))) (consp x))))))
+
 (defconst *generic-tame-badge-1*
   (MAKE APPLY$-BADGE :ARITY 1 :OUT-ARITY 1 :ILKS t))
 (defconst *generic-tame-badge-2*
@@ -2876,13 +3215,20 @@
 
 (defun executable-badge (fn wrld)
 
-; Find the badge, if any, for fn in wrld; else return nil.  Aside from
+; Find the badge, if any, for any fn in wrld; else return nil.  Aside from
 ; primitives and the apply$ boot functions, all badges are stored in the
 ; badge-table entry :badge-userfn-structure.
 
-; Aside: All badged functions have warrants except the primitives and the
-; apply$ boot functions, which have badges but don't have and don't need
-; warrants.
+; Note: The word ``executable'' in the name means this function is executable,
+; unlike its namesake, badge, which is just constrained.
+
+; Aside: The apply$ primitives have badges stored in the *badge-prim-falist*.
+; The apply$ boot functions have built-in badges as specified below.  All other
+; badged functions are in the :badge-userfn-structure of the badge-table.  The
+; apply$ primitives and boot functions do not have warrants and don't need
+; them.  The functions in :badge-userfn-structure may or may not have warrants,
+; depending on the warrantp flag of the entry for fn in the structure.  See the
+; Essay on the Badge-Table.
 
 ; There's nothing wrong with putting this in logic mode but we don't need it in
 ; logic mode here.  This function is only used by defwarrant, to analyze and
@@ -2918,6 +3264,41 @@
        (t (get-badge fn wrld)))))
    (t nil)))
 
+(defun find-warrant-function-name (fn wrld)
+
+; If fn has a warrant function, return the name of the warrant function.  If fn
+; is known to apply$ and needs no warrant, e.g., fn is CONS or fn is APPLY$,
+; etc., return t.  Else, return nil.  See executable-badge for further
+; discussion.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((and (global-val 'boot-strap-flg wrld)
+         (or (not (getpropc '*badge-prim-falist* 'const nil wrld))
+             (not (getpropc 'badge-table 'table-guard nil wrld))))
+    (er hard 'find-warrant-function-name
+        "It is illegal to call this function during boot strapping because ~
+         primitives have not yet been identified and warrants not yet ~
+         computed!"))
+   ((symbolp fn)
+    (let ((temp
+           (hons-get fn ; *badge-prim-falist* is not yet defined!
+                     (unquote
+                      (getpropc '*badge-prim-falist* 'const nil wrld)))))
+      (cond
+       (temp t)
+       ((eq fn 'BADGE) t)
+       ((eq fn 'TAMEP) t)
+       ((eq fn 'TAMEP-FUNCTIONP) t)
+       ((eq fn 'SUITABLY-TAMEP-LISTP) t)
+       ((eq fn 'APPLY$) t)
+       ((eq fn 'EV$) t)
+       (t (let ((temp (get-warrantp fn wrld)))
+            (cond
+             (temp (warrant-name fn))
+             (t nil)))))))
+   (t nil)))
+
 ; Compare this to the TAMEP clique.
 
 (defabbrev executable-tamep-lambdap (fn wrld)
@@ -2927,8 +3308,10 @@
 ; It does not check full well-formedness.  It is possible for an ill-formed
 ; lambda expression to pass this test!
 
-; Note: The word ``executable'' in the name means this function is executable,
-; not that the purported lambda expression is executable!
+; Note: The word ``executable'' in the name means this ``function'' is
+; executable, unlike its namesake tamep-lambdap which involves constrained
+; functions.  The same clarification applies to the mutually recursive clique
+; below.
 
 ; This function is one of the ways of recognizing a lambda object.  See the end
 ; of the Essay on Lambda Objects and Lambda$ for a discussion of the various
@@ -3008,20 +3391,27 @@
 
 (defun well-formed-lambda-objectp1 (extracts wrld)
 
-; Extracts is a non-nil list of 3-tuples, (satisfies-exprs guard . body), as
-; returned by a successful syntactically-plausible-lambda-objectp.  We check
-; that each 3-tuple contains truly well-formed components wrt wrld.
+; Extracts is a non-nil list splo-extracts-tuples, as returned by a successful
+; syntactically-plausible-lambda-objectp.  We check that each tuple contains
+; truly well-formed components wrt wrld.
 
-  (cond ((endp extracts) t)
-        (t (let ((satisfies-exprs (car (car extracts)))
-                 (guard (cadr (car extracts)))
-                 (body (cddr (car extracts))))
-             (and (term-listp satisfies-exprs wrld)
-                  (termp guard wrld)
-                  (null (collect-programs (all-fnnames guard) wrld))
-                  (termp body wrld)
-                  (executable-tamep body wrld)
-                  (well-formed-lambda-objectp1 (cdr extracts) wrld))))))
+  (cond
+   ((endp extracts) t)
+   (t (let ((gflg (access splo-extracts-tuple (car extracts) :gflg))
+            (satisfies-exprs
+             (access splo-extracts-tuple (car extracts) :satisfies-exprs))
+            (guard (access splo-extracts-tuple (car extracts) :guard))
+            (body (access splo-extracts-tuple (car extracts) :body)))
+        (and (term-listp satisfies-exprs wrld)
+             (termp guard wrld)
+; Prior to V8.4 we included:
+;                 (null (collect-programs (all-fnnames guard) wrld))
+; but now we allow :program mode fns in the guard (and body).  But this will
+; force the containing defun to be in :program mode too.
+             (termp body wrld)
+             (or gflg ; see syntactically-plausible-lambda-object
+                 (executable-tamep body wrld))
+             (well-formed-lambda-objectp1 (cdr extracts) wrld))))))
 
 (defun well-formed-lambda-objectp (x wrld)
 
@@ -3034,14 +3424,108 @@
 ; We do not check that the :guard and/or body are composed of guard verified
 ; functions, nor do we prove the guard conjectures for x.
 
-  (let ((extracts (syntactically-plausible-lambda-objectp x)))
+  (let ((extracts (syntactically-plausible-lambda-objectp nil x)))
 
 ; Extracts is either nil, indicating that the object x is not syntactically
-; plausible or is a list of 3-tuples, (satisfies-exprs guard . body), to be
-; checked wrt the wrld.
+; plausible or is a list of splo-extracts-tuples to be checked wrt the wrld.
 
     (and extracts
          (well-formed-lambda-objectp1 extracts wrld))))
+
+(defun all-fnnames! (lst-flg where-flg collect-flg
+                             term ilk wrld acc)
+
+; Roughly speaking, we collect every function symbol in term -- including those
+; occurring as quoted symbols in :FN slots and in well-formed quoted lambda
+; constants in :FN slots.  This is coded as a flagged mutually recursive
+; function with lst-flg = t meaning term is really a list of terms.
+
+; Where-flg controls from where we collect.  It can be:
+
+; :inside - only collect while inside a quoted well-formed object in an ilk :FN
+;   or :EXPR slot
+
+; :outside - only collect while outside those objects -- this is the same as
+;   all-fnnames and is only implemented because it's easy and symmetric
+
+; :both - collect both inside and outside.
+
+; Collect-flg is t if we are in a context in which we're collecting.
+
+; IMPORTANT NOTE: Think carefully about the initial values of where-flg and
+; collect-flg!  Typically, if you're processing a term, you're outside of
+; quoted functions and expressions, so if your where-flg = :INSIDE, your
+; initial collect-flg should be nil.  But if your where-flg = :OUTSIDE or :BOTH
+; your initial collect-flg should be t.
+
+; Term is either a term or a list of terms, ilk is the corresponding ilk or
+; list of ilks, and acc is our collection site.
+
+; Purpose: Certain of these sets of function symbols collected must be in
+; :logic mode and warranted for term to be considered :logic mode.  They are
+; the fns that are encountered by the rewriter if we rewrite this term.  When
+; this term is compiled, these are the fns that will be called directly.  We
+; don't collect the fn in (apply$ 'fn ...) or in (ev$ '(fn ...) ...) because
+; they are not called directly but only fed to apply$.
+
+; Warning: This function must not be called during boot-strap, so check
+; (global-val 'boot-strap-flg wrld) before calling this function.
+
+  (cond
+   (lst-flg ; term is a list of terms
+    (cond ((endp term) acc)
+          (t (all-fnnames! nil where-flg collect-flg
+                           (car term)
+                           (car ilk)
+                           wrld
+                           (all-fnnames! t where-flg collect-flg
+                                         (cdr term)
+                                         (cdr ilk)
+                                         wrld
+                                         acc)))))
+   ((variablep term) acc)
+   ((fquotep term)
+    (cond ((eq where-flg :outside) acc)
+          ((eq ilk :FN)
+           (let ((evg (unquote term)))
+             (cond
+              ((symbolp evg)
+               (add-to-set-eq evg acc))
+              ((and (consp evg)
+                    (eq (car evg) 'lambda)
+                    (well-formed-lambda-objectp evg wrld))
+               (all-fnnames! nil where-flg t
+                             (lambda-object-body evg)
+                             nil wrld acc))
+              (t acc))))
+          ((eq ilk :EXPR)
+           (let ((evg (unquote term)))
+             (cond
+              ((termp evg wrld)
+               (all-fnnames! nil where-flg t
+                             evg nil wrld acc))
+              (t acc))))
+          (t acc)))
+   ((lambda-applicationp term)
+    (all-fnnames! t where-flg collect-flg
+                  (fargs term)
+                  nil
+                  wrld
+                  (all-fnnames! nil where-flg collect-flg
+                                (lambda-body (ffn-symb term))
+                                nil wrld acc)))
+   (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
+        (all-fnnames!
+         t where-flg collect-flg
+         (fargs term)
+         (if (or (null bdg)
+                 (eq (access apply$-badge bdg :ilks) t))
+             nil
+             (access apply$-badge bdg :ilks))
+         wrld
+         (if collect-flg
+             (add-to-set-eq (ffn-symb term) acc)
+             acc))))))
 
 ; Essay on Cleaning Up Dirty Lambda Objects
 
@@ -3887,7 +4371,7 @@
 ; lambda-object-formals, -dcl, and -body) because those are :logic mode
 ; functions with a guard of T and are guard verified.  This function is in
 ; :program mode and if it had a guard it would be
-; (syntactically-plausible-lambda-objectp x).
+; (syntactically-plausible-lambda-objectp nil x).
 
   (or (cadr (assoc-keyword :guard
                            (cdr (assoc-eq 'xargs
@@ -6368,7 +6852,7 @@
 ;   they have been checked in whichever of the two worlds is the
 ;   extension.
 
-; Essay on Context-message Pairs
+; Essay on Context-message Pairs (cmp)
 
 ; Recall that translate returns state, which might be modified.  It can be
 ; useful to have a version of translate that does not return state, for example
@@ -12785,20 +13269,24 @@
       `(lambda$
         (loop$-ivar)
         (let ((,v loop$-ivar))
+          (declare (ignorable ,v))
           ,(excart :untranslated :body carton))))
      (t `(lambda$
           (loop$-ivar)
           (declare
            (xargs
             :guard (let ((,v loop$-ivar))
+                     (declare (ignorable ,v))
                      ,(excart :untranslated :guard carton))))
           (let ((,v loop$-ivar))
+            (declare (ignorable ,v))
             ,(excart :untranslated :body carton))))))
    ((equal (excart :translated :guard carton) *t*)
     `(lambda$
       (loop$-ivar)
       (declare (type ,spec loop$-ivar))
       (let ((,v loop$-ivar))
+        (declare (ignorable ,v))
         ,(excart :untranslated :body carton))))
    (t `(lambda$
         (loop$-ivar)
@@ -12807,6 +13295,7 @@
                   :guard (let ((,v loop$-ivar))
                            ,(excart :untranslated :guard carton))))
         (let ((,v loop$-ivar))
+          (declare (ignorable ,v))
           ,(excart :untranslated :body carton))))))
 
 ; Now we build up to making a fancy loop$ lambda object...
@@ -13279,13 +13768,23 @@
                             nil))
                   bindings)))))
 
-(defun weak-apply$-badge-alistp (x)
+(defun weak-badge-userfn-structure-alistp (x)
+
+; This function checks that x is a true-list of elements (weakly) of the form
+; made by make-badge-userfn-structure-tuple and that the warrantp and badge
+; slots are occupied by a boolean and a (weakly formed) apply$-badge.  This
+; function must be in :logic mode and guard verified for use in
+; remove-guard-holders.  We do the verify-termination in
+; books/system/remove-guard-holders.lisp.
+
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
-        (t (and (consp (car x))
-;               (symbolp (caar x)) ; should be true, but not needed
-                (weak-apply$-badge-p (cdar x))
-                (weak-apply$-badge-alistp (cdr x))))))
+        (t (and (weak-badge-userfn-structure-tuplep (car x))
+                (symbolp (car (car x)))
+                (booleanp (access-badge-userfn-structure-tuple-warrantp (car x)))
+                (weak-apply$-badge-p
+                 (access-badge-userfn-structure-tuple-badge (car x)))
+                (weak-badge-userfn-structure-alistp (cdr x))))))
 
 (defun ilks-plist-worldp (wrld)
   (declare (xargs :guard t))
@@ -13293,7 +13792,7 @@
        (let ((tbl (fgetprop 'badge-table 'table-alist
                             nil wrld)))
          (and (alistp tbl)
-              (weak-apply$-badge-alistp
+              (weak-badge-userfn-structure-alistp
                (cdr (assoc-equal :badge-userfn-structure
                                  tbl)))))))
 
@@ -13306,11 +13805,16 @@
 ; for purposes of translation.  See the Explanation of a Messy Restriction on
 ; :FN Slots in translate11.
 
-; The get-badge function doesn't record badges for APPLY$ and EV$ because
-; they're built into BADGE.  So we have to supply them below.  All other
-; symbols with no badges are assigned nil as the list of ilks, which is treated
-; as a list of n nils, meaning for current purposes that translate allows
-; anything but lambda$.
+; FYI: Fn here can be any function symbol, e.g., an unbadged :program mode
+; function, because input to the ACL2 read-eval-print loop calls translate on
+; every expression typed.  Furthermore, get-badge returns nil on unbadged
+; functions of any mode as well as on apply$ primitives and even on apply$ boot
+; functions like apply$ which have non-trivial badges.  It just handles apply$
+; ``userfns.''  But ilks-per-argument-slot must handle all function symbols.
+
+; All symbols on which get-badge returns nil are here assigned nil as
+; the list of ilks, which is treated as a list of n nils, meaning for current
+; purposes that translate allows anything but lambda$.
 
 ; A consequence of this default is that translate cannot detect the difference
 ; between a lambda$, say, encountered in an ordinary slot versus one
@@ -14939,18 +15443,8 @@
                                             type-exprs
                                             guard-conjuncts)
                                          nil))
-                   (bad-fns (collect-programs (all-fnnames tguard) wrld))
                    (free-vars-guard (set-difference-eq (all-vars tguard) vars)))
               (cond
-               (bad-fns
-                (trans-er+? cform x
-                            ctx
-                            "The guard of a LAMBDA object or lambda$ term ~
-                             must be in :logic mode but ~x0 calls the ~
-                             :program mode function~#1~[~/s~] ~&1.  ~@2"
-                            (untranslate tguard t wrld)
-                            bad-fns
-                            *gratuitous-lambda-object-restriction-msg*))
                ((and free-vars-guard (not allow-free-varsp))
                 (trans-er+? cform x
                             ctx
@@ -15029,8 +15523,7 @@
 
                                     nil ; flet-alist
                                     cform ctx wrld state-vars))))
-                 (let* ((bad-fns (collect-programs (all-fnnames tbody) wrld))
-                        (body-vars (all-vars tbody))
+                 (let* ((body-vars (all-vars tbody))
                         (free-vars-body (set-difference-eq body-vars vars))
                         (used-ignores
                          (and lambda-casep
@@ -15043,16 +15536,6 @@
                                 ignores)
                                ignorables))))
                    (cond
-                    (bad-fns
-                     (trans-er+? cform x
-                                 ctx
-                                 "The body of a LAMBDA object, lambda$ term, ~
-                                  or loop$ statement must be in :logic mode ~
-                                  but ~x0 calls the :program mode ~
-                                  function~#1~[~/s~] ~&1.  ~@2"
-                                 (untranslate tbody t wrld)
-                                 bad-fns
-                                 *gratuitous-lambda-object-restriction-msg*))
                     ((and free-vars-body (not allow-free-varsp))
                      (trans-er+? cform x
                                  ctx
@@ -15621,14 +16104,14 @@
 ; Explanation of a Messy Restriction on :FN Slots
 
 ; If we are in a :FN slot and see a quoted object, then we insist the object be
-; a tame symbol or a LAMBDA.  If it's a LAMBDA we know it's well-formed by the
+; a badged symbol or a LAMBDA.  If it's a LAMBDA we know it's well-formed by the
 ; use of translate11-lambda-object in the binding of transx above.  So we focus
 ; here on all manner of quoted objects except conses starting with LAMBDA and
-; we cause an error unless it's a tame symbol.  However, there are three
+; we cause an error unless it's a badged symbol.  However, there are three
 ; exceptions.
 
-; (1) We allow a non-tame symbol into the :FN slot of APPLY$ because the
-; warrants for mapping functions call APPLY$ on quoted non-tame symbols, e.g.,
+; (1) We allow an unbadged symbol into the :FN slot of APPLY$ because the
+; warrants for mapping functions call APPLY$ on quoted non-badged symbols, e.g.,
 ; (APPLY$ 'COLLECT$ ...) = (COLLECT$ ...).  Recall that the ``ilk'' for the
 ; first arg of APPLY$ is :FN? as per ilks-per-argument-slot.
 
@@ -15639,11 +16122,12 @@
 ; (3) Anything goes during boot-strapping, for obvious reasons.
 
 ; The following test recognizes the error cases.  Read this as follows: we're
-; looking a fn slot containing a quoted object that didn't come from a defconst
-; and that is not during boot-strapping.  The quoted object is not a LAMBDA
-; (because we know any lambda here is well-formed).  So then consider the cases
-; on ilk.  If it's :FN we insist the quoted object is a tame symbol and if it's
-; :FN? (which means we're in an apply$) it must be a symbol.
+; looking at fn slot containing a quoted object that didn't come from a
+; defconst and that arose after boot-strapping.  The quoted object is not a
+; LAMBDA (because we know any lambda here is well-formed).  So then consider
+; the cases on ilk.  If it's :FN we insist the quoted object is a badged symbol
+; and if it's :FN?, which means we're in an APPLY$ call, it must at least be a
+; symbol.
 
              ((and (or (eq ilk :FN)
                        (eq ilk :FN?))
@@ -15655,20 +16139,23 @@
                    (cond
                     ((eq ilk :FN)
                      (not (and (symbolp (unquote transx))
-                               (executable-tamep-functionp (unquote transx)
-                                                           wrld))))
+                               (executable-badge (unquote transx) wrld))))
                     (t ; ilk is :FN? so we're in apply$
                      (not (symbolp (unquote transx))))))
               (trans-er+?
                cform x
                ctx
                "The quoted object ~x0 occurs in a :FN slot of a function call ~
-                but ~x0 is not a tame function symbol or lambda constant (or, ~
-                in the case of calls of APPLY$, even a symbol).  We see no ~
-                reason to allow this!  To insist on having such a call, ~
-                defconst some symbol and use that symbol constant here ~
-                instead."
-               (unquote transx)))
+                but ~x0 ~@1  We see no reason to allow this!  To insist on ~
+                having such a call, defconst some symbol and use that symbol ~
+                constant here instead but be advised that even this workaround ~
+                will not allow such a call in a DEFUN."
+               (unquote transx)
+               (if (symbolp (unquote transx))
+                   (if (function-symbolp (unquote transx) wrld)
+                       "does not have a badge."
+                       "is not a function symbol.")
+                   "is not a function symbol or lambda object")))
              (t
               (translate11-var-or-quote-exit x transx stobjs-out bindings
                                              known-stobjs flet-alist
@@ -17976,6 +18463,10 @@
   (let ((alist (ancestral-lambda$s-by-caller1 caller *T* term wrld nil)))
     (collect-non-empty-pairs alist)))
 
+; The following block of code is currently obsolete but might have some useful
+; functionality so we preserve it.  The block ends at the Note after
+; tilde-*-lambda$-replacement-phrase5 below.
+
 (mutual-recursion
 
 (defun eliminate-lambda$ (term wrld)
@@ -18006,7 +18497,7 @@
             (t term))))
    ((flambdap (ffn-symb term))
     (fcons-term `(lambda ,(lambda-formals (ffn-symb term))
-                   (eliminate-lambda$ (lambda-body (ffn-symb term)) wrld))
+                   ,(eliminate-lambda$ (lambda-body (ffn-symb term)) wrld))
                 (eliminate-lambda$-lst (fargs term) wrld)))
    (t (fcons-term (ffn-symb term)
                   (eliminate-lambda$-lst (fargs term) wrld)))))
@@ -18026,7 +18517,7 @@
                  (tilde-@-lambda$-replacement-phrase1 (cdr lst) wrld)))))
 
 (defun tilde-*-lambda$-replacement-phrase2 (lst wrld)
-  (list "" "~@*.~%" "~@*~%~%and~%~%" "~@*~%"
+  (list "" "~@*~%" "~@*~%~%and~%~%" "~@*~%"
         (tilde-@-lambda$-replacement-phrase1 lst wrld)))
 
 (defun tilde-@-lambda$-replacement-phrase3 (caller lst wrld)
@@ -18044,6 +18535,88 @@
 (defun tilde-*-lambda$-replacement-phrase5 (alist wrld)
   (list "" "~@*~%~%" "~@*~%~%" "~@*~%~%"
         (tilde-@-lambda$-replacement-phrase4 alist wrld)))
+
+; Note: Once upon a time, (tilde-*-lambda$-replacement-phrase5 alist wrld), where
+; alist was the output of ancestral-lambda$s-by-caller, was used as the value of
+; #\0 in the following message:
+
+;   "We prohibit certain events, including DEFCONST, DEFPKG, and DEFMACRO, from ~
+;    being ancestrally dependent on lambda$ expressions.  Since loop$ ~
+;    expressions expand to loop$ scion calls containing lambda$ expressions, ~
+;    this prohibition means loop$ statements may not be used in these events ~
+;    either.  This prohibition has to do with the loading of compiled books ~
+;    before the events in the book are processed.  You must edit this event ~
+;    and/or its dependents to remove lambda$ (and any loop$) expressions.  It ~
+;    might be easiest to rewrite it just using old-fashioned ACL2 recursive ~
+;    definitions!  But you could search through the (translations of the) ~
+;    functions mentioned in this event and replace every lambda$ by the ~
+;    corresponding fully-translated quoted lambda object.  Loop$ statements ~
+;    should be replaced by the corresponding loop$ scion calls (e.g., collect$, ~
+;    sum$, etc.) using the quoted lambda objects instead of lambda$s.   The ~
+;    following table may help.~%~%~*0")
+
+; That message was printed by simple-translate-and-eval and by defmacro-fn
+; where those functions now use prohibition-of-loop$-and-lambda$-msg.  (In the
+; latter use, the alist was (union-equal ancestral-lambda$s-in-guard
+; ancestral-lambda$s-in-body).)  The error message was thought to be too
+; complicated!  So we changed it and now only print the names of the places
+; where offending loop$ and lambda$s occur.  So
+; tilde-*-lambda$-replacement-phrase5 et al are currently obsolete.  But we
+; preserve them and this hint of their use because they explain for each place
+; how each lambda$ should be replaced by a fully-translated quoted lambda
+; object.
+
+; One reason the message above was so unhelpful is that telling the user to
+; replace (LAMBDA$ (LOOP$-IVAR) (LET ((E LOOP$-IVAR)) (CONS 'HI E))) by (LAMBDA
+; (E) (CONS 'HI E)) is confusing when the lambda$ doesn't appear in what the
+; user actually wrote: (loop$ for e in x collect (cons 'hi e)).
+
+(defun strings-and-others (alist strings others)
+
+; Alist is an alist with strings and symbols as keys and we partition the keys
+; into the strings and everything else.  We just throw away the values in the
+; alist.
+
+  (cond
+   ((endp alist) (mv strings others))
+   ((stringp (car (car alist)))
+    (strings-and-others (cdr alist)
+                        (cons (car (car alist)) strings)
+                        others))
+   (t
+    (strings-and-others (cdr alist)
+                        strings
+                        (cons (car (car alist)) others)))))
+
+(defun prohibition-of-loop$-and-lambda$-msg (alist)
+
+; Alist was created by ancestral-lambda$s-by-caller.  Its keys are strings and
+; symbols indicating where lambda$s (and thus also loop$s) occur in some event.
+; The strings are things like "the guard of this event" and the others are
+; function names ancestral in the event.  The intent of our message is ``we
+; prohibit loop$ and lambda$ in certain events and here are the places you
+; should look...''  But the exact form of the phrase depends on how many
+; strings and others there are!  English grammar is tricky.  We know there is
+; at least one string or other because we wouldn't be causing an error if there
+; were none.
+
+  (mv-let (strings others)
+    (strings-and-others alist nil nil)
+    (let ((i (cond ((null strings)
+                    (if (null (cdr others)) 0 1))
+                   ((null others) 2)
+                   ((null (cdr others)) 3)
+                   (t 4))))
+      (msg "We prohibit certain events, including DEFCONST, DEFPKG, and ~
+            DEFMACRO, from being ancestrally dependent on loop$ and lambda$ ~
+            expressions.  But at least one of these prohibited expressions ~
+            occurs in ~#0~[~&2 which is ancestral here~/each of ~&2 which are ~
+            ancestral here~/~*1~/~*1 and in ~&2 which is ancestral here~/~*1 ~
+            and in each of ~&2 which are ancestral here~].  See :DOC ~
+            prohibition-of-loop$-and-lambda$."
+           i
+           (list "" "~s*" "~s* and " "~s*, " strings)
+           others))))
 
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)
@@ -18115,7 +18688,7 @@
                    (t (let ((ancestral-lambda$s
                              (and (f-get-global 'safe-mode state)
                                   (ancestral-lambda$s-by-caller
-                                   "the offending term"
+                                   "this event"
                                    term wrld))))
                         (cond
                          ((null ancestral-lambda$s)
@@ -18140,25 +18713,9 @@
                                        "~@0 could not be evaluated."
                                        msg)))
                              (t (value (cons term val))))))
-                         (t (er soft ctx
-                                "We do not allow lambda$ expressions to be ~
-                                 evaluated in certain events, including ~
-                                 DEFCONST, DEFPKG, and DEFMACRO events.  This ~
-                                 restriction has to do with the loading of ~
-                                 compiled books before the events in the book ~
-                                 are processed.  The term ~x0 occurs in one ~
-                                 of these sensitive contexts (possibly as a ~
-                                 guard).  You can remedy this by using ~
-                                 make-event.  E.g., to fix (DEFCONST ... (foo ~
-                                 ...)), replace it with (make-event ~
-                                 `(DEFCONST ... ',(foo ...))).  ~
-                                 Alternatively, you can replace the lambda$ ~
-                                 expressions reachable from this term by ~
-                                 their translations.~%~%~*1"
-                                x
-                                (tilde-*-lambda$-replacement-phrase5
-                                 ancestral-lambda$s
-                                 wrld))))))))))
+                         (t (er soft ctx "~@0"
+                                (prohibition-of-loop$-and-lambda$-msg
+                                 ancestral-lambda$s))))))))))
 
 (defun error-fms-cw (hardp ctx str alist)
 

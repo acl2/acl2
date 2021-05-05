@@ -1913,6 +1913,22 @@
    (t (cons (car alist)
             (clear-warning-summaries-alist (cdr alist))))))
 
+(defun clear-warning-summaries ()
+
+; We update the COMMENT-WINDOW-IO wormhole data to remove all the
+; *tracked-warning-summaries*.  Doing this means that the next time those
+; warning situations arise the warnings are actually printed.
+
+  (wormhole 'COMMENT-WINDOW-IO
+            '(lambda (whs)
+               (make-wormhole-status
+                whs
+                :SKIP
+                (clear-warning-summaries-alist
+                 (wormhole-data whs))))
+            nil 
+            nil))
+
 (defun print-warnings-summary (state)
   (mv-let
    (warnings state)
@@ -2942,6 +2958,7 @@
       (let ((steps (prover-steps state)))
         (pprogn
          (clear-event-data state)
+         (prog2$ (clear-warning-summaries) state)
          (let ((trip (car wrld)))
            (cond ((and (not noop-flg)
                        (eq (car trip) 'EVENT-LANDMARK)
@@ -6378,37 +6395,6 @@
         (t (fmt1 "~@0"
                  (list (cons #\0 (print-indented-list-msg objects indent nil)))
                  0 channel state evisc-tuple))))
-
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
 
 (defun relativize-book-path (filename system-books-dir action)
 
@@ -11794,7 +11780,7 @@
 
 ; Loop$-recursion, a different but similarly named flag, has the value declared
 ; in the :loop$-recursion xarg.  If non-nil it means loop$ recursion is
-; permited and present!  If NIL it means loop$ recursion is prohibited and
+; permitted and present!  If NIL it means loop$ recursion is prohibited and
 ; doesn't occur.  But it is only valid if loop$ recursion has been checked.
 
 ; Note that loop$-recursion-checkedp does not mean that loop$ recursion is
@@ -12054,8 +12040,8 @@
 
 (defun all-loop$-scion-quote-lambdas (term alist)
 
-; We collect every subterm of term/alist that that is a call of a loop$ scion
-; on a quoted lambda and that is not within another such call.
+; We collect every subterm of term/alist that is a call of a loop$ scion on a
+; quoted lambda and that is not within another such call.
 
   (cond
    ((variablep term) nil)
@@ -13395,31 +13381,6 @@
                         (if (eq style :plain) 1 2))))))
     (t nil)))
 
-(defun warrant-name-inverse (warrant-fn)
-
-; Warning: Keep this in sync with warrant-name.
-
-  (declare (xargs :guard (symbolp warrant-fn)))
-  (let ((warrant-fn-name (symbol-name warrant-fn)))
-    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
-         (intern-in-package-of-symbol
-          (subseq warrant-fn-name
-                  15 ; (length "APPLY$-WARRANT-")
-                  (length warrant-fn-name))
-          warrant-fn))))
-
-(defun warrantp (warrant-fn wrld)
-
-; We check whether warrant-fn is the warrant of some function, fn.  But fn has
-; a warrant iff fn has a badge in the badge-table.
-
-  (declare (xargs :guard (and (symbolp warrant-fn)
-                              (plist-worldp wrld))))
-  (let* ((fn (warrant-name-inverse warrant-fn))
-         (badge (and fn
-                     (get-badge fn wrld))))
-    (and badge t)))
-
 (mutual-recursion
 
 (defun collect-warranted-fns (term ilk collect-p wrld)
@@ -13437,6 +13398,12 @@
         ((fquotep term)
          (let ((val (unquote term)))
            (cond ((eq ilk :FN)
+
+; Note: The case-match below is a little odd.  If an ill-formed quoted lambda
+; occurred here (car (last val)) might treat the formals as the body, or might
+; treat the declare as the body.  But if it collects fns from that object they
+; really will have warrants, even though they may completely irrelevant.
+
                   (cond ((case-match val
                            (('lambda . &) t)
                            (& nil))
@@ -13444,7 +13411,13 @@
                            (and (pseudo-termp body)
                                 (collect-warranted-fns body nil t wrld))))
                         ((and (symbolp val)
-                              (warrantp val wrld))
+                              (get-warrantp val wrld))
+
+; We use get-warrantp, above, to determine if val has a warrant function.
+; Every function with a warrant is so marked in the :badge-userfn-structure of
+; the badge-table.  All other functions known to apply$, e.g., primitives and
+; boot functions, have no warrants.
+
                          (list val))
                         (t nil)))
                  ((eq ilk :EXPR)
@@ -13456,9 +13429,11 @@
           (collect-warranted-fns (lambda-body (ffn-symb term)) nil collect-p
                                  wrld)
           (collect-warranted-fns-lst (fargs term) nil collect-p wrld)))
-        (t (let ((badge (get-badge (ffn-symb term) wrld)))
+        (t (mv-let (badge warrantp)
+             (get-badge-and-warrantp (ffn-symb term) wrld)
+; If warrantp is t, there is a badge, not not vice versa.
              (cond
-              (badge
+              (warrantp
                (let* ((ilks0 (access apply$-badge badge :ilks))
                       (ilks (if (eq ilks0 t) nil ilks0))
                       (fns (collect-warranted-fns-lst (fargs term) ilks
@@ -13479,6 +13454,10 @@
 )
 
 (defun collect-negated-warrants1 (lst clause)
+
+; Lst is a list of function names, each of which is known to have a warrant
+; function.
+
   (cond ((endp lst) clause)
         ((equal clause *true-clause*) clause)
         (t (collect-negated-warrants1
@@ -18012,6 +17991,19 @@
               See :DOC table."
              op bad-argn bad-arg))
         (t (value nil))))
+
+(defconst *badge-table-guard-msg*
+
+; This constant isn't used until apply.lisp, where it is used in functions
+; supporting badge-table-guard.  But if this defconst is placed in apply.lisp
+; the build fails because *badge-table-guard-msg* is unbound.  Presumably this
+; happens when we're checking table guards as we build.  There might well be a
+; better place to put such a defconst, but it doesn't seem worth the trouble to
+; figure that out.
+
+  (msg "The attempt to change the :badge-userfn-structure of the badge-table ~
+        failed because "
+       nil))
 
 (defun chk-table-guard (name key val ctx wrld ens state)
 
