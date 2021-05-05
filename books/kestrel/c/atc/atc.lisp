@@ -2376,6 +2376,13 @@
      The type prescriptions of the callable functions
      are needed to discharge some proof subgoal that arise.")
    (xdoc::p
+    "To speed up the proofs, we actually remove from the theory
+     some opener rules that should never apply,
+     e.g. because they handle error situations that are not supposed to occur.
+     Listing their names explicitly is a bit brittle,
+     but for now it is the best we can do.
+     It does speed up some proofs quite a bit.")
+   (xdoc::p
     "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'),
      with the pointer arguments replaced by the dereferenced arrays.
@@ -2440,7 +2447,20 @@
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory (append *atc-all-rules*
+                 :in-theory (append (set-difference-eq
+                                     *atc-all-rules*
+                                     '(exec-expr-pure-base-6
+                                       exec-expr-pure-base-7
+                                       exec-expr-pure-base-8
+                                       exec-expr-pure-list-base-2
+                                       exec-stmt-base-1
+                                       exec-stmt-base-6
+                                       exec-stmt-base-8
+                                       exec-block-item-list-base-1
+                                       exec-block-item-list-base-3
+                                       init-scope-base-2
+                                       read-var-aux-base-1
+                                       write-var-aux-base-1))
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms
