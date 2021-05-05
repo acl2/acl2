@@ -669,7 +669,9 @@
                                                       (svcall zerox 5 "in")))))))))))
 (local
  (make-event
-  (b* (((mv err result svtv-data)
+  (b* (((mv err (cons ?stobjs-out
+                      (list ?err2 result ?replaced-svtv-data))
+            state)
         (svtv-data-run-defsvtv$
          (defsvtv$-phasewise my-svtv
            :design *my-design*
@@ -681,8 +683,18 @@
              :inputs (("in" in2))
              :outputs (("out" out2)))))
          :env '((in . 5) (in2 . 9))))
+       (stobjs-out-expected  '(nil nil svtv-data))
+       ((unless (equal stobjs-out stobjs-out-expected))
+        (mv (msg "Unexpected stobjs-out: ~x0 expected: ~x1~%" stobjs-out stobjs-out-expected)
+            nil state))
+       ((when err)
+        (mv (msg "Unexpected trans-eval error: ~x0~%" err)
+            nil state))
+       ((when err2)
+        (mv (msg "Unexpected error: ~x0~%" err2)
+            nil state))
        (expected '((OUT . #ux1A) (OUT2 . #ux16)))
        ((unless (equal result expected))
         (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
-            nil state svtv-data)))
-    (mv err '(value-triple :ok) state svtv-data))))
+            nil state)))
+    (mv err '(value-triple :ok) state))))
