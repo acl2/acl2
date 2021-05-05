@@ -629,11 +629,6 @@
                                     (<= (nfix n) (len x)))
                                (4veclist-p (take n x)))
                       :hints(("Goal" :in-theory (enable 4veclist-p)))))
-             (local (defthm svex-env-p-of-pairlis$
-                      (implies (and (equal (len x) (len y))
-                                    (svarlist-p x) (4veclist-p y))
-                               (svex-env-p (pairlis$ x y)))
-                      :hints(("Goal" :in-theory (enable svex-env-p pairlis$)))))
              (local (defthm len-of-nthcdr
                       (implies (<= (nfix n) (len x))
                                (equal (len (nthcdr n x))
