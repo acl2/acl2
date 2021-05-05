@@ -37,5 +37,6 @@
 (include-book "process")
 (include-book "structure")
 (include-book "vcd")
+(include-book "chase")
 (include-book "svtv-stobj-defsvtv")
 (include-book "svtv-stobj-debug")
