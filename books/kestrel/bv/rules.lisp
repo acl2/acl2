@@ -1850,15 +1850,10 @@
                   (equal (bvchop 1 x)
                          (bvchop 1 y)))))
 
-(defthm x-less-than-minus-x
-  (equal (< x (- x))
-         (< x 0)))
-
 (defthm signed-byte-p-of-logtail-hack
   (IMPLIES (AND (EQUAL (FLOOR X (EXPT 2 M))
                        (- (* 1/2 (EXPT 2 N))))
                 (POSP M)
-
                 (INTEGERP X)
                 (POSP N))
            (NOT (< X (- (* 1/2 (EXPT 2 M) (EXPT 2 N))))))

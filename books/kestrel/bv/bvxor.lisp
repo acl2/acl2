@@ -403,3 +403,41 @@
                 (posp n))
            (equal (bvxor n x (+ y (* k z)))
                   (bvxor n x y))))
+
+
+;move
+;rename?
+(defthm bvxor-of-negative-constant
+  (implies (and (syntaxp (and (quotep size)
+                              (quotep x)
+                              (not (unsigned-byte-p (unquote size) (unquote x)))))
+                (integerp size)
+                (< 0 size)
+                (integerp x)
+                (integerp y)
+                )
+           (equal (bvxor size x y)
+                  (bvxor size (bvchop size x) y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthm bvxor-of-bvchop-tighten-2
+   (implies (and (< size1 size2)
+                 (natp size1)
+                 (natp size2)
+                 (integerp y)
+                 (integerp x))
+            (equal (bvxor size1 x (bvchop size2 y))
+                   (bvxor size1 x (bvchop size1 y))))
+   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
+                                    ) ()))))
+
+(defthm bvxor-of-bvchop-tighten-1
+   (implies (and (< size1 size2)
+                 (natp size1)
+                 (natp size2)
+                 (integerp y)
+                 (integerp x))
+            (equal (Bvxor size1 (BVCHOP size2 y) x)
+                   (Bvxor size1 (BVCHOP size1 y) x)))
+   :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
+                                    ) ()))))

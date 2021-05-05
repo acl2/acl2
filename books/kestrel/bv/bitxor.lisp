@@ -294,3 +294,19 @@
                   (bitxor y x)))
   :hints (("Goal" :use (:instance bitxor-of-bvchop-arg1)
            :in-theory (disable bitxor-of-bvchop-arg1))))
+
+(defthm bitxor-of-bvxor-arg1
+  (implies (posp size)
+           (equal (bitxor (bvxor size x y) z)
+                  (bitxor (bitxor x y) z)))
+  :hints (("Goal" ;:cases ((equal size 1))
+           :in-theory (e/d (;bitxor
+                            ) (;BVXOR-1-BECOMES-BITXOR
+                               bitxor-commutative
+                               bitxor-commutative
+                               bitxor-associative)))))
+
+(defthm bitxor-of-bvxor-arg2
+  (implies (posp size)
+           (equal (bitxor z (bvxor size x y))
+                  (bitxor z (bitxor x y)))))
