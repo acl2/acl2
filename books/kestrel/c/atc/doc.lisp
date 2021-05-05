@@ -242,7 +242,11 @@
        because it just serves to conclude
        preceding statements that may modify @('var1'), ..., @('varn'),
        but since ACL2 is functional,
-       the possibly modified variables must be returned by the term.")
+       the possibly modified variables must be returned by the term.
+       In translated terms,
+       @('(mv var1 ... varn)') is
+       @('(cons var1 (cons ... (cons varn \' nil)...))');
+       this is the pattern that ATC looks for.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is a boolean term and
@@ -333,9 +337,6 @@
                     (mv-nth \'n-1 mv)))
            term)');
        this is the pattern that ATC looks for."))
-    (xdoc::p
-     "Currently there is no actual support for @(tsee mv-let) above,
-      but support will be added soon.")
 
     (xdoc::p
      "A <i>C-valued term</i> is

@@ -36,8 +36,10 @@
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
+(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
@@ -591,6 +593,19 @@
       (and (not (member-equal var-name
                               (symbol-name-lst (strip-cars (car inscope)))))
            (atc-var-newp var-name (cdr inscope)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-var-inscopep ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in scope."
+  (and (atc-get-var var inscope) t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-var-list-inscopep (x inscope)
+  :guard (and (symbol-listp x) (atc-symbol-type-alist-listp inscope))
+  (atc-var-inscopep x inscope))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1672,6 +1687,15 @@
      by 1 to go from @(tsee exec-block-item-list) to @(tsee exec-block-item),
      and another 1 to go from there to @(tsee exec-stmt).")
    (xdoc::p
+    "If the term is a @(tsee mv-let),
+     we ensure that all its bound variables are in scope.
+     We recursively treat the bound term as
+     a statement term transforming the bound variables,
+     generating block items for it;
+     then we continue processing the body of the @(tsee mv-let)
+     as a term transforming the variables in @('xforming').
+     We just use the sum of the two limits as the overall limit.")
+   (xdoc::p
     "If the term is a @(tsee let),
      we first check whether a variable with the same symbol name
      is not already in scope (i.e. in the symbol table):
@@ -1725,7 +1749,13 @@
      This is the end of a list of block items that transforms that variable.
      See the user documentation.")
    (xdoc::p
-    "If the term is neither an @(tsee if) nor a @(tsee let),
+    "If the term is an @(tsee mv)
+     and its arguments are the @('xforming') variables,
+     the we return nothing.
+     This is the end of a list of block items that transforms that variable.
+     See the user documentation.")
+   (xdoc::p
+    "If the term does not have any of the forms above,
      we treat it as a C-valued term.
      We translate it to an expression
      and we generate a @('return') statement with that expression.
@@ -1785,6 +1815,27 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
+       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((when okp)
+        (b* (((unless (> (len vars) 1))
+              (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
+                         term)
+                  (list nil (irr-type) 0)
+                  state))
+             ((unless (atc-var-list-inscopep vars inscope))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         not all of whose variables ~x1 are in scope."
+                        fn vars))
+             ((er (list xform-items & xform-limit))
+              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+             ((er (list body-items body-type body-limit))
+              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+             (items (append xform-items body-items))
+             (type body-type)
+             (limit (+ xform-limit body-limit)))
+          (acl2::value (list items type limit))))
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
@@ -1864,6 +1915,11 @@
               state)))
        ((when (and (symbolp term)
                    (equal xforming (list term))))
+        (acl2::value (list nil nil 0)))
+       ((mv okp terms) (acl2::check-list-call term))
+       ((when (and okp
+                   (>= (len terms) 2)
+                   (equal terms xforming)))
         (acl2::value (list nil nil 0)))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term inscope fn prec-fns ctx state))
