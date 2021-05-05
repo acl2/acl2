@@ -4841,8 +4841,9 @@
 ; 'accumulated-warnings, rather than in the raw lisp variable,
 ; *accumulated-warnings*.  But then we introduced warning$-cw1 to support the
 ; definitions of translate1-cmp and translate-cmp, which do not modify the ACL2
-; state.  Since warning$-cw1 uses a wormhole, the warning frames based on a
-; state global variable were unavailable when printing warning summaries.
+; state.  See the Essay on Context-message Pairs (cmp) for an explanation.
+; Since warning$-cw1 uses a wormhole, the warning frames based on a state
+; global variable were unavailable when printing warning summaries.
 
   #+acl2-loop-only
   (declare (ignore accum-p))
@@ -6526,6 +6527,11 @@
                            (the fixnum (1+ i))
                            n))))
 
+; In raw Lisp, the live version of state is held in the constant
+; *the-live-state* (whose value is actually just a symbol because we don't
+; really represent the live state as an object).  But what is the live version
+; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
+
 (defmacro live-stobjp (name)
 
 ; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
@@ -7457,11 +7463,15 @@
 (defun the-live-var (name)
 
 ; Through Version_8.2, for a stobj named st, (the-live-var st) was a special
-; variable.  At that time we thought that one might wonder why we didn't choose
-; to name this object $s.  Below we explain our earlier thinking.  Now that we
-; use only (the-live-var name) only to store properties, perhaps we could
-; instead store those properties on name; but when we eliminated the special
-; variable in October 2019, that didn't seem worthwhile to explore.
+; variable.  However, now the live stobj corresponding to st is stored on the
+; raw Lisp alist *user-stobj-alist* under the key st.
+
+; Back when we stored it under the value of the the-live-var, we thought that
+; one might wonder why we didn't choose to name this object $s.  Below we
+; explain our earlier thinking.  Now that we use only (the-live-var name) only
+; to store properties, perhaps we could instead store those properties on name;
+; but when we eliminated the special variable in October 2019, that didn't seem
+; worthwhile to explore.
 
 ; Historical Plaque for Why the Live Var for $S Is Not $S
 

@@ -29,15 +29,16 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
-(include-book "kestrel/event-macros/evmac-input-print-p" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
+(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
@@ -594,6 +595,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-var-inscopep ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in scope."
+  (and (atc-get-var var inscope) t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-var-list-inscopep (x inscope)
+  :guard (and (symbol-listp x) (atc-symbol-type-alist-listp inscope))
+  (atc-var-inscopep x inscope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defaggregate atc-fn-info
   :short "Information associated to an ACL2 function translated to C."
   :long
@@ -771,8 +785,7 @@
      but here we need to check it because we do not have
      guard verification as a contextual assumption on the term),
      along with an indication of unsignedness and type suffix information,
-     and also the C integer type of the constant.
-     This way, the caller can generate the appropriate C integer constant."))
+     and also the C integer type of the constant."))
   (case-match term
     ((fn ('quote val))
      (b* (((when (not (symbolp fn)))
@@ -799,15 +812,13 @@
                (op unopp)
                (arg pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a unary expression."
+  :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C unary operators,
-     we return the operator and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply the operator to the expression.")
+     we return the operator and the argument term.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -843,15 +854,13 @@
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a strict pure binary expression."
+  :short "Check if a term may represent a strict pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C strict pure binary operators,
-     we return the operator and the argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and apply the operator to the expressions.")
+     we return the operator and the argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -905,16 +914,14 @@
   :returns (mv (yes/no booleanp)
                (tyname tynamep)
                (arg pseudo-termp :hyp :guard))
-  :short "Check if a term represents a conversion."
+  :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represents C integer conversions,
      we return the C type name for the destination type
-     and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply a cast with a type name to the expression.")
+     and the argument term.")
    (xdoc::p
     "The C type of the conversion can be determined from the returned type name,
      so there is no need to also return a C type here.")
@@ -971,16 +978,14 @@
                (arr pseudo-termp :hyp :guard)
                (sub pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents an array read."
+  :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C array read operations
      (currently just @(tsee uchar-array-read-sint)),
-     we return the two argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and form a C array subscripting expression.")
+     we return the two argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -1015,7 +1020,7 @@
                (args pseudo-term-listp :hyp (pseudo-termp term))
                (type typep)
                (limit natp :rule-classes :type-prescription))
-  :short "Check if a term represents a call to a callable target function."
+  :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1051,8 +1056,10 @@
                (var symbolp :hyp :guard)
                (init pseudo-termp :hyp :guard)
                (body pseudo-termp :hyp :guard))
-  :short "Check if a term represents
-          a local variable declaration or an assignment
+  :short "Check if a term may represent
+          a local variable declaration
+          or assignment
+          or single-variable transformation,
           followed by more code."
   :long
   (xdoc::topstring
@@ -1060,7 +1067,7 @@
     "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, these are terms @('((lambda (var) body) init)').
      However, if @('body') has other free variables in addition to @('var'),
-     those appear as both formal paramaters and actual arguments, e.g.
+     those appear as both formal parameters and actual arguments, e.g.
      @('((lambda (var x y) body<var,x,y>) init x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
      so ACL2 adds formal parameters and actual arguments to make that happen.
@@ -1679,6 +1686,15 @@
      by 1 to go from @(tsee exec-block-item-list) to @(tsee exec-block-item),
      and another 1 to go from there to @(tsee exec-stmt).")
    (xdoc::p
+    "If the term is a @(tsee mv-let),
+     we ensure that all its bound variables are in scope.
+     We recursively treat the bound term as
+     a statement term transforming the bound variables,
+     generating block items for it;
+     then we continue processing the body of the @(tsee mv-let)
+     as a term transforming the variables in @('xforming').
+     We just use the sum of the two limits as the overall limit.")
+   (xdoc::p
     "If the term is a @(tsee let),
      we first check whether a variable with the same symbol name
      is not already in scope (i.e. in the symbol table):
@@ -1732,7 +1748,13 @@
      This is the end of a list of block items that transforms that variable.
      See the user documentation.")
    (xdoc::p
-    "If the term is neither an @(tsee if) nor a @(tsee let),
+    "If the term is an @(tsee mv)
+     and its arguments are the @('xforming') variables,
+     the we return nothing.
+     This is the end of a list of block items that transforms that variable.
+     See the user documentation.")
+   (xdoc::p
+    "If the term does not have any of the forms above,
      we treat it as a C-valued term.
      We translate it to an expression
      and we generate a @('return') statement with that expression.
@@ -1792,6 +1814,27 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
+       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((when okp)
+        (b* (((unless (> (len vars) 1))
+              (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
+                         term)
+                  (list nil (irr-type) 0)
+                  state))
+             ((unless (atc-var-list-inscopep vars inscope))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         not all of whose variables ~x1 are in scope."
+                        fn vars))
+             ((er (list xform-items & xform-limit))
+              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+             ((er (list body-items body-type body-limit))
+              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+             (items (append xform-items body-items))
+             (type body-type)
+             (limit (+ xform-limit body-limit)))
+          (acl2::value (list items type limit))))
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
@@ -1871,6 +1914,11 @@
               state)))
        ((when (and (symbolp term)
                    (equal xforming (list term))))
+        (acl2::value (list nil nil 0)))
+       ((mv okp terms) (acl2::check-list-call term))
+       ((when (and okp
+                   (>= (len terms) 2)
+                   (equal terms xforming)))
         (acl2::value (list nil nil 0)))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term inscope fn prec-fns ctx state))
@@ -2327,6 +2375,13 @@
      The type prescriptions of the callable functions
      are needed to discharge some proof subgoal that arise.")
    (xdoc::p
+    "To speed up the proofs, we actually remove from the theory
+     some opener rules that should never apply,
+     e.g. because they handle error situations that are not supposed to occur.
+     Listing their names explicitly is a bit brittle,
+     but for now it is the best we can do.
+     It does speed up some proofs quite a bit.")
+   (xdoc::p
     "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'),
      with the pointer arguments replaced by the dereferenced arrays.
@@ -2391,7 +2446,20 @@
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory (append *atc-all-rules*
+                 :in-theory (append (set-difference-eq
+                                     *atc-all-rules*
+                                     '(exec-expr-pure-base-6
+                                       exec-expr-pure-base-7
+                                       exec-expr-pure-base-8
+                                       exec-expr-pure-list-base-2
+                                       exec-stmt-base-1
+                                       exec-stmt-base-6
+                                       exec-stmt-base-8
+                                       exec-block-item-list-base-1
+                                       exec-block-item-list-base-3
+                                       init-scope-base-2
+                                       read-var-aux-base-1
+                                       write-var-aux-base-1))
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms

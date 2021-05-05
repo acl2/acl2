@@ -177,9 +177,8 @@ current theory is the evaluation theory of a.
 
 To certify the books in and under this directory do:
 
-make all ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
-make top ACL2=<your-acl2> ACL2_SYSTEM_BOOKS=<your-acl2-books-directory>
+make ACL2=<your-acl2>
 
 E.g.,
-make all ACL2=v82 ACL2_SYSTEM_BOOKS=/u/moore/acl2/v8-2/books/
-make top ACL2=v82 ACL2_SYSTEM_BOOKS=/u/moore/acl2/v8-2/books/
+make ACL2=v82
+

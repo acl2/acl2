@@ -84,54 +84,43 @@
 ; executed.  Later, we just set that variable to t.  Since then (after
 ; Version_8.0) we have eliminated that variable.
 
-(defun query-badge-userfn-structure (msgp fn wrld)
+(defun query-badge-userfn-structure (fn wrld)
 
-; This function takes a purported function symbol, fn, and determines if it has
-; been assigned a badge by defwarrant.  We return one of three answers:
+; We determine whether fn is badged and whether it is warranted.  We return (mv
+; bad-fn-msg badge warrantp) where bad-fn-msg is either nil or a message that
+; explains that fn is not a known function or else has not been badged.  If
+; bad-fn-msg is nil, then badge is the badge and warrantp indicates whether fn
+; has a warrant.
 
-; - (mv nil badge): fn was found in the badge-table and the badge is badge.
-;      Every symbol in the :badge-userfn-structure has both a badge and a
-;      warrant, because defwarrant put the symbol there after successfully
-;      processing it.  Fn's warrant is named APPLY$-WARRANT-fn.
+; This function is a gatekeeper for the execution of badge-userfn and
+; apply$-userfn (q.v.).
 
-; - (mv msg nil): there is no entry for fn in the badge-table, so no
-;      defwarrant has been successful on fn; msg is a tilde-@ msg possibly
-;      explaining in a little more detail why fn doesn't have a badge.
+; It is important that if this function returns a non-nil badge a world then it
+; returns that same answer for all extensions of the world!  The guard on the
+; badge table, badge-table-guard, guarantees this invariant.
 
-; - (mv t nil): same as above but we don't bother to explain why.
-
-; Note that if the first result is non-nil it means we failed to find a badge.
-; But that first result could either be an error msg or just T.  It is a msg if
-; the input argument msgp is t and it is not a message if msgp is nil.  That
-; is, msgp = t means generate an explanatory message; msgp=nil means signal
-; failure with first result T.
-
-; It is important that if this function returns (mv nil badge) for a world then
-; it returns that same answer for all extensions of the world!  The guard on
-; the badge table, badge-table-guard, guarantees this invariant.
+; Programming Note: This function assumes fn is being used as a ``userfn,''
+; i.e., by badge-userfn or apply$-userfn.  It fails to answer correctly if, for
+; example, fn is CONS or APPLY$.  Use executable-badge if you want to answer
+; the question ``does fn have a badge?''  This function differs from the more
+; primitive get-badge, get-warrant, and get-warrant-and-badge by virtue of
+; checking that fn is a known function symbol.
 
   (cond
    ((not (symbolp fn))
-    (mv (or (not msgp)
-            (msg "~x0 is not a symbol" fn))
-        nil))
+    (mv (msg "~x0 is not a symbol" fn)
+        nil nil))
    ((not (function-symbolp fn wrld))
-    (mv (or (not msgp)
-            (msg "~x0 is not a known function symbol" fn))
-        nil))
-   ((eq (symbol-class fn wrld) :program)
-    (mv (or (not msgp)
-            (msg "~x0 is a :PROGRAM mode function symbol" fn))
-        nil))
+    (mv (msg "~x0 is not a known function symbol" fn)
+        nil nil))
    (t
-    (let ((bdg ; the badge of nonprim fn, if any
-           (get-badge fn wrld)))
+    (mv-let (badge warrantp)
+      (get-badge-and-warrantp fn wrld)
       (cond
-       ((null bdg) ; fn is a function symbol with no badge assigned
-        (cond ((null msgp) (mv t nil))
-              (t (mv (msg "~x0 has not been warranted" fn)
-                     nil))))
-       (t (mv nil bdg)))))))
+       ((null badge) ; fn is a function symbol with no badge assigned
+        (mv (msg "~x0 has not been badged" fn)
+            nil nil))
+       (t (mv nil badge warrantp)))))))
 
 ; The (extensible) attachments for badge-userfn and apply$-userfn are
 ; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They will be
@@ -195,12 +184,23 @@
 ;        (eq fn 'ev$))
 ;    nil)
 
-   (t (mv-let (failure-msg bdg)
-        (query-badge-userfn-structure t fn (w *the-live-state*))
+   (t
+
+; We know either *aokp* = t (meaning we are in the evaluation theory) or else
+; *aokp*=nil and *warrant-reqs* is non-nil (meaning we're in the prover and
+; warrants are required).
+
+      (mv-let (bad-fn-msg badge warrantp)
+        (query-badge-userfn-structure fn (w *the-live-state*))
+
+; Note:  If bad-fn-msg is nil then we know fn has a badge and badge is it.
+
         (cond
-         ((null failure-msg)
-          (maybe-extend-warrant-reqs fn nil 'badge-userfn)
-          bdg)
+         ((and (null bad-fn-msg)    ; there is a badge and either we're in the
+               (or *aokp* warrantp)); evaluation theory or fn has a warrant
+          (or (not warrantp)
+              (maybe-extend-warrant-reqs fn nil 'badge-userfn))
+          badge)
          (t (throw-raw-ev-fncall
              (list* 'ev-fncall-null-body-er
                     nil
@@ -211,7 +211,11 @@
 
                     (msg "The value of ~x0 is not specified on ~x1 because ~
                           ~@2."
-                         'BADGE-USERFN fn failure-msg)
+                         'BADGE-USERFN
+                         fn
+                         (cond (bad-fn-msg bad-fn-msg)
+                               (t (msg "~x0 has not been warranted"
+                                       fn))))
                     (print-list-without-stobj-arrays
                      (list fn))))))))))
 
@@ -361,6 +365,21 @@
 ; The next two items are pushed to the left margin so they get picked up by
 ; etags.  But they're really part of the progn!
 
+(defun raw-apply-for-badged-fn (fn arity args)
+  (cond
+   ((and (eq (symbol-class fn (w *the-live-state*)) :program)
+         (not (f-get-global 'safe-mode *the-live-state*)))
+    (state-free-global-let*
+     ((safe-mode t))
+     (apply (*1*-symbol fn)
+            (if (= arity (length args))
+                args
+                (take arity args)))))
+   (t (apply (*1*-symbol fn)
+             (if (= arity (length args))
+                 args
+                 (take arity args))))))
+
 (defun doppelganger-apply$-userfn (fn args)
 
 ; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
@@ -374,10 +393,12 @@
             'doppelganger-apply$-userfn
             (print-list-without-stobj-arrays
              (list fn args)))))
-   (t (mv-let (failure-msg bdg)
-        (query-badge-userfn-structure t fn (w *the-live-state*))
+   (t (mv-let (bad-fn-msg badge warrantp)
+        (query-badge-userfn-structure fn (w *the-live-state*))
         (cond
-         (failure-msg ; no badge for fn
+         ((or bad-fn-msg ; no badge for fn, or there is a badge but we're in
+              (and (null *aokp*) ; prover (so warrants are required) but fn
+                   (not warrantp))) ; has no warrant
           (throw-raw-ev-fncall
            (list* 'ev-fncall-null-body-er
                   nil
@@ -389,36 +410,41 @@
 ; doppelganger-apply$-userfn!  See the Essay on Memoization with Attachments.
 
                   (msg "The value of ~x0 is not specified on ~x1 because ~@2."
-                       'APPLY$-USERFN fn failure-msg)
+                       'APPLY$-USERFN fn
+                       (cond (bad-fn-msg bad-fn-msg)
+                             (t (msg "~x0 has not been warranted"
+                                     fn))))
                   (print-list-without-stobj-arrays
                    (list fn args)))))
-         ((eq (access apply$-badge bdg :ilks) t)
-          (maybe-extend-warrant-reqs fn args 'apply$-userfn)
-          (if (int= (access apply$-badge bdg :out-arity) 1)
-              (apply (*1*-symbol fn)
-                     (if (= (access apply$-badge bdg :arity) (length args))
-                         args
-                       (take (access apply$-badge bdg :arity) args)))
+
+; If we get here we know that fn has a badge and that either *aokp* is true (so
+; no warrants are necessary) or fn has a warrant.
+
+         ((eq (access apply$-badge badge :ilks) t)
+          (or (not warrantp)
+              (maybe-extend-warrant-reqs fn args 'apply$-userfn))
+          (if (int= (access apply$-badge badge :out-arity) 1)
+              (raw-apply-for-badged-fn fn
+                                       (access apply$-badge badge :arity)
+                                       args)
             (multiple-value-list
-             (apply (*1*-symbol fn)
-                    (if (= (access apply$-badge bdg :arity) (length args))
-                        args
-                      (take (access apply$-badge bdg :arity) args))))))
+             (raw-apply-for-badged-fn fn
+                                      (access apply$-badge badge :arity)
+                                      args))))
          ((concrete-check-apply$-hyp-tamep-hyp
-           (access apply$-badge bdg :ilks)
+           (access apply$-badge badge :ilks)
            args
            (w *the-live-state*))
-          (maybe-extend-warrant-reqs fn args 'apply$-userfn)
-          (if (int= (access apply$-badge bdg :out-arity) 1)
-              (apply (*1*-symbol fn)
-                     (if (= (access apply$-badge bdg :arity) (length args))
-                         args
-                       (take (access apply$-badge bdg :arity) args)))
+          (or (not warrantp)
+              (maybe-extend-warrant-reqs fn args 'apply$-userfn))
+          (if (int= (access apply$-badge badge :out-arity) 1)
+              (raw-apply-for-badged-fn fn
+                                       (access apply$-badge badge :arity)
+                                       args)
             (multiple-value-list
-             (apply (*1*-symbol fn)
-                    (if (= (access apply$-badge bdg :arity) (length args))
-                        args
-                      (take (access apply$-badge bdg :arity) args))))))
+             (raw-apply-for-badged-fn fn
+                                      (access apply$-badge badge :arity)
+                                      args))))
          (t
           (throw-raw-ev-fncall
            (list* 'ev-fncall-null-body-er
@@ -431,7 +457,7 @@
                         argument, fn, is ~x1, and the second argument, args, ~
                         is ~x2.  Fn has badge ~x3 and args is not known to ~
                         satisfy the tameness requirement of that badge."
-                       'APPLY$-USERFN fn args bdg)
+                       'APPLY$-USERFN fn args badge)
                   (print-list-without-stobj-arrays
                    (list fn args))))))))))
 
@@ -519,9 +545,9 @@
 ;    :GOOD.  If the line's status is not :GOOD, the :absolute-event-number is
 ;    nil.
 
-; - :extracts is a list of 3-tuples (satisfies-exprs guard . body) that allows
-;    us to re-check well-formedness and guard verification without re-parsing
-;    the lambda expression
+; - :extracts is a list of splo-extracts-tuples that allows us to re-check
+;    well-formedness and guard verification without re-parsing the lambda
+;    expression
 
 ; - :problem is an object that indicates why the :status isn't :GOOD
 
@@ -584,14 +610,14 @@
 ; than might at first appear since we know the object had status :GOOD or :BAD
 ; in some other world and hence is basically the right shape.  The :extracts of
 ; the cache line give us the relevant TYPE expressions, guards, and bodies
-; without having to re-parse the object.  (:Extracts is a list of 3-tuples,
-; (satisfies-exprs guard . body), and extracted from the lambda object and from
-; every lambda object within it.)  We basically make termp checks on these
-; components, additionally checking Common Lisp compliant symbol-classes for
-; the functions involved in the guard and body, and tameness of the body.
-; Provided these checks succeed we generate the guard obligations of the
-; :lambda-object and we attempt to prove them with the Tau System.  If this
-; succeeds the object is :GOOD, otherwise it is :BAD.
+; without having to re-parse the object.  (:Extracts is a list of
+; splo-extracts-tuples extracted from the lambda object and from every lambda
+; object within it.)  We basically make termp checks on these components,
+; additionally checking Common Lisp compliant symbol-classes for the functions
+; involved in the guard and body, and tameness of the body.  Provided these
+; checks succeed we generate the guard obligations of the :lambda-object and we
+; attempt to prove them with the Tau System.  If this succeeds the object is
+; :GOOD, otherwise it is :BAD.
 
 ; The algorithm sketched above is implemented by fetch-cl-cache-line.
 
@@ -932,9 +958,9 @@
 ; - :absolute-event-number is nil or a number.  This entry is a number iff the
 ;    status is :GOOD and the number is the greatest absolute-event-number of
 ;    the world at the time the line was detected as :GOOD.
-; - :extracts is a list of 3-tuples, (satisfies-exprs guard . body), that
-;    allows us to re-check well-formedness and guard verification without
-;    re-parsing the lambda expression
+; - :extracts is a list of splo-extracts-tuples that allows us to re-check
+;    well-formedness and guard verification without re-parsing the lambda
+;    expression
 ; - :problem is an object that indicates why the :status is :BAD
 ; - :hits is the number of times we have fetched this line
 ; - :guard-code is the compiled code for (LAMBDA formals guard)
@@ -1043,6 +1069,17 @@
    (t (assert (natp cl-cache))
       cl-cache)))
 
+(defun prettyify-splo-extracts-tuples (extracts)
+  (cond
+   ((endp extracts) nil)
+   (t (cons `(splo-extracts-tuple
+              :gflg ,(access splo-extracts-tuple (car extracts) :gflg)
+              :satisfies-exprs
+              ,(access splo-extracts-tuple (car extracts) :satisfies-exprs)
+              :guard ,(access splo-extracts-tuple (car extracts) :guard)
+              :body ,(access splo-extracts-tuple (car extracts) :body))
+            (prettyify-splo-extracts-tuples (cdr extracts))))))
+
 (defun print-cl-cache-line (i line)
 
 ; Line is assumed to be the (non-nil) cl-cache-line record at position i in the
@@ -1070,7 +1107,7 @@
          7
          status
          absolute-event-number
-         extracts
+         (prettyify-splo-extracts-tuples extracts)
          problem
          hits
          (if guard-code "<code>" "NIL")
@@ -1201,9 +1238,11 @@
 (defun collect-from-extracts (key extracts acc)
 
 ; Key should be one of :satisfies-exprs, :guard, or :body.  Extracts is a list
-; of 3-tuples (satisfies-exprs guard . body).  We map over exports and collect
-; all the terms in the key slot and union them into acc.  The order of the terms
-; is reversed from their appearance-order in extracts.
+; of splo-extracts-tuples.  We map over extracts and collect a duplicate-free
+; list of all the terms in the key slot and union them into acc.  The order of
+; the terms is reversed from their appearance-order in extracts.  Note that
+; :gflg is not among the keys recognized.  It makes no sense to collect all the
+; :gflgs as their meanings apply only to the tuple they're in.
 
   (cond
    ((endp extracts) acc)
@@ -1214,11 +1253,20 @@
          (:satisfies-exprs
 ; We use the -removing-duplicates version here to reverse the satisfies-exprs
 ; as they're added to the accumulator.
-          (union-equal-removing-duplicates (car (car extracts)) acc))
+          (union-equal-removing-duplicates
+           (access splo-extracts-tuple (car extracts) :satisfies-exprs)
+           acc))
          (:guard
-          (add-to-set-equal (cadr (car extracts)) acc))
-         (otherwise
-          (add-to-set-equal (cddr (car extracts)) acc)))))))
+          (add-to-set-equal
+           (access splo-extracts-tuple (car extracts) :guard)
+           acc))
+         (:body
+          (add-to-set-equal
+           (access splo-extracts-tuple (car extracts) :body)
+           acc))
+         (otherwise (er hard 'collect-from-extracts
+                        "We cannot collect values of key ~x0."
+                        key)))))))
 
 (defun maybe-re-validate-cl-cache-line (line w state)
 
@@ -1562,17 +1610,12 @@
           :lambda-code nil))
    (t
 
-; No matter what the caller says about the status, we have to recover
-; satisfies-exprs, guard, and body.  We could optimize this computation for known
-; :GOOD and :BAD lambdas but for the moment we just do the full syntactic
-; plausibility check.
+; No matter what the caller says about the status, we have to recover the
+; splo-extracts-tuples.  We could optimize this computation for known :GOOD and
+; :BAD lambdas but for the moment we just do the full syntactic plausibility
+; check.
 
-    (let ((extracts (syntactically-plausible-lambda-objectp fn)))
-
-; Extracts is either nil, indicating that fn is not syntactically plausible, or
-; a list of 3-tuples, (satisfies-exprs guard . body), to further check wrt
-; wrld.
-
+    (let ((extracts (syntactically-plausible-lambda-objectp nil fn)))
       (cond
        ((null extracts)
         (cond ((or (eq status :GOOD) (eq status :BAD))
@@ -1616,14 +1659,7 @@
                 :guard-code (compile nil guard-lambda)
                 :lambda-code (compile nil body-lambda))))
        ((eq status :BAD)
-
-; For status = :GOOD, the fn should be well-formed in w and w must be able to
-; prove the guard conjectures, and for status = :BAD, there should (probably)
-; exist a world in which fn is well-formed and guard-verifiable but it is not
-; in this w.  We don't check these things because we assume the caller knows
-; what it's doing.
-
-
+; See note above about status :GOOD and :BAD.
         (make cl-cache-line
               :lambda-object fn
               :status :BAD
@@ -1918,7 +1954,8 @@
 
   (list (access cl-cache-line line :lambda-object)
         (access cl-cache-line line :status)
-        (access cl-cache-line line :extracts)
+        (prettyify-splo-extracts-tuples
+         (access cl-cache-line line :extracts))
         (access cl-cache-line line :problem)
         (and (access cl-cache-line line :guard-code)
              '<guard-code>)
@@ -4124,8 +4161,10 @@
          (list 'ev-fncall-guard-er
                fn
                args
-               (untranslate ; guard of first 3-tuple
-                (cadr (car (access cl-cache-line line :extracts)))
+               (untranslate ; guard of first splo-extracts-tuple
+                (access splo-extracts-tuple
+                        (car (access cl-cache-line line :extracts))
+                        :guard)
                 t
                 (w *the-live-state*))
                (make-list ; stobjs-in = (nil ... nil)

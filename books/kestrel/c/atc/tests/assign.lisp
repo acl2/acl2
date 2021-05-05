@@ -79,9 +79,25 @@
                    |y|))))
       (c::bitand-sint-sint |x| |y|))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |k| (|x| |y|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (c::sintp |y|))))
+  (let* ((|a| (c::lognot-sint |x|))
+         (|b| (c::bitnot-sint |x|)))
+    (mv-let (|a| |b|)
+      (if (c::boolean-from-sint |y|)
+          (let ((|a| (c::bitnot-sint |a|)))
+            (mv |a| |b|))
+        (let* ((|b| (c::sint-const 2))
+               (|a| (c::sint-const 14)))
+          (mv |a| |b|)))
+      (c::bitxor-sint-sint |a| |b|))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| |i| |j| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| |j| |k| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

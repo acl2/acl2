@@ -2540,6 +2540,88 @@
            set-bogus-measure-ok."
           name)))))
 
+(defun collect-problematic-quoted-fns (names0 fns wrld progs unwars)
+
+; Fns is a list of quoted symbols used as function symbols in :FN or :EXPR
+; slots.  We collect into progs and unwars the :program mode ones and the
+; un-warranted :logic ones that require warrants.
+
+; Warning: Do not call this function during boot-strapping!  Warrant
+; information is not available.
+
+  (cond ((endp fns)
+         (mv (reverse progs)
+             (reverse unwars)))
+        ((or
+          (member-eq (car fns) names0)
+; The following hons-get is equivalent to (apply$-primp (car fns)).
+          (hons-get (car fns) ; *badge-prim-falist* is not yet defined!
+                    (unquote
+                     (getpropc '*badge-prim-falist*
+                               'const nil wrld)))
+; We similarly inspect the value of *apply$-boot-fns-badge-alist*
+          (assoc-eq (car fns)
+                    (unquote
+                     (getpropc '*apply$-boot-fns-badge-alist*
+                               'const nil wrld))))
+         (collect-problematic-quoted-fns names0 (cdr fns)
+                                         wrld progs unwars))
+        ((programp (car fns) wrld)
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld
+                                         (add-to-set-eq (car fns) progs)
+                                         unwars))
+        ((not (get-warrantp (car fns) wrld))
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld progs
+                                         (add-to-set-eq (car fns) unwars)))
+        (t
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld
+                                         progs unwars))))
+
+
+(defun maybe-warn-on-problematic-quoted-fns (names measures bodies ctx wrld state)
+  (if (global-val 'boot-strap-flg wrld)
+      (value nil)
+      (mv-let (progs unwars)
+        (collect-problematic-quoted-fns
+         names
+         (all-fnnames! t       ; list of terms flg
+                       :inside ; collect from inside quotes
+                       nil     ; these terms are outside of quotes
+                       (append measures bodies)
+                       nil ; ilks
+                       wrld
+                       nil)
+         wrld nil nil)
+        (pprogn
+         (cond
+          (progs
+           (warning$ ctx "Problematic-quoted-fns"
+                     "The definition~#0~[~/s~] of ~&0 ~#0~[is~/are~] in ~
+                      :LOGIC mode but mention~#0~[s~/~] the :PROGRAM mode ~
+                      function~#1~[~/s~] ~&1 in one or more :FN or :EXPR ~
+                      slots.  Conjectures about ~#0~[~&0~/the functions ~
+                      defined in the clique~] may not be provable until ~
+                      ~#1~[this program is~/these programs are~] converted to ~
+                      :LOGIC mode and warranted!  See :DOC verify-termination ~
+                      and defwarrant."
+                     names
+                     progs))
+          (t state))
+         (cond
+          (unwars
+           (warning$ ctx "Problematic-quoted-fns"
+                     "The definition~#0~[~/s~] of ~&0 ~#0~[is~/are~] in ~
+                      :LOGIC mode but mention~#0~[s~/~] the unwarranted ~
+                      function~#1~[~/s~] ~&1 in one or more :FN or :EXPR ~
+                      slots.  Conjectures about ~#0~[~&0~/the functions ~
+                      defined in the clique~] may not be provable until ~
+                      ~#1~[this unwarranted function is~/these unwarranted ~
+                      functions are~] warranted!  See :DOC defwarrant."
+                     names
+                     unwars))
+          (t state))
+         (value nil)))))
+
 (defun put-induction-info ( ; we assume loop$-recursion-checkedp = t
                            loop$-recursion
                            names arglists measures ruler-extenders-lst bodies
@@ -2595,14 +2677,22 @@
                 (null (getpropc (car names) 'recursivep nil wrld1)))
 
 ; If only one function is being defined and it is non-recursive, we can quit.
-; But we have to store the symbol-class and we have to print out the admission
-; message with prove-termination so the rest of our processing is uniform.
+; But we have to store the symbol-class and we have to print out the
+; program/unwarrated warning and the admission messages with prove-termination
+; so the rest of our processing is uniform.
 
            (er-progn
             (cond ((equal (car measures) *no-measure*)
                    (value nil))
                   (t (maybe-warn-or-error-on-non-rec-measure (car names) ctx
-                                                             wrld state)))
+                                                             wrld1 state)))
+            (maybe-warn-on-problematic-quoted-fns
+             names
+             (if (equal (car measures) *no-measure*)
+                 nil
+                 measures)
+             bodies
+             ctx wrld1 state)
             (prove-termination-non-recursive names bodies mp rel hints otf-flg
                                              big-mutrec ctx ens wrld1 state)))
           (t
@@ -2630,6 +2720,14 @@
 
                           t ; formerly big-mutrec
                           wrld1))
+                  (temp (maybe-warn-on-problematic-quoted-fns
+                         names
+                         (if (equal (car measures) *no-measure*)
+                             nil
+                             measures)
+                         bodies
+                         ctx wrld1 state))
+; Temp is intentially ignored; it is nil and a warning may have been printed.
                   (triple (prove-termination-recursive
                            names arglists measures t-machines mp rel hints
                            otf-flg bodies measure-debug ctx ens wrld1 state)))
@@ -4905,7 +5003,11 @@
                                      (car terms)
                                      wrld
                                      nil))))
-                         nil)
+                         (if (global-val 'boot-strap-flg wrld)
+                             nil
+                             (all-fnnames! nil :inside nil
+                                           (car terms)
+                                           nil wrld nil)))
                         names0)
                        wrld)))
              (cond
@@ -4979,7 +5081,12 @@
               (collect-non-common-lisp-compliants (all-fnnames-exec term)
                                                   wrld)))
      (t
-      (value-cmp (cons :term term))))))
+      (er-progn-cmp
+       (chk-common-lisp-compliant-subfunctions-cmp
+        (list name) (list name)
+        (list term)
+        wrld "formula" ctx)
+      (value-cmp (cons :term term)))))))
 
 (defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 
@@ -4998,6 +5105,7 @@
 ;   and rrp = t:
 ;   Test: T
 ;   Non-Erroneous Value: 'redundant.
+
 ; * if name is a function symbol:
 ;   Test: is every subfunction in the definitions of names -- including symbols
 ;   in quoted well-formed lambda objects -- except possibly names themselves
@@ -5099,10 +5207,12 @@
                  :common-lisp-compliant)
                 (t
 
-; Since name is known to be a well-formed lambda, every function in it and its
-; guard is in :logic mode.
+; Name is known to be a well-formed lambda, but it may contain all classes of
+; badged symbols, including :program mode ones.  We don't know how to classify
+; the lambda and so we'll choose the worst possibility.  But as of this writing
+; symbol-class is not used in the lambda case below!
 
-                 :ideal))))
+                 :program))))
      (cond
       ((and rrp
             (eq symbol-class :common-lisp-compliant))
@@ -6514,59 +6624,96 @@
                                       (all-fnnames1-exec t bodies nil)
                                       wrld)))))))
 
-(defun defuns-fn-short-cut (names docs pairs guards measures split-types-terms
-                                  bodies non-executablep ctx wrld state)
+(defun defuns-fn-short-cut (loop$-recursion-checkedp
+                            loop$-recursion
+                            names docs pairs guards measures split-types-terms
+                            bodies non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
 ; analysis of defuns.  The function essentially makes the named functions look
-; like primitives in the sense that they can be used in formulas and they can
-; be evaluated on explicit constants but no axioms or rules are available about
-; them.  In particular, we do not store 'def-bodies, type-prescriptions, or
-; any of the recursion/induction properties normally associated with defuns and
-; the prover will not execute them on explicit constants.
+; like primitives in the sense that they can be used in terms and they can be
+; evaluated on explicit constants but no axioms or rules are available about
+; them.  In particular, we do not store 'def-bodies, type-prescriptions, or any
+; of the recursion/induction properties normally associated with defuns.  The
+; the prover will reject a formula that contains a call of a :program mode
+; function.
 
 ; We do take care of the documentation database.
 
 ; Like defuns-fn0, this function returns a pair consisting of the new world and
 ; a tag-tree recording the proofs that were done.
 
+; Quick Refresher on Badged :Program Mode Functions
+
+; :Program mode functions can be badged and can be used, even in formulas
+; submitted to the prover, in apply$ contexts, i.e., in quoted lambda objects,
+; lambda$ and loop$ and other scions.  Thus, such functions can find their way
+; into the prover -- but the prover should NEVER encounter a first-order
+; application of :program mode function.  That is, while the prover might see
+; (apply$ 'progmode-fn (list x)) or (collect$ (lambda$ (e) (progmode-fn e))
+; lst) it should never see (progmode-fn x) or (progmode-fn (car lst)).  In
+; particular, when considering rewriting the body of a well-formed lambda
+; object the prover must check that there are no :program mode functions in it.
+; This can get tricky.
+
+; E.g., one might be tempted to expand (apply$ (lambda$ (e)(progmode-fn e))
+; '(5)) to (progmode-fn '5) by beta reduction, but that would be wrong!  It
+; actually expands to (ev$ '(progmode-fn e) '((e . 5))) which stops because in
+; the proof theory (badge 'progmode-fn) is undefined.  It is not defined unless
+; a warrant for progmode-fn is available and that can't happen until
+; progmode-fn is promoted to :logic mode.  Note also that while (badge
+; 'progmode-fn) is undefined in the proof theory, (badge 'progmode-fn) will
+; evaluate to a badge in the evaluation theory if progmode-fn has been badged.
+; It's the warrant that moves this knowledge into the proof theory.
+
+; Another issue is how we handle loop$-recursive :program mode functions.  At
+; the moment defuns-fn0, the only caller of defuns-fn-short-cut, causes an
+; error if a :program mode function has a :loop$-recursion t xarg.  So we never
+; get to this function if loop$-recursion is set.
+
   (declare (ignore docs pairs))
-  (er-progn
-   (cond
-    ((and (null (cdr names))                                 ; single function
-          (not (equal (car measures) *no-measure*))          ; explicit measure
-          (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
+  (prog2$
+   (choke-on-loop$-recursion loop$-recursion-checkedp
+                             names
+                             bodies
+                             'defuns-fn-short-cut)
+   (er-progn
+    (cond
+     ((and (null (cdr names))                                ; single function
+           (not (equal (car measures) *no-measure*))         ; explicit measure
+           (not loop$-recursion)
+           (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
 
 ; Warning: Keep the test just above in sync with putprop-recursivep-lst, in the
 ; sense that a measure is legal only for a singly-recursive function or a list
 ; of at least two functions.
 
-     (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
-    (t (value nil)))
-   (let* (#-acl2-save-unnormalized-bodies
-          (boot-strap-flg (global-val 'boot-strap-flg wrld))
-          (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
-                                                        non-executablep
-                                                        wrld))
-                       (t wrld)))
-          (wrld1 (cond
-                  #-acl2-save-unnormalized-bodies
-                  (boot-strap-flg wrld0)
-                  (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
-          (wrld2 (put-invariant-risk
-                  names
-                  bodies
-                  non-executablep
-                  :program ; symbol-class
-                  guards
-                  (putprop-x-lst2-unless
-                   names 'guard guards *t*
+      (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
+     (t (value nil)))
+    (let* (#-acl2-save-unnormalized-bodies
+           (boot-strap-flg (global-val 'boot-strap-flg wrld))
+           (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
+                                                         non-executablep
+                                                         wrld))
+                        (t wrld)))
+           (wrld1 (cond
+                   #-acl2-save-unnormalized-bodies
+                   (boot-strap-flg wrld0)
+                   (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
+           (wrld2 (put-invariant-risk
+                   names
+                   bodies
+                   non-executablep
+                   :program ; symbol-class
+                   guards
                    (putprop-x-lst2-unless
-                    names 'split-types-term split-types-terms *t*
-                    (putprop-x-lst1
-                     names 'symbol-class :program wrld1))))))
-     (value (cons wrld2 nil)))))
+                    names 'guard guards *t*
+                    (putprop-x-lst2-unless
+                     names 'split-types-term split-types-terms *t*
+                     (putprop-x-lst1
+                      names 'symbol-class :program wrld1))))))
+      (value (cons wrld2 nil))))))
 
 ; Now we develop the output for the defun event.
 
@@ -8370,12 +8517,153 @@
                    (value nil)))
                  (t (er soft ctx "~@0" msg))))))))))))))
 
+; Essay on the Use of :PROGRAM Mode Functions by :LOGIC Mode Functions
+
+; This essay does not reveal anything that a user familiar with apply$ doesn't
+; already know!  It's not really about implementation details though it served
+; as a sort of design document for allowing :program mode functions to be
+; badged.
+
+; Before the introduction of apply$, there was a simple rule: :logic mode
+; functions are defined entirely in terms of :logic mode subfunctions.  When
+; apply$ was first introduced (in Version 8.0), every badged function had also
+; a warrant (and all warranted functions are necessarily in :logic mode), so
+; every badged function was in :logic mode.  But it was possible to define an
+; unbadged :logic mode function to appear to call a :program mode function (or
+; even an undefined function!).  The following commands were carried out in
+; V8.3, which has the same restrictions as V8.0 but was more powerful mainly
+; because all warrants are true in its evaluation theory (enabling top-level
+; evaluation of apply$ forms), loop$ recursion was supported, and lambda object
+; rewriting was done.
+
+; Consider this sketch of a V8.3 session:
+
+; ; Successful defun of :logic mode fn ``calling'' an undefined function:
+; (defun foo (x y)
+;    (declare (xargs :mode :logic))
+;    (apply$ 'undefined-fn (list x y)))
+;
+; ; Two tests and results:
+; (foo 1 2)
+;
+; ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+; on UNDEFINED-FN because UNDEFINED-FN is not a known function symbol.
+;
+; (thm (consp (foo 1 2)))
+; *** Key checkpoint at the top level: ***
+; Goal'
+; (CONSP (APPLY$ 'UNDEFINED-FN '(1 2)))
+;
+; ; The checkpoint could be further reduced, with hints to (CONSP (APPLY$-USERFN
+; ; 'UNDEFINED-FN '(1 2))).
+;
+; ; Define the formerly undefined function:
+; (defun undefined-fn (x y)(declare (xargs :mode :program)) (list 'hello x y))
+;
+; ; Repeating the two tests above produces virtually the same results, except the
+; ; error message now complains about undefined-fn being in :program mode.
+;
+; ; So convert undefined-fn to :logic mode:
+; (verify-termination undefined-fn)
+;
+; ; Repeating the two tests above produces virtually the same results, except the
+; ; error message now complains about undefined-fn being unwarranted (which also
+; ; means unbadged here).
+;
+; ; So badge and warrant it:
+; (defwarrant undefined-fn)
+;
+; ; Repeating the two tests:
+;
+; (foo 1 2)
+; ==> (HELLO 1 2)
+;
+; (thm (consp (foo 1 2)))
+; q.e.d. (given one forced hypothesis)
+; [1]Goal
+; (APPLY$-WARRANT-UNDEFINED-FN)
+;
+; ; So supply the warrant:
+; (thm (implies (warrant undefined-fn) (consp (foo 1 2))))
+; Q.E.D.
+
+; What we've seen is that ACL2 has always supported the idea that a :logic mode
+; function might use apply$ to call undefined quoted ``function symbol'' and
+; the :logic mode function behaves reasonably (soundly) as the formerly
+; undefined function becomes more acceptable to apply$.
+
+; Furthermore, it not possible to determine all the functions a :logic
+; mode function might call via apply$.  Consider
+
+; (defun foo (fn x y) (apply$ fn (list x y))).
+
+; If you replace every call of (foo 1 2) in the session above with (foo
+; 'undefined-fn 1 2) you get the same behavior as before.  So it's simply
+; hopeless to imagine enforcing a rule against :logic mode functions
+; ``calling'' :program mode functions via apply$.  The best we can do is
+; guarantee that evaluation -- whether in the evaluation theory or the logic --
+; handles non-logical arguments correctly.  And that's pretty straightforward
+; simply because the logic doesn't know anything about userfns except what
+; warrants tell it, and the doppelgangers for badge-userfn and apply$-userfn
+; handle things correctly.
+
+; Here is an example of an unbadgeable function that computes a new lambda
+; expression on every recursion, and we reason about it perfectly well:
+
+; (defun enumerate (fn lst)
+;   (if (endp lst)
+;       nil
+;       (cons (apply$ fn (list (car lst)))
+;             (enumerate `(lambda (e)
+;                           (cons (binary-+ '1 ,(cadr (caddr fn)))
+;                                 ,(caddr (caddr fn))))
+;                        (cdr lst)))))
+
+; (thm (equal (enumerate '(lambda (e) (cons '0 e)) '(a b c d))
+;             '((0 . a) (1 . b) (2 . c) (3 . d))))
+
+; In Version 8.4 we allowed :program mode functions to have badges so that
+; loop$s, for example, could be run using :program mode functions in their
+; bodies.  Of course, :program mode functions cannot have warrants because
+; warrants make a logical statement about the function.  The session sketched
+; above should still be valid, except that in 8.4 we'd expect (foo 1 2) to
+; evaluate in the evaluation theory even if undefined-fn is just a :program
+; mode function -- as long as it has a badge.
+
+; The change from v8.3 to v8.4 really only raises source-code programming
+; problems: prior to v8.4 we knew that if a userfn had a badge the function was
+; in :logic mode and had a warrant.  But in v8.4 we must explicitly test each
+; of those conditions before carrying out certain acts.  The challenge was
+; finding all the places we tested for badges or tameness and implicitly relied
+; on the existence of a warrant.
+
+; It is also worth noting that rewrite-lambda-object invites trouble because it
+; offers an opportunity to get into evaluation without explicitly going through
+; apply$ or the doppelgangers.  If a lambda object can have a body that
+; mentions undefined or :program mode functions and the rewriter just barged
+; into the body treating it like a logical term, we could easily get hard
+; errors (or worse) because we'd be violating a basic invariant of our code:
+; the theorem prover deals with :logic terms.  The lambda rewriter checked that
+; the body was well-formed, which included tame, which pre-v8.4 guaranteed
+; warrants, and so we knew that (ev$ '(undefined-fn '1 '2) a) = (undefined-fn
+; '1 '2).  But now tameness doesn't guarantee that warrants exist.
+
+; Some good guidelines to keep in mind:
+; (1) Apply$ can encounter anything!
+; (2) Badges are necessary to know that :FNs are respected.
+; (3) Badges are necessary to run safely.
+; (4) Not every function using apply$ will be badged.
+; (5) Warrants are necessary to prove anything.
+; (6) Warrants imply badges and :logic mode.
+
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
 
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
-; function used in terms be :logic.  Str is a string used in our error
-; message and is either "guard", "split-types expression", or "body".
+; function used in terms be :logic.  Str is a string used in our error message
+; and is either "guard", "split-types expression", or "body".  But we allow
+; quoted function symbols in :FN slots to be in :program mode.  See the Essay
+; on the Use of :PROGRAM Mode Functions by :LOGIC Mode Functions.
 
 ; WARNING: This function guarantees that a call of a :logic mode function
 ; cannot lead to a call of a :program mode function.  This guarantee justifies
@@ -8386,72 +8674,72 @@
 ; past the end of an array.  So be careful when considering a relaxation of
 ; this guarantee!
 
-  (cond ((null names) (value nil))
-        (t (let ((bad (collect-programs
-                       (set-difference-eq (all-fnnames (car terms))
-                                          names0)
-                       wrld)))
-             (cond
-              (bad
+  (cond
+   ((null names) (value nil))
+   (t
+    (let
+      ((bad (collect-programs
+             (set-difference-eq (all-fnnames (car terms))
+                                names0)
+             wrld)))
+      (cond
+       (bad
+        (er
+         soft ctx
+         "The ~@0 for ~x1 calls the :program function~#2~[ ~&2~/s ~&2~].  We ~
+          require that :logic definitions be defined entirely in terms of ~
+          :logically defined functions.  See :DOC defun-mode."
+         str (car names)
+         (reverse bad)))
+       (t (chk-logic-subfunctions names0 (cdr names)
+                                  (cdr terms)
+                                  wrld str ctx state)))))))
 
-; Before eliminating the error below, think carefully!  In particular, consider
-; the following problem involving trans-eval.  A related concern, which points
-; to the comment below, may be found in a comment in the definition of
-; magic-ev-fncall.
+(defun collect-unbadged (fns wrld)
+  (cond ((endp fns) nil)
+        ((executable-badge (car fns) wrld)
+         (collect-unbadged (cdr fns) wrld))
+        (t (cons (car fns)
+                 (collect-unbadged (cdr fns) wrld)))))
 
-; Sol Swords wondered whether there might be an issue when function takes and
-; returns both a user-defined stobj and state, calling trans-eval to change the
-; stobj even though the function doesn't actually change it.  Below
-; investigating whether Sol's idea can be exploited to destroy, perhaps with
-; bad consequences, some sort of invariant related to the user-stobj-alist of
-; the state.  The answer seems to be no, but only because (as Sol pointed out,
-; if memory serves) trans-eval is in :program mode -- and it stays there
-; because trans-eval calls ev-for-trans-eval, which calls ev, which belongs to
-; the list *initial-program-fns-with-raw-code* (and because :logic mode
-; functions can't call :program mode functions).  Below is an example that
-; illustrates what could go wrong if trans-eval were in :logic mode.
+(defun chk-badged-quoted-subfunctions (names0 names terms wrld str ctx state)
 
-;   (defstobj st fld)
-;
-;   (set-state-ok t)
-;
-;   (defun f (st state)
-;     (declare (xargs :stobjs (st state)
-;                     :mode :program))
-;     (let ((st (update-fld 2 st)))
-;       (mv-let (erp val state)
-;               (trans-eval '(update-fld 3 st) 'f state nil)
-;               (declare (ignore erp val))
-;               (mv state (fld st) st))))
-;
-;   ; Logically, f sets (fld st) to 2, so the return value should be (mv _ 2
-;   ; _).  But we get (mv _ 3 _).  The only thing that saves us is that
-;   ; trans-eval is in :program mode, hence f is in :program mode.  This gives
-;   ; us a good reason to be very cautious before allowing :program mode
-;   ; functions to be called from :logic mode functions.  Note that even if we
-;   ; were to allow the return state to be somehow undefined, still the middle
-;   ; return value would be a problem logically!
-;
-;   ; Succeeds
-;   (mv-let (state val st)
-;           (f st state)
-;           (assert$ (equal val 3)
-;                    (mv state val st)))
-;
-;   ; Fails
-;   (mv-let (state val st)
-;           (f st state)
-;           (assert$ (equal val 2)
-;                    (mv state val st)))
+; Assume we are defining names in terms of terms (1:1 correspondence).  Then we
+; insist that every quoted symbol used as a function in a :FN or :EXPR slot be
+; badged.  Note that we do not require the subfunctions to be in :logic mode
+; even if the functions being defined are in :logic mode.  The only reason we
+; check this condition is to cause an error on (apply$ 'foo ...) where foo is
+; unbadged.  And the reason we do that is because we cause such an error on
+; (lambda$ (x) (foo ...)) and it just seems confusing to allow unbadged symbols
+; to (apparently) be applied with apply$ but not evaluated by ev$.
 
-               (er soft ctx
-                   "The ~@0 for ~x1 calls the :program function~#2~[ ~
-                    ~&2~/s ~&2~].  We require that :logic definitions be ~
-                    defined entirely in terms of :logically defined ~
-                    functions.  See :DOC defun-mode."
-                   str (car names) bad))
-              (t (chk-logic-subfunctions names0 (cdr names) (cdr terms)
-                                             wrld str ctx state)))))))
+; Warning:  Do not call this function during boot-strap!
+
+  (cond
+   ((null names) (value nil))
+   (t
+    (let
+      ((bad (collect-unbadged
+             (set-difference-eq (all-fnnames! nil     ; term flg
+                                              :inside ; collect inside quotes
+                                              nil     ; don't start til inside
+                                              (car terms)
+                                              nil ; ilk
+                                              wrld nil)
+                                names0)
+             wrld)))
+      (cond
+       (bad
+        (er
+         soft ctx
+         "The ~@0 for ~x1 uses the unbadged symbol~#2~[ ~&2~/s ~&2~] in one ~
+          or more :FN or :EXPR slots.  We require that all such symbols be ~
+          badged function symbols.  See :DOC defun and defbadge."
+         str (car names)
+         (reverse bad)))
+       (t (chk-badged-quoted-subfunctions names0 (cdr names)
+                                          (cdr terms)
+                                          wrld str ctx state)))))))
 
 ;; Historical Comment from Ruben Gamboa:
 ;; This function strips out the functions which are
@@ -10496,8 +10784,10 @@
                      'badge-table
                      'table-alist
                      (put-assoc-eq :badge-userfn-structure
-                                   (cons (cons fn badge)
-                                         userfn-structure)
+                                   (put-badge-userfn-structure-tuple-in-alist
+                                    (make-badge-userfn-structure-tuple
+                                     fn nil badge)
+                                    userfn-structure)
                                    badge-table)
                      wrld2))))
                 (value wrld2))))
@@ -10670,17 +10960,36 @@
 ; translate11 and translate1 do not.
 
                          (er-progn
-                          (chk-logic-subfunctions names names
-                                                  guards wrld3 "guard"
-                                                  ctx state)
-                          (chk-logic-subfunctions names names
-                                                  split-types-terms wrld3
-                                                  "split-types expression"
-                                                  ctx state)
-                          (chk-logic-subfunctions names names bodies
-                                                  wrld3 "body"
-                                                  ctx state))
+                          (chk-logic-subfunctions
+                           names names
+                           guards wrld3 "guard"
+                           ctx state)
+                          (chk-logic-subfunctions
+                           names names
+                           split-types-terms wrld3
+                           "split-types expression"
+                           ctx state)
+                          (chk-logic-subfunctions
+                           names names
+                           bodies wrld3 "body"
+                           ctx state))
                          (value nil))
+                     (if (global-val 'boot-strap-flg (w state))
+                         (value nil)
+                         (er-progn
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           guards wrld3 "guard"
+                           ctx state)
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           split-types-terms wrld3
+                           "split-types expression"
+                           ctx state)
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           bodies wrld3 "body"
+                           ctx state)))
                      (if (eq symbol-class :common-lisp-compliant)
                          (er-progn
                           (chk-common-lisp-compliant-subfunctions
@@ -11289,7 +11598,10 @@
 
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+    (defuns-fn-short-cut
+      t ; loop$-recursion-checkp, because chk-acceptable-defuns has approved.
+      (access lambda-info lambda-info :loop$-recursion)
+      names docs pairs guards measures split-types-terms
       bodies non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
@@ -11814,58 +12126,62 @@
                 (if (access lambda-info lambda-info :loop$-recursion)
 ; If loop$-recursion is set we know this is a singly-recursive (not mutually
 ; recursive) defun that the user alleged was tame.  We check that now.
-                    (mv-let (erp msg-and-badge)
-                      (ev-fncall-w 'badger
-                                   (list (car names) (ens state) (w state))
-                                   (w state) nil nil nil t t)
+                    (let ((wrld (car pair)))
+                      (mv-let (erp msg-and-badge)
+                        (ev-fncall-w 'badger
+                                     (list (car names) wrld)
+                                     wrld nil nil nil t t)
 
 ; If erp is t, then msg-and-badge is actually an error msg.  Otherwise,
 ; msg-and-badge is (msg badge), where msg is either an error message or nil.
 ; When msg is nil, badge is the computed badge.
 
-                      (let ((msg1 msg-and-badge)
-                            (msg2 (if erp
-                                      nil
-                                    (car msg-and-badge)))
-                            (badge (if erp
-                                       nil
-                                     (cadr msg-and-badge))))
-                        (cond
-                         ((or erp msg2)
-                          (er soft 'defun
-                              "When :LOOP$-RECURSION T is declared for a ~
-                             function, as it was for ~x0, we must assign it a ~
-                             badge before we translate its body.  That ~
-                             assigned badge asserts that ~x0 returns a single ~
-                             value and is tame.  We then check that ~
-                             assumption after translation by generating the ~
-                             badge using the technique that DEFWARRANT would ~
-                             use.  But the attempt to generate the badge has ~
-                             failed, indicating that it is illegal to declare ~
-                             :LOOP$-RECURSION T for this function.  ~#1~[Our ~
-                             attempt to generate a badge produced the ~
-                             following error:~/The error message that would ~
-                             be reported by DEFWARRANT is:~]~%~%~@2"
-                              (car names) (if erp 0 1) (if erp msg1 msg2)))
-                         ((not (equal (access apply$-badge badge :out-arity) 1))
+                        (let ((msg1 msg-and-badge)
+                              (msg2 (if erp
+                                        nil
+                                        (car msg-and-badge)))
+                              (badge (if erp
+                                         nil
+                                         (cadr msg-and-badge))))
+                          (cond
+                           ((or erp msg2)
+                            (er soft 'defun
+                                "When :LOOP$-RECURSION T is declared for a ~
+                                 function, as it was for ~x0, we must assign ~
+                                 it a badge before we translate its body.  ~
+                                 That assigned badge asserts that ~x0 returns ~
+                                 a single value and is tame.  We then check ~
+                                 that assumption after translation by ~
+                                 generating the badge using the technique ~
+                                 that DEFWARRANT would use.  But the attempt ~
+                                 to generate the badge has failed, indicating ~
+                                 that it is illegal to declare ~
+                                 :LOOP$-RECURSION T for this function.  ~
+                                 ~#1~[Our attempt to generate a badge ~
+                                 produced the following error:~/The error ~
+                                 message that would be reported by DEFWARRANT ~
+                                 is:~]~%~%~@2"
+                                (car names) (if erp 0 1) (if erp msg1 msg2)))
+                           ((not (equal (access apply$-badge badge :out-arity) 1))
 
 ; This error can't happen!  The world -- wrld3 of chk-acceptable-defuns1 -- has
 ; the stobjs-out property of fn set to a list of length 1.  And the badger just
 ; looks there to find the :out-arity.
 
-                          (er soft 'defun
-                              "Impossible error!  The final badger check in ~
-                              DEFUNS-FN has failed on the :OUT-ARITY.  This ~
-                              is impossible given chk-acceptable-defuns1. ~
-                              Please show the implementors this bug!"))
-                         ((not (eq (access apply$-badge badge :ilks) t))
-                          (er soft 'defun
-                              "When :LOOP$-RECURSION T is declared for a ~
-                              function the function must be tame.  But ~x0 is ~
-                              not!  Its ilks are actually ~x1."
-                              (car names)
-                              (access apply$-badge badge :ilks)))
-                         (t (value nil)))))
+                            (er soft 'defun
+                                "Impossible error!  The final badger check in ~
+                                 DEFUNS-FN has failed on the :OUT-ARITY.  ~
+                                 This is impossible given ~
+                                 chk-acceptable-defuns1. Please show the ~
+                                 implementors this bug!"))
+                           ((not (eq (access apply$-badge badge :ilks) t))
+                            (er soft 'defun
+                                "When :LOOP$-RECURSION T is declared for a ~
+                                 function the function must be tame.  But ~x0 ~
+                                 is not!  Its ilks are actually ~x1."
+                                (car names)
+                                (access apply$-badge badge :ilks)))
+                           (t (value nil))))))
                   (value nil))
                 (install-event-defuns names event-form def-lst0 symbol-class
                                       reclassifyingp non-executablep pair ctx wrld
@@ -11919,18 +12235,7 @@
 ; *badge-prim-falist* because it will not be known to the compiler during the
 ; boot-strapping.
 
-                  (warrant (cond ((assoc-eq name
-                                            (unquote
-                                             (getpropc '*badge-prim-falist*
-                                                       'const nil wrld)))
-                                  t)
-                                 (badge
-                                  (list (intern-in-package-of-symbol
-                                         (concatenate 'string
-                                                      "APPLY$-WARRANT-"
-                                                      (symbol-name name))
-                                         name)))
-                                 (t nil)))
+                  (warrant (find-warrant-function-name name wrld))
                   (constraint-msg
                    (mv-let
                      (some-name constraint-lst)
@@ -11954,8 +12259,8 @@
                Guards Verified: ~y5~|~
                Defun-Mode:      ~@6~|~
                Type:            ~#7~[built-in (or unrestricted)~/~q8~]~|~
-               Badge:           ~#b~[built-in to apply$~/~yc~/none~]~|~
-               Warrant:         ~#b~[none needed~/~yd~/none~]~|~
+               Badge:           ~#b~[~yc~/none~]~|~
+               Warrant:         ~#d~[built-in~/~ye~/none~]~|~
                ~#9~[~/Constraint:      ~@a~|~]~
                ~%"
                    (list (cons #\0 name)
@@ -11971,9 +12276,10 @@
                          (cons #\8 tpthm)
                          (cons #\9 (if (equal constraint-msg "") 0 1))
                          (cons #\a constraint-msg)
-                         (cons #\b (if (eq warrant t) 0 (if warrant 1 2)))
+                         (cons #\b (if badge 0 1))
                          (cons #\c badge)
-                         (cons #\d warrant))
+                         (cons #\d (if (eq warrant t) 0 (if warrant 1 2)))
+                         (cons #\e warrant))
                    channel state nil)
               (value name))))
           ((and (symbolp name)

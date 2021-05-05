@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -58,7 +58,7 @@
             mv-body))')
      instead;
      it depends on whether @('mv-term') is single-valued or multi-valued,
-     and also on whether the terms is translated for execution or not.
+     and also on whether the term is translated for execution or not.
      However, the result of translating @(tsee mv-let)
      necessarily has the form above.")
    (xdoc::p

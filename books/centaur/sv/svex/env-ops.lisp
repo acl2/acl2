@@ -538,7 +538,31 @@ of @(see svex-env-lookup), and they bind the same variables.")
 
                  (hons-assoc-equal-of-svex-alist-fix))))))
 
+(defun assigns-for-svassocs (args alist)
+  (if (atom args)
+      nil
+    (cons (if (consp (car args))
+              `(,(caar args) (sv::svex-env-lookup ,(cadar args) ,alist))
+            (mv-let (sym ign)
+              (acl2::decode-varname-for-patbind (car args))
+              (declare (ignore ign))
+              `(,(car args) (sv::svex-env-lookup ',sym ,alist))))
+          (assigns-for-svassocs (cdr args) alist))))
 
+(acl2::def-b*-binder svassocs
+  :body
+  #!acl2
+  (b* (((mv pre-bindings name rest)
+        (if (and (consp (car forms))
+                 (not (eq (caar forms) 'quote)))
+            (mv `((?tmp-for-assocs ,(car forms)))
+                'tmp-for-assocs
+                `(check-vars-not-free (tmp-for-assocs)
+                                      ,rest-expr))
+          (mv nil (car forms) rest-expr))))
+    `(b* (,@pre-bindings
+          . ,(sv::assigns-for-svassocs args name))
+       ,rest)))
 
 
 (define svex-env-removekeys ((keys svarlist-p) (env svex-env-p))
@@ -612,8 +636,6 @@ of @(see svex-env-lookup), and they bind the same variables.")
     (equal (svex-alist-eval (svarlist-x-subst x) env)
            (svarlist-x-env x))
     :hints(("Goal" :in-theory (enable svarlist-x-env svex-alist-eval)))))
-
-
 
 
 (defthm svex-env-p-of-pairlis$
