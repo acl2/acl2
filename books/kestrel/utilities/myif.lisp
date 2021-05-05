@@ -11,9 +11,6 @@
 
 (in-package "ACL2")
 
-;; MYIF is just an alias for IF, but MYIF can be disabled to prevent
-;; case-splitting.
-
 ;; STATUS: In-progress
 
 ;; TODO: Now that we can rewrite an IF (which was not possible when we
@@ -21,9 +18,7 @@
 
 ;; TODO: Consider giving this a better name.
 
-(defund myif (test thenpart elsepart)
-  (declare (xargs :guard t))
-  (if test thenpart elsepart))
+(include-book "myif-def")
 
 ;; This is now a legal rewrite rule.
 (defthmd if-becomes-myif
