@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -410,21 +410,6 @@
               (list `(cons 'ld-user-stobjs-modified-warning
                            ,ld-user-stobjs-modified-warning))
             nil)))))))
-
-(defun legal-constantp1 (name)
-
-; This function should correctly distinguish between variables and
-; constants for symbols that are known to satisfy
-; legal-variable-or-constant-namep.  Thus, if name satisfies this
-; predicate then it cannot be a variable.
-
-  (declare (xargs :guard (symbolp name)))
-  (or (eq name t)
-      (eq name nil)
-      (let ((s (symbol-name name)))
-        (and (not (= (length s) 0))
-             (eql (char s 0) #\*)
-             (eql (char s (1- (length s))) #\*)))))
 
 (defun lambda-keywordp (x)
   (and (symbolp x)
@@ -4856,8 +4841,9 @@
 ; 'accumulated-warnings, rather than in the raw lisp variable,
 ; *accumulated-warnings*.  But then we introduced warning$-cw1 to support the
 ; definitions of translate1-cmp and translate-cmp, which do not modify the ACL2
-; state.  Since warning$-cw1 uses a wormhole, the warning frames based on a
-; state global variable were unavailable when printing warning summaries.
+; state.  See the Essay on Context-message Pairs (cmp) for an explanation.
+; Since warning$-cw1 uses a wormhole, the warning frames based on a state
+; global variable were unavailable when printing warning summaries.
 
   #+acl2-loop-only
   (declare (ignore accum-p))
@@ -6541,6 +6527,11 @@
                            (the fixnum (1+ i))
                            n))))
 
+; In raw Lisp, the live version of state is held in the constant
+; *the-live-state* (whose value is actually just a symbol because we don't
+; really represent the live state as an object).  But what is the live version
+; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
+
 (defmacro live-stobjp (name)
 
 ; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
@@ -7472,11 +7463,15 @@
 (defun the-live-var (name)
 
 ; Through Version_8.2, for a stobj named st, (the-live-var st) was a special
-; variable.  At that time we thought that one might wonder why we didn't choose
-; to name this object $s.  Below we explain our earlier thinking.  Now that we
-; use only (the-live-var name) only to store properties, perhaps we could
-; instead store those properties on name; but when we eliminated the special
-; variable in October 2019, that didn't seem worthwhile to explore.
+; variable.  However, now the live stobj corresponding to st is stored on the
+; raw Lisp alist *user-stobj-alist* under the key st.
+
+; Back when we stored it under the value of the the-live-var, we thought that
+; one might wonder why we didn't choose to name this object $s.  Below we
+; explain our earlier thinking.  Now that we use only (the-live-var name) only
+; to store properties, perhaps we could instead store those properties on name;
+; but when we eliminated the special variable in October 2019, that didn't seem
+; worthwhile to explore.
 
 ; Historical Plaque for Why the Live Var for $S Is Not $S
 
@@ -7910,15 +7905,6 @@
                      0)
                   0)))
     (mv major minor incrl rest)))
-
-#-acl2-loop-only
-(defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl rest)
-    (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore rest))
-    (if (zerop incrl)
-        (format nil "note-~s-~s" major minor)
-      (format nil "note-~s-~s-~s" major minor incrl))))
 
 (defun pcd2 (n channel state)
   (declare (xargs :guard (integerp n)))

@@ -23,23 +23,18 @@
   (declare (xargs :guard (and (c::ucharp |x|)
                               (c::ucharp |y|))
                   :guard-hints (("Goal"
-                                 :in-theory (enable c::sint-from-uchar-okp
-                                                    c::sint-integerp-alt-def
-                                                    c::uchar-integerp-alt-def
-                                                    c::ucharp
-                                                    c::uchar->get
-                                                    c::sint-max
-                                                    c::uchar-max
-                                                    c::char-bits
-                                                    c::int-bits)))))
-  (c::sint-bitxor (c::sint-from-uchar |x|)
-                  (c::sint-from-uchar |y|)))
+                                 :in-theory
+                                 (enable c::sint-from-uchar-okp
+                                         c::sint-integerp-alt-def
+                                         c::uchar-integerp-alt-def)))))
+  (c::bitxor-sint-sint (c::sint-from-uchar |x|)
+                       (c::sint-from-uchar |y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |g| (|i|)
   (declare (xargs :guard (c::sintp |i|)))
-  (c::uchar-from-sint (c::sint-bitnot |i|)))
+  (c::uchar-from-sint (c::bitnot-sint |i|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

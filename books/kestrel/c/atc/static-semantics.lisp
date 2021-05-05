@@ -420,7 +420,13 @@
     (:sshort (type-sint))
     (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
     (t (type-fix type)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule type-integerp-of-promote-type
+    (equal (type-integerp (promote-type type))
+           (type-integerp type))
+    :enable (type-integerp type-unsigned-integerp type-signed-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,7 +478,7 @@
 (define uaconvert-types ((type1 typep) (type2 typep))
   :guard (and (type-arithmeticp type1)
               (type-arithmeticp type2))
-  :returns (type type-resultp)
+  :returns (type typep)
   :short "Apply the usual arithmetic conversions to two arithmetic types
           [C:6.3.1.8]."
   :long
@@ -495,7 +501,7 @@
                  (:uint (if (>= (sllong-max) (uint-max))
                             (type-sllong)
                           (type-ullong)))
-                 (t (error (impossible)))))
+                 (t (prog2$ (impossible) (irr-type)))))
       (:slong (case (type-kind type2)
                 (:sllong (type-sllong))
                 (:slong (type-slong))
@@ -505,7 +511,7 @@
                 (:uint (if (>= (slong-max) (uint-max))
                            (type-slong)
                          (type-ulong)))
-                (t (error (impossible)))))
+                (t (prog2$ (impossible) (irr-type)))))
       (:sint (case (type-kind type2)
                (:sllong (type-sllong))
                (:slong (type-slong))
@@ -513,7 +519,7 @@
                (:ullong (type-ullong))
                (:ulong (type-ulong))
                (:uint (type-uint))
-               (t (error (impossible)))))
+               (t (prog2$ (impossible) (irr-type)))))
       (:ullong (case (type-kind type2)
                  (:sllong (type-ullong))
                  (:slong (type-ullong))
@@ -521,7 +527,7 @@
                  (:ullong (type-ullong))
                  (:ulong (type-ullong))
                  (:uint (type-ullong))
-                 (t (error (impossible)))))
+                 (t (prog2$ (impossible) (irr-type)))))
       (:ulong (case (type-kind type2)
                 (:sllong (if (>= (sllong-max) (ulong-max))
                              (type-sllong)
@@ -531,7 +537,7 @@
                 (:ullong (type-ullong))
                 (:ulong (type-ulong))
                 (:uint (type-ulong))
-                (t (error (impossible)))))
+                (t (prog2$ (impossible) (irr-type)))))
       (:uint (case (type-kind type2)
                (:sllong (if (>= (sllong-max) (uint-max))
                             (type-sllong)
@@ -543,8 +549,8 @@
                (:ullong (type-ullong))
                (:ulong (type-ulong))
                (:uint (type-uint))
-               (t (error (impossible)))))
-      (t (error (impossible)))))
+               (t (prog2$ (impossible) (irr-type)))))
+      (t (prog2$ (impossible) (irr-type)))))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
                                            type-realp
                                            type-integerp
@@ -577,6 +583,19 @@
              type-integerp
              type-signed-integerp
              type-unsigned-integerp
+             promote-type))
+
+  (defrule type-integerp-of-uaconvert-types
+    (implies (and (type-arithmeticp type1)
+                  (type-arithmeticp type2))
+             (equal (type-integerp (uaconvert-types type1 type2))
+                    (and (type-integerp type1)
+                         (type-integerp type2))))
+    :enable (type-arithmeticp
+             type-realp
+             type-integerp
+             type-unsigned-integerp
+             type-signed-integerp
              promote-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

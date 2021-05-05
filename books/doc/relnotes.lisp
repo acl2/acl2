@@ -1022,6 +1022,11 @@
      for books that are now in Std/testing
      has been removed.")
 
+   (xdoc::p
+    "The event macros @(tsee assert!) and @(tsee assert!-stobj) no longer
+     invoke @(tsee make-event), but rather, create direct calls of @(tsee
+     assert-event).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"

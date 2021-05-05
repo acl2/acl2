@@ -157,6 +157,15 @@
   (:llong ())
   :pred iconst-tysuffixp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-iconst-tysuffix ()
+  :returns (tysuff iconst-tysuffixp)
+  :short "An irrelevant type suffix, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (iconst-tysuffix-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-iconst-tysuffix))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst

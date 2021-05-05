@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -175,7 +175,7 @@
         CODE-CHAR-TYPE COERCE COERCE-INVERSE-1
         COERCE-INVERSE-2 COERCE-OBJECT-TO-STATE
         COERCE-STATE-TO-OBJECT
-        COLLECT$ COLLECT$+ 
+        COLLECT$ COLLECT$+
         COMMENT
         COMMUNITY-BOOKS
         COMMUTATIVITY-OF-*
@@ -230,7 +230,7 @@
         DEFAULT-UNARY-/ DEFAULT-UNARY-MINUS
         DEFAULT-VERIFY-GUARDS-EAGERNESS
         DEFAULT-WELL-FOUNDED-RELATION
-        DEFAXIOM DEFCHOOSE DEFCONG DEFCONST
+        DEFAXIOM DEFBADGE DEFCHOOSE DEFCONG DEFCONST
         DEFEQUIV DEFEVALUATOR DEFEXEC
         DEFINE-PC-ATOMIC-MACRO DEFINE-PC-HELP
         DEFINE-PC-MACRO DEFINE-PC-META

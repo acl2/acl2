@@ -13,6 +13,7 @@
            (pseudo-termp rhs)
            (pseudo-term-listp hyps)
            (axe-rule-hyp-listp extra-hyps)
+           (all-axe-syntaxp-hypsp extra-hyps)
            (symbolp rule-symbol))
       (mv-let (erp rule)
         (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)

@@ -8,4 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!))
+; cert-flags: ? t :ttags :all :skip-proofs-okp t

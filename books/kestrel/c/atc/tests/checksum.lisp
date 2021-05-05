@@ -40,6 +40,11 @@
                          hist
                          pspv))))
 
+  (defrulel sint-max->=-200k
+    (>= (c::sint-max) 200000)
+    :rule-classes :linear
+    :enable (c::sint-max c::int-bits))
+
   (defun |checksum| (|current| |hibyte| |lobyte|)
     (declare (xargs :guard (and (c::sintp |current|)
                                 (c::sintp |hibyte|)
@@ -55,20 +60,20 @@
                                 (<= (c::sint->get |lobyte|) 255))
                     :guard-hints (("Goal"
                                    :in-theory (enable c::sint-integerp-alt-def
-                                                      c::sint-add-okp
-                                                      c::sint-shl-sint-okp
-                                                      c::sint-shl-okp
-                                                      c::sint-add
-                                                      c::sint-shl-sint
-                                                      c::sint-shl
-                                                      c::sint-bitand
-                                                      (:e c::sint-max))))))
-    (c::sint-bitand (c::sint-add |current|
-                                 (c::sint-add (c::sint-shl-sint |hibyte|
-                                                                (c::sint-const
-                                                                 8))
-                                              |lobyte|))
-                    (c::sint-const 65535))))
+                                                      c::add-sint-sint-okp
+                                                      c::shl-sint-sint-okp
+                                                      c::shl-sint-okp
+                                                      c::add-sint-sint
+                                                      c::shl-sint-sint
+                                                      c::shl-sint
+                                                      c::bitand-sint-sint)))))
+    (c::bitand-sint-sint
+     (c::add-sint-sint |current|
+                       (c::add-sint-sint (c::shl-sint-sint |hibyte|
+                                                           (c::sint-const
+                                                            8))
+                                         |lobyte|))
+     (c::sint-const 65535))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

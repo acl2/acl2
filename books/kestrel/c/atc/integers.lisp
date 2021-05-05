@@ -12,8 +12,12 @@
 (in-package "C")
 
 (include-book "integer-formats")
+(include-book "types")
 
 (include-book "kestrel/fty/defbyte" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+
+(local (include-book "arithmetic-3/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,328 +27,729 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a model of the C standard signed and unsigned integer values
-     (except @('_Bool') for now),
+    "We define a model of the C standard signed and unsigned integer values,
+     except @('_Bool') for now,
      based on their "
     (xdoc::seetopic "atc-integer-formats" "format definitions")
     ". As mentioned there, the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "For each of @('char'), @('short'), @('int'), @('long'), and @('long long'),
-     we define ACL2 unsigned and signed integers for them
+    "For each C integer type covered by our model,
+     we define ACL2 signed or unsigned integers corresponding to them
      (via @(tsee fty::defbyte)), and
-     we define C values by wrapping those unsigned and signed integers.
+     we define the C values by wrapping those signed or unsigned integers.
      We also define maximum and (for signed) minimum integers,
      prove some linear rules about them,
      and prove rules that provide alternative definitions
-     of the unsigned and signed ACL2 integers in terms of minima and maxima.
-     This way we have the ability to view the integer ranges
-     as ACL2's @(tsee unsigned-byte-p) and @(tsee signed-byte-p) values,
+     of the signed and unsigned ACL2 integers in terms of minima and maxima.
+     This gives us the ability to view the integer ranges
+     as ACL2's @(tsee signed-byte-p) and @(tsee unsigned-byte-p) values,
      which is useful for bitwise operations,
      but also as plain integers in certain ranges,
-     which may lead to simpler reasoning about ranges."))
+     which should lead to simpler reasoning about ranges.")
+   (xdoc::p
+    "For the unsigned types,
+     we also introduce ACL2 functions
+     to turn ACL2 integers into values of those types
+     by reducing them modulo one plus the maximum value of the type.
+     These functions are used
+     to define certain C integer conversions and operations,
+     which are modular for unsigned integer types."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-def-integer-values (type)
-  (declare (xargs :guard (member-eq type '(:char :short :int :long :llong))))
-  :short "Macro to generate the models of the C integer values."
+(define atc-integer-type-string ((type typep))
+  :guard (type-integerp type)
+  :returns (string stringp)
+  :short "Documentation (sub)string that describes a C integer type."
+  (b* ((core (case (type-kind type)
+               (:char "char")
+               (:schar "signed char")
+               (:uchar "unsigned char")
+               (:sshort "signed short")
+               (:ushort "unsigned short")
+               (:sint "signed int")
+               (:uint "unsigned int")
+               (:slong "signed long")
+               (:ulong "unsigned long")
+               (:sllong "signed long long")
+               (:ullong "unsigned long long")
+               (t (prog2$ (impossible) "")))))
+    (str::cat "type @('" core "')"))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp))))
 
-  (b* ((type-string (acl2::string-downcase
-                     (if (eq type :llong) "LONG LONG" (symbol-name type))))
-       (type-bits (acl2::packn-pos (list type "-BITS") 'atc))
-       (type-bits-bound (case type
-                          (:char 8)
-                          (:short 16)
-                          (:int 16)
-                          (:long 32)
-                          (:llong 64)))
-       (utype (acl2::packn-pos (list "U" type) 'atc))
-       (stype (acl2::packn-pos (list "S" type) 'atc))
-       (utypep (add-suffix utype "P"))
-       (stypep (add-suffix stype "P"))
-       (utype-list (add-suffix utype "-LIST"))
-       (stype-list (add-suffix stype "-LIST"))
-       (utype-listp (add-suffix utype "-LISTP"))
-       (stype-listp (add-suffix stype "-LISTP"))
-       (utype-integer (add-suffix utype "-INTEGER"))
-       (stype-integer (add-suffix stype "-INTEGER"))
-       (utype-integerp (add-suffix utype "-INTEGERP"))
-       (stype-integerp (add-suffix stype "-INTEGERP"))
-       (utype-max (add-suffix utype "-MAX"))
-       (utype-max-bound (1- (expt 2 type-bits-bound)))
-       (stype-min (add-suffix stype "-MIN"))
-       (stype-min-bound (- (expt 2 (1- type-bits-bound))))
-       (stype-max (add-suffix stype "-MAX"))
-       (stype-max-bound (1- (expt 2 (1- type-bits-bound)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    `(encapsulate ()
+(define atc-integer-type-fixtype ((type typep))
+  :guard (type-integerp type)
+  :returns (fixtype symbolp)
+  :short "Name of the fixtype of the values of a C integer type."
+  :long
+  (xdoc::topstring-p
+   "This is the symbol in the @('\"C\"') package
+    with the same name as the keyword kind of the type
+    (e.g. it is @('uchar') for @('(type-uchar)')).")
+  (intern$ (symbol-name (type-kind type)) "C"))
 
-       (local (include-book "arithmetic-3/top" :dir :system))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define atc-integer-type-bits ((type typep))
+  :guard (type-integerp type)
+  :returns (bits symbolp)
+  :short "Name of the nullary function that defines
+          the size in bits of a C integer type."
+  :long
+  (xdoc::topstring-p
+   "We take the name of the kind,
+    remove the initial @('s') or @('u'),
+    and add @('-bits') at the end.")
+  (b* ((char/short/int/long/llong
+        (if (type-case type :char)
+            "CHAR"
+          (str::implode (cdr (str::explode (symbol-name (type-kind type))))))))
+    (pack char/short/int/long/llong '-bits))
+  :prepwork
+  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
-       (fty::defbyte ,utype-integer
-         :short ,(concatenate
-                  'string
-                  "Fixtype of ACL2 integers in the range of @('unsigned "
-                  type-string
-                  "')s.")
-         :size (,type-bits)
-         :signed nil
-         :pred ,utype-integerp)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::defbyte ,stype-integer
-         :short ,(concatenate
-                  'string
-                  "Fixtype of ACL2 integers in the range of @('signed "
-                  type-string
-                  "')s.")
-         :size (,type-bits)
-         :signed t
-         :pred ,stype-integerp)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,utype-max ()
-         :returns (,utype-max integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Maximum integer value of C @('unsigned "
-                              type-string
-                              "')s.")
-         (1- (expt 2 (,type-bits)))
-         ///
-
-         (in-theory (disable (:e ,utype-max)))
-
-         (defrule ,(add-suffix utype-max "-BOUND")
-           (>= (,utype-max) ,utype-max-bound)
-           :rule-classes :linear
-           :enable ,utype-max
-           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,type-bits-bound) (n (,type-bits)) (x 2)))
-
-         ,@(case type
-             (:char nil)
-             (:short '((defrule ushort-max->=-uchar-max
-                         (>= (ushort-max) (uchar-max))
-                         :rule-classes :linear
-                         :enable uchar-max
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule uint-max->=-ushort-max
-                       (>= (uint-max) (ushort-max))
-                       :rule-classes :linear
-                       :enable ushort-max
-                       :use (:instance
-                             acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule ulong-max->=-uint-max
-                        (>= (ulong-max) (uint-max))
-                        :rule-classes :linear
-                        :enable uint-max
-                        :use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule ullong-max->=-ulong-max
-                         (>= (ullong-max) (ulong-max))
-                         :rule-classes :linear
-                         :enable ulong-max
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,stype-min ()
-         :returns (,stype-min integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Minimum integer value of C @('signed "
-                              type-string
-                              "')s.")
-         (- (expt 2 (1- (,type-bits))))
-         ///
-
-         (in-theory (disable (:e ,stype-min)))
-
-         (defrule ,(add-suffix stype-min "-BOUND")
-           (<= (,stype-min) ,stype-min-bound)
-           :rule-classes :linear
-           :enable ,stype-min
-           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
-
-         ,@(case type
-             (:char nil)
-             (:short '((defrule sshort-min-<=-schar-min
-                         (<= (sshort-min) (schar-min))
-                         :rule-classes :linear
-                         :enable schar-min
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule sint-min-<=-sshort-min
-                       (<= (sint-min) (sshort-min))
-                       :rule-classes :linear
-                       :enable sshort-min
-                       :use (:instance
-                             acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule slong-min-<=-sint-min
-                        (<= (slong-min) (sint-min))
-                        :rule-classes :linear
-                        :enable sint-min
-                        :use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule sllong-min-<=-slong-min
-                         (<= (sllong-min) (slong-min))
-                         :rule-classes :linear
-                         :enable slong-min
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,stype-max ()
-         :returns (,stype-max integerp :rule-classes :type-prescription)
-         :short ,(concatenate 'string
-                              "Maximumm integer value of C @('signed "
-                              type-string
-                              "')s.")
-         (1- (expt 2 (1- (,type-bits))))
-         ///
-
-         (in-theory (disable (:e ,stype-max)))
-
-         (defrule ,(add-suffix stype-max "-BOUND")
-           (>= (,stype-max) ,stype-max-bound)
-           :rule-classes :linear
-           :enable ,stype-max
-           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(1- type-bits-bound)) (n (1- (,type-bits))) (x 2)))
-
-         ,@(case type
-             (:char nil)
-             (:short '((defrule sshort-max->=-schar-max
-                         (>= (sshort-max) (schar-max))
-                         :rule-classes :linear
-                         :enable schar-max
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (char-bits)) (n (short-bits)) (x 2)))))
-             (:int '((defrule sint-max->=-sshort-max
-                       (>= (sint-max) (sshort-max))
-                       :rule-classes :linear
-                       :enable sshort-max
-                       :use (:instance
-                             acl2::expt-is-weakly-increasing-for-base->-1
-                             (m (short-bits)) (n (int-bits)) (x 2)))))
-             (:long '((defrule slong-max->=-sint-max
-                        (>= (slong-max) (sint-max))
-                        :rule-classes :linear
-                        :enable sint-max
-                        :use (:instance
-                              acl2::expt-is-weakly-increasing-for-base->-1
-                              (m (int-bits)) (n (long-bits)) (x 2)))))
-             (:llong '((defrule sllong-max->=-slong-max
-                         (>= (sllong-max) (slong-max))
-                         :rule-classes :linear
-                         :enable slong-max
-                         :use (:instance
-                               acl2::expt-is-weakly-increasing-for-base->-1
-                               (m (long-bits)) (n (llong-bits)) (x 2)))))))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (defruled ,(add-suffix utype-integerp "-ALT-DEF")
-         :short ,(concatenate 'string
-                              "Alternative definition of @(tsee "
-                              (acl2::string-downcase
-                               (symbol-name utype-integerp))
-                              ") as integer range.")
-         (equal (,utype-integerp x)
-                (and (integerp x)
-                     (<= 0 x)
-                     (<= x (,utype-max))))
-         :enable (,utype-integerp ,utype-max))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (defruled ,(add-suffix stype-integerp "-ALT-DEF")
-         :short ,(concatenate 'string
-                              "Alternative definition of @(tsee "
-                              (acl2::string-downcase
-                               (symbol-name stype-integerp))
-                              ") as integer range.")
-         (equal (,stype-integerp x)
-                (and (integerp x)
-                     (<= (,stype-min) x)
-                     (<= x (,stype-max))))
-         :enable (,stype-integerp ,stype-min ,stype-max))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::defprod ,utype
-         :short ,(concatenate 'string
-                              "Fixtype of C @('unsigned "
-                              type-string
-                              "') values.")
-         ((get ,utype-integer))
-         :tag ,(intern (symbol-name utype) "KEYWORD")
-         :layout :list
-         :pred ,utypep)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::deflist ,utype-list
-         :short ,(concatenate 'string
-                              "Fixtype of lists of C @('unsigned "
-                              type-string
-                              "') values.")
-         :elt-type ,utype
-         :true-listp t
-         :elementp-of-nil nil
-         :pred ,utype-listp)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::defprod ,stype
-         :short ,(concatenate 'string
-                              "Fixtype of C @('signed "
-                              type-string
-                              "') values.")
-         ((get ,stype-integer))
-         :tag ,(intern (symbol-name stype) "KEYWORD")
-         :layout :list
-         :pred ,stypep)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (fty::deflist ,stype-list
-         :short ,(concatenate 'string
-                              "Fixtype of lists of C @('signed "
-                              type-string
-                              "') values.")
-         :elt-type ,stype
-         :true-listp t
-         :elementp-of-nil nil
-         :pred ,stype-listp))))
+(define atc-integer-type-minbits ((type typep))
+  :guard (type-integerp type)
+  :returns (minbits posp :rule-classes :type-prescription)
+  :short "Minimum number of bits that forms a value of a C integer type."
+  (case (type-kind type)
+    ((:char :schar :uchar) 8)
+    ((:sshort :ushort) 16)
+    ((:sint :uint) 16)
+    ((:slong :ulong) 32)
+    ((:sllong :ullong) 64)
+    (t (prog2$ (impossible) 1)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(atc-def-integer-values :char)
+(define atc-def-integer-values ((type typep))
+  :guard (type-integerp type)
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the model of the values of a C integer type."
 
-(atc-def-integer-values :short)
+  (b* ((type-string (atc-integer-type-string type))
+       (minbits (atc-integer-type-minbits type))
+       (signedp (type-signed-integerp type))
+       (maxbound (if signedp
+                     (1- (expt 2 (1- minbits)))
+                   (1- (expt 2 minbits))))
+       (minbound (if signedp
+                     (- (expt 2 (1- minbits)))
+                   0))
+       (<type>-bits (atc-integer-type-bits type))
+       (<type> (atc-integer-type-fixtype type))
+       (<type>p (pack <type> 'p))
+       (<type>-integer (pack <type> '-integer))
+       (<type>-integerp (pack <type>-integer 'p))
+       (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
+       (<type>-integer-list (pack <type>-integer '-list))
+       (<type>-integer-listp (pack <type>-integer-list 'p))
+       (<type>-integer-list-fix (pack <type>-integer-list '-fix))
+       (<type>-integer-fix (pack <type>-integer '-fix))
+       (<type>-max (pack <type> '-max))
+       (<type>-min (pack <type> '-min))
+       (<type>->get (pack <type> '->get))
+       (<type>-list (pack <type> '-list))
+       (<type>-listp (pack <type>-list 'p))
+       (<type>-list-fix (pack <type>-list '-fix))
+       (<type>-integer-list-from-<type>-list (pack <type>-integer-list
+                                                   '-from-
+                                                   <type>-list))
+       (<type>-list-from-<type>-integer-list (pack <type>-list
+                                                   '-from-
+                                                   <type>-integer-list))
+       (<type>-list-from-<type>-integer-list-from-<type>-list
+        (pack <type>
+              '-list-from-
+              <type>
+              '-integer-list-from-
+              <type>
+              '-list))
+       (<type>-integer-list-from-<type>-list-from-<type>-integer-list
+        (pack <type>
+              '-integer-list-from-
+              <type>
+              '-list-from-
+              <type>
+              '-integer-list))
+       (<type>-mod (pack <type> '-mod)))
 
-(atc-def-integer-values :int)
+    `(progn
 
-(atc-def-integer-values :long)
+       ,@(and (type-case type :char)
+              (raise "Type ~x0 not supported." type))
 
-(atc-def-integer-values :llong)
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::defbyte ,<type>-integer
+         :short ,(str::cat "Fixtype of ACL2 integers in the range of "
+                           type-string
+                           ".")
+         :size (,<type>-bits)
+         :signed ,signedp
+         :pred ,<type>-integerp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::deflist ,<type>-integer-list
+         :short ,(str::cat "Fixtype of lists of ACL2 integers in the range of "
+                           type-string
+                           ".")
+         :elt-type ,<type>-integer
+         :true-listp t
+         :elementp-of-nil nil
+         :pred ,<type>-integer-listp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-max ()
+         :returns (,<type>-max integerp :rule-classes :type-prescription)
+         :short ,(str::cat "Maximum ACL2 integer value of " type-string ".")
+         (1- (expt 2 ,(if signedp
+                          `(1- (,<type>-bits))
+                        `(,<type>-bits))))
+         ///
+
+         (in-theory (disable (:e ,<type>-max)))
+
+         (defrule ,(pack <type>-max '-bound)
+           (>= (,<type>-max) ,maxbound)
+           :rule-classes :linear
+           :enable ,<type>-max
+           :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                 (m ,(if signedp (1- minbits) minbits))
+                 (n ,(if signedp `(1- (,<type>-bits)) `(,<type>-bits)))
+                 (x 2))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          signedp
+          `((define ,<type>-min ()
+              :returns (,<type>-min integerp :rule-classes :type-prescription)
+              :short ,(str::cat
+                       "Minimum ACL2 integer value of " type-string ".")
+              (- (expt 2 (1- (,<type>-bits))))
+              ///
+
+              (in-theory (disable (:e ,<type>-min)))
+
+              (defrule ,(pack <type>-min '-bound)
+                (<= (,<type>-min) ,minbound)
+                :rule-classes :linear
+                :enable ,<type>-min
+                :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                      (m ,(1- minbits))
+                      (n (1- (,<type>-bits)))
+                      (x 2))))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defruled ,<type>-integerp-alt-def
+         :short ,(str::cat "Alternative definition of @(tsee "
+                           (str::downcase-string (symbol-name <type>-integerp))
+                           ") as integer range.")
+         (equal (,<type>-integerp x)
+                (and (integerp x)
+                     (<= ,(if signedp `(,<type>-min) 0) x)
+                     (<= x (,<type>-max))))
+         :enable (,<type>-integerp ,<type>-max ,@(and signedp `(,<type>-min))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::defprod ,<type>
+         :short ,(str::cat "Fixtype of values of " type-string ".")
+         ((get ,<type>-integer))
+         :tag ,(type-kind type)
+         :layout :list
+         :pred ,<type>p
+         ///
+
+         (defrule ,(pack <type>->get '-upper-bound)
+           (<= (,<type>->get x) (,<type>-max))
+           :rule-classes :linear
+           :enable (,<type>->get
+                    ,<type>-integer-fix
+                    ,<type>-integerp-alt-def))
+
+         ,@(and
+            signedp
+            `((defrule ,(pack <type>->get '-lower-bound)
+                (>= (,<type>->get x) (,<type>-min))
+                :rule-classes :linear
+                :enable (,<type>->get
+                         ,<type>-integer-fix
+                         ,<type>-integerp-alt-def)))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-mod ((x integerp))
+         :returns (result ,<type>p)
+         (,<type> (mod (ifix x) (1+ (,<type>-max))))
+         :guard-hints (("Goal" :in-theory (enable ,<type>-integerp-alt-def)))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (fty::deflist ,<type>-list
+         :short ,(str::cat "Fixtype of lists of values of " type-string ".")
+         :elt-type ,<type>
+         :true-listp t
+         :elementp-of-nil nil
+         :pred ,<type>-listp)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (std::defprojection ,<type>-integer-list-from-<type>-list
+         ((x ,<type>-listp))
+         :returns (result ,<type>-integer-listp)
+         :short ,(str::cat "Lift @(tsee "
+                           (str::downcase-string (symbol-name <type>->get))
+                           ") to lists.")
+         (,<type>->get x)
+         ///
+         (fty::deffixequiv ,<type>-integer-list-from-<type>-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (std::defprojection ,<type>-list-from-<type>-integer-list
+         ((x ,<type>-integer-listp))
+         :returns (result ,<type>-listp)
+         :short ,(str::cat "Lift @(tsee "
+                           (str::downcase-string (symbol-name <type>))
+                           ") to lists.")
+         (,<type> x)
+         ///
+         (fty::deffixequiv ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,<type>-list-from-<type>-integer-list-from-<type>-list
+         (equal (,<type>-list-from-<type>-integer-list
+                 (,<type>-integer-list-from-<type>-list x))
+                (,<type>-list-fix x))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,<type>-integer-list-from-<type>-list-from-<type>-integer-list
+         (equal (,<type>-integer-list-from-<type>-list
+                 (,<type>-list-from-<type>-integer-list x))
+                (,<type>-integer-list-fix x))
+         :enable (,<type>-integer-list-from-<type>-list
+                  ,<type>-list-from-<type>-integer-list))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-def-integer-values-loop ((types type-listp))
+  :guard (type-integer-listp types)
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the models of the values of some C integer types."
+  (cond ((endp types) nil)
+        (t (cons (atc-def-integer-values (car types))
+                 (atc-def-integer-values-loop (cdr types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-values-loop types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-ushort-max
+    :parents (uchar-max ushort-max)
+    :short "Relation between
+            @('unsigned char') and @('unsigned short') maxima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (uchar-max) (ushort-max))
+       '(< (uchar-max) (ushort-max)))
+    :rule-classes :linear
+    ,@(if (= (char-bits) (short-bits))
+          '(:enable (uchar-max ushort-max)
+            :use char-bits-vs-short-bits)
+        '(:enable (uchar-max ushort-max char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-uint-max
+    :parents (ushort-max uint-max)
+    :short "Relation between
+            @('unsigned short') and @('unsigned int') maxima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (ushort-max) (uint-max))
+       '(< (ushort-max) (uint-max)))
+    :rule-classes :linear
+    ,@(if (= (short-bits) (int-bits))
+          '(:enable (ushort-max uint-max)
+            :use short-bits-vs-int-bits)
+        '(:enable (ushort-max uint-max short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-ulong-max
+    :parents (uint-max ulong-max)
+    :short "Relation between
+            @('unsigned int') and @('unsigned long') maxima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (uint-max) (ulong-max))
+       '(< (uint-max) (ulong-max)))
+    :rule-classes :linear
+    ,@(if (= (int-bits) (long-bits))
+          '(:enable (uint-max ulong-max)
+            :use int-bits-vs-long-bits)
+        '(:enable (uint-max ulong-max int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ulong-max-vs-ullong-max
+    :parents (ulong-max ullong-max)
+    :short "Relation between
+            @('unsigned long') and @('unsigned long long') maxima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (ulong-max) (ullong-max))
+       '(< (ulong-max) (ullong-max)))
+    :rule-classes :linear
+    ,@(if (= (long-bits) (llong-bits))
+          '(:enable (ulong-max ullong-max)
+            :use long-bits-vs-llong-bits)
+        '(:enable (ulong-max ullong-max long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule schar-min-vs-sshort-min
+    :parents (schar-min schar-min)
+    :short "Relation between
+            @('signed char') and @('signed short') minima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (schar-min) (sshort-min))
+       '(>= (schar-min) (sshort-min)))
+    :rule-classes :linear
+    ,@(if (= (char-bits) (short-bits))
+          '(:enable (schar-min sshort-min)
+            :use char-bits-vs-short-bits)
+        '(:enable (schar-min sshort-min char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sshort-min-vs-sint-min
+    :parents (sshort-min sint-min)
+    :short "Relation between
+            @('signed short') and @('signed int') minima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (sshort-min) (sint-min))
+       '(> (sshort-min) (sint-min)))
+    :rule-classes :linear
+    ,@(if (= (char-bits) (short-bits))
+          '(:enable (sshort-min sint-min)
+            :use short-bits-vs-int-bits)
+        '(:enable (sshort-min sint-min short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sint-min-vs-slong-min
+    :parents (sint-min slong-min)
+    :short "Relation between
+            @('signed int') and @('signed long') minima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (sint-min) (slong-min))
+       '(> (sint-min) (slong-min)))
+    :rule-classes :linear
+    ,@(if (= (int-bits) (long-bits))
+          '(:enable (sint-min slong-min)
+            :use int-bits-vs-long-bits)
+        '(:enable (sint-min slong-min int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule slong-min-vs-sllong-min
+    :parents (slong-min sllong-min)
+    :short "Relation between
+            @('signed long') and @('signed long long') minima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (slong-min) (sllong-min))
+       '(> (slong-min) (sllong-min)))
+    :rule-classes :linear
+    ,@(if (= (long-bits) (llong-bits))
+          '(:enable (slong-min sllong-min)
+            :use long-bits-vs-llong-bits)
+        '(:enable (slong-min sllong-min long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule schar-max-vs-sshort-max
+    :parents (schar-max sshort-max)
+    :short "Relation between
+            @('signed char') and @('signed short') maxima."
+    ,(if (= (char-bits) (short-bits))
+         '(= (schar-max) (sshort-max))
+       '(< (schar-max) (sshort-max)))
+    :rule-classes :linear
+    ,@(if (= (char-bits) (short-bits))
+          '(:enable (schar-max sshort-max)
+            :use char-bits-vs-short-bits)
+        '(:enable (schar-max sshort-max char-bits-vs-short-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (char-bits)) (n (short-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sshort-max-vs-sint-max
+    :parents (sshort-max sint-max)
+    :short "Relation between
+            @('signed short') and @('signed int') maxima."
+    ,(if (= (short-bits) (int-bits))
+         '(= (sshort-max) (sint-max))
+       '(< (sshort-max) (sint-max)))
+    :rule-classes :linear
+    ,@(if (= (char-bits) (short-bits))
+          '(:enable (sshort-max sint-max)
+            :use short-bits-vs-int-bits)
+        '(:enable (sshort-max sint-max short-bits-vs-int-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (short-bits)) (n (int-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule sint-max-vs-slong-max
+    :parents (sint-max slong-max)
+    :short "Relation between
+            @('signed int') and @('signed long') maxima."
+    ,(if (= (int-bits) (long-bits))
+         '(= (sint-max) (slong-max))
+       '(< (sint-max) (slong-max)))
+    :rule-classes :linear
+    ,@(if (= (int-bits) (long-bits))
+          '(:enable (sint-max slong-max)
+            :use int-bits-vs-long-bits)
+        '(:enable (sint-max slong-max int-bits-vs-long-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (int-bits)) (n (long-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule slong-max-vs-sllong-max
+    :parents (slong-max sllong-max)
+    :short "Relation between
+            @('signed long') and @('signed long long') maxima."
+    ,(if (= (long-bits) (llong-bits))
+         '(= (slong-max) (sllong-max))
+       '(< (slong-max) (sllong-max)))
+    :rule-classes :linear
+    ,@(if (= (long-bits) (llong-bits))
+          '(:enable (slong-max sllong-max)
+            :use long-bits-vs-llong-bits)
+        '(:enable (slong-max sllong-max long-bits-vs-llong-bits)
+          :use (:instance
+                acl2::expt-is-increasing-for-base->-1
+                (m (long-bits)) (n (llong-bits)) (x 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-sint-max
+    :parents (uchar-max sint-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (uchar-max) (sint-max))
+         '(<= (uchar-max) (sint-max))
+       '(> (uchar-max) (sint-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (sint-max))))
+    :enable (uchar-max
+             sint-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-sint-max
+    :parents (ushort-max sint-max)
+    :short "Relation between
+            @('unsigned short') and @('signed int') maxima."
+    ,(if (<= (ushort-max) (sint-max))
+         '(<= (ushort-max) (sint-max))
+       '(> (ushort-max) (sint-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (sint-max))))
+    :enable (ushort-max
+             sint-max
+             short-bits-vs-int-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-slong-max
+    :parents (uchar-max slong-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (uchar-max) (slong-max))
+         '(<= (uchar-max) (slong-max))
+       '(> (uchar-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (slong-max))))
+    :enable (uchar-max
+             slong-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-slong-max
+    :parents (ushort-max slong-max)
+    :short "Relation between
+            @('unsigned char') and @('signed int') maxima."
+    ,(if (<= (ushort-max) (slong-max))
+         '(<= (ushort-max) (slong-max))
+       '(> (ushort-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (slong-max))))
+    :enable (ushort-max
+             slong-max
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-slong-max
+    :parents (uint-max slong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long') maxima."
+    ,(if (<= (uint-max) (slong-max))
+         '(<= (uint-max) (slong-max))
+       '(> (uint-max) (slong-max)))
+    :rule-classes ((:linear :trigger-terms ((uint-max) (slong-max))))
+    :enable (uint-max
+             slong-max
+             int-bits-vs-long-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uchar-max-vs-sllong-max
+    :parents (uchar-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (uchar-max) (sllong-max))
+         '(<= (uchar-max) (sllong-max))
+       '(> (uchar-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((uchar-max) (sllong-max))))
+    :enable (uchar-max
+             sllong-max
+             char-bits-vs-short-bits
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ushort-max-vs-sllong-max
+    :parents (ushort-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (ushort-max) (sllong-max))
+         '(<= (ushort-max) (sllong-max))
+       '(> (ushort-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((ushort-max) (sllong-max))))
+    :enable (ushort-max
+             sllong-max
+             short-bits-vs-int-bits
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule uint-max-vs-sllong-max
+    :parents (uint-max sllong-max)
+    :short "Relation between
+            @('unsigned int') and @('signed long long') maxima."
+    ,(if (<= (uint-max) (sllong-max))
+         '(<= (uint-max) (sllong-max))
+       '(> (uint-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((uint-max) (sllong-max))))
+    :enable (uint-max
+             sllong-max
+             int-bits-vs-long-bits
+             long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(defrule ulong-max-vs-sllong-max
+    :parents (ulong-max sllong-max)
+    :short "Relation between
+            @('unsigned long') and @('signed long long') maxima."
+    ,(if (<= (ulong-max) (sllong-max))
+         '(<= (ulong-max) (sllong-max))
+       '(> (ulong-max) (sllong-max)))
+    :rule-classes ((:linear :trigger-terms ((ulong-max) (sllong-max))))
+    :enable (ulong-max
+             sllong-max
+             long-bits-vs-llong-bits)))

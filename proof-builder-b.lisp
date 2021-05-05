@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4469,7 +4469,8 @@
                                      data)))))
    nil))
 
-(define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg)
+(define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg
+                                      alistp)
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t))
@@ -4513,10 +4514,16 @@
                  (fms0 "*** Contradiction in the hypotheses! ***~%The S ~
                         command should complete this goal.~|"))
           (io? proof-builder nil state
-               (hyps-type-alist w)
+               (hyps-type-alist alistp w)
                (pprogn
                 (fms0 "~|Current type-alist, including forward chaining:~%")
-                (prog2$ (print-type-alist hyps-type-alist w nil)
+                (prog2$ (cond ((eq alistp :raw)
+                               (cw "~x0~|" hyps-type-alist))
+                              (alistp
+                               (cw "~x0~|"
+                                   (alist-to-doublets
+                                    (decode-type-alist hyps-type-alist))))
+                              (t (print-type-alist hyps-type-alist w nil)))
                         state))))))))))
 
 (define-pc-macro print-main ()

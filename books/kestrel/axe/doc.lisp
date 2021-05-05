@@ -22,4 +22,4 @@
 
 We are currently open sourcing Axe to the ACL2 Community books.
 
-See https://www.kestrel.edu/research/axe/ for more information."))
+See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))

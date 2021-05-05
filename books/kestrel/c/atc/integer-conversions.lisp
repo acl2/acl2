@@ -17,7 +17,7 @@
 
 (defxdoc+ atc-integer-conversions
   :parents (atc-dynamic-semantics)
-  :short "C integer conversions for ATC."
+  :short "A model of C integer conversions for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -26,16 +26,10 @@
      In the ACL2 representation of C code for ATC,
      these explicit conversions are necessary,
      because the ACL2 representations of different C integer types
-     are disjoint, i.e. there are no automatic inclusions.
-     However, under appropriate conditions,
-     ATC can translate these conversions in ACL2 to no-ops in C,
-     e.g. if an @('unsigned char') is used as an operand of binary addition,
-     no explicit conversion is necessary in C
-     due to the usual arithmetic conversions [C:6.3.1.8]
-     that happen automatically.")
+     are disjoint, i.e. there are no automatic inclusions.")
    (xdoc::p
     "Conversions between C types are described in [C:6.3].
-     Here we define conversions between the integer types in our model;
+     Here we define conversions among the integer types supported by our model;
      these conversions are described in [C:6.3.1.3].")
    (xdoc::p
     "For the case of a conversion to a signed integer
@@ -43,12 +37,10 @@
      we use a guard that rules out that case.
      This way, in order to use the conversion,
      it must be provably the case that
-     the value is representable in the new signed integer type.
-     This approach is similar to the one used for signed integer operations
-     (see @(see atc-integer-operations)).")
+     the value is representable in the new signed integer type.")
    (xdoc::p
     "For the case of a conversion to an unsigned integer,
-     we always use @(tsee mod) to ensure it fits.
+     we use @(tsee mod) (via the modular constructor) to make it fit.
      If the original value fits, the @(tsee mod) has no effect.
      Otherwise, the @(tsee mod) corresponds to the
      repeated addition or subtraction described in [C:6.3.1.3]."))
@@ -57,160 +49,276 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversion (src-type dst-type)
-  :guard (subsetp-eq (list src-type dst-type)
-                     '(:schar :uchar
-                       :sshort :ushort
-                       :sint :uint
-                       :slong :ulong
-                       :sllong :ullong))
-  :short "Event to generate a conversion between C integer types."
+(define atc-def-integer-conversion ((stype typep) (dtype typep))
+  :guard (and (type-integerp stype)
+              (type-integerp dtype)
+              (not (equal stype dtype)))
+  :returns (event pseudo-event-formp)
+  :short "Event to generate the conversion between C integer types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The conversion turns values of the source type
-     into values of the destination type:
-     keywords specifying source and destination type
-     are passed to this macro as inputs.
-     If the two types are the same, no events are generated;
-     we do not have the guard require the types to be different
-     so that it is more convenient to call this macro repeatedly
-     while looping through the source and destination types.")
+    "The conversion turns values of a source type @('stype')
+     into values of the destination type @('dtype').
+     The two types must be different.")
    (xdoc::p
-    "If the destination type is signed,
+    "Unless the destination type is signed,
+     and the source type is also signed
+     and always included in the destination type
+     (for every possible choice of integer bit sizes),
      we generate not only the conversion,
      but also a function for the guard of the conversion,
      asserting that the original value is representable
-     in the destination type."))
+     in the destination type.
+     Some of the generated guards may be always true
+     for certain choices of integer bit sizes."))
 
-  (b* ((src-fixtype (acl2::packn-pos (list src-type) 'atc))
-       (dst-fixtype (acl2::packn-pos (list dst-type) 'atc))
-       (src-type-string (case src-type
-                          (:schar "signed char")
-                          (:uchar "unsigned char")
-                          (:sshort "signed short")
-                          (:ushort "unsigned short")
-                          (:sint "signed int")
-                          (:uint "unsigned int")
-                          (:slong "signed long")
-                          (:ulong "unsigned long")
-                          (:sllong "signed long long")
-                          (:ullong "unsigned long long")
-                          (t (impossible))))
-       (dst-type-string (case dst-type
-                          (:schar "signed char")
-                          (:uchar "unsigned char")
-                          (:sshort "signed short")
-                          (:ushort "unsigned short")
-                          (:sint "signed int")
-                          (:uint "unsigned int")
-                          (:slong "signed long")
-                          (:ulong "unsigned long")
-                          (:sllong "signed long long")
-                          (:ullong "unsigned long long")
-                          (t (impossible))))
-       (conv (acl2::packn-pos (list dst-type "-FROM-" src-type) 'atc))
-       (conv-okp (add-suffix conv "-OKP"))
-       (src-typep (add-suffix src-fixtype "P"))
-       (dst-typep (add-suffix dst-fixtype "P"))
-       (src-type->get (add-suffix src-fixtype "->GET"))
-       (dst-type-integerp (add-suffix dst-fixtype "-INTEGERP"))
-       (dst-type-integer-alt-def (add-suffix dst-fixtype "-INTEGERP-ALT-DEF"))
-       (dst-type-max (add-suffix dst-fixtype "-MAX")))
+  (b* ((stype-string (atc-integer-type-string stype))
+       (dtype-string (atc-integer-type-string dtype))
+       (signedp (type-signed-integerp dtype))
+       (guardp (and signedp
+                    (case (type-kind dtype)
+                      (:schar t)
+                      (:sshort (not (eq (type-kind stype) :schar)))
+                      (:sint (not (member-eq (type-kind stype)
+                                             '(:schar :sshort))))
+                      (:slong (not (member-eq (type-kind stype)
+                                              '(:schar :sshort :sint))))
+                      (:sllong (not (member-eq (type-kind stype)
+                                               '(:schar :sshort :sint :slong))))
+                      (t (impossible)))))
+       (<stype> (atc-integer-type-fixtype stype))
+       (<dtype> (atc-integer-type-fixtype dtype))
+       (<stype>p (pack <stype> 'p))
+       (<dtype>p (pack <dtype> 'p))
+       (<stype>->get (pack <stype> '->get))
+       (<dtype>-integerp (pack <dtype> '-integerp))
+       (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
+       (<dtype>-mod (pack <dtype> '-mod))
+       (<dtype>-from-<stype> (pack <dtype> '-from- <stype>))
+       (<dtype>-from-<stype>-okp (pack <dtype>-from-<stype> '-okp)))
 
-    (if (eq src-type dst-type)
+    `(progn
 
-        '(progn)
+       ,@(and
+          guardp
+          `((define ,<dtype>-from-<stype>-okp ((x ,<stype>p))
+              :returns (yes/no booleanp)
+              :short ,(str::cat "Check if a conversion from "
+                                stype-string
+                                " to "
+                                dtype-string
+                                " is well-defined.")
+              (,<dtype>-integerp (,<stype>->get x))
+              :hooks (:fix))))
 
-      (if (member-eq dst-type '(:schar :sshort :sint :slong :sllong))
+       (define ,<dtype>-from-<stype> ((x ,<stype>p))
+         ,@(and guardp `(:guard (,<dtype>-from-<stype>-okp x)))
+         :returns (result ,<dtype>p)
+         :short ,(str::cat "Convert from "
+                           stype-string
+                           " to "
+                           dtype-string
+                           "').")
+         (,(if signedp <dtype> <dtype>-mod) (,<stype>->get x))
+         :guard-hints (("Goal"
+                        :in-theory (enable ,(if guardp
+                                                <dtype>-from-<stype>-okp
+                                              <dtype>-integerp-alt-def))))
+         :hooks (:fix))))
 
-          `(encapsulate ()
-
-             (define ,conv-okp ((x ,src-typep))
-               :returns (yes/no booleanp)
-               :short ,(concatenate 'string
-                                    "Check if a conversion from @('"
-                                    src-type-string
-                                    "') to @('"
-                                    dst-type-string
-                                    "') is well-defined.")
-               (,dst-type-integerp (,src-type->get x))
-               :hooks (:fix))
-
-             (define ,conv ((x ,src-typep))
-               :guard (,conv-okp x)
-               :returns (result ,dst-typep)
-               :short ,(concatenate 'string
-                                    "Convert from @('"
-                                    src-type-string
-                                    "') to @('"
-                                    dst-type-string
-                                    "').")
-               (,dst-fixtype (,src-type->get x))
-               :guard-hints (("Goal" :in-theory (enable ,conv-okp)))
-               :hooks (:fix)))
-
-        `(encapsulate ()
-
-           (local (include-book "arithmetic-3/top" :dir :system))
-
-           (define ,conv ((x ,src-typep))
-             :returns (result ,dst-typep)
-             :short ,(concatenate 'string
-                                  "Convert from @('"
-                                  src-type-string
-                                  "') to @('"
-                                  dst-type-string
-                                  "').")
-             (,dst-fixtype (mod (,src-type->get x)
-                                (1+ (,dst-type-max))))
-             :guard-hints (("Goal"
-                            :in-theory (enable ,dst-type-integer-alt-def)))
-             :hooks (:fix)))))))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-signed-integerp
+                                           type-unsigned-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop1 (src-type dst-types)
-  :guard (and (true-listp dst-types)
-              (subsetp-eq (cons src-type dst-types)
-                          '(:schar :uchar
-                            :sshort :ushort
-                            :sint :uint
-                            :slong :ulong
-                            :sllong :ullong)))
-  (cond ((endp dst-types) nil)
+(define atc-def-integer-conversions-loop-inner ((stype typep)
+                                                (dtypes type-listp))
+  :guard (and (type-integerp stype)
+              (type-integer-listp dtypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the conversions
+          between a source type and each of a list of destination types."
+  :long
+  (xdoc::topstring-p
+   "This is the inner loop for generating conversions
+    for all combinations of source and destination types.")
+  (cond ((endp dtypes) nil)
+        ((equal stype (car dtypes))
+         (atc-def-integer-conversions-loop-inner stype (cdr dtypes)))
         (t (cons
-            (atc-def-integer-conversion src-type (car dst-types))
-            (atc-def-integer-conversions-loop1 src-type (cdr dst-types))))))
+            (atc-def-integer-conversion stype (car dtypes))
+            (atc-def-integer-conversions-loop-inner stype (cdr dtypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop2 (src-types dst-types)
-  :guard (and (true-listp src-types)
-              (true-listp dst-types)
-              (subsetp-eq (append src-types dst-types)
-                          '(:schar :uchar
-                            :sshort :ushort
-                            :sint :uint
-                            :slong :ulong
-                            :sllong :ullong)))
-  (cond ((endp src-types) nil)
+(define atc-def-integer-conversions-loop-outer ((stypes type-listp)
+                                                (dtypes type-listp))
+  :guard (and (type-integer-listp stypes)
+              (type-integer-listp dtypes))
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the conversions
+          between each of a list of source types
+          and each of a list of destination types."
+  :long
+  (xdoc::topstring-p
+   "This is the outer loop for generating conversions
+    for all combinations of source and destination types.")
+  (cond ((endp stypes) nil)
         (t (append
-            (atc-def-integer-conversions-loop1 (car src-types) dst-types)
-            (atc-def-integer-conversions-loop2 (cdr src-types) dst-types))))
-  :prepwork ((local (include-book "std/lists/sets" :dir :system))))
+            (atc-def-integer-conversions-loop-inner (car stypes) dtypes)
+            (atc-def-integer-conversions-loop-outer (cdr stypes) dtypes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-def-integer-conversions ()
-  :short "Macro to generate all the integer conversions in our model."
-  (b* ((types '(:schar :uchar
-                :sshort :ushort
-                :sint :uint
-                :slong :ulong
-                :sllong :ullong)))
-    `(progn ,@(atc-def-integer-conversions-loop2 types types))))
+(make-event
+ (b* ((types (list (type-schar)
+                   (type-uchar)
+                   (type-sshort)
+                   (type-ushort)
+                   (type-sint)
+                   (type-uint)
+                   (type-slong)
+                   (type-ulong)
+                   (type-sllong)
+                   (type-ullong))))
+   `(progn ,@(atc-def-integer-conversions-loop-outer types types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(atc-def-integer-conversions)
+(defsection atc-integer-conversions-signed-from-unsigned-okp
+  :short "Theorems about certain conversions from unsigned to signed
+          being always allowed for certain integer type sizes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove these theorems in a general way,
+     with hypotheses on the integer type sizes,
+     disabling the rules that may otherwise obviate the hypotheses."))
+
+  (defrule sint-from-uchar-okp-when-uchar-max-<=-sint-max
+    (implies (<= (uchar-max) (sint-max))
+             (sint-from-uchar-okp x))
+    :enable (sint-from-uchar-okp sint-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sint-from-ushort-okp-when-ushort-max-<=-sint-max
+    (implies (<= (ushort-max) (sint-max))
+             (sint-from-ushort-okp x))
+    :enable (sint-from-ushort-okp sint-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-uchar-okp-when-uchar-max-<=slong-max
+    (implies (<= (uchar-max) (slong-max))
+             (slong-from-uchar-okp x))
+    :enable (slong-from-uchar-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-ushort-okp-when-ushort-max-<=slong-max
+    (implies (<= (ushort-max) (slong-max))
+             (slong-from-ushort-okp x))
+    :enable (slong-from-ushort-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule slong-from-uint-okp-when-uint-max-<=slong-max
+    (implies (<= (uint-max) (slong-max))
+             (slong-from-uint-okp x))
+    :enable (slong-from-uint-okp slong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-uchar-okp-when-uchar-max-<=sllong-max
+    (implies (<= (uchar-max) (sllong-max))
+             (sllong-from-uchar-okp x))
+    :enable (sllong-from-uchar-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-ushort-okp-when-ushort-max-<=sllong-max
+    (implies (<= (ushort-max) (sllong-max))
+             (sllong-from-ushort-okp x))
+    :enable (sllong-from-ushort-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-uint-okp-when-uint-max-<=sllong-max
+    (implies (<= (uint-max) (sllong-max))
+             (sllong-from-uint-okp x))
+    :enable (sllong-from-uint-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max))
+
+  (defrule sllong-from-ulong-okp-when-ulong-max-<=sllong-max
+    (implies (<= (ulong-max) (sllong-max))
+             (sllong-from-ulong-okp x))
+    :enable (sllong-from-ulong-okp sllong-integerp-alt-def)
+    :disable (uchar-max-vs-sint-max
+              ushort-max-vs-sint-max
+              uchar-max-vs-slong-max
+              ushort-max-vs-slong-max
+              uint-max-vs-slong-max
+              uchar-max-vs-sllong-max
+              ushort-max-vs-sllong-max
+              uint-max-vs-sllong-max
+              ulong-max-vs-sllong-max)))

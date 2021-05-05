@@ -21,22 +21,22 @@
 
 (defun |and| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (c::sint01 (and (c::sint-nonzerop |x|)
-                  (c::sint-nonzerop |y|))))
+  (c::sint-from-boolean (and (c::boolean-from-sint |x|)
+                             (c::boolean-from-sint |y|))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |or| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (c::sint01 (or (c::sint-nonzerop |x|)
-                 (c::sint-nonzerop |y|))))
+  (c::sint-from-boolean (or (c::boolean-from-sint |x|)
+                            (c::boolean-from-sint |y|))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |ifand| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (if (and (c::sint-nonzerop (c::sint-lt |x| |y|))
-           (c::sint-nonzerop (c::sint-lt |y| (c::sint-const 100))))
+  (if (and (c::boolean-from-sint (c::lt-sint-sint |x| |y|))
+           (c::boolean-from-sint (c::lt-sint-sint |y| (c::sint-const 100))))
       |x|
     |y|))
 
@@ -44,8 +44,8 @@
 
 (defun |ifor| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (if (or (c::sint-nonzerop (c::sint-lt |x| |y|))
-          (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 100))))
+  (if (or (c::boolean-from-sint (c::lt-sint-sint |x| |y|))
+          (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-const 100))))
       |x|
     |y|))
 
@@ -53,43 +53,43 @@
 
 (defun |condand| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
-  (c::sint-eq |x|
-              (if (and (c::sint-nonzerop
-                        (c::sint-le (c::sint-const 0) |x|))
-                       (c::sint-nonzerop
-                        (c::sint-le |x| (c::sint-const 10))))
-                  (c::sint-const 10)
-                (c::sint-const 20))))
+  (c::eq-sint-sint |x|
+                   (if (and (c::boolean-from-sint
+                             (c::le-sint-sint (c::sint-const 0) |x|))
+                            (c::boolean-from-sint
+                             (c::le-sint-sint |x| (c::sint-const 10))))
+                       (c::sint-const 10)
+                     (c::sint-const 20))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |condor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
-  (c::sint-eq |x|
-              (if (or (c::sint-nonzerop
-                       (c::sint-lt |x| (c::sint-const 0)))
-                      (c::sint-nonzerop
-                       (c::sint-gt |x| (c::sint-const 10))))
-                  (c::sint-const 10)
-                (c::sint-const 20))))
+  (c::eq-sint-sint |x|
+                   (if (or (c::boolean-from-sint
+                            (c::lt-sint-sint |x| (c::sint-const 0)))
+                           (c::boolean-from-sint
+                            (c::gt-sint-sint |x| (c::sint-const 10))))
+                       (c::sint-const 10)
+                     (c::sint-const 20))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |notandor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
-  (c::sint01
-   (and (or (and (c::sint-nonzerop (c::sint-le (c::sint-const 10)
-                                               |x|))
-                 (c::sint-nonzerop (c::sint-le |x|
-                                               (c::sint-const 20))))
-            (and (c::sint-nonzerop (c::sint-le (c::sint-const 100)
-                                               |x|))
-                 (c::sint-nonzerop (c::sint-le |x|
-                                               (c::sint-const 200)))))
-        (not (and (c::sint-nonzerop (c::sint-le (c::sint-const 4)
-                                                |x|))
-                  (c::sint-nonzerop (c::sint-le |x|
-                                                (c::sint-const 6))))))))
+  (c::sint-from-boolean
+   (and (or (and (c::boolean-from-sint (c::le-sint-sint (c::sint-const 10)
+                                                        |x|))
+                 (c::boolean-from-sint (c::le-sint-sint |x|
+                                                        (c::sint-const 20))))
+            (and (c::boolean-from-sint (c::le-sint-sint (c::sint-const 100)
+                                                        |x|))
+                 (c::boolean-from-sint (c::le-sint-sint |x|
+                                                        (c::sint-const 200)))))
+        (not (and (c::boolean-from-sint (c::le-sint-sint (c::sint-const 4)
+                                                         |x|))
+                  (c::boolean-from-sint (c::le-sint-sint |x|
+                                                         (c::sint-const 6))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +108,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc -o nonstrict nonstrict.c nonstrict-test.c
-  ./nonstrict
+gcc -o nonstrict nonstrict.c nonstrict-test.c
+./nonstrict
 
 |#

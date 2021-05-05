@@ -89,7 +89,7 @@
     ;; booland-of-t ;use booland-of-non-nil instead
     booland-of-non-nil ;use these more? ffixme these should fire before commutativity..
     booland-of-non-nil-arg2
-    booland-of-nil
+    booland-of-nil-arg1
     booland-of-nil-arg2
     booland-same
     booland-same-2

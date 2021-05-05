@@ -29,7 +29,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "compose-theory-base")
+(include-book "compose-theory-compose-steps")
 (include-book "compose")
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
@@ -37,6 +37,13 @@
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
+
+
+
+
+
+
+
 
 ;; This book uses the theory of compositional network evaluations introduced in
 ;; compose-theory-base.lisp and shows that the SVEX-COMPOSE-DFS algorithm used
@@ -73,13 +80,13 @@
 ;; neteval-for-svexlist-compose-dfs-is-neteval-for-assigns.
 
 ;; Since neteval-p is an existentially quantified function, what we really do
-;; take a neteval-witness for the final network, (append new-updates assigns),
-;; and show that we can produce a neteval-witness for the original network,
+;; take a neteval-ordering for the final network, (append new-updates assigns),
+;; and show that we can produce a neteval-ordering for the original network,
 ;; (append updates assigns), for which the resulting neteval is the same.  The
 ;; functions that map a witness for the final network to a witness for the
-;; original network are neteval-witness-for-svex(list)-compose-dfs and the
+;; original network are neteval-ordering-for-svex(list)-compose-dfs and the
 ;; theorems that prove its correctness are
-;; neteval-witness-for-svex(list)-compose-dfs-correct.
+;; neteval-ordering-for-svex(list)-compose-dfs-correct.
 
 ;; We need to show a couple of invariants before we can do this proof.  In
 ;; particular we have to deal with the memo table and formulate what
@@ -580,19 +587,12 @@
   :fn svexlist-compose-dfs)
 
 
-(local (defthm svex-lookup-of-cons
-         (equal (svex-lookup key (cons (cons var val) rest))
-                (if (and (svar-p var)
-                         (equal (svar-fix key) var))
-                    (svex-fix val)
-                  (svex-lookup key rest)))
-         :hints(("Goal" :in-theory (enable svex-lookup)))))
 
 
 
 ;; We want to take a composition step applied to some network and show that an
 ;; evaluation of the composed network produces an evaluation of the original
-;; network.  So we take a neteval-witness for the composed network and map it
+;; network.  So we take a neteval-ordering for the composed network and map it
 ;; to one for the original network.  We assume here that the composition step
 ;; is of the form:
 ;; (cons (cons var (svex-compose (svex-lookup var network)
@@ -600,208 +600,7 @@
 ;;       network).
 
 
-(define svex-network-compose-step ((var svar-p)
-                                   (composed-vars svarlist-p)
-                                   (network svex-alist-p))
-  :guard (svex-lookup var network)
-  :returns (new-network svex-alist-p)
-  (cons (cons (svar-fix var)
-              (svex-compose (svex-lookup var network)
-                            (svex-alist-reduce composed-vars network)))
-        (svex-alist-fix network))
-  ///
-  (defret svex-lookup-of-<fn>
-    (equal (svex-lookup key new-network)
-           (if (equal (svar-fix key) (svar-fix var))
-               (svex-compose (svex-lookup var network)
-                             (svex-alist-reduce composed-vars network))
-             (svex-lookup key network)))
-    :hints(("Goal" :in-theory (enable svex-lookup))))
 
-  (defret svex-network-join-envs-of-<fn>
-    (implies (svex-lookup var network)
-             (svex-envs-equivalent (svex-network-join-envs new-network env1 env2)
-                                   (svex-network-join-envs network env1 env2)))
-    :hints(("Goal" :in-theory (enable svex-envs-equivalent)))))
-
-
-(local (defthm neteval-witness-p-of-append
-         (implies (and (neteval-witness-p x)
-                       (neteval-witness-p y))
-                  (neteval-witness-p (append x y)))))
-
-(local (fty::deflist neteval-witnesslist :elt-type neteval-witness :true-listp t))
-
-(local (defthm neteval-witness-p-of-pairlis$
-         (implies (and (svarlist-p x)
-                       (neteval-witnesslist-p y)
-                       (equal (len x) (len y)))
-                  (neteval-witness-p (pairlis$ x y)))
-         :hints(("Goal" :in-theory (enable pairlis$)))))
-
-(local (deffixcong neteval-witness-equiv neteval-witness-equiv (append x y) x))
-(local (deffixcong neteval-witness-equiv neteval-witness-equiv (append x y) y))
-
-(local (include-book "clause-processors/generalize" :dir :system))
-(local (include-book "clause-processors/find-subterms" :dir :system))
-
-(define neteval-witness-for-compose-step ((var svar-p)
-                                          (composed-vars svarlist-p)
-                                          (new-witness neteval-witness-p))
-  :returns (witness neteval-witness-p)
-  (b* (((when (atom new-witness)) nil)
-       ((unless (mbt (and (consp (car new-witness)) (svar-p (caar new-witness)))))
-        (neteval-witness-for-compose-step var composed-vars (cdr new-witness)))
-       ((cons wit-var sub-witness) (car new-witness))
-       (sub-witness2 (neteval-witness-for-compose-step
-                      var composed-vars sub-witness))
-       ((unless (equal wit-var (svar-fix var)))
-        (cons (cons wit-var sub-witness2)
-              (neteval-witness-for-compose-step var composed-vars (cdr new-witness))))
-       (sub-witness3
-        (append (pairlis$ (svarlist-fix composed-vars)
-                          (repeat (len composed-vars) sub-witness2))
-                sub-witness2)))
-    (cons (cons wit-var sub-witness3)
-          (neteval-witness-for-compose-step var composed-vars (cdr new-witness))))
-  ///
-  (local (in-theory (enable neteval-witness-fix)))
-
-  (deffixequiv neteval-witness-for-compose-step)
-
-  (defret lookup-in-<fn>
-    (equal (hons-assoc-equal key witness)
-           (let ((new-look (hons-assoc-equal key (neteval-witness-fix new-witness))))
-             (and new-look
-                  (let ((sub-witness2
-                         (neteval-witness-for-compose-step
-                          var composed-vars (cdr new-look))))
-                    (if (equal key (svar-fix var))
-                        (cons key (append (pairlis$ (svarlist-fix composed-vars)
-                                                    (repeat (len composed-vars) sub-witness2))
-                                          sub-witness2))
-                      (cons key sub-witness2))))))
-    :hints (("goal" :induct (len new-witness)
-             :expand (<call>))))
-
-  (local (defthm neteval-witness->neteval-of-append
-           (equal (neteval-witness->neteval (append x y) network env)
-                  (append (neteval-witness->neteval x network env)
-                          (neteval-witness->neteval y network env)))
-           :hints(("Goal" 
-                   :expand ((:free (x y) (neteval-witness->neteval (cons x y) network env))
-                            (append x y)
-                            (neteval-witness->neteval x network env))
-                   :induct (neteval-witness->neteval x network env)
-                   :in-theory (enable (:i neteval-witness->neteval)))
-                  (and stable-under-simplificationp
-                       '(:expand ((neteval-witness->neteval y network env)))))))
-
-  (local (defthmd neteval-witness->neteval-of-pairlis$-repeat-lemma
-           (implies (svarlist-p keys)
-                    (equal (neteval-witness->neteval (pairlis$ keys (repeat (len keys) x)) network env)
-                           (svex-env-reduce keys
-                                            (svex-alist-eval network
-                                                             (svex-network-join-envs
-                                                              network
-                                                              (neteval-witness->neteval x network env)
-                                                              env)))))
-           :hints(("Goal" :in-theory (enable svex-env-reduce-redef pairlis$)
-                   :expand ((:free (x y) (neteval-witness->neteval (cons x y) network env))
-                            (neteval-witness->neteval nil network env))
-                   :induct (len keys)))))
-
-  (local (defthm neteval-witness->neteval-of-pairlis$-repeat
-           (equal (neteval-witness->neteval (pairlis$ (svarlist-fix keys) (repeat (len keys) x)) network env)
-                  (svex-env-reduce keys
-                                   (svex-alist-eval network
-                                                    (svex-network-join-envs
-                                                     network
-                                                     (neteval-witness->neteval x network env)
-                                                     env))))
-           :hints (("goal" :use ((:instance neteval-witness->neteval-of-pairlis$-repeat-lemma
-                                  (keys (svarlist-fix keys))))))))
-
-  (local (defthm acl2-count-of-hons-assoc-equal
-           (<= (acl2-count (hons-assoc-equal k x)) (acl2-count x))
-           :rule-classes :linear))
-
-
-  (local (defun correct-induction (var composed-vars network new-witness env)
-           (declare (xargs :measure (acl2-count (neteval-witness-fix new-witness))
-                           :hints (("goal" :in-theory (disable hons-assoc-equal-of-neteval-witness-fix)))))
-           (b* ((witness (neteval-witness-for-compose-step
-                          var composed-vars new-witness))
-                (badguy (svex-envs-equivalent-witness
-                         (neteval-witness->neteval
-                          witness network env)
-                         (neteval-witness->neteval
-                          new-witness
-                          (svex-network-compose-step var composed-vars network)
-                          env)))
-                (look (hons-assoc-equal (svar-fix badguy) (neteval-witness-fix new-witness)))
-                ((unless look) (list witness badguy)))
-             (correct-induction var composed-vars network (cdr look) env))))
-
-
-  (local (defthm svex-env-boundp-of-svex-env-reduce
-           (iff (svex-env-boundp key (svex-env-reduce vars x))
-                (and (member-equal (svar-fix key) (svarlist-fix vars))
-                     (svex-env-boundp key x)))
-           :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-reduce)))))
-
-  (local (defthm lemma
-           (svex-envs-equivalent (SVEX-NETWORK-JOIN-ENVS
-                                  NETWORK
-                                  (APPEND
-                                   (SVEX-ENV-REDUCE
-                                    COMPOSED-VARS
-                                    (SVEX-ALIST-EVAL
-                                     NETWORK
-                                     neteval1))
-                                   neteval)
-                                  ENV)
-                                 (APPEND
-                                  (SVEX-ENV-REDUCE
-                                   COMPOSED-VARS
-                                   (SVEX-ALIST-EVAL
-                                    NETWORK
-                                    neteval1))
-                                  (SVEX-NETWORK-JOIN-ENVS
-                                   NETWORK
-                                   neteval
-                                   ENV)))
-           :hints(("Goal" :in-theory (enable svex-envs-equivalent))
-                  (and stable-under-simplificationp
-                       (let ((wit (acl2::find-call-lst 'svex-envs-equivalent-witness clause)))
-                         `(:clause-processor (acl2::simple-generalize-cp
-                                              clause
-                                              '((,wit . badguy-key)))))))))
-
-  
-
-  (defret <fn>-correct
-    (implies (svex-lookup var network)
-             (svex-envs-equivalent
-              (neteval-witness->neteval
-               witness network env)
-              (neteval-witness->neteval
-               new-witness
-               (svex-network-compose-step var composed-vars network)
-               env)))
-    :hints(("Goal" ;; :in-theory (enable svex-envs-equivalent)
-            :induct (correct-induction var composed-vars network new-witness env))
-           (and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                (let ((wit (acl2::find-call-lst 'svex-envs-equivalent-witness clause)))
-                  `(:clause-processor (acl2::simple-generalize-cp
-                                       clause
-                                       '((,wit . badguy-key))))))
-           ;; (and stable-under-simplificationp
-           ;;      '(:in-theory (enable svex-network-join-envs)))
-           )
-    :otf-flg t))
        
     
 
@@ -812,6 +611,15 @@
 
 (deffixcong svex-alist-equiv svex-alist-equiv (append x y) x)
 (deffixcong svex-alist-equiv svex-alist-equiv (append x y) y)
+
+
+(local (defthm svex-lookup-of-cons
+         (equal (svex-lookup key (cons (cons var val) rest))
+                (if (and (svar-p var)
+                         (equal (svar-fix key) var))
+                    (svex-fix val)
+                  (svex-lookup key rest)))
+         :hints(("Goal" :in-theory (enable svex-lookup)))))
 
 (defsection svex-compose-dfs-is-svex-compose*
 
@@ -952,224 +760,92 @@
                          (:free (a) (svexlist-compose* x a)))))
       :fn svexlist-compose-dfs)
     :mutual-recursion svex-compose-dfs))
+
+
+
+(defcong svex-eval-equiv svex-alist-eval-equiv (svex-acons var val x) 2
+  :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
+
+(defcong svex-alist-eval-equiv svex-alist-eval-equiv (svex-acons var val x) 3
+  :hints ((and stable-under-simplificationp `(:expand (,(car (last clause)))))))
+
+(defthm svex-compose*-under-svex-eval-equiv
+  (svex-eval-equiv (svex-compose* x al)
+                   (svex-compose x al))
+  :hints(("Goal" :in-theory (enable svex-eval-equiv))))
+
+(defsection netcomp-p-of-svex-compose-dfs
+  ;;   (local (defthm alist-keys-of-cons
+  ;;          (equal (alist-keys (cons (cons a b) c))
+  ;;                 (cons a (alist-keys c)))
+  ;;          :hints(("Goal" :in-theory (enable alist-keys)))))
+
+  ;; (local (defthm svex-lookup-of-append
+  ;;          (equal (svex-lookup k (append a b))
+  ;;                 (or (svex-lookup k a)
+  ;;                     (svex-lookup k b)))
+  ;;          :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
+
+
+  ;; (defthm svex-compose-svex-alist-eval-equiv-congruence
+  ;;   (implies (svex-alist-eval-equiv a b)
+  ;;            (svex-eval-equiv (svex-compose x a) (svex-compose x b)))
+  ;;   :hints(("Goal" :in-theory (enable svex-eval-equiv)))
+  ;;   :rule-classes :congruence)
+
+  ;; (defthm svex-compose*-svex-alist-eval-equiv-congruence
+  ;;   (implies (svex-alist-eval-equiv a b)
+  ;;            (svex-eval-equiv (svex-compose* x a) (svex-compose* x b)))
+  ;;   :hints(("Goal" :in-theory (enable svex-eval-equiv)))
+  ;;   :rule-classes :congruence)
+
+  ;; (local (defthm svex-alist-eval-equiv-cons-cons
+  ;;          (implies (svex-eval-equiv x y)
+  ;;                   (svex-alist-eval-equiv (cons (cons var x) rest)
+  ;;                                          (cons (cons var y) rest)))
+  ;;          :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))
+  ;;          :rule-classes :congruence))
+
+  ;; (local (defthm svex-compose-to-svex-compose*
+  ;;          (svex-eval-equiv (svex-compose x a)
+  ;;                           (svex-compose* x a))
+  ;;          :hints(("Goal" :in-theory (enable svex-eval-equiv)))))
+
+  ;; (local (defthm svex-alist-reduce-of-svex-alist-keys
+  ;;          (svex-alist-eval-equiv (svex-alist-reduce (svex-alist-keys updates)
+  ;;                                                    (append updates assigns))
+  ;;                                 updates)
+  ;;          :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
+
+  ;; (local (defthm append-acons-compose-is-svex-network-compose-step
+  ;;          (implies
+  ;;           (not (svex-lookup var updates))
+  ;;           (svex-alist-eval-equiv
+  ;;            (append (svex-acons var (svex-compose* (svex-lookup var assigns) updates)
+  ;;                                updates)
+  ;;                    assigns)
+  ;;            (svex-network-compose-step var (svex-alist-keys updates) (append updates assigns))))
+  ;;          :hints(("Goal" :in-theory (enable svex-network-compose-step
+  ;;                                            svex-alist-eval-equiv)))))
+
+  (std::defret-mutual netcomp-p-of-<fn>
+    (defret netcomp-p-of-<fn>
+      (implies (and (svex-compose-dfs-memo-correct memo updates)
+                    (svex-compose-dfs-memo-vars-okp memo assigns updates stack)
+                    (netcomp-p updates network)
+                    (netcomp-p assigns network))
+               (netcomp-p updates1 network))
+      :hints ('(:expand (<call>)))
+      :fn svex-compose-dfs)
+    (defret netcomp-p-of-<fn>
+      (implies (and (svex-compose-dfs-memo-correct memo updates)
+                    (svex-compose-dfs-memo-vars-okp memo assigns updates stack)
+                    (netcomp-p updates network)
+                    (netcomp-p assigns network))
+               (netcomp-p updates1 network))
+      :hints ('(:expand (<call>)) 
+              (and stable-under-simplificationp
+                   '(:in-theory (enable netcomp-p-transitive2))))
+      :fn svexlist-compose-dfs)
+    :mutual-recursion svex-compose-dfs))
                     
-
-
-
-
-
-(defines neteval-witness-for-svex-compose-dfs
-  :flag-local nil
-  (define neteval-witness-for-svex-compose-dfs ((x svex-p "svex we're traversing")
-                                                (assigns svex-alist-p "alist of assign stmts")
-                                                (updates svex-alist-p "alist of composed update fns")
-                                                (memo svex-svex-memo-p "memo table for internal nodes")
-                                                (stack "alist of seen vars"
-                                                       alistp)
-                                                (witness neteval-witness-p))
-    :verify-guards nil
-    :returns (new-witness neteval-witness-p)
-    :well-founded-relation acl2::nat-list-<
-    :measure (list (len (set-difference-equal
-                         (svex-alist-keys assigns)
-                         (strip-cars stack)))
-                   (svex-count x))
-
-    (b* ((x (mbe :logic (svex-fix x) :exec x))
-         (memo (svex-svex-memo-fix memo))
-         (updates (mbe :logic (svex-alist-fix updates) :exec updates)))
-      (svex-case x
-        :quote (neteval-witness-fix witness)
-        :call (b* ((look (hons-get x memo))
-                   ((when look) (neteval-witness-fix witness)))
-                (neteval-witness-for-svexlist-compose-dfs x.args assigns updates memo stack witness))
-        :var (b* ((update-fn (svex-fastlookup x.name updates))
-                  ((when update-fn) (neteval-witness-fix witness))
-                  (assign (svex-fastlookup x.name assigns))
-                  ((unless assign)
-                   (neteval-witness-fix witness))
-                  ((when (hons-get x.name stack))
-                   (neteval-witness-fix witness))
-                  (stack (hons-acons x.name t stack))
-                  ((mv & updates1 &)
-                   (svex-compose-dfs assign assigns updates nil stack))
-                  (witness (neteval-witness-for-compose-step x.name
-                                                             ;; (set-difference-equal (svex-vars x.name)
-                                                             ;;                       (alist-keys stack))
-                                                             (svex-alist-keys updates1)
-                                                             witness))
-                  (witness
-                   (neteval-witness-for-svex-compose-dfs assign assigns updates nil stack witness))
-                  (- (acl2::fast-alist-pop stack)))
-               witness))))
-  (define neteval-witness-for-svexlist-compose-dfs ((x svexlist-p)
-                                (assigns svex-alist-p)
-                                (updates svex-alist-p)
-                                (memo svex-svex-memo-p)
-                                (stack alistp)
-                                (witness neteval-witness-p))
-    :measure (list (len (set-difference-equal
-                         (svex-alist-keys assigns)
-                         (strip-cars stack)))
-                   (svexlist-count x))
-    :returns (new-witness neteval-witness-p)
-    (b* ((updates (mbe :logic (svex-alist-fix updates) :exec updates))
-         (memo (svex-svex-memo-fix memo))
-         ((when (atom x)) (neteval-witness-fix witness))
-         ;; (witness (neteval-witness-for-svex-compose-dfs
-         ;;           (car x) assigns updates memo stack witness))
-         ((mv ?first updates1 memo1)
-          (svex-compose-dfs (car x) assigns updates memo stack))
-         (witness1 (neteval-witness-for-svexlist-compose-dfs
-                    (cdr x) assigns updates1 memo1 stack witness)))
-      (neteval-witness-for-svex-compose-dfs
-       (car x) assigns updates memo stack witness1)))
-  ///
-
-  (local (defthm alist-keys-of-cons
-           (equal (alist-keys (cons (cons a b) c))
-                  (cons a (alist-keys c)))
-           :hints(("Goal" :in-theory (enable alist-keys)))))
-
-  (local (defthm svex-lookup-of-append
-           (equal (svex-lookup k (append a b))
-                  (or (svex-lookup k a)
-                      (svex-lookup k b)))
-           :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix)))))
-
-
-  (defthm svex-compose-svex-alist-eval-equiv-congruence
-    (implies (svex-alist-eval-equiv a b)
-             (svex-eval-equiv (svex-compose x a) (svex-compose x b)))
-    :hints(("Goal" :in-theory (enable svex-eval-equiv)))
-    :rule-classes :congruence)
-
-  (defthm svex-compose*-svex-alist-eval-equiv-congruence
-    (implies (svex-alist-eval-equiv a b)
-             (svex-eval-equiv (svex-compose* x a) (svex-compose* x b)))
-    :hints(("Goal" :in-theory (enable svex-eval-equiv)))
-    :rule-classes :congruence)
-
-  (local (defthm svex-alist-eval-equiv-cons-cons
-           (implies (svex-eval-equiv x y)
-                    (svex-alist-eval-equiv (cons (cons var x) rest)
-                                           (cons (cons var y) rest)))
-           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))
-           :rule-classes :congruence))
-
-  (defthm svex-compose-to-svex-compose*
-    (svex-eval-equiv (svex-compose x a)
-                     (svex-compose* x a))
-    :hints(("Goal" :in-theory (enable svex-eval-equiv))))
-
-  (local (defthm svex-alist-reduce-of-svex-alist-keys
-           (svex-alist-eval-equiv (svex-alist-reduce (svex-alist-keys updates)
-                                                     (append updates assigns))
-                                  updates)
-           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv)))))
-
-  (local (in-theory (disable neteval-witness-for-compose-step-correct)))
-
-  (local
-   (defthm neteval-witness-for-compose-step-correct-for-compose-dfs
-     (b* ((witness (neteval-witness-for-compose-step var (svex-alist-keys updates) new-witness)))
-       (implies (and (svex-lookup var assigns)
-                     (not (svex-lookup var updates))
-                     (svar-p var))
-                (svex-envs-equivalent
-                 (neteval-witness->neteval
-                  new-witness
-                  (cons (cons var (svex-compose*
-                                   (svex-lookup var assigns)
-                                   updates))
-                        (append updates assigns))
-                  env)
-                 (neteval-witness->neteval
-                  witness (append updates assigns) env))))
-     :hints(("Goal" :use ((:instance neteval-witness-for-compose-step-correct
-                           (composed-vars (svex-alist-keys updates))
-                           (network (append updates assigns))))
-             :in-theory (enable svex-network-compose-step)
-            ;; (and stable-under-simplificationp
-            ;;      '(:in-theory (enable svex-network-join-envs)))
-            ))))
-
-
-  (std::defret-mutual neteval-witness-for-svex-compose-dfs-correct
-    (defret <fn>-correct
-      (b* (((mv ?x1 updates1 ?memo1)
-            (svex-compose-dfs x assigns updates memo stack))
-           (neteval1 (neteval-witness->neteval new-witness
-                                               (append updates assigns)
-                                               env))
-           (neteval2 (neteval-witness->neteval witness
-                                               (append updates1 assigns)
-                                               env)))
-        (implies (And (svex-compose-dfs-memo-correct memo updates)
-                      (svex-compose-dfs-memo-vars-okp memo assigns updates stack))
-                 (svex-envs-equivalent neteval1 neteval2)))
-      :hints ('(:expand (<call>
-                         (svex-compose-dfs x assigns updates memo stack))
-                :in-theory (enable svex-acons)))
-      :fn neteval-witness-for-svex-compose-dfs)
-
-    (defret <fn>-correct
-      (b* (((mv ?x1 updates1 ?memo1)
-            (svexlist-compose-dfs x assigns updates memo stack))
-           (neteval1 (neteval-witness->neteval new-witness
-                                               (append updates assigns)
-                                               env))
-           (neteval2 (neteval-witness->neteval witness
-                                               (append updates1 assigns)
-                                               env)))
-        (implies (And (svex-compose-dfs-memo-correct memo updates)
-                      (svex-compose-dfs-memo-vars-okp memo assigns updates stack))
-                 (svex-envs-equivalent neteval1 neteval2)))
-      :hints ('(:expand (<call>
-                         (svexlist-compose-dfs x assigns updates memo stack))))
-      :fn neteval-witness-for-svexlist-compose-dfs)))
-
-
-(defret neteval-for-<fn>-is-neteval-for-assigns
-  (implies (And (svex-compose-dfs-memo-correct memo updates)
-                (svex-compose-dfs-memo-vars-okp memo assigns updates stack)
-                (neteval-p neteval (append updates1 assigns) env))
-           (neteval-p neteval (append updates assigns) env))
-  :hints (("goal" :expand ((neteval-p neteval (append updates1 assigns) env))
-           :use ((:instance neteval-p-suff
-                  (network (append updates assigns))
-                  (neteval-witness (neteval-witness-for-svex-compose-dfs
-                                    x assigns updates memo stack 
-                                    (neteval-p-witness neteval (append updates1 assigns) env)))))))
-  :fn svex-compose-dfs
-  :rule-classes nil)
-
-
-(defret neteval-for-<fn>-is-neteval-for-assigns
-  (implies (And (svex-compose-dfs-memo-correct memo updates)
-                (svex-compose-dfs-memo-vars-okp memo assigns updates stack)
-                (neteval-p neteval (append updates1 assigns) env))
-           (neteval-p neteval (append updates assigns) env))
-  :hints (("goal" :expand ((neteval-p neteval (append updates1 assigns) env))
-           :use ((:instance neteval-p-suff
-                  (network (append updates assigns))
-                  (neteval-witness (neteval-witness-for-svexlist-compose-dfs
-                                    x assigns updates memo stack 
-                                    (neteval-p-witness neteval (append updates1 assigns) env)))))))
-  :fn svexlist-compose-dfs
-  :rule-classes nil)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

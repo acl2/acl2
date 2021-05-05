@@ -43,6 +43,7 @@
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
+(include-book "find-index")
 (include-book "firstn-def")
 (include-book "firstn")
 (include-book "repeat")

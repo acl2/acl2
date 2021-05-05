@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -317,6 +317,11 @@
 ; Warning: Keep this constant in sync with the value in community book
 ; books/projects/apply-model-2/apply-prim.lisp.
 
+; Warning: Functions that take state, e.g., EV, can't be badged and so are not
+; currently listed below.  But if and when we relax the conditions on badging
+; and support STATE in apply$ we should probably blacklist ev and a bunch of
+; other superpowerful :program mode functions!
+
 ; The functions listed here are not safe to apply, primarily because their
 ; behavior differs from their logical definitions.
 
@@ -410,7 +415,7 @@
 ; make ACL2_DEVEL=t
 ; make clean-books
 ; cd books
-; (time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/devel-check)
+; (time ./build/cert.pl -j 16 --acl2 `pwd`/../saved_acl2d system/devel-check)
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
@@ -501,7 +506,6 @@
     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
     (LATEST-BODY)
     (LEGAL-CONSTANTP)
-    (LEGAL-CONSTANTP1)
     (LEGAL-INITP)
     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
     (LEGAL-VARIABLEP)
@@ -560,6 +564,7 @@
     (STOBJP)
     (STRING-PREFIXP)
     (STRING-PREFIXP-1 ACL2-COUNT I)
+    (STRIP-CADDRS ACL2-COUNT X)
     (STRIP-CADRS ACL2-COUNT X)
     (SUBCOR-VAR ACL2-COUNT FORM)
     (SUBCOR-VAR-LST ACL2-COUNT FORMS)
@@ -604,7 +609,7 @@
     (UNTIL$-AC ACL2-COUNT LST)
     (WARNING-OFF-P1)
     (WARNING1-CW)
-    (WEAK-APPLY$-BADGE-ALISTP ACL2-COUNT X)
+    (WEAK-BADGE-USERFN-STRUCTURE-ALISTP ACL2-COUNT X)
     (WHEN$ ACL2-COUNT LST)
     (WHEN$+ ACL2-COUNT LST)
     (WHEN$+-AC ACL2-COUNT LST)
@@ -686,11 +691,7 @@
 
 ; Search the world for every ACL2 primitive function that does not traffic (in
 ; or out) in stobjs or state and that are not among a select few (named below)
-; that require trust tags or have syntactic restrictions on their calls.  Note
-; that our final list includes functions that return multiple values, which are
-; not warranted but will have badges: they are first-order-like and could be
-; used in the subsequent definitions of warranted functions provided their
-; multiple values are ultimately turned into a single returned value.
+; that require trust tags or have syntactic restrictions on their calls.
 
 ; Return (... ((fn . formals) . output-arity) ...), that for each identified
 ; fn, pairs a term, (fn . formals), with its output arity.  We will ultimately
@@ -757,7 +758,8 @@
 ) ; end when-pass-2
 
 ; We originally defined the apply$-badge record here.  But it is needed in
-; warrantp, which is needed in defattach-constraint-rec.
+; earlier, e.g., in defattach-constraint-rec.
+
 ; (defrec apply$-badge (arity out-arity . ilks) nil)
 
 (defun compute-badge-of-primitives (terms-and-out-arities)

@@ -288,3 +288,8 @@
   (equal (sbvlt size x (logext size y))
          (sbvlt size x y))
   :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthmd <-of-logext-and-0-alt
+  (equal (< (logext 32 x) 0)
+         (sbvlt 32 x 0))
+  :hints (("Goal" :in-theory (enable sbvlt))))

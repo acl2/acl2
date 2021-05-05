@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1152,6 +1152,19 @@
                 :lhs (fcons-term* 'equal 'x *nil*)
                 :var-info t
                 :rhs (fcons-term* 'if 'x *nil* *t*))))
+   ((eq fn 'consp)
+
+; (defthm consp-cons (consp (cons x y)))
+
+    (list (make rewrite-rule
+                :nume nil :hyps nil :equiv 'equal
+                :subclass 'backchain
+                :heuristic-info nil
+                :backchain-limit-lst *initial-default-backchain-limit*
+                :rune *fake-rune-for-anonymous-enabled-rule*
+                :lhs (fcons-term* 'consp (fcons-term* 'cons 'x 'y))
+                :var-info t
+                :rhs *t*)))
    ((equivalence-relationp fn wrld)
 
 ; We do not need to include reflexivity when fn is 'equal, because it is

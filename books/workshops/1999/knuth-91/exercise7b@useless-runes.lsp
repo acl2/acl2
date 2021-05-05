@@ -3,7 +3,9 @@
 (G-AT-ZP)
 (G-NOT-AT-ZP)
 (INDUCT-HINT)
-(G-IS-ZERO (2 2 (:REWRITE G-AT-ZP))
-           (1 1 (:REWRITE ZP-OPEN))
-           (1 1 (:REWRITE DEFAULT-+-2))
-           (1 1 (:REWRITE DEFAULT-+-1)))
+(G-IS-ZERO
+ (2 2 (:REWRITE G-AT-ZP))
+ (1 1 (:REWRITE ZP-OPEN))
+ (1 1 (:REWRITE DEFAULT-+-2))
+ (1 1 (:REWRITE DEFAULT-+-1))
+ )

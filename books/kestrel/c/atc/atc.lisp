@@ -29,14 +29,16 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
-(include-book "kestrel/event-macros/evmac-input-print-p" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
+(include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
+(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
@@ -83,7 +85,7 @@
 
   "@('fns') is @('fn1...fnp') or a suffix of it."
 
-  "@('vars') is a list of alists from ACL2 variable symbols to C types.
+  "@('inscope') is a list of alists from ACL2 variable symbols to C types.
    These are the variables in scope
    for the ACL2 term whose code is being generated,
    organized in nested scopes from innermost to outermost.
@@ -541,8 +543,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-get-var ((var symbolp) (vars atc-symbol-type-alist-listp))
-  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp vars))
+(define atc-get-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
   :short "Obtain the type of a variable from the symbol table."
   :long
   (xdoc::topstring
@@ -552,44 +554,29 @@
      so any lookup order would give the same result.")
    (xdoc::p
     "Return @('nil') if the variable is not in scope."))
-  (if (endp vars)
+  (if (endp inscope)
       nil
-    (or (cdr (assoc-eq var (car vars)))
-        (atc-get-var var (cdr vars)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-get-var-innermost ((var symbolp)
-                               (vars atc-symbol-type-alist-listp))
-  :returns (type? type-optionp
-                  :hyp (atc-symbol-type-alist-listp vars)
-                  :hints (("Goal" :in-theory (enable type-optionp))))
-  :short "Obtain the type of a variable
-          from the innermost scope of the symbol table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This only looks at the innermost scope; it ignores the others."))
-  (cdr (assoc-eq var (car vars))))
+    (or (cdr (assoc-eq var (car inscope)))
+        (atc-get-var var (cdr inscope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-add-var ((var symbolp)
                      (type typep)
-                     (vars atc-symbol-type-alist-listp))
-  :returns (new-vars atc-symbol-type-alist-listp :hyp :guard)
+                     (inscope atc-symbol-type-alist-listp))
+  :returns (new-inscope atc-symbol-type-alist-listp :hyp :guard)
   :short "Add a variable with a type to the symbol table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is added to the innermost scope.
      The symbol table has always at least one scope."))
-  (cons (acons var type (car vars))
-        (cdr vars)))
+  (cons (acons var type (car inscope))
+        (cdr inscope)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-var-newp ((var-name stringp) (vars atc-symbol-type-alist-listp))
+(define atc-var-newp ((var-name stringp) (inscope atc-symbol-type-alist-listp))
   :returns (yes/no booleanp)
   :short "Check if a variable name is not already in the symbol table."
   :long
@@ -601,10 +588,23 @@
      is ignored for the purpose of representing C variables:
      only the symbol name is used,
      and thus all the symbol names must be distinct."))
-  (or (endp vars)
+  (or (endp inscope)
       (and (not (member-equal var-name
-                              (symbol-name-lst (strip-cars (car vars)))))
-           (atc-var-newp var-name (cdr vars)))))
+                              (symbol-name-lst (strip-cars (car inscope)))))
+           (atc-var-newp var-name (cdr inscope)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-var-inscopep ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in scope."
+  (and (atc-get-var var inscope) t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-var-list-inscopep (x inscope)
+  :guard (and (symbol-listp x) (atc-symbol-type-alist-listp inscope))
+  (atc-var-inscopep x inscope))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -695,28 +695,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-const ((term pseudo-termp))
+(define atc-check-symbol-2part ((sym symbolp))
   :returns (mv (yes/no booleanp)
-               (val sint-integerp))
-  :short "Check if a term represents an @('int') constant."
+               (part1 symbolp)
+               (part2 symbolp))
+  :short "Check if a symbol consists of two parts separated by dash."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the term is a call of @(tsee sint-const) on a quoted integer constant
-     whose value is non-negative and representable as an @('int'),
-     we return the value.
-     This way, the caller can generate the appropriate C integer constant."))
-  (case-match term
-    (('sint-const ('quote val))
-     (if (and (natp val)
-              (sint-integerp val))
-         (mv t val)
-       (mv nil 0)))
-    (& (mv nil 0)))
+    "If the symbol has the form @('<part1>-<part2>'),
+     with @('<part1>') and @('<part2>') non-empty and without dashes,
+     we return an indication of success and the two parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The two returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 2)) (mv nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym)))
+    (mv t part1 part2))
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-symbol-3part ((sym symbolp))
+  :returns (mv (yes/no booleanp)
+               (part1 symbolp)
+               (part2 symbolp)
+               (part3 symbolp))
+  :short "Check if a symbol consists of three parts separated by dash."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the symbol has the form @('<part1>-<part2>-<part3>'),
+     with @('<part1>') and @('<part2>') and @('<part3>')
+     non-empty and without dashes,
+     we return an indication of success and the three parts.
+     Otherwise, we return an indication of failure and @('nil') as the parts.
+     The three returned symbols, when the function is successful,
+     are interned in the same package as the input symbol."))
+  (b* ((parts (str::strtok! (symbol-name sym) (list #\-)))
+       ((unless (= (len parts) 3)) (mv nil nil nil nil))
+       (part1 (intern-in-package-of-symbol (first parts) sym))
+       (part2 (intern-in-package-of-symbol (second parts) sym))
+       (part3 (intern-in-package-of-symbol (third parts) sym)))
+    (mv t part1 part2 part3))
+  :prepwork
+  ((local (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-integer-fixtype-to-type ((fixtype symbolp))
+  :returns (type type-optionp)
+  :short "Integer type corresponding to a fixtype name, if any."
+  (case fixtype
+    (schar (type-schar))
+    (uchar (type-uchar))
+    (sshort (type-sshort))
+    (ushort (type-ushort))
+    (sint (type-sint))
+    (uint (type-uint))
+    (slong (type-slong))
+    (ulong (type-ulong))
+    (sllong (type-sllong))
+    (ullong (type-ullong))
+    (t nil))
   ///
-  (defret natp-of-atc-check-sint-const
-    (natp val)
-    :rule-classes :type-prescription))
+  (defret type-arithmeticp-of-atc-integer-fixtype-to-type
+    (implies type
+             (type-arithmeticp type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-iconst ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (val natp :rule-classes :type-prescription)
+               (unsignedp booleanp)
+               (suffix iconst-tysuffixp)
+               (type typep))
+  :short "Check if a term represents an integer constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of a function @('<type>-const')
+     on a quoted integer constant,
+     we return the value of the integer constant
+     (which must be non-negative due to guard verification,
+     but here we need to check it because we do not have
+     guard verification as a contextual assumption on the term),
+     along with an indication of unsignedness and type suffix information,
+     and also the C integer type of the constant."))
+  (case-match term
+    ((fn ('quote val))
+     (b* (((when (not (symbolp fn)))
+           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))
+          ((mv okp type const) (atc-check-symbol-2part fn))
+          ((unless (and okp
+                        (eq const 'const)
+                        (natp val)))
+           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))
+       (case type
+         (sint (mv t val nil (iconst-tysuffix-none) (type-sint)))
+         (uint (mv t val t (iconst-tysuffix-none) (type-uint)))
+         (slong (mv t val nil (iconst-tysuffix-long) (type-slong)))
+         (ulong (mv t val t (iconst-tysuffix-long) (type-ulong)))
+         (sllong (mv t val nil (iconst-tysuffix-llong) (type-sllong)))
+         (ullong (mv t val t (iconst-tysuffix-llong) (type-ullong)))
+         (t (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))))
+    (& (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -725,15 +812,13 @@
                (op unopp)
                (arg pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a unary expression."
+  :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C unary operators,
-     we return the operator and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply the operator to the expression.")
+     we return the operator and the argument term.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -741,12 +826,17 @@
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg)
-     (case fn
-       (sint-plus (mv t (unop-plus) arg (type-sint)))
-       (sint-minus (mv t (unop-minus) arg (type-sint)))
-       (sint-bitnot (mv t (unop-bitnot) arg (type-sint)))
-       (sint-lognot (mv t (unop-lognot) arg (type-sint)))
-       (t (mv nil (irr-unop) nil (irr-type)))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-unop) nil (irr-type)))
+          ((mv okp op fixtype) (atc-check-symbol-2part fn))
+          ((when (not okp)) (mv nil (irr-unop) nil (irr-type)))
+          (type (atc-integer-fixtype-to-type fixtype))
+          ((when (not type)) (mv nil (irr-unop) nil (irr-type))))
+       (case op
+         (plus (mv t (unop-plus) arg (promote-type type)))
+         (minus (mv t (unop-minus) arg (promote-type type)))
+         (bitnot (mv t (unop-bitnot) arg (promote-type type)))
+         (lognot (mv t (unop-lognot) arg (type-sint)))
+         (t (mv nil (irr-unop) nil (irr-type))))))
     (& (mv nil (irr-unop) nil (irr-type))))
   ///
 
@@ -764,19 +854,13 @@
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents a non-side-effecting binary expression."
+  :short "Check if a term may represent a strict pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
-     that represent C non-side-effecting binary operators,
-     we return the operator and the argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and apply the operator to the expressions.")
-   (xdoc::p
-    "Note that when @('&&') and @('||') are represented this way,
-     their ACL2 representation is strict,
-     which may be acceptable in some cases.")
+     that represent C strict pure binary operators,
+     we return the operator and the argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -784,26 +868,31 @@
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg1 arg2)
-     (case fn
-       (sint-add (mv t (binop-add) arg1 arg2 (type-sint)))
-       (sint-sub (mv t (binop-sub) arg1 arg2 (type-sint)))
-       (sint-mul (mv t (binop-mul) arg1 arg2 (type-sint)))
-       (sint-div (mv t (binop-div) arg1 arg2 (type-sint)))
-       (sint-rem (mv t (binop-rem) arg1 arg2 (type-sint)))
-       (sint-shl-sint (mv t (binop-shl) arg1 arg2 (type-sint)))
-       (sint-shr-sint (mv t (binop-shr) arg1 arg2 (type-sint)))
-       (sint-lt (mv t (binop-lt) arg1 arg2 (type-sint)))
-       (sint-le (mv t (binop-le) arg1 arg2 (type-sint)))
-       (sint-gt (mv t (binop-gt) arg1 arg2 (type-sint)))
-       (sint-ge (mv t (binop-ge) arg1 arg2 (type-sint)))
-       (sint-eq (mv t (binop-eq) arg1 arg2 (type-sint)))
-       (sint-ne (mv t (binop-ne) arg1 arg2 (type-sint)))
-       (sint-bitand (mv t (binop-bitand) arg1 arg2 (type-sint)))
-       (sint-bitxor (mv t (binop-bitxor) arg1 arg2 (type-sint)))
-       (sint-bitior (mv t (binop-bitior) arg1 arg2 (type-sint)))
-       (sint-logand (mv t (binop-logand) arg1 arg2 (type-sint)))
-       (sint-logor (mv t (binop-logor) arg1 arg2 (type-sint)))
-       (t (mv nil (irr-binop) nil nil (irr-type)))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-binop) nil nil (irr-type)))
+          ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part fn))
+          ((when (not okp)) (mv nil (irr-binop) nil nil (irr-type)))
+          (type1 (atc-integer-fixtype-to-type fixtype1))
+          ((when (not type1)) (mv nil (irr-binop) nil nil (irr-type)))
+          (type2 (atc-integer-fixtype-to-type fixtype2))
+          ((when (not type2)) (mv nil (irr-binop) nil nil (irr-type))))
+       (case op
+         (add (mv t (binop-add) arg1 arg2 (uaconvert-types type1 type2)))
+         (sub (mv t (binop-sub) arg1 arg2 (uaconvert-types type1 type2)))
+         (mul (mv t (binop-mul) arg1 arg2 (uaconvert-types type1 type2)))
+         (div (mv t (binop-div) arg1 arg2 (uaconvert-types type1 type2)))
+         (rem (mv t (binop-rem) arg1 arg2 (uaconvert-types type1 type2)))
+         (shl (mv t (binop-shl) arg1 arg2 (promote-type type1)))
+         (shr (mv t (binop-shr) arg1 arg2 (promote-type type2)))
+         (lt (mv t (binop-lt) arg1 arg2 (type-sint)))
+         (le (mv t (binop-le) arg1 arg2 (type-sint)))
+         (gt (mv t (binop-gt) arg1 arg2 (type-sint)))
+         (ge (mv t (binop-ge) arg1 arg2 (type-sint)))
+         (eq (mv t (binop-eq) arg1 arg2 (type-sint)))
+         (ne (mv t (binop-ne) arg1 arg2 (type-sint)))
+         (bitand (mv t (binop-bitand) arg1 arg2 (uaconvert-types type1 type2)))
+         (bitxor (mv t (binop-bitxor) arg1 arg2 (uaconvert-types type1 type2)))
+         (bitior (mv t (binop-bitior) arg1 arg2 (uaconvert-types type1 type2)))
+         (t (mv nil (irr-binop) nil nil (irr-type))))))
     (& (mv nil (irr-binop) nil nil (irr-type))))
   ///
 
@@ -825,21 +914,14 @@
   :returns (mv (yes/no booleanp)
                (tyname tynamep)
                (arg pseudo-termp :hyp :guard))
-  :short "Check if a term represents a conversion."
+  :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represents C integer conversions,
      we return the C type name for the destination type
-     and the argument term.
-     This way, the caller can translate the argument term to a C expression
-     and apply a cast with a type name to the expression.")
-   (xdoc::p
-    "For now we always generate explicit casts for conversions.
-     Future versions of ATC will avoid generating casts
-     when the conversions happen automatically
-     due to where the argument expression occurs.")
+     and the argument term.")
    (xdoc::p
     "The C type of the conversion can be determined from the returned type name,
      so there is no need to also return a C type here.")
@@ -848,16 +930,38 @@
      we return an indication of failure."))
   (case-match term
     ((fn arg)
-     (case fn
-       (sint-from-uchar (mv t
-                            (make-tyname :specs (tyspecseq-sint)
-                                         :pointerp nil)
-                            arg))
-       (uchar-from-sint (mv t
-                            (make-tyname :specs (tyspecseq-uchar)
-                                         :pointerp nil)
-                            arg))
-       (t (mv nil (irr-tyname) nil))))
+     (b* (((when (not (symbolp fn))) (mv nil (irr-tyname) nil))
+          ((mv okp dtype from stype) (atc-check-symbol-3part fn))
+          ((when (not okp)) (mv nil (irr-tyname) nil))
+          ((unless (eq from 'from)) (mv nil (irr-tyname) nil))
+          ((unless (atc-integer-fixtype-to-type stype))
+           (mv nil (irr-tyname) nil))
+          (type (atc-integer-fixtype-to-type dtype))
+          ((when (not type)) (mv nil (irr-tyname) nil))
+          (tyname (case (type-kind type)
+                    (:schar (make-tyname :specs (tyspecseq-schar)
+                                         :pointerp nil))
+                    (:uchar (make-tyname :specs (tyspecseq-uchar)
+                                         :pointerp nil))
+                    (:sshort (make-tyname :specs (tyspecseq-sshort)
+                                          :pointerp nil))
+                    (:ushort (make-tyname :specs (tyspecseq-ushort)
+                                          :pointerp nil))
+                    (:sint (make-tyname :specs (tyspecseq-sint)
+                                        :pointerp nil))
+                    (:uint (make-tyname :specs (tyspecseq-uint)
+                                        :pointerp nil))
+                    (:slong (make-tyname :specs (tyspecseq-slong)
+                                         :pointerp nil))
+                    (:ulong (make-tyname :specs (tyspecseq-ulong)
+                                         :pointerp nil))
+                    (:sllong (make-tyname :specs (tyspecseq-sllong)
+                                          :pointerp nil))
+                    (:ullong (make-tyname :specs (tyspecseq-ullong)
+                                          :pointerp nil))
+                    (t (prog2$ (raise "Internal error: type ~x0" type)
+                               (irr-tyname))))))
+       (mv t tyname arg)))
     (& (mv nil (irr-tyname) nil)))
   ///
 
@@ -874,16 +978,14 @@
                (arr pseudo-termp :hyp :guard)
                (sub pseudo-termp :hyp :guard)
                (type typep))
-  :short "Check if a term represents an array read."
+  :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C array read operations
      (currently just @(tsee uchar-array-read-sint)),
-     we return the two argument terms.
-     This way, the caller can translate the argument terms to C expressions
-     and form a C array subscripting expression.")
+     we return the two argument terms.")
    (xdoc::p
     "We also return the result C type of the operator.")
    (xdoc::p
@@ -918,7 +1020,7 @@
                (args pseudo-term-listp :hyp (pseudo-termp term))
                (type typep)
                (limit natp :rule-classes :type-prescription))
-  :short "Check if a term represents a call to a callable target function."
+  :short "Check if a term may represent a call to a callable target function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -954,8 +1056,10 @@
                (var symbolp :hyp :guard)
                (init pseudo-termp :hyp :guard)
                (body pseudo-termp :hyp :guard))
-  :short "Check if a term represents
-          a local variable declaration or an assignment
+  :short "Check if a term may represent
+          a local variable declaration
+          or assignment
+          or single-variable transformation,
           followed by more code."
   :long
   (xdoc::topstring
@@ -963,7 +1067,7 @@
     "Here we recognize and decompose statement terms that are @(tsee let)s.
      In translated form, these are terms @('((lambda (var) body) init)').
      However, if @('body') has other free variables in addition to @('var'),
-     those appear as both formal paramaters and actual arguments, e.g.
+     those appear as both formal parameters and actual arguments, e.g.
      @('((lambda (var x y) body<var,x,y>) init x y)'):
      this is because ACL2 translated terms have all closed lambda expressions,
      so ACL2 adds formal parameters and actual arguments to make that happen.
@@ -1043,11 +1147,11 @@
     "These are for pure C-valued terms
      and for boolean terms (which are always pure)."))
 
-  (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
-                                     (vars atc-symbol-type-alist-listp)
-                                     (fn symbolp)
-                                     ctx
-                                     state)
+  (define atc-gen-expr-cval-pure ((term pseudo-termp)
+                                  (inscope atc-symbol-type-alist-listp)
+                                  (fn symbolp)
+                                  ctx
+                                  state)
     :returns (mv erp
                  (val (tuple (expr exprp)
                              (type typep)
@@ -1068,7 +1172,7 @@
       "An ACL2 variable is translated to a C variable.
        Its type is looked up in the symbol table passed as input.")
      (xdoc::p
-      "If the term fits the @(tsee sint-const) pattern,
+      "If the term fits the pattern of an integer constant
        we translate it to a C integer constant.")
      (xdoc::p
       "If the term fits the pattern of a unary or binary operation,
@@ -1088,7 +1192,7 @@
        on the recursively generated expressions.
        The type is the array's element type.")
      (xdoc::p
-      "If the term is a call of @(tsee c::sint01),
+      "If the term is a call of @(tsee c::sint-from-boolean),
        we call the mutually recursive ACL2 function
        that translates the argument (which must be a boolean term)
        to an expression, which we return.
@@ -1109,7 +1213,7 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (b* ((type (atc-get-var term vars))
+          (b* ((type (atc-get-var term inscope))
                ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
@@ -1117,99 +1221,99 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name term)))
                    (type-fix type)))))
-         ((mv okp val) (atc-check-sint-const term))
+         ((mv okp val unsignedp suffix type) (atc-check-iconst term))
          ((when okp)
           (acl2::value
            (list
             (expr-const (const-int (make-iconst :value val
                                                 :base (iconst-base-dec)
-                                                :unsignedp nil
-                                                :type (iconst-tysuffix-none))))
-            (type-sint))))
+                                                :unsignedp unsignedp
+                                                :type suffix)))
+            type)))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
+                                                               inscope
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-unary :op op :arg arg-expr)
                                type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr &)) (atc-gen-expr-pure-nonbool arg1
-                                                                   vars
-                                                                   fn
-                                                                   ctx
-                                                                   state))
-               ((er (list arg2-expr &)) (atc-gen-expr-pure-nonbool arg2
-                                                                   vars
-                                                                   fn
-                                                                   ctx
-                                                                   state)))
+          (b* (((er (list arg1-expr &)) (atc-gen-expr-cval-pure arg1
+                                                                inscope
+                                                                fn
+                                                                ctx
+                                                                state))
+               ((er (list arg2-expr &)) (atc-gen-expr-cval-pure arg2
+                                                                inscope
+                                                                fn
+                                                                ctx
+                                                                state)))
             (acl2::value (list (make-expr-binary :op op
                                                  :arg1 arg1-expr
                                                  :arg2 arg2-expr)
                                type))))
          ((mv okp tyname arg) (atc-check-conv term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
+                                                               inscope
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-cast :type tyname
                                                :arg arg-expr)
                                (type-name-to-type tyname)))))
          ((mv okp arr sub type) (atc-check-array-read term))
          ((when okp)
-          (b* (((er (list arr-expr &)) (atc-gen-expr-pure-nonbool arr
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state))
-               ((er (list sub-expr &)) (atc-gen-expr-pure-nonbool sub
-                                                                  vars
-                                                                  fn
-                                                                  ctx
-                                                                  state)))
+          (b* (((er (list arr-expr &)) (atc-gen-expr-cval-pure arr
+                                                               inscope
+                                                               fn
+                                                               ctx
+                                                               state))
+               ((er (list sub-expr &)) (atc-gen-expr-cval-pure sub
+                                                               inscope
+                                                               fn
+                                                               ctx
+                                                               state)))
             (acl2::value (list (make-expr-arrsub :arr arr-expr
                                                  :sub sub-expr)
                                type)))))
       (case-match term
-        (('c::sint01 arg)
+        (('c::sint-from-boolean arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg vars fn ctx state))
+               (atc-gen-expr-bool arg inscope fn ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
            (mv nil (list expr (type-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-pure-nonbool then
-                                                      vars
-                                                      fn
-                                                      ctx
-                                                      state))
+              ((when mbtp) (atc-gen-expr-cval-pure then
+                                                   inscope
+                                                   fn
+                                                   ctx
+                                                   state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-pure-nonbool then
-                                                       vars
-                                                       fn
-                                                       ctx
-                                                       state))
+              ((when mbt$p) (atc-gen-expr-cval-pure then
+                                                    inscope
+                                                    fn
+                                                    ctx
+                                                    state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                           vars
+                                                           inscope
                                                            fn
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state))
-              ((er (list then-expr then-type)) (atc-gen-expr-pure-nonbool
+              ((er (list then-expr then-type)) (atc-gen-expr-cval-pure
                                                 then
-                                                vars
+                                                inscope
                                                 fn
                                                 ctx
                                                 state))
-              ((er (list else-expr else-type)) (atc-gen-expr-pure-nonbool
+              ((er (list else-expr else-type)) (atc-gen-expr-cval-pure
                                                 else
-                                                vars
+                                                inscope
                                                 fn
                                                 ctx
                                                 state))
@@ -1233,7 +1337,7 @@
                      fn term)))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (vars atc-symbol-type-alist-listp)
+                             (inscope atc-symbol-type-alist-listp)
                              (fn symbolp)
                              ctx
                              state)
@@ -1244,7 +1348,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is a boolen term,
+      "At the same time, we check that the term is a boolean term,
        as described in the user documentation.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
@@ -1253,7 +1357,7 @@
        and we construct a logical expression
        with the corresponding C operators.")
      (xdoc::p
-      "If the term is a call of @(tsee sint-nonzerop),
+      "If the term is a call of @('boolean-from-<type>'),
        we call the mutually recursive function
        that translates the argument, which must be a C-valued term,
        to an expression, which we return.")
@@ -1265,19 +1369,19 @@
     (case-match term
       (('not arg)
        (b* (((er arg-expr) (atc-gen-expr-bool arg
-                                              vars
+                                              inscope
                                               fn
                                               ctx
                                               state)))
          (acl2::value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state)))
@@ -1286,21 +1390,40 @@
                                         :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               vars
+                                               inscope
                                                fn
                                                ctx
                                                state)))
          (acl2::value (make-expr-binary :op (binop-logor)
                                         :arg1 arg1-expr
                                         :arg2 arg2-expr))))
-      (('c::sint-nonzerop arg)
-       (b* (((mv erp (list expr &) state)
-             (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
+      ((boolean-from-type arg)
+       (b* (((when (not (symbolp boolean-from-type)))
+             (er-soft+ ctx t (irr-expr)
+                       "When generating C code for the function ~x0, ~
+                        at a point where
+                        a boolean ACL2 term is expected, ~
+                        the term ~x1 is encountered instead."
+                       fn term))
+            ((mv okp boolean from type)
+             (atc-check-symbol-3part boolean-from-type))
+            ((unless (and okp
+                          (eq boolean 'boolean)
+                          (eq from 'from)
+                          (atc-integer-fixtype-to-type type)))
+             (er-soft+ ctx t (irr-expr)
+                       "When generating C code for the function ~x0, ~
+                        at a point where
+                        a boolean ACL2 term is expected, ~
+                        the term ~x1 is encountered instead."
+                       fn term))
+            ((mv erp (list expr &) state)
+             (atc-gen-expr-cval-pure arg inscope fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -1316,51 +1439,51 @@
   ///
 
   (defret-mutual consp-of-atc-gen-expr-pure
-    (defret typeset-of-atc-gen-expr-pure-nonbool
+    (defret typeset-of-atc-gen-expr-cval-pure
       (and (consp val)
            (true-listp val))
       :rule-classes :type-prescription
-      :fn atc-gen-expr-pure-nonbool)
+      :fn atc-gen-expr-cval-pure)
     (defret true-of-atc-gen-expr-bool
       t
       :rule-classes nil
       :fn atc-gen-expr-bool))
 
-  (verify-guards atc-gen-expr-pure-nonbool))
+  (verify-guards atc-gen-expr-cval-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
-                                        (vars atc-symbol-type-alist-listp)
-                                        (fn symbolp)
-                                        ctx
-                                        state)
+(define atc-gen-expr-cval-pure-list ((terms pseudo-term-listp)
+                                     (inscope atc-symbol-type-alist-listp)
+                                     (fn symbolp)
+                                     ctx
+                                     state)
   :returns (mv erp (exprs expr-listp) state)
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure C-valued terms."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee atc-gen-expr-pure-nonbool) to lists.
+    "This lifts @(tsee atc-gen-expr-cval-pure) to lists.
      However, we do not return the C types of the expressions."))
   (b* (((when (endp terms)) (acl2::value nil))
-       ((mv erp (list expr &) state) (atc-gen-expr-pure-nonbool (car terms)
-                                                                vars
-                                                                fn
-                                                                ctx
-                                                                state))
+       ((mv erp (list expr &) state) (atc-gen-expr-cval-pure (car terms)
+                                                             inscope
+                                                             fn
+                                                             ctx
+                                                             state))
        ((when erp) (mv erp nil state))
-       ((er exprs) (atc-gen-expr-pure-nonbool-list (cdr terms)
-                                                   vars
-                                                   fn
-                                                   ctx
-                                                   state)))
+       ((er exprs) (atc-gen-expr-cval-pure-list (cdr terms)
+                                                inscope
+                                                fn
+                                                ctx
+                                                state)))
     (acl2::value (cons expr exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-cval ((term pseudo-termp)
-                           (vars atc-symbol-type-alist-listp)
+                           (inscope atc-symbol-type-alist-listp)
                            (fn symbolp)
                            (prec-fns atc-symbol-fninfo-alistp)
                            ctx
@@ -1406,11 +1529,11 @@
   (b* (((mv okp called-fn args type limit)
         (atc-check-callable-fn term prec-fns))
        ((when okp)
-        (b* (((mv erp arg-exprs state) (atc-gen-expr-pure-nonbool-list args
-                                                                       vars
-                                                                       fn
-                                                                       ctx
-                                                                       state))
+        (b* (((mv erp arg-exprs state) (atc-gen-expr-cval-pure-list args
+                                                                    inscope
+                                                                    fn
+                                                                    ctx
+                                                                    state))
              ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
           (acl2::value (list
                         (make-expr-call :fun (make-ident
@@ -1419,7 +1542,7 @@
                         type
                         (1+ limit))))))
     (b* (((mv erp (list expr type) state)
-          (atc-gen-expr-pure-nonbool term vars fn ctx state))
+          (atc-gen-expr-cval-pure term inscope fn ctx state))
          ((when erp) (mv erp (list (irr-expr) (irr-type) 0) state)))
       (acl2::value (list expr type 1))))
   ///
@@ -1472,15 +1595,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-must-be-stmt-term-not-cval ((term pseudo-termp))
+  :returns (yes/no booleanp)
+  :short "Perform a shallow check that a term is a statement term
+          that is not a C-valued term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atc-gen-stmt) to distinguish two cases
+     in the treatment of @(tsee let) terms where the variable is in scope.
+     The check just serves to distinguish the two cases,
+     each of which performs a complete validation of the term;
+     so it is fine for the check to be shallow.")
+   (xdoc::p
+    "The check succeeds when the term is a call of
+     an @(tsee if) or a lambda expression."))
+  (case-match term
+    ((if/lambda . &) (or (eq if/lambda 'if)
+                         (consp if/lambda)))
+    (& nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp)
-                      (vars atc-symbol-type-alist-listp)
+                      (inscope atc-symbol-type-alist-listp)
+                      (xforming symbol-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-fninfo-alistp)
                       ctx
                       state)
   :returns (mv erp
                (val (tuple (items block-item-listp)
-                           (type typep)
+                           (type type-optionp)
                            (limit natp)
                            val))
                state)
@@ -1495,12 +1641,19 @@
     "At the same time, we check that the term is a statement term,
      as described in the user documentation.")
    (xdoc::p
-    "Besides the generated block items list,
-     we also return the C type of the value it returns.
-     Even though C block item lists do not always return values,
-     the ones generated by ATC always do;
-     in fact, we are turning ACL2 terms (which return values)
-     into block item lists that return values corresponding to the terms.")
+    "The @('xforming') parameter of this ACL2 function
+     is the list of variables being transformed by this statement.
+     This is denoted @('vars') in the user documentation at @(tsee atc).")
+   (xdoc::p
+    "Besides the generated block items,
+     we also return an optional C type.
+     This is non-@('nil') when @('xforming') is @('nil'):
+     in this case, the list of block items is not just transforming variables
+     but it is returning a value,
+     and the type is the type of that value.
+     When @('xforming') is non-@('nil'), no type is returned,
+     because the block items is just transforming variables,
+     and it is followed by more block items that eventually return a value.")
    (xdoc::p
     "We also return a limit that suffices for @(tsee exec-block-item-list)
      to execute the returned block items completely.")
@@ -1514,7 +1667,8 @@
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
-     we ensure that the two branches have the same type.
+     we ensure that the two branches have the same type
+     (if @('xforming') is non-@('nil'), those types are both @('nil')).
      When we process the branches,
      we extend the symbol table with a new empty scope for each branch.
      The calculation of the limit result is a bit more complicated in this case:
@@ -1532,6 +1686,15 @@
      by 1 to go from @(tsee exec-block-item-list) to @(tsee exec-block-item),
      and another 1 to go from there to @(tsee exec-stmt).")
    (xdoc::p
+    "If the term is a @(tsee mv-let),
+     we ensure that all its bound variables are in scope.
+     We recursively treat the bound term as
+     a statement term transforming the bound variables,
+     generating block items for it;
+     then we continue processing the body of the @(tsee mv-let)
+     as a term transforming the variables in @('xforming').
+     We just use the sum of the two limits as the overall limit.")
+   (xdoc::p
     "If the term is a @(tsee let),
      we first check whether a variable with the same symbol name
      is not already in scope (i.e. in the symbol table):
@@ -1541,21 +1704,28 @@
      from the term that the variable is bound to,
      which also determines the type of the variable;
      the type must not be a pointer type (code generation fails if it is).
-     Otherwise, we check whether a variable with the same symbol
-     is in the innermost scope (only the innermost):
+     Otherwise, a variable with the same symbol is in scope,
+     and there are two case to consider.
+     The first case is that the term bound in the @(tsee let)
+     must be a statement term that is not a C-valued term:
+     then this is a term transforming the variable bound in the @(tsee let),
+     and thus we generate the transforming block items
+     followed by the body block items.
+     The second case is that the term bound in the @(tsee let)
+     must be a C-valued term:
      in that case, we ensure that the type of the existing variable
-     matches the one of the term bound to the inner variable,
+     matches the one of the term bound in the @(tsee let),
      and we generate an assignment to the C variable,
      with the expression obtained
      from the term that the inner variable is bound to.
-     In both cases, we recursively generate the block items for the body
-     and we put those just after the variable declaration or assignment.
-     If neither case applies,
-     it means that a variable with the same symbol is in an outer scope:
-     we stop with an error.")
+     In all cases, we recursively generate the block items for the body
+     and we put those just after the variable declaration or assignment.")
    (xdoc::p
     "In the @(tsee let) case whose translation is explained above,
      the limit is calculated as follows.
+     For the case of the transforming term, we add up the two limits;
+     this may need refinement.
+     For the other cases, we have one block item followed by block items.
      First, we need 1 to go from @(tsee exec-block-item-list)
      to @(tsee exec-block-item).
      Then we take the maximum of the limit for the first block item
@@ -1572,7 +1742,19 @@
      For the remaining block items, we need to add another 1
      to go from @(tsee exec-block-item-list) to its recursive call.")
    (xdoc::p
-    "If the term is neither an @(tsee if) nor a @(tsee let),
+    "If the term is a single variable
+     and @('xforming') is a singleton list with that variable,
+     then we return nothing.
+     This is the end of a list of block items that transforms that variable.
+     See the user documentation.")
+   (xdoc::p
+    "If the term is an @(tsee mv)
+     and its arguments are the @('xforming') variables,
+     the we return nothing.
+     This is the end of a list of block items that transforms that variable.
+     See the user documentation.")
+   (xdoc::p
+    "If the term does not have any of the forms above,
      we treat it as a C-valued term.
      We translate it to an expression
      and we generate a @('return') statement with that expression.
@@ -1585,19 +1767,33 @@
   (b* (((mv okp test then else) (acl2::check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (acl2::check-mbt-call test))
-             ((when mbtp) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((when mbtp)
+              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
              ((mv mbt$p &) (acl2::check-mbt$-call test))
-             ((when mbt$p) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((when mbt$p)
+              (atc-gen-stmt then inscope xforming fn prec-fns ctx state))
              ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                          vars
+                                                          inscope
                                                           fn
                                                           ctx
                                                           state))
              ((when erp) (mv erp (list nil (irr-type) 0) state))
              ((er (list then-items then-type then-limit))
-              (atc-gen-stmt then (cons nil vars) fn prec-fns ctx state))
+              (atc-gen-stmt then
+                            (cons nil inscope)
+                            xforming
+                            fn
+                            prec-fns
+                            ctx
+                            state))
              ((er (list else-items else-type else-limit))
-              (atc-gen-stmt else (cons nil vars) fn prec-fns ctx state))
+              (atc-gen-stmt else
+                            (cons nil inscope)
+                            xforming
+                            fn
+                            prec-fns
+                            ctx
+                            state))
              ((unless (equal then-type else-type))
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
@@ -1618,18 +1814,40 @@
                                 :else (make-stmt-compound :items else-items))))
             type
             limit))))
+       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((when okp)
+        (b* (((unless (> (len vars) 1))
+              (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
+                         term)
+                  (list nil (irr-type) 0)
+                  state))
+             ((unless (atc-var-list-inscopep vars inscope))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         not all of whose variables ~x1 are in scope."
+                        fn vars))
+             ((er (list xform-items & xform-limit))
+              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+             ((er (list body-items body-type body-limit))
+              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+             (items (append xform-items body-items))
+             (type body-type)
+             (limit (+ xform-limit body-limit)))
+          (acl2::value (list items type limit))))
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
-             ((unless (atc-ident-stringp var-name))
-              (er-soft+ ctx t (list nil (irr-type) 0)
-                        "The symbol name ~s0 of ~
-                         the LET variable ~x1 of the function ~x2 ~
-                         must be a portable ASCII C identifier, but it is not."
-                        var-name var fn))
-             ((when (atc-var-newp var-name vars))
-              (b* (((mv erp (list init-expr init-type init-limit) state)
-                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
+             ((when (atc-var-newp var-name inscope))
+              (b* (((unless (atc-ident-stringp var-name))
+                    (er-soft+ ctx t (list nil (irr-type) 0)
+                              "The symbol name ~s0 of ~
+                               the LET variable ~x1 of the function ~x2 ~
+                               must be a portable ASCII C identifier, ~
+                               but it is not."
+                              var-name var fn))
+                   ((mv erp (list init-expr init-type init-limit) state)
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((when (type-case init-type :pointer))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1639,24 +1857,34 @@
                    (declon (make-declon :type (atc-gen-tyspecseq init-type)
                                         :declor (make-declor
                                                  :ident
-                                                  (make-ident
-                                                   :name
-                                                    (symbol-name var)))
+                                                 (make-ident
+                                                  :name
+                                                  (symbol-name var)))
                                         :init init-expr))
                    (item (block-item-declon declon))
-                   (vars (atc-add-var var init-type vars))
+                   (inscope (atc-add-var var init-type inscope))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 init-limit)
                                     (+ 1 body-limit)))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
-             (prev-type (atc-get-var-innermost var vars))
+             (stmt-not-cval (atc-must-be-stmt-term-not-cval val))
+             ((when stmt-not-cval)
+              (b* (((er (list xform-items & xform-limit))
+                    (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+                   ((er (list body-items body-type body-limit))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+                   (items (append xform-items body-items))
+                   (type body-type)
+                   (limit (+ xform-limit body-limit)))
+                (acl2::value (list items type limit))))
+             (prev-type (atc-get-var var inscope))
              ((when (typep prev-type))
               (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-cval val vars fn prec-fns ctx state))
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((unless (equal prev-type rhs-type))
                     (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1664,8 +1892,7 @@
                                assigned to the LET variable ~x2 ~
                                of the function ~x3 ~
                                differs from the type ~x4 ~
-                               of a variable with the same symbol ~
-                               in the same innermost scope."
+                               of a variable with the same symbol in scope."
                               rhs-type val var fn prev-type))
                    (asg (make-expr-binary
                          :op (binop-asg)
@@ -1674,22 +1901,27 @@
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body vars fn prec-fns ctx state))
+                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
                    (type body-type)
                    (limit (+ 1 (max (+ 1 1 1 rhs-limit)
                                     body-limit))))
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit)))))
-          (er-soft+ ctx t (list nil (irr-type) 0)
-                    "When generating C code for the function ~x0, ~
-                     the LET variable ~x1 has the same symbol name as ~
-                     another variable (formal parameter or LET variable) ~
-                     that is in an outer scope; ~
-                     this is disallowed, even if the package names differ."
-                    fn var)))
+          (mv (raise "Internal error: variable ~x0 is not new but has no type."
+                     var)
+              (list nil (irr-type) 0)
+              state)))
+       ((when (and (symbolp term)
+                   (equal xforming (list term))))
+        (acl2::value (list nil nil 0)))
+       ((mv okp terms) (acl2::check-list-call term))
+       ((when (and okp
+                   (>= (len terms) 2)
+                   (equal terms xforming)))
+        (acl2::value (list nil nil 0)))
        ((mv erp (list expr type limit) state)
-        (atc-gen-expr-cval term vars fn prec-fns ctx state))
+        (atc-gen-expr-cval term inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
        (limit (+ 1 1 1 limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
@@ -1707,6 +1939,9 @@
              (true-listp val))
         :name cons-true-listp-of-atc-gen-stmt-val
         :rule-classes :type-prescription))
+  (defret true-listp-of-atc-gen-stmt.items
+    (true-listp (car val))
+    :rule-classes :type-prescription)
   (defret natp-of-atc-gen-stmt.limit
     (natp (caddr val))
     :rule-classes :type-prescription)
@@ -1746,8 +1981,16 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
+               (scharp (type-schar))
                (ucharp (type-uchar))
+               (sshortp (type-sshort))
+               (ushortp (type-ushort))
                (sintp (type-sint))
+               (uintp (type-uint))
+               (slongp (type-slong))
+               (ulongp (type-ulong))
+               (sllongp (type-sllong))
+               (ullongp (type-ullong))
                (uchar-arrayp (type-pointer (type-uchar)))
                (t nil)))
        ((when (not type))
@@ -1827,7 +2070,7 @@
                                    state)
   :returns (mv erp
                (val (tuple (params param-declon-listp)
-                           (vars atc-symbol-type-alist-listp)
+                           (inscope atc-symbol-type-alist-listp)
                            (pointers symbol-listp)
                            val))
                state)
@@ -1858,12 +2101,12 @@
        ((mv erp (list param type pointerp) state)
         (atc-gen-param-declon formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list nil nil nil) state))
-       ((er (list params vars pointers))
+       ((er (list params inscope pointers))
         (atc-gen-param-declon-list (cdr formals)
                                    fn guard-conjuncts guard
                                    ctx state)))
     (acl2::value (list (cons param params)
-                       (atc-add-var formal type vars)
+                       (atc-add-var formal type inscope)
                        (if pointerp (cons formal pointers) pointers))))
 
   :verify-guards nil ; done below
@@ -1902,7 +2145,7 @@
     (xdoc::li
      "A formal parameter is constrained to be a value by the guard.")
     (xdoc::li
-     "Calls of @(tsee sint-const), @(tsee sint-add), etc.
+     "Calls of @(tsee sint-const), @(tsee add-sint-sint), etc.
       are known to return values.")
     (xdoc::li
      "A @(tsee let) variable is equal to a term that,
@@ -1927,47 +2170,32 @@
      by construction;
      thus, we stop with an error if it is any other type,
      but that should never happen currently."))
-  (b* ((pred (case (type-kind type)
-               (:uchar 'ucharp)
-               (:sint 'sintp)
-               (t (raise "Internal error: function return type is ~x0." type))))
+  (b* (((unless (type-integerp type))
+        (prog2$ (raise "Internal error: function return type is ~x0." type)
+                (mv '(_) nil names-to-avoid)))
+       (pred (pack (atc-integer-type-fixtype type) 'p))
        (name (add-suffix fn "-RETURNS-VALUE"))
        ((mv name names-to-avoid)
         (acl2::fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
        (formula `(implies ,guard (,pred (,fn ,@formals))))
-       (theory `(,fn
-                 ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
-                 sintp-of-sint-const
-                 sintp-of-sint01
-                 sintp-of-sint-plus
-                 sintp-of-sint-minus
-                 sintp-of-sint-bitnot
-                 sintp-of-sint-lognot
-                 sintp-of-sint-add
-                 sintp-of-sint-sub
-                 sintp-of-sint-mul
-                 sintp-of-sint-div
-                 sintp-of-sint-rem
-                 sintp-of-sint-shl-sint
-                 sintp-of-sint-shr-sint
-                 sintp-of-sint-lt
-                 sintp-of-sint-gt
-                 sintp-of-sint-le
-                 sintp-of-sint-ge
-                 sintp-of-sint-eq
-                 sintp-of-sint-ne
-                 sintp-of-sint-bitand
-                 sintp-of-sint-bitxor
-                 sintp-of-sint-bitior
-                 sintp-of-sint-logand
-                 sintp-of-sint-logor
-                 sintp-of-sint-from-uchar
-                 ucharp-of-uchar-from-sint
-                 ucharp-of-uchar-array-read-sint))
        (hints `(("Goal"
-                 :in-theory ',theory
+                 :in-theory
+                 (append
+                  *atc-integer-ops-1-return-rewrite-rules*
+                  *atc-integer-ops-2-return-rewrite-rules*
+                  *atc-integer-convs-return-rewrite-rules*
+                  '(,fn
+                    ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
+                    sintp-of-sint-const
+                    uintp-of-uint-const
+                    slongp-of-slong-const
+                    ulongp-of-ulong-const
+                    sllongp-of-sllong-const
+                    ullongp-of-ullong-const
+                    sintp-of-sint-from-boolean
+                    ucharp-of-uchar-array-read-sint))
                  :use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -2147,13 +2375,20 @@
      The type prescriptions of the callable functions
      are needed to discharge some proof subgoal that arise.")
    (xdoc::p
+    "To speed up the proofs, we actually remove from the theory
+     some opener rules that should never apply,
+     e.g. because they handle error situations that are not supposed to occur.
+     Listing their names explicitly is a bit brittle,
+     but for now it is the best we can do.
+     It does speed up some proofs quite a bit.")
+   (xdoc::p
     "Furthermore, we generate a @(':use') hint
      to augment the theorem's formula with the guard theorem of @('fn'),
      with the pointer arguments replaced by the dereferenced arrays.
      This is critical to ensure that the symbolic execution of the C operators
      does not split on the error cases:
      the fact that @('fn') is guard-verified
-     ensures that @(tsee sint-add) and similar functions are always called
+     ensures that @(tsee add-sint-sint) and similar functions are always called
      on values such that the exact result fit into the type,
      which is the same condition under which the dynamic semantics
      does not error on the corresponding operators.")
@@ -2211,7 +2446,20 @@
        (instantiation
         (atc-gen-instantiation-deref-compustate pointers compst-var))
        (hints `(("Goal"
-                 :in-theory (append *atc-all-rules*
+                 :in-theory (append (set-difference-eq
+                                     *atc-all-rules*
+                                     '(exec-expr-pure-base-6
+                                       exec-expr-pure-base-7
+                                       exec-expr-pure-base-8
+                                       exec-expr-pure-list-base-2
+                                       exec-stmt-base-1
+                                       exec-stmt-base-6
+                                       exec-stmt-base-8
+                                       exec-block-item-list-base-1
+                                       exec-block-item-list-base-3
+                                       init-scope-base-2
+                                       read-var-aux-base-1
+                                       write-var-aux-base-1))
                                     '(,fn)
                                     ',type-prescriptions
                                     ',returns-value-thms
@@ -2491,15 +2739,19 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list params vars pointers))
+       ((er (list params inscope pointers))
         (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
        (body (acl2::ubody+ fn wrld))
        ((er (list items type limit)) (atc-gen-stmt body
-                                                   vars
+                                                   inscope
+                                                   nil
                                                    fn
                                                    prec-fns
                                                    ctx
                                                    state))
+       ((unless (typep type))
+        (acl2::value
+         (raise "Internal error: the function ~x0 has no return type." fn)))
        ((when (type-case type :pointer))
         (acl2::value
          (raise "Internal error: ~

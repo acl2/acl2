@@ -968,6 +968,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled point-on-montgomery-finite-when-not-zero
+  :short "A non-zero point on a Montgomery curve is finite."
+  (implies (and (pointp point)
+                (point-on-montgomery-p point curve)
+                (not (equal point (montgomery-zero))))
+           (equal (point-kind point) :finite))
+  :enable (point-on-montgomery-p
+           montgomery-zero
+           pointp
+           point-kind))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-neg ((point pointp) (curve montgomery-curvep))
   :guard (point-on-montgomery-p point curve)
   :returns (point1 pointp)
@@ -2023,4 +2036,239 @@
                (equal (montgomery-mul (mod scalar order) point curve)
                       (montgomery-mul scalar point curve)))
       :from (:decompose-scalar :reduce-to-mod))
+     (:qed)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule montgomery-distinct-x-when-nonzero-mul-in-order-range
+  :short "Multiplying a Montgomery point
+          by two distinct and not opposite non-zero scalars
+          in the range of the point order
+          yields points with distinct abscissae."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially Theorem A.3.4 in the "
+    (xdoc::ahref "https://zips.z.cash/protocol/protocol.pdf"
+                 "Zcash Protocol Specification (Version 2020.1.15)")
+    ", without the hypothesis that the order of the point is odd,
+     which is not needed to prove the fact that the abscissae are distinct."))
+  (implies (and (montgomery-add-closure)
+                (montgomery-add-associativity)
+                (point-on-montgomery-p point curve)
+                (natp order)
+                (montgomery-point-orderp point order curve)
+                (integerp k1)
+                (or (and (<= (- (/ (1- order) 2)) k1)
+                         (< k1 0))
+                    (and (< 0 k1)
+                         (<= k1 (/ (1- order) 2))))
+                (equal point1 (montgomery-mul k1 point curve))
+                (integerp k2)
+                (or (and (<= (- (/ (1- order) 2)) k2)
+                         (< k2 0))
+                    (and (< 0 k2)
+                         (<= k2 (/ (1- order) 2))))
+                (equal point2 (montgomery-mul k2 point curve))
+                (not (equal k1 k2))
+                (not (equal k1 (- k2))))
+           (and (equal (point-kind point1) :finite)
+                (equal (point-kind point2) :finite)
+                (not (equal (point-finite->x point1)
+                            (point-finite->x point2)))))
+  :use main
+
+  :prep-lemmas
+
+  ((defruled lemma1
+     (implies (and (natp order)
+                   (integerp k)
+                   (or (and (<= (- (/ (1- order) 2)) k)
+                            (< k 0))
+                       (and (< 0 k)
+                            (<= k (/ (1- order) 2)))))
+              (and (natp (mod k order))
+                   (< 0 (mod k order))
+                   (< (mod k order) order)))
+     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+   (defruled lemma2
+     (implies (and (natp order)
+                   (integerp k1)
+                   (or (and (<= (- (/ (1- order) 2)) k1)
+                            (< k1 0))
+                       (and (< 0 k1)
+                            (<= k1 (/ (1- order) 2))))
+                   (integerp k2)
+                   (or (and (<= (- (/ (1- order) 2)) k2)
+                            (< k2 0))
+                       (and (< 0 k2)
+                            (<= k2 (/ (1- order) 2))))
+                   (not (equal k1 (- k2))))
+              (and (natp (mod (+ k1 k2) order))
+                   (< 0 (mod (+ k1 k2) order))
+                   (< (mod (+ k1 k2) order) order)))
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (defruled lemma3
+     (implies (and (natp order)
+                   (integerp k1)
+                   (or (and (<= (- (/ (1- order) 2)) k1)
+                            (< k1 0))
+                       (and (< 0 k1)
+                            (<= k1 (/ (1- order) 2))))
+                   (integerp k2)
+                   (or (and (<= (- (/ (1- order) 2)) k2)
+                            (< k2 0))
+                       (and (< 0 k2)
+                            (<= k2 (/ (1- order) 2))))
+                   (not (equal k1 k2)))
+              (and (natp (mod (- k1 k2) order))
+                   (< 0 (mod (- k1 k2) order))
+                   (< (mod (- k1 k2) order) order)))
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (acl2::defisar
+    main
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (point-on-montgomery-p point curve)
+                  (natp order)
+                  (montgomery-point-orderp point order curve)
+                  (integerp k1)
+                  (or (and (<= (- (/ (1- order) 2)) k1)
+                           (< k1 0))
+                      (and (< 0 k1)
+                           (<= k1 (/ (1- order) 2))))
+                  (equal point1 (montgomery-mul k1 point curve))
+                  (integerp k2)
+                  (or (and (<= (- (/ (1- order) 2)) k2)
+                           (< k2 0))
+                      (and (< 0 k2)
+                           (<= k2 (/ (1- order) 2))))
+                  (equal point2 (montgomery-mul k2 point curve))
+                  (not (equal k1 k2))
+                  (not (equal k1 (- k2))))
+             (and (equal (point-kind point1) :finite)
+                  (equal (point-kind point2) :finite)
+                  (not (equal (point-finite->x point1)
+                              (point-finite->x point2)))))
+    :proof
+    ((:assume
+      (:closure (montgomery-add-closure)))
+     (:assume
+      (:assoc (montgomery-add-associativity)))
+     (:assume
+      (:point (point-on-montgomery-p point curve)))
+     (:assume
+      (:order (natp order)))
+     (:assume
+      (:point-order (montgomery-point-orderp point order curve)))
+     (:assume
+      (:k1 (and (integerp k1)
+                (or (and (<= (- (/ (1- order) 2)) k1)
+                         (< k1 0))
+                    (and (< 0 k1)
+                         (<= k1 (/ (1- order) 2)))))))
+     (:assume
+      (:k2 (and (integerp k2)
+                (or (and (<= (- (/ (1- order) 2)) k2)
+                         (< k2 0))
+                    (and (< 0 k2)
+                         (<= k2 (/ (1- order) 2)))))))
+     (:assume
+      (:k1-diff-k2 (not (equal k1 k2))))
+     (:assume
+      (:k1-diff-neg-k2 (not (equal k1 (- k2)))))
+     (:assume
+      (:point1 (equal point1 (montgomery-mul k1 point curve))))
+     (:assume
+      (:point2 (equal point2 (montgomery-mul k2 point curve))))
+     (:derive
+      (:k1-point-not-zero (not (equal (montgomery-mul k1 point curve)
+                                      (montgomery-zero))))
+      :from (:point-order :order :closure :assoc :point :k1)
+      :hints (("Goal"
+               :in-theory (enable montgomery-point-orderp)
+               :use ((:instance lemma1 (k k1))
+                     (:instance montgomery-point-order-leastp-necc
+                      (order1 (mod k1 order)))))))
+     (:derive
+      (:k2-point-not-zero (not (equal (montgomery-mul k2 point curve)
+                                      (montgomery-zero))))
+      :from (:point-order :order :closure :assoc :point :k2)
+      :hints (("Goal"
+               :in-theory (enable montgomery-point-orderp)
+               :use ((:instance lemma1 (k k2))
+                     (:instance montgomery-point-order-leastp-necc
+                      (order1 (mod k2 order)))))))
+     (:derive
+      (:point1-on-curve (point-on-montgomery-p point1 curve))
+      :from (:point :point1 :closure))
+     (:derive
+      (:point2-on-curve (point-on-montgomery-p point2 curve))
+      :from (:point :point2 :closure))
+     (:derive
+      (:point1-finite (equal (point-kind point1) :finite))
+      :from (:point1-on-curve :k1-point-not-zero :point1)
+      :hints (("Goal"
+               :in-theory (enable point-on-montgomery-finite-when-not-zero))))
+     (:derive
+      (:point2-finite (equal (point-kind point2) :finite))
+      :from (:point2-on-curve :k2-point-not-zero :point2)
+      :hints (("Goal"
+               :in-theory (enable point-on-montgomery-finite-when-not-zero))))
+     (:derive
+      (:point1-plus-point2-not-zero
+       (not (equal (montgomery-add point1 point2 curve)
+                   (montgomery-zero))))
+      :from (:point1 :point2
+             :point :k1 :k2
+             :k1-diff-neg-k2
+             :point-order :order :closure :assoc)
+      :hints (("Goal"
+               :in-theory (enable montgomery-point-orderp
+                                  montgomery-mul-of-scalar-addition-converse)
+               :use (lemma2
+                     (:instance montgomery-point-order-leastp-necc
+                      (order1 (mod (+ k1 k2) order)))))))
+     (:derive
+      (:point1-minus-point2-not-zero
+       (not (equal (montgomery-sub point1 point2 curve)
+                   (montgomery-zero))))
+      :from (:point1 :point2
+             :point :k1 :k2
+             :k1-diff-k2
+             :point-order :order :closure :assoc)
+      :hints (("Goal"
+               :in-theory (enable montgomery-point-orderp
+                                  montgomery-mul-of-scalar-addition-converse
+                                  montgomery-sub)
+               :use (lemma3
+                     (:instance montgomery-point-order-leastp-necc
+                      (order1 (mod (- k1 k2) order)))))))
+     (:derive
+      (:point1-diff-neg-point2 (not (equal point1
+                                           (montgomery-neg point2 curve))))
+      :from (:point1-plus-point2-not-zero :point2-on-curve))
+     (:derive
+      (:point1-diff-point2 (not (equal point1 point2)))
+      :from (:point1-minus-point2-not-zero :point1-on-curve)
+      :hints (("Goal" :in-theory (enable montgomery-sub))))
+     (:derive
+      (:diff-x (not (equal (point-finite->x point1)
+                           (point-finite->x point2))))
+      :from (:point1 :point2
+             :point1-on-curve :point2-on-curve
+             :point1-finite :point2-finite
+             :point1-diff-point2 :point1-diff-neg-point2)
+      :hints (("Goal"
+               :use montgomery-points-with-same-x-are-same-or-neg-point)))
+     (:derive
+      (:conclusion
+       (and (equal (point-kind point1) :finite)
+            (equal (point-kind point2) :finite)
+            (not (equal (point-finite->x point1)
+                        (point-finite->x point2)))))
+      :from (:point1-finite :point2-finite :diff-x))
      (:qed)))))

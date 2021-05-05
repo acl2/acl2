@@ -29,15 +29,26 @@
 (defun integer-to-sint-expr (x)
   (if (>= x 0)
       `(c::sint-const ,x)
-    `(c::sint-minus (c::sint-const ,(- x)))))
+    `(c::minus-sint (c::sint-const ,(- x)))))
 
 ; Name of the ACL2 function that models a unary or binary operator
 ; and name of the C function to test the operator.
 ; The index is for the test number
 ; (just a number to distinguish the tests for an operator).
 
-(defun afn-cfn (op index)
-  (let* ((afn (packn-pos (list 'sint- op) (pkg-witness "C")))
+(defun afn-cfn-unary (op index)
+  (let* ((afn (packn-pos (list op '-sint) (pkg-witness "C")))
+         (cfn (intern (str::cat
+                       (substitute #\_
+                                   #\-
+                                   (str::downcase-string (symbol-name afn)))
+                       "_test"
+                       (str::natstr index))
+                      "ACL2")))
+    (mv afn cfn)))
+
+(defun afn-cfn-binary (op index)
+  (let* ((afn (packn-pos (list op '-sint-sint) (pkg-witness "C")))
          (cfn (intern (str::cat
                        (substitute #\_
                                    #\-
@@ -53,7 +64,7 @@
 
 (defun gen-sint-unary-test-fn (op index arg state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((mv afn cfn) (afn-cfn op index))
+  (b* (((mv afn cfn) (afn-cfn-unary op index))
        (arg-expr (integer-to-sint-expr arg))
        ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg)) 'test state nil))
        (res (c::sint->get res))
@@ -61,7 +72,7 @@
     (value
      `(defun ,cfn ()
         (declare (xargs :guard t))
-        (c::sint-eq (,afn ,arg-expr) ,res-expr)))))
+        (c::eq-sint-sint (,afn ,arg-expr) ,res-expr)))))
 
 (defmacro gen-sint-unary-test (op index arg)
   `(make-event (gen-sint-unary-test-fn ',op ',index ',arg state)))
@@ -72,7 +83,7 @@
 
 (defun gen-sint-binary-test-fn (op index arg1 arg2 state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((mv afn cfn) (afn-cfn op index))
+  (b* (((mv afn cfn) (afn-cfn-binary op index))
        (arg1-expr (integer-to-sint-expr arg1))
        (arg2-expr (integer-to-sint-expr arg2))
        ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg1) (c::sint ,arg2))
@@ -84,7 +95,7 @@
     (value
      `(defun ,cfn ()
         (declare (xargs :guard t))
-        (c::sint-eq (,afn ,arg1-expr ,arg2-expr) ,res-expr)))))
+        (c::eq-sint-sint (,afn ,arg1-expr ,arg2-expr) ,res-expr)))))
 
 (defmacro gen-sint-binary-test (op index arg1 arg2)
   `(make-event (gen-sint-binary-test-fn ',op ',index ',arg1 ',arg2 state)))
@@ -189,19 +200,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(gen-sint-binary-test shl-sint 1 3339303 0)
+(gen-sint-binary-test shl 1 3339303 0)
 
-(gen-sint-binary-test shl-sint 2 1 30)
+(gen-sint-binary-test shl 2 1 30)
 
-(gen-sint-binary-test shl-sint 3 255 8)
+(gen-sint-binary-test shl 3 255 8)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(gen-sint-binary-test shr-sint 1 3339303 0)
+(gen-sint-binary-test shr 1 3339303 0)
 
-(gen-sint-binary-test shr-sint 2 2000000000 30)
+(gen-sint-binary-test shr 2 2000000000 30)
 
-(gen-sint-binary-test shr-sint 3 2000000 8)
+(gen-sint-binary-test shr 3 2000000 8)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,112 +292,84 @@
 
 (gen-sint-binary-test bitior 4 -77222 -2222)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(gen-sint-binary-test logand 1 0 0)
-
-(gen-sint-binary-test logand 2 0 1)
-
-(gen-sint-binary-test logand 3 1 0)
-
-(gen-sint-binary-test logand 4 1 1)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(gen-sint-binary-test logor 1 0 0)
-
-(gen-sint-binary-test logor 2 0 1)
-
-(gen-sint-binary-test logor 3 1 0)
-
-(gen-sint-binary-test logor 4 1 1)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |sint_plus_test1|
-        |sint_plus_test2|
-        |sint_plus_test3|
-        |sint_plus_test4|
-        |sint_plus_test5|
-        |sint_minus_test1|
-        |sint_minus_test2|
-        |sint_minus_test3|
-        |sint_minus_test4|
-        |sint_minus_test5|
-        |sint_bitnot_test1|
-        |sint_bitnot_test2|
-        |sint_bitnot_test3|
-        |sint_bitnot_test4|
-        |sint_bitnot_test5|
-        |sint_lognot_test1|
-        |sint_lognot_test2|
-        |sint_lognot_test3|
-        |sint_lognot_test4|
-        |sint_lognot_test5|
-        |sint_add_test1|
-        |sint_add_test2|
-        |sint_add_test3|
-        |sint_add_test4|
-        |sint_sub_test1|
-        |sint_sub_test2|
-        |sint_sub_test3|
-        |sint_sub_test4|
-        |sint_mul_test1|
-        |sint_mul_test2|
-        |sint_mul_test3|
-        |sint_mul_test4|
-        |sint_div_test1|
-        |sint_div_test2|
-        |sint_div_test3|
-        |sint_div_test4|
-        |sint_rem_test1|
-        |sint_rem_test2|
-        |sint_rem_test3|
-        |sint_rem_test4|
-        |sint_shl_sint_test1|
-        |sint_shl_sint_test2|
-        |sint_shl_sint_test3|
-        |sint_shr_sint_test1|
-        |sint_shr_sint_test2|
-        |sint_shr_sint_test3|
-        |sint_lt_test1|
-        |sint_lt_test2|
-        |sint_lt_test3|
-        |sint_gt_test1|
-        |sint_gt_test2|
-        |sint_gt_test3|
-        |sint_le_test1|
-        |sint_le_test2|
-        |sint_le_test3|
-        |sint_ge_test1|
-        |sint_ge_test2|
-        |sint_ge_test3|
-        |sint_eq_test1|
-        |sint_eq_test2|
-        |sint_eq_test3|
-        |sint_ne_test1|
-        |sint_ne_test2|
-        |sint_ne_test3|
-        |sint_bitand_test1|
-        |sint_bitand_test2|
-        |sint_bitand_test3|
-        |sint_bitand_test4|
-        |sint_bitxor_test1|
-        |sint_bitxor_test2|
-        |sint_bitxor_test3|
-        |sint_bitxor_test4|
-        |sint_bitior_test1|
-        |sint_bitior_test2|
-        |sint_bitior_test3|
-        |sint_bitior_test4|
-        |sint_logand_test1|
-        |sint_logand_test2|
-        |sint_logand_test3|
-        |sint_logand_test4|
-        |sint_logor_test1|
-        |sint_logor_test2|
-        |sint_logor_test3|
-        |sint_logor_test4|
+(c::atc |plus_sint_test1|
+        |plus_sint_test2|
+        |plus_sint_test3|
+        |plus_sint_test4|
+        |plus_sint_test5|
+        |minus_sint_test1|
+        |minus_sint_test2|
+        |minus_sint_test3|
+        |minus_sint_test4|
+        |minus_sint_test5|
+        |bitnot_sint_test1|
+        |bitnot_sint_test2|
+        |bitnot_sint_test3|
+        |bitnot_sint_test4|
+        |bitnot_sint_test5|
+        |lognot_sint_test1|
+        |lognot_sint_test2|
+        |lognot_sint_test3|
+        |lognot_sint_test4|
+        |lognot_sint_test5|
+        |add_sint_sint_test1|
+        |add_sint_sint_test2|
+        |add_sint_sint_test3|
+        |add_sint_sint_test4|
+        |sub_sint_sint_test1|
+        |sub_sint_sint_test2|
+        |sub_sint_sint_test3|
+        |sub_sint_sint_test4|
+        |mul_sint_sint_test1|
+        |mul_sint_sint_test2|
+        |mul_sint_sint_test3|
+        |mul_sint_sint_test4|
+        |div_sint_sint_test1|
+        |div_sint_sint_test2|
+        |div_sint_sint_test3|
+        |div_sint_sint_test4|
+        |rem_sint_sint_test1|
+        |rem_sint_sint_test2|
+        |rem_sint_sint_test3|
+        |rem_sint_sint_test4|
+        |shl_sint_sint_test1|
+        |shl_sint_sint_test2|
+        |shl_sint_sint_test3|
+        |shr_sint_sint_test1|
+        |shr_sint_sint_test2|
+        |shr_sint_sint_test3|
+        |lt_sint_sint_test1|
+        |lt_sint_sint_test2|
+        |lt_sint_sint_test3|
+        |gt_sint_sint_test1|
+        |gt_sint_sint_test2|
+        |gt_sint_sint_test3|
+        |le_sint_sint_test1|
+        |le_sint_sint_test2|
+        |le_sint_sint_test3|
+        |ge_sint_sint_test1|
+        |ge_sint_sint_test2|
+        |ge_sint_sint_test3|
+        |eq_sint_sint_test1|
+        |eq_sint_sint_test2|
+        |eq_sint_sint_test3|
+        |ne_sint_sint_test1|
+        |ne_sint_sint_test2|
+        |ne_sint_sint_test3|
+        |bitand_sint_sint_test1|
+        |bitand_sint_sint_test2|
+        |bitand_sint_sint_test3|
+        |bitand_sint_sint_test4|
+        |bitxor_sint_sint_test1|
+        |bitxor_sint_sint_test2|
+        |bitxor_sint_sint_test3|
+        |bitxor_sint_sint_test4|
+        |bitior_sint_sint_test1|
+        |bitior_sint_sint_test2|
+        |bitior_sint_sint_test3|
+        |bitior_sint_sint_test4|
         :output-file "operators.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

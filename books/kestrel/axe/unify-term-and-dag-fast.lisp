@@ -52,6 +52,7 @@
        ;; Term is a cons, so it's either a function call or a quoted constant:
        (let ((pat-fn (ffn-symb term)))
          (if (eq 'quote pat-fn)
+             ;; consider: (equal term darg)
              ;; Term is a quoted constant (the only thing that matches is that constant -- we are now inlining all constants)
              (and (consp darg) ;if it's a consp it must be a quotep (nodenums are integers)
                   (equal (unquote term) (unquote darg)))

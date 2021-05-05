@@ -98,10 +98,10 @@
      not maximum requirements:
      other than practical considerations,
      mathematically nothing prevents some integer types
-     to consists of thousands of millions of bits.")
+     to consists of thousands or millions of bits.")
    (xdoc::p
     "Because of all of the above,
-     our model of C arrays puts no length constraints on arrays.
+     our model of C arrays puts no maximum length constraints on arrays.
      (This is in contrast with Java,
      where arrays have a bounded length and may be also empty.)
      We model arrays as (wrappers of) lists of arbitrary positive length.")
@@ -148,11 +148,6 @@
   :returns (yes/no booleanp)
   :short "Check if a C @('int') is a valid index (i.e. in range)
           for a C @('unsigned char') array."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-index-okp array (sint-integer-value index))
   :hooks (:fix))
 
@@ -190,11 +185,6 @@
   :returns (element ucharp)
   :short "Read an element in an @('unsigned char') array,
           using an @('int') index."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is temporary, since its role will be replaced by
-     @(tsee uchar-array-index-okp) and @(tsee sint-integer-value)."))
   (uchar-array-read array (sint-integer-value index))
   :guard-hints (("Goal" :in-theory (enable uchar-array-sint-index-okp)))
   :hooks (:fix))

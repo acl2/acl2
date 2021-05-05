@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -827,12 +827,14 @@
                               (collect-non-apply$-primps tbody wrld1)))
                         (ancestral-lambda$s-in-guard
                          (and (not ctx1)
-                              (ancestral-lambda$s-by-caller "the guard"
-                                                            tguard wrld1)))
+                              (ancestral-lambda$s-by-caller
+                               "the guard of this event"
+                               tguard wrld1)))
                         (ancestral-lambda$s-in-body
                          (and (not ctx1)
-                              (ancestral-lambda$s-by-caller "the body"
-                                                            tbody wrld1))))
+                              (ancestral-lambda$s-by-caller
+                               "the body of this event"
+                               tbody wrld1))))
 
 ; We collect any unsafe apply$ function objects literally in the guard or body
 ; and any ancestral lambda$s in the guard or body, provided we successfully
@@ -894,27 +896,10 @@
                    ((or ancestral-lambda$s-in-guard
                         ancestral-lambda$s-in-body)
                     (er soft ctx
-                        "We do not allow lambda$ expressions to be evaluated ~
-                         in certain events, including DEFCONST, DEFPKG, and ~
-                         DEFMACRO events.  This restriction has to do with ~
-                         the loading of compiled books before the events in ~
-                         the book are processed.  ~#0~[The :guard, ~x1, of ~
-                         this defmacro~/The body, ~x2, of this defmacro~/Both ~
-                         the guard, ~x1, and the body, ~x2~] ancestrally ~
-                         mention lambda$ expressions.  You should be able to ~
-                         remedy this by replacing the lambda$ expressions by ~
-                         their translations, as described below.~%~%~*3"
-                        (cond ((and ancestral-lambda$s-in-guard
-                                    ancestral-lambda$s-in-body)
-                               2)
-                              (ancestral-lambda$s-in-body 1)
-                              (t 0))
-                        guard
-                        body
-                        (tilde-*-lambda$-replacement-phrase5
+                        "~@0"
+                        (prohibition-of-loop$-and-lambda$-msg
                          (union-equal ancestral-lambda$s-in-guard
-                                      ancestral-lambda$s-in-body)
-                         wrld1)))
+                                      ancestral-lambda$s-in-body))))
                    ((redundant-defmacrop name args tguard tbody wrld1)
                     (cond ((and (not (f-get-global 'in-local-flg state))
                                 (not (f-get-global 'boot-strap-flg state))
@@ -4580,9 +4565,7 @@
                  (chk-embedded-event-form-orig-form-msg orig-form state)
                  (msg "~|Calls of the macro ~x0 do not generate an event, ~
                        because this macro has special meaning that is not ~
-                       handled by ACL2's event-generation mechanism.  Please ~
-                       contact the implementors if this seems to be a ~
-                       hardship."
+                       handled by ACL2's event-generation mechanism."
                       (car form))))
             (t
              (er-let*
@@ -17847,6 +17830,10 @@
           (t (mv nil guard-p verify-guards-p non-exec-p guard-hints dcls)))))
 
 (defun defun-sk-fn (form name args rest)
+
+; Warning: Keep this function in sync with make-apply$-warrant-defun-sk.  For
+; an explanation, see the comment below about the 5th element.
+
   (declare (xargs :mode :program))
   (let ((ctx `(defun-sk . ,name)))
     (mv-let
@@ -17945,6 +17932,18 @@
                      (set-match-free-default :all)
                      (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
                                            "Infected")
+
+; The following encapsulate, which is the 5th element of the returned
+; encapsulate, introduces the witness function and then any constrained
+; function using that witness.  When defun-sk is used to define an apply$
+; warrant function for fn, this encapsulate is the event that introduces
+; APPLY$-WARRANT-fn.  The function make-apply$-warrant-defun-sk assumes that it
+; can grab this event with NTH 5.  It then checks that the grabbed event is an
+; encapsulate that introduces the witness, just as a sanity check.  If the
+; sanity check fails, it's because defun-sk-fn and make-apply$-warrant-defun-sk
+; got out of sync!  Just make sure that the latter function always knows how to
+; find the event creating the apply$ warrant function.
+
                      (encapsulate
                        (((,skolem-name ,@(make-list (length args)
                                                     :initial-element '*))
@@ -18034,6 +18033,106 @@
                                   ,@(and guard-hints
                                          (list :hints
                                                guard-hints))))))))))))))))))
+
+; Because make-apply$-warrant-defun-sk is so dependent on defun-sk-fn, we
+; define that function now, after introducing a couple of helper functions.
+; But make-apply$-warrant-defun-sk isn't needed until we define defwarrant.
+
+(defun tameness-conditions (ilks var)
+  (declare (xargs :mode :program))
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :FN)
+         (cons `(TAMEP-FUNCTIONP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        ((eq (car ilks) :EXPR)
+         (cons `(TAMEP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
+
+(defun successive-cadrs (formals var)
+  (declare (xargs :mode :program))
+  (cond ((endp formals) nil)
+        (t
+         (cons `(CAR ,var)
+               (successive-cadrs (cdr formals) (list 'CDR var))))))
+
+(defun make-apply$-warrant-defun-sk (fn formals bdg trans1-flg)
+
+; This function creates the defun-sk event that introduces APPLY$-WARRANT-fn
+; after (fn . formals) has been confirmed to have badge bdg.  If trans1-flg is
+; nil, it returns an explicit defun-sk form; if trans1-flg is t it returns the
+; encapsulate into which defun-sk expands.  (Note that the resulting encapsulate
+; is not fully translated, just expanded as per the defun-sk macro.)
+
+; This function works by creating the untranslated defun-sk and then, if
+; necessary, calling defun-sk-fn -- the macro expander for defun-sk -- to get
+; the result.  However, defun-sk-fn actually returns an encapsulate that does
+; several things, among which is an inner encapsulate that creates
+; APPLY$-WARRANT-fn.  We need to recover that inner encapsulate from the result
+; of defun-sk-fn.  That inner encapsulate is known to be the 5th element of the
+; result!  However, we do a sanity check, just in case.  The sanity check
+; confirms that the thing we recover is an ENCAPSULATE that introduces
+; APPLY$-WARRANT-fn.  A hard error is signalled if it is not.
+
+; Warning: Keep this function in sync with defun-sk-fn.
+
+  (let* ((name (warrant-name fn))
+         (form
+          (cond ((eq (access apply$-badge bdg :ilks) t)
+                 `(defun-sk ,name ()
+                    (forall (args)
+                      (and
+                       (equal (badge-userfn ',fn) ',bdg)
+                       (equal (apply$-userfn ',fn args)
+                              ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                                   `(,fn ,@(successive-cadrs formals 'args))
+                                   `(mv-list
+                                     ',(access apply$-badge bdg :out-arity)
+                                     (,fn ,@(successive-cadrs formals 'args)))))))
+                    :constrain t))
+                (t (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
+                                                         'ARGS))
+                          (hyp (if (null (cdr hyp-list))
+                                   (car hyp-list)
+                                   `(AND ,@hyp-list))))
+                     `(defun-sk ,name ()
+                        (forall (args)
+                          (implies
+                           ,hyp
+                           (and
+                            (equal (badge-userfn ',fn) ',bdg)
+                            (equal (apply$-userfn ',fn args)
+                                   ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                                        `(,fn ,@(successive-cadrs formals 'args))
+                                        `(mv-list
+                                          ',(access apply$-badge bdg :out-arity)
+                                          (,fn ,@(successive-cadrs formals 'args))))))))
+                        :constrain t))))))
+    (cond
+     ((null trans1-flg) form)
+     (t (let* ((defun-sk-event (defun-sk-fn form name nil (cdddr form)))
+               (crux (nth 5 defun-sk-event))
+               (constrained-fn (and (consp crux)
+                                    (eq (car crux) 'ENCAPSULATE)
+                                    (consp (nth 1 crux))
+                                    (consp (car (nth 1 crux)))
+                                    (consp (car (car (nth 1 crux))))
+; Return the name of the first constrained fn introduced by this ENCAPSULATE:
+                                    (car (car (car (nth 1 crux)))))))
+          (cond
+           ((eq constrained-fn
+                (add-suffix name "-WITNESS"))
+            crux)
+           (t (er hard 'make-apply$-warrant-defun-sk
+                  "Make-apply$-warrant-defun-sk, when called on the function ~
+                   symbol ~x0, expected to find an ENCAPSULATE constraining ~
+                   ~x1 as the 5th element of the form created by ~
+                   DEFUN-SK-EVENT.  But that sanity check failed.  This ~
+                   indicates that make-apply$-warrant-defun-sk and ~
+                   defun-sk-event are no longer in sync.  Please advise the ~
+                   ACL2 implementors!"
+                  name
+                  (add-suffix name "-WITNESS")))))))))
 
 (defmacro defun-sk (&whole form name args &rest rest)
   (defun-sk-fn form name args rest))
@@ -25872,24 +25971,6 @@
 ; We introduce defwarrant here (along with some related and supporting
 ; utilities) in support of defattach.
 
-(defun tameness-conditions (ilks var)
-  (declare (xargs :mode :program))
-  (cond ((endp ilks) nil)
-        ((eq (car ilks) :FN)
-         (cons `(TAMEP-FUNCTIONP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        ((eq (car ilks) :EXPR)
-         (cons `(TAMEP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
-
-(defun successive-cadrs (formals var)
-  (declare (xargs :mode :program))
-  (cond ((endp formals) nil)
-        (t
-         (cons `(CAR ,var)
-               (successive-cadrs (cdr formals) (list 'CDR var))))))
-
 ; As described in the ``BTW'' notes in the DEFWARRANT section of apply.lisp,
 ; we need to convert the lemma provided by defun-sk into an effective rewrite
 ; rule.  To do that we need a hint and this function creates that hint.
@@ -25912,7 +25993,7 @@
          (cons T (necc-name-ARGS-instance (cdr ilks))))
         (t (cons NIL (necc-name-ARGS-instance (cdr ilks))))))
 
-(defun defwarrant-event (fn formals bdg)
+(defun defwarrant-events (fn formals bdg)
 
 ; Bdg must be a legal badge for (fn . formals).
 
@@ -25930,17 +26011,8 @@
                      fn)))
     (cond
      ((eq (access apply$-badge bdg :ilks) t)
-      `((defun-sk ,name ()
-          (forall (args)
-            (and
-             (equal (badge-userfn ',fn) ',bdg)
-             (equal (apply$-userfn ',fn args)
-                    ,(if (eql (access apply$-badge bdg :out-arity) 1)
-                         `(,fn ,@(successive-cadrs formals 'args))
-                         `(mv-list
-                           ',(access apply$-badge bdg :out-arity)
-                           (,fn ,@(successive-cadrs formals 'args)))))))
-          :constrain t)
+      `(,(make-apply$-warrant-defun-sk fn formals bdg nil) ; trans1-flg = nil
+; Make the appropriate defun-sk form.  It will be translated when admitted.
         (in-theory (disable ,(definition-rule-name name)))
         (defthm ,rule-name
           (implies
@@ -25962,19 +26034,8 @@
              (hyp (if (null (cdr hyp-list))
                       (car hyp-list)
                       `(AND ,@hyp-list))))
-        `((defun-sk ,name ()
-            (forall (args)
-              (implies
-               ,hyp
-               (and
-                (equal (badge-userfn ',fn) ',bdg)
-                (equal (apply$-userfn ',fn args)
-                       ,(if (eql (access apply$-badge bdg :out-arity) 1)
-                            `(,fn ,@(successive-cadrs formals 'args))
-                            `(mv-list
-                              ',(access apply$-badge bdg :out-arity)
-                              (,fn ,@(successive-cadrs formals 'args))))))))
-            :constrain t)
+        `(,(make-apply$-warrant-defun-sk fn formals bdg nil) ; trans1-flg = nil
+; Make the appropriate defun-sk form.  It will be translated when admitted.
           (in-theory (disable ,(definition-rule-name name)))
           (defthm ,rule-name
             (and (implies (force (,(warrant-name fn)))
@@ -26832,15 +26893,15 @@
                       required to specify :SYSTEM-OK T in your defattach ~
                       event."
                      f))
-                ((and (warrantp f wrld)
+                ((and (warrant-function-namep f wrld)
                       (not (eq g 'true-apply$-warrant)))
 
 ; We check in attachment-records that the attachment to a warrant is always
 ; true-apply$-warrant.  See the Essay on Memoization with Attachments.
 
                  (er soft ctx
-                     "The only attachment legal for the warrant ~x0 is ~x1.  ~
-                      The attachment of ~x2 to ~x0 is thus illegal."
+                     "The only attachment legal for the warrant function ~x0 ~
+                      is ~x1.  The attachment of ~x2 to ~x0 is thus illegal."
                      f 'true-apply$-warrant g))
                 (t
                  (let ((at-alist (attachment-alist f wrld)))
@@ -27373,7 +27434,7 @@
 ; also supports the attachment of each warrant to true-apply$-warrant, because
 ; in the doppelganger model, every warrant is true.
 
-              (warrantp (caar alist) wrld))
+              (warrant-function-namep (caar alist) wrld))
          (defattach-constraint-rec
            (cdr alist) full-alist proved-fnl-insts-alist constraint
            event-names new-entries seen wrld))
@@ -28278,7 +28339,7 @@
     (value records))
    (t (let ((pair (car attachments)))
         (cond
-         ((warrantp (car pair) wrld)
+         ((warrant-function-namep (car pair) wrld)
 
 ; For the purpose of finding loops, we can ignore attachments to warrants.  The
 ; reason is that we can view attachments as being done in two stages: first,
@@ -28292,7 +28353,7 @@
 ; theory.
 
 ; We can also ignore attachments to warrants when computing extended ancestors
-; for handling functions memoized with :aokp t, because the are all attached to
+; for handling functions memoized with :aokp t, because they are all attached to
 ; true-apply$-warrant, which is a defined function and hence cannot have its
 ; behavior changed with an attachment, and which has no ancestors.  See the
 ; Essay on Memoization with Attachments.
@@ -29977,6 +30038,10 @@
 
 (defun protected-eval (form on-behalf-of ctx state aok)
 
+; Warning: If you change this definition, consider whether the code in
+; value-triple-fn1 should also be changed around the call there of
+; protect-system-state-globals.
+
 ; This evaluator is intended to be used for make-event expansion.
 
 ; We assume that this is executed under a revert-world-on-error, so that we do
@@ -30018,6 +30083,12 @@
 ; If we bind safe-mode to t here, visit occurrences of comments "; Note that
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
+; Also note that we have similarly decided that value-triple does not use
+; safe-mode (at least by default); it did at one time, but we decided that
+; since make-event doesn't use safe-mode, it is a bit pointless to require
+; value-triple to use safe-mode.  So if we decide that make-event expansion
+; should use safe-mode, then we should strongly consider making the same
+; decision for value-triple.
 
                  (trans-eval-default-warning form ctx state aok)))
         (prog2$
@@ -30308,20 +30379,22 @@
         (state-global-let*
          ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
                                                     state))))
-         (let ((wrld (w state))
-               (skip-check-expansion
-                (and (consp check-expansion)
-                     (let ((info (f-get-global 'certify-book-info state)))
-                       (and info
-                            (access certify-book-info info
-                                    :include-book-phase))))))
+         (let* ((wrld (w state))
+                (include-book-phase-p
+                 (let ((info (f-get-global 'certify-book-info state)))
+                   (and info
+                        (access certify-book-info info :include-book-phase))))
+                (skip-check-expansion
+                 (and (consp check-expansion)
+                      include-book-phase-p)))
            (er-let*
                ((debug-depth (make-event-debug-pre form on-behalf-of state))
                 (expansion0/new-kpa/new-ttags-seen
                  (cond
                   ((and expansion?
                         (eq (ld-skip-proofsp state) 'include-book)
-                        (not (f-get-global 'including-uncertified-p state))
+                        (or (not (f-get-global 'including-uncertified-p state))
+                            include-book-phase-p)
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
@@ -30865,6 +30938,160 @@
 ; those functions).
 
   (list 'quote x))
+
+(defun value-triple-fn1 (form check stobjs-out0 ctx state)
+  (declare (xargs :guard t))
+  (er-let* ((stobjs-out0 (value (or stobjs-out0 '(nil))))
+            (stobjs-out/replaced-val
+             (cond ((equal stobjs-out0 '(nil)) ; take efficiency short-cut
+                    (cond ((or (eq form t)
+                               (eq form nil)
+                               (keywordp form))
+                           (mv nil `((nil) . ,form) state))
+                          ((and (consp form)
+                                (eq (car form) 'QUOTE)
+                                (consp (cdr form))
+                                (null (cddr form)))
+
+; We avoid quotep just above since we do not want to include the case that form
+; is ill-formed, as in (QUOTE x . y) where y is not nil.
+
+                           (mv nil `((nil) . ,(cadr form)) state))
+                          (t (trans-eval `(value ,form) ctx state t))))
+                   (t ; no warning when stobjs-out is explicit
+
+; We ensure that the state is protected from inappropriate changes, much as
+; we do in protected-eval.  If you change this protection below, consider
+; whether corresponding chcanges should be made to protected-eval.
+
+                    (revert-world
+                     (state-global-let*
+                      ((ttags-allowed nil))
+                      (protect-system-state-globals
+                       (if (eq stobjs-out0 :auto)
+
+; We could use trans-eval-default-warning here, as we do during make-event
+; expansion (as explained in protected-eval).  But by default, that is
+; trans-eval-no-warning.  We view the use of :auto as a way to ask for the
+; warning when user stobjs are modified.
+
+                           (trans-eval form ctx state t)
+                         (trans-eval-no-warning form ctx state t)))))))))
+    (let* ((stobjs-out (car stobjs-out/replaced-val))
+           (replaced-val (cdr stobjs-out/replaced-val))
+           (error-triple-p (equal stobjs-out *error-triple-sig*))
+           (val0 (cond (error-triple-p
+                        (cadr replaced-val))
+                       ((cdr stobjs-out)
+                        (car replaced-val))
+                       (t
+                        replaced-val))))
+      (cond
+       ((not (or (eq stobjs-out0 :auto)
+                 (equal stobjs-out stobjs-out0)
+                 (and (equal stobjs-out0 '(nil))
+                      (equal stobjs-out *error-triple-sig*))))
+        (flet ((output-msg (stobjs-out)
+                           (cond
+                            ((equal stobjs-out '(nil))
+                             "a single (non-stobj) value")
+                            ((null (cdr stobjs-out))
+                             (msg "a single stobj value, ~x0"
+                                  (car stobjs-out)))
+                            (t
+                             (msg "multiple values of shape ~x0"
+                                  (cons 'mv stobjs-out))))))
+          (er soft ctx
+              "Expected ~@0, but got ~@1.~@2"
+              (output-msg stobjs-out0)
+              (output-msg stobjs-out)
+
+; Report modified stobjs even if stobjs-out is not :auto, since warnings may
+; have been turned off and also to emphasize that the changes occurred in spite
+; of there being an error.
+
+              (let ((stobjs (remove nil stobjs-out)))
+                (cond ((null stobjs) "")
+                      (t (msg "  Note that in spite of the error, evaluation ~
+                               may have modified the stobj~#0~[~/s~] ~&0."
+                              stobjs)))))))
+       ((and error-triple-p (car replaced-val))
+        (er soft ctx
+            "Evaluation failed: Result was an error triple with non-nil error ~
+             component, ~x0.  See :DOC error-triple."
+            (car replaced-val)))
+       (check (cond ((car stobjs-out)
+                     (er soft ctx
+                         "Ill-formed assertion: The~@0 value returned is ~@1."
+                         (if (cdr stobjs-out) " first" "")
+                         (if (eq (car stobjs-out) 'state)
+                             "the ACL2 state"
+                           (msg "the stobj, ~x0"
+                                (car stobjs-out)))))
+                    (val0 (value :passed))
+                    ((tilde-@p check)
+                     (er soft ctx
+                         "Assertion failed:~%~@0~|"
+                         check))
+                    (t
+                     (er soft ctx
+                         "Assertion failed on form:~%~x0~|"
+                         form))))
+       ((car stobjs-out)
+        (value (car stobjs-out)))
+       (t (value val0))))))
+
+(defun chk-value-triple (on-skip-proofs check safe-mode stobjs-out ctx state)
+
+; Warning: The checks in chk-value-triple should be at least as strong as the
+; ones made here.
+
+  (cond
+   ((not (or (booleanp on-skip-proofs)
+             (eq on-skip-proofs :interactive)))
+    (er soft ctx
+        "The value of keyword argument :ON-SKIP-PROOFS must be Boolean or ~
+         :INTERACTIVE, but ~x0 is not."
+        on-skip-proofs))
+   ((not (or (booleanp check)
+             (msgp check)))
+    (er soft ctx
+        "The value of keyword argument :CHECK must be Boolean or satisfy the ~
+         predicate msgp.  The value ~x0 is thus illegal."
+        check))
+   ((not (or (booleanp safe-mode)
+             (eq safe-mode :same)))
+    (er soft ctx
+        "The value of keyword argument :SAFE-MODE must be Boolean, but ~x0 is ~
+         not."
+        safe-mode))
+   ((not (or (eq stobjs-out :auto)
+             (symbol-listp stobjs-out)))
+    (er soft ctx
+        "The value of keyword argument :STOBJS-OUT must either be :AUTO or ~
+         satisfy symbol-listp.  The value ~x0 is thus illegal."
+        stobjs-out))
+   (t (value nil))))
+
+(defun value-triple-fn (form on-skip-proofs check safe-mode stobjs-out ctx
+                             state)
+  (declare (xargs :guard t))
+  (er-progn
+   (chk-value-triple on-skip-proofs check safe-mode stobjs-out ctx state)
+   (cond
+    ((and (not on-skip-proofs)
+          (f-get-global 'ld-skip-proofsp state))
+     (value :skipped))
+    ((and (eq on-skip-proofs :interactive)
+          (eq (f-get-global 'ld-skip-proofsp state) 'include-book))
+     (value :skipped))
+    ((or (eq safe-mode :same)
+         (eq safe-mode (f-get-global 'safe-mode state)))
+     (value-triple-fn1 form check stobjs-out ctx state))
+    (t
+     (state-global-let*
+      ((safe-mode (if safe-mode t nil)))
+      (value-triple-fn1 form check stobjs-out ctx state))))))
 
 ; Essay on Memoization with Partial Functions (Memoize-partial)
 
@@ -31656,12 +31883,15 @@
                                                       wrld))))))))))))
 
 (defun partial-functions-table-guard (fn val wrld)
-  (let ((msg (partial-functions-table-guard-msg fn val wrld)))
-    (cond (msg (er hard 'partial-functions-table-guard
-                   "Illegal partial-functions-table key and value (see :DOC ~
-                    memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
-                   fn val msg))
-          (t t))))
+  (let ((msg0 ; nil if fn/val is OK as a key/value pair, else a msg
+         (partial-functions-table-guard-msg fn val wrld)))
+    (cond
+     (msg0 (mv nil
+               (msg
+                "Illegal partial-functions-table key and value (see :DOC ~
+                 memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
+                fn val msg0)))
+     (t (mv t nil)))))
 
 (table partial-functions-table nil nil
        :guard
@@ -31704,7 +31934,7 @@
 ; We considered allowing a new body in place of the new-fn:
 
 ; (memoize 'old-fn :invoke 'term).
-; 
+;
 ; However, that would require complicating the implementation by computing the
 ; guard proof obligation for the term (which depends on state via the global
 ; enabled structure, by the way, because simplification of ground terms is

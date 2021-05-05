@@ -3,7 +3,9 @@
 (|[(b - a) + a  =  b] counterexample|)
 (|[(b - a) + a  =  b] counterexample2|)
 (|[(a+b)-c  =  a+(b-c)] counterexample|)
-(|[(a+b)-c  =  a+(b-c)] counterexample2| (3 3 (:TYPE-PRESCRIPTION OB+)))
+(|[(a+b)-c  =  a+(b-c)] counterexample2|
+ (3 3 (:TYPE-PRESCRIPTION OB+))
+ )
 (|[ab = ba] counterexample|)
 (|[(b + c)a = ba + ca] counterexample|)
 (|[b < c  =>  ba < ca] counterexample|)

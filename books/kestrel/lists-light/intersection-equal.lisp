@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(local (include-book "remove1-equal"))
 
 (in-theory (disable intersection-equal))
 
@@ -48,6 +50,13 @@
          nil)
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
+(defthm intersection-equal-when-not-consp-arg1-cheap
+  (implies (not (consp x))
+           (equal (intersection-equal x y)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
 (defthm intersection-equal-when-not-consp-arg2-cheap
   (implies (not (consp y))
            (equal (intersection-equal x y)
@@ -84,3 +93,20 @@
   (implies (subsetp-equal y x)
            (iff (intersection-equal x y)
                 (consp y))))
+
+(defthm intersection-equal-of-remove1-equal-arg1-irrel-arg1
+  (implies (not (member-equal a y))
+           (equal (intersection-equal (remove1-equal a x) y)
+                  (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
+
+(defthm intersection-equal-of-remove1-equal-arg1-irrel-arg2
+  (implies (not (member-equal a x))
+           (equal (intersection-equal x (remove1-equal a y))
+                  (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
+
+;enable?
+(defthmd intersection-equal-commutative-iff
+  (iff (intersection-equal x y)
+       (intersection-equal y x)) :hints (("Goal" :in-theory (enable intersection-equal ))))

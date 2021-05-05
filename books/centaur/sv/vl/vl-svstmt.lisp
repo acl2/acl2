@@ -2053,25 +2053,6 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
     :hints(("Goal" :in-theory (enable svex-alist-keys
                                       svex-lookup)))))
 
-#!sv
-(define svarlist-x-subst ((x svarlist-p))
-  :short "Creates a substitution alist that maps the given variables to X."
-  :returns (subst svex-alist-p)
-  (b* (((when (atom x)) nil))
-    (cons (cons (svar-fix (car x))
-                (svex-x))
-          (svarlist-x-subst (cdr x))))
-  ///
-  (defthm svex-lookup-of-svarlist-x-subst
-    (implies (and (not (member v (svarlist-fix x)))
-                  (svar-p v))
-             (not (svex-lookup v (svarlist-x-subst x))))
-    :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
-
-  (defthm vars-of-svarlist-x-subst
-    (equal (svex-alist-vars (svarlist-x-subst x)) nil)
-    :hints(("Goal" :in-theory (enable svex-alist-vars)))))
-
 (define vl-always->svex-latch-warnings ((write-masks sv::4vmask-alist-p)
                                         (read-masks sv::svex-mask-alist-p))
   :returns (warnings vl-warninglist-p)

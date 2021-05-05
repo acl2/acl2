@@ -12,11 +12,13 @@
 
 (include-book "divides")
 (include-book "primes")
+(include-book "mod")
+(include-book "mod-expt-fast")
 (include-book "defprime")
 (include-book "euler2-support")
 (include-book "quadratic-residue")
 (include-book "tonelli-shanks")
 
 (defxdoc number-theory
-  :parents (arithmetic)
+  :parents (arithmetic kestrel-books)
   :short "Some utilities related to number theory")

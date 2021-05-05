@@ -273,3 +273,24 @@
          (equal (getbit 0 y) (getbit 0 z)))
   :hints (("Goal" :in-theory (e/d (bitxor)
                                   (bvxor-1-becomes-bitxor)))))
+
+(defthm bvchop-of-bitxor
+  (implies (and (< 0 n)
+                (natp n))
+           (equal (bvchop n (bitxor x y))
+                  (bitxor x y))))
+
+(defthm bitxor-of-bvchop-arg1
+  (implies (and (<= 1 n)
+                (natp n))
+           (equal (bitxor (bvchop n x) y)
+                  (bitxor x y)))
+  :hints (("Goal" :in-theory (e/d (bitxor) (bvxor-1-becomes-bitxor)))))
+
+(defthm bitxor-of-bvchop-arg2
+  (implies (and (<= 1 n)
+                (natp n))
+           (equal (bitxor y (bvchop n x))
+                  (bitxor y x)))
+  :hints (("Goal" :use (:instance bitxor-of-bvchop-arg1)
+           :in-theory (disable bitxor-of-bvchop-arg1))))

@@ -423,7 +423,7 @@
   (equal (len (generalization-symbol-base-list list))
          (len list)))
 
-(defthm alistp-pairlis$
+(defthm alistp-pairlis$-rewrite
   (alistp (pairlis$ keys vals)))
 
 (defund car? (x)

@@ -516,30 +516,54 @@
        :flag guess-ilks-alist-list)
      :hints (("Goal" :in-theory (enable accumulate-ilk))))
 
-   (defun badge-table-okp (alist)
+; Two similar concepts are needed: Badge-alistp is used to check the
+; *badge-prim-falist* and badge-userfn-structure-okp is used to check the
+; :badge-userfn-structure of the badge-table.
+
+   (defun badge-alistp (alist)
      (cond
       ((atom alist) (eq alist nil))
       (t (and (consp (car alist))
               (symbolp (caar alist))
               (apply$-badgep (cdar alist))
-              (badge-table-okp (cdr alist))))))
+              (badge-alistp (cdr alist))))))
+
+   (defun badge-userfn-structure-okp (alist)
+
+; Every element is supposed to be a weak-badge-userfn-structure-tuplep.  We
+; access the fn component with car because the assoc does that.  We access the
+; warrantp and badge components with the specially-defined macros so we don't
+; care where they really are below as long as the system source code is
+; sensible.
+
+     (cond
+      ((atom alist) (eq alist nil))
+      (t (and (weak-badge-userfn-structure-tuplep (car alist))
+              (symbolp (car (car alist)))
+              (booleanp
+               (access-badge-userfn-structure-tuple-warrantp (car alist)))
+              (apply$-badgep
+               (access-badge-userfn-structure-tuple-badge (car alist)))
+              (badge-userfn-structure-okp (cdr alist))))))
 
    (defthm apply$-badgep-hons-get-lemma
-     (implies (and (badge-table-okp alist)
+     (implies (and (badge-alistp alist)
                    (hons-get fn alist))
               (apply$-badgep (cdr (hons-get fn alist))))
      :hints (("Goal" :in-theory (enable hons-assoc-equal))))
 
    (defthm apply$-badgep-executable-badge-lemma
-     (implies (and (badge-table-okp alist)
-                   (cdr (assoc-equal fn alist)))
-              (apply$-badgep (cdr (assoc-equal fn alist)))))
+     (implies (and (badge-userfn-structure-okp alist)
+                   (assoc fn alist))
+              (apply$-badgep
+               (access-badge-userfn-structure-tuple-badge
+                (assoc-equal fn alist)))))
 
    (defthm apply$-badgep-executable-badge
-     (implies (and (badge-table-okp
+     (implies (and (badge-alistp
                     (unquote
                      (getpropc '*badge-prim-falist* 'const nil wrld)))
-                   (badge-table-okp
+                   (badge-userfn-structure-okp
                     (cdr (assoc-equal :badge-userfn-structure
                                       (table-alist 'badge-table wrld))))
                    (executable-badge fn wrld))
@@ -556,10 +580,10 @@
                       (mv-nth 0 (guess-ilks-alist fn new-badge term
                                                   ilk wrld alist)))
                      (alist-okp term formals new-badge alist wrld)
-                     (badge-table-okp
+                     (badge-alistp
                       (unquote
                        (getpropc '*badge-prim-falist* 'const nil wrld)))
-                     (badge-table-okp
+                     (badge-userfn-structure-okp
                       (cdr (assoc-equal :badge-userfn-structure
                                         (table-alist 'badge-table wrld))))
                      (apply$-badgep new-badge)
@@ -573,10 +597,10 @@
                       (mv-nth 0 (guess-ilks-alist-list fn new-badge terms
                                                        ilks wrld alist)))
                      (alist-okp-list terms formals new-badge alist wrld)
-                     (badge-table-okp
+                     (badge-alistp
                       (unquote
                        (getpropc '*badge-prim-falist* 'const nil wrld)))
-                     (badge-table-okp
+                     (badge-userfn-structure-okp
                       (cdr (assoc-equal :badge-userfn-structure
                                         (table-alist 'badge-table wrld))))
                      (apply$-badgep new-badge)

@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "evmac-input-hints-p")
-(include-book "evmac-input-print-p")
+(include-book "screen-printing")
 
 (include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)

@@ -269,23 +269,26 @@
     These operations also apply to other arithmetic types,
     but operands are subjected to promotions and conversions
     that reduce the possible combinations of operand types for each operation.
-    For instance, the addition operation @('+') does not directly apply
-    to @('short') or @('unsigned char') operands:
-    these are promoted to @('int') values before applying the operation,
+    For instance, the addition operation @('+') does not directly add
+    @('short') or @('unsigned char') operands:
+    these are promoted to @('int') values before adding them up,
     according to the integer promotions described in [C:6.3.1.1/2].
-    Similarly, the addition operation @('+') does not directly apply
-    to an @('int') operand and a @('long') operand:
+    Similarly, the addition operation @('+') does not directly add
+    an @('int') operand and a @('long') operand:
     the first operand is converted to @('long') first,
     so that addition is performed on two @('long') values,
     according to the usual arithmetic conversions
     described in [C:6.3.1.8].")
 
   (xdoc::p
-   "This means that there are only certain instances of operations like @('+'),
+   "This means that there are only certain ``interesting'' instances
+    of operations like @('+'),
     i.e. one for @('int') operands, one for @('long') operands etc.
-    There are no instances for @('short') or @('unsigned char') operands,
-    and there is no instance for
-    an @('int') first operand and a @('long') second operand.
+    The instances for @('short') or @('unsigned char') operands,
+    as well the instance for
+    an @('int') first operand and a @('long') second operand,
+    are less interesting because they can be viewed as
+    combinations of conversions with the interesting instances.
     Thus, in the context of this tutorial page,
     we are interested in the instances of the C operations
     that apply to @('int') operands:
@@ -315,7 +318,18 @@
    (xdoc::li "@('^') (binary) &mdash; bitwise exclusive disjunction")
    (xdoc::li "@('|') (binary) &mdash; bitwise inclusive disjunction")
    (xdoc::li "@('&&') (binary) &mdash; logical (short-circuit) conjunction")
-   (xdoc::li "@('||') (binary) &mdash; logical (short-circuit) disjunction"))
+   (xdoc::li "@('||') (binary) &mdash; logical (short-circuit) disjunction")
+   (xdoc::li "@('=') (binary) &mdash; simple assignment")
+   (xdoc::li "@('+=') (binary) &mdash; compound assignment with @('+')")
+   (xdoc::li "@('-=') (binary) &mdash; compound assignment with @('-')")
+   (xdoc::li "@('*=') (binary) &mdash; compound assignment with @('*')")
+   (xdoc::li "@('/=') (binary) &mdash; compound assignment with @('/')")
+   (xdoc::li "@('%=') (binary) &mdash; compound assignment with @('%')")
+   (xdoc::li "@('<<=') (binary) &mdash; compound assignment with @('<<')")
+   (xdoc::li "@('>>=') (binary) &mdash; compound assignment with @('>>')")
+   (xdoc::li "@('&=') (binary) &mdash; compound assignment with @('&')")
+   (xdoc::li "@('^=') (binary) &mdash; compound assignment with @('^')")
+   (xdoc::li "@('|=') (binary) &mdash; compound assignment with @('|')"))
   (xdoc::p
    "These not only take, but also return, @('int') values.
     This uniformity is also due to the fact that C represents booleans
@@ -341,25 +355,25 @@
     (which is the same result prescribed by the Java language specification).")
 
   (xdoc::p
-   "We also note that the last two operations in the list above
+   "The @('&&') and @('||') operations
     are non-strict at the expression level:
     their second operand expression is not executed
     if the result of the first operand expression
     suffices to determine the final result
-    (0 for conjunction, 1 for disjunction).
-    However, here we are concerned about
-    how these operations operate on values,
-    assuming that we have values.
-    The ACL2 representation of non-strict C conjunctions and disjunctions
-    is described elsewhere in this tutorial.")
+    (0 for conjunction, 1 for disjunction).")
+
+  (xdoc::p
+   "The simple and compound assignment operations have side effects.
+    All the other operations are pure, i.e. without side effect.")
 
   (atc-tutorial-section "ACL2 Representation")
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the file @('[books]/kestrel/c/atc/signed-ints.lisp').
-    This is automatically included when ATC is included,
-    but one may want to include that file as part of an APT derivation
+    is in the files @('[books]/kestrel/c/atc/integers.lisp')
+    and @('[books]/kestrel/c/atc/integer-operations.lisp').
+    These are automatically included when ATC is included,
+    but one may want to include those file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
     (see @(see atc-tutorial-approach)),
     and thus before including ATC itself,
@@ -390,36 +404,33 @@
 
   (xdoc::p
    "We also provide ACL2 functions
-    corresponding to the operations listed above:")
+    corresponding to some of the operations listed above:")
   (xdoc::ul
-   (xdoc::li "@(tsee sint-plus) &mdash; for unary @('+')")
-   (xdoc::li "@(tsee sint-minus) &mdash; for unary @('-')")
-   (xdoc::li "@(tsee sint-bitnot) &mdash; for @('~')")
-   (xdoc::li "@(tsee sint-lognot) &mdash; for @('!')")
-   (xdoc::li "@(tsee sint-add) &mdash; for binary @('+')")
-   (xdoc::li "@(tsee sint-sub) &mdash; for binary @('-')")
-   (xdoc::li "@(tsee sint-mul) &mdash; for @('*')")
-   (xdoc::li "@(tsee sint-div) &mdash; for @('/')")
-   (xdoc::li "@(tsee sint-rem) &mdash; for @('%')")
-   (xdoc::li "@(tsee sint-shl-sint) &mdash; for @('<<')")
-   (xdoc::li "@(tsee sint-shr-sint) &mdash; for @('>>')")
-   (xdoc::li "@(tsee sint-lt) &mdash; for @('<')")
-   (xdoc::li "@(tsee sint-gt) &mdash; for @('>')")
-   (xdoc::li "@(tsee sint-le) &mdash; for @('<=')")
-   (xdoc::li "@(tsee sint-ge) &mdash; for @('>=')")
-   (xdoc::li "@(tsee sint-eq) &mdash; for @('==')")
-   (xdoc::li "@(tsee sint-ne) &mdash; for @('!=')")
-   (xdoc::li "@(tsee sint-bitand) &mdash; for @('&')")
-   (xdoc::li "@(tsee sint-bitxor) &mdash; for @('^')")
-   (xdoc::li "@(tsee sint-bitior) &mdash; for @('|')")
-   (xdoc::li "@(tsee sint-logand) &mdash; for @('&&')")
-   (xdoc::li "@(tsee sint-logor) &mdash; for @('||')"))
+   (xdoc::li "@(tsee plus-sint) &mdash; for unary @('+')")
+   (xdoc::li "@(tsee minus-sint) &mdash; for unary @('-')")
+   (xdoc::li "@(tsee bitnot-sint) &mdash; for @('~')")
+   (xdoc::li "@(tsee lognot-sint) &mdash; for @('!')")
+   (xdoc::li "@(tsee add-sint-sint) &mdash; for binary @('+')")
+   (xdoc::li "@(tsee sub-sint-sint) &mdash; for binary @('-')")
+   (xdoc::li "@(tsee mul-sint-sint) &mdash; for @('*')")
+   (xdoc::li "@(tsee div-sint-sint) &mdash; for @('/')")
+   (xdoc::li "@(tsee rem-sint-sint) &mdash; for @('%')")
+   (xdoc::li "@(tsee shl-sint-sint) &mdash; for @('<<')")
+   (xdoc::li "@(tsee shr-sint-sint) &mdash; for @('>>')")
+   (xdoc::li "@(tsee lt-sint-sint) &mdash; for @('<')")
+   (xdoc::li "@(tsee gt-sint-sint) &mdash; for @('>')")
+   (xdoc::li "@(tsee le-sint-sint) &mdash; for @('<=')")
+   (xdoc::li "@(tsee ge-sint-sint) &mdash; for @('>=')")
+   (xdoc::li "@(tsee eq-sint-sint) &mdash; for @('==')")
+   (xdoc::li "@(tsee ne-sint-sint) &mdash; for @('!=')")
+   (xdoc::li "@(tsee bitand-sint-sint) &mdash; for @('&')")
+   (xdoc::li "@(tsee bitxor-sint-sint) &mdash; for @('^')")
+   (xdoc::li "@(tsee bitior-sint-sint) &mdash; for @('|')"))
   (xdoc::p
-   "The @('-sint') at the end of the names of the shift operations
-    is motivated by the fact that, as mentioned earlier,
-    these operations may operate on operands of different types.
-    Thus, the additional name suffix makes it clear that
-    here we are dealing with the instances that operate on @('int') operands.")
+   "These are all the strict pure operations;
+    the non-strict or non-pure operations are excluded,
+    because they are represented differently in ACL2,
+    as described elsewhere in this tutorial.")
 
   (xdoc::p
    "These ACL2 functions take @(tsee sint) values as inputs,
@@ -431,21 +442,21 @@
    "Some of these functions have additional guard conditions
     that capture the conditions under which
     the result is well-defined according to the [C].
-    For instance, the guard of @(tsee sint-add) includes the condition that
+    For instance, the guard of @(tsee add-sint-sint) includes the condition that
     the exact integer result fits in the range of the ACL2 integers
     that are wrapped to form @(tsee sint) values.
     More precisely, these additional guard conditions
     are captured by the following predicates,
     whose association to the above functions should be obvious from the names:")
   (xdoc::ul
-   (xdoc::li "@(tsee sint-minus-okp)")
-   (xdoc::li "@(tsee sint-add-okp)")
-   (xdoc::li "@(tsee sint-sub-okp)")
-   (xdoc::li "@(tsee sint-mul-okp)")
-   (xdoc::li "@(tsee sint-div-okp)")
-   (xdoc::li "@(tsee sint-rem-okp)")
-   (xdoc::li "@(tsee sint-shl-sint-okp)")
-   (xdoc::li "@(tsee sint-shr-sint-okp)"))
+   (xdoc::li "@(tsee minus-sint-okp)")
+   (xdoc::li "@(tsee add-sint-sint-okp)")
+   (xdoc::li "@(tsee sub-sint-sint-okp)")
+   (xdoc::li "@(tsee mul-sint-sint-okp)")
+   (xdoc::li "@(tsee div-sint-sint-okp)")
+   (xdoc::li "@(tsee rem-sint-sint-okp)")
+   (xdoc::li "@(tsee shl-sint-sint-okp)")
+   (xdoc::li "@(tsee shr-sint-sint-okp)"))
   (xdoc::p
    "We remark that the predicates for @('/') and @('%') include
     the condition that the divisor is not 0.")
@@ -454,7 +465,7 @@
    "Besides unary and binary @('int') operations,
     C includes @('int') constants [C:6.4.4.1]
     (more precisely, integer constants, some of which have type @('int')),
-    which may be regarded as (a large number of) nullary @('int') operations.
+    which may be regarded as (a large number nullary) of @('int') operations.
     Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
     provides a function @(tsee sint-const),
     whose calls on suitable ACL2 quoted integer constants
@@ -574,8 +585,8 @@
     is represented as follows in ACL2:")
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
-   "  (c::sint-mul (c::sint-add |x| |y|)"
-   "               (c::sint-sub |z| (c::sint-const 3))))")
+   "  (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
+   "                    (c::sub-sint-sint |z| (c::sint-const 3))))")
   (xdoc::p
    "We represent the expression of the @('return') statement
     that forms the body of the function @('f').
@@ -587,7 +598,7 @@
     when the function is defined in a different ACL2 package from @('\"C\"').
     The package of the symbols @('|f|'), @('|x|'), etc. do not matter,
     in the sense that they do not represent anything in the C code.
-    However the functions @(tsee sint-const), @(tsee sint-add), etc.
+    However the functions @(tsee sint-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
     from the file @('[books]/kestrel/c/atc/integers.lisp').")
 
@@ -603,7 +614,7 @@
   (atc-tutorial-section "Function Input and Ouput Types")
 
   (xdoc::p
-   "Given the use of @(tsee sint-add) and @(tsee sint-sub)
+   "Given the use of @(tsee add-sint-sint) and @(tsee sub-sint-sint)
     on the ACL2 parameters @('|x|'), @('|y|'), and @('|z|'),
     it would not be hard to infer automatically that
     these represent @('int') parameters in C.
@@ -622,8 +633,8 @@
    "                              (c::sintp |y|)"
    "                              (c::sintp |z|)"
    "                              ...))) ; more conjuncts, described below"
-   "  (c::sint-mul (c::sint-add |x| |y|)"
-   "               (c::sint-sub |z| (c::sint-const 3))))")
+   "  (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
+   "                    (c::sub-sint-sint |z| (c::sint-const 3))))")
 
   (xdoc::p
    "When generating C code for @('|f|'),
@@ -649,7 +660,7 @@
     by performing a C type analysis of the function's body.
     For the function @('|f|') above,
     the output type is obviously @('int'),
-    because the body is a call of @(tsee sint-mul),
+    because the body is a call of @(tsee mul-sint-sint),
     which is known to return (the ACL2 representation of) an @('int') value.
     ATC does not require explicit return type theorems for the ACL2 functions
     that are translated to C functions.")
@@ -729,13 +740,13 @@
    "                                   :in-theory"
    "                                   (enable c::sint-integerp-alt-def"
    "                                           c::sintp"
-   "                                           c::sint-add-okp"
-   "                                           c::sint-sub-okp"
-   "                                           c::sint-mul-okp"
-   "                                           c::sint-add"
-   "                                           c::sint-sub)))))"
-   "    (c::sint-mul (c::sint-add |x| |y|)"
-   "                 (c::sint-sub |z| (c::sint-const 3)))))")
+   "                                           c::add-sint-sint-okp"
+   "                                           c::sub-sint-sint-okp"
+   "                                           c::mul-sint-sint-okp"
+   "                                           c::add-sint-sint"
+   "                                           c::sub-sint-sint)))))"
+   "    (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
+   "                      (c::sub-sint-sint |z| (c::sint-const 3)))))")
 
   (xdoc::p
    "The proof is carried out on the ACL2 integers
@@ -1021,15 +1032,15 @@
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |z|) (c::sintp |y|))))"
-   "  (c::sint-lt |x| |y|))"
+   "  (c::lt-sint-sint |x| |y|))"
    ""
    "(defun |g| (|z|)"
    "  (declare (xargs :guard (c::sintp |z|)))"
-   "  (|f| |z| (c::sint-bitnot |z|)))"
+   "  (|f| |z| (c::bitnot-sint |z|)))"
    ""
    "(defun |h| (|a| |b|)"
    "  (declare (xargs :guard (and (c::sintp |a|) (c::sintp |b|))))"
-   "  (|g| (c::sint-bitand |a| |b|)))")
+   "  (|g| (c::bitand-sint-sint |a| |b|)))")
   (xdoc::p
    "These three functions must necessarily appear in this order,
     but of course they do not have to be contiguous events
@@ -1307,8 +1318,8 @@
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-   "  (let ((|z| (c::sint-lt |x| |y|)))"
-   "    (c::sint-lognot |z|)))")
+   "  (let ((|z| (c::lt-sint-sint |x| |y|)))"
+   "    (c::lognot-sint |z|)))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1339,10 +1350,10 @@
    (xdoc::codeblock
     "(defun |g| (|x| |y|)"
     "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-    "  (let ((|x_lt_y| (c::sint-lt |x| |y|)))"
-    "    (let ((|x_eq_y| (c::sint-eq |x| |y|)))"
-    "      (let ((|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "        (c::sint-lognot |x_le_y|)))))")
+    "  (let ((|x_lt_y| (c::lt-sint-sint |x| |y|)))"
+    "    (let ((|x_eq_y| (c::eq-sint-sint |x| |y|)))"
+    "      (let ((|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
+    "        (c::lognot-sint |x_le_y|)))))")
    (xdoc::p
     "represents the C function")
    (xdoc::codeblock
@@ -1358,10 +1369,10 @@
    (xdoc::codeblock
     "(defun |g| (|x| |y|)"
     "  (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))"
-    "  (let* ((|x_lt_y| (c::sint-lt |x| |y|))"
-    "         (|x_eq_y| (c::sint-eq |x| |y|))"
-    "         (|x_le_y| (c::sint-logor |x_lt_y| |x_eq_y|)))"
-    "    (c::sint-lognot |x_le_y|)))")
+    "  (let* ((|x_lt_y| (c::lt-sint-sint |x| |y|))"
+    "         (|x_eq_y| (c::eq-sint-sint |x| |y|))"
+    "         (|x_le_y| (c::bitior-sint-sint |x_lt_y| |x_eq_y|)))"
+    "    (c::lognot-sint |x_le_y|)))")
    (xdoc::p
     "This form may be more readable:
      the variables are not indented,
@@ -1405,15 +1416,15 @@
 
   (xdoc::p
    "A C local variable assignment is represented by an ACL2 @(tsee let)
-    that binds a variable already bound in the same scope.
+    that binds a variable already bound, i.e. already in scope.
     For example, the ACL2 function")
   (xdoc::codeblock
    "(defun |f| (|x| |y|)"
    "  (declare (xargs :guard (and (c::sintp |x|)"
    "                              (c::sintp |y|))))"
-   "  (let* ((|a| (c::sint-bitand |x| |y|))"
-   "         (|a| (c::sint-bitnot |a|)))"
-   "    (c::sint-gt |a| (c::sint-const 0))))")
+   "  (let* ((|a| (c::bitand-sint-sint |x| |y|))"
+   "         (|a| (c::bitnot-sint |a|)))"
+   "    (c::gt-sint-sint |a| (c::sint-const 0))))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1457,10 +1468,10 @@
    "                              (<= (c::sint->get |a|) 100))"
    "                  :guard-hints ((\"Goal\""
    "                                 :in-theory"
-   "                                 (enable c::sint-add-okp"
+   "                                 (enable c::add-sint-sint-okp"
    "                                         c::sint-integerp-alt-def)))))"
-   "  (let ((|a| (c::sint-add |a| (c::sint-const 200))))"
-   "    (c::sint-lt |b| |a|)))")
+   "  (let ((|a| (c::add-sint-sint |a| (c::sint-const 200))))"
+   "    (c::lt-sint-sint |b| |a|)))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1480,7 +1491,7 @@
   (xdoc::p
    "In general, ATC treats a @(tsee let) as
     either a local variable declaration or a local variable assignment
-    based on whether the variable is already in the same scope or not.
+    based on whether the variable is already in scope or not.
     This description is still an over-approximation,
     which will be refined in upcoming tutorial pages."))
 
@@ -1517,12 +1528,13 @@
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
     The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
-    provides a function @(tsee sint-nonzerop)
+    provides a function @(tsee boolean-from-sint)
     the converts (the ACL2 representation of) a C @('int')
     into an ACL2 boolean:
     it returns @('t') if the @('int') is not 0;
     it returns @('nil') if the @('int') is 0.
-    This @(tsee sint-nonzerop) must be used as the test of an ACL2 @(tsee if),
+    This @(tsee boolean-from-sint) must be used
+    as the test of an ACL2 @(tsee if),
     applied to an ACL2 term representing an @('int') expression:
     it represents a C @('if') test consisting of the argument expression.")
 
@@ -1533,7 +1545,7 @@
    "  (declare (xargs :guard (and (c::sintp |x|)"
    "                              (c::sintp |y|)"
    "                              (c::sintp |z|))))"
-   "  (if (c::sint-nonzerop |x|)"
+   "  (if (c::boolean-from-sint |x|)"
    "      |y|"
    "    |z|))")
   (xdoc::p
@@ -1552,8 +1564,8 @@
   (xdoc::codeblock
    "(defun |g| (|e|)"
    "  (declare (xargs :guard (c::sintp |e|)))"
-   "  (if (c::sint-nonzerop (c::sint-ge |e| (c::sint-const 0)))"
-   "      (if (c::sint-nonzerop (c::sint-lt |e| (c::sint-const 1000)))"
+   "  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-const 0)))"
+   "      (if (c::boolean-from-sint (c::lt-sint-sint |e| (c::sint-const 1000)))"
    "          (c::sint-const 1)"
    "        (c::sint-const 2))"
    "    (c::sint-const 3)))"
@@ -1574,10 +1586,10 @@
    "}")
 
   (xdoc::p
-   "The arguments of @(tsee sint-nonzerop) in @(tsee if) tests
+   "The arguments of @(tsee boolean-from-sint) in @(tsee if) tests
     may be the same ones used to describe the expressions
     returned by @('int')-valued functions.
-    The @(tsee sint-nonzerop) just serves
+    The @(tsee boolean-from-sint) just serves
     to turn C @('int')s into ACL2 booleans;
     it is not explicitly represented in the C code,
     as shown in the examples above."))
@@ -1618,14 +1630,15 @@
    "                              ;; x > 0:"
    "                              (> (c::sint->get |x|) 0))"
    "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable c::sint-sub-okp"
+   "                                 :in-theory (enable c::sub-sint-sint-okp"
    "                                                    c::sint-integerp-alt-def"
    "                                                    c::sint-integer-fix"
    "                                                    c::sint->get)))))"
-   "  (c::sint-sub |x|"
-   "               (if (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 18)))"
-   "                   (c::sint 0)"
-   "                 (c::sint 1))))")
+   "  (c::sub-sint-sint"
+   "   |x|"
+   "   (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-const 18)))"
+   "       (c::sint 0)"
+   "     (c::sint 1))))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1640,18 +1653,18 @@
    "  (declare (xargs :guard (and (c::sintp |a|)"
    "                              (c::sintp |b|))"
    "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable c::sint-nonzerop"
+   "                                 :in-theory (enable c::boolean-from-sint"
    "                                                    c::sint-integerp-alt-def"
    "                                                    c::sint-integer-fix"
-   "                                                    c::sint-gt"
-   "                                                    c::sint-sub-okp"
+   "                                                    c::gt-sint-sint"
+   "                                                    c::sub-sint-sint-okp"
    "                                                    c::sint->get)))))"
-   "  (if (c::sint-nonzerop (c::sint-gt |a| |b|))"
-   "      (c::sint-sub |a|"
-   "                   (if (c::sint-nonzerop"
-   "                        (c::sint-eq |b| (c::sint-const 3)))"
-   "                       (c::sint-const 0)"
-   "                     (c::sint-const 1)))"
+   "  (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))"
+   "      (c::sub-sint-sint |a|"
+   "                        (if (c::boolean-from-sint"
+        "                        (c::eq-sint-sint |b| (c::sint-const 3)))"
+   "                            (c::sint-const 0)"
+   "                          (c::sint-const 1)))"
    "    |b|))")
   (xdoc::p
    "represents the C function")
@@ -1674,7 +1687,7 @@
     must return ACL2 booleans,
     in the same way as the @(tsee if)s that represent conditional statements.
     As explained in @(see atc-tutorial-conditional-statements),
-    the function @(tsee sint-nonzerop) is used
+    the function @(tsee boolean-from-sint) is used
     to convert C @('int')s to ACL2 booleans in the tests."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1760,7 +1773,7 @@
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
    "  (if (mbt (c::sintp |x|))"
-   "      (c::sint-lt |x| (c::sint-const 100))"
+   "      (c::lt-sint-sint |x| (c::sint-const 100))"
    "    (list :this-is-not-translated-to-c)))")
   (xdoc::p
    "and the ACL2 function")
@@ -1768,7 +1781,7 @@
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
    "  (if (mbt$ (c::sintp |x|))"
-   "      (c::sint-lt |x| (c::sint-const 100))"
+   "      (c::lt-sint-sint |x| (c::sint-const 100))"
    "    (list :this-is-not-translated-to-c)))")
   (xdoc::p
    "represent the C function")
@@ -1781,7 +1794,7 @@
   (xdoc::codeblock
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
-   "  (c::sint-lt |x| (c::sint-const 100)))"))
+   "  (c::lt-sint-sint |x| (c::sint-const 100)))"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

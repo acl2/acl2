@@ -43,3 +43,7 @@
 
 ;; This helps justify some things that Axe does:
 (defcong iff equal (bool-to-bit x) 1 :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+(defthm unsigned-byte-p-1-of-bool-to-bit
+  (unsigned-byte-p 1 (bool-to-bit x))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))

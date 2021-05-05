@@ -133,3 +133,9 @@
                             BVCHOP-LOGNOT-BVCHOP
                             slice-becomes-getbit ;LOGTAIL-BVCHOP
                             bvchop-1-becomes-getbit BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+;rename and gen
+(defthm getbit-1-of-bvnot-1
+  (equal (getbit 1 (bvnot 1 x))
+         0)
+  :hints (("Goal" :in-theory (enable bvnot))))

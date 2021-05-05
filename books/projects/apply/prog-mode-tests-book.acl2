@@ -1,0 +1,11 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "prog-mode-tests")
+
+; Help dependency scanner.
+#||
+(depends-on "prog-mode-tests-input.lsp")
+(depends-on "prog-mode-tests-log.txt")
+(include-book "projects/apply/top" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
+||#
