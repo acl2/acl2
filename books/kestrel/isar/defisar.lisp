@@ -43,7 +43,9 @@
 
   "@('hyps') is the list of hypotheses of @('formula')."
 
-  "@('concl') is the conclusion of @('formula')"))
+  "@('concl') is the conclusion of @('formula')")
+
+ :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
