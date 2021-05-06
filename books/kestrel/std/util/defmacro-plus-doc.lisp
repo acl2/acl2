@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defmacro+
-  :parents (std/util-extensions std/util defmacro)
+  :parents (std::std/util-extensions std/util defmacro)
   :short "An enhancement of @(tsee defmacro)
           with <see topic='@(url xdoc)'>XDOC</see> integration."
   :long

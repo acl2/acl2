@@ -16,7 +16,7 @@
 
 (defxdoc deftutorial
 
-  :parents (std/util-extensions std/util)
+  :parents (std::std/util-extensions std/util)
 
   :short "Generate utilities to build a tutorial."
 
