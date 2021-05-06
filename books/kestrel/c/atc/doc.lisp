@@ -488,21 +488,7 @@
        (ii) branches that are pure C-valued terms.
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
-       and whose branch expressions are represented by the branch terms.")
-     (xdoc::li
-      "A call of @(tsee if) on
-       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is a pure C-valued term, and
-       (iii) an `else' branch that may be any ACL2 term.
-       This represents the same C code represented by the `then' branch.
-       Both the test and the `else' branch are ignored;
-       the reason is that ATC generates C code under guard assumptions.
-       In translated terms,
-       @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t x)'), and
-       @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))');
-       these are the patterns that ATC looks for."))
+       and whose branch expressions are represented by the branch terms."))
 
     (xdoc::p
      "A <i>boolean term</i> is

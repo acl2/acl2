@@ -1199,10 +1199,6 @@
        The type of this expression is always @('int').")
      (xdoc::p
       "If the term is an @(tsee if) call,
-       first we check if the test is @(tsee mbt) or @(tsee mbt$);
-       in that case, we discard test and `else' branch
-       and recursively process the `then' branch.
-       Otherwise,
        we call the mutually recursive ACL2 function on the test,
        we call this ACL2 function on the branches,
        and we construct a conditional expression.
@@ -1287,19 +1283,7 @@
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
            (mv nil (list expr (type-sint)) state)))
         (('if test then else)
-         (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-cval-pure then
-                                                   inscope
-                                                   fn
-                                                   ctx
-                                                   state))
-              ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-cval-pure then
-                                                    inscope
-                                                    fn
-                                                    ctx
-                                                    state))
-              ((mv erp test-expr state) (atc-gen-expr-bool test
+         (b* (((mv erp test-expr state) (atc-gen-expr-bool test
                                                            inscope
                                                            fn
                                                            ctx
