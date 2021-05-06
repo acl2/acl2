@@ -177,8 +177,7 @@
    (b (sparse-vectorp b))
    (c (sparse-vectorp c)))
   :pred r1cs-constraintp
-  :suppress-xdoc t
-  :parents (r1cs))
+  :suppress-xdoc t)
 
 ;; A true list of r1cs-constraints
 (defun r1cs-constraint-listp (constraints)

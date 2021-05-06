@@ -15,6 +15,7 @@
                     open-output-channel-p1
                     mv-nth))
 
+;; Needed because we mention open-output-channel! in the theorems below.
 (defttag file-io!)
 
 (defthm symbolp-of-mv-nth-0-of-open-output-channel!
