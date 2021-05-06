@@ -902,11 +902,13 @@
             `(,bitand-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
-         ,@(and samep
-                `(:guard-hints
-                  (("Goal"
-                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
+         ,@(and
+            samep
+            `(:prepwork
+              ((local (include-book "ihs/logops-lemmas" :dir :system)))
+              :guard-hints
+              (("Goal"
+                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -924,12 +926,13 @@
             `(,bitxor-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :prepwork
-         ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
-         ,@(and samep
-                `(:guard-hints
-                  (("Goal"
-                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
+         ,@(and
+            samep
+            `(:prepwork
+              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+              :guard-hints
+              (("Goal"
+                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -947,12 +950,13 @@
             `(,bitior-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :prepwork
-         ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
-         ,@(and samep
-                `(:guard-hints
-                  (("Goal"
-                    :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
+         ,@(and
+            samep
+            `(:prepwork
+              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+              :guard-hints
+              (("Goal"
+                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
