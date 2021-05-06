@@ -543,7 +543,7 @@ binder.</p>")
                 prods-doc
                 `((xdoc::order-subtopics ,x.name
                                          ,(remove nil (list* x.pred x.fix x.kind x.equiv x.count
-                                                             type-names)))))
+                                                             (remove x.name type-names))))))
         state)))
 
 (defun defoption->defxdoc (x parents kwd-alist base-pkg state)
