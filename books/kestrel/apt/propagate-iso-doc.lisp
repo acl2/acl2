@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc propagate-iso
-  :parents (transformations)
+  :parents (apt)
   :short "Propagate an isomorphism from a set of isomorphically transformed functions to events that use them."
 
   :long
