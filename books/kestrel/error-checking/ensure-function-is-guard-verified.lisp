@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,7 @@
 
 (def-error-checker ensure-function-is-guard-verified
   ((fn (function-namep fn (w state)) "Function to check."))
+  :parents (error-checking)
   :short "Cause an error if a function is not guard-verified."
   :body (((guard-verified-p fn (w state))
           "~@0 must be guard-verified." description)))

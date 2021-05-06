@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -163,6 +163,7 @@
                            :in-theory
                            (enable acl2::ensure-value-is-in-list))))
                state)
+  :parents (input-processors)
   :short "Process the input of an APT transformation
           that selects an input of the function variable call in
           a SOFT shallow pop-refinement specification of a certain form."

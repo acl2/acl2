@@ -34,6 +34,7 @@
 (include-book "svtv-stobj-defsvtv")
 (include-book "debug")
 (include-book "eval-phases")
+(include-book "chase-base")
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 
@@ -278,6 +279,86 @@
                    :filename filename)))
     (mv nil moddb aliases vcd-wiremap vcd-vals state)))
 
+(define svtv-data-chase-phase-fsm-update ((ins svex-envlist-p)
+                                          (initst svex-env-p)
+                                          &key
+                                          (svtv-data 'svtv-data)
+                                          (moddb 'moddb)
+                                          (aliases 'aliases)
+                                          (svtv-chase-data 'svtv-chase-data)
+                                          (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->phase-fsm-validp svtv-data)
+              (equal (alist-keys initst)
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (and (moddb-ok moddb)
+                   (b* ((design (svtv-data->design svtv-data))
+                        (top-mod (design->top design))
+                        (modidx (moddb-modname-get-index top-mod moddb)))
+                     (and modidx
+                          (< modidx (moddb->nmods moddb))
+                          (<= (moddb-mod-totalwires modidx moddb)
+                              (aliass-length aliases))))))
+  :returns (mv new-svtv-chase-data new-state)
+  (b* (((base-fsm fsm) (svtv-data->phase-fsm svtv-data))
+       ((flatnorm-res flatnorm) (svtv-data->flatnorm svtv-data))
+       (svtv-chase-data (set-svtv-chase-data->stack nil svtv-chase-data))
+       (evaldata (make-svtv-evaldata
+                  :nextstate (make-fast-alist fsm.nextstate)
+                  :inputs (make-fast-alists ins)
+                  :initst (make-fast-alist initst)))
+       (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
+       (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
+       (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
+       (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data))
+       (svtv-chase-data (set-svtv-chase-data->modidx (moddb-modname-get-index
+                                                      (design->top (svtv-data->design svtv-data))
+                                                      moddb)
+                                                     svtv-chase-data)))
+    (svtv-chase-repl)))
+
+(define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
+                                   (initst svex-env-p)
+                                   &key
+                                   (skip-flatten 'nil)
+                                   (svtv-data 'svtv-data)
+                                   (moddb 'moddb)
+                                   (aliases 'aliases)
+                                   (svtv-chase-data 'svtv-chase-data)
+                                   (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->phase-fsm-validp svtv-data)
+              (equal (alist-keys initst)
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                   (b* ((design (svtv-data->design svtv-data))
+                        (top-mod (design->top design))
+                        (modidx (moddb-modname-get-index top-mod moddb)))
+                     (and modidx
+                          (< modidx (moddb->nmods moddb))
+                          (<= (moddb-mod-totalwires modidx moddb)
+                              (aliass-length aliases)))))))
+  :returns (mv err new-moddb new-aliases new-svtv-chase-data new-state)
+  :prepwork ((local (defthmd svtv-data-flatten-okp-when-validp
+                      (implies (and (svtv-data$ap svtv-data)
+                                    (svtv-data->flatten-validp svtv-data))
+                               (svtv-data-flatten-okp svtv-data (svtv-data$c->flatten svtv-data))))))
+  :guard-hints (("goal" :use svtv-data-flatten-okp-when-validp
+                 :in-theory (e/d (svtv-data$c-flatten-okp
+                                    normalize-stobjs-of-svtv-design-flatten)
+                                 (not nth))))
+  (b* (((mv err ?flatten moddb aliases)
+        (if skip-flatten
+            (mv nil nil moddb aliases)
+          (svtv-design-flatten (svtv-data->design svtv-data))))
+       ((when err)
+        (mv err moddb aliases svtv-chase-data state))
+       ((mv svtv-chase-data state)
+        (svtv-data-chase-phase-fsm-update ins initst)))
+    (mv nil moddb aliases svtv-chase-data state)))
+
+
 
 (define svtv-data-debug-cycle-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
@@ -307,6 +388,33 @@
     (svtv-data-debug-phase-fsm base-ins initst :filename filename :skip-flatten skip-flatten)))
 
 
+(define svtv-data-chase-cycle-fsm ((ins svex-envlist-p)
+                                   (initst svex-env-p)
+                                   &key
+                                   (skip-flatten 'nil)
+                                   (svtv-data 'svtv-data)
+                                   (moddb 'moddb)
+                                   (aliases 'aliases)
+                                   (svtv-chase-data 'svtv-chase-data)
+                                   (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->phase-fsm-validp svtv-data)
+              (equal (alist-keys initst)
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
+  :returns (mv err new-moddb new-aliases new-svtv-chase-data new-state)
+  (b* ((base-ins (svtv-cycle-run-fsm-inputs ins (svtv-data->cycle-phases svtv-data))))
+    (svtv-data-chase-phase-fsm base-ins initst :skip-flatten skip-flatten))) 
+
+
 (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
   (implies (and (svtv-data$ap svtv-data)
                 ;; (svtv-data$c->base-fsm-validp svtv-data)
@@ -324,6 +432,29 @@
                   (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-pipeline-okp))))
 
+(define svtv-pipeline-setup-to-cycle-inputs ((env svex-env-p)
+                                             (setup pipeline-setup-p)
+                                             (cycle-fsm base-fsm-p)
+                                             (namemap svtv-name-lhs-map-p))
+  :returns (mv (cycle-ins svex-envlist-p)
+               (initst svex-env-p))
+  (b* (((acl2::with-fast env))
+       ((pipeline-setup setup))
+       (rename-ins (svex-alistlist-eval setup.inputs env))
+       (rename-overrides (svex-alistlist-eval setup.overrides env))
+       (initst (svex-alist-eval setup.initst env))
+       (outvars (svtv-probealist-outvars setup.probes))
+       (len (len outvars))
+       (fsm (make-svtv-fsm :base-fsm cycle-fsm
+                           :namemap namemap))
+       (cycle-ins (svtv-fsm-run-input-envs
+                   (take len rename-ins)
+                   rename-overrides fsm)))
+    (mv cycle-ins initst))
+  ///
+  (defret initst-alist-keys-of-<fn>
+    (equal (alist-keys initst)
+           (svex-alist-keys (pipeline-setup->initst setup)))))
 
 (define svtv-data-debug-pipeline-aux ((env svex-env-p)
                                       (setup pipeline-setup-p)
@@ -351,19 +482,12 @@
                               (<= (moddb-mod-totalwires modidx moddb)
                                   (aliass-length aliases)))))))
 
-  (b* (((acl2::with-fast env))
-       ((pipeline-setup setup))
-       (rename-ins (svex-alistlist-eval setup.inputs env))
-       (rename-overrides (svex-alistlist-eval setup.overrides env))
-       (initst (svex-alist-eval setup.initst env))
-       (outvars (svtv-probealist-outvars setup.probes))
-       (len (len outvars))
-       (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
-                           :namemap (svtv-data->namemap svtv-data)))
-       (cycle-ins (svtv-fsm-run-input-envs
-                   (take len rename-ins)
-                   rename-overrides fsm)))
+  (b* (((mv cycle-ins initst)
+        (svtv-pipeline-setup-to-cycle-inputs env setup
+                                             (svtv-data->cycle-fsm svtv-data)
+                                             (svtv-data->namemap svtv-data))))
     (svtv-data-debug-cycle-fsm cycle-ins initst :filename filename :skip-flatten skip-flatten)))
+
 
 (define svtv-data-debug-pipeline ((env svex-env-p)
                                   &key
@@ -392,6 +516,67 @@
   (svtv-data-debug-pipeline-aux
    env (svtv-data->pipeline-setup svtv-data)
    :filename filename :skip-flatten skip-flatten))
+
+
+(define svtv-data-chase-pipeline-aux ((env svex-env-p)
+                                      (setup pipeline-setup-p)
+                                      &key
+                                      (skip-flatten 'nil)
+                                      (svtv-data 'svtv-data)
+                                      (moddb 'moddb)
+                                      (aliases 'aliases)
+                                      (svtv-chase-data 'svtv-chase-data)
+                                      (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              ;; (svtv-data->namemap-validp svtv-data)
+              (equal (svex-alist-keys (pipeline-setup->initst setup))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data))))
+              (or (not skip-flatten)
+                  (and (moddb-ok moddb)
+                       (b* ((design (svtv-data->design svtv-data))
+                            (top-mod (design->top design))
+                            (modidx (moddb-modname-get-index top-mod moddb)))
+                         (and modidx
+                              (< modidx (moddb->nmods moddb))
+                              (<= (moddb-mod-totalwires modidx moddb)
+                                  (aliass-length aliases)))))))
+  :returns (mv err new-moddb new-aliases new-svtv-chase-data new-state)
+  (b* (((mv cycle-ins initst)
+        (svtv-pipeline-setup-to-cycle-inputs env
+                                             setup
+                                             (svtv-data->cycle-fsm svtv-data)
+                                             (svtv-data->namemap svtv-data))))
+    (svtv-data-chase-cycle-fsm cycle-ins initst :skip-flatten skip-flatten)))
+
+(define svtv-data-chase-pipeline ((env svex-env-p)
+                                  &key
+                                  (skip-flatten 'nil)
+                                  (svtv-data 'svtv-data)
+                                  (moddb 'moddb)
+                                  (aliases 'aliases)
+                                  (svtv-chase-data 'svtv-chase-data)
+                                  (state 'state))
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              ;; (svtv-data->namemap-validp svtv-data)
+              (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data))))
+              (and (moddb-ok moddb)
+                   (b* ((design (svtv-data->design svtv-data))
+                        (top-mod (design->top design))
+                        (modidx (moddb-modname-get-index top-mod moddb)))
+                     (and modidx
+                          (< modidx (moddb->nmods moddb))
+                          (<= (moddb-mod-totalwires modidx moddb)
+                              (aliass-length aliases))))))
+  :returns (mv err new-moddb new-aliases new-svtv-chase-data new-state)
+  (svtv-data-chase-pipeline-aux env (svtv-data->pipeline-setup svtv-data) :skip-flatten skip-flatten))
+
+
+
 
 
 (defun find-make-defsvtv-args (x)
@@ -642,6 +827,51 @@
 
 
 
+(defun svtv-data-chase-defsvtv$-form (make-defsvtv-args-form
+                                      args)
+  (b* (((unless (keyword-value-listp args))
+        (er hard? 'svtv-data-chase-defsvtv$ "Args should be a keyword-value list~%"))
+       (env (cadr (assoc-keyword :env args)))
+       (args (remove-keywords '(:env) args))
+       (svtv-data (lookup-keyword-with-default :svtv-data 'svtv-data args))
+       (svtv-chase-data (lookup-keyword-with-default :svtv-chase-data 'svtv-chase-data args))
+       (moddb (lookup-keyword-with-default :moddb 'moddb args))
+       (aliases (lookup-keyword-with-default :aliases 'aliases args)))
+    `(b* ((x ,make-defsvtv-args-form)
+          ((mv err pipeline-setup ,svtv-data)
+           (defsvtv-stobj-pipeline-setup x ,svtv-data))
+          ((when err)
+           (mv err ,svtv-data ,moddb ,aliases ,svtv-chase-data state))
+          ((mv err ,moddb ,aliases ,svtv-chase-data state)
+           (svtv-data-chase-pipeline-aux ,env pipeline-setup . ,args)))
+       (mv err ,svtv-data ,moddb ,aliases ,svtv-chase-data state))))
+
+(defun svtv-data-chase-defsvtv$-fn (defsvtv$-form args)
+  (declare (xargs :mode :program))
+  `(b* (((mv err make-defsvtv-args-form)
+         (translate-defsvtv-form-for-debug ',defsvtv$-form (w state)))
+        ((when err)
+         (er soft 'svtv-data-chase-defsvtv$
+             "Error translating defsvtv$ form: ~@0~%" make-defsvtv-args-form))
+        (form (svtv-data-chase-defsvtv$-form make-defsvtv-args-form ',args)))
+     (trans-eval-default-warning form 'svtv-data-chase-defsvtv$ state t)))
+
+
+(defmacro svtv-data-chase-defsvtv$ (defsvtv$-form
+                                     &rest args
+                                     ;; (env 'nil)
+                                     ;; (svtv-data 'svtv-data)
+                                     ;; (svtv-chase-data 'svtv-chase-data)
+                                     ;; (moddb 'moddb)
+                                     ;; (aliases 'aliases)
+                                     ;; (vcd-wiremap 'vcd-wiremap)
+                                     ;; (vcd-vals 'vcd-vals)
+                                     ;; (skip-flatten 'nil)
+                                     )
+  (svtv-data-chase-defsvtv$-fn defsvtv$-form args))
+
+
+
   
 
 (local
@@ -698,3 +928,51 @@
         (mv (msg "Wrong answer: expected ~x0 result ~x1~%" expected result)
             nil state)))
     (mv err '(value-triple :ok) state))))
+
+#||
+
+(defconst *my-design2*
+  (make-design
+   :top "top"
+   :modalist
+   (make-fast-alist
+    (list (cons "top"
+                (make-module
+                 :wires (list (make-wire :name "ctr"
+                                         :width 5
+                                         :low-idx 0)
+                              (make-wire :name "inc"
+                                         :width 1
+                                         :low-idx 0)
+                              (make-wire :name "reset"
+                                         :width 1
+                                         :low-idx 0)
+                              (make-wire :name "ctrnext"
+                                         :width 5
+                                         :low-idx 3))
+                 :assigns (list (cons (list (make-lhrange
+                                             :w 5
+                                             :atom (make-lhatom-var :name "ctrnext" :rsh 0))) ;; lhs
+                                      (make-driver :value
+                                                   (svcall ?
+                                                           (svcall zerox 1 "reset")
+                                                           0
+                                                           (svcall + (svcall ? (svcall zerox 1 "inc") 1 0)
+                                                                   (svcall zerox 5 "ctr")))))
+                                (cons (list (make-lhrange
+                                             :w 5
+                                             :atom (make-lhatom-var :name "ctr" :rsh 0)))
+                                      (make-driver :value (make-svar :name "ctrnext" :delay 1))))))))))
+
+(svtv-data-chase-defsvtv$
+ (defsvtv$ my-svtv
+   :design *my-design2*
+   :inputs
+   '(("reset"  1 0 0 0)
+     ("inc"    inc0 inc1 inc2 inc3))
+   :outputs
+   '(("ctr"    _ _ _ lastctr)))
+ :env '((inc0 . 0) (inc1 . 1) (inc2 . 0) (inc3 . 1)))
+
+
+||#

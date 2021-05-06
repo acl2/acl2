@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,7 @@
                                  state)
   :returns (mv erp (rewritten-term "A @(tsee pseudo-termp).") state)
   :mode :program
+  :parents (solve-implementation)
   :short "Call the Axe rewriter on the matrix of @('old')."
   :long
   (xdoc::topstring

@@ -576,6 +576,7 @@
   :returns (mv (names "A @(tsee symbol-listp).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
+  :parents (numbered-names)
   :short "Add to each of the given bases the lowest index,
           starting with the given index,
           such that the resulting names are not already in use."
@@ -592,6 +593,7 @@
   :returns (mv (name "A @(tsee symbolp).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
+  :parents (numbered-names)
   :short "Specialize @(tsee next-fresh-numbered-names) to a single name."
   (b* (((mv names names-to-avoid) (next-fresh-numbered-names (list base)
                                                              index
