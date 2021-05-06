@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,6 +30,7 @@
                (updated-event-names-to-avoid "A @(tsee symbol-listp).")
                state)
   :mode :program
+  :parents (error-checking)
   :short "Cause an error if a symbol
           cannot be used as the name of a new event of a certain type,
           also given that certain symbols will be used as event names."

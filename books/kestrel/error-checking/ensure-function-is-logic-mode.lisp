@@ -18,6 +18,7 @@
 
 (def-error-checker ensure-function-is-logic-mode
   ((fn (function-namep fn (w state)) "Function to check."))
+  :parents (error-checking)
   :short "Cause an error if a function is in program mode."
   :body (((logicp fn (w state))
           "~@0 is not in logic mode." description fn)))

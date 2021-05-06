@@ -19,6 +19,7 @@
 
 (def-error-checker ensure-function-is-defined
   ((fn (logic-function-namep fn (w state)) "Function to check."))
+  :parents (error-checking)
   :short "Cause an error if a logic-mode function is not defined."
   :body (((definedp fn (w state))
           "~@0 exists but has no definition." description)))
