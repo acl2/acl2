@@ -74,7 +74,7 @@
      we remove all their formal parameters
      that are identical to the corresponding arguments,
      via @(tsee remove-trivial-vars)'s auxiliary function
-     @('remove-trivial-vars-aux'), which does exactly that.
+     @(tsee remove-equal-formals-actuals), which does exactly that.
      We do not use @(tsee remove-trivial-vars) because that one
      removes the trivial variables at all levels,
      while here we only want to remove the ones
@@ -117,7 +117,7 @@
        (outer-lambda-expr (ffn-symb term))
        (formals (lambda-formals outer-lambda-expr))
        (actuals (fargs term))
-       ((mv list-mv list-mv-term) (remove-trivial-vars-aux formals actuals))
+       ((mv list-mv list-mv-term) (remove-equal-formals-actuals formals actuals))
        ((unless (and (consp list-mv)
                      (not (consp (cdr list-mv)))))
         (mv nil nil nil nil nil nil))
@@ -134,7 +134,7 @@
        (inner-lambda-expr (ffn-symb inner-lambda-expr-call))
        (formals (lambda-formals inner-lambda-expr))
        (actuals (fargs inner-lambda-expr-call))
-       ((mv vars mv-nths) (remove-trivial-vars-aux formals actuals))
+       ((mv vars mv-nths) (remove-equal-formals-actuals formals actuals))
        (body-term (lambda-body inner-lambda-expr))
        ((when (dumb-occur-var-open mv-var body-term))
         (mv nil nil nil nil nil nil))
@@ -183,7 +183,7 @@
              (equal (len indices)
                     (len vars)))
     :hyp :guard
-    :hints (("Goal" :in-theory (enable remove-trivial-vars-aux-same-len))))
+    :hints (("Goal" :in-theory (enable remove-equal-formals-actuals-same-len))))
 
   (in-theory (disable len-of-check-mv-let-call.indices/vars))
 
