@@ -127,7 +127,6 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
-                            divconq
                             expdata
                             isodata
                             parteval
