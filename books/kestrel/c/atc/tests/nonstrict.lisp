@@ -54,24 +54,26 @@
 (defun |condand| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::eq-sint-sint |x|
-                   (if (and (c::boolean-from-sint
-                             (c::le-sint-sint (c::sint-const 0) |x|))
-                            (c::boolean-from-sint
-                             (c::le-sint-sint |x| (c::sint-const 10))))
-                       (c::sint-const 10)
-                     (c::sint-const 20))))
+                   (c::condexpr
+                    (if (and (c::boolean-from-sint
+                              (c::le-sint-sint (c::sint-const 0) |x|))
+                             (c::boolean-from-sint
+                              (c::le-sint-sint |x| (c::sint-const 10))))
+                        (c::sint-const 10)
+                      (c::sint-const 20)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |condor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::eq-sint-sint |x|
-                   (if (or (c::boolean-from-sint
-                            (c::lt-sint-sint |x| (c::sint-const 0)))
-                           (c::boolean-from-sint
-                            (c::gt-sint-sint |x| (c::sint-const 10))))
-                       (c::sint-const 10)
-                     (c::sint-const 20))))
+                   (c::condexpr
+                    (if (or (c::boolean-from-sint
+                             (c::lt-sint-sint |x| (c::sint-const 0)))
+                            (c::boolean-from-sint
+                             (c::gt-sint-sint |x| (c::sint-const 10))))
+                        (c::sint-const 10)
+                      (c::sint-const 20)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

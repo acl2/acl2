@@ -16,6 +16,7 @@
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "arrays")
+(include-book "conditional-expressions")
 (include-book "exec-limit-theorems")
 (include-book "proof-support")
 
@@ -1282,7 +1283,7 @@
                (atc-gen-expr-bool arg inscope fn ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
            (mv nil (list expr (type-sint)) state)))
-        (('if test then else)
+        (('condexpr ('if test then else))
          (b* (((mv erp test-expr state) (atc-gen-expr-bool test
                                                            inscope
                                                            fn

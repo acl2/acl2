@@ -48,10 +48,11 @@
                                  :in-theory (enable c::sub-sint-sint-okp
                                                     c::sint-integerp-alt-def)))))
   (c::sub-sint-sint |x|
-                    (if (c::boolean-from-sint
-                         (c::ge-sint-sint |y| (c::sint-const 18)))
-                        (c::sint-const 0)
-                      (c::sint-const 1))))
+                    (c::condexpr
+                     (if (c::boolean-from-sint
+                          (c::ge-sint-sint |y| (c::sint-const 18)))
+                         (c::sint-const 0)
+                       (c::sint-const 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,10 +66,11 @@
                                                     c::sub-sint-sint-okp)))))
   (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))
       (c::sub-sint-sint |a|
-                        (if (c::boolean-from-sint
-                             (c::eq-sint-sint |b| (c::sint-const 3)))
-                            (c::sint-const 0)
-                          (c::sint-const 1)))
+                        (c::condexpr
+                         (if (c::boolean-from-sint
+                              (c::eq-sint-sint |b| (c::sint-const 3)))
+                             (c::sint-const 0)
+                           (c::sint-const 1))))
     |b|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

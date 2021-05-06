@@ -549,6 +549,9 @@
      others are functions to manipulate the frame stack,
      etc.")
    (xdoc::p
+    "We expand @(tsee condexpr) because it is just a wrapper
+     that signifies a conditional expression instead of statement.")
+   (xdoc::p
     "It may seem surprising that we expand functions like @(tsee sint-const),
      since those correspond to C constructs;
      we certainly do not expand functions like @(tsee add-sint-sint).
@@ -576,6 +579,7 @@
      in the symbolic execution."))
   (append
    '(compustate-frames-number
+     condexpr
      create-var
      endp
      enter-scope
