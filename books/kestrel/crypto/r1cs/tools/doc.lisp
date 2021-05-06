@@ -13,6 +13,8 @@
 (include-book "xdoc/topics" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
+(include-book "verify-r1cs")
+
 (xdoc::defxdoc
  r1cs-verification-with-axe
  :short "Verifying an R1CS using the Axe toolkit."
