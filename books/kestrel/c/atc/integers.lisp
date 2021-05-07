@@ -461,7 +461,7 @@
 
 (make-event
  `(defrule schar-min-vs-sshort-min
-    :parents (schar-min schar-min)
+    :parents (schar-min sshort-min)
     :short "Relation between
             @('signed char') and @('signed short') minima."
     ,(if (= (char-bits) (short-bits))
