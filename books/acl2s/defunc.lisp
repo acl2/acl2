@@ -2322,14 +2322,14 @@ To debug a failed defunc form, you can proceed in multiple ways:
                     nil
                     ((defundcd ,name ,@args))))
 
-(defmacro prove-body-contracts (name)
-  `(verify-guards ,name))
+(defmacro prove-body-contracts (name &rest args)
+  `(verify-guards ,name ,@args))
 
-(defmacro verify-body-contracts (name)
-  `(verify-guards ,name))
+(defmacro verify-body-contracts (name &rest args)
+  `(verify-guards ,name ,@args))
 
-(defmacro prove-termination (name)
-  `(verify-termination ,name))
+(defmacro prove-termination (name &rest args)
+  `(verify-termination ,name ,@args))
 
 #|
 (defmacro verify-function-contract (name)
