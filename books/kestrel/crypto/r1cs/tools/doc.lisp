@@ -141,12 +141,17 @@ core function."))
 
      (xdoc::topparas "This is the hardest step.  We suggest looking at some example proofs.
 
-The proof will include assumptions that:
-A. All of the inputs are field elements
-B. The inputs that were indicated to be bits actually are bits
-C. The R1CS holds
-The conclusion will assert that the spec function (written in step 1)
-holds over the appropriate arguments.
+     The proof will include assumptions that:")
+
+     (xdoc::ol-from-string
+      "A. All of the inputs are field elements.
+
+      B. The inputs that were indicated to be bits actually are bits.
+
+      C. The R1CS holds.")
+
+     (xdoc::topparas "The conclusion will assert that the spec function (written in step 1)
+     holds over the appropriate arguments.
 
 Most of the work in this step involves providing lists of rewrite rules
 that suffice to rewrite all the idioms in the R1CS into the more
