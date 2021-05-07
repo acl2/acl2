@@ -542,8 +542,10 @@ binder.</p>")
     (mv (append (and (not sum-name-shared-with-prod-name) main-doc)
                 prods-doc
                 `((xdoc::order-subtopics ,x.name
-                                         ,(remove nil (list* x.pred x.fix x.kind x.equiv x.count
-                                                             (remove x.name type-names))))))
+                                         ,(remove nil
+                                                  (remove x.name
+                                                          (list* x.pred x.fix x.kind x.equiv x.count
+                                                                 type-names))))))
         state)))
 
 (defun defoption->defxdoc (x parents kwd-alist base-pkg state)
