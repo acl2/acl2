@@ -1078,7 +1078,8 @@
      and removing the ones that match."))
   (b* (((mv okp formals body actuals) (acl2::check-lambda-call term))
        ((when (not okp)) (mv nil nil nil nil))
-       ((mv formals actuals) (atc-check-let-aux formals actuals))
+       ((mv formals actuals) (acl2::remove-equal-formals-actuals formals
+                                                                 actuals))
        ((unless (and (= (len formals) 1)
                      (= (len actuals) 1)))
         (mv nil nil nil nil))
@@ -1088,41 +1089,8 @@
   :guard-hints (("Goal"
                  :in-theory
                  (enable acl2::len-of-check-lambda-calls.args-is-formals)))
-
   :prepwork
-
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
-
-   (define atc-check-let-aux ((formals symbol-listp)
-                              (actuals pseudo-term-listp))
-     :guard (= (len formals) (len actuals))
-     :returns (mv (new-formals symbol-listp
-                               :hyp (symbol-listp formals))
-                  (new-actuals pseudo-term-listp
-                               :hyp (pseudo-term-listp actuals)))
-     :parents nil
-     (b* (((when (endp formals)) (mv nil nil))
-          ((unless (mbt (consp actuals))) (mv nil nil))
-          (formal (car formals))
-          (actual (car actuals))
-          ((when (eq formal actual))
-           (atc-check-let-aux (cdr formals) (cdr actuals)))
-          ((mv rest-formals rest-actuals)
-           (atc-check-let-aux (cdr formals) (cdr actuals))))
-       (mv (cons formal rest-formals)
-           (cons actual rest-actuals)))
-     ///
-
-     (defret acl2-count-of-atc-check-let-aux.formals
-       (<= (acl2-count new-formals)
-           (acl2-count formals))
-       :rule-classes :linear)
-
-     (defret acl2-count-of-atc-check-let-aux.actuals
-       (<= (acl2-count new-actuals)
-           (acl2-count actuals))
-       :rule-classes :linear)))
-
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
   ///
 
   (defret acl2-count-of-atc-check-let-init

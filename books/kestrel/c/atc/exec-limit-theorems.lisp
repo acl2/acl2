@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-exec-limit-theorems
-  :parents (dynamic-semantics)
+  :parents (atc-dynamic-semantics)
   :short "Theorems about the limit on the depth of the recursive calls of
           the big-step operational interpretive semantics."
   :long

@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -167,12 +167,12 @@
 
   (in-theory (disable len-of-fty-check-mv-let-call.indices/vars))
 
-  (defrulel remove-trivial-vars-aux-lemma
+  (defrulel remove-equal-formals-actuals-lemma
     (<= (pseudo-term-list-count
-         (mv-nth 1 (acl2::remove-trivial-vars-aux formals actuals)))
+         (mv-nth 1 (acl2::remove-equal-formals-actuals formals actuals)))
         (pseudo-term-list-count actuals))
     :rule-classes :linear
-    :enable (acl2::remove-trivial-vars-aux pseudo-term-list-count))
+    :enable (acl2::remove-equal-formals-actuals pseudo-term-list-count))
 
   (defrulel pseudo-term-count-of-fty-check-mv-let-call.mv-term-lemma
     (implies (pseudo-termp term)

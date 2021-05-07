@@ -422,7 +422,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (c-abstract-syntax expr-fixtypes)
+    :parents (atc-abstract-syntax expr-fixtypes)
     :short "Fixtype of expressions [C:6.5]."
     :long
     (xdoc::topstring

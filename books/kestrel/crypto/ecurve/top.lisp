@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -56,4 +56,4 @@
    secp256k1-interface
    secp256k1-attachment
    bls12-377-domain-parameters
-   prime-field-squares))
+   pfield-squarep))

@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ obags
-  :parents (acl2::kestrel-utilities std::std/osets acl2::lists)
+  :parents (acl2::std)
   :short "A library of obags (ordered bags),
           i.e. finite bags (a.k.a. multisets)
           represented as non-strictly ordered lists."
