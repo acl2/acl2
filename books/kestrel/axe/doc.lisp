@@ -38,7 +38,7 @@ A DAG contains a set of nodes, each of which has a node number (a natural number
 
 A quoted constant, or
 
-The application of a function symbol (almost always a defined ACL2 function) to a list of arguments.  Each argument (or \"darg\" = \"DAG argument\")) should be either a quoted constant or the number of a DAG node, which must be smaller than the number of the node that contains this expression.")
+The application of a function symbol (almost always a defined ACL2 function) to a list of arguments.  Each argument (or \"darg\" = \"DAG argument\")) should be either a quoted constant or the number of a DAG node, which must be smaller than the number of the node that contains this expression.  Since the expression for a given node can only refer to nodes with smaller numbers, the DAG is acyclic.")
 
    (xdoc::topparas
     "The nodes in a DAG are listed in decreasing order, with each node number consed onto its expression.  Here is an example DAG:
@@ -51,6 +51,4 @@ The application of a function symbol (almost always a defined ACL2 function) to 
  (0 . x))
 }).
 
-Since the expression for a given node can only refer to nodes with smaller numbers, the DAG is acyclic.  The variables in this DAG are @('x') and @('y'), and the functions it calls are @('foo), @('bar'), and @('binary-+')."
-
-    )))
+The variables in this DAG are @('x') and @('y'), and the functions it calls are @('foo), @('bar'), and @('binary-+').")))
