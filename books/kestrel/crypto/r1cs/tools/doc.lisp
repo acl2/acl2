@@ -93,8 +93,8 @@ The formalization is based on our ACL2 formalization of prime
  exactly matches the expression derived from the R1CS (perhaps after some
  normalization, also done by rewriting).  This completes the proof.
 
-This rest of this topic describes the concrete steps for using Axe to verify an R1CS (rank-1 constraint system).  It may be helpful to follow along with an example.  There is one in
-@('[books]/kestrel/ethereum/semaphore/uint32xor-proof.lisp').
+This rest of this topic describes the concrete steps for using Axe to verify an R1CS (rank-1 constraint system).  It may be helpful to follow along with an example.  There is one
+<a href=\"https://github.com/acl2/acl2/tree/master/books/kestrel/ethereum/semaphore/uint32xor-proof.lisp\">here</a>.
 
 To use the Axe R1CS Prover to verify an R1CS, follow these steps:")
   (xdoc::ol
