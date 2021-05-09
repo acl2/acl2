@@ -227,6 +227,16 @@
                   ,2vec-body
                 ,4vec-body)))
 
+(define s4vec-equal ((x s4vec-p) (y s4vec-p))
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable s4vec->4vec)))
+  (mbe :logic (equal (s4vec->4vec x) (s4vec->4vec y))
+       :exec (if-s2vec-p (x y)
+                         (sparseint-equal (s2vec->val x) (s2vec->val y))
+                         (and (sparseint-equal (s4vec->upper x) (s4vec->upper y))
+                              (sparseint-equal (s4vec->lower x) (s4vec->lower y))))))
+
+
 (deflist s4veclist :elt-type s4vec :true-listp t)
 
 (define s4vec-index-p ((x s4vec-p))
@@ -753,12 +763,39 @@
   :returns (res s4vec-p)
   (b* (((s4vec x))
        ((s4vec y)))
-    (s2vec (int-to-sparseint (bool->vec (if-s2vec-p (x y)
-                                                    (sparseint-equal (s2vec->val x) (s2vec->val y))
-                                                    (and (sparseint-equal x.upper y.upper)
-                                                         (sparseint-equal x.lower y.lower)))))))
+    (s2vec (int-to-sparseint (bool->vec (s4vec-equal x y)))))
   ///
   (s4vec-correct :enable (s4vec->4vec bool->vec)))
+
+(define s4vec-===* ((left s4vec-p) (right s4vec-p))
+  :returns (equal s4vec-p)
+  (b* (((s4vec left))
+       ((s4vec right))
+       (uppers-diff (sparseint-bitxor left.upper right.upper))
+       (lowers-diff (sparseint-bitxor left.lower right.lower))
+       (diff (sparseint-bitor uppers-diff lowers-diff))
+       (left-non-x (sparseint-bitorc1 left.upper left.lower))
+       (right-non-x (sparseint-bitorc1 right.upper right.lower))
+       (true ;; inputs are non-x and identical
+        (sparseint-equal -1
+                         (sparseint-bitandc1 diff
+                                             ;; not X: ~(upper & ~lower) = ~upper | lower
+                                             left-non-x)))
+       ((when true) (mbe :logic (s4vec (int-to-sparseint -1) (int-to-sparseint -1)) :exec -1))
+       (not-false (sparseint-equal 0
+                                   (sparseint-bitand
+                                    left-non-x ;; factor this out because both conditions below include it
+                                    (sparseint-bitorc2
+                                     ;; bits are Boolean and not equal
+                                     ;; (sparseint-bitand right-non-x
+                                     diff
+                                     ;; left is non-x and y is X
+                                     right-non-x))))
+       ((when not-false) (s4vec-x)))
+    (mbe :logic (s4vec (int-to-sparseint 0) (int-to-sparseint 0)) :exec 0))
+
+  ///
+  (s4vec-correct))
 
 (define s3vec-? ((test s4vec-p)
                  (then s4vec-p)

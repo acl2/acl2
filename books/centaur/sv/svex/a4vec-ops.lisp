@@ -983,6 +983,169 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
 
 
 
+
+(local
+ (define 4vec-===*-conds ((left 4vec-p) (right 4vec-p))
+   :returns (mv true not-false)
+   (b* (((4vec left))
+        ((4vec right))
+        (uppers-diff (logxor left.upper right.upper))
+        (lowers-diff (logxor left.lower right.lower))
+        (diff (logior uppers-diff lowers-diff))
+        (left-non-x (logorc1 left.upper left.lower))
+        (true ;; inputs are non-x and identical
+         (equal -1
+                (logandc1 diff
+                          ;; not X: ~(upper & ~lower) = ~upper | lower
+                          left-non-x)))
+        (right-non-x (logorc1 right.upper right.lower))
+        (not-false (equal 0
+                          (logand
+                           left-non-x ;; factor this out because both conditions below include it
+                           (logorc2
+                            ;; bits are Boolean and not equal
+                            ;; (logand right-non-x
+                            diff
+                            ;; left is non-x and y is X
+                            right-non-x)))))
+     (mv true not-false))
+   ///
+   (defret 4vec-===*-redef
+     (equal (4vec-===* left right)
+            (cond (true -1)
+                  (not-false (4vec-x))
+                  (t 0)))
+     :hints(("Goal" :in-theory (enable 4vec-===*))))
+
+   (defthm 4vec-===*-conds-decomp
+     (b* ((a (4vec (logcons a1.upper ar.upper)
+                   (logcons a1.lower ar.lower)))
+          (b (4vec (logcons b1.upper br.upper)
+                   (logcons b1.lower br.lower)))
+          (a1 (4vec (- a1.upper) (- a1.lower)))
+          (b1 (4vec (- b1.upper) (- b1.lower)))
+          (ar (4vec ar.upper ar.lower))
+          (br (4vec br.upper br.lower))
+          ((mv full-true full-not-false) (4vec-===*-conds a b))
+          ((mv first-true first-not-false) (4vec-===*-conds a1 b1))
+          ((mv rest-true rest-not-false) (4vec-===*-conds ar br)))
+       (implies (and (bitp a1.upper)
+                     (bitp a1.lower)
+                     (bitp b1.upper)
+                     (bitp b1.lower))
+                (and (iff full-true (and first-true rest-true))
+                     (iff full-not-false (and first-not-false rest-not-false)))))
+     :hints(("Goal" :in-theory (enable bitp))))))
+
+   
+
+
+    
+
+(define a4vec-===*-bit ((a.upper "Aig for one bit")
+                        a.lower b.upper b.lower)
+  :returns (mv true not-false)
+  (b* ((diff (aig-or (aig-xor a.upper b.upper) (aig-xor a.lower b.lower)))
+       (a-non-x (aig-or (aig-not a.upper) a.lower))
+       (b-non-x (aig-or (aig-not b.upper) b.lower))
+
+       (true (aig-and (aig-not diff) a-non-x))
+       (not-false (aig-not (aig-and a-non-x (aig-or diff (aig-not b-non-x))))))
+    (mv true not-false)))
+  
+
+
+(define a4vec-===*-aux ((a.upper true-listp)
+                        (a.lower true-listp)
+                        (b.upper true-listp)
+                        (b.lower true-listp))
+  :measure (+ (len b.upper) (len b.lower) (len a.upper) (len a.lower))
+  :hints(("Goal" :in-theory (enable and4)))
+  :returns (mv (true "aig")
+               (not-false "aig"))
+  (b* (((mv buf bur buend) (gl::first/rest/end b.upper))
+       ((mv blf blr blend) (gl::first/rest/end b.lower))
+       ;; ((when (and buend blend (eq buf nil) (eq blf t)))
+       ;;  ;; Ends in Zs out to infinity.
+       ;;  (mv t t))
+       ((mv auf aur auend) (gl::first/rest/end a.upper))
+       ((mv alf alr alend) (gl::first/rest/end a.lower))
+       
+       ((mv true1 not-false1) (a4vec-===*-bit auf alf buf blf))
+
+       ((when (mbe :logic (and4 buend blend auend alend)
+                   :exec (and buend blend auend alend)))
+        (mv true1 not-false1))
+       ((mv rest-true rest-not-false) (a4vec-===*-aux aur alr bur blr)))
+    (mv (aig-and true1 rest-true)
+        (aig-and not-false1 rest-not-false))))
+
+
+(define a4vec-===* ((a a4vec-p) (b a4vec-p))
+  :returns (ans a4vec-p)
+  (b* (((a4vec a))
+       ((a4vec b))
+       ((mv true not-false) (a4vec-===*-aux a.upper a.lower b.upper b.lower)))
+    (a4vec (aig-sterm (aig-or true not-false))
+           (aig-sterm true)))
+  ///
+  (local (defret <fn>-correct
+           :fn a4vec-===*-bit
+           (b* (((mv spec-true spec-not-false) (4vec-===*-conds (4vec (gl::bool->sign (aig-eval a.upper env))
+                                                                      (gl::bool->sign (aig-eval a.lower env)))
+                                                                (4vec (gl::bool->sign (aig-eval b.upper env))
+                                                                      (gl::bool->sign (aig-eval b.lower env))))))
+             (and (iff (aig-eval true env) spec-true)
+                  (iff (aig-eval not-false env) spec-not-false)))
+           :hints(("Goal" :in-theory (enable <fn> 4vec-===*-conds gl::bool->sign)))))
+
+  (local (Defthm close-up-aig-list->s
+           (equal (logcons (bool->bit (aig-eval (car x) env))
+                           (aig-list->s (gl::scdr x) env))
+                  (aig-list->s x env))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm aig-list->s-when-endp
+           (implies (gl::s-endp x)
+                    (equal (aig-list->s x env)
+                           (gl::bool->sign (aig-eval (car x) env))))
+           :hints(("Goal" :in-theory (enable aig-list->s)))))
+
+  (local (defthm minus-bool->bit
+           (equal (- (bool->bit x))
+                  (gl::bool->sign x))))
+
+  (local (defret <fn>-correct
+           :fn a4vec-===*-aux
+           (b* (((mv spec-true spec-not-false) (4vec-===*-conds (4vec (aig-list->s a.upper env)
+                                                                      (aig-list->s a.lower env))
+                                                                (4vec (aig-list->s b.upper env)
+                                                                      (aig-list->s b.lower env)))))
+             (and (iff (aig-eval true env) spec-true)
+                  (iff (aig-eval not-false env) spec-not-false)))
+           :hints (("goal"
+                    :in-theory (e/d ((:i <fn>)))
+                    :induct <call>
+                    :expand (<call>))
+                   '(:in-theory (disable 4vec-===*-conds-decomp gl::bool->sign)
+                     :do-not-induct t
+                     :use ((:instance 4vec-===*-conds-decomp
+                            (a1.upper (BOOL->BIT (AIG-EVAL (CAR A.UPPER) ENV)))
+                            (a1.lower (BOOL->BIT (AIG-EVAL (CAR A.lower) ENV)))
+                            (ar.upper (AIG-LIST->S (GL::SCDR A.UPPER) ENV))
+                            (ar.lower (AIG-LIST->S (GL::SCDR A.lower) ENV))
+                            (b1.upper (BOOL->BIT (AIG-EVAL (CAR B.UPPER) ENV)))
+                            (b1.lower (BOOL->BIT (AIG-EVAL (CAR B.lower) ENV)))
+                            (br.upper (AIG-LIST->S (GL::SCDR B.UPPER) ENV))
+                            (br.lower (AIG-LIST->S (GL::SCDR B.lower) ENV))))))))
+
+  (defret <fn>-correct
+    (b* ((spec (4vec-===* (a4vec-eval a env) (a4vec-eval b env))))
+      (equal (a4vec-eval ans env) spec))
+    :hints(("Goal" :in-theory (enable 4vec-===*-redef)))))
+
+
+
 (define a4vec-wildeq-safe-bit ((au "aig")
                           (al)
                           (bu)
@@ -1057,6 +1220,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                           (x a.upper) (y a.lower) (env env)))
                    :in-theory (disable acl2::aig-eval-and
                                        acl2::aig-eval-xor))))))
+
 
 
 (define a4vec-wildeq-safe-aux ((a.upper true-listp "aig list")

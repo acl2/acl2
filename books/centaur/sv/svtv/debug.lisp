@@ -254,15 +254,6 @@
            (true-list-listp (append a b)))
   :hints(("Goal" :in-theory (enable true-list-listp))))
 
-(defthm svex-env-p-of-pairlis$
-  (implies (and (svarlist-p x)
-                (4veclist-p y)
-                (equal (len x) (len y)))
-           (svex-env-p (pairlis$ x y)))
-  :hints(("Goal" :in-theory (enable svex-env-p
-                                    svarlist-p
-                                    4veclist-p
-                                    pairlis$))))
 
 (defenum debugdata-status-p
   (:empty :initialized :composed))

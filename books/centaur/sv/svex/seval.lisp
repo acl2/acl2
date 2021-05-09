@@ -205,6 +205,8 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
 
 
 
+
+
 (defines svex-s4eval
   :parents (evaluation)
   :short "Evaluate an @(see svex) in some s4vec environment."
@@ -462,235 +464,246 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
       :fn svexlist-s4eval)))
 
 
-(defines svex-s4xeval
-  :parents (svex-s4eval)
-  (define svex-s4xeval ((x svex-p "Expression to evaluate."))
-    :returns (val s4vec-p "Indication of always-constant bits (see below).")
-    :measure (svex-count x)
-    :short "Evaluate an svex using s4vecs in an all-X environment."
-    :verify-guards nil
-    (svex-case x
-      :quote (4vec->s4vec x.val)
-      :var (s4vec-x)
-      :call
-      (let ((x.fn (case x.fn
-                       (=== '==)
-                       (==? 'safer-==?)
-                       (bit?! 'bit?)
-                       (?! '?*)
-                       (otherwise x.fn))))
-        ;; Shortcuts for ?, bit?, bitand, bitor
-        (case x.fn
-          ((? ?*)
-           (b* (((unless (eql (len x.args) 3))
-                 (svex-s4apply x.fn (svexlist-s4xeval x.args)))
-                (test (s3vec-fix (svex-s4xeval (first x.args))))
-                ((s4vec test))
-                ((when (sparseint-equal test.upper 0))
-                 (svex-s4xeval (third x.args)))
-                ((when (not (sparseint-equal test.lower 0)))
-                 (svex-s4xeval (second x.args)))
-                (then (svex-s4xeval (second x.args)))
-                (else (svex-s4xeval (third x.args))))
-             (case x.fn
-               (? (s4vec-? test then else))
-               (?* (s4vec-?* test then else)))))
-          (bit?
-           (b* (((unless (eql (len x.args) 3))
-                 (svex-s4apply x.fn (svexlist-s4xeval x.args)))
-                (test (svex-s4xeval (first x.args)))
-                ((unless (s4vec-2vec-p test))
-                 (s4vec-bit? test
-                        (svex-s4xeval (second x.args))
-                        (svex-s4xeval (third x.args))))
-                (testval (s4vec->upper test))
-                ((when (sparseint-equal testval 0))
-                 (svex-s4xeval (third x.args)))
-                ((when (sparseint-equal testval -1))
-                 (svex-s4xeval (second x.args))))
-             (s4vec-bit? test
-                         (svex-s4xeval (second x.args))
-                         (svex-s4xeval (third x.args)))))
-          (bitand
-           (b* (((unless (eql (len x.args) 2))
-                 (svex-s4apply x.fn (svexlist-s4xeval x.args)))
-                (test (svex-s4xeval (first x.args)))
-                ((when (and (s4vec-2vec-p test)
-                            (sparseint-equal (s4vec->upper test) 0))) 0))
-             (s4vec-bitand test
-                          (svex-s4xeval (second x.args)))))
-          (bitor
-           (b* (((unless (eql (len x.args) 2))
-                 (svex-s4apply x.fn (svexlist-s4xeval x.args)))
-                (test (svex-s4xeval (first x.args)))
-                ((when (and (s4vec-2vec-p test)
-                            (sparseint-equal (s4vec->upper test) -1))) -1))
-             (s4vec-bitor test
-                         (svex-s4xeval (second x.args)))))
-          (otherwise
-           (svex-s4apply x.fn (svexlist-s4xeval x.args)))))))
+(local (defthm svex-count-gt-1
+         (implies (svex-case x :call)
+                  (< 1 (svex-count x)))
+         :hints(("Goal" :expand ((svex-count x))))
+         :rule-classes :linear))
 
-  (define svexlist-s4xeval ((x svexlist-p))
-    :measure (svexlist-count x)
-    :returns (val s4veclist-p)
-    :short "Maps @(see svex-s4xeval) over an @(see svex) list."
-    (if (atom x)
-        nil
-      (cons (svex-s4xeval (car x))
-            (svexlist-s4xeval (cdr x)))))
-  ///
-  (local (include-book "std/lists/len" :dir :system))
+(define svex-quote->s4val ((x svex-p))
+  :guard (svex-case x :quote)
+  :inline t
+  :enabled t
+  (4vec->s4vec (svex-quote->val x)))
 
-  (local (in-theory (disable default-car
-                             default-cdr
-                             4vec->lower-when-2vec-p
-                             acl2::len-when-atom
-                             svex-s4xeval
-                             svexlist-s4xeval)))
+(defmacro mbe-choose-exec (&key logic exec)
+  (declare (ignore logic))
+  exec)
 
-  (local (defthm consp-of-svexlist-s4xeval
-           (equal (consp (svexlist-s4xeval x))
-                  (consp x))
-           :hints (("goal" :expand ((svexlist-s4xeval x))))))
+(defconst *svex-s4xeval-event*
+  '(defines svex-s4xeval
+     :parents (svex-s4eval)
+     (define svex-s4xeval ((x svex-p "Expression to evaluate."))
+       :returns (val s4vec-p "Indication of always-constant bits (see below).")
+       :measure (two-nats-measure (svex-count x) 1)
+       :short "Evaluate an svex using s4vecs in an all-X environment."
+       :verify-guards nil
+       (svex-case x
+         :quote (4vec->s4vec x.val)
+         :var (s4vec-x)
+         :call (svex-call-s4xeval x)))
 
-  (local (defthm upper-lower-of-3vec-fix
-           (implies (and (3vec-p x)
-                         (not (equal (4vec->lower x) 0)))
-                    (not (equal (4vec->upper x) 0)))
-           :hints(("Goal" :in-theory (enable 3vec-p)))))
+     (define svex-call-s4xeval ((x svex-p))
+       :guard (svex-case x :call)
+       :measure (two-nats-measure (svex-count x) 0)
+       :returns (val s4vec-p)
+       :verify-guards nil
+       (b* (((unless (mbt (svex-case x :call))) (s4vec-x))
+            ((svex-call x)))
+         (mbe :logic (svex-fn/args-s4xeval x.fn x.args)
+              :exec (let* ((fn x.fn)
+                           (args x.args))
+                      <body>))))
+     (define svex-fn/args-s4xeval ((fn fnsym-p) (args svexlist-p))
+       :measure (two-nats-measure (svexlist-count args) 1)
+       :returns (val s4vec-p)
+       <body>)
 
-  (local (defthm 4vec-?-cases
-           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
-                         (equal (4vec-? test then else)
-                                (4vec-fix else)))
-                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
-                         (equal (4vec-? test then else)
-                                (4vec-fix then))))
-           :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+     (define svexlist-s4xeval ((x svexlist-p))
+       :measure (two-nats-measure (svexlist-count x) 0)
+       :returns (val s4veclist-p)
+       :short "Maps @(see svex-s4xeval) over an @(see svex) list."
+       (if (atom x)
+           nil
+         (cons (svex-s4xeval (car x))
+               (svexlist-s4xeval (cdr x)))))
+     ///
+     (local (include-book "std/lists/len" :dir :system))
 
-  (local (defthm 4vec-?*-cases
-           (and (implies (equal (4vec->upper (3vec-fix test)) 0)
-                         (equal (4vec-?* test then else)
-                                (4vec-fix else)))
-                (implies (not (equal (4vec->lower (3vec-fix test)) 0))
-                         (equal (4vec-?* test then else)
-                                (4vec-fix then))))
-           :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
+     (local (in-theory (disable default-car
+                                default-cdr
+                                4vec->lower-when-2vec-p
+                                acl2::len-when-atom
+                                svex-s4xeval
+                                svexlist-s4xeval)))
 
-  (local (defthm 4vec-bit?-cases
-           (and (implies (b* (((4vec test)))
-                           (and (equal test.upper 0)
-                                (equal test.lower 0)))
-                         (equal (4vec-bit? test then else)
-                                (4vec-fix else)))
-                (implies (b* (((4vec test)))
-                           (and (equal test.upper -1)
-                                (equal test.lower -1)))
-                         (equal (4vec-bit? test then else)
-                                (4vec-fix then))))
-           :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit? 3vec-fix)))))
+     (local (defthm consp-of-svexlist-s4xeval
+              (equal (consp (svexlist-s4xeval x))
+                     (consp x))
+              :hints (("goal" :expand ((svexlist-s4xeval x))))))
 
-  (local (defthm 4vec-bitand-case
-           (implies (b* (((4vec test)))
-                      (and (equal test.upper 0)
-                           (equal test.lower 0)))
-                    (equal (4vec-bitand test x)
-                           0))
-           :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand 3vec-fix)))))
+     (local (defthm upper-lower-of-3vec-fix
+              (implies (and (3vec-p x)
+                            (not (equal (4vec->lower x) 0)))
+                       (not (equal (4vec->upper x) 0)))
+              :hints(("Goal" :in-theory (enable 3vec-p)))))
 
-  (local (defthm 4vec-bitor-case
-           (implies (b* (((4vec test)))
-                      (and (equal test.upper -1)
-                           (equal test.lower -1)))
-                    (equal (4vec-bitor test x)
-                           -1))
-           :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor 3vec-fix)))))
+     (local (defthm 4vec-?-cases
+              (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                            (equal (4vec-? test then else)
+                                   (4vec-fix else)))
+                   (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                            (equal (4vec-? test then else)
+                                   (4vec-fix then))))
+              :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
 
-  (verify-guards svex-s4xeval
-    :hints((and stable-under-simplificationp
-                '(:in-theory (e/d (svex-s4apply len 4veclist-nth-safe nth)
-                                  (svex-s4xeval))
-                  :expand ((svexlist-s4xeval (svex-call->args x))
-                           (svexlist-s4xeval (cdr (svex-call->args x)))
-                           (svexlist-s4xeval (cddr (svex-call->args x))))))))
+     (local (defthm 4vec-?*-cases
+              (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                            (equal (4vec-?* test then else)
+                                   (4vec-fix else)))
+                   (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                            (equal (4vec-?* test then else)
+                                   (4vec-fix then))))
+              :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
 
-  (memoize 'svex-s4xeval :condition '(eq (svex-kind x) :call))
+     (local (defthm 4vec-bit?-cases
+              (and (implies (b* (((4vec test)))
+                              (and (equal test.upper 0)
+                                   (equal test.lower 0)))
+                            (equal (4vec-bit? test then else)
+                                   (4vec-fix else)))
+                   (implies (b* (((4vec test)))
+                              (and (equal test.upper -1)
+                                   (equal test.lower -1)))
+                            (equal (4vec-bit? test then else)
+                                   (4vec-fix then))))
+              :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit? 3vec-fix)))))
 
-  (deffixequiv-mutual svex-s4xeval)
+     (local (defthm 4vec-bitand-case
+              (implies (b* (((4vec test)))
+                         (and (equal test.upper 0)
+                              (equal test.lower 0)))
+                       (equal (4vec-bitand test x)
+                              0))
+              :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand 3vec-fix)))))
 
-  (defthm svexlist-s4xeval-nil
-    (equal (svexlist-s4xeval nil) nil))
+     (local (defthm 4vec-bitor-case
+              (implies (b* (((4vec test)))
+                         (and (equal test.upper -1)
+                              (equal test.lower -1)))
+                       (equal (4vec-bitor test x)
+                              -1))
+              :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor 3vec-fix)))))
 
-  (defthm car-of-svexlist-s4xeval
-    (s4vec-equiv (car (svexlist-s4xeval x))
-                (svex-s4xeval (car x)))
-    :hints(("Goal" :expand ((svexlist-s4xeval x))
-            :in-theory (enable default-car))))
+     (verify-guards svex-s4xeval
+       :hints((and stable-under-simplificationp
+                   '(:in-theory (e/d (svex-s4apply len 4veclist-nth-safe nth
+                                                   s4vec->4vec)
+                                     (svex-s4xeval))
+                     :expand ((svexlist-s4xeval (svex-call->args x))
+                              (svexlist-s4xeval (cdr (svex-call->args x)))
+                              (svexlist-s4xeval (cddr (svex-call->args x)))
+                              (svexlist-s4xeval args)
+                              (svexlist-s4xeval (cdr args))
+                              (svexlist-s4xeval (cddr args)))))))
 
-  (defthm cdr-of-svexlist-s4xeval
-    (s4veclist-equiv (cdr (svexlist-s4xeval x))
-                    (svexlist-s4xeval (cdr x)))
-    :hints(("Goal" :expand ((svexlist-s4xeval x))
-            :in-theory (enable default-cdr))))
+     (memoize 'svex-s4xeval :condition '(eq (svex-kind x) :call))
 
-  (defthm len-of-svexlist-s4xeval
-    (equal (len (svexlist-s4xeval x))
-           (len x))
-    :hints(("Goal" :expand ((svexlist-s4xeval x)))))
+     (deffixequiv-mutual svex-s4xeval)
 
-  (defthm svexlist-s4xeval-of-append
-    (equal (svexlist-s4xeval (append a b))
-           (append (svexlist-s4xeval a)
-                   (svexlist-s4xeval b)))
-    :hints(("Goal" :in-theory (enable append svexlist-s4xeval))))
+     (defthm svexlist-s4xeval-nil
+       (equal (svexlist-s4xeval nil) nil))
 
-  
-  (local (defthm open-svexlist-xeval
-           (implies (consp args)
-                    (equal (svexlist-xeval args)
-                           (cons (svex-xeval (car args))
-                                 (svexlist-xeval (Cdr args)))))
-           :hints(("Goal" :in-theory (enable svexlist-xeval)))))
+     (defthm car-of-svexlist-s4xeval
+       (s4vec-equiv (car (svexlist-s4xeval x))
+                    (svex-s4xeval (car x)))
+       :hints(("Goal" :expand ((svexlist-s4xeval x))
+               :in-theory (enable default-car))))
 
-  (local (defthm len-plus-1-equal-const
-           (implies (and (syntaxp (and (quotep n)
-                                       (quotep m)))
-                         (posp n)
-                         (posp m))
-                    (equal (equal (+ n (len x)) m)
-                           (equal (len x) (- m n))))))
+     (defthm cdr-of-svexlist-s4xeval
+       (s4veclist-equiv (cdr (svexlist-s4xeval x))
+                        (svexlist-s4xeval (cdr x)))
+       :hints(("Goal" :expand ((svexlist-s4xeval x))
+               :in-theory (enable default-cdr))))
 
-  (local (defthm s4veclist->4veclist-of-cons
-           (equal (s4veclist->4veclist (cons a b))
-                  (cons (s4vec->4vec a) (s4veclist->4veclist b)))
-           :hints(("Goal" :in-theory (enable s4veclist->4veclist)))))
+     (defthm len-of-svexlist-s4xeval
+       (equal (len (svexlist-s4xeval x))
+              (len x))
+       :hints(("Goal" :expand ((svexlist-s4xeval x)))))
 
-  (local (defthm sparseint-val-of-s4vec->lower
-           (equal (sparseint-val (s4vec->lower x))
-                  (4vec->lower (s4vec->4vec x)))
-           :hints(("Goal" :in-theory (enable s4vec->4vec)))))
-  (local (defthm sparseint-val-of-s4vec->upper
-           (equal (sparseint-val (s4vec->upper x))
-                  (4vec->upper (s4vec->4vec x)))
-           :hints(("Goal" :in-theory (enable s4vec->4vec)))))
+     (defthm svexlist-s4xeval-of-append
+       (equal (svexlist-s4xeval (append a b))
+              (append (svexlist-s4xeval a)
+                      (svexlist-s4xeval b)))
+       :hints(("Goal" :in-theory (enable append svexlist-s4xeval))))
 
-  (local (in-theory (disable 4VEC->UPPER-OF-S4VEC->4VEC
-                             4VEC->LOWER-OF-S4VEC->4VEC)))
+     
+     (local (defthm open-svexlist-xeval
+              (implies (consp args)
+                       (equal (svexlist-xeval args)
+                              (cons (svex-xeval (car args))
+                                    (svexlist-xeval (Cdr args)))))
+              :hints(("Goal" :in-theory (enable svexlist-xeval)))))
 
-  (std::defret-mutual svex-s4xeval-is-svex-xeval
-    (defret svex-s4xeval-is-svex-xeval
-      (equal (s4vec->4vec val)
-             (svex-xeval x))
-      :hints ('(:expand (<call>
-                         (svex-xeval x))
-                :do-not '(preprocess))
-              (and stable-under-simplificationp
-                   '(:in-theory (enable svex-apply 4vec-?!))))
-      :fn svex-s4xeval)
-    (defret svexlist-s4xeval-is-svexlist-xeval
-      (equal (s4veclist->4veclist val)
-             (svexlist-xeval x))
-      :hints ('(:expand (<call>
-                         (svexlist-xeval x))))
-      :fn svexlist-s4xeval)))
+     (local (defthm len-plus-1-equal-const
+              (implies (and (syntaxp (and (quotep n)
+                                          (quotep m)))
+                            (posp n)
+                            (posp m))
+                       (equal (equal (+ n (len x)) m)
+                              (equal (len x) (- m n))))))
+
+     (local (defthm s4veclist->4veclist-of-cons
+              (equal (s4veclist->4veclist (cons a b))
+                     (cons (s4vec->4vec a) (s4veclist->4veclist b)))
+              :hints(("Goal" :in-theory (enable s4veclist->4veclist)))))
+
+     (local (defthm sparseint-val-of-s4vec->lower
+              (equal (sparseint-val (s4vec->lower x))
+                     (4vec->lower (s4vec->4vec x)))
+              :hints(("Goal" :in-theory (enable s4vec->4vec)))))
+     (local (defthm sparseint-val-of-s4vec->upper
+              (equal (sparseint-val (s4vec->upper x))
+                     (4vec->upper (s4vec->4vec x)))
+              :hints(("Goal" :in-theory (enable s4vec->4vec)))))
+
+     (local (in-theory (disable 4VEC->UPPER-OF-S4VEC->4VEC
+                                4VEC->LOWER-OF-S4VEC->4VEC)))
+
+     (std::defret-mutual svex-s4xeval-is-svex-xeval
+       (defret svex-s4xeval-is-svex-xeval
+         (equal (s4vec->4vec val)
+                (svex-xeval x))
+         :hints ('(:expand (<call>
+                            (svex-xeval x))
+                   :do-not '(preprocess)))
+         :fn svex-s4xeval)
+       (defret svex-call-s4xeval-is-svex-call-xeval
+         (equal (s4vec->4vec val)
+                (svex-call-xeval x))
+         :hints ('(:expand (<call>
+                            (svex-call-xeval x))
+                   :do-not '(preprocess))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable svex-apply 4vec-?!))))
+         :fn svex-call-s4xeval)
+       (defret svex-fn/args-s4xeval-is-svex-fn/args-xeval
+         (equal (s4vec->4vec val)
+                (svex-fn/args-xeval fn args))
+         :hints ('(:expand ((:free (fn) <call>)
+                            (:free (fn) (svex-fn/args-xeval fn args)))
+                   :do-not '(preprocess))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable svex-apply 4vec-?!))))
+         :fn svex-fn/args-s4xeval)
+       (defret svexlist-s4xeval-is-svexlist-xeval
+         (equal (s4veclist->4veclist val)
+                (svexlist-xeval x))
+         :hints ('(:expand (<call>
+                            (svexlist-xeval x))))
+         :fn svexlist-s4xeval))))
+
+(make-event
+ (b* ((body (acl2::template-subst *svex-fn/args-mono-eval-body-template*
+                                  :str-alist '(("<EV>" "S4XEVAL" . svex-package)
+                                               ("<FNPREFIX>" "S4VEC" . svex-package))
+                                  :splice-alist '((<env> . nil))
+                                  :atom-alist '((<apply> . svex-s4apply)
+                                                (<quote-val> . svex-quote->s4val)
+                                                (<vec-eql> . sparseint-equal)
+                                                (<3vec-fix> . s3vec-fix)
+                                                (<4vec> . s4vec)
+                                                (<4vec-eql> . s4vec-equal)
+                                                (<mbe-or-exec> . mbe-choose-exec)))))
+   (subst body '<body> *svex-s4xeval-event*)))
 

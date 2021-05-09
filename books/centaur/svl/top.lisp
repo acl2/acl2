@@ -78,6 +78,3 @@ rp::multiplier-verification) for a use case. </p>
 "
  )
 
-(xdoc::defxdoc
- svl
- :long "See @(see acl2::svl)")

@@ -638,6 +638,19 @@ every bit of X and Y, with no short circuiting or any kind.</p>"
          (and stable-under-simplificationp
               '(:in-theory (enable 4vmask-all-or-none)))))
 
+(def-svmask ===* (x y)
+  :long "<p>We can't do anything smart here because @('(=== x y)') cares about
+every bit of X and Y, with no short circuiting or any kind.</p>"
+  :inline t
+  :nobindings t
+  :body (b* ((argmask (4vmask-all-or-none mask)))
+          (list argmask argmask))
+  :hints(("Goal" :in-theory (enable svex-apply
+                                    4veclist-nth-safe
+                                    hide-past-second-arg))
+         (and stable-under-simplificationp
+              '(:in-theory (enable 4vmask-all-or-none)))))
+
 
 (local (defthm sparseint-val-of-s4vec->lower
          (equal (sparseint-val (s4vec->lower x))
@@ -817,6 +830,14 @@ such bits from the mask for @('weaker').</p>"
                       (:instance svex-eval-gte-xeval (x (cadr args))))))
          (bitops::logbitp-reasoning)))
 
+
+(local (defthm xeval-non-x-implies-eval-is-xeval
+         (implies (equal (4vec->upper (svex-xeval x))
+                         (4vec->lower (svex-xeval x)))
+                  (equal (svex-eval x env)
+                         (svex-xeval x)))
+         :hints (("goal" :use ((:instance svex-eval-gte-xeval))
+                  :in-theory (disable svex-eval-gte-xeval)))))
 
 (def-svmask bitsel (n x)
   :long "<p>For @('n').  If we care about ANY bit of @('(bitsel n x)'), then we

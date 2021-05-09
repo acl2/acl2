@@ -205,6 +205,7 @@ expect or preserve @(see fast-alists)."
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
     (===       4vec-===            (x y)               "case equality (scary verilog semantics)")
+    (===*      4vec-===*           (x y)               "modified case equality (x-monotonic if y is constant)")
     (==?       4vec-wildeq         (x y)               "wildcard equality (scary verilog semantics)")
     (safer-==? 4vec-wildeq-safe    (x y)               "wildcard equality (X-monotonic version)")
     (==??      4vec-symwildeq      (x y)               "wildcard equality for casez")

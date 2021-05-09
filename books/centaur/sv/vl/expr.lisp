@@ -271,19 +271,9 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     :measure (svex-count x)
     (svex-case x
       :call (b* ((args (svexlist-reduce-consts x.args))
-                 ((when (svexlist-variable-free-p args))
-                  (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
-                 (args-eval (svexlist-xeval args))
-                 (res (svex-apply
-                       (case x.fn
-                         (=== '==)
-                         (==? 'safer-==?)
-                         (bit?! 'bit?)
-                         (?! '?*)
-                         (otherwise x.fn))
-                       args-eval)))
-              (if (4vec-xfree-p res)
-                  (svex-quote res)
+                 (val (svex-fn/args-xeval x.fn args)))
+              (if (4vec-xfree-p val)
+                  (svex-quote val)
                 (svex-call x.fn args)))
       :otherwise (svex-fix x)))
   (define svexlist-reduce-consts ((x svexlist-p))
@@ -299,18 +289,24 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
   (local (in-theory (disable svex-reduce-consts
                              svexlist-reduce-consts)))
 
+  (local (defthm svex-fn/args-xeval-is-xeval
+           (equal (svex-fn/args-xeval fn args)
+                  (svex-xeval (svex-call fn args)))
+           :hints(("Goal" :in-theory (enable svex-xeval svex-call-xeval)))))
+
+  (local (defthm svex-apply-when-4vec-xfree-of-minval
+           (implies (and (syntaxp (not (equal env ''nil)))
+                         (4vec-xfree-p (svex-xeval (svex-call fn args))))
+                    (equal (svex-apply fn (svexlist-eval args env))
+                           (svex-xeval (svex-call fn args))))
+           :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                                  (n (svex-call fn args))))))))
+         
 
   (defthm-svex-reduce-consts-flag
     (defthm svex-reduce-consts-correct
       (equal (svex-eval (svex-reduce-consts x) env)
              (svex-eval x env))
-      :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
-                                        svex-eval-when-4vec-xfree-of-minval-apply-===
-                                        svex-eval-when-4vec-xfree-of-minval-apply-==?
-                                        svex-eval-when-4vec-xfree-of-minval-apply-bit?!
-                                        svex-eval-when-4vec-xfree-of-minval-apply-?!
-                                        eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
       (equal (svexlist-eval (svexlist-reduce-consts x) env)

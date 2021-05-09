@@ -1347,6 +1347,57 @@ another.</p>
   (deffixequiv 4vec-===))
 
 
+(define 4vec-===* ((left 4vec-p) (right 4vec-p))
+  :returns (equal 4vec-p)
+  :short "Approximation of Verilog-style ``case equality'' of @(see 4vec)s that
+          is X-monotonic when one argument is constant"
+
+  :long "<p>This is a substitute for @(see 4vec-===) that is X-monotonic, but
+is hoped to be good enough for most purposes.</p>
+
+<p>One of the common ways of using the @('===') operator in SystemVerilog is to
+check some value is exactly X, and if so, return an X result.  In such cases it
+suffices to produce X instead of 1 for the result of the ===, and this can make
+the result monotonic.</p>
+
+<p>We return, following the @(see boolean-convention),</p>
+
+<ul>
+<li>True (all 1s) when the inputs are both all non-X and identical, or</li>
+<li>False (all 0s) when some corresponding non-X bits of the inputs are not
+identical, or or when some bit of the left input is non-X and the corresponding
+bit of the right input is X</li>
+<li>Otherwise, X.</li>
+</ul>"
+  (b* (((4vec left))
+       ((4vec right))
+       (uppers-diff (logxor left.upper right.upper))
+       (lowers-diff (logxor left.lower right.lower))
+       (diff (logior uppers-diff lowers-diff))
+       (left-non-x (logorc1 left.upper left.lower))
+       (true ;; inputs are non-x and identical
+        (equal -1
+               (logandc1 diff
+                       ;; not X: ~(upper & ~lower) = ~upper | lower
+                       left-non-x)))
+       ((when true) -1)
+       (right-non-x (logorc1 right.upper right.lower))
+       (not-false (equal 0
+                         (logand
+                          left-non-x ;; factor this out because both conditions below include it
+                          (logorc2
+                           ;; bits are Boolean and not equal
+                           ;; (logand right-non-x
+                           diff
+                           ;; left is non-x and y is X
+                           right-non-x))))
+       ((when not-false) (4vec-x)))
+    0)
+
+  ///
+  (deffixequiv 4vec-===*))
+
+
 (define 3vec-? ((test 4vec-p)
                 (then 4vec-p)
                 (else 4vec-p))

@@ -1166,7 +1166,7 @@ What you can enter at the SVTV-CHASE prompt:
                        :do-not-induct t)))
   :returns (mv new-svtv-chase-data new-state)
   :measure (file-measure *standard-oi* state)
-
+  :parents (svtv-chase)
   :short "Re-enter the @(see svtv-chase) read-eval-print loop, with no change to the environment or SVTV."
   (b* (((mv exitp svtv-chase-data state) (svtv-chase-rep))
        ((when exitp)
