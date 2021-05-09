@@ -18,6 +18,7 @@
 (include-book "euler2-support")
 (include-book "quadratic-residue")
 (include-book "tonelli-shanks")
+(include-book "tonelli-shanks-proof")
 
 (defxdoc number-theory
   :parents (arithmetic kestrel-books)
