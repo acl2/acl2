@@ -90,16 +90,22 @@
 
 
 
-(define svtv-data-maybe-compute-flatnorm (svtv-data)
+(define svtv-data-maybe-compute-flatnorm (svtv-data (setup flatnorm-setup-p))
   :returns new-svtv-data
   :guard (svtv-data->flatten-validp svtv-data)
-  (if (svtv-data->flatnorm-validp svtv-data)
+  (if (and (svtv-data->flatnorm-validp svtv-data)
+           (equal (flatnorm-setup-fix setup) (svtv-data->flatnorm-setup svtv-data)))
       svtv-data
-    (svtv-data-compute-flatnorm svtv-data))
+    (b* ((svtv-data (update-svtv-data->flatnorm-validp nil svtv-data))
+         (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
+         (svtv-data (update-svtv-data->flatnorm-setup setup svtv-data)))
+    (svtv-data-compute-flatnorm svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
                   (not (equal key :flatnorm))
+                  (not (equal key :flatnorm-setup))
+                  (not (equal key :phase-fsm-validp))
                   (not (equal key :flatnorm-validp)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data))))
@@ -107,7 +113,11 @@
   (defret svtv-data$c->flatnorm-validp-of-<fn>
     (implies (not err)
              (equal (svtv-data$c->flatnorm-validp new-svtv-data)
-                    t))))
+                    t)))
+
+  (defret svtv-data$c->flatnorm-setup-of-<fn>
+    (equal (svtv-data$c->flatnorm-setup new-svtv-data)
+           (flatnorm-setup-fix setup))))
 
 (define svtv-data-maybe-compute-namemap ((user-names svtv-namemap-p) svtv-data)
   :guard (svtv-data->flatten-validp svtv-data)

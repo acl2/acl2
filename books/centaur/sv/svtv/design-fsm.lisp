@@ -34,6 +34,7 @@
 (include-book "../mods/compile")
 (include-book "fsm-obj")
 (include-book "expand")
+(include-book "../svex/monotonify")
 
 
 (local (std::add-default-post-define-hook :fix))
@@ -141,13 +142,24 @@
                  (len new-aliases)))
     :rule-classes :linear))
 
-(define svtv-normalize-assigns ((flatten flatten-res-p) aliases)
+
+(defprod flatnorm-setup
+  ((monotonify booleanp)))
+
+(define svtv-normalize-assigns ((flatten flatten-res-p) aliases
+                                (setup flatnorm-setup-p))
   :returns (res flatnorm-res-p)
   :guard (svarlist-boundedp (flatten-res-vars flatten) (aliass-length aliases))
   :guard-hints (("goal" :in-theory (enable flatten-res-vars)))
   (b* (((flatten-res flatten))
        ((mv assigns delays constraints)
-        (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints flatten.var-decl-map aliases)))
+        (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints flatten.var-decl-map aliases))
+       ((flatnorm-setup setup))
+       (assigns (if setup.monotonify
+                    (pairlis$ (svex-alist-keys assigns)
+                              (time$ (svexlist-monotonify (svex-alist-vals assigns))
+                                     :msg "; svexlist-monotonify: ~st sec (~sa bytes)~%"))
+                  assigns)))
     (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
 
 (define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p))

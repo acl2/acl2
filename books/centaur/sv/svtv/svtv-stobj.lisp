@@ -91,7 +91,8 @@
              :initially ,(make-flatten-res))
     (flatten-validp :type (member t nil) :pred booleanp :fix bool-fix)
 
-    
+    (flatnorm-setup :type (satisfies flatnorm-setup-p) :pred flatnorm-setup-p :fix flatnorm-setup-fix
+                    :initially ,(make-flatnorm-setup))
     (flatnorm :type (satisfies flatnorm-res-p) :pred flatnorm-res-p :fix flatnorm-res-fix
               :initially ,(make-flatnorm-res))
     (flatnorm-validp :type (member t nil) :pred booleanp :fix bool-fix)
@@ -225,10 +226,11 @@
               (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
   :enabled t
   (flatnorm-res-equiv flatnorm
-                      (b* ((flatten (svtv-data$c->flatten svtv-data$c)))
+                      (b* ((flatten (svtv-data$c->flatten svtv-data$c))
+                           (setup (svtv-data$c->flatnorm-setup svtv-data$c)))
                         (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
                                    (assigns)
-                                   (svtv-normalize-assigns flatten aliases)
+                                   (svtv-normalize-assigns flatten aliases setup)
                                    assigns)))
   ///
   
@@ -237,7 +239,9 @@
       (implies (and (equal (svtv-data$c->flatten new)
                            (svtv-data$c->flatten old))
                     (equal (svtv-data$c->aliases new)
-                           (svtv-data$c->aliases old)))
+                           (svtv-data$c->aliases old))
+                    (equal (svtv-data$c->flatnorm-setup new)
+                           (svtv-data$c->flatnorm-setup old)))
                (equal (svtv-data$c-flatnorm-okp new flatnorm)
                       (svtv-data$c-flatnorm-okp old flatnorm))))))
 
@@ -255,14 +259,17 @@
 
 
 (define svtv-data$c-phase-fsm-okp (svtv-data$c (phase-fsm base-fsm-p))
-  :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
-              (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
+  ;; :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
+  ;;             ;; (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c))
+  ;;             )
   :enabled t
-  (b* ((flatnorm (b* ((flatten (svtv-data$c->flatten svtv-data$c)))
-                   (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
-                              (assigns)
-                              (svtv-normalize-assigns flatten aliases)
-                              assigns))))
+  (b* ((flatnorm ;; (b* ((flatten (svtv-data$c->flatten svtv-data$c))
+                 ;;      (setup (svtv-data$c->flatnorm-setup svtv-data$c)))
+                 ;;   (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
+                 ;;              (assigns)
+                 ;;              (svtv-normalize-assigns flatten aliases setup)
+                 ;;              assigns))
+        (svtv-data$c->flatnorm svtv-data$c)))
     (base-fsm-eval-equiv phase-fsm
                          (svtv-compose-assigns/delays flatnorm)))
   ///
@@ -270,17 +277,15 @@
 
   (acl2::def-updater-independence-thm svtv-data$c-phase-fsm-okp-updater-independence
     (let ((new acl2::new) (old acl2::old))
-      (implies (and (equal (svtv-data$c->flatten new)
-                           (svtv-data$c->flatten old))
-                    (equal (svtv-data$c->aliases new)
-                           (svtv-data$c->aliases old)))
+      (implies (equal (svtv-data$c->flatnorm new)
+                      (svtv-data$c->flatnorm old))
                (equal (svtv-data$c-phase-fsm-okp new phase-fsm)
                       (svtv-data$c-phase-fsm-okp old phase-fsm))))))
 
 
 (define svtv-data$a-phase-fsm-okp (x (phase-fsm base-fsm-p))
-  :guard (and (modalist-addr-p (design->modalist (svtv-data$a->design x)))
-              (svtv-data$a-flatten-okp x (svtv-data$a->flatten x)))
+  ;; :guard (and (modalist-addr-p (design->modalist (svtv-data$a->design x)))
+  ;;             (svtv-data$a-flatten-okp x (svtv-data$a->flatten x)))
   :enabled t
   :hooks nil
   (non-exec (svtv-data$c-phase-fsm-okp x phase-fsm)))
@@ -573,6 +578,12 @@
                   (svtv-data$c->flatnorm-validp x))
              (svtv-data$c-flatnorm-okp x (svtv-data$c->flatnorm x))))
 
+  (defthm svtv-data$ap-implies-namemap-okp
+    (implies (and (svtv-data$ap x)
+                  ;; (svtv-data$c->flatten-validp x)
+                  (svtv-data$c->namemap-validp x))
+             (svtv-data$c-namemap-okp x (svtv-data$c->namemap x))))
+
   (defthm svtv-data$ap-implies-phase-fsm-okp
     (implies (and (svtv-data$ap x)
                   ;; (svtv-data$c->flatten-validp x)
@@ -594,7 +605,7 @@
   (defthm no-duplicatesp-nextstate-keys-of-svtv-data->phase-fsm
     (implies (and (svtv-data$ap x)
                   (svtv-data$a->phase-fsm-validp x)
-                  ;; (svtv-data$a->flatten-validp x)
+                  (svtv-data$a->flatnorm-validp x)
                   )
              (no-duplicatesp-equal
               (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm x)))))
@@ -602,7 +613,10 @@
                                    (no-duplicate-nextstates-of-svtv-compose-assigns/delays))
             :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
                    (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
-                                                     (svtv-data$c->aliases x)))))))))
+                                                     (svtv-data$c->aliases x)
+                                                     (svtv-data$c->flatnorm-setup x)))))))))
+
+
 
 
 (define svtv-data$c-compute-flatten (svtv-data$c)
@@ -622,13 +636,14 @@
   (defret <fn>-preserves-svtv-data$ap
     (implies (and (svtv-data$ap svtv-data$c)
                   (not (svtv-data$c->flatnorm-validp svtv-data$c))
-                  (not (svtv-data$c->phase-fsm-validp svtv-data$c))
-                  (not (svtv-data$c->cycle-fsm-validp svtv-data$c))
-                  (not (svtv-data$c->namemap-validp svtv-data$c))
-                  (not (svtv-data$c->pipeline-validp svtv-data$c)))
+                  (not (svtv-data$c->namemap-validp svtv-data$c)))
              (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatten-okp
-                                      normalize-stobjs-of-svtv-design-flatten))))
+    :hints(("Goal" :in-theory (e/d (svtv-data$c-flatten-okp
+                                      normalize-stobjs-of-svtv-design-flatten)
+                                   (svtv-data$ap-implies-flatten-okp))
+            :use ((:instance svtv-data$ap-implies-flatten-okp (x svtv-data$c)))
+            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->flatten-validp t x)))
+                     (:free (fl x) (svtv-data$ap (update-svtv-data$c->flatten fl x)))))))
 
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -645,9 +660,6 @@
 
 (define svtv-data$a-compute-flatten ((x svtv-data$ap))
   :guard (and (not (svtv-data$a->flatnorm-validp x))
-              (not (svtv-data$a->phase-fsm-validp x))
-              (not (svtv-data$a->cycle-fsm-validp x))
-              (not (svtv-data$a->pipeline-validp x))
               (not (svtv-data$a->namemap-validp x)))
   :enabled t :hooks nil
   (b* (((mv a b) (non-exec (svtv-data$c-compute-flatten x))))
@@ -658,17 +670,20 @@
   :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
               (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
   :returns new-svtv-data$c
-  (b* ((flatten (svtv-data$c->flatten svtv-data$c)))
+  (b* ((flatten (svtv-data$c->flatten svtv-data$c))
+       (flatnorm-setup (svtv-data$c->flatnorm-setup svtv-data$c)))
     (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
                (assigns)
-               (svtv-normalize-assigns flatten aliases)
+               (svtv-normalize-assigns flatten aliases flatnorm-setup)
                (b* ((svtv-data$c (update-svtv-data$c->flatnorm assigns svtv-data$c)))
                  (update-svtv-data$c->flatnorm-validp t svtv-data$c))))
   ///
   (defret <fn>-preserves-svtv-data$ap
-    (implies (svtv-data$ap svtv-data$c)
+    (implies (and (svtv-data$ap svtv-data$c)
+                  (not (svtv-data$c->phase-fsm-validp svtv-data$c)))
              (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatnorm-okp))))
+    :hints(("Goal" :in-theory (enable svtv-data$c-flatnorm-okp)
+            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->flatnorm-validp t x)))))))
 
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -681,7 +696,8 @@
     (svtv-data$c->flatnorm-validp new-svtv-data$c)))
 
 (define svtv-data$a-compute-flatnorm ((x svtv-data$ap))
-  :guard (svtv-data$a->flatten-validp x)
+  :guard (and (svtv-data$a->flatten-validp x)
+              (not (svtv-data$a->phase-fsm-validp x)))
   :enabled t :hooks nil
   (non-exec (svtv-data$c-compute-flatnorm x)))
 
@@ -720,8 +736,8 @@
                   (svtv-data$c->flatten-validp svtv-data$c)
                   (not (svtv-data$c->pipeline-validp svtv-data$c)))
              (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (enable svtv-data$ap
-                                      svtv-data$c-namemap-okp)))))
+    :hints(("Goal" :in-theory (enable svtv-data$c-namemap-okp)
+            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->namemap-validp t x))))))))
 
 (define svtv-data$a-compute-namemap ((x svtv-data$ap))
   :guard (and (svtv-data$a->flatten-validp x)
@@ -783,7 +799,7 @@
                 (not (svtv-data$c->namemap-validp x))
                 (modalist-addr-p (design->modalist design)))
            (svtv-data$ap (update-svtv-data$c->design design x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->design design x))))))
 
 (define update-svtv-data$a->design ((design design-p) x)
   :guard (and (not (svtv-data$a->flatten-validp x))
@@ -801,21 +817,19 @@
                          (svtv-data$a-flatten-okp x flatten))
                      (not (svtv-data$a->namemap-validp x))
                      (not (svtv-data$a->flatnorm-validp x))
-                     (not (svtv-data$a->phase-fsm-validp x))
-                     (not (svtv-data$a->cycle-fsm-validp x))
-                     (not (svtv-data$a->pipeline-validp x))))
+                     ;; (not (svtv-data$a->phase-fsm-validp x))
+                     ;; (not (svtv-data$a->cycle-fsm-validp x))
+                     ;; (not (svtv-data$a->pipeline-validp x))
+                     ))
            (svtv-data$ap (update-svtv-data$c->flatten flatten x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->flatten flatten x))))))
 
 (define update-svtv-data$a->flatten ((flatten flatten-res-p) (x svtv-data$ap))
   :guard 
   (and (or (not (svtv-data$a->flatten-validp x))
            (svtv-data$a-flatten-okp x flatten))
        (not (svtv-data$a->namemap-validp x))
-       (not (svtv-data$a->flatnorm-validp x))
-       (not (svtv-data$a->phase-fsm-validp x))
-       (not (svtv-data$a->cycle-fsm-validp x))
-       (not (svtv-data$a->pipeline-validp x)))
+       (not (svtv-data$a->flatnorm-validp x)))
   :enabled t :hooks nil
   (non-exec (update-svtv-data$c->flatten flatten x)))
 
@@ -826,11 +840,13 @@
                     (and (svtv-data$a-flatten-okp x (svtv-data$a->flatten x))
                          (not (svtv-data$a->namemap-validp x))
                          (not (svtv-data$a->flatnorm-validp x))
-                         (not (svtv-data$a->phase-fsm-validp x))
-                         (not (svtv-data$a->cycle-fsm-validp x))
-                         (not (svtv-data$a->pipeline-validp x)))))
+                         ;; (not (svtv-data$a->phase-fsm-validp x))
+                         ;; (not (svtv-data$a->cycle-fsm-validp x))
+                         ;; (not (svtv-data$a->pipeline-validp x))
+                         )))
            (svtv-data$ap (update-svtv-data$c->flatten-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints (("goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->flatten-validp validp x))))))
+  :otf-flg t)
 
 (define update-svtv-data$a->flatten-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
@@ -838,24 +854,41 @@
              (and (svtv-data$a-flatten-okp x (svtv-data$a->flatten x))
                   (not (svtv-data$a->namemap-validp x))
                   (not (svtv-data$a->flatnorm-validp x))
-                  (not (svtv-data$a->phase-fsm-validp x))
-                  (not (svtv-data$a->cycle-fsm-validp x))
-                  (not (svtv-data$a->pipeline-validp x))))
+                  ;; (not (svtv-data$a->phase-fsm-validp x))
+                  ;; (not (svtv-data$a->cycle-fsm-validp x))
+                  ;; (not (svtv-data$a->pipeline-validp x))
+                  ))
   
   :enabled t :hooks nil
   (non-exec (update-svtv-data$c->flatten-validp validp x)))
 
 
+(defthm update-flatnorm-setup-preserves-svtv-data$ap
+  (implies (and (svtv-data$ap x)
+                (not (svtv-data$a->flatnorm-validp x))
+                ;; (not (svtv-data$a->phase-fsm-validp x))
+                )
+           (svtv-data$ap (update-svtv-data$c->flatnorm-setup flatnorm-setup x)))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->flatnorm-setup flatnorm-setup x))))))
+
+
+(define update-svtv-data$a->flatnorm-setup ((flatnorm-setup flatnorm-setup-p) x)
+  :guard (and (not (svtv-data$a->flatnorm-validp x)))
+  :enabled t :hooks nil
+  (non-exec (update-svtv-data$c->flatnorm-setup flatnorm-setup x)))
+
 (defthm update-flatnorm-preserves-svtv-data$ap
   (implies (and (svtv-data$ap x)
                 (or (not (svtv-data$a->flatnorm-validp x))
-                    (svtv-data$a-flatnorm-okp x flatnorm)))
+                    (svtv-data$a-flatnorm-okp x flatnorm))
+                (not (svtv-data$a->phase-fsm-validp x)))
            (svtv-data$ap (update-svtv-data$c->flatnorm flatnorm x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->flatnorm flatnorm x))))))
 
 (define update-svtv-data$a->flatnorm ((flatnorm flatnorm-res-p) (x svtv-data$ap))
-  :guard (or (not (svtv-data$a->flatnorm-validp x))
-             (ec-call (svtv-data$a-flatnorm-okp x flatnorm)))
+  :guard (and (or (not (svtv-data$a->flatnorm-validp x))
+                  (ec-call (svtv-data$a-flatnorm-okp x flatnorm)))
+              (not (svtv-data$a->phase-fsm-validp x)))
   ;; :guard-hints ((and stable-under-simplificationp '(:in-theory (enable svtv-data$ap))))
   :enabled t :hooks nil
   (non-exec (update-svtv-data$c->flatnorm flatnorm x)))
@@ -865,7 +898,7 @@
                 (or (not validp)
                     (svtv-data$a-flatnorm-okp x (svtv-data$a->flatnorm x))))
            (svtv-data$ap (update-svtv-data$c->flatnorm-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->flatnorm-validp validp x)))))))
 
 (define update-svtv-data$a->flatnorm-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
@@ -883,7 +916,9 @@
                     (svtv-data$c-phase-fsm-okp x phase-fsm)
                   (not (svtv-data$c->cycle-fsm-validp x))))
            (svtv-data$ap (update-svtv-data$c->phase-fsm phase-fsm x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->phase-fsm phase-fsm x)))
+          :use ((:instance svtv-data$ap-implies-phase-fsm-okp))
+          :in-theory (disable svtv-data$ap-implies-phase-fsm-okp))))
 
 (define update-svtv-data$a->phase-fsm ((phase-fsm base-fsm-p) (x svtv-data$ap))
   :guard (if (svtv-data$a->phase-fsm-validp x)
@@ -900,7 +935,7 @@
                     (and (svtv-data$a-phase-fsm-okp x (svtv-data$a->phase-fsm x))
                          (not (svtv-data$a->cycle-fsm-validp x)))))
            (svtv-data$ap (update-svtv-data$c->phase-fsm-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->phase-fsm-validp validp x)))))))
 
 (define update-svtv-data$a->phase-fsm-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
@@ -915,7 +950,7 @@
   (implies (and (svtv-data$ap x)
                 (not (svtv-data$a->namemap-validp x)))
            (svtv-data$ap (update-svtv-data$c->user-names user-names x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->user-names user-names x))))))
 
 (define update-svtv-data$a->user-names ((names svtv-namemap-p) x)
   :guard (not (svtv-data$a->namemap-validp x))
@@ -928,7 +963,10 @@
                     (svtv-data$a-namemap-okp x namemap)
                   (not (svtv-data$a->pipeline-validp x))))
            (svtv-data$ap (update-svtv-data$c->namemap namemap x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-namemap-okp))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->namemap namemap x)))
+          :in-theory (e/d (svtv-data$c-namemap-okp)
+                          (svtv-data$ap-implies-namemap-okp))
+          :use ((:instance svtv-data$ap-implies-namemap-okp)))))
 
 (define update-svtv-data$a->namemap ((namemap svtv-name-lhs-map-p) x)
   :guard (if (svtv-data$a->namemap-validp x)
@@ -942,7 +980,10 @@
                 (or (not validp)
                     (svtv-data$a-namemap-okp x (svtv-data$a->namemap x))))
            (svtv-data$ap (update-svtv-data$c->namemap-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-namemap-okp))))
+  :hints(("Goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->namemap-validp validp x))))
+          :in-theory (e/d (svtv-data$c-namemap-okp)
+                          (svtv-data$ap-implies-namemap-okp))
+          :use ((:instance svtv-data$ap-implies-namemap-okp)))))
 
 (define update-svtv-data$a->namemap-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
@@ -955,7 +996,8 @@
   (implies (and (svtv-data$ap x)
                 (not (svtv-data$a->cycle-fsm-validp x)))
            (svtv-data$ap (update-svtv-data$c->cycle-phases phases x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-namemap-okp))))
+  :hints(("Goal" 
+          :expand ((svtv-data$ap (update-svtv-data$c->cycle-phases phases x))))))
 
 (define update-svtv-data$a->cycle-phases ((phases svtv-cyclephaselist-p) x)
   :guard (not (svtv-data$a->cycle-fsm-validp x))
@@ -968,7 +1010,11 @@
                     (svtv-data$c-cycle-fsm-okp x cycle-fsm)
                   (not (svtv-data$c->pipeline-validp x))))
            (svtv-data$ap (update-svtv-data$c->cycle-fsm cycle-fsm x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->cycle-fsm cycle-fsm x))))
+         (and stable-under-simplificationp
+              '(:in-theory (e/d (SVTV-DATA$C-CYCLE-FSM-OKP)
+                                (svtv-data$ap-implies-cycle-fsm-okp))
+                :use svtv-data$ap-implies-cycle-fsm-okp))))
 
 (define update-svtv-data$a->cycle-fsm ((cycle-fsm base-fsm-p) (x svtv-data$ap))
   :guard (if (svtv-data$a->cycle-fsm-validp x)
@@ -984,7 +1030,7 @@
                     (and (svtv-data$a-cycle-fsm-okp x (svtv-data$a->cycle-fsm x))
                          (not (svtv-data$a->pipeline-validp x)))))
            (svtv-data$ap (update-svtv-data$c->cycle-fsm-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->cycle-fsm-validp validp x)))))))
 
 (define update-svtv-data$a->cycle-fsm-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
@@ -998,7 +1044,7 @@
   (implies (and (svtv-data$ap x)
                 (not (svtv-data$a->pipeline-validp x)))
            (svtv-data$ap (update-svtv-data$c->pipeline-setup pipeline-setup x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->pipeline-setup pipeline-setup x))))))
 
 
 (define update-svtv-data$a->pipeline-setup ((pipeline-setup pipeline-setup-p) x)
@@ -1012,7 +1058,7 @@
                 (or (not (svtv-data$a->pipeline-validp x))
                     (svtv-data$a-pipeline-okp x pipeline)))
            (svtv-data$ap (update-svtv-data$c->pipeline pipeline x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((svtv-data$ap (update-svtv-data$c->pipeline pipeline x))))))
 
 (define update-svtv-data$a->pipeline ((pipeline svex-alist-p) (x svtv-data$ap))
   :guard (or (not (svtv-data$a->pipeline-validp x))
@@ -1026,7 +1072,7 @@
                 (or (not validp)
                     (svtv-data$a-pipeline-okp x (svtv-data$a->pipeline x))))
            (svtv-data$ap (update-svtv-data$c->pipeline-validp validp x)))
-  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+  :hints(("Goal" :expand ((:free (validp) (svtv-data$ap (update-svtv-data$c->pipeline-validp validp x)))))))
 
 (define update-svtv-data$a->pipeline-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)

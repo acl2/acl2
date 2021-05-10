@@ -250,6 +250,7 @@
 (define svtv-compute-trivial-cycle ((pre-simplify booleanp) svtv-data
                                     (simp svex-simpconfig-p))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               (not (svtv-data->cycle-fsm-validp svtv-data))
               (not (svtv-data->pipeline-validp svtv-data)))
   :returns (new-svtv-data)
@@ -332,6 +333,7 @@
    (design design-p)
    (design-const symbolp)
    labels
+   (monotonify booleanp :default t)
    (simplify booleanp :default t)
    (pre-simplify booleanp :default t)
    (pipe-simp svex-simpconfig-p)
@@ -425,7 +427,8 @@
         (svtv-data-defcycle-core x.design phases svtv-data
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
-                                 :cycle-simp x.cycle-simp))
+                                 :cycle-simp x.cycle-simp
+                                 :monotonify x.monotonify))
        
        ((when err)
         (mv err nil svtv-data))

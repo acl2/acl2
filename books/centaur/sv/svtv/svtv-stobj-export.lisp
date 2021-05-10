@@ -411,7 +411,7 @@
              (b* (((mv ?err ?res ?moddb ?aliases)
                    (svtv-design-flatten (svtv-data-obj->design x) :moddb nil :aliases nil)))
                (equal (svtv-data-obj->flatnorm x)
-                      (svtv-normalize-assigns res aliases))))
+                      (svtv-normalize-assigns res aliases (svtv-data-obj->flatnorm-setup x)))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap
                                       svtv-data$c-flatten-okp
                                       svtv-data$c-flatnorm-okp))))
@@ -419,15 +419,13 @@
   (defthm phase-fsm-validp-of-svtv-data-obj
     (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                   (svtv-data-obj->phase-fsm-validp x)
-                  (svtv-data-obj->flatten-validp x))
+                  ;; (svtv-data-obj->flatten-validp x)
+                  )
              (base-fsm-eval-equiv
               (svtv-data-obj->phase-fsm x)
-              (b* (((mv & res & aliases)
-                    (svtv-design-flatten (svtv-data-obj->design x) :moddb nil :aliases nil)))
-                (svtv-compose-assigns/delays
-                 (svtv-normalize-assigns res aliases)))))
+              (svtv-compose-assigns/delays (svtv-data-obj->flatnorm x))))
     :hints(("Goal" :in-theory (enable svtv-data$ap
-                                      svtv-data$c-flatten-okp))))
+                                      svtv-data$c-phase-fsm-okp))))
 
   (defthm namemap-validp-of-svtv-data-obj
     (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
@@ -503,6 +501,7 @@
           ((mv ?err svtv-data) (svtv-data-compute-flatten svtv-data))
           ;; err is impossible due to flatten-validp
 
+          (svtv-data (update-svtv-data->flatnorm-setup obj.flatnorm-setup svtv-data))
           (svtv-data (update-svtv-data->flatnorm obj.flatnorm svtv-data))
           (svtv-data (update-svtv-data->flatnorm-validp obj.flatnorm-validp svtv-data))
 

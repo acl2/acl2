@@ -198,6 +198,7 @@
 
 (define svtv-data-compute-cycle-fsm (svtv-data (simp svex-simpconfig-p))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               (not (svtv-data->pipeline-validp svtv-data)))
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable base-fsm-to-cycle)))
@@ -224,7 +225,8 @@
 (define svtv-data-maybe-compute-cycle-fsm ((phases svtv-cyclephaselist-p)
                                            svtv-data
                                            (simp svex-simpconfig-p))
-  :guard (svtv-data->phase-fsm-validp svtv-data)
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data))
   :returns new-svtv-data
   (if (and (equal (svtv-cyclephaselist-fix phases)
                   (svtv-data->cycle-phases svtv-data))

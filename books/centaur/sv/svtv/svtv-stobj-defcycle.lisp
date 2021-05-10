@@ -42,6 +42,7 @@
                                  (phases svtv-cyclephaselist-p)
                                  svtv-data
                                  &key
+                                 ((monotonify booleanp) 't)
                                  ((rewrite-phases booleanp) 't)
                                  ((rewrite-cycle booleanp) 't)
                                  ((cycle-simp svex-simpconfig-p) 't))
@@ -51,7 +52,7 @@
        ((mv err svtv-data) (svtv-data-maybe-compute-flatten svtv-data))
        ((when err)
         (mv err svtv-data))
-       (svtv-data (svtv-data-maybe-compute-flatnorm svtv-data))
+       (svtv-data (svtv-data-maybe-compute-flatnorm svtv-data (make-flatnorm-setup :monotonify monotonify)))
        (svtv-data (svtv-data-maybe-compute-phase-fsm svtv-data))
        (svtv-data (svtv-data-maybe-rewrite-phase-fsm rewrite-phases svtv-data :verbosep t))
        (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp))
@@ -67,14 +68,15 @@
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
                   (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t)))))
 
-(defun defcycle-fn (name design phases names names-p rewrite-phases rewrite-cycle cycle-simp stobj)
+(defun defcycle-fn (name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp stobj)
   `(make-event
     (b* (((mv err ,stobj)
           (svtv-data-defcycle-core ,design ,phases
                                    ,stobj
                                    :rewrite-phases ,rewrite-phases
                                    :rewrite-cycle ,rewrite-cycle
-                                   :cycle-simp ,cycle-simp))
+                                   :cycle-simp ,cycle-simp
+                                   :monotonify ,monotonify))
          ((when err)
           (mv err nil state ,stobj))
          ((mv err ,stobj)
@@ -102,10 +104,11 @@
                          design
                          phases
                          (names 'nil names-p)
+                         (monotonify 't)
                          (rewrite-phases 't)
                          (rewrite-cycle 't)
                          (cycle-simp 't)
                          (stobj 'svtv-data))
-  (defcycle-fn name design phases names names-p rewrite-phases rewrite-cycle cycle-simp stobj))
+  (defcycle-fn name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp stobj))
 
 ;; Doc in new-svtv-doc.lisp
