@@ -21,9 +21,8 @@
  :parents (r1cs acl2::axe)
  :long
  (xdoc::topstring
-  (xdoc::&&
-   (xdoc::topparas
-    "Kestrel Institute's Axe toolkit (see @(tsee acl2::axe)) can be used to verify R1CS circuits.  Axe is
+  (xdoc::topparas
+   "Kestrel Institute's Axe toolkit (see @(tsee acl2::axe)) can be used to verify R1CS circuits.  Axe is
  is implemented as an ACL2 program.  We use our formalization of the semantics
  of R1CSes in ACL2 (see @(tsee r1cs::r1cs)). This formalization defines the syntax of an R1CS as an ACL2
  object and defines the semantics of such objects by characterizing what it
@@ -94,14 +93,14 @@ The formalization is based on our ACL2 formalization of prime
  exactly matches the expression derived from the R1CS (perhaps after some
  normalization, also done by rewriting).  This completes the proof.
 
-This rest of this topic describes the concrete steps for using Axe to verify an R1CS (rank-1 constraint system).  It may be helpful to follow along with an example.  There is one in
-@('[books]/kestrel/ethereum/semaphore/uint32xor-proof.lisp').
+This rest of this topic describes the concrete steps for using Axe to verify an R1CS (rank-1 constraint system).  It may be helpful to follow along with an example.  There is one
+<a href=\"https://github.com/acl2/acl2/tree/master/books/kestrel/ethereum/semaphore/uint32xor-proof.lisp\">here</a>.
 
 To use the Axe R1CS Prover to verify an R1CS, follow these steps:")
-   (xdoc::ol
+  (xdoc::ol
 
-    (xdoc::&&
-     (xdoc::p "1. Write or obtain a specification for the R1CS.  You may be able to
+   (xdoc::&&
+    (xdoc::p "1. Write or obtain a specification for the R1CS.  You may be able to
 use existing formalizations from the ACL2 libraries (e.g.,
 formalizations of hash functions), but you may need to account for the
 fact that some R1CS variables are single bits.  In general, you will
@@ -112,8 +111,8 @@ input and output variables (hundreds).  The intermediate
 variables of the R1CS are not mentioned at all by this spec function.
 Often, the spec function will do 3 things:")
 
-     (xdoc::ol-from-string
-      "A. Pack the input bits and output bits into larger words (e.g., 32-bit words.
+    (xdoc::ol-from-string
+     "A. Pack the input bits and output bits into larger words (e.g., 32-bit words.
 
        B. Call a \"core\" specification function (e.g., the specification of a
 hash function, from a library) on the input words.
@@ -121,17 +120,17 @@ hash function, from a library) on the input words.
       C. Check that the (packed) output matches the value returned from the
 core function."))
 
-    (xdoc::p "2. Load the R1CS by calling load-circom-json to read in the file.  This
+   (xdoc::p "2. Load the R1CS by calling load-circom-json to read in the file.  This
     parses the JSON and creates an ACL2 constant representing the R1CS for
     use in Step 3 below.")
 
-    (xdoc::p "3. Lift the R1CS into logic.  This is done by calling lift-r1cs (or a variant of it, like lift-semaphore-r1cs).  It is often largely automatic.")
+   (xdoc::p "3. Lift the R1CS into logic.  This is done by calling lift-r1cs (or a variant of it, like lift-semaphore-r1cs).  It is often largely automatic.")
 
-    (xdoc::&&
-     (xdoc::p "4. Invoke the Axe Prover.  This is done by calling verify-r1cs (or a variant of it, like verify-semaphore-r1cs).  You pass it:")
+   (xdoc::&&
+    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling verify-r1cs (or a variant of it, like verify-semaphore-r1cs).  You pass it:")
 
-     (xdoc::ol-from-string
-      "A. The R1CS
+    (xdoc::ol-from-string
+     "A. The R1CS
 
       B. The spec
 
@@ -139,18 +138,18 @@ core function."))
 
       D. Rules to use, and other prover options")
 
-     (xdoc::topparas "This is the hardest step.  We suggest looking at some example proofs.
+    (xdoc::topparas "This is the hardest step.  We suggest looking at some example proofs.
 
      The proof will include assumptions that:")
 
-     (xdoc::ol-from-string
-      "A. All of the inputs are field elements.
+    (xdoc::ol-from-string
+     "A. All of the inputs are field elements.
 
       B. The inputs that were indicated to be bits actually are bits.
 
       C. The R1CS holds.")
 
-     (xdoc::topparas "The conclusion will assert that the spec function (written in step 1)
+    (xdoc::topparas "The conclusion will assert that the spec function (written in step 1)
      holds over the appropriate arguments.
 
 Most of the work in this step involves providing lists of rewrite rules
@@ -163,4 +162,4 @@ but we are still working to create a robust and coherent set of rules
 for general R1CS verification.  The actual input to the prover is a
 sequences of rule sets, to be applied one after the other.  We are
 currently working to formulate robust sequences of rule sets for R1CS
-proofs."))))))
+proofs.")))))

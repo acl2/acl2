@@ -51,7 +51,7 @@
     :parents (semaphore r1cs::r1cs-verification-with-axe)
     :short "A tool to verify a semaphore R1CS"
     :long "This tool is a wrapper for @(tsee r1cs::verify-r1cs) that sets the prime to @(tsee baby-jubjub-prime). See also @(tsee r1cs::r1cs-verification-with-axe)."
-    :inputs (lifted-r1cs "A DAG representing the lifted R1CS"
+    :inputs (lifted-r1cs "A <see topic=\"@(url acl2::dags)\">DAG</see> representing the lifted R1CS"
             spec-term "A term over the input and output vars (this input is not evaluated)"
             :bit-inputs "Variables for which to generate BITP assumptions"
             :tactic "The Axe tactic to use"
