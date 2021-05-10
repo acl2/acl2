@@ -10260,14 +10260,20 @@
               (t (er soft ctx
                      "The argument to IN-PACKAGE must be a known ~
                       package name, but ~x0, used in the first form ~
-                      in ~x1, is not.  The known packages are ~*2"
+                      in ~x1, is not.  The known packages are ~*2~@3"
                      (cadr val)
                      file
                      (tilde-*-&v-strings
                       '&
                       (strip-non-hidden-package-names
                        (known-package-alist state))
-                      #\.)))))
+                      #\.)
+                     (if (global-val 'include-book-path (w state))
+                         (msg "~%NOTE: This error might be eliminated by ~
+                               certifying the book mentioned above.  See :DOC ~
+                               certify-book."
+                              (car (global-val 'include-book-path (w state))))
+                       "")))))
             (t (er soft ctx
                    "The first form in ~x0 was expected to be ~
                     (IN-PACKAGE \"pkg\") where \"pkg\" is a known ~
