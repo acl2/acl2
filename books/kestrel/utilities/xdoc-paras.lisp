@@ -104,12 +104,14 @@
   (declare (xargs :guard (stringp str)))
   `(xdoc::topstring (xdoc::&& ,@(xdoc::paras str))))
 
-;; Make an ordered list, given a string, interpreting blank lines as separators between list items
+;; Makes an xdoc tree for an ordered list, given a string, interpreting blank
+;; lines as separators between list items.
 (defmacro xdoc::ol-from-string (str)
   (declare (xargs :guard (stringp str)))
   `(xdoc::ol (xdoc::topparas ,str)))
 
-;; Make an unordered list, given a string, interpreting blank lines as separators between list items
+;; Makes an xdoc tree for an unordered list, given a string, interpreting blank
+;; lines as separators between list items.
 (defmacro xdoc::ul-from-string (str)
   (declare (xargs :guard (stringp str)))
   `(xdoc::ul (xdoc::topparas ,str)))

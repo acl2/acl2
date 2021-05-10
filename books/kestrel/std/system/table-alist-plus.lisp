@@ -18,10 +18,10 @@
 (define table-alist+ ((name symbolp) (wrld plist-worldp))
   :returns (alist alistp)
   :parents (std/system)
-  :short "Enhanced variant of @('table-alist')."
+  :short "Enhanced variant of @(tsee table-alist)."
   :long
   (xdoc::topstring-p
-   "This returns the same result as the built-in @('table-alist') function
+   "This returns the same result as the built-in @(tsee table-alist) function
     (see the ACL2 system sources),
     but it includes a run-time check (which should always succeed) on the result
     that allows us to prove the return type theorem

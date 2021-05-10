@@ -11718,12 +11718,17 @@
         ((not (find-non-hidden-package-entry str (known-package-alist state)))
          (er soft 'in-package
              "The argument to IN-PACKAGE must be a known package ~
-              name, but ~x0 is not.  The known packages are ~*1"
+              name, but ~x0 is not.  The known packages are ~*1~@2"
              str
              (tilde-*-&v-strings
               '&
               (strip-non-hidden-package-names (known-package-alist state))
-              #\.)))
+              #\.)
+             (if (global-val 'include-book-path (w state))
+                 (msg "~%NOTE: This error might be eliminated by certifying ~
+                       the book,~|~x0.~|See :DOC certify-book."
+                      (car (global-val 'include-book-path (w state))))
+               "")))
         (t (let ((state (f-put-global 'current-package str state)))
              (value str)))))
 
