@@ -10,6 +10,7 @@
 
 (in-package "R1CS")
 
+(include-book "axe-prover-r1cs") ; since this calls prove-implication-with-r1cs-prover
 (include-book "kestrel/utilities/doc" :dir :system)
 (include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
 (include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)
