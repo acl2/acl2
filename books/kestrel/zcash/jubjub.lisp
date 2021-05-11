@@ -180,6 +180,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define point-on-jubjub-p ((point ecurve::pointp))
+  :returns (yes/no booleanp)
+  :short "Check if a point is on the Jubjub curve [ZPS:5.4.8.3]."
+  (ecurve::point-on-twisted-edwards-p point (jubjub-curve))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define jubjub-pointp (x)
   :returns (yes/no booleanp)
   :short "Recognize elements of @($\\mathbb{J}$) [ZPS:5.4.8.3]."
@@ -190,11 +198,12 @@
    (xdoc::p
     "These are all finite points."))
   (and (ecurve::pointp x)
-       (ecurve::point-on-twisted-edwards-p x (jubjub-curve)))
+       (point-on-jubjub-p x))
   ///
   (defruled point-finite-when-jubjub-pointp
     (implies (jubjub-pointp x)
-             (equal (ecurve::point-kind x) :finite))))
+             (equal (ecurve::point-kind x) :finite))
+    :enable point-on-jubjub-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,13 +236,14 @@
    (xdoc::p
     "This is always below the Jubjub field prime."))
   (ecurve::point-finite->x point)
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
   (defret jubjub-point->u-upper-bound
     (< u (jubjub-q))
     :hyp (jubjub-pointp point)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable jubjub-pointp
+                                       point-on-jubjub-p
                                        ecurve::point-on-twisted-edwards-p
                                        jubjub-curve)))))
 
@@ -250,13 +260,14 @@
    (xdoc::p
     "This is always below the Jubjub field prime."))
   (ecurve::point-finite->y point)
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
   (defret jubjub-point->v-upper-bound
     (< v (jubjub-q))
     :hyp (jubjub-pointp point)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable jubjub-pointp
+                                       point-on-jubjub-p
                                        ecurve::point-on-twisted-edwards-p
                                        jubjub-curve)))))
 
@@ -265,20 +276,22 @@
 (define jubjub-mul ((scalar integerp) (point jubjub-pointp))
   :returns (point1 jubjub-pointp
                    :hyp (jubjub-pointp point)
-                   :hints (("Goal" :in-theory (enable jubjub-pointp))))
+                   :hints (("Goal" :in-theory (enable jubjub-pointp
+                                                      point-on-jubjub-p))))
   :short "Scalar multiplication [ZPS:4.1.8], on Jubjub."
   (ecurve::twisted-edwards-mul scalar point (jubjub-curve))
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp))))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jubjub-add ((point1 jubjub-pointp) (point2 jubjub-pointp))
   :returns (point jubjub-pointp
                   :hyp (and (jubjub-pointp point1) (jubjub-pointp point2))
-                  :hints (("Goal" :in-theory (enable jubjub-pointp))))
+                  :hints (("Goal" :in-theory (enable jubjub-pointp
+                                                      point-on-jubjub-p))))
   :short "Group addition [ZPS:4.1.8], on Jubjub."
   (ecurve::twisted-edwards-add point1 point2 (jubjub-curve))
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp))))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,7 +388,7 @@
                                (sub a (mul d (mul v v q) q) q)
                                q)
                           (sub 1 (mul v v q) q))))
-        :enable div
+        :enable (div point-on-jubjub-p)
         :disable ((:rewrite pfield::mul-of-add-arg1)
                   (:rewrite pfield::mul-of-add-arg2)
                   (:rewrite pfield::mul-associative)))
@@ -392,6 +405,7 @@
                                (sub 1 (mul v v q) q)))
                    (jubjub-pointp (ecurve::point-finite u v))))
         :enable (jubjub-pointp
+                 point-on-jubjub-p
                  ecurve::point-on-twisted-edwards-p
                  jubjub-curve)
         :prep-books
@@ -449,7 +463,7 @@
   (or (equal x (ecurve::twisted-edwards-zero))
       (and (jubjub-pointp x)
            (ecurve::twisted-edwards-point-orderp x (jubjub-r) (jubjub-curve))))
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
 
   (defrule jubjub-pointp-when-jubjub-r-pointp
@@ -470,7 +484,7 @@
      minus @($\\mathcal{O}_\\mathbb{J}$)."))
   (and (jubjub-pointp x)
        (ecurve::twisted-edwards-point-orderp x (jubjub-r) (jubjub-curve)))
-  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp point-on-jubjub-p)))
   ///
 
   (defrule jubjub-r-pointp-when-jubjub-rstar-pointp
