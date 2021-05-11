@@ -12,8 +12,11 @@
 
 (in-package "ACL2")
 
+;; This tool simplifies a term and stores the resulting DAG as a defconst.
+
 ;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
-;;TODO: What about xor simplification?  maybe ok to delay?
+
+;; TODO: Consider adding xor simplification to this, as an option.
 
 ;; TODO: Add -basic to the name of this file and the things defined here.
 
@@ -53,6 +56,7 @@
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/booleans/booleans" :dir :system)
 
+;; The rules used by def-simplified by default.
 (defun def-simplified-rules ()
   (append (base-rules)
           (amazing-rules-bv)
@@ -86,7 +90,8 @@
                               ;; (pseudo-termp term) ;; really an untranlated term
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (symbol-listp rules)
+                              (or (eq :auto rules)
+                                  (symbol-listp rules))
                               ;; (pseudo-term-listp assumptions) ;; untranslated terms
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
@@ -98,22 +103,24 @@
            )
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
-       ((when (and rules extra-rules))
+       ((when (and (not (eq :auto rules)) extra-rules))
         (er hard? 'def-simplified-fn ":rules and :extra-rules should not both be given.")
         (mv (erp-t) nil state))
-       ((when (and rules remove-rules))
+       ((when (and (not (eq :auto rules)) remove-rules))
         (er hard? 'def-simplified-fn ":rules and :remove-rules should not both be given.")
         (mv (erp-t) nil state))
        (term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
        ((mv erp rule-alist)
         (make-rule-alist
-         ;; Either use the user-supplied rules or the usual rules
-         ;; plus any user-supplied extra rules:
-         (or rules
+         (if (eq :auto rules)
+             ;; Use the default rules, plus any user-supplied extra rules,
+             ;; minus any user-supplied rules to remove:
              (set-difference-eq (append (def-simplified-rules)
                                         extra-rules)
-                                remove-rules))
+                                remove-rules)
+           ;; Use the rules explicitly given by the user:
+           rules)
          (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag)
@@ -168,7 +175,7 @@
                                  &key
                                  (extra-rules 'nil) ; to add to the usual set of rules
                                  (remove-rules 'nil) ; to remove from to the usual set of rules
-                                 (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
+                                 (rules ':auto) ;to completely replace the usual set of rules
                                  ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                  (assumptions 'nil)
                                  (interpreted-function-alist 'nil)
