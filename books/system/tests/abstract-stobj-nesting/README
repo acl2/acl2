@@ -1,0 +1,5 @@
+This collection of tests was developed to test stobj fields of
+abstract stobjs.  It could probably be significantly more complete,
+and some of the books surely duplicate testing that is done in others.
+But it seemed reasonable to keep these as regression tests in the
+community books.

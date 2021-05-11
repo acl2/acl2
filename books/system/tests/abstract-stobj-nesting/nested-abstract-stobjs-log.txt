@@ -494,9 +494,9 @@ ACL2 !>>(DEFUN FOO-BAD (TOP)
                           (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO-BAD ...):  The accessors SUB0 and SUB0-AGAIN
-ultimately invoke the same accessor, SUB0$C, of the same concrete stobj,
-TOP$C.  The form 
+ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let bindings of SUB$C
+to (SUB0 TOP) and of SUB$C-CONG to (SUB0-AGAIN TOP) ultimately invoke
+the same accessor, SUB0$C, of the concrete stobj, TOP$C.  The form
 (STOBJ-LET ((SUB$C (SUB0 TOP))
             (SUB$C-CONG (SUB0-AGAIN TOP)
                         UPDATE-SUB0))
@@ -712,9 +712,10 @@ ACL2 !>>(DEFUN FOO2-BAD (TOP2)
                           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
-ACL2 Error in ( DEFUN FOO2-BAD ...):  The accessors SUB02 and SUB02-AGAIN
-ultimately invoke the same accessor, SUB0$C, of the same concrete stobj,
-TOP$C.  The form 
+ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let bindings of SUB$C
+to (SUB02 TOP2) and of SUB$C-CONG to (SUB02-AGAIN TOP2) ultimately
+invoke the same accessor, SUB0$C, of the concrete stobj, TOP$C.  The
+form 
 (STOBJ-LET ((SUB$C (SUB02 TOP2))
             (SUB$C-CONG (SUB02-AGAIN TOP2)
                         UPDATE-SUB02))
@@ -736,4 +737,377 @@ Rules: NIL
 ACL2 Error in ( DEFUN FOO2-BAD ...):  See :DOC failure.
 
 ******** FAILED ********
+ACL2 !>>(DEFLABEL START-EXAMPLE-3)
+
+Summary
+Form:  ( DEFLABEL START-EXAMPLE-3 ...)
+Rules: NIL
+ START-EXAMPLE-3
+ACL2 !>>(INCLUDE-BOOK "two-usuallyequal-nums-stobj")
+
+Summary
+Form:  ( INCLUDE-BOOK "two-usuallyequal-nums-stobj" ...)
+Rules: NIL
+ "two-usuallyequal-nums-stobj.lisp"
+ACL2 !>>(VALUE-TRIPLE
+             (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
+                    '(:N 0 :N2 0 :VALID NIL))
+             :CHECK T)
+ :PASSED
+ACL2 !>>(UPDATE-TWO-USUALLYEQUAL-NUMS 3 TWO-USUALLYEQUAL-NUMS)
+<two-usuallyequal-nums>
+ACL2 !>>(VALUE-TRIPLE
+             (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
+                    '(:N 3 :N2 3 :VALID T))
+             :CHECK T)
+ :PASSED
+ACL2 !>>(DEFUN INTERRUPT-1 (TWO-USUALLYEQUAL-NUMS)
+               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                          (N$)
+                          (LET* ((OLD (N$VAL N$))
+                                 (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                             (UPDATE-N$VAL OLD N$))))
+                                N$)
+                          TWO-USUALLYEQUAL-NUMS))
+
+Since INTERRUPT-1 is non-recursive, its admission is trivial.  We observe
+that the type of INTERRUPT-1 is described by the theorem 
+(CONSP (INTERRUPT-1 TWO-USUALLYEQUAL-NUMS)).  We used the :type-prescription
+rule UPDATE-UENSLOT1.
+
+(INTERRUPT-1 TWO-USUALLYEQUAL-NUMS) => TWO-USUALLYEQUAL-NUMS.
+
+Computing the guard conjecture for INTERRUPT-1....
+
+The non-trivial part of the guard conjecture for INTERRUPT-1 is
+
+Goal
+(IMPLIES
+ (TWO-USUALLYEQUAL-NUMSP TWO-USUALLYEQUAL-NUMS)
+ (LET
+  ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+  (AND
+   (LET ((OLD (N$VAL N$))) (NATP OLD))
+   (LET
+    ((N$ (LET* ((OLD (N$VAL N$))
+                (N$ (UPDATE-N$VAL OLD N$)))
+               N$)))
+    (OR
+      (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
+      (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(EQUAL (N$VAL N$)
+                                                     (N$VAL (UENSLOT2$A X))))
+              (EQUAL (N$VAL N$)
+                     (N$VAL (UENSLOT2 TWO-USUALLYEQUAL-NUMS))))))))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for INTERRUPT-1.  INTERRUPT-1
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN INTERRUPT-1 ...)
+Rules: ((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION N$VAL)
+        (:DEFINITION N$VAL$A)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:DEFINITION TWO-USUALLYEQUAL-NUMS$AP)
+        (:DEFINITION TWO-USUALLYEQUAL-NUMSP)
+        (:DEFINITION UENSLOT1)
+        (:DEFINITION UENSLOT1$A)
+        (:DEFINITION UENSLOT2)
+        (:DEFINITION UENSLOT2$A)
+        (:DEFINITION UENVALID)
+        (:DEFINITION UENVALID$A)
+        (:DEFINITION UPDATE-N$VAL)
+        (:DEFINITION UPDATE-N$VAL$A)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION UPDATE-UENSLOT1))
+ INTERRUPT-1
+ACL2 !>>(INTERRUPT-1 TWO-USUALLYEQUAL-NUMS)
+
+
+HARD ACL2 ERROR in TOP:  Interrupt!
+
+
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
+gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation
+for an abstract stobj!
+**PROCEED AT YOUR OWN RISK.**
+To proceed, evaluate the following form.
+:CONTINUE-FROM-ILLEGAL-STATE
+See :DOC set-absstobj-debug.
+
+
+[Illegal-State] >>:CONTINUE-FROM-ILLEGAL-STATE
+ :CONTINUING
+ACL2 !>>(DEFUN INTERRUPT-2 (TWO-USUALLYEQUAL-NUMS)
+               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                          (N$)
+                          (LET* ((OLD (N$VAL N$))
+                                 (N$ (UPDATE-N$VAL (1+ OLD) N$))
+                                 (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                             (UPDATE-N$VAL OLD N$))))
+                                N$)
+                          TWO-USUALLYEQUAL-NUMS))
+
+Since INTERRUPT-2 is non-recursive, its admission is trivial.  We observe
+that the type of INTERRUPT-2 is described by the theorem 
+(CONSP (INTERRUPT-2 TWO-USUALLYEQUAL-NUMS)).  We used the :type-prescription
+rule UPDATE-UENSLOT1.
+
+(INTERRUPT-2 TWO-USUALLYEQUAL-NUMS) => TWO-USUALLYEQUAL-NUMS.
+
+Computing the guard conjecture for INTERRUPT-2....
+
+The non-trivial part of the guard conjecture for INTERRUPT-2 is
+
+Goal
+(IMPLIES
+ (TWO-USUALLYEQUAL-NUMSP TWO-USUALLYEQUAL-NUMS)
+ (LET
+  ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+  (AND
+   (LET ((OLD (N$VAL N$)))
+        (AND (ACL2-NUMBERP OLD)
+             (NATP (+ 1 OLD))
+             (LET NIL (NATP OLD))))
+   (LET
+    ((N$ (LET* ((OLD (N$VAL N$))
+                (N$ (UPDATE-N$VAL (+ 1 OLD) N$))
+                (N$ (UPDATE-N$VAL OLD N$)))
+               N$)))
+    (OR
+      (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
+      (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(EQUAL (N$VAL N$)
+                                                     (N$VAL (UENSLOT2$A X))))
+              (EQUAL (N$VAL N$)
+                     (N$VAL (UENSLOT2 TWO-USUALLYEQUAL-NUMS))))))))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for INTERRUPT-2.  INTERRUPT-2
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN INTERRUPT-2 ...)
+Rules: ((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION N$VAL)
+        (:DEFINITION N$VAL$A)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:DEFINITION TWO-USUALLYEQUAL-NUMS$AP)
+        (:DEFINITION TWO-USUALLYEQUAL-NUMSP)
+        (:DEFINITION UENSLOT1)
+        (:DEFINITION UENSLOT1$A)
+        (:DEFINITION UENSLOT2)
+        (:DEFINITION UENSLOT2$A)
+        (:DEFINITION UENVALID)
+        (:DEFINITION UENVALID$A)
+        (:DEFINITION UPDATE-N$VAL)
+        (:DEFINITION UPDATE-N$VAL$A)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION UPDATE-UENSLOT1))
+ INTERRUPT-2
+ACL2 !>>(INTERRUPT-2 TWO-USUALLYEQUAL-NUMS)
+
+
+HARD ACL2 ERROR in TOP:  Interrupt!
+
+
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
+gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation
+for an abstract stobj!
+**PROCEED AT YOUR OWN RISK.**
+To proceed, evaluate the following form.
+:CONTINUE-FROM-ILLEGAL-STATE
+See :DOC set-absstobj-debug.
+
+
+[Illegal-State] >>:CONTINUE-FROM-ILLEGAL-STATE
+ :CONTINUING
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
+                    '(:N 4 :N2 3 :VALID T)))
+ :PASSED
+ACL2 !>>(UBT 'START-EXAMPLE-3)
+ V        29:x(DEFUN FOO2 (TOP2) ...)
+ACL2 !>>(INCLUDE-BOOK "two-ordered-nums-stobj")
+
+Summary
+Form:  ( INCLUDE-BOOK "two-ordered-nums-stobj" ...)
+Rules: NIL
+ "two-ordered-nums-stobj.lisp"
+ACL2 !>>(UPDATE-TWO-ORDERED-NUMS 3 5 TWO-ORDERED-NUMS)
+<two-ordered-nums>
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIELDS-OF-TWO-ORDERED-NUMS TWO-ORDERED-NUMS)
+                             '(:N 3 :N2 5 :VALID T)))
+ :PASSED
+ACL2 !>>(DEFUN
+         INTERRUPT-3 (TWO-ORDERED-NUMS)
+         (DECLARE (XARGS :STOBJS TWO-ORDERED-NUMS))
+         (STOBJ-LET
+            ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
+             (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
+            (N$ N$2)
+            (MV-LET
+                 (N$ N$2)
+                 (SWAP-STOBJS N$ N$2)
+                 (LET ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$)))
+                      (PROG2$ (ER HARD? 'TOP "Stopping!")
+                              (LET ((N$ (UPDATE-N$VAL (1+ (N$2VAL N$2)) N$)))
+                                   (SWAP-STOBJS N$ N$2)))))
+            TWO-ORDERED-NUMS))
+
+Since INTERRUPT-3 is non-recursive, its admission is trivial.  We observe
+that the type of INTERRUPT-3 is described by the theorem 
+(AND (CONSP (INTERRUPT-3 TWO-ORDERED-NUMS))
+     (NOT (TRUE-LISTP (INTERRUPT-3 TWO-ORDERED-NUMS)))).
+We used the :type-prescription rule UPDATE-UENSLOT2.
+
+(INTERRUPT-3 TWO-ORDERED-NUMS) => TWO-ORDERED-NUMS.
+
+Computing the guard conjecture for INTERRUPT-3....
+
+The non-trivial part of the guard conjecture for INTERRUPT-3 is
+
+Goal
+(IMPLIES
+ (TWO-ORDERED-NUMSP TWO-ORDERED-NUMS)
+ (LET
+  ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
+   (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
+  (AND
+   (LET* ((MV (LIST N$2 N$)) (N$2 (MV-NTH 1 MV)))
+         (AND (NATP (N$2VAL N$2))
+              (LET NIL
+                   (AND (ACL2-NUMBERP (N$2VAL N$2))
+                        (NATP (+ 1 (N$2VAL N$2)))))))
+   (MV-LET
+    (N$ N$2)
+    (MV-LET (N$ N$2)
+            (MV N$2 N$)
+            (LET* ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$))
+                   (N$ (UPDATE-N$VAL (+ 1 (N$2VAL N$2)) N$)))
+                  (LIST N$2 N$)))
+    (AND
+     (OR
+      (NOT (UENVALID TWO-ORDERED-NUMS))
+      (PROG2$
+       (THROW-NONEXEC-ERROR :NON-EXEC '(< (N$VAL N$) (N$VAL (UENSLOT2$A X))))
+       (< (N$VAL N$)
+          (N$VAL (UENSLOT2 TWO-ORDERED-NUMS)))))
+     (LET ((TWO-ORDERED-NUMS (UPDATE-UENSLOT1 N$ TWO-ORDERED-NUMS)))
+          (OR (NOT (UENVALID TWO-ORDERED-NUMS))
+              (PROG2$ (THROW-NONEXEC-ERROR
+                           :NON-EXEC '(< (N$VAL (UENSLOT1$A X)) (N$VAL N$2)))
+                      (< (N$VAL (UENSLOT1 TWO-ORDERED-NUMS))
+                         (N$VAL N$2)))))))))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for INTERRUPT-3.  INTERRUPT-3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN INTERRUPT-3 ...)
+Rules: ((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION MV-NTH)
+        (:DEFINITION N$2VAL)
+        (:DEFINITION N$VAL)
+        (:DEFINITION N$VAL$A)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION THROW-NONEXEC-ERROR)
+        (:DEFINITION TWO-ORDERED-NUMS$AP)
+        (:DEFINITION TWO-ORDERED-NUMSP)
+        (:DEFINITION UENSLOT1)
+        (:DEFINITION UENSLOT1$A)
+        (:DEFINITION UENSLOT2)
+        (:DEFINITION UENSLOT2$A)
+        (:DEFINITION UENVALID)
+        (:DEFINITION UENVALID$A)
+        (:DEFINITION UPDATE-N$VAL)
+        (:DEFINITION UPDATE-N$VAL$A)
+        (:DEFINITION UPDATE-UENSLOT1)
+        (:DEFINITION UPDATE-UENSLOT1$A)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CONS-CAR-CDR)
+        (:TYPE-PRESCRIPTION UPDATE-UENSLOT2))
+ INTERRUPT-3
+ACL2 !>>(INTERRUPT-3 TWO-ORDERED-NUMS)
+
+
+HARD ACL2 ERROR in TOP:  Stopping!
+
+
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
+gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation
+for an abstract stobj!
+**PROCEED AT YOUR OWN RISK.**
+To proceed, evaluate the following form.
+:CONTINUE-FROM-ILLEGAL-STATE
+See :DOC set-absstobj-debug.
+
+
+[Illegal-State] >>:CONTINUE-FROM-ILLEGAL-STATE
+ :CONTINUING
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIELDS-OF-TWO-ORDERED-NUMS TWO-ORDERED-NUMS)
+                             '(:N 3 :N2 3 :VALID T)))
+ :PASSED
+ACL2 !>>(DEFTTAG :BOGUS-CERT)
+ :BOGUS-CERT
+ACL2 !>>(REMOVE-UNTOUCHABLE ILLEGAL-TO-CERTIFY-MESSAGE NIL)
+
+Summary
+Form:  ( REMOVE-UNTOUCHABLE ILLEGAL-TO-CERTIFY-MESSAGE NIL)
+Rules: NIL
+ ILLEGAL-TO-CERTIFY-MESSAGE
+ACL2 !>>(MAKE-EVENT (PPROGN (F-PUT-GLOBAL 'ILLEGAL-TO-CERTIFY-MESSAGE
+                                          NIL STATE)
+                            (VALUE '(VALUE-TRIPLE :CERTIFICATION-MADE-OK))))
+
+Summary
+Form:  ( MAKE-EVENT (PPROGN ...))
+Rules: NIL
+ :CERTIFICATION-MADE-OK
+ACL2 !>>(DEFTTAG NIL)
+ NIL
+ACL2 !>>(VALUE-TRIPLE "Completed")
+ "Completed"
 ACL2 !>>Bye.

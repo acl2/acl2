@@ -19826,11 +19826,10 @@
 ;   is t or xg is nil then return (mv t a0') where a0' is the restriction of a0
 ;   to stobjs.  Otherwise (i.e., each eg = nil and each xg is non-nil), compute
 ;   (ev+ b a1 A) = (mv e x).  If e is nil then return (mv nil x).  Otherwise,
-;   -- with the following two exceptions for errors in evaluation of the body
-;   of certain lambdas -- return (mv t a0'), where a0' is produced by updating
-;   the stobj entries of a0 with corresponding stobj results from the alist, x.
-;   In the following exceptional cases a0' is just the restriction of a0 to
-;   stobj names.
+;   -- with the following exceptions for errors (i.e., guard errors) -- return
+;   (mv t a0'), where a0' is produced by updating the stobj entries of a0 with
+;   corresponding stobj results from the alist, x.  In the following
+;   exceptional cases a0' is just the restriction of a0 to stobj names.
 
 ;   - EXCEPTION 1: stobj-let update of a child stobj
 
@@ -19851,20 +19850,35 @@
 ;     the body of a lambda with a stobj creator argument, we define a0' to
 ;     avoid updating the binding (if any) for that stobj.
 
+;   - EXCEPTION 3: f is a stobj primitive for a stobj not in A
+
+;     In this case, after successfully checking the guard for f, we avoid guard
+;     checking while evaluating the corresponding call of the :LOGIC primitive
+;     f_L for f, as though (with-guard-checking :none ...) were wrapped around
+;     that call.  We should model this separately, say, with a variant of ev+
+;     that treats all guards as t, uses logical axioms for evaluation (e.g.,
+;     (car 3) is nil), and isn't concerned about whether the input alist is
+;     A-proper.  But for simplicity we'll keep that implicit; all properties of
+;     ev+ carry over of course since we are not changing the structure of its
+;     definition (only changing the guards, ignoring stobjs, and "completing"
+;     the axioms).  Note that since we never get a guard violation during such
+;     evalution, the stobjs-out are irrelevant if A is empty.
+
 ; - CASE (ev+ (f t1 ... tk) a0 A), where f is a stobj primitive for a stobj s0
 ;   in A (hence s0 is an abstract stobj)
 
 ;   The only difference from the case above is that the body, b, of f is
-;   considered to be (f_E v1 ... vk).  Note that if instead f is an
-;   s0-primitive for an abstract stobj not in A, then b is (f_L v1 ... vk).
+;   considered to be (f_E v1 ... vk).
 
 ; As suggested above, we may refer to (ev+ ... {}) as :LOGIC evaluation, and we
 ; may refer to (ev+ ... A) as :EXEC evaluation when A is the set of all
-; abstract stobj names (in the current world).  The use of MBE in defining
-; abstract stobj primitives is key to the observation that :LOGIC evaluation
-; represents evaluation in the logic and :EXEC evaluation represents evaluation
-; actually carried out by ACL2.  For convenience we introduce abbreviations
-; ev_E and ev_L as follows, for an implicit ACL2 world, w.
+; abstract stobj names (in the current world).  The use of :LOGIC and :EXEC
+; primitives in respective logical and raw Lisp definitions of the abstract
+; stobj primitives (see defabsstobj-raw-def and defabsstobj-axiomatic-defs,
+; resp.) is key to the observation that :LOGIC evaluation represents evaluation
+; in the logic and :EXEC evaluation represents evaluation actually carried out
+; by ACL2.  For convenience we introduce abbreviations ev_E and ev_L as
+; follows, for an implicit ACL2 world, w.
 
 ;   :EXEC evaluation:
 ;   (ev_E term alist) = (ev+ term alist A)
@@ -19923,12 +19937,12 @@
 ; which is assumed E-proper or L-proper with respect to w1 for (a) or (b)
 ; below, respectively.  Then:
 ;
-; (a) The value of (ev_E u al) is the same when computed with respect
-; to w2 as when computed with respect to w1, assuming that
-; all abstract stobj variables of u are in w2.
+; (a) The value of (ev_E u al) is the same when computed with respect to w2 as
+;     when computed with respect to w1, assuming that all abstract stobj
+;     variables of u are in w2.
 
-; (b)  The value of (ev_L u al) is the same when computed with respect
-; to w2 as when computed with respect to w1.  -|
+; (b) The value of (ev_L u al) is the same when computed with respect to w2 as
+;     when computed with respect to w1.  -|
 
 ; Lemma 5.  If a1 and a2 agree on all the free variables of the term u, then
 ; (ev+ u a1 A) = (ev+ u a2 A) for every A.  In particular, (ev_L u a1) = (ev_L
@@ -19957,12 +19971,12 @@
 ; is something minimal that we are happy to do.  -|
 
 ; There are complications when an abstract stobj's foundation can itself be an
-; abstract stobj, and when a stobj has a child stobj that is an abstract stobj
-; (or is an array or hash table that contains abstract stobjs).  We ignore
-; these complications for now, in particular for the "narrow version" of the
-; main theorem, which depends on a correspondingly narrower version of
-; E*-correspondence, namely, E-correspondence.  After proving the theorem we
-; will return to the general version.
+; abstract stobj. There are also complications when a stobj can have a child
+; stobj that is an abstract stobj (or is an array or hash table that contains
+; abstract stobjs).  We ignore these complications for now, in particular for
+; the "narrow version" of the main theorem, which depends on a correspondingly
+; narrower version of E*-correspondence, namely, E-correspondence.  After
+; proving the theorem we will return to the general version.
 
 ; The following definition formalizes a notion of correspondence between two
 ; objects or two alists, x and y.  It is motivated by evaluations (ev_E u a_E)
@@ -20048,17 +20062,18 @@
 ; If f is not a stobj primitive, then the desired conclusion is immediate from
 ; the computational inductive hypothesis applied to corresponding evaluations
 ; of the body of f.  If f is a concrete stobj primitive then we treat it
-; specially since using the body would violate guards (in particular when
-; recurring with nth on the cdr of the stobj to access a field).  But we are
-; assuming here that child fields are never abstract stobjs; thus
-; E-correspondence reduces to equality, and the conclusion is immediate.
+; specially (see Exception 3 above) since using the body would violate guards
+; (in particular when recurring with nth on the cdr of the stobj to access a
+; field).  But we are assuming here that child fields are never abstract
+; stobjs; thus E-correspondence reduces to equality, and the conclusion is
+; immediate.
 
 ; So assume that f is an s-primitive where s is an abstract stobj.  First
 ; suppose that s is not s0.  The following equations hold by (1), Lemma 6, and
-; the definition of ev+, where bd is the body of f.
+; the definition of ev+.
 
-;         (ev_E bd a_E) = (ev_E (f v1 ... vk) b_E)
-;         (ev_L bd a_L) = (ev_L (f v1 ... vk) b_L)
+;         (ev_E u a_E) = (ev_E (f v1 ... vk) b_E)
+;         (ev_L u a_L) = (ev_L (f v1 ... vk) b_L)
 
 ; Since we are in the case that s is not s0, therefore s0 is not among the
 ; formals of f since f is defined in w2, before s0 is introduced.  The
@@ -20071,11 +20086,11 @@
 ; only the case that f returns a single value; the general case differs only by
 ; considering each specific position's result.
 
-; Let f_E and f_L be the :EXEC and :LOGIC versions of f, respectively, and let
-; s0$c be the foundational stobj for s0.  Also let Corr0 be the correspondence
-; predicate for s0, let s0_E = b_E(s0), and let s0_L = b_L(s0).  Thus Corr0
-; holds of <s0_E,s0_L> since, as noted above, b_E and b_L are E-corresponding
-; (and thus s0_E E-corresponds to s0_L with respect to s0).
+; Let f_E be the :EXEC version of f and let s0$c be the foundational stobj for
+; s0.  Also let Corr0 be the correspondence predicate for s0, let s0_E =
+; b_E(s0), and let s0_L = b_L(s0).  Thus Corr0 holds of <s0_E,s0_L> since, as
+; noted above, b_E and b_L are E-corresponding (and thus s0_E E-corresponds to
+; s0_L with respect to s0).
 
 ; By (1) and Lemma 1, the following is a theorem.
 
@@ -20167,12 +20182,10 @@
 ; Claim 1: Assume that s is a stobj name; then val_f satisfies the :LOGIC
 ; recognizer for s.  To prove this we consider two cases.  For the case that s
 ; is s0 this follows from (2_L) and the PRESERVATION theorem (with the use of
-; Lemma 1 to trade theoremhood with evaluation, as usual).  When s is not s0 we
-; again use (2_L), but this time we argue by trading the call of f for the
-; corresponding call of f_L, and then applying Lemma 4 together with the
-; inductive hypothesis to w2 to conclude some E-correspondence to val_f, which
-; establishes that the recognizer for s holds on val_f.  That concludes the
-; proof of this claim.
+; Lemma 1 to trade theoremhood with evaluation, as usual).  So suppose that s
+; is not s0.  By (4), val_f_E = val_f.  So by (5), val_f_E$c E-corresponds to
+; val_f with respect to s.  By definition of E-corresponds, val_f satisfies the
+; :LOGIC recognizer for s.
 
 ; Claim 2. Assume that s is an abstract stobj name; then val_f_E$c satisfies
 ; the :EXEC recognizer for s.  This is clear from (5).
@@ -20376,8 +20389,7 @@
 ; The case that f is an abstract stobj primitive for a stobj s other than s0 is
 ; handled just as before.  So as before we consider the case that f is an
 ; s0-primitive returning a single value, with formals (v1 ... s0 ... vk), with
-; respective :EXEC and :LOGIC versions f_E and f_L and s0$c the foundational
-; stobj for s0.
+; :EXEC version f_E and where s0$c is the foundational stobj for s0.
 
 ; As before, let s0_E = b_E(s0) and let s0_L = b_L(s0).  Since b_E
 ; E*-corresponds to b_L, then s0_E E*-corresponds to s0_L.  So by definition of
@@ -21022,9 +21034,9 @@
                           (function-symbolp exec wrld)))
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
-                       for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
-                       :CREATOR~/exported~] symbol ~x3, is not a function ~
-                       symbol in the current ACL2 logical world.  ~@4"
+                         for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
+                         :CREATOR~/exported~] symbol ~x3, is not a function ~
+                         symbol in the current ACL2 logical world.  ~@4"
                         exec
                         (if exec-p 0 1)
                         (case type
@@ -21036,16 +21048,23 @@
                      (not (member-eq type '(:RECOGNIZER :CREATOR)))
                      (not (member-eq ld-skip-proofsp ; optimization
                                      '(include-book include-book-with-locals)))
-;;; !! Need to think about the following call of unprotected-export-p when we
-;;; have a stobj field.  Maybe there's no issue, since we deal with
-;;; non-atomicity of incomplete child updates in stobj-let-fn-raw by using
-;;; with-inside-absstobj-update.
+
+; We believe that in the case of a child stobj updater, the following call of
+; unprotected-export-p will always return nil -- that is, the update is
+; demonstrably atomic.  That's because the :exec update is atomic: this is
+; immediate if the foundational stobj is concrete, and otherwise it's because
+; (inductively) the child stobj updater is atomic.  We should revisit our
+; understanding if we find otherwise, because we may not need to be concerned
+; with non-atomic child stobj updates anyhow; that's because we deal with
+; non-atomicity of incomplete child updates in stobj-let-fn-raw by using
+; with-inside-absstobj-update.
+
                      (unprotected-export-p st$c exec wrld))
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
-                       for defabsstobj field ~x2, appears capable of ~
-                       modifying the concrete stobj, ~x3, non-atomically; yet ~
-                       :PROTECT T was not specified for this field.  ~@4"
+                         for defabsstobj field ~x2, appears capable of ~
+                         modifying the concrete stobj, ~x3, non-atomically; ~
+                         yet :PROTECT T was not specified for this field.  ~@4"
                         exec
                         (if exec-p 0 1)
                         name st$c see-doc))
@@ -21061,7 +21080,6 @@
                          (stobjs-in-exec (stobjs-in exec wrld))
                          (stobjs-out-logic (stobjs-out logic wrld))
                          (stobjs-out-exec (stobjs-out exec wrld))
-                         (posn-exec-out (position-eq st$c stobjs-out-exec))
                          (correspondence-required (not (eq type :RECOGNIZER)))
                          (preserved-required (and (not (eq type :RECOGNIZER))
                                                   (member-eq st$c
@@ -21129,8 +21147,9 @@
                                  (fn (if lp logic exec)))
                             (er-cmp ctx
                                     "The~#0~[~/ (implicit)~] ~x1 component of ~
-                                field ~x2, ~x3, is a function symbol but its ~
-                                guards have not yet been verified.  ~@4"
+                                     field ~x2, ~x3, is a function symbol but ~
+                                     its guards have not yet been verified.  ~
+                                     ~@4"
                                     (if implicit-p 0 1)
                                     (if lp :LOGIC :EXEC)
                                     field0 fn see-doc)))
@@ -21141,9 +21160,10 @@
 ; by defabsstobj-raw-defs.
 
                           (er-cmp ctx
-                                  "The~#0~[~/ (implicit)~] :EXEC component, ~x1, ~
-                              of the specified :RECOGNIZER, ~x2, is not the ~
-                              recognizer of the :CONCRETE stobj ~x3.  ~@4"
+                                  "The~#0~[~/ (implicit)~] :EXEC component, ~
+                                   ~x1, of the specified :RECOGNIZER, ~x2, is ~
+                                   not the recognizer of the :CONCRETE stobj ~
+                                   ~x3.  ~@4"
                                   (if exec-p 0 1) exec name st$c see-doc))
                          ((and preserved-p
                                (not preserved-required))
@@ -21169,9 +21189,9 @@
 
                           (er-cmp ctx
                                   "We do not allow the use of the defabsstobj ~
-                              name, ~x0, in the formals of the :EXEC function ~
-                              of a field, in particular, the :EXEC function ~
-                              ~x1 for field ~x2.  ~@3"
+                                   name, ~x0, in the formals of the :EXEC ~
+                                   function of a field, in particular, the ~
+                                   :EXEC function ~x1 for field ~x2.  ~@3"
                                   st exec field0 see-doc))
                          ((and (eq type :CREATOR)
                                (not (and (null stobjs-in-logic)
@@ -21183,11 +21203,11 @@
                           (cond ((or stobjs-in-logic
                                      stobjs-in-exec)
                                  (er-cmp ctx
-                                         "The :LOGIC and :EXEC versions of the ~
-                                     :CREATOR function must both be functions ~
-                                     of no arguments but ~&0 ~#0~[is not such ~
-                                     a function~/xare not such functions~].  ~
-                                     ~@1"
+                                         "The :LOGIC and :EXEC versions of ~
+                                          the :CREATOR function must both be ~
+                                          functions of no arguments but ~&0 ~
+                                          ~#0~[is not such a function~/xare ~
+                                          not such functions~].  ~@1"
                                          (append (and stobjs-in-logic
                                                       (list logic))
                                                  (and stobjs-in-exec
@@ -21196,11 +21216,12 @@
                                 ((or (not (eql (length stobjs-out-logic) 1))
                                      (not (eql (length stobjs-out-exec) 1)))
                                  (er-cmp ctx
-                                         "The :LOGIC and :EXEC versions of the ~
-                                     :CREATOR function must both be functions ~
-                                     that return a single value, but ~&0 ~
-                                     ~#0~[is not such a function~/are not ~
-                                     such functions~].  ~@1"
+                                         "The :LOGIC and :EXEC versions of ~
+                                          the :CREATOR function must both be ~
+                                          functions that return a single ~
+                                          value, but ~&0 ~#0~[is not such a ~
+                                          function~/are not such functions~]. ~
+                                          ~ ~@1"
                                          (append
                                           (and (not (eql (length stobjs-out-logic) 1))
                                                (list logic))
@@ -21210,9 +21231,9 @@
                                 (t ; (not (eq (car stobjs-out-exec) st$c))
                                  (er-cmp ctx
                                          "The :EXEC version of the :CREATOR ~
-                                     function must return a single value that ~
-                                     is the stobj ~x0, but ~x1 does not have ~
-                                     that property.  ~@2"
+                                          function must return a single value ~
+                                          that is the stobj ~x0, but ~x1 does ~
+                                          not have that property.  ~@2"
                                          st$c exec see-doc))))
                          ((and (not (eq type :CREATOR))
                                (not posn-exec))
@@ -21223,64 +21244,38 @@
 ; functions other than the creator.
 
                           (er-cmp ctx
-                                  "The :CONCRETE stobj name, ~x0, is not a known ~
-                              stobj parameter of :EXEC function ~x1 for field ~
-                              ~x2.~|~@3"
+                                  "The :CONCRETE stobj name, ~x0, is not a ~
+                                   known stobj parameter of :EXEC function ~
+                                   ~x1 for field ~x2.~|~@3"
                                   st$c exec field0 see-doc))
                          ((and (not (eq type :CREATOR))
-                               (not
-                                (and (equal (length stobjs-in-logic)
-                                            (length stobjs-in-exec))
-                                     (equal (update-nth posn-exec nil
-                                                        stobjs-in-logic)
-                                            (update-nth posn-exec nil
-                                                        stobjs-in-exec)))))
+                               (not (equal (length stobjs-in-logic)
+                                           (length stobjs-in-exec))))
                           (er-cmp ctx
-                                  "The input signatures of the :LOGIC and ~
-                                   :EXEC functions for a field must agree ~
-                                   except perhaps at the position of the ~
-                                   concrete stobj in the :EXEC function.  ~
-                                   (The concrete stobj here is ~x0, and that ~
-                                   zero-based position is ~x1.)  However, ~
-                                   this agreement fails for field ~x2, as the ~
-                                   input signatures are as follows.~|~%~x3 ~
-                                   (:LOGIC):~|~X47~|~%~x5 ~
-                                   (:EXEC):~|~X67~|~%~@8"
-                                  st$c posn-exec field0
-                                  logic (prettyify-stobj-flags stobjs-in-logic)
-                                  exec (prettyify-stobj-flags stobjs-in-exec)
+                                  "The :LOGIC and ~
+                                   :EXEC functions for a field must ~
+                                   have the same length.  However, ~
+                                   this fails for field ~x0, as the ~
+                                   input signatures are as follows.~|~%~x1 ~
+                                   (:LOGIC):~|~X25~|~%~x3 ~
+                                   (:EXEC):~|~X45~|~%~@6"
+                                  field0 logic
+                                  (prettyify-stobj-flags stobjs-in-logic)
+                                  exec
+                                  (prettyify-stobj-flags stobjs-in-exec)
                                   nil see-doc))
                          ((and (not (eq type :CREATOR)) ; handled elsewhere
-                               (not updater-tail) ; handled elsewhere !! Make sure it is!
-                               (not (and (equal (length stobjs-out-logic)
-                                                (length stobjs-out-exec))
-                                         (equal stobjs-out-exec
-                                                (if posn-exec-out
-                                                    (update-nth
-                                                     posn-exec-out
-                                                     (assert$
-                                                      posn-exec
-                                                      (nth posn-exec
-                                                           stobjs-in-exec))
-                                                     stobjs-out-logic)
-                                                  stobjs-out-logic)))))
+                               (not (equal (length stobjs-out-logic)
+                                           (length stobjs-out-exec))))
                           (er-cmp ctx
                                   "The output signatures of the :LOGIC and ~
-                                   :EXEC functions for a field (other than ~
-                                   one with an :UPDATER) must have the same ~
-                                   length and must agree at each position, ~
-                                   except for the position of concrete stobj ~
-                                   (~x0) in the outputs of the :EXEC ~
-                                   function.  For that position, the :LOGIC ~
-                                   function should return the type of the ~
-                                   object (stobj or not) that is at the ~
-                                   position of ~x0 in the inputs of the :EXEC ~
-                                   function.  However, the criteria above are ~
-                                   not all met for field ~x1, as the output ~
-                                   signatures are as follows.~|~%~x2 ~
-                                   (:LOGIC):~|~X36~|~%~x4 ~
+                                   :EXEC functions for an abstract stobj ~
+                                   export must have the same length.  ~
+                                   However, the output signatures are as ~
+                                   follows for field ~x0 of abstract stobj ~
+                                   ~x1.~|~%~x2 (:LOGIC):~|~X36~|~%~x4 ~
                                    (:EXEC):~|~X56~|~%~@7"
-                                  st$c field0
+                                  field0 st
                                   logic (prettyify-stobj-flags stobjs-out-logic)
                                   exec (prettyify-stobj-flags stobjs-out-exec)
                                   nil see-doc))
@@ -21319,7 +21314,8 @@
                                      :CORRESPONDENCE correspondence
                                      :PRESERVED preserved
                                      :PROTECT protect
-                                     :UPDATER (cadr updater-tail)))))))))))))))))))))))
+                                     :UPDATER
+                                     (cadr updater-tail)))))))))))))))))))))))
 
 (defun simple-translate-absstobj-fields (st st$c fields types protect-default
                                             ld-skip-proofsp)
@@ -21882,11 +21878,17 @@
 ; We use prog2$ here, rather than just returning its last argument, because we
 ; want to track functions that might be called in raw Lisp, in particular for
 ; avoiding the violation of important invariants; see put-invariant-risk.
+; Actually we already take measures to put invariant-risk; see
+; put-defabsstobj-invariant-risk.  But it seems harmless to add the prog2$
+; call, which is removed for most purposes by remove-guard-holders; so we
+; include it for robustness.  We use non-exec for two reasons: in case EXEC
+; returns multiple values or a stobj, and in case the stobjs-out of LOGIC
+; doesn't agree with the stobjs-out of NAME.
 
 ; We formerly used mbe, but that caused a soundness bug; see :DOC note-8-4.
 
-                        (prog2$ (,exec ,@formals)
-                                (,logic ,@formals)))))
+                        (non-exec (prog2$ (,exec ,@formals)
+                                          (,logic ,@formals))))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun with-inside-absstobj-update (temp saved name form)
@@ -22666,9 +22668,18 @@
 ; End of Essay on Nested Stobjs
 
 (defmacro stobj-let (&whole x &rest args)
+
+; It is usually a mistake to invoke the stobj-let macro during logical
+; evaluation, because some checks are generated by translate, using its access
+; to the world, rather than by this macro; see for example
+; chk-stobj-let/accessors.
+
   (declare (ignore args))
   #+acl2-loop-only
-  (stobj-let-fn x)
+  (mv-let (form actuals stobj)
+    (stobj-let-fn x)
+    (declare (ignore actuals stobj))
+    form)
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 

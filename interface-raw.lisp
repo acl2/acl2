@@ -1316,9 +1316,7 @@
      fns w program-p))
    ((eq (car x) 'return-last)
 
-; Warning: Keep this in sync with stobj-let-fn and the handling of stobj-let in
-; this function, in particular the case in which stobj-let-fn generates a call
-; of prog2$ (or perhaps progn$).
+; Warning: Keep this in sync with prog2$-call.
 
     (let* ((qfn (and (consp (cdr x))
                      (cadr x)))
@@ -1514,28 +1512,31 @@
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
 ; code for that macro.
 
-    (let ((temp (oneify (stobj-let-fn x)
-                        fns w program-p)))
-      (case-match temp
+    (mv-let (temp1 actuals stobj)
+      (stobj-let-fn x)
+      (let ((temp2 (oneify temp1 fns w program-p)))
+        (case-match temp2
 
 ; Warning: Keep these cases in sync with stobj-let-fn.
 
-        (('let bindings . rest)
-         `(let* ,bindings ,@rest))
-        (('progn conjoined-no-dups-exprs
-                 ('let bindings . rest))
-
-; Warning: Keep this case in sync with the definition of (prog2$ x y) as
-; (return-last 'progn x y), and in sync with the handling of such a return-last
-; form by oneify.
-
-         `(progn ,conjoined-no-dups-exprs
-                 (let* ,bindings ,@rest)))
-        (& (interface-er "Implementation error: unexpected form of stobj-let ~
-                          encountered by ~
-                          oneify!.~|~%Input:~|~y0~%Output:~|~y1~%Please ~
-                          contact the ACL2 implementors."
-                         x temp)))))
+          (('let bindings ('declare ('ignorable . &)) . rest)
+           (let ((dups-check (no-duplicatesp-checks-for-stobj-let-actuals
+                              actuals stobj w)))
+             (cond (dups-check `(let* ,bindings
+                                  (prog2$ (flet ((chk-no-duplicatesp
+                                                  (lst)
+                                                  (,(*1*-symbol
+                                                     'chk-no-duplicatesp)
+                                                   lst)))
+                                            ,dups-check)
+                                          ,@rest)))
+                   (t `(let* ,bindings ,@rest)))))
+          (& (interface-er "Implementation error: unexpected form of ~
+                            stobj-let encountered by oneify!.~|~%Stobj-let ~
+                            form:~|~y0~%Output of stobj-let-fn:~|~y1~%Output ~
+                            of oneify on that output:~|~y2~%Please contact ~
+                            the ACL2 implementors."
+                           x temp1 temp2))))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par
            (granularity-decl (and (eq (car x) 'plet)

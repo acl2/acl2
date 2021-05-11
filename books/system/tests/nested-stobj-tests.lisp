@@ -1197,7 +1197,7 @@ ACL2 !>
                                      (c-hidden-a-fld-update)))))
 
 (must-fail
- (defthm true-and-false-is-contradictory
+ (defthm true-and-false-is-contradictory-2
    nil
    :hints (("goal" :use true-and-false-is-true
             :in-theory (disable true-and-false-is-true)))

@@ -2,14 +2,19 @@
 ; Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This file illustrates how ACL2 protects against a potential unsoundness
-; caused by aliasing when two child stobj fields of an abstract stobj are
-; implemented by the same child stobj of a concrete stobj.  Thanks to Sol
-; Swords for supplying the stobj-let form for the first example below, which
-; provided critical guidance in the development of the appropriate check.
+; This file illustrates some ACL2 protections against potential unsoundness
+; with nested abstract stobjs.
+
+; The first two examples address aliasing when two child stobj fields of an
+; abstract stobj are implemented by the same child stobj of a concrete stobj.
+; Thanks to Sol Swords for supplying the stobj-let form for the first example
+; below, which provided critical guidance in the development of the appropriate
+; check.
+
+; The third example deals with invariant-risk violastions.
 
 ; For a more complex example of nested abstract stobjs, see community book
-; demos/two-usuallyequal-nums-stobj.lisp.
+; two-usuallyequal-nums-stobj.lisp.
 
 (in-package "ACL2")
 
@@ -245,3 +250,104 @@ ACL2 !>
 		    (sub$c-cong-val (fld0$c sub$c-cong)))
 	       (mv sub$c sub$c-val sub$c-cong sub$c-cong-val))
 	     (mv top2 sub$c-val sub$c-cong-val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Example 3
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deflabel start-example-3)
+
+(include-book "two-usuallyequal-nums-stobj")
+
+(value-triple (equal (fields-of-two-usuallyequal-nums two-usuallyequal-nums)
+                     '(:N 0 :N2 0 :VALID NIL))
+              :check t)
+
+(update-two-usuallyequal-nums 3 two-usuallyequal-nums)
+
+(value-triple (equal (fields-of-two-usuallyequal-nums two-usuallyequal-nums)
+                     '(:N 3 :N2 3 :VALID t))
+              :check t)
+
+(defun interrupt-1 (two-usuallyequal-nums)
+  (declare (xargs :stobjs two-usuallyequal-nums))
+  (stobj-let ((n$ (uenslot1 two-usuallyequal-nums)))
+             (n$)
+             (let* ((old (n$val n$))
+                    (n$ (prog2$ (er hard? 'top "Interrupt!")
+                                (update-n$val old n$))))
+               n$)
+             two-usuallyequal-nums))
+
+; Causes hard error (!! but perhaps needn't do so, an observation that I
+; believe is essentially due to Sol Swords):
+(interrupt-1 two-usuallyequal-nums)
+
+:continue-from-illegal-state
+
+(defun interrupt-2 (two-usuallyequal-nums)
+  (declare (xargs :stobjs two-usuallyequal-nums))
+  (stobj-let ((n$ (uenslot1 two-usuallyequal-nums)))
+             (n$)
+             (let* ((old (n$val n$))
+                    (n$ (update-n$val (1+ old) n$))
+                    (n$ (prog2$ (er hard? 'top "Interrupt!")
+                                (update-n$val old n$))))
+               n$)
+             two-usuallyequal-nums))
+
+; Causes hard error:
+(interrupt-2 two-usuallyequal-nums)
+
+:continue-from-illegal-state
+
+; Inconsistent state!
+(assert-event (equal (fields-of-two-usuallyequal-nums two-usuallyequal-nums)
+                     '(:N 4 :N2 3 :VALID T)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Example 4 (involving swap-stobjs)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ubt 'start-example-3) ; avoid name conflict in included books
+
+(include-book "two-ordered-nums-stobj")
+
+(update-two-ordered-nums 3 5 two-ordered-nums)
+
+(assert-event (equal (fields-of-two-ordered-nums two-ordered-nums)
+                     '(:N 3 :N2 5 :VALID T)))
+
+(defun interrupt-3 (two-ordered-nums)
+  (declare (xargs :stobjs two-ordered-nums))
+  (stobj-let ((n$ (uenslot1 two-ordered-nums))
+              (n$2 (uenslot2 two-ordered-nums)))
+             (n$ n$2)
+             (mv-let (n$ n$2)
+               (swap-stobjs n$ n$2)
+               (let ((n$ (update-n$val (n$2val n$2) n$)))
+                 (prog2$ (er hard? 'top "Stopping!")
+                         (let ((n$ (update-n$val (1+ (n$2val n$2)) n$)))
+                           (swap-stobjs n$ n$2)))))
+             two-ordered-nums))
+
+(interrupt-3 two-ordered-nums)
+
+:continue-from-illegal-state
+
+; Inconsistent state!
+(assert-event (equal (fields-of-two-ordered-nums two-ordered-nums)
+                     '(:N 3 :N2 3 :VALID T)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Use a trust tag to avoid certification failure.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag :bogus-cert)
+(remove-untouchable illegal-to-certify-message nil)
+(make-event (pprogn (f-put-global 'illegal-to-certify-message nil state)
+                    (value '(value-triple :certification-made-ok))))
+(defttag nil)
+
+(value-triple "Completed")
