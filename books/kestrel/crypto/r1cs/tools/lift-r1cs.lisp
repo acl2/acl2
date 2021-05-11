@@ -89,7 +89,7 @@
                                        (not (equal "" package))))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (symbol-listp rules)
+                              (or (eq :auto rules) (symbol-listp rules))
                               (symbol-listp monitor)
                               (booleanp memoizep)
                               (booleanp count-hitsp))
@@ -103,16 +103,20 @@
        (lifted-vars (strip-cdrs r1cs-var-to-lifted-var-alist))
        ((acl2::when (not (no-duplicatesp lifted-vars))) ;todo: optimize by sorting
         (er hard? 'lift-r1cs-new-fn "Duplicate var(s) detected in ~X01." lifted-vars nil)
-        (mv t ;erp
-            nil
-            state))
+        (mv :duplicate-vars nil state))
        (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
                                                         ,(make-efficient-symbolic-valuation-for-alist r1cs-var-to-lifted-var-alist)
-                                                        ',prime)))
+                                                        ',prime))
+       ((acl2::when (and (not (eq :auto rules)) extra-rules))
+        (er hard? 'lift-r1cs-new-fn ":rules and :extra-rules should not both be given.")
+        (mv :bad-input nil state))
+       ((acl2::when (and (not (eq :auto rules)) remove-rules))
+        (er hard? 'lift-r1cs-new-fn ":rules and :remove-rules should not both be given.")
+        (mv :bad-input nil state)))
   (acl2::def-simplified-fn name-of-defconst
                            term-to-simplify
                            ;; The extra rules:
-                           (if rules
+                           (if (not (eq :auto rules))
                                nil ;rules are given below, so extra-rules are not allowed
                              (append (lift-r1cs-rules)
                                      extra-rules))
@@ -156,7 +160,7 @@
                                 (package ':auto) ; package to use for vars
                                 (extra-rules 'nil)
                                 (remove-rules 'nil)
-                                (rules 'nil)
+                                (rules ':auto)
                                 (monitor 'nil)
                                 (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
                                 (count-hitsp 'nil)
