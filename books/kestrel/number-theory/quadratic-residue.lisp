@@ -15,6 +15,8 @@
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 
 (local (include-book "divides"))
+(local (include-book "primes"))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (include-book "euler2-support")
 
@@ -104,10 +106,7 @@
 
 (defthm no-square-root-forall
   (implies (and (not (has-square-root? x p))
-                (natp p)
                 (< 2 p)
-                (oddp p)
-                (natp x) (< x p)
                 (natp y) (< y p)
                 (rtl::primep p))
            (not (equal x (mod (* y y) p)))
@@ -118,3 +117,12 @@
                   :use ((:instance rtl::not-res-no-root
                                    (acl2::p p) (acl2::m x) (acl2::j y)))))
   )
+
+;; If there is some y whose square (mod p) is x, then x has a square root (mod p).
+(defthm has-square-root?-suff
+  (implies (and (equal x (mod (* y y) p))
+                (integerp y)
+                (rtl::primep p)
+                (< 2 p))
+           (has-square-root? x p))
+  :hints (("Goal" :use (:instance no-square-root-forall (y (mod y p))))))
