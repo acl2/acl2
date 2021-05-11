@@ -139,3 +139,17 @@
          0)
   :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
            :in-theory (disable bvplus-of-bvuminus-same))))
+
+(defthm equal-of-bvuminus-and-bvchop-same
+  (equal (equal (bvuminus size x)
+                (bvchop size x))
+         (or (equal 0 (bvchop size x))
+             (equal (expt 2 (+ -1 size)) (bvchop size x))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus bvminus))))
+
+(defthm equal-of-bvchop-and-bvuminus-same
+  (equal (equal (bvchop size x)
+                (bvuminus size x))
+         (or (equal 0 (bvchop size x))
+             (equal (expt 2 (+ -1 size)) (bvchop size x))))
+  :hints (("Goal" :cases ((natp size)) :in-theory (enable bvuminus bvminus))))
