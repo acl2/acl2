@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
@@ -24,7 +23,7 @@
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 ;(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "known-booleans")
-(include-book "axe-rules")
+(include-book "axe-rule-lists")
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
@@ -54,6 +53,12 @@
 
 (add-known-boolean memberp) ;move?
 
+(defthm plist-worldp-of-cdr-of-assoc-equal-etc
+  (implies (state-p1 state)
+           (plist-worldp (cdr (assoc-equal 'current-acl2-world
+                                           (nth 2 state)))))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
 ;move
 (defthm vars-in-terms-when-equal-of-0-and-len
   (implies (equal 0 (len terms))
@@ -67,8 +72,6 @@
 ;;              nil
 ;;            (all-vars1-lst args nil)))
 ;;   :hints (("Goal" :in-theory (enable all-vars))))
-
-
 
 ;move
 (defthm pseudo-termp-of-caddr
@@ -92,52 +95,6 @@
   (lambda-free-termsp (fn-formals fun wrld))
   :hints (("Goal" :in-theory (enable lambda-free-termsp-when-symbol-listp))))
 
-;move
-;avoid name clash with the one in books/std/typed-lists/symbol-listp.lisp
-(defthm symbol-listp-of-union-equal2
-  (implies (and (symbol-listp x)
-                (symbol-listp y))
-           (symbol-listp (union-equal x y))))
-
-;;;
-;;; hyps-and-conc-for-axe-rule
-;;;
-
-;; Split an ACL2 theorem into hypotheses and a conclusion
-;; Returns (mv erp hyps conc).
-;todo: ACL2 must have something like this already
-;; TODO: Add support for lambdas (here and in lhs-and-rhs-of-conc).
-;; TODO: Handle a conjunction at the top level.
-;; TODO: Document what kinds of ACL2 theorems can be made into Axe rules.
-(defund hyps-and-conc-for-axe-rule (theorem-body rule-name)
-  (declare (xargs :guard (pseudo-termp theorem-body)))
-  (if (not (consp theorem-body))
-      (mv `(:bad-rule ,rule-name)
-          (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a variable): ~x1" rule-name theorem-body)
-          nil)
-    (if (consp (car theorem-body))
-        (mv `(:bad-rule ,rule-name)
-            (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a lambda application, which is not yet supported): ~x1" rule-name theorem-body)
-            nil)
-      (if (and (eq 'implies (car theorem-body))
-               (= 2 (len (fargs theorem-body)))) ;for guards
-          ;; TODO: Support nested implies?
-          (mv (erp-nil)
-              (get-conjuncts (second theorem-body))
-              (third theorem-body))
-        (mv (erp-nil)
-            nil ;no hyps
-            theorem-body)))))
-
-(defthm pseudo-termp-of-mv-nth-2-of-hyps-and-conc-for-axe-rule
-  (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 2 (hyps-and-conc-for-axe-rule term sym))))
-  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
-
-(defthm pseudo-term-listp-of-mv-nth-1-of-hyps-and-conc-for-axe-rule
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (mv-nth 1 (hyps-and-conc-for-axe-rule term sym))))
-  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
 
 ;; ;; Recognize a pseudo-term that is neither a variable, quoted constant, or lambda application.
 ;; (defun regular-function-callp (term)
@@ -979,6 +936,78 @@
                   bound-vars))
   :hints (("Goal" :in-theory (enable all-axe-syntaxp-hypsp bound-vars-after-hyps BOUND-VARS-AFTER-HYP))))
 
+
+
+;;Returns (mv erp hyp).
+;;TTODO: How can we access the auto-generated loop stopper that ACL2 sometimes puts in?
+(defund make-axe-rule-hyp-for-loop-stopper (loop-stopper rule-name)
+  (declare (xargs :guard t)
+           (ignore rule-name))
+  (if (and (true-listp loop-stopper)
+           (<= 2 (len loop-stopper))
+           (symbolp (first loop-stopper))
+           (symbolp (second loop-stopper)))
+      ;;a loop-stopper of (x y) means y must be smaller than x for the rule to fire
+      (let ((loop-stopper `(:axe-syntaxp . (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
+        (prog2$ nil ;(cw "Note: inserting loop stopper ~x0 for rule ~x1.~%" loop-stopper rule-name)
+                (mv (erp-nil) loop-stopper))) ;TODO: get the invisible fns and have heavier-dag-term (or a variant of it) ignore them
+    (prog2$ (er hard? 'make-axe-rule-hyp-for-loop-stopper "Unrecognized loop stopper: ~x0." loop-stopper)
+            (mv :bad-loop-stopper *unrelievable-hyp*))))
+
+(defthm axe-rule-hypp-of-mv-nth-1-of-make-axe-rule-hyp-for-loop-stopper
+  (axe-rule-hypp (mv-nth 1 (make-axe-rule-hyp-for-loop-stopper loop-stopper rule-name)))
+  :hints (("Goal" :in-theory (enable axe-rule-hypp make-axe-rule-hyp-for-loop-stopper
+                                     axe-syntaxp-exprp axe-syntaxp-function-applicationp
+                                     list-of-variables-and-constantsp))))
+
+;;Returns (mv erp hyps).
+(defund make-axe-rule-hyps-for-loop-stoppers (loop-stoppers rule-name)
+  (declare (xargs :guard t))
+  (if (atom loop-stoppers)
+      (mv (erp-nil) nil)
+    (b* (((mv erp first-res)
+          (make-axe-rule-hyp-for-loop-stopper (first loop-stoppers) rule-name))
+         ((when erp) (mv erp nil))
+         ((mv erp rest-res)
+          (make-axe-rule-hyps-for-loop-stoppers (rest loop-stoppers) rule-name))
+         ((when erp) (mv erp nil)))
+      (mv (erp-nil)
+          (cons first-res rest-res)))))
+
+(defthm axe-rule-hyp-listp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
+  (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
+  :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
+                                     axe-rule-hyp-listp))))
+
+(defthm all-axe-syntaxp-hypsp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
+  (all-axe-syntaxp-hypsp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
+  :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
+                                     make-axe-rule-hyp-for-loop-stopper
+                                     all-axe-syntaxp-hypsp))))
+
+;;Returns (mv erp hyps).
+;; TODO: Should we get anything else from the :rule-classes in addition to the loop-stoppers?  Check for unknown things?
+;; These do not bind any vars
+(defund make-axe-rule-loop-stopping-hyps (rule-classes rule-name)
+  (declare (xargs :guard t))
+  (b* (((when (not (alistp rule-classes)))
+        (er hard? 'make-axe-rule-loop-stopping-hyps "Bad rule-classes: ~x0" rule-classes)
+        (mv :bad-rule-classes nil))
+       (rewrite-keyword-value-list (lookup-eq :rewrite rule-classes))
+       ((when (not (keyword-value-listp rewrite-keyword-value-list)))
+        (er hard? 'make-axe-rule-loop-stopping-hyps "Unexpected stuff in :rewrite rule class: ~x0." rewrite-keyword-value-list)
+        (mv :bad-rule-class nil))
+       (loop-stoppers (cadr (assoc-keyword :loop-stopper rewrite-keyword-value-list)))) ;we only look at :rewrite rules to get the loop-stoppers
+    (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
+
+(defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-loop-stopping-hyps
+  (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-loop-stopping-hyps rule-classes rule-symbol)))
+  :hints (("Goal" :in-theory (enable make-axe-rule-loop-stopping-hyps))))
+
+(defthm all-axe-syntaxp-hypsp-of-mv-nth-1-of-make-axe-rule-loop-stopping-hyps
+  (all-axe-syntaxp-hypsp (mv-nth 1 (make-axe-rule-loop-stopping-hyps rule-classes rule-symbol)))
+  :hints (("Goal" :in-theory (enable make-axe-rule-loop-stopping-hyps))))
+
 ;; Returns (mv erp rule).
 ;; Note: the format of the rule when stored in a rule-alist or rule-world is different (see stored-axe-rulep).
 ;; TODO: Consider deprecating this in favor of the stored-rule format.
@@ -1058,11 +1087,12 @@
                                      make-axe-rule
                                      make-axe-rule-hyps-redef
                                      make-axe-rule-hyps-redef-0
-                                     RULE-lhs
-                                     RULE-RHS
-                                     RULE-HYPS
+                                     rule-lhs
+                                     rule-rhs
+                                     rule-hyps
                                      rule-symbol))))
 
+;; Splits CONC into a left-hand-side and a right-hand-side..
 ;;Returns (mv erp lhs rhs).
 (defund lhs-and-rhs-of-conc (conc rule-symbol known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp conc)
@@ -1153,36 +1183,51 @@
            (pseudo-termp (mv-nth 2 (lhs-and-rhs-of-conc conc rule-symbol known-boolean-fns))))
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
-
-
 ;;;
-;;; axe-rule-listp
+;;; hyps-and-conc-for-axe-rule
 ;;;
 
-(defforall axe-rule-listp (items) (axe-rulep items) :true-listp t)
-(verify-guards axe-rule-listp)
+;; Splits an ACL2 theorem into hypotheses and a conclusion.
+;; Returns (mv erp hyps conc).
+;todo: ACL2 must have something like this already
+;; TODO: Add support for lambdas (here and in lhs-and-rhs-of-conc).
+;; TODO: Handle a conjunction at the top level.
+;; TODO: Document what kinds of ACL2 theorems can be made into Axe rules.
+(defund hyps-and-conc-for-axe-rule (theorem-body rule-name)
+  (declare (xargs :guard (pseudo-termp theorem-body)))
+  (if (not (consp theorem-body))
+      (mv `(:bad-rule ,rule-name)
+          (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a variable): ~x1" rule-name theorem-body)
+          nil)
+    (if (consp (car theorem-body))
+        (mv `(:bad-rule ,rule-name)
+            (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a lambda application, which is not yet supported): ~x1" rule-name theorem-body)
+            nil)
+      (if (and (eq 'implies (car theorem-body))
+               (= 2 (len (fargs theorem-body)))) ;for guards
+          ;; TODO: Support nested implies?
+          (mv (erp-nil)
+              (get-conjuncts (second theorem-body))
+              (third theorem-body))
+        (mv (erp-nil)
+            nil ;no hyps
+            theorem-body)))))
 
-(defthm axe-rule-listp-of-reverse-list
-  (implies (axe-rule-listp acc)
-           (axe-rule-listp (reverse-list acc)))
-  :hints (("Goal" :in-theory (enable axe-rule-listp))))
+(defthm pseudo-termp-of-mv-nth-2-of-hyps-and-conc-for-axe-rule
+  (implies (pseudo-termp term)
+           (pseudo-termp (mv-nth 2 (hyps-and-conc-for-axe-rule term sym))))
+  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
 
-;fixme defforall should do this (but maybe disable it?)
-(defthm axe-rulep-of-car-when-axe-rule-listp
-  (implies (and (axe-rule-listp lst)
-                (consp lst))
-           (axe-rulep (car lst))))
+(defthm pseudo-term-listp-of-mv-nth-1-of-hyps-and-conc-for-axe-rule
+  (implies (pseudo-termp term)
+           (pseudo-term-listp (mv-nth 1 (hyps-and-conc-for-axe-rule term sym))))
+  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
 
-(defund rule-symbol-list (rules)
-  (declare (xargs :guard (axe-rule-listp rules)
-                  :guard-hints (("Goal" :expand ((axe-rulep (car rules))) ;this is because rule-symbol is a macro?
-                                 :in-theory (enable axe-rule-listp)))))
-  (if (endp rules)
-      nil
-    (cons (rule-symbol (first rules))
-          (rule-symbol-list (rest rules)))))
+;;;
+;;; add-rule-for-conjunct
+;;;
 
-;possibly adds an axe-rule to acc
+;; Possibly adds an axe-rule to ACC.
 ;;fixme be more general?
 ;; TODO: Return an error?
 (defund add-rule-for-conjunct (conc
@@ -1217,11 +1262,11 @@
        )
     (cons rule acc)))
 
-(defthm symbolp-when-memberp
-  (implies (and (memberp x free)
-                (symbol-listp free))
-           (symbolp x))
-  :hints (("Goal" :in-theory (enable symbol-listp))))
+;; (defthm symbolp-when-memberp
+;;   (implies (and (memberp x free)
+;;                 (symbol-listp free))
+;;            (symbolp x))
+;;   :hints (("Goal" :in-theory (enable symbol-listp))))
 
 (defthm axe-rule-listp-of-add-rule-for-conjunct
   (implies (and (symbolp rule-symbol)
@@ -1240,6 +1285,10 @@
   (implies (true-listp acc)
            (true-listp (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
   :hints (("Goal" :in-theory (e/d (add-rule-for-conjunct) (true-listp)))))
+
+;;;
+;;; make-rules-from-conclusion
+;;;
 
 ;; Returns an axe-rule-list.
 ;; Extracts conjuncts from the conclusion
@@ -1309,76 +1358,9 @@
   (true-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))
   :hints (("Goal" :in-theory (e/d (make-rules-from-conclusion) (axe-rulep)))))
 
-
-;;Returns (mv erp hyp).
-;;TTODO: How can we access the auto-generated loop stopper that ACL2 sometimes puts in?
-(defund make-axe-rule-hyp-for-loop-stopper (loop-stopper rule-name)
-  (declare (xargs :guard t)
-           (ignore rule-name))
-  (if (and (true-listp loop-stopper)
-           (<= 2 (len loop-stopper))
-           (symbolp (first loop-stopper))
-           (symbolp (second loop-stopper)))
-      ;;a loop-stopper of (x y) means y must be smaller than x for the rule to fire
-      (let ((loop-stopper `(:axe-syntaxp . (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
-        (prog2$ nil ;(cw "Note: inserting loop stopper ~x0 for rule ~x1.~%" loop-stopper rule-name)
-                (mv (erp-nil) loop-stopper))) ;TODO: get the invisible fns and have heavier-dag-term (or a variant of it) ignore them
-    (prog2$ (er hard? 'make-axe-rule-hyp-for-loop-stopper "Unrecognized loop stopper: ~x0." loop-stopper)
-            (mv :bad-loop-stopper *unrelievable-hyp*))))
-
-(defthm axe-rule-hypp-of-mv-nth-1-of-make-axe-rule-hyp-for-loop-stopper
-  (axe-rule-hypp (mv-nth 1 (make-axe-rule-hyp-for-loop-stopper loop-stopper rule-name)))
-  :hints (("Goal" :in-theory (enable axe-rule-hypp make-axe-rule-hyp-for-loop-stopper
-                                     axe-syntaxp-exprp axe-syntaxp-function-applicationp
-                                     list-of-variables-and-constantsp))))
-
-;;Returns (mv erp hyps).
-(defund make-axe-rule-hyps-for-loop-stoppers (loop-stoppers rule-name)
-  (declare (xargs :guard t))
-  (if (atom loop-stoppers)
-      (mv (erp-nil) nil)
-    (b* (((mv erp first-res)
-          (make-axe-rule-hyp-for-loop-stopper (first loop-stoppers) rule-name))
-         ((when erp) (mv erp nil))
-         ((mv erp rest-res)
-          (make-axe-rule-hyps-for-loop-stoppers (rest loop-stoppers) rule-name))
-         ((when erp) (mv erp nil)))
-      (mv (erp-nil)
-          (cons first-res rest-res)))))
-
-(defthm axe-rule-hyp-listp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
-  (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
-  :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
-                                     axe-rule-hyp-listp))))
-
-(defthm all-axe-syntaxp-hypsp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
-  (all-axe-syntaxp-hypsp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
-  :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
-                                     make-axe-rule-hyp-for-loop-stopper
-                                     all-axe-syntaxp-hypsp))))
-
-;;Returns (mv erp hyps).
-;; TODO: Should we get anything else from the :rule-classes in addition to the loop-stoppers?  Check for unknown things?
-;; These do not bind any vars
-(defund make-axe-rule-loop-stopping-hyps (rule-classes rule-name)
-  (declare (xargs :guard t))
-  (b* (((when (not (alistp rule-classes)))
-        (er hard? 'make-axe-rule-loop-stopping-hyps "Bad rule-classes: ~x0" rule-classes)
-        (mv :bad-rule-classes nil))
-       (rewrite-keyword-value-list (lookup-eq :rewrite rule-classes))
-       ((when (not (keyword-value-listp rewrite-keyword-value-list)))
-        (er hard? 'make-axe-rule-loop-stopping-hyps "Unexpected stuff in :rewrite rule class: ~x0." rewrite-keyword-value-list)
-        (mv :bad-rule-class nil))
-       (loop-stoppers (cadr (assoc-keyword :loop-stopper rewrite-keyword-value-list)))) ;we only look at :rewrite rules to get the loop-stoppers
-    (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
-
-(defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-loop-stopping-hyps
-  (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-loop-stopping-hyps rule-classes rule-symbol)))
-  :hints (("Goal" :in-theory (enable make-axe-rule-loop-stopping-hyps))))
-
-(defthm all-axe-syntaxp-hypsp-of-mv-nth-1-of-make-axe-rule-loop-stopping-hyps
-  (all-axe-syntaxp-hypsp (mv-nth 1 (make-axe-rule-loop-stopping-hyps rule-classes rule-symbol)))
-  :hints (("Goal" :in-theory (enable make-axe-rule-loop-stopping-hyps))))
+;;;
+;;; make-rules-from-theorem
+;;;
 
 ;; Returns (mv erp axe-rules).
 (defund make-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
@@ -1401,18 +1383,6 @@
     (mv (erp-nil)
         (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))))
 
-;; Returns the axe-rules.  Does not return erp.
-(defund make-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
-  (declare (xargs :guard (and (pseudo-termp theorem-body)
-                              (symbolp rule-symbol)
-                              (symbol-listp known-boolean-fns)
-                              (plist-worldp wrld))))
-  (mv-let (erp axe-rules)
-    (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
-    (if erp
-        (er hard? 'make-rules-from-theorem! "Error making Axe rules.")
-      axe-rules)))
-
 (defthm axe-rule-listp-of-mv-nth-1-of-make-rules-from-theorem
   (implies (and (pseudo-termp theorem-body)
                 (symbolp rule-symbol)
@@ -1426,11 +1396,17 @@
   (true-listp (mv-nth 1 (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (e/d (make-rules-from-theorem) ()))))
 
-(defthm plist-world-of-cdr-of-assoc-equal-etc
-  (implies (state-p1 state)
-           (plist-worldp (cdr (assoc-equal 'current-acl2-world
-                                           (nth 2 state)))))
-  :hints (("Goal" :in-theory (enable state-p1))))
+;; Returns the axe-rules.  Does not return erp.
+(defund make-rules-from-theorem! (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
+  (declare (xargs :guard (and (pseudo-termp theorem-body)
+                              (symbolp rule-symbol)
+                              (symbol-listp known-boolean-fns)
+                              (plist-worldp wrld))))
+  (mv-let (erp axe-rules)
+    (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
+    (if erp
+        (er hard? 'make-rules-from-theorem! "Error making Axe rules.")
+      axe-rules)))
 
 ;; (mutual-recursion
 ;;  (defun strip-return-last (term)
