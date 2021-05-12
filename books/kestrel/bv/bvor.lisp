@@ -392,3 +392,10 @@
            (equal (bvor size z (bvor size2 x y))
                   (bvor size z (bvor size x y))))
   :hints (("Goal" :in-theory (e/d (bvor) ( BVCHOP-1-BECOMES-GETBIT)))))
+
+(defthm bitp-of-bvor-of-1
+  (bitp (bvor 1 x y))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvor (size 1))
+           :in-theory (disable unsigned-byte-p-of-bvor
+                               unsigned-byte-p-of-bvor-gen))))
