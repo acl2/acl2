@@ -14,17 +14,11 @@
 (include-book "bvnot")
 
 (defund bitnot (x)
-  (declare (type integer x))
+  (declare (type integer x)
+           (xargs :type-prescription (bitp (bitnot x))))
   (if (= (bvchop 1 x) 0)
       1
     0))
-
-(defthm bitnot-type
-  (or (equal 0 (bitnot x))
-      (equal 1 (bitnot x)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:type-prescription bitnot))) ;our rule is better
 
 (defthm integerp-of-bitnot
   (integerp (bitnot x)))
