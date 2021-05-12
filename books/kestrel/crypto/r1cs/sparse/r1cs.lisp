@@ -176,8 +176,33 @@
   ((a (sparse-vectorp a))
    (b (sparse-vectorp b))
    (c (sparse-vectorp c)))
-  :pred r1cs-constraintp
+  :pred r1cs-constraintp-aux
   :suppress-xdoc t)
+
+;; TODO: Improve defaggregate to check that extra keys don't exist in the
+;; alist! The lack of that check can cause problems if the keys are in the
+;; wrong package.
+(defund r1cs-constraintp (x)
+  (declare (xargs :guard t
+                  :guard-hints (("Goal" :in-theory (enable r1cs-constraintp-aux)))))
+  (and (r1cs-constraintp-aux x)
+       ;; TODO: Optimize:
+       (subsetp-eq (strip-cars x) '(a b c))))
+
+(defthm r1cs-constraintp-forward-to-r1cs-constraintp-aux
+  (implies (r1cs-constraintp x)
+           (r1cs-constraintp-aux x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable r1cs-constraintp))))
+
+(defthm r1cs-constraintp-of-r1cs-constraint
+  (implies (force (and (sparse-vectorp a)
+                       (sparse-vectorp b)
+                       (sparse-vectorp c)))
+           (r1cs-constraintp (r1cs-constraint a b c)))
+  :hints (("Goal" :in-theory (enable r1cs-constraintp
+                                     r1cs-constraint
+                                     r1cs-constraintp-aux))))
 
 ;; A true list of r1cs-constraints
 (defun r1cs-constraint-listp (constraints)
