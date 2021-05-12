@@ -1184,46 +1184,6 @@
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
 ;;;
-;;; hyps-and-conc-for-axe-rule
-;;;
-
-;; Splits an ACL2 theorem into hypotheses and a conclusion.
-;; Returns (mv erp hyps conc).
-;todo: ACL2 must have something like this already
-;; TODO: Add support for lambdas (here and in lhs-and-rhs-of-conc).
-;; TODO: Handle a conjunction at the top level.
-;; TODO: Document what kinds of ACL2 theorems can be made into Axe rules.
-(defund hyps-and-conc-for-axe-rule (theorem-body rule-name)
-  (declare (xargs :guard (pseudo-termp theorem-body)))
-  (if (not (consp theorem-body))
-      (mv `(:bad-rule ,rule-name)
-          (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a variable): ~x1" rule-name theorem-body)
-          nil)
-    (if (consp (car theorem-body))
-        (mv `(:bad-rule ,rule-name)
-            (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a lambda application, which is not yet supported): ~x1" rule-name theorem-body)
-            nil)
-      (if (and (eq 'implies (car theorem-body))
-               (= 2 (len (fargs theorem-body)))) ;for guards
-          ;; TODO: Support nested implies?
-          (mv (erp-nil)
-              (get-conjuncts (second theorem-body))
-              (third theorem-body))
-        (mv (erp-nil)
-            nil ;no hyps
-            theorem-body)))))
-
-(defthm pseudo-termp-of-mv-nth-2-of-hyps-and-conc-for-axe-rule
-  (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 2 (hyps-and-conc-for-axe-rule term sym))))
-  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
-
-(defthm pseudo-term-listp-of-mv-nth-1-of-hyps-and-conc-for-axe-rule
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (mv-nth 1 (hyps-and-conc-for-axe-rule term sym))))
-  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
-
-;;;
 ;;; add-rule-for-conjunct
 ;;;
 
@@ -1291,7 +1251,8 @@
 ;;;
 
 ;; Returns an axe-rule-list.
-;; Extracts conjuncts from the conclusion
+;; Extracts conjuncts from CONC and makes a rule for each
+;; TODO: What about lambdas that hide conjunctions?
 (defund make-rules-from-conclusion-aux (conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
@@ -1304,14 +1265,11 @@
   (if (atom conc)
       (er hard? 'make-rules-from-conclusion-aux "Unexpected form (atom) of a conclusion for ~x0" conc)
     (if (eq 'if (ffn-symb conc))
-        ;;it's an AND (represented as (if <x> <y> 'nil), of course):
-        ;;fffixme handle booland??!
         (if (equal *nil* (farg3 conc))
+            ;;it's an AND, represented as (if <x> <y> 'nil):
             (add-rule-for-conjunct (farg1 conc) hyps extra-hyps counter rule-symbol known-boolean-fns print wrld
                                    (make-rules-from-conclusion-aux (farg2 conc) hyps extra-hyps (+ 1 counter) rule-symbol known-boolean-fns print wrld))
-          ;;the guard on this is nil?
-          ;;ffixme what about lambdas?
-          (er hard? 'make-rules-from-conclusion-aux "Unexpected form of a conclusion: ~x0" conc))
+          (er hard? 'make-rules-from-conclusion-aux "Unexpected form of a conclusion (an IF that does not represent a conjunction): ~x0" conc))
       (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld nil))))
 
 (defthm axe-rule-listp-of-make-rules-from-conclusion-aux
@@ -1357,6 +1315,46 @@
 (defthm true-listp-of-make-rules-from-conclusion
   (true-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))
   :hints (("Goal" :in-theory (e/d (make-rules-from-conclusion) (axe-rulep)))))
+
+;;;
+;;; hyps-and-conc-for-axe-rule
+;;;
+
+;; Splits an ACL2 theorem into hypotheses and a conclusion.
+;; Returns (mv erp hyps conc).
+;todo: ACL2 must have something like this already
+;; TODO: Add support for lambdas (here and in lhs-and-rhs-of-conc).
+;; TODO: Handle a conjunction at the top level.
+;; TODO: Document what kinds of ACL2 theorems can be made into Axe rules.
+(defund hyps-and-conc-for-axe-rule (theorem-body rule-name)
+  (declare (xargs :guard (pseudo-termp theorem-body)))
+  (if (not (consp theorem-body))
+      (mv `(:bad-rule ,rule-name)
+          (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a variable): ~x1" rule-name theorem-body)
+          nil)
+    (if (consp (car theorem-body))
+        (mv `(:bad-rule ,rule-name)
+            (er hard? 'hyps-and-conc-for-axe-rule "Unable to make an Axe rule from ~x0 (theorem body is a lambda application, which is not yet supported): ~x1" rule-name theorem-body)
+            nil)
+      (if (and (eq 'implies (car theorem-body))
+               (= 2 (len (fargs theorem-body)))) ;for guards
+          ;; TODO: Support nested implies?
+          (mv (erp-nil)
+              (get-conjuncts (second theorem-body))
+              (third theorem-body))
+        (mv (erp-nil)
+            nil ;no hyps
+            theorem-body)))))
+
+(defthm pseudo-termp-of-mv-nth-2-of-hyps-and-conc-for-axe-rule
+  (implies (pseudo-termp term)
+           (pseudo-termp (mv-nth 2 (hyps-and-conc-for-axe-rule term sym))))
+  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-hyps-and-conc-for-axe-rule
+  (implies (pseudo-termp term)
+           (pseudo-term-listp (mv-nth 1 (hyps-and-conc-for-axe-rule term sym))))
+  :hints (("Goal" :in-theory (enable hyps-and-conc-for-axe-rule))))
 
 ;;;
 ;;; make-rules-from-theorem
