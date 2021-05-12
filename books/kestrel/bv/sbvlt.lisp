@@ -14,7 +14,6 @@
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
 (include-book "kestrel/booleans/boolor" :dir :system) ;todo
-(include-book "kestrel/utilities/myif-def" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

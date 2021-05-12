@@ -489,3 +489,13 @@
                   (slice (+ (lg k) -1 n) (lg k) x)))
   :hints (("Goal" :use (:instance bvchop-of-floor-of-expt-of-2 (m (lg k)))
            :in-theory (e/d (power-of-2p) (bvchop-of-floor-of-expt-of-2)))))
+
+(defthm bitp-of-slice-same-type
+  (bitp (slice n n x))
+  :rule-classes :type-prescription)
+
+(defthmd slice-same-when-not-0
+  (implies (not (equal 0 (slice n n x)))
+           (equal (slice n n x) 1))
+  :hints (("Goal" :use (:instance usb1-cases (x (slice n n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
