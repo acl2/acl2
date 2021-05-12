@@ -135,7 +135,8 @@
      which must be integers in C,
      but must be booleans in ACL2 to represent their non-strictness."))
   (if b (sint 1) (sint 0))
-  :hooks (:fix))
+  :hooks (:fix)
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +210,8 @@
               :guard (,<type1>-integerp x)
               :returns (result ,<type1>p)
               :short ,(str::cat "Integer constant of " type1-string ".")
-              (,<type1> x))))
+              (,<type1> x)
+              :no-function t)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +219,8 @@
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if a value of " type1-string " is not 0.")
          (/= (,<type1>->get x) 0)
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,7 +230,8 @@
                            type1-string
                            " into an ACL2 integer value.")
          (,<type1>->get x)
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +243,8 @@
          ,(if samep
               `(,<type1>-fix x)
             `(,plus-<type> (,<type>-from-<type1> x)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,7 +258,8 @@
               ,(if samep
                    `(,<type1>-integerp (- (,<type1>->get x)))
                  `(,minus-<type>-okp (,<type>-from-<type1> x)))
-              :hooks (:fix))))
+              :hooks (:fix)
+              :no-function t)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -269,7 +275,8 @@
          ,@(and
             signedp
             `(:guard-hints (("Goal" :in-theory (enable ,minus-<type1>-okp)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,7 +296,8 @@
                                               ,<type1>p
                                               (:e ,<type>-min)
                                               (:e ,<type>-max))))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,7 +307,8 @@
                            type1-string
                            " [C:6.5.3].")
          (sint-from-boolean (= (,<type1>->get x) 0))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,7 +328,8 @@
                                               (expt 2 (ifix y)))))
                 `(integer-range-p 0 (,<type1>-bits) (ifix y)))
             `(,shl-<type>-okp (,<type>-from-<type1> x) (ifix y)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -337,7 +347,8 @@
          ,@(and (not signedp)
                 '(:prepwork
                   ((local (include-book "arithmetic-3/top" :dir :system)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -355,7 +366,8 @@
                         (>= (,<type1>->get x) 0))
                 `(integer-range-p 0 (,<type1>-bits) (ifix y)))
             `(,shr-<type>-okp (,<type>-from-<type1> x) (ifix y)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +396,8 @@
                 (include-book "kestrel/arithmetic-light/expt" :dir :system))
                (local
                 (include-book "kestrel/arithmetic-light/truncate" :dir :system)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -534,7 +547,8 @@
                  `(,add-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix))))
+              :hooks (:fix)
+              :no-function t)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -555,7 +569,8 @@
          ,@(and signedp
                 `(:guard-hints
                   (("Goal" :in-theory (enable ,add-<type1>-<type2>-okp)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -574,7 +589,8 @@
                  `(,sub-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix))))
+              :hooks (:fix)
+              :no-function t)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -595,7 +611,8 @@
          ,@(and signedp
                 `(:guard-hints
                   (("Goal" :in-theory (enable ,sub-<type1>-<type2>-okp)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,7 +631,8 @@
                  `(,mul-<type>-<type>-okp
                    ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                    ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix))))
+              :hooks (:fix)
+              :no-function t)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -635,7 +653,8 @@
          ,@(and signedp
                 `(:guard-hints
                   (("Goal" :in-theory (enable ,mul-<type1>-<type2>-okp)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,7 +677,8 @@
             `(,div-<type>-<type>-okp
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -677,7 +697,8 @@
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :guard-hints (("Goal" :in-theory (enable ,div-<type1>-<type2>-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,7 +721,8 @@
             `(,rem-<type>-<type>-okp
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -719,7 +741,8 @@
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
          :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,7 +754,8 @@
                            type2-string
                            " is well-defined.")
          (,shl-<type1>-okp x (,<type2>-integer-value y))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -745,7 +769,8 @@
                            " [C:6.5.7].")
          (,shl-<type1> x (,<type2>-integer-value y))
          :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,7 +782,8 @@
                            type2-string
                            " is well-defined.")
          (,shr-<type1>-okp x (,<type2>-integer-value y))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -771,7 +797,8 @@
                            " [C:6.5.7].")
          (,shr-<type1> x (,<type2>-integer-value y))
          :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,7 +817,8 @@
             `(,lt-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -809,7 +837,8 @@
             `(,gt-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -828,7 +857,8 @@
             `(,le-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -847,7 +877,8 @@
             `(,ge-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -866,7 +897,8 @@
             `(,eq-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -885,7 +917,8 @@
             `(,ne-<type>-<type>
               ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
               ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -909,7 +942,8 @@
               :guard-hints
               (("Goal"
                 :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -933,7 +967,8 @@
               :guard-hints
               (("Goal"
                 :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -957,7 +992,8 @@
               :guard-hints
               (("Goal"
                 :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix))
+         :hooks (:fix)
+         :no-function t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
