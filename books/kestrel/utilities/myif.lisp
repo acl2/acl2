@@ -252,3 +252,9 @@
   (implies (and (acl2-numberp a) (acl2-numberp b))
            (equal (acl2-numberp (myif test a b)) t))
   :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd myif-of-nil-special
+  (implies (implies ep (not test))
+           (equal (myif test nil ep)
+                  ep))
+  :hints (("Goal" :in-theory (enable myif))))
