@@ -34,14 +34,14 @@
          (make-input-contract-aux (rest args) (rest types)))
         (t (cons `(,(car types) ,(car args))
                  (make-input-contract-aux (rest args) (rest types))))))
-         
+
 (defun make-input-contract (args types)
   (declare (xargs :guard (and (symbol-listp args) (symbol-listp types))))
   (let ((res (make-input-contract-aux args types)))
     (cond ((endp res) t) ; if res=(), no constraints
           ((equal (len res) 1) (first res))
           (t (cons 'and res)))))
-     
+
 
 #|
 ;; A version of definec without the fc rules
@@ -66,7 +66,7 @@ Examples
 (definec f (x :nat y :nat) :all
   (+ x y))
 
-and 
+and
 
 (definec f (x nat y nat) all
   (+ x y))
@@ -81,7 +81,7 @@ both expand into
 
 |#
 
-;; Before latest updates to defunc 
+;; Before latest updates to defunc
 
 (defun find-bad-d-arg-types (d-arg-types d-arg-preds)
   (cond ((endp d-arg-preds) nil)
@@ -178,7 +178,7 @@ both expand into
         0
       (+ 1 (len (rest a)))))
 
-  (definec app (x :tl y :tl) :tl 
+  (definec app (x :tl y :tl) :tl
     (if (endp x)
         y
       (cons (car x) (app (cdr x) y))))
@@ -196,7 +196,7 @@ both expand into
 <h3>Purpose</h3>
 <p>
 The macro @(see definec) is an extension of @(see defunc)
-that makes it more convient to specify simple contracts. 
+that makes it more convient to specify simple contracts.
 For example, the expansions of
 </p>
 
@@ -207,7 +207,7 @@ For example, the expansions of
 })
 
 <p>
-and 
+and
 </p>
 
 @({
@@ -242,15 +242,15 @@ and all other types @(see defdata) knows.  </p>
 
 <p>
 When specifying types one can use keywords or regular symbols,
-as shown above. It is important to put a space between 
-the variable name and the type, e.g., x:nat will lead to errors. 
+as shown above. It is important to put a space between
+the variable name and the type, e.g., x:nat will lead to errors.
 </p>
 
 <p>
 As the examples above show, the paramater types and the return type
 are used to generate @(see defunc) contracts and then the rest of
 the arguments are passed to @(see defunc), so you can use all the
-bells and whistles of @(see defunc). 
+bells and whistles of @(see defunc).
 
 </p>
 "
@@ -264,9 +264,9 @@ bells and whistles of @(see defunc).
      (with-output
       :stack :pop
       (definec ,name ,@args))
-     (make-event 
+     (make-event
       `(with-output
-        :off :all :on (summary) :summary (form)
+        :off :all :on (summary) :summary-off (:other-than form)
         (in-theory
          (disable
           ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
@@ -279,9 +279,9 @@ bells and whistles of @(see defunc).
      (with-output
       :stack :pop
       (definedc ,name ,@args))
-     (make-event 
+     (make-event
       `(with-output
-        :off :all :on (summary) :summary (form)
+        :off :all :on (summary) :summary-off (:other-than form)
         (in-theory
          (disable
           ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
@@ -298,7 +298,7 @@ bells and whistles of @(see defunc).
 
 (defmacro definedc-no-test (name &rest args)
   `(gen-acl2s-local testing-enabled
-                    nil 
+                    nil
                     ((definedc ,name ,@args))))
 
 (defmacro definedcd-no-test (name &rest args)

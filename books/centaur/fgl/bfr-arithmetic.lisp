@@ -406,7 +406,7 @@
         (t (cons-with-hint (aabf-verify-guards-to-bfr old-name new-name (car x) func-subst)
                            (aabf-verify-guards-to-bfr old-name new-name (cdr x) func-subst)
                            x))))
-  
+
 
 (defun aabf-tableops-to-bfr (old-name new-name x)
   (declare (xargs :mode :program))
@@ -422,7 +422,7 @@
                            (aabf-tableops-to-bfr old-name new-name (cdr x))
                            x))))
 
-                           
+
 
 (defun aabf-form-to-bfr (name form world)
   (declare (xargs :mode :program))
@@ -499,5 +499,5 @@
                            default-+-2 default-+-1 member equal-of-booleans-rewrite
                            not)))
 
-(with-output :off (prove event observation) :summary (time acl2::form)
+(with-output :off (prove event observation) :summary-off (:other-than time acl2::form)
   (defsymbolic-to-bfr))

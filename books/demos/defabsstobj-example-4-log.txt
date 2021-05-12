@@ -17,43 +17,10 @@ Rules: NIL
  ST$C
 ACL2 !>>(DEFSTUB STOP NIL NIL)
 
-To verify that the two encapsulated events correctly extend the current
-theory we will evaluate them.  The theory thus constructed is only
-ephemeral.
-
-Encapsulated Events:
-
-
-ACL2 !>>>(LOGIC)
-
-The event ( TABLE ACL2-DEFAULTS-TABLE ...) is redundant.  See :DOC
-redundant-events.
-:INVISIBLE
-
-
-ACL2 !>>>(LOCAL (DEFUN STOP NIL (DECLARE (IGNORABLE))
-                       NIL))
-
-Since STOP is non-recursive, its admission is trivial.  We observe
-that the type of STOP is described by the theorem (EQUAL (STOP) NIL).
-
 Summary
-Form:  ( DEFUN STOP ...)
+Form:  (DEFSTUB STOP ...)
 Rules: NIL
-STOP
-
-End of Encapsulated Events.
-
-Having verified that the encapsulated events validate the signatures
-of the ENCAPSULATE event, we discard the ephemeral theory and extend
-the original theory as directed by the signatures and the non-LOCAL
-events.
-
-
-Summary
-Form:  ( ENCAPSULATE ((STOP NIL ...) ...) ...)
-Rules: NIL
- T
+ STOP
 ACL2 !>>(DEFUN UPDATE-FLD-NIL-GOOD$C (ST$C)
                (DECLARE (XARGS :STOBJS ST$C))
                (UPDATE-FLD$C NIL ST$C))
@@ -494,7 +461,7 @@ Subgoal 1
 Goal'
 Subgoal 2
 Subgoal 1
- T
+ (EVL EVL-LIST)
 ACL2 !>>(DEFUN SIMPLE-CL-PROC (CL TERM ST)
                (DECLARE (XARGS :STOBJS ST)
                         (IGNORE TERM))

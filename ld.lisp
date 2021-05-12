@@ -612,7 +612,8 @@
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
         (ld-pre-eval-filter
-         (if (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state)
+         (if (and (f-boundp-global 'ld-pre-eval-filter state); for boot-strap
+                  (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state))
              state ; See the Essay on Illegal-states.
            (f-put-global 'ld-pre-eval-filter (cdar alist) state)))
         (ld-pre-eval-print

@@ -19,7 +19,7 @@ data last modified: [2014-08-06]
 ; DATA CONSTRUCTOR TABLE
 (table data-constructor-table nil nil :clear)
 
-(def-const *register-data-constructor-keywords* 
+(def-const *register-data-constructor-keywords*
   '(:verbose :hints :proper :rule-classes :local-events
              :export-defthms :theory-name :recordp))
 
@@ -105,14 +105,14 @@ data last modified: [2014-08-06]
       nil
       (LOGIC)
       (WITH-OUTPUT
-       :SUMMARY (ACL2::FORM) :ON (ERROR)
+       :SUMMARY-OFF (:OTHER-THAN ACL2::FORM) :ON (ERROR)
        (PROGN
         (defthm ,(s+ conx-name '-CONSTRUCTOR-PRED :pkg pkg)
           (implies ,hyp
                    (,recog (,conx-name . ,dex-names)))
           :hints ,hints
           :rule-classes ,rule-classes)
-        
+
         (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS :pkg pkg)
           (implies (,recog ,x)
                    (and . ,(list-up-lists
@@ -130,14 +130,14 @@ data last modified: [2014-08-06]
                                    ,x))
                    :hints ,hints
                    :rule-classes ,(if (or recordp rule-classes) '(:elim) rule-classes))
-                 
-                 
+
+
                  (defthm ,(s+ conx-name '-CONSTRUCTOR-DESTRUCTORS-PROPER :pkg pkg)
                    (implies ,hyp
                             (and . ,(get-proper-dex-theorems conx-name dex-names)))
                    :hints ,hints
                    :rule-classes ,rule-classes)))
-;local 
+;local
 ;export-defthms TODO
         (TABLE DATA-CONSTRUCTOR-TABLE ',conx-name ',kwd-alist)
         (VALUE-TRIPLE :REGISTERED)

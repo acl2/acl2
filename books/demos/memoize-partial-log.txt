@@ -160,25 +160,39 @@ ACL2 !>>(ENCAPSULATE
                                             (FIB-LIMIT (- N 2) LIMIT)))))))))
          (MEMOIZE 'FIB :TOTAL 'FIB-LIMIT))
 
+The event ( DEFCHOOSE FIB-LIMIT-CHANGE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE FIB-LIMIT-CHANGE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFCHOOSE FIB-LIMIT-STABLE ...) is redundant.  See :DOC
+redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE FIB-LIMIT-STABLE ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( DEFUN FIB ...) is redundant.  See :DOC redundant-events.
+
 Summary
 Form:  ( DEFUN FIB ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -330,15 +344,23 @@ ACL2 !>>(ENCAPSULATE
                (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N)))))
 T
 
+The event ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( DEFCHOOSE FIB2-CLOCK-STABLE0 ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-STABLE0 ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFUN FIB2 ...) is redundant.  See :DOC redundant-events.
 
 Summary
 Form:  ( DEFUN FIB2 ...)
@@ -691,40 +713,62 @@ ACL2 !>>(ENCAPSULATE
          (MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
          (MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD))
 
+The event ( DEFCHOOSE EVENLP-BDD-CHANGE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-CHANGE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFCHOOSE EVENLP-BDD-STABLE ...) is redundant.  See :DOC
+redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-STABLE ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( DEFUN EVENLP ...) is redundant.  See :DOC redundant-events.
+
 Summary
 Form:  ( DEFUN EVENLP ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFCHOOSE ODDLP-BDD-CHANGE ...) is redundant.  See :DOC
+redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-CHANGE ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( DEFCHOOSE ODDLP-BDD-STABLE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-STABLE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFUN ODDLP ...) is redundant.  See :DOC redundant-events.
 
 Summary
 Form:  ( DEFUN ODDLP ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -736,6 +780,9 @@ Summary
 Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 EVENLP
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -2804,25 +2851,39 @@ ACL2 !>>(ENCAPSULATE
          (MEMOIZE 'COLLATZ
                   :TOTAL 'COLLATZ-LIMIT))
 
+The event ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) is redundant.  See
+:DOC redundant-events.
+
 Summary
 Form:  ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...) is redundant.  See
+:DOC redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( DEFUN COLLATZ ...) is redundant.  See :DOC redundant-events.
+
 Summary
 Form:  ( DEFUN COLLATZ ...)
 Rules: NIL
 :REDUNDANT
 
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)

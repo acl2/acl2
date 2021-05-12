@@ -6173,6 +6173,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; If you change this list, also consider changing the value of INHIBIT in
 ; distributed books files Makefile-generic and build/make_cert.
 
+; Warning: With-output depends on :other-than not being a member of this list.
+
   (set-difference-eq (strip-cars *window-descriptions*)
                      '(TEMPORARY QUERY)))
 
@@ -6186,7 +6188,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: Keep this list in sync with :doc summary.
 
-  '(errors form header hint-events rules splitter-rules
+; Warning: With-output depends on :other-than not being a member of this list.
+
+  '(errors form header hint-events redundant rules splitter-rules
            steps ; shown as "Prover steps counted"
            system-attachments time value warnings))
 
@@ -6213,177 +6217,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      ,@(and abbrevp `((set-abbrev-evisc-tuple ,abbrev state)))
      ,@(and gag-modep `((set-gag-mode-evisc-tuple ,gag-mode state)))
      ,form)))
-
-(defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
-                           summary summary-p evisc evisc-p)
-  (declare (xargs :mode :program
-                  :guard (true-listp args)))
-  (cond
-   ((endp args) nil)
-   ((keywordp (car args))
-    (let ((illegal-value-string
-           "~x0 is not a legal value for a call of with-output, but has been ~
-            supplied for keyword ~x1.  See :DOC with-output."))
-      (cond
-       ((consp (cdr args))
-        (cond
-         ((eq (car args) :gag-mode)
-          (cond
-           ((member-eq
-             (cadr args)
-             '(t :goals nil)) ; keep this list in sync with set-gag-mode
-            (with-output-fn ctx (cddr args) off on (cadr args) off-on-p t
-                            stack summary summary-p evisc evisc-p))
-           (t (illegal ctx
-                       illegal-value-string
-                       (list (cons #\0 (cadr args))
-                             (cons #\1 :gag-mode))))))
-         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
-          (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                          stack summary summary-p (cadr args) t))
-         ((eq (car args) :stack)
-          (cond
-           (stack
-            (illegal ctx
-                     "The keyword :STACK may only be supplied once in a call ~
-                      of ~x0."
-                     (list (cons #\0 'with-output))))
-           ((member-eq (cadr args) '(:push :pop))
-            (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                            (cadr args) summary summary-p evisc evisc-p))
-           (t (illegal ctx
-                       illegal-value-string
-                       (list (cons #\0 (cadr args))
-                             (cons #\1 :stack))))))
-         ((eq (car args) :summary)
-          (cond (summary-p
-                 (illegal ctx
-                          "The keyword :SUMMARY may only be supplied once in ~
-                           a call of ~x0."
-                          (list (cons #\0 'with-output))))
-                ((not (or (eq (cadr args) :all)
-                          (and (symbol-listp (cadr args))
-                               (subsetp-eq (cadr args) *summary-types*))))
-                 (illegal ctx
-                          "In a call of ~x0, the value of keyword :SUMMARY ~
-                           must either be :ALL or a true-list contained in ~
-                           the list ~x1."
-                          (list (cons #\0 'with-output)
-                                (cons #\1 *summary-types*))))
-                (t
-                 (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                                 stack
-                                 (cadr args) t
-                                 evisc evisc-p))))
-         ((not (member-eq (car args) '(:on :off)))
-          (illegal ctx
-                   "~x0 is not a legal keyword for a call of with-output.  ~
-                    See :DOC with-output."
-                   (list (cons #\0 (car args)))))
-         (t (let ((syms (cond ((eq (cadr args) :all)
-                               :all)
-                              ((symbol-listp (cadr args))
-                               (cadr args))
-                              ((symbolp (cadr args))
-                               (list (cadr args))))))
-              (cond (syms
-                     (cond ((eq (car args) :on)
-                            (and (null on)
-                                 (with-output-fn ctx (cddr args) off
-                                                 (if (eq syms :all)
-                                                     :all
-                                                   syms)
-                                                 gag-mode t gag-p stack summary
-                                                 summary-p evisc evisc-p)))
-                           (t ; (eq (car args) :off)
-                            (and (null off)
-                                 (with-output-fn ctx (cddr args)
-                                                 (if (eq syms :all)
-                                                     :all
-                                                   syms)
-                                                 on gag-mode t gag-p stack
-                                                 summary summary-p
-                                                 evisc evisc-p)))))
-                    (t (illegal ctx
-                                illegal-value-string
-                                (list (cons #\0 (cadr args))
-                                      (cons #\1 (car args))))))))))
-       (t (illegal ctx
-                   "A with-output form has terminated with a keyword, ~x0.  ~
-                    This is illegal.  See :DOC with-output."
-                   (list (cons #\0 (car args))))))))
-   ((cdr args)
-    (illegal ctx
-             "Illegal with-output form.  See :DOC with-output."
-             nil))
-   ((not (or (eq off :all)
-             (subsetp-eq off *valid-output-names*)))
-    (illegal ctx
-             "The :off argument to with-output-fn must either be :all or a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             (list (cons #\0 *valid-output-names*)
-                   (cons #\1 nil)
-                   (cons #\2 off)
-                   (cons #\3 (set-difference-eq off *valid-output-names*)))))
-   ((not (or (eq on :all)
-             (subsetp-eq on *valid-output-names*)))
-    (illegal ctx
-             "The :on argument to with-output-fn must either be :all or a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             (list (cons #\0 *valid-output-names*)
-                   (cons #\1 nil)
-                   (cons #\2 on)
-                   (cons #\3 (set-difference-eq on *valid-output-names*)))))
-   (t
-    (let ((form
-           `(state-global-let*
-             (,@
-              (and (or gag-p
-                       (eq stack :pop))
-                   `((gag-mode (f-get-global 'gag-mode state)
-                               set-gag-mode-fn)))
-              ,@
-              (and (or off-on-p
-                       (eq stack :pop))
-                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst
-                                                       state))))
-              ,@
-              (and stack
-                   '((inhibit-output-lst-stack
-                      (f-get-global 'inhibit-output-lst-stack state))))
-              ,@
-              (and summary-p
-                   `((inhibited-summary-types
-                      ,(if (eq summary :all)
-                           nil
-                         (list 'quote
-                               (set-difference-eq *summary-types* summary)))))))
-             (er-progn
-              ,@(and stack
-                     `((pprogn ,(if (eq stack :pop)
-                                    '(pop-inhibit-output-lst-stack state)
-                                  '(push-inhibit-output-lst-stack state))
-                               (value nil))))
-              ,@(and gag-p
-                     `((pprogn (set-gag-mode ,gag-mode)
-                               (value nil))))
-              ,@(and off-on-p
-                     `((set-inhibit-output-lst
-                        ,(cond ((eq on :all)
-                                (if (eq off :all)
-                                    '*valid-output-names*
-                                  `(quote ,off)))
-                               ((eq off :all)
-                                `(set-difference-eq *valid-output-names* ',on))
-                               (t
-                                `(union-eq ',off
-                                           (set-difference-eq
-                                            (f-get-global 'inhibit-output-lst
-                                                          state)
-                                            ',on)))))))
-              ,(car args)))))
-      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
-            (t form))))))
 
 #+acl2-loop-only
 (defun last (l)
@@ -6458,24 +6291,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (if (<= lng n)
         nil
       (take (- lng n) lst))))
-
-(defmacro with-output! (&rest args)
-  `(if (eq (ld-skip-proofsp state) 'include-book)
-       ,(car (last args))
-     ,(let ((val (with-output-fn 'with-output
-                                 args nil nil nil nil nil nil nil nil nil nil)))
-        (or val
-            (illegal 'with-output
-                     "Macroexpansion of ~q0 failed."
-                     (list (cons #\0 (cons 'with-output args))))))))
-
-#-acl2-loop-only
-(defmacro with-output (&rest args)
-  (car (last args)))
-
-#+acl2-loop-only
-(defmacro with-output (&rest args)
-  `(with-output! ,@args))
 
 ; Mutual Recursion
 
@@ -7954,6 +7769,229 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (symbolp field-name)
                               (plausible-dclsp lst))))
   (fetch-dcl-fields (list field-name) lst))
+
+(defun with-output-on-off-binding-val (on off summary-p)
+
+; On and off are each either :all or a list of symbols contained in
+; *summary-types* if summary-p is true, else contained in *valid-output-names*.
+; We return an expression that represents the corresponding value indicated for
+; state global inhibited-summary-types or inhibit-output-lst according to
+; whether summary-p is true or nil, respectively.
+
+  (declare (xargs :guard (and (or (eq on :all)
+                                  (symbol-listp on))
+                              (or (eq off :all)
+                                  (symbol-listp off)))))
+  (let* ((qconst (if summary-p '*summary-types* '*valid-output-names*))
+         (global (if summary-p 'inhibited-summary-types 'inhibit-output-lst)))
+    (cond
+     ((eq on :all)
+      (cond
+       ((eq off :all) qconst)
+       (t `(quote ,off))))
+     ((eq off :all)
+      `(set-difference-eq ,qconst ',on))
+     (t
+      `(union-eq ',off
+                 (set-difference-eq (f-get-global ',global state)
+                                    ',on))))))
+
+(defun with-output-on-off-arg (arg universe)
+
+; Arg is an argument of with-output keyword :on, :off, :summary-on, or
+; :summary-off.  We return :all if arg is :all, and otherwise the sublist of
+; universe indicated by arg (hence, arg itself unless the car of arg is
+; :other-than, in which case the complement of the indicated list in universe).
+; Except, we return :fail if arg is illegal.
+
+  (declare (xargs :guard (symbol-listp universe)))
+  (cond ((true-listp arg)
+         (let* ((flg (eq (car arg) :other-than))
+                (lst (if flg (cdr arg) arg)))
+           (if (subsetp-eq lst universe)
+               (if flg
+                   (set-difference-eq universe lst)
+                 lst)
+             :fail)))
+        ((eq arg :all) :all)
+        ((member-eq arg universe)
+         (list arg))
+        (t :fail)))
+
+(defun with-output-fn (ctx0 args off on gag-mode stack summary-on summary-off
+                            evisc ctx kwds)
+  (declare (xargs :mode :program
+                  :guard (and (true-listp args)
+                              (or (symbol-listp off)
+                                  (eq off :all))
+                              (or (symbol-listp on)
+                                  (eq on :all))
+                              (or (symbol-listp summary-off)
+                                  (eq summary-off :all))
+                              (or (symbol-listp summary-on)
+                                  (eq summary-on :all))
+                              (true-listp kwds))))
+  (cond
+   ((endp args) nil)
+   ((keywordp (car args))
+    (let ((illegal-value-string
+           "~x0 is an illegal value for the keyword ~x1 of WITH-OUTPUT.  See ~
+            :DOC with-output."))
+      (cond
+       ((consp (cdr args))
+        (cond
+         ((member-eq (car args) kwds)
+          (hard-error ctx0
+                      "Each keyword for ~x0 may be used at most once, but ~
+                       keyword ~x1 is used more than once."
+                      (list (cons #\0 'with-output) ; ctx, presumably
+                            (cons #\1 (car args)))))
+         ((eq (car args) :ctx)
+          (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                          summary-on summary-off evisc (cadr args)
+                          (cons (car args) kwds)))
+         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
+          (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                          summary-on summary-off (cadr args) ctx
+                          (cons (car args) kwds)))
+         ((eq (car args) :gag-mode)
+          (cond
+           ((member-eq (cadr args)
+                       '(t :goals nil)) ; keep in sync with set-gag-mode
+            (with-output-fn ctx0 (cddr args) off on (cadr args) stack
+                            summary-on summary-off evisc ctx
+                            (cons (car args) kwds)))
+           (t (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 :gag-mode))))))
+         ((member-eq (car args) '(:on :off))
+          (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
+            (cond
+             ((eq val :fail)
+              (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 (car args)))))
+             ((eq (car args) :on)
+              (with-output-fn ctx0 (cddr args) off val
+                              gag-mode stack summary-on summary-off evisc ctx
+                              (cons (car args) kwds)))
+             (t ; (eq (car args) :off)
+              (with-output-fn ctx0 (cddr args) val on
+                              gag-mode stack summary-on summary-off evisc ctx
+                              (cons (car args) kwds))))))
+         ((eq (car args) :stack)
+          (cond
+           ((member-eq (cadr args) '(:push :pop))
+            (with-output-fn ctx0 (cddr args) off on gag-mode (cadr args)
+                            summary-on summary-off evisc ctx
+                            (cons (car args) kwds)))
+           (t (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 :stack))))))
+         ((member-eq (car args) '(:summary-on :summary-off))
+          (let ((val (with-output-on-off-arg (cadr args) *summary-types*)))
+            (cond ((eq val :fail)
+                   (hard-error ctx0
+                               illegal-value-string
+                               (list (cons #\0 (cadr args))
+                                     (cons #\1 (car args)))))
+                  ((eq (car args) :summary-on)
+                   (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                   val summary-off evisc ctx
+                                   (cons (car args) kwds)))
+                  (t ; (eq (car args) :summary-off)
+                   (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                   summary-on val evisc ctx
+                                   (cons (car args) kwds))))))
+         (t
+          (hard-error ctx0
+                      "~x0 is not a legal keyword for a call of with-output.  ~
+                       See :DOC with-output."
+                      (list (cons #\0 (car args)))))))
+       (t (hard-error ctx0
+                      "A with-output form has terminated with a keyword, ~x0. ~
+                       ~ This is illegal.  See :DOC with-output."
+                      (list (cons #\0 (car args))))))))
+   ((cdr args)
+    (illegal ctx0
+             "Illegal with-output form.  See :DOC with-output."
+             nil))
+   (t
+    (let* ((ctx-p (member-eq :ctx kwds))
+           (evisc-p (member-eq :evisc kwds))
+           (gag-p (member-eq :gag-mode kwds))
+           (on-p (member-eq :on kwds))
+           (off-p (member-eq :off kwds))
+           (on-off-p (or on-p off-p))
+           (summary-on-p (member-eq :summary-on kwds))
+           (summary-off-p (member-eq :summary-off kwds))
+           (summary-on-off-p (or summary-on-p summary-off-p))
+           (form
+            `(state-global-let*
+              (,@
+               (and ctx-p
+                    `((global-ctx ,ctx)))
+               ,@
+               (and (or gag-p
+                        (eq stack :pop))
+                    `((gag-mode (f-get-global 'gag-mode state)
+                                set-gag-mode-fn)))
+               ,@
+               (and (or on-off-p
+                        (eq stack :pop))
+                    '((inhibit-output-lst (f-get-global 'inhibit-output-lst
+                                                        state))))
+               ,@
+               (and stack
+                    '((inhibit-output-lst-stack
+                       (f-get-global 'inhibit-output-lst-stack state))))
+               ,@
+               (and summary-on-off-p
+                    `((inhibited-summary-types ,(with-output-on-off-binding-val
+                                                 summary-on
+                                                 summary-off
+                                                 t)))))
+              (er-progn
+               ,@(and stack
+                      `((pprogn ,(if (eq stack :pop)
+                                     '(pop-inhibit-output-lst-stack state)
+                                   '(push-inhibit-output-lst-stack state))
+                                (value nil))))
+               ,@(and gag-p
+                      `((pprogn (set-gag-mode ,gag-mode)
+                                (value nil))))
+               ,@(and on-off-p
+                      `((set-inhibit-output-lst
+                         ,(with-output-on-off-binding-val on off nil))))
+               ,(car args)))))
+      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
+            (t form))))))
+
+(defmacro with-output! (&rest args)
+  `(if (eq (ld-skip-proofsp state) 'include-book)
+       ,(car (last args))
+     ,(let ((val (with-output-fn 'with-output args
+                                 nil nil nil nil nil nil nil nil nil)))
+        (or val
+
+; If val is nil, then we have presumably already aborted with an error.  But
+; just to be robust here we explicitly cause an error (in case we are wrong
+; about being able to reach this point).
+
+            (illegal 'with-output
+                     "Macroexpansion of ~q0 failed."
+                     (list (cons #\0 (cons 'with-output args))))))))
+
+#-acl2-loop-only
+(defmacro with-output (&rest args)
+  (car (last args)))
+
+#+acl2-loop-only
+(defmacro with-output (&rest args)
+  `(with-output! ,@args))
 
 (defun defun-nx-dcls (form dcls)
   (declare (xargs :guard (consp form)))
@@ -14806,6 +14844,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (get-internal-time-as-realtime . nil) ; seems harmless to change
+    (global-ctx . nil)
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)

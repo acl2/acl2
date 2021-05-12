@@ -4301,7 +4301,8 @@
 ; warnings that are recovered from the currently installed world in state and
 ; we print the runes from 'accumulated-ttree.
 
-  `(let ((ctx ,ctx)
+  `(let ((ctx (or (f-get-global 'global-ctx state)
+                  ,ctx))
          (saved-wrld (w state)))
      (pprogn (initialize-summary-accumulators state)
              (mv-let
@@ -5013,35 +5014,47 @@
                           (value val)))
                         (t (value val)))))))))))))
 
+(defun stop-redundant-event-fn1 (chan ctx extra-msg state)
+  (mv-let (col state)
+    (fmt "The event " nil chan state nil)
+    (mv-let (col state)
+      (fmt-ctx ctx col chan state)
+      (mv-let (col state)
+        (fmt1 " is redundant.  See :DOC redundant-events.~#0~[~/  ~@1~]~%"
+              (list (cons #\0 (if (null extra-msg) 0 1))
+                    (cons #\1 extra-msg))
+              col chan state nil)
+        (declare (ignore col))
+        state))))
+
 (defun stop-redundant-event-fn (ctx state extra-msg)
-  (let ((chan (proofs-co state)))
+
+; Through Version_8.3 we printed an "is redundant" message as event output (in
+; the sense of io?)  only.  But when we reduced output from defstub, we still
+; wanted that message even though we were inhibiting event output.  We
+; considered simply switching to summary output, but we want the user to see
+; "is redundant" when summary output is inhibited but event output is not; the
+; "is redundant" output is appropriate both as event-level and summary-level
+; explanations, though it should only be printed once.  Our solution is to
+; print it as event output if event output is not inhibited, and otherwise as
+; summary output unless 'redundant is among the inhibited summary types.
+
+  (let ((chan (proofs-co state))
+        (ctx (or (f-get-global 'global-ctx state)
+                 ctx)))
     (pprogn
      (cond ((ld-skip-proofsp state) state)
-           (t (io? event nil state
+           ((not (member-eq 'event
+                            (f-get-global 'inhibit-output-lst state)))
+            (io? event nil state
+                 (chan ctx extra-msg)
+                 (stop-redundant-event-fn1 chan ctx extra-msg state)))
+           ((member-eq 'redundant
+                       (f-get-global 'inhibited-summary-types state))
+            state)
+           (t (io? summary nil state
                    (chan ctx extra-msg)
-                   (mv-let
-                    (col state)
-                    (fmt "The event "
-                         nil
-                         chan
-                         state
-                         nil)
-                    (mv-let
-                     (col state)
-                     (fmt-ctx ctx col chan state)
-                     (mv-let
-                      (col state)
-                      (fmt1 " is redundant.  See :DOC ~
-                             redundant-events.~#0~[~/  ~@1~]~%"
-                            (list (cons #\0 (if (null extra-msg) 0 1))
-                                  (cons #\1 extra-msg))
-                            col
-                            chan
-                            state
-                            nil)
-                      (declare (ignore col))
-                      state)))
-                   :default-bindings ((col 0)))))
+                   (stop-redundant-event-fn1 chan ctx extra-msg state))))
      (value :redundant))))
 
 (defmacro stop-redundant-event (ctx state &optional extra-msg)

@@ -6,7 +6,7 @@
 (in-package "ACL2S")
 (include-book "acl2s/definec" :dir :system :ttags :all)
 (include-book "acl2s/acl2s-size" :dir :system)
-(include-book "acl2s/ccg/ccg" :dir :system 
+(include-book "acl2s/ccg/ccg" :dir :system
   :uncertified-okp nil :ttags ((:ccg))
   :load-compiled-file nil)
 (include-book "base-lists")
@@ -22,8 +22,8 @@ You should also use property to define properties (not thm and
 defthm). See the notes below regarding properties.
 
 The idea is to provide support for design and modeling of systems in
-ACL2s. Here are the built-in modes, but note that you can 
-easily define your own modes by looking at the definitions 
+ACL2s. Here are the built-in modes, but note that you can
+easily define your own modes by looking at the definitions
 below and updating them.
 
 Modeling-start mode:
@@ -62,7 +62,7 @@ then you have real ACL2s proofs of correctness.
 As mentioned above, you have lots of flexibility because
 you can choose a mode and then make project-relevant adjustments.
 For example if you are in modeling-admit-all mode, but want
-to just assume some properties, you can disable proofs 
+to just assume some properties, you can disable proofs
 as follows.
 
 (set-acl2s-property-table-proofsp nil)
@@ -123,7 +123,7 @@ as follows.
           *property-thm-keywords*
           *property-just-defthm-keywords*))
 
-(gen-property-table 
+(gen-property-table
  ((:debug? . nil)
   (:proofs? . t)
   (:proof-timeout . 40)
@@ -131,10 +131,10 @@ as follows.
   (:testing-timeout . 20)
   (:check-contracts? . t)
   (:complete-contracts? . t)))
-     
+
 #|
 
-:trans1 (gen-property-table 
+:trans1 (gen-property-table
          ((:proofs? . t)
           (:proof-timeout . 5)
           (:testing? . t)
@@ -198,10 +198,10 @@ with the same hints and directives that defthm accepts.
 
 #|
 (definec extract-hyps (x :all) :tl
-;(defun extract-hyps (x) 
+;(defun extract-hyps (x)
   (b* ((x-hyps (if (and (consp x) (equal (car x) 'implies))
                    (if (and (consp (cdr x))
-                            (consp (second x)) 
+                            (consp (second x))
                             (equal 'and (car (second x))))
                        (cdr (second x))
                      (list (second x)))
@@ -209,7 +209,7 @@ with the same hints and directives that defthm accepts.
        (find-duplicate-x-hyps (find-first-duplicate x-hyps))
        (- (cw? find-duplicate-x-hyps
                "~|**Warning: Your conjecture has duplicate hypothesis, ~x0. ~
-                ~%**This may indicate an error.~%" 
+                ~%**This may indicate an error.~%"
                find-duplicate-x-hyps)))
     (remove-dups x-hyps)))
 |#
@@ -231,7 +231,7 @@ with the same hints and directives that defthm accepts.
        (find-duplicate-x-hyps (find-first-duplicate x-hyps))
        (- (cw? find-duplicate-x-hyps
                "~|**Warning: Your conjecture has duplicate hypothesis, ~x0. ~
-                ~%**This may indicate an error." 
+                ~%**This may indicate an error."
                find-duplicate-x-hyps)))
     (remove-dups x-hyps)))
 
@@ -292,7 +292,7 @@ I don't need this?
        (find-duplicate-hyp (find-first-duplicate hyps-list))
        (- (cw? find-duplicate-hyp
                "~|**Warning: Your property has a duplicate hypothesis, ~x0. ~
-                ~%**This may indicate an error.~%" 
+                ~%**This may indicate an error.~%"
                find-duplicate-hyp))
        (hyps-list (remove-dups hyps-list))
        (user-var-list (defdata::get1 :vars kwd-alist))
@@ -316,7 +316,7 @@ I don't need this?
          (er hard? ctx
              "~| The :vars provided do not match the actual variables ~
                 appearing in the property.~%")))
-       ((mv erp val) 
+       ((mv erp val)
         (guard-obligation prop nil nil t ctx state))
        ((when erp)
         (value (er hard? ctx "~%**Guard Error **~%"))))
@@ -446,7 +446,7 @@ I don't need this?
           `(with-output
             ,@(if debug?
                   '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
-                '(:off :all :on (summary) :summary (time) :gag-mode nil ))
+                '(:off :all :on (summary) :summary-off (:other-than time) :gag-mode nil ))
             (encapsulate
              nil
              (with-output
@@ -524,7 +524,7 @@ I don't need this?
          timeout
          (trans-eval `(with-output
                        ;;:on :all :off (proof-builder proof-tree) :gag-mode nil
-                       :off :all :on (summary) :summary (time) :gag-mode nil
+                       :off :all :on (summary) :summary-off (:other-than time) :gag-mode nil
                        (encapsulate
                         nil
                         (with-output
@@ -609,7 +609,7 @@ I don't need this?
                (list* prop flat-kwds)))
        ((when (and proofs? testing?))
         `(with-output
-          :off :all 
+          :off :all
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -621,7 +621,7 @@ I don't need this?
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when proofs?)
         `(with-output
-          :off :all 
+          :off :all
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( PROVING PROPERTY )~%"))
@@ -630,7 +630,7 @@ I don't need this?
            (value-triple (cw "~|Form:  ( ACCEPTED PROPERTY AS THEOREM )~%")))))
        ((when (and testing? name?))
         `(with-output
-          :off :all 
+          :off :all
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -641,7 +641,7 @@ I don't need this?
             (cw "~|Form:  ( ACCEPTED PROPERTY AS A THEOREM WITHOUT PROOF )~%")))))
        ((when testing?)
         `(with-output
-          :off :all 
+          :off :all
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -651,7 +651,7 @@ I don't need this?
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)
         `(with-output
-          :off :all 
+          :off :all
           (encapsulate
            ()
            (value-triple (cw "~|Form:  ( TESTING PROPERTY )~%"))
@@ -682,13 +682,13 @@ I don't need this?
     `(with-output
       ;; ,@(and (not debug?) '(:off :all))
       ;;  We take are of debug? later
-      :off :all :on (summary) :summary (time)
+      :off :all :on (summary) :summary-off (:other-than time)
       :gag-mode ,(not debug?)
       :stack :push
       (encapsulate
        ()
        (with-output
-        :off :all 
+        :off :all
         (make-event (property-fn ',args state)))
        (value-triple (cw "~|Form:  ( PROPERTY CHECKING SUCCESSFUL )~%"))))))
 
@@ -697,8 +697,8 @@ I don't need this?
 
 #|
 
-start-modeling: 
- 
+start-modeling:
+
 You are just starting to design your model, so the goal is quick
 responses from ACL2s.  Therefore, testing is done with a short timeout
 but admissibility, contract checking and body contract checking are
@@ -729,7 +729,7 @@ Properties are just tested with a short timeout.
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,table)))
 
-     
+
 (defmacro modeling-validate-defs
   (&key (cgen '4) (cgen-local '2) (defunc '10) (table '10))
   `(progn

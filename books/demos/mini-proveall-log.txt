@@ -646,7 +646,7 @@ Summary
 Form:  ( ENCAPSULATE (((LT * ...) ...) ...) ...)
 Rules: NIL
 Warnings:  Subsume and Non-rec
- T
+ LT
 ACL2 !>>>(DEFUN INSERT (X LST)
                 (COND ((ATOM LST) (LIST X))
                       ((LT X (CAR LST)) (CONS X LST))

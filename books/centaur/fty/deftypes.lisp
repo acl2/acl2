@@ -803,11 +803,11 @@
     `(with-output
        ,@(and (not verbosep)
               `(:off (prove event observation)
-                :summary (acl2::form acl2::time)))
+                :summary-off (:other-than acl2::form acl2::time)))
        (encapsulate nil       ;; was: defsection ,x.name
          (with-output
            ,@(and (not verbosep)
-                  `(:summary (acl2::form acl2::time)))
+                  `(:summary-off (:other-than acl2::form acl2::time)))
            (progn
              (local (table xdoc::xdoc 'xdoc::post-defxdoc-event nil))
              (local (std::set-returnspec-mrec-default-hints nil))

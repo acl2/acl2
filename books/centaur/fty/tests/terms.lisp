@@ -201,7 +201,7 @@
 (deffixtype nat :fix nfix :pred natp :equiv nat-equiv :define t)
 
 (with-output :off (prove event observation)
-  :summary (acl2::form)
+  :summary-off (:other-than acl2::form)
   :gag-mode t
   (defflexsum fnsym-tree
     :parents (var-tree)
@@ -224,7 +224,7 @@
 
 ;; testing no-count
 (with-output :off (prove event observation)
-  :summary (acl2::form)
+  :summary-off (:other-than acl2::form)
   :gag-mode t
   (deftypes pterm1
     :prepwork ((local (defthm len-equal-val
@@ -276,7 +276,7 @@
     (deflist pterm1list :elt-type pterm1-p)))
 
 (with-output :off (prove event observation)
-  :summary (acl2::form)
+  :summary-off (:other-than acl2::form)
   :gag-mode t
   (deftypes pterm2
     :prepwork ((local (defthm len-equal-val
