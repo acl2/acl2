@@ -51,22 +51,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hash-extract ((point jubjub-pointp))
+(define coordinate-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
           [ZPS:5.4.8.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[ZPS] defines this is defined on @($\\mathbb{J}^{(r)}$),
+    "[ZPS] defines this on @($\\mathbb{J}^{(r)}$),
      not all of @($\\mathbb{J}$),
-     but for now we define on all of @($\\mathbb{J}$)
+     but for now we define it on all of @($\\mathbb{J}$)
      because we do not have an ACL2 definition of @($\\mathbb{J}^{(r)}$) yet,
      and in fact the function is well-defined on all of @($\\mathbb{J}$)."))
   (i2lebsp *l-merkle-sapling* (jubjub-point->u point))
   :guard-hints (("Goal" :in-theory (enable jubjub-q)))
   ///
-  (defret len-of-hash-extract
+  (defret len-of-coordinate-extract
     (equal (len bits) *l-merkle-sapling*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -591,4 +591,4 @@
      This is distinguishes from a valid hash, which is not empty."))
   (b* ((point (pedersen-point d m))
        ((unless (jubjub-pointp point)) nil))
-    (hash-extract point)))
+    (coordinate-extract point)))
