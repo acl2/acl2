@@ -16,16 +16,9 @@
 
 (defund bitand (x y)
   (declare (type integer x)
-           (type integer y))
+           (type integer y)
+           (xargs :type-prescription (bitp (bitand x y))))
   (bvand 1 x y))
-
-(defthm bitand-type
-  (or (equal 0 (bitand x y))
-      (equal 1 (bitand x y)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable bitand bvand))))
-
-(in-theory (disable (:type-prescription bitand))) ;our rule is better
 
 (defthm bitand-associative
   (equal (bitand (bitand x y) z)

@@ -441,3 +441,10 @@
                    (Bvxor size1 (BVCHOP size1 y) x)))
    :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
                                     ) ()))))
+
+(defthm bitp-of-bvxor-of-1
+  (bitp (bvxor 1 x y))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor (size 1))
+           :in-theory (disable unsigned-byte-p-of-bvxor
+                               unsigned-byte-p-of-bvxor-gen))))
