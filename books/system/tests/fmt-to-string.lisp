@@ -32,3 +32,19 @@ defge")
                    :fmt-control-alist '((write-for-read . nil)))
    (and (eql col 5) ; for Version 7.4 and before: 180
         (equal str *s2*))))
+
+; The following used the global evisc-table to get the wrong value for *c* (13,
+; instead of 7 in this encapsulate) until the fmt1-to-string was fixed on
+; 5/13/2021.  This allowed for proving (equal *c* 7) outside the encapsulate
+; and thus driving nil.
+(encapsulate
+  ()
+  (local (table evisc-table '(a b c) "<my-abc-list>"))
+  (defconst *c*
+    (mv-let (col s)
+      (fmt1-to-string "~x0" (list (cons #\0 '(a b c))) 0)
+      (declare (ignore s))
+      col))
+  (defthm it-is-7
+    (equal *c* 7)
+    :rule-classes nil))
