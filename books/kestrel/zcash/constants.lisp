@@ -35,7 +35,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *l-merkle-sapling*
-  :short "The constant @($\\ell_\\mathsf{MerkleSapling}$) in [ZPS:5.3]."
+  :short "The constant @($\\ell_\\mathsf{Merkle}^\\mathsf{Sapling}}$)
+          in [ZPS:5.3]."
   255)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

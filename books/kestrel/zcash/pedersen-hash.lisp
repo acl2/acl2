@@ -51,22 +51,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hash-extract ((point jubjub-pointp))
+(define coordinate-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
           [ZPS:5.4.8.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[ZPS] defines this is defined on @($\\mathbb{J}^{(r)}$),
-     not all of @($\\mathbb{J}$),
-     but for now we define on all of @($\\mathbb{J}$)
+    "[ZPS] defines this on @($\\mathbb{J}^{(r)}$), not all of @($\\mathbb{J}$),
+     but for now we define it on all of @($\\mathbb{J}$)
      because we do not have an ACL2 definition of @($\\mathbb{J}^{(r)}$) yet,
      and in fact the function is well-defined on all of @($\\mathbb{J}$)."))
   (i2lebsp *l-merkle-sapling* (jubjub-point->u point))
   :guard-hints (("Goal" :in-theory (enable jubjub-q)))
   ///
-  (defret len-of-hash-extract
+  (defret len-of-coordinate-extract
     (equal (len bits) *l-merkle-sapling*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -511,27 +510,17 @@
     "This returns a Jubjub point from (the index of) a segment.
      However, @(tsee find-group-hash) may return @('nil'),
      so we need to allow that case here.
-     [ZPS] does not explicitly handles that case,
+     [ZPS] does not explicitly handle that case,
      perhaps because it is not going to happen with overwhelming probability.")
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
      into a byte sequence consisting of 32 bits, i.e. 4 bytes.
-     There seems to be a bit of ambiguity on how to do that.
-     The meaning of this kind of diagrams (i.e. boxes)
-     is explained in the last two paragraphs [ZPS:5.2].
-     First, take @($i - 1$), and turn it into a 32-bit unsigned integer;
-     [ZPS] does not explicitly say that, but the diagram shows 32 bits
-     (presumably it is envisioned that this integer will never exceed 32 bits).
      The first paragraph of [ZPS:5.2] says that, unless otherwise specified,
      integers are encoded in little endian bytes of fixed length;
-     but here we need bits, so perhaps we should pick little endian bits.
-     Once we have bits, the last two paragraphs of [ZPS:5.2] apply:
-     we convert to bytes, with each byte in big endian.
-     This seems a bit involved; we should confirm and/or test this."))
+     thus, we take the little endian byte representation of @($i-1$)."))
   (b* ((i1 (1- i))
        (i1-32bit (mod i1 (expt 2 32)))
-       (bits (acl2::nat=>lebits 32 i1-32bit))
-       (m (acl2::bits=>bebytes bits)))
+       (m (acl2::nat=>lebytes 4 i1-32bit)))
     (find-group-hash d m))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
@@ -591,4 +580,4 @@
      This is distinguishes from a valid hash, which is not empty."))
   (b* ((point (pedersen-point d m))
        ((unless (jubjub-pointp point)) nil))
-    (hash-extract point)))
+    (coordinate-extract point)))
