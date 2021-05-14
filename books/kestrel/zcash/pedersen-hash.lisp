@@ -58,8 +58,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[ZPS] defines this on @($\\mathbb{J}^{(r)}$),
-     not all of @($\\mathbb{J}$),
+    "[ZPS] defines this on @($\\mathbb{J}^{(r)}$), not all of @($\\mathbb{J}$),
      but for now we define it on all of @($\\mathbb{J}$)
      because we do not have an ACL2 definition of @($\\mathbb{J}^{(r)}$) yet,
      and in fact the function is well-defined on all of @($\\mathbb{J}$)."))
@@ -511,7 +510,7 @@
     "This returns a Jubjub point from (the index of) a segment.
      However, @(tsee find-group-hash) may return @('nil'),
      so we need to allow that case here.
-     [ZPS] does not explicitly handles that case,
+     [ZPS] does not explicitly handle that case,
      perhaps because it is not going to happen with overwhelming probability.")
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
