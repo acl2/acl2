@@ -254,7 +254,7 @@
 
 ;; Rules for executing JVM instructions and model methods (but not for
 ;; simplifying JVM expressions/states -- those are separate).
-(defun jvm-symbolic-execution-rules ()
+(defun jvm-semantics-rules ()
   (declare (xargs :guard t))
   '(jvm::execute-tableswitch
     jvm::execute-aaload
@@ -752,8 +752,6 @@
 
             jvm::field-id-type-constant-opener
 
-            myif-of-sbvlt-of-0-and-not-sbvlt-of-0 ;; useful for the LCMP instruction
-
             ;; acl2::return-last-rewrite
 
             ;; call stacks:
@@ -1221,7 +1219,7 @@
 ;; ;; Core JVM rules, for symbolic execution, etc.
 ;; (defun jvm-rules-jvm ()
 ;;   (declare (xargs :guard t))
-;;   (append (jvm-symbolic-execution-rules)
+;;   (append (jvm-semantics-rules)
 ;;           (jvm-simplification-rules)))
 
 ;; todo: get rid of this?
@@ -1272,7 +1270,7 @@
 (defun jvm-rules ()
   (declare (xargs :guard t))
   (append (map-rules)
-          (jvm-symbolic-execution-rules)
+          (jvm-semantics-rules)
           (jvm-simplification-rules)
           (jvm-rules-list)
           (jvm-rules-alist)
@@ -1320,7 +1318,7 @@
   (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag)
           (map-rules)
-          (jvm-symbolic-execution-rules)
+          (jvm-semantics-rules)
           (jvm-simplification-rules)
           (run-until-return-from-stack-height-rules-smart) ;drop? but this is needed for some things in examples/axe
           ))
@@ -1398,7 +1396,7 @@
            (bvif-rules)
            (unsigned-byte-p-rules)
            (logext-rules)
-           (jvm-symbolic-execution-rules)
+           (jvm-semantics-rules)
            (jvm-simplification-rules)
            (jvm-rules-list)
            (jvm-rules-alist)
@@ -1446,7 +1444,7 @@
   (set-difference-equal
    (append (amazing-rules-spec-and-dag)
            (map-rules)
-           (jvm-symbolic-execution-rules)
+           (jvm-semantics-rules)
            (jvm-simplification-rules)
            ;;(run-until-return-from-stack-height-rules-smart) ;drop?
            ;;(dag-val-rules) ;where else should we use this?
@@ -2569,7 +2567,7 @@
                                   )
                                 (amazing-rules-spec-and-dag)
                                 (map-rules)
-                                (jvm-symbolic-execution-rules)
+                                (jvm-semantics-rules)
                                 (jvm-simplification-rules)
                                 (run-until-return-from-stack-height-rules-smart))
                         '(                ;;BVOR-WITH-SMALL-ARG2
@@ -2609,7 +2607,7 @@
                                                          )
                                                        (amazing-rules-spec-and-dag)
                                                        (map-rules)
-                                                       (jvm-symbolic-execution-rules)
+                                                       (jvm-semantics-rules)
                                                        (jvm-simplification-rules)
                                                        (run-until-return-from-stack-height-rules-smart))
                                                '( ;BVOR-WITH-SMALL-ARG2

@@ -15,10 +15,9 @@
 
 (defund bitxor (x y)
   (declare (type integer x)
-           (type integer y))
+           (type integer y)
+           (xargs :type-prescription (bitp (bitxor x y))))
   (bvxor 1 x y))
-
-(in-theory (disable (:type-prescription bitxor))) ;; bitxor-type is better
 
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
@@ -91,13 +90,6 @@
 (defthmd unsigned-byte-p-1-of-bitxor
   (unsigned-byte-p 1 (bitxor x y))
   :hints (("Goal" :in-theory (enable bitxor))))
-
-(defthm bitxor-type
-  (or (equal 0 (bitxor x y))
-      (equal 1 (bitxor x y)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-bitxor)
-           :in-theory (disable unsigned-byte-p-1-of-bitxor))))
 
 (defthm unsigned-byte-p-of-bitxor
   (implies (posp size)

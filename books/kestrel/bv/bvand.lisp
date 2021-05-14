@@ -249,3 +249,10 @@
   (equal (bvand size (expt 2 size) x)
          0)
   :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bitp-of-bvand-of-1
+  (bitp (bvand 1 x y))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvand-simple (size 1))
+           :in-theory (disable unsigned-byte-p-of-bvand
+                               unsigned-byte-p-of-bvand-simple))))

@@ -629,7 +629,11 @@
      bvsx-of-bvif-safe
 
      bvlt-when-bvlt-false
-     bvlt-when-bvlt-false2)))
+     bvlt-when-bvlt-false2
+
+     myif-of-sbvlt-of-0-and-not-sbvlt-of-0 ;; useful for the JVM's LCMP instruction
+     myif-of-sbvlt-of-0-and-equal-of-0
+     booland-of-not-sbvlt-and-not-equal)))
 
 (defun update-nth2-rules ()
   (declare (xargs :guard t))
