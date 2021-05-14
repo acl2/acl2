@@ -212,7 +212,8 @@
             `((fty::deffixequiv ,name
                 :args ,(if arg-type
                            `((x ,arg-type))
-                         `((x ,arg1-type) (y ,arg2-type))))))))
+                         `((x ,arg1-type) (y ,arg2-type))))))
+     (in-theory (disable ,name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
