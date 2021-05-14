@@ -273,7 +273,8 @@
                                         (append required-args
                                                 '(&key)
                                                 optional-args-and-values
-                                                '((show-only 'nil) (print ':result)))))))))
+                                                '((show-only 'nil) (print ':result)))
+                                        (symbol-package-name name)))))))
 
 (defmacro deftransformation (name required-args optional-args-and-values
                                   &key
