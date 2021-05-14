@@ -1176,10 +1176,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
 
           (with-output
-           ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+           ,@(and (not debug?) '(:off :all :on (summary) :summary-off (:other-than time)))
            ,@(and debug? '(:on :all))
 
-;           :off :all :on (error summary) :summary (time)
+;           :off :all :on (error summary) :summary-off (:other-than time)
            (with-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
 
           (me-assign defunc-failure-reason :contract)
@@ -1191,9 +1191,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( PROVE-FUNCTION-CONTRACT ~x0 ... )~%" ',name))
           ,@(and contract-defthm ;(list contract-defthm))
                  `((with-output
-                    ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+                    ,@(and (not debug?) '(:off :all :on (summary) :summary-off (:other-than time)))
                     ,@(and debug? '(:on :all))
-;                    :off :all :on (summary error) :summary (time)
+;                    :off :all :on (summary error) :summary-off (:other-than time)
                     (with-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
 ;         ,@(and test-subgoals-p
 ;                '((local (acl2s-defaults :set testing-enabled nil))))
@@ -1203,7 +1203,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( PROVE-BODY-CONTRACTS ~x0 ... )~%" ',name))
 
           (with-output
-           ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+           ,@(and (not debug?) '(:off :all :on (summary) :summary-off (:other-than time)))
            ,@(and debug? '(:on :all))
 
            (with-time-limit
@@ -1244,7 +1244,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (value-triple
          (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
         (with-output
-         ,@(and (not debug?) '(:off :all :on (error summary) :summary (time)))
+         ,@(and (not debug?) '(:off :all :on (error summary) :summary-off (:other-than time)))
          ,@(and debug? '(:on :all))
          (defun ,name ,formals
            ,@decls
@@ -1343,7 +1343,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (- (cw "~%~|Form:  ( TEST-DEFINITION ~x0 ... )~%" name))
        ((er trval)
         (with-output!
-         :off :all ;:on (summary) :summary (time)
+         :off :all ;:on (summary) :summary-off (:other-than time)
          (acl2::trans-eval
           `(make-event
             (with-output
@@ -1880,7 +1880,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defxdoc defunc
   :parents (acl2::acl2-sedan acl2::macro-libraries)
-  :short "Function definitions with contracts. See also 
+  :short "Function definitions with contracts. See also
           @(see? definec) and @(see defun)."
   :long
   "
@@ -1925,7 +1925,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 })
 
-<h3>Purpose</h3> 
+<h3>Purpose</h3>
 
 <p> The macro @(see defunc) is an extension of @(see defun) with
 <b>contracts</b>.  We recommend the use of @(see? definec), a macro based
@@ -2282,7 +2282,7 @@ To debug a failed defunc form, you can proceed in multiple ways:
       (defunc ,name ,@args))
      (make-event
       `(with-output
-        :off :all :on (summary) :summary (form)
+        :off :all :on (summary) :summary-off (:other-than form)
         (in-theory
          (disable
           ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
@@ -2307,7 +2307,7 @@ To debug a failed defunc form, you can proceed in multiple ways:
       (defundc ,name ,@args))
      (make-event
       `(with-output
-        :off :all :on (summary) :summary (form)
+        :off :all :on (summary) :summary-off (:other-than form)
         (in-theory
          (disable
           ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))

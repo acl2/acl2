@@ -653,7 +653,7 @@ see (defdata foo rational)
        (- (cw "~%")))
     `(with-output
       ,@(and (not verbosep)
-             '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+             '(:off :all :on (summary error) :summary-off (:other-than acl2::form acl2::time)))
       :gag-mode t :stack :push
       (make-event
        (b* ((pkg (current-package state))
@@ -720,7 +720,7 @@ see (defdata foo rational)
             (er hard 'defdata-alias
                 "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))
         `(with-output
-          ,@(and (not ,verbosep) '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+          ,@(and (not ,verbosep) '(:off :all :on (summary error) :summary-off (:other-than acl2::form acl2::time)))
           :gag-mode t :stack :push
           (encapsulate
            ()
@@ -1059,7 +1059,7 @@ see (defdata foo rational)
 
 #|
 
-PETE: seems like this is not used. If used, have to 
+PETE: seems like this is not used. If used, have to
 fix s+ form so that it has access to pkg.
 
 (defmacro acl2s::defun-attach (&rest args)
@@ -1137,7 +1137,7 @@ fix s+ form so that it has access to pkg.
                          ans))
           ((equal (car term) 'ACL2::QUOTE) ans)
           (t (get-vars1-lst (cdr term) ans))))
- 
+
  (defun get-vars1-lst (terms ans)
    (declare (xargs :verify-guards nil
                    :guard (and (true-listp terms)

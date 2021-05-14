@@ -1203,7 +1203,7 @@ Summary
 Form:  ( ENCAPSULATE ((|G-INV-arity-1| ...) ...) ...)
 Rules: NIL
 Warnings:  Disable
-T
+|G-INV-arity-1|
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC G-INV (N0 A0 S)
@@ -1507,7 +1507,7 @@ Summary
 Form:  ( ENCAPSULATE ((G-INV ...) ...) ...)
 Rules: NIL
 Warnings:  Subsume, Non-rec and Disable
-T
+G-INV
 
 
 M1 >>>(DEFTHM G-INV-OPENER
@@ -3432,7 +3432,7 @@ Summary
 Form:  ( ENCAPSULATE ((|H-INV-arity-1| ...) ...) ...)
 Rules: NIL
 Warnings:  Disable
-T
+|H-INV-arity-1|
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC H-INV (N0 S)
@@ -3811,7 +3811,7 @@ Summary
 Form:  ( ENCAPSULATE ((H-INV ...) ...) ...)
 Rules: NIL
 Warnings:  Subsume, Non-rec and Disable
-T
+H-INV
 
 
 M1 >>>(DEFTHM H-INV-OPENER

@@ -1088,7 +1088,7 @@
     (value
      `(with-output
         :off (event acl2::prove)
-        :summary (acl2::form time)
+        :summary-off (:other-than acl2::form time)
         (defsection ,x.name
           :parents ,(or (cdr (assoc :parents x.kwd-alist))
                         (xdoc::get-default-parents (w state))

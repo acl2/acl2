@@ -6,19 +6,6 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(defmacro with-output$ (&rest args)
-
-; This is basically just the #+acl2-loop-only definition of with-output.
-
-  `(if (eq (ld-skip-proofsp state) 'include-book)
-       ,(car (last args))
-     ,(let ((val (with-output-fn 'with-output$
-                                 args nil nil nil nil nil nil nil nil nil nil)))
-        (or val
-            (illegal 'with-output$
-                     "Macroexpansion of ~q0 failed."
-                     (list (cons #\0 (cons 'with-output$ args))))))))
-
 (defun prove$-fn (term state hints otf-flg)
 
 ; This function is based on thm-fn.  It returns (value t) if the proof
@@ -63,7 +50,7 @@
 
   (let* ((form `(prove$-fn ,term state ,hints ,otf-flg))
          (form (if with-output
-                   `(with-output$ ,@with-output ,form)
+                   `(with-output! ,@with-output ,form)
                  form))
          (form (if time-limit
                    `(with-prover-time-limit ,time-limit ,form)

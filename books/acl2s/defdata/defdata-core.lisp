@@ -81,7 +81,7 @@ B is the builtin combinator table."
                           `(EQUAL ,x ,s)))
 
     ((not (true-listp s)) (make-pred-I... (cdr s) x)) ;name decl
-    
+
     ((assoc-eq (car s) B) ;builtin combinator
      (b* ((pred-I-fn (get2 (car s) :pred-I B)))
        (if pred-I-fn
@@ -105,7 +105,7 @@ B is the builtin combinator table."
            `(AND ,@recog-calls
                  (LET ,binding (AND . ,rst)))
          `(AND ,@recog-calls ,@rst))))
-    
+
     (t
 ;TODO: maybe dependent expr...
      `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
@@ -372,7 +372,7 @@ Does not seem to be used.
   (b* (((list D kwd-alist) a1)) ;a1 is the result of parse-defdata
     `(WITH-OUTPUT
       :ON (SUMMARY ERROR) :OFF (PROVE EVENT OBSERVATION)
-      :SUMMARY (ACL2::FORM ACL2::TIME)
+      :SUMMARY-OFF (:OTHER-THAN ACL2::FORM ACL2::TIME)
       (PROGN
        ,@(collect-events :pre-events D kwd-alist)
        ,@(funcalls-append (get1 :pre-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
@@ -380,7 +380,7 @@ Does not seem to be used.
         nil
         (LOGIC)
         (WITH-OUTPUT
-         :SUMMARY (ACL2::FORM) :ON (ERROR)
+         :SUMMARY-OFF (:OTHER-THAN ACL2::FORM) :ON (ERROR)
          (PROGN
           ;;(acl2::acl2s-defaults :set acl2::testing-enabled ,(get1 :testing-enabled kwd-alist))
           (SET-BOGUS-DEFUN-HINTS-OK T)
@@ -388,7 +388,7 @@ Does not seem to be used.
           (SET-IRRELEVANT-FORMALS-OK t)
           ;; (local (in-theory (disable . ,disable-rules)))
           ;; (local (in-theory (enable . ,enable-rules)))
-          
+
           ,@(predicate-events D kwd-alist wrld)
           ;; ,@(tau-characterization-events D kwd-alist wrld)
           ;; ,@(polymorphic-inst-defdata-events D kwd-alist wrld)
@@ -939,7 +939,7 @@ Example use
        ((unless (and (consp ds)
                      (true-listp ds)))
         (er hard? ctx "~| Empty form not allowed.~%"))
-      
+
        ((when (and (not (symbolp (car ds)))
                    (consp (cdr ds)))) ;atleast 2 types
         (list (parse-data-defs ds tnames rest-args curr-pkg ctx wrld) kwd-alist))
@@ -949,7 +949,7 @@ Example use
        ;;rename ds to d to avoid confusion, d is the single definition
        ((unless (> (len d) 1))
         (er hard? ctx "~| Empty definition.~%" ))
-      
+
        ((unless (null (cddr d)))
         (er hard? ctx "~| Definitions that are not mutually-recursive should be ~
                       of form (defdata <id> <type-exp> [:hints <hints>
@@ -977,7 +977,7 @@ Example use
                    (and lst (cadr lst)))))
     `(with-output
       ,@(and (not verbosep)
-             '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+             '(:off :all :on (summary error) :summary-off (:other-than acl2::form acl2::time)))
       :gag-mode t :stack :push
       (encapsulate
        nil
@@ -988,7 +988,7 @@ Example use
         (make-event
          (defdata-events
            (parse-defdata ',args (current-package state) (w state)) (w state))))))))
-  
+
 (defun make-subsumes-relation-name (T1 T2 curr-pkg)
   (let* ((str1 (symbol-name T1))
         (str2 (symbol-name T2))
@@ -1236,7 +1236,7 @@ because the rule-classes may matter.
      (defdatas-disjoint-fn (cdr L) rule-classes strictp verbose hints otf-flg))))
 
 ; Check that all the defdata types in L are disjoint from each other.
-(defmacro defdatas-disjoint 
+(defmacro defdatas-disjoint
     (L
      &key (rule-classes '((:tau-system) (:forward-chaining)))
      strictp
@@ -1285,7 +1285,7 @@ because the rule-classes may matter.
 
 ; Check that L1 <= L2 <= ... <= Ln, where <= is subtype relation and
 ; Li is the ith element of L.
-(defmacro defdatas-subtype 
+(defmacro defdatas-subtype
     (L
      &key (rule-classes '((:tau-system) (:forward-chaining)))
      strictp
@@ -1334,7 +1334,7 @@ because the rule-classes may matter.
 
 ; Check that L1 = L2 = ... = Ln, where = is equality and
 ; Li is the ith element of L.
-(defmacro defdatas-equal 
+(defmacro defdatas-equal
     (L
      &key (rule-classes '((:tau-system) (:forward-chaining)))
      strictp

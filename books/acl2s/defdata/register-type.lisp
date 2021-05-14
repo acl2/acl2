@@ -62,7 +62,7 @@ data last modified: [2014-08-06]
        ((when rest) (er hard? ctx "~| Extra args: ~x0~%" rest))
        ((unless (proper-symbolp name))
         (er hard? ctx "~| ~x0 should be a proper symbol.~%" name))
-       
+
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
 
@@ -84,11 +84,11 @@ data last modified: [2014-08-06]
         (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum enum-name))
        ((when (eq enum/acc enum/acc-name))
         (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum/acc enum/acc-name))
-       
+
        (enum/acc-default (s+ enum/acc-name '|-BUILTIN| :pkg pkg))
        (kwd-alist (put-assoc-eq :enumerator enum-name kwd-alist))
        (kwd-alist (put-assoc-eq :enum/acc enum/acc-name kwd-alist))
-       
+
        (kwd-alist (put-assoc-eq
                    :domain-size
                    (or (get1 :domain-size kwd-alist) 't) kwd-alist))
@@ -108,21 +108,21 @@ data last modified: [2014-08-06]
 
        (kwd-alist (put-assoc-eq :min-rec-depth (or (get1 :min-rec-depth kwd-alist) 0) kwd-alist))
        (kwd-alist (put-assoc-eq :max-rec-depth (or (get1 :max-rec-depth kwd-alist) 30) kwd-alist))
-       
+
        ;(- (cw "** default value of ~x0 is ~x1" enum default-val))
 
        )
-    
+
     `(ENCAPSULATE
       nil
       (LOGIC)
       (WITH-OUTPUT
-       :SUMMARY (ACL2::FORM) :ON (ERROR)
+       :SUMMARY-OFF (:OTHER-THAN ACL2::FORM) :ON (ERROR)
        (PROGN
         ,@(AND (table-alist 'ACL2::ACL2S-DEFAULTS-TABLE wrld)
                '((LOCAL (ACL2::ACL2S-DEFAULTS :SET :TESTING-ENABLED :NAIVE))))
         ;;(defstub ,enum-name (*) => *)
-        (encapsulate 
+        (encapsulate
          (((,enum-name *) => * :formals ,enum-formals :guard ,enum-guard))
          (local (defun ,enum-name ,enum-formals
                   (declare (xargs :guard ,enum-guard))
@@ -131,10 +131,10 @@ data last modified: [2014-08-06]
          ;; (defthm ,(s+ enum-name "-IS-OF-TYPE-" pred-name)
          ;;   (,pred-name (,enum-name . ,enum-formals)))
          )
-        
+
         ;;(defstub ,enum/acc-name (* *) => (mv * *))
         ,@(and (not enum/acc) (make-enum-uniform-defun-ev enum/acc-default enum-name))
-        (encapsulate 
+        (encapsulate
          (((,enum/acc-name * *) => (mv * *) :formals ,enum/acc-formals :guard ,enum/acc-guard))
          (local (defun ,enum/acc-name ,enum/acc-formals
                   (declare (xargs :guard ,enum/acc-guard))
@@ -150,7 +150,7 @@ data last modified: [2014-08-06]
         )))
      ))
 
-(defmacro register-type (name &rest keys) 
+(defmacro register-type (name &rest keys)
   (b* ((verbosep (let ((lst (member :verbose keys)))
                    (and lst (cadr lst))))
        (ctx 'register-type)

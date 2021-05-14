@@ -1307,7 +1307,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
        &key (output
              '(:off (warning warning! observation prove acl2::proof-builder
                              acl2::history event proof-tree)
-                    :summary (acl2::form)
+                    :summary-off (:other-than acl2::form)
                     :gag-mode nil)))
   `(with-output ,@output (make-event (make-g-world-fn ',fns ',ev
                                                       state))))
@@ -1342,7 +1342,7 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
   (geval fns &key (output '(:off (warning warning! observation prove
                                           acl2::proof-builder
                                           acl2::history event proof-tree)
-                                 :summary (acl2::form)
+                                 :summary-off (:other-than acl2::form)
                                  :gag-mode nil)))
   `(with-output ,@output
                 (make-event (make-geval-fn ',geval ',fns state))))

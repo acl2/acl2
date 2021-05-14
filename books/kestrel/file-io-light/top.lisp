@@ -23,6 +23,7 @@
 (include-book "write-strings-to-file-bang")
 (include-book "file-length-dollar")
 
+(include-book "read-object-from-file")
 (include-book "read-file-into-character-list")
 
 (include-book "doc")

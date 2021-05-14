@@ -366,7 +366,9 @@
                                    (cons #\F (print-component base r15))
                                    (cons #\G (print-component base flg))
                                    (cons #\H (print-component base rip))
-                                   (cons #\I '8)))))
+                                   (cons #\I '8))
+                             :fmt-control-alist
+                             '((current-package . "X86ISA")))))
       str))
  
    (defun printing-x86-components (base x86 state)

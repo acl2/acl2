@@ -7025,12 +7025,6 @@
                                   (anti-slice ;anti-bvplus
                                    bvlt-of-plus-arg1 bvlt-of-plus-arg2)))))
 
-(DEFTHM slice-same-WHEN-NOT-0
-  (IMPLIES (NOT (EQUAL 0 (slice n N X)))
-           (EQUAL (slice n N X) 1))
-  :HINTS (("Goal" :USE (:INSTANCE USB1-CASES (X (slice n N X)))))
-  :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0))))
-
 (defthm getbit-of-minus
   (implies (and (integerp x)
                 (natp n)
@@ -8481,6 +8475,7 @@
            :in-theory (enable sbvlt
                               EQUAL-OF-LOGEXT-AND-LOGEXT))))
 
+;move
 ;; This idiom can arise from the JVM LCMP instruction
 (defthm myif-of-sbvlt-of-0-and-not-sbvlt-of-0
   (implies (posp size)
@@ -8491,3 +8486,10 @@
   :hints (("Goal"
            :use (:instance svblt-trichotomy (y 0))
            :in-theory (enable myif))))
+
+(defthm booland-of-not-sbvlt-and-not-equal
+  (implies (and (unsigned-byte-p size x)
+                (unsigned-byte-p size k))
+           (equal (booland (not (sbvlt size k x)) (not (equal k x)))
+                  (sbvlt size x k)))
+  :hints (("Goal" :use (:instance svblt-trichotomy (y k)))))

@@ -13,13 +13,10 @@
 
 (include-book "bvor")
 
-;we write this phrasing instead of just saying (integerp (bitor x y))
-;to make things more regular (e.g., when we use these rules in the
-;dag-rewriter):
-
 (defund bitor (x y)
   (declare (type integer x)
-           (type integer y))
+           (type integer y)
+           (xargs :type-prescription (bitp (bitor x y))))
   (bvor 1 x y))
 
 (defthm integerp-of-bitor
@@ -35,7 +32,7 @@
          (bitor x y))
   :hints (("Goal" :in-theory (enable bitor))))
 
-(theory-invariant (incompatible (:rewrite bvor-1-becomes-bitor) (:definition bitior)))
+(theory-invariant (incompatible (:rewrite bvor-1-becomes-bitor) (:definition bitor)))
 
 (defthm bitor-associative
   (equal (bitor (bitor x y) z)
@@ -132,12 +129,3 @@
                       (bitor x y)
                     0)))
   :hints (("Goal" :in-theory (enable bitor))))
-
-(defthm bitor-type
-  (or (equal 0 (bitor x y))
-      (equal 1 (bitor x y)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-bitor)
-           :in-theory (disable unsigned-byte-p-1-of-bitor))))
-
-(in-theory (disable (:type-prescription bitor))) ;our rule is better

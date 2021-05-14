@@ -144,7 +144,7 @@
     ))
 
 (with-output :off (prove event)
-  :summary #!acl2 (errors form time)
+  :summary-off #!acl2 (:other-than errors form time)
   (make-event
    `(rstobj2::defrstobj mach-o
       ,@*mach-o-body*

@@ -5957,9 +5957,10 @@
 ; world extended by the signatures (and the incremented depth).  That world,
 ; called proto-wrld3 in the encapsulate essay and below, is useful only for
 ; computing (via difference) the names introduced by the embedded events.  We
-; still need the expansion-alist described in the preceding paragraph, so the
-; value returned for 'encapsulate-pass-2 is the cons of that expansion-alist
-; with this proto-wrld3.
+; still need the expansion-alist described in the preceding paragraph, and we
+; also need the value returned by the last event.  So the value returned for
+; 'encapsulate-pass-2 is a triple consisting of that value, the
+; expansion-alist, and this proto-wrld3.
 
 ; If an error is caused by the attempt to embed the events, we print a warning
 ; message explaining and pass the error up.
@@ -6003,7 +6004,7 @@
 ; current-package to pkg (with "unwind protection") and so we have to make the
 ; check ourselves.
 
-       (mv-let (erp expansion-alist-and-final-kpa state)
+       (mv-let (erp val/expansion-alist/final-kpa state)
                (state-global-let*
                 ((current-package pkg)
                  (cert-data cert-data)
@@ -6115,7 +6116,7 @@
                                 (value nil)
                               (maybe-install-acl2-defaults-table
                                acl2-defaults-table state))
-                            (value (cons expansion-alist final-kpa))))))))
+                            (value (list* val expansion-alist final-kpa))))))))
                (cond
                 (erp
 
@@ -6176,12 +6177,13 @@
                                            (w state))
                                state)))
                    (cond ((eq caller 'encapsulate-pass-2)
-                          (value (cons (car expansion-alist-and-final-kpa)
-                                       proto-wrld3)))
+                          (value (list* (car val/expansion-alist/final-kpa)
+                                        (cadr val/expansion-alist/final-kpa)
+                                        proto-wrld3)))
                          ((eq caller 'certify-book)
-                          (value expansion-alist-and-final-kpa))
+                          (value (cdr val/expansion-alist/final-kpa)))
                          (t (value
-                             (car expansion-alist-and-final-kpa))))))))))))
+                             (cadr val/expansion-alist/final-kpa))))))))))))
 
 (defun constrained-functions (exported-fns sig-fns new-trips)
 
@@ -6415,6 +6417,11 @@
 (defun remove-type-prescription-cert-data (cert-data)
   (remove1-assoc-eq :type-prescription cert-data))
 
+(defun encapsulate-return-value-p (val)
+  (case-match val
+    ((:return-value &) t)
+    (& nil)))
+
 (defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
@@ -6434,6 +6441,8 @@
 ; * constrained-fns - the functions for which a new constraint-lst will
 ;   be stored
 
+; * retval - the value returned
+
 ; * constraints - the corresponding list of constraints
 
 ; * exported-names - the exported names
@@ -6443,19 +6452,19 @@
 ; * infectious-fns - list of (non-subversive) fns whose defun equations were
 ;   moved into the constraint
 
-; However, if only-pass-p = t, then the value returned is an expansion-alist
-; mapping, in reverse increasing order, indices of events in ev-lst to the
-; result of expanding away make-event calls.
+; However, if only-pass-p = t, then we return (cons expansion-alist retval)
+; where expansion-alist maps, in reverse increasing order, indices of events in
+; ev-lst to the result of expanding away make-event calls.
 
 ; This information is used by the output routines.
 
-; Note:  The function could be declared to return five values, but we would
+; Note:  The function could be declared to return six values, but we would
 ; rather use the standard state and error primitives and so it returns three.
 
   (let* ((wrld1 (w state))
          (saved-unknown-constraints-table
           (table-alist 'unknown-constraints-table wrld1)))
-    (er-let* ((expansion-alist-and-proto-wrld3
+    (er-let* ((val/expansion-alist/proto-wrld3
 
 ; The following process-embedded-events, which requires world reversion on
 ; errors, is protected by virtue of being in encapsulate-pass-2, which also
@@ -6515,8 +6524,9 @@
                    (remove-type-prescription-cert-data
                     (f-get-global 'cert-data state)))
                  ctx state))))
-      (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
-             (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
+      (let* ((retval (car val/expansion-alist/proto-wrld3))
+             (expansion-alist (cadr val/expansion-alist/proto-wrld3))
+             (proto-wrld3 (cddr val/expansion-alist/proto-wrld3))
              (wrld (w state))
              (new-trips (new-trips wrld proto-wrld3)))
         (cond
@@ -6620,8 +6630,8 @@
 
                ((null insigs)
                 (value (if only-pass-p
-                           expansion-alist
-                         (list nil nil exported-names))))
+                           (cons expansion-alist retval)
+                         (list nil retval nil exported-names))))
                (t
 
 ; We are about to collect the constraint generated by this encapsulate on the
@@ -6691,8 +6701,9 @@
                             :verify-guards nil."
                             bogus-exported-compliants))
                        (t (value (if only-pass-p
-                                     expansion-alist
+                                     (cons expansion-alist retval)
                                    (list constrained-fns
+                                         retval
                                          (if unknown-constraints-p
                                              *unknown-constraints*
                                            constraints)
@@ -8553,9 +8564,10 @@
             (er-let*
                 ((trip (chk-acceptable-encapsulate1 signatures ev-lst
                                                     ctx wrld1 state)))
-              (let ((insigs (car trip))
-                    (kwd-value-list-lst (cadr trip))
-                    (wrld1 (cddr trip)))
+              (let* ((insigs (car trip))
+                     (names (strip-cars insigs))
+                     (kwd-value-list-lst (cadr trip))
+                     (wrld1 (cddr trip)))
                 (pprogn
                  (set-w 'extension
                         (global-set 'proof-supporters-alist nil
@@ -8670,10 +8682,11 @@
                                 (t
                                  (let* ((wrld3 (w state))
                                         (constrained-fns (nth 0 temp))
-                                        (constraints-introduced (nth 1 temp))
-                                        (exports (nth 2 temp))
-                                        (subversive-fns (nth 3 temp))
-                                        (infectious-fns (nth 4 temp))
+                                        (retval (nth 1 temp))
+                                        (constraints-introduced (nth 2 temp))
+                                        (exports (nth 3 temp))
+                                        (subversive-fns (nth 4 temp))
+                                        (infectious-fns (nth 5 temp))
                                         (final-proved-fnl-inst-alist
                                          (and
 
@@ -8704,10 +8717,15 @@
                                                    insigs kwd-value-list-lst
                                                    wrld3a))))
                                       (install-event
-                                       t
+                                       (cond
+                                        ((encapsulate-return-value-p retval)
+                                         (cadr retval))
+                                        ((null names) t)
+                                        ((null (cdr names)) (car names))
+                                        (t names))
                                        (or new-event-form event-form)
                                        'encapsulate
-                                       (or (strip-cars insigs) 0)
+                                       (or names 0)
                                        nil nil
                                        t
                                        ctx
@@ -8802,9 +8820,10 @@
 
             (er-let*
                 ((trip (chk-signatures signatures ctx wrld1 state)))
-              (let ((insigs (car trip))
-                    (kwd-value-list-lst (cadr trip))
-                    (wrld1 (cddr trip)))
+              (let* ((insigs (car trip))
+                     (names (strip-cars insigs))
+                     (kwd-value-list-lst (cadr trip))
+                     (wrld1 (cddr trip)))
                 (pprogn
                  (set-w 'extension wrld1 state)
                  (er-let*
@@ -8812,16 +8831,18 @@
 ; The following encapsulate-pass-2 is protected by the revert-world-on
 ; error above.
 
-                     ((expansion-alist0
+                     ((expansion-alist0/retval
                        (encapsulate-pass-2
                         insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
                         t ctx state)))
                    (let* ((empty-encapsulate-p
-                           (eq (car expansion-alist0) :empty-encapsulate))
+                           (eq (car expansion-alist0/retval) :empty-encapsulate))
                           (expansion-alist
                            (if empty-encapsulate-p
-                               (cdr expansion-alist0)
-                             expansion-alist0))
+                               (cdr expansion-alist0/retval)
+                             (car expansion-alist0/retval)))
+                          (retval (and (not empty-encapsulate-p) ; else unused
+                                       (cdr expansion-alist0/retval)))
                           (wrld3 (w state))
                           (new-event-form
                            (and expansion-alist
@@ -8843,12 +8864,17 @@
                              #+:non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
-                          (install-event t
+                          (install-event (cond
+                                          ((encapsulate-return-value-p retval)
+                                           (cadr retval))
+                                          ((null names) t)
+                                          ((null (cdr names)) (car names))
+                                          (t names))
                                          (if expansion-alist
                                              new-event-form
                                            event-form)
                                          'encapsulate
-                                         (or (strip-cars insigs) 0)
+                                         (or names 0)
                                          nil nil
                                          nil ; irrelevant, since we are skipping proofs
                                          ctx
@@ -17634,7 +17660,7 @@
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
-              :constrain
+              :constrain :verbose
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
@@ -17835,6 +17861,13 @@
                nil nil nil nil nil))
           (t (mv nil guard-p verify-guards-p non-exec-p guard-hints dcls)))))
 
+(defun map-with-output (kwd arg forms)
+  (declare (xargs :guard (true-listp forms)))
+  (pairlis-x1 'with-output
+              (pairlis-x1 kwd
+                          (pairlis-x1 arg
+                                      (pairlis$ forms nil)))))
+
 (defun defun-sk-fn (form name args rest)
 
 ; Warning: Keep this function in sync with make-apply$-warrant-defun-sk.  For
@@ -17862,6 +17895,7 @@
                (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
                (constrained-pair (assoc-eq :constrain keyword-alist))
                (constrained (cdr constrained-pair))
+               (verbose (cdr (assoc-eq :verbose keyword-alist)))
                (def-name (cond ((eq constrained t)
                                 (definition-rule-name name))
                                ((symbolp constrained)
@@ -17931,13 +17965,12 @@
                               `(defthm ,def-name
                                  (equal (,name ,@args)
                                         ,defun-body)
-                                 :rule-classes :definition))))
-                  `(encapsulate
-                     ()
-                     (logic)
-                     (set-match-free-default :all)
-                     (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
-                                           "Infected")
+                                 :rule-classes :definition)))
+                       (encap-forms
+                        `((logic)
+                          (set-match-free-default :all)
+                          (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
+                                                "Infected")
 
 ; The following encapsulate, which is the 5th element of the returned
 ; encapsulate, introduces the witness function and then any constrained
@@ -17950,95 +17983,109 @@
 ; got out of sync!  Just make sure that the latter function always knows how to
 ; find the event creating the apply$ warrant function.
 
-                     (encapsulate
-                       (((,skolem-name ,@(make-list (length args)
-                                                    :initial-element '*))
-                         =>
-                         ,(if (= (length bound-vars) 1)
-                              '*
-                            (cons 'mv
-                                  (make-list (length bound-vars)
-                                             :initial-element '*)))
-                         #+:non-standard-analysis
-                         ,@(and classicalp-p
-                                `(:classicalp ,classicalp)))
-                        ,@(and constrained
-                               `((,name
-                                  ,args
-                                  t
-                                  ,@(and stobjs
-                                         `(:stobjs ,@stobjs))
-                                  ,@(and guard-p
-                                         (mv-let (ign guard)
-                                           (dcls-guard-raw-from-def
-                                            (cdr defun-form)
+                          (encapsulate
+                            (((,skolem-name ,@(make-list (length args)
+                                                         :initial-element '*))
+                              =>
+                              ,(if (= (length bound-vars) 1)
+                                   '*
+                                 (cons 'mv
+                                       (make-list (length bound-vars)
+                                                  :initial-element '*)))
+                              #+:non-standard-analysis
+                              ,@(and classicalp-p
+                                     `(:classicalp ,classicalp)))
+                             ,@(and constrained
+                                    `((,name
+                                       ,args
+                                       t
+                                       ,@(and stobjs
+                                              `(:stobjs ,@stobjs))
+                                       ,@(and guard-p
+                                              (mv-let (ign guard)
+                                                (dcls-guard-raw-from-def
+                                                 (cdr defun-form)
 
 ; It is safe to pass nil in for the world because we are meeting the conditions
 ; of dcls-guard-raw-from-def: an explicit :STOBJS keyword is added above if
 ; there are stobjs, and SATISFIES declarations are checked in the local
 ; defun-form.
 
-                                            nil)
-                                           (declare (ignore ign))
-                                           `(:guard ,guard)))
-                                  #+:non-standard-analysis
-                                  ,@(and classicalp-p
-                                         `(:classicalp ,classicalp))))))
-                       (local (in-theory '(implies)))
-                       (local
-                        (encapsulate ; unable to declare ignorable in defchoose
-                          ()
-                          (set-ignore-ok t) ; local to encapsulate
-                          (defchoose ,skolem-name ,bound-vars ,args
-                            ,defchoose-body
+                                                 nil)
+                                                (declare (ignore ign))
+                                                `(:guard ,guard)))
+                                       #+:non-standard-analysis
+                                       ,@(and classicalp-p
+                                              `(:classicalp ,classicalp))))))
+                            (local (in-theory '(implies)))
+                            (local
+                             (encapsulate ; ignorable unsupported for defchoose
+                               ()
+                               (set-ignore-ok t) ; local to encapsulate
+                               (defchoose ,skolem-name ,bound-vars ,args
+                                 ,defchoose-body
+                                 ,@(and strengthen
+                                        '(:strengthen t)))))
                             ,@(and strengthen
-                                   '(:strengthen t)))))
-                       ,@(and strengthen
-                              `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
-                                  ,(defchoose-constraint-extra
-                                     skolem-name bound-vars args
-                                     defchoose-body)
-                                  :hints (("Goal"
-                                           :use ,skolem-name
-                                           :in-theory (theory 'minimal-theory)))
-                                  :rule-classes nil)))
-                       ,@(cond (constrained
-                                `((local ,defun-form)
-                                  ,defun-constraint
-                                  (local (in-theory (disable (,name))))))
-                               (t
-                                `(,defun-form
-                                   (in-theory (disable (,name))))))
-                       (defthm ,thm-name
-                         ,(cond (exists-p
-                                 `(implies ,body-guts
-                                           (,name ,@args)))
-                                ((eq rewrite :direct)
-                                 `(implies (,name ,@args)
-                                           ,body-guts))
-                                ((member-eq rewrite '(nil :default))
-                                 `(implies (not ,body-guts)
-                                           (not (,name ,@args))))
-                                (t rewrite))
-                         :hints (("Goal"
-                                  :use (,skolem-name ,name)
-                                  :in-theory (theory 'minimal-theory)))))
-                     (extend-pe-table ,name ,form)
-                     ,@(and (not constrained)
-                            (case verify-guards-p
-                              ((t)
-                               `((verify-guards ,name
-                                   ,@(and guard-hints
-                                          (list :hints guard-hints)))))
-                              ((nil)
-                               nil)
-                              (otherwise ; '?
-                               `((verify-guards?
-                                  ,guard-p
-                                  ,name
-                                  ,@(and guard-hints
-                                         (list :hints
-                                               guard-hints))))))))))))))))))
+                                   `((defthm ,(add-suffix skolem-name
+                                                          "-STRENGTHEN")
+                                       ,(defchoose-constraint-extra
+                                          skolem-name bound-vars args
+                                          defchoose-body)
+                                       :hints (("Goal"
+                                                :use ,skolem-name
+                                                :in-theory
+                                                (theory 'minimal-theory)))
+                                       :rule-classes nil)))
+                            ,@(cond (constrained
+                                     `((local ,defun-form)
+                                       ,defun-constraint
+                                       (local (in-theory (disable (,name))))))
+                                    (t
+                                     `(,defun-form
+                                        (in-theory (disable (,name))))))
+                            (defthm ,thm-name
+                              ,(cond (exists-p
+                                      `(implies ,body-guts
+                                                (,name ,@args)))
+                                     ((eq rewrite :direct)
+                                      `(implies (,name ,@args)
+                                                ,body-guts))
+                                     ((member-eq rewrite '(nil :default))
+                                      `(implies (not ,body-guts)
+                                                (not (,name ,@args))))
+                                     (t rewrite))
+                              :hints (("Goal"
+                                       :use (,skolem-name ,name)
+                                       :in-theory (theory 'minimal-theory)))))
+                          (extend-pe-table ,name ,form)
+                          ,@(and (not constrained)
+                                 (case verify-guards-p
+                                   ((t)
+                                    `((verify-guards ,name
+                                        ,@(and guard-hints
+                                               (list :hints guard-hints)))))
+                                   ((nil)
+                                    nil)
+                                   (otherwise ; '?
+                                    `((verify-guards?
+                                       ,guard-p
+                                       ,name
+                                       ,@(and guard-hints
+                                              (list :hints guard-hints)))))))
+                          (value-triple '(:return-value ,name)
+                                        :on-skip-proofs t))))
+                  (cond
+                   (verbose `(encapsulate () ,@encap-forms))
+                   (t `(with-output
+                         :off (:other-than error summary)
+                         :ctx ',ctx
+                         :summary-off value
+                         :gag-mode nil
+                         (encapsulate
+                           ()
+                           ,@(map-with-output :off 'summary
+                                              encap-forms)))))))))))))))
 
 ; Because make-apply$-warrant-defun-sk is so dependent on defun-sk-fn, we
 ; define that function now, after introducing a couple of helper functions.
@@ -18117,7 +18164,12 @@
     (cond
      ((null trans1-flg) form)
      (t (let* ((defun-sk-event (defun-sk-fn form name nil (cdddr form)))
+               (with-output-p (eq (car defun-sk-event) 'with-output))
+               (defun-sk-event (if with-output-p
+                                   (car (last defun-sk-event))
+                                 defun-sk-event))
                (crux (nth 5 defun-sk-event))
+               (crux (if with-output-p (car (last crux)) crux))
                (constrained-fn (and (consp crux)
                                     (eq (car crux) 'ENCAPSULATE)
                                     (consp (nth 1 crux))
@@ -28797,6 +28849,7 @@
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin
              ,(cdr (assoc-eq 'ppr-flat-right-margin *initial-global-table*)))
+            (current-package "ACL2")
 
 ; Values not to be modified; keep in sync with *fixed-fmt-controls*.
 
@@ -28848,6 +28901,26 @@
 
   (f-put-global 'iprint-ar (compress1 'iprint-ar iprint-ar) state))
 
+(defun override-global-evisc-table (evisc-tuple state)
+
+; This function expands evisc-tuple as necessary so that entries in the global
+; evisc-table will be ignored when printing with evisceration.
+
+  (let ((evisc-table (table-alist 'evisc-table (w state))))
+    (cond ((null evisc-table) ; optimization
+           evisc-tuple)
+          ((consp evisc-tuple)
+           (cons (append (car evisc-tuple)
+                         (pairlis$ (strip-cars evisc-table)
+                                   nil))
+                 (cdr evisc-tuple)))
+          (t ; presumably evisc-tuple is nil
+           (evisc-tuple nil
+                        nil
+                        (pairlis$ (strip-cars evisc-table)
+                                  nil)
+                        nil)))))
+
 (defmacro channel-to-string (form channel-var
                                   &optional
                                   extra-var fmt-controls
@@ -28881,9 +28954,10 @@
 ; evaluated.
 
 ; This macro is not recommended for users, as it has been designed specifically
-; for the fmt family of functions.  If one wishes to use this or a similar
-; macro outside the boot-strap then one will need to avoid issues with
-; untouchables; here is an example.
+; for the fmt family of functions.  In fact, the code below provides
+; idiosyncratic special handling for evisc-tuple.  If one wishes to use this or
+; a similar macro outside the boot-strap then one will need to avoid issues
+; with untouchables; here is an example.
 
 ;   (defttag t)
 ;   (remove-untouchable temp-touchable-fns nil)
@@ -28911,10 +28985,16 @@
                               (symbolp fmt-controls)
                               (not (eq 'result extra-var))
                               (not (eq 'state extra-var)))))
-  (let* ((body0 ; error triple (mv nil val state), where val may cons extra-var
+  (let* ((form0
+          (if (member-eq 'evisc-tuple form)
+              `(let ((evisc-tuple
+                      (override-global-evisc-table evisc-tuple state)))
+                 ,form)
+            form))
+         (body0 ; error triple (mv nil val state), where val may cons extra-var
           `(mv?-let
             (,@(and extra-var (list extra-var)) state)
-            ,form
+            ,form0
             (mv-let (erp result state)
                     (get-output-stream-string$ ,channel-var state)
                     (mv nil
@@ -28983,12 +29063,17 @@
        ,(cond (extra-var `(mv (car result) (cdr result)))
               (t 'result))))))
 
+(defconst *fmt-control-defaults-keys*
+  (strip-cars *fmt-control-defaults*))
+
 (defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -29001,7 +29086,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -29014,7 +29101,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -29027,7 +29116,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -29037,10 +29128,12 @@
 
 (defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
-                  (and (stringp str)
-                       (character-alistp alist)
+                  (and (character-alistp alist)
+                       (stringp str)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
@@ -29054,7 +29147,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
