@@ -3992,14 +3992,22 @@
                                     i pair s))
                                   state))))))
              ((#\f #\F)
-              (let ((evisc-table (table-alist 'evisc-table (w state))))
+              (let ((evisc-table
+                     (append? (car evisc-tuple) ;;; alist
+
+; We normally would pass the alist above into eviscerate-top below, as the
+; argument just above evisc-table, and bind evisc-table to the table-alist call
+; on the line just below.  However, the call of splat below expects a single
+; alist.
+
+                              (table-alist 'evisc-table (w state)))))
                 (mv-let
                   (x state)
                   (cond (evisc-table (eviscerate-top
                                       (fmt-var s alist i maximum)
                                       nil ;;; print-level
                                       nil ;;; print-length
-                                      nil ;;; alist
+                                      nil
                                       evisc-table
                                       nil ;;; hiding-cars
                                       state))

@@ -28849,6 +28849,7 @@
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin
              ,(cdr (assoc-eq 'ppr-flat-right-margin *initial-global-table*)))
+            (current-package "ACL2")
 
 ; Values not to be modified; keep in sync with *fixed-fmt-controls*.
 
@@ -28900,6 +28901,26 @@
 
   (f-put-global 'iprint-ar (compress1 'iprint-ar iprint-ar) state))
 
+(defun override-global-evisc-table (evisc-tuple state)
+
+; This function expands evisc-tuple as necessary so that entries in the global
+; evisc-table will be ignored when printing with evisceration.
+
+  (let ((evisc-table (table-alist 'evisc-table (w state))))
+    (cond ((null evisc-table) ; optimization
+           evisc-tuple)
+          ((consp evisc-tuple)
+           (cons (append (car evisc-tuple)
+                         (pairlis$ (strip-cars evisc-table)
+                                   nil))
+                 (cdr evisc-tuple)))
+          (t ; presumably evisc-tuple is nil
+           (evisc-tuple nil
+                        nil
+                        (pairlis$ (strip-cars evisc-table)
+                                  nil)
+                        nil)))))
+
 (defmacro channel-to-string (form channel-var
                                   &optional
                                   extra-var fmt-controls
@@ -28933,9 +28954,10 @@
 ; evaluated.
 
 ; This macro is not recommended for users, as it has been designed specifically
-; for the fmt family of functions.  If one wishes to use this or a similar
-; macro outside the boot-strap then one will need to avoid issues with
-; untouchables; here is an example.
+; for the fmt family of functions.  In fact, the code below provides
+; idiosyncratic special handling for evisc-tuple.  If one wishes to use this or
+; a similar macro outside the boot-strap then one will need to avoid issues
+; with untouchables; here is an example.
 
 ;   (defttag t)
 ;   (remove-untouchable temp-touchable-fns nil)
@@ -28963,10 +28985,16 @@
                               (symbolp fmt-controls)
                               (not (eq 'result extra-var))
                               (not (eq 'state extra-var)))))
-  (let* ((body0 ; error triple (mv nil val state), where val may cons extra-var
+  (let* ((form0
+          (if (member-eq 'evisc-tuple form)
+              `(let ((evisc-tuple
+                      (override-global-evisc-table evisc-tuple state)))
+                 ,form)
+            form))
+         (body0 ; error triple (mv nil val state), where val may cons extra-var
           `(mv?-let
             (,@(and extra-var (list extra-var)) state)
-            ,form
+            ,form0
             (mv-let (erp result state)
                     (get-output-stream-string$ ,channel-var state)
                     (mv nil
@@ -29035,12 +29063,17 @@
        ,(cond (extra-var `(mv (car result) (cdr result)))
               (t 'result))))))
 
+(defconst *fmt-control-defaults-keys*
+  (strip-cars *fmt-control-defaults*))
+
 (defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -29053,7 +29086,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -29066,7 +29101,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -29079,7 +29116,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -29089,10 +29128,12 @@
 
 (defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
-                  (and (stringp str)
-                       (character-alistp alist)
+                  (and (character-alistp alist)
+                       (stringp str)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
@@ -29106,7 +29147,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)

@@ -745,10 +745,12 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
         (if level
             (fmt1-to-string "SIMPLIFY-~x0-LEVEL-~x1" `((#\0 . ,template) (#\1 . ,level)) 0
                             :fmt-control-alist '((fmt-soft-right-margin . 2000)
-                                                 (fmt-hard-right-margin . 2000)))
+                                                 (fmt-hard-right-margin . 2000)
+                                                 (current-package . "AIGNET")))
           (fmt1-to-string "SIMPLIFY-~x0" `((#\0 . ,template)) 0
                           :fmt-control-alist '((fmt-soft-right-margin . 2000)
-                                               (fmt-hard-right-margin . 2000)))))
+                                               (fmt-hard-right-margin . 2000)
+                                               (current-package . "AIGNET")))))
        (name (intern$ name-str "AIGNET"))
        (formals (append (apply-template-to-lits lits '(x litp :type (unsigned-byte 30)))
                         extra-formals))
