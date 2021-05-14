@@ -16,10 +16,11 @@
 (include-book "strings") ; for n-string-append and newline-string
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system) ;for lookup-keyword
 
-(defun object-to-string (obj)
-  (declare (xargs :mode :program))
+(defun object-to-string (obj package)
+  (declare (xargs :guard (stringp package)
+                  :mode :program))
   (mv-let (col string)
-    (fmt1-to-string "~x0" (acons #\0 obj nil) 0)
+    (fmt1-to-string "~x0" (acons #\0 obj nil) 0 :fmt-control-alist (acons 'acl2::current-package package nil))
     (declare (ignore col))
     string))
 
@@ -112,8 +113,9 @@
                    (xdoc-for-macro-required-args-general-form (rest macro-args) indent-space nil))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-arg-general-form (macro-arg indent-space firstp max-len)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-keyword-arg-general-form (macro-arg indent-space firstp max-len package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (if (symbolp macro-arg)
       (let* ((name (string-downcase (symbol-name macro-arg)))
              (name (n-string-append ":" name)))
@@ -135,22 +137,24 @@
       (n-string-append (if firstp "" indent-space)
                        name
                        space-before-comment "; default "
-                       (string-downcase (object-to-string default))
+                       (string-downcase (object-to-string default package))
                        (newline-string)
                        ))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-args-general-form (macro-args indent-space firstp max-len)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-keyword-args-general-form (macro-args indent-space firstp max-len package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-keyword-arg-general-form (first macro-args) indent-space firstp max-len)
-                   (xdoc-for-macro-keyword-args-general-form (rest macro-args) indent-space nil max-len))))
+    (string-append (xdoc-for-macro-keyword-arg-general-form (first macro-args) indent-space firstp max-len package)
+                   (xdoc-for-macro-keyword-args-general-form (rest macro-args) indent-space nil max-len package))))
 
 
 ;; Returns a string
-(defun xdoc-for-macro-args-general-form (macro-args indent-space)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-args-general-form (macro-args indent-space package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
        ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
         (split-macro-args macro-args))
@@ -162,12 +166,13 @@
                                           "&key"
                                           (newline-string))
                        "")
-                     (xdoc-for-macro-keyword-args-general-form keyword-args indent-space (not required-args) max-len))))
+                     (xdoc-for-macro-keyword-args-general-form keyword-args indent-space (not required-args) max-len package))))
 
 
 ;; Returns a string
-(defun xdoc-for-macro-general-form (name macro-args)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-general-form (name macro-args package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (let* ((name (string-downcase (symbol-name name)))
          (name-len (length name))
          (indent-space (string-append-lst (make-list (+ 2 name-len) :initial-element " "))))
@@ -176,7 +181,7 @@
                  (newline-string)
                  (newline-string)
                  (xdoc-within-code "(" name " "
-                                   (xdoc-for-macro-args-general-form macro-args indent-space)
+                                   (xdoc-for-macro-args-general-form macro-args indent-space package)
                                    indent-space
                                    ")"))))
 
@@ -234,8 +239,9 @@
                    (xdoc-for-macro-required-inputs (rest macro-args) input-descriptions))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-input (macro-arg input-descriptions)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-keyword-input (macro-arg input-descriptions package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (let* ((name (if (symbolp macro-arg)  ;note that name will not be a keyword here
                    macro-arg
                  (first macro-arg)))
@@ -248,7 +254,7 @@
                         nil
                       ;;todo: ensure it's quoted?:
                       (unquote (second macro-arg)))))
-         (default (string-downcase (object-to-string default))))
+         (default (string-downcase (object-to-string default package))))
     (n-string-append "<p>@('" name "')  &mdash; default @('" default "')</p>" (newline-string)
                      (newline-string)
                      "<blockquote>" (newline-string)
@@ -257,16 +263,18 @@
                      (newline-string))))
 
 ;; Returns a string
-(defun xdoc-for-macro-keyword-inputs (macro-args input-descriptions)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-keyword-inputs (macro-args input-descriptions package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (if (endp macro-args)
       ""
-    (string-append (xdoc-for-macro-keyword-input (first macro-args) input-descriptions)
-                   (xdoc-for-macro-keyword-inputs (rest macro-args) input-descriptions))))
+    (string-append (xdoc-for-macro-keyword-input (first macro-args) input-descriptions package)
+                   (xdoc-for-macro-keyword-inputs (rest macro-args) input-descriptions package))))
 
 ;; Returns a string
-(defun xdoc-for-macro-inputs (macro-args input-descriptions)
-  (declare (xargs :mode :program))
+(defun xdoc-for-macro-inputs (macro-args input-descriptions package)
+  (declare (xargs :mode :program
+                  :guard (stringp package)))
   (b* ((macro-args (maybe-skip-whole-arg macro-args)) ;skip &whole
        ((mv required-args keyword-args) ;todo: handle optional args?  &rest? what else?
         (split-macro-args macro-args)))
@@ -275,7 +283,7 @@
                  (newline-string)
                  (newline-string)
                  (xdoc-for-macro-required-inputs required-args input-descriptions)
-                 (xdoc-for-macro-keyword-inputs keyword-args input-descriptions))))
+                 (xdoc-for-macro-keyword-inputs keyword-args input-descriptions package))))
 
 ;; Returns a progn including the original defmacro and a defxdoc form
 (defun defmacrodoc-fn (name macro-args rest)
@@ -293,15 +301,16 @@
        ((when (and macro-args
                    (not input-descriptions)))
         (er hard 'defmacrodoc "No :input supplied for ~x0" name))
-       )
+       ;; The xdoc seems to be created in this package:
+       (package (symbol-package-name name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
             (defxdoc ,name
               ,@(and short `(:short ,short))
               ,@(and parents `(:parents ,parents))
               :long (n-string-append
-                     ,(xdoc-for-macro-general-form name macro-args)
+                     ,(xdoc-for-macro-general-form name macro-args package)
                      ;;(newline-string)
-                     ,(xdoc-for-macro-inputs macro-args input-descriptions)
+                     ,(xdoc-for-macro-inputs macro-args input-descriptions package)
                      (newline-string)
                      (newline-string)
                      ,(if long
