@@ -287,7 +287,9 @@
 
 ;; Returns a progn including the original defmacro and a defxdoc form
 (defun defmacrodoc-fn (name macro-args rest)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :guard (symbolp name) ; todo: add more guard conjuncts
+                  ))
   (b* (((mv declares rest) ;first come optional declares (no legacy doc strings)
         (get-declares rest))
        (body (first rest))      ;then the body
