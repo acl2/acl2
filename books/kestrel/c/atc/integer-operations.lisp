@@ -140,6 +140,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ atc-defun-integer (name
+                              &key
+                              arg-type
+                              arg1-type
+                              arg2-type
+                              guard
+                              res-type
+                              short
+                              body
+                              guard-hints
+                              no-fix
+                              prepwork)
+  :short "Function definition macro specialized for C integer operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 functions that model the C integer operations (and their guards)
+     have a fairly uniform structure.
+     This macro generates functions with that structure.")
+   (xdoc::p
+    "The arguments of this macro are:")
+   (xdoc::ul
+    (xdoc::li
+     "@('name') &mdash; The name of the function.")
+    (xdoc::li
+     "@('arg-type') &mdash; The argument type, for a unary function.
+      The name is always @('x').")
+    (xdoc::li
+     "@('arg1-type') &mdash; The first argument type, for a binary function.
+      The name is always @('x').")
+    (xdoc::li
+     "@('arg2-type') &mdash; The second argument type, for a binary function.
+      The name is always @('y').")
+    (xdoc::li
+     "@('guard') &mdash; The guard, in addition to the argument type(s).")
+    (xdoc::li
+     "@('res-type') &mdash; The result type.")
+    (xdoc::li
+     "@('short') &mdash; The XDOC short string.")
+    (xdoc::li
+     "@('body') &mdash; The body of the function.")
+    (xdoc::li
+     "@('guard-hints') &mdash; Hints to verify guards.")
+    (xdoc::li
+     "@('no-fix') &mdash; Do not generate fixing theorem when non-@('nil')."))
+   (xdoc::p
+    "The presence (i.e. being non-@('nil') of @('arg-type')
+     determines whether the function is unary or binary.")
+   (xdoc::p
+    "Besides shortening the formulation of the function definitions,
+     this macro results in both faster certification and faster inclusion
+     compared to just using @(tsee define), which is not much more verbose.
+     Give the large number of functions generated in this file,
+     the savings are significant."))
+  `(defsection ,name
+     :short ,short
+     ,@prepwork
+     (defun ,name ,(if arg-type '(x) '(x y))
+       (declare
+        (xargs
+         :guard (and ,@(and arg-type `((,arg-type x)))
+                     ,@(and arg1-type `((,arg1-type x)))
+                     ,@(and arg2-type `((,arg2-type y)))
+                     ,@(and guard (list guard)))
+         ,@(and guard-hints `(:guard-hints ,guard-hints))))
+       ,body)
+     (defthm ,(pack res-type '-of- name)
+       (,res-type (,name ,@(if arg-type '(x) '(x y)))))
+     ,@(and (not no-fix)
+            `((fty::deffixequiv ,name
+                :args ,(if arg-type
+                           `((x ,arg-type))
+                         `((x ,arg1-type) (y ,arg2-type))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-operations-1 ((type1 typep))
   :guard (type-integerp type1)
   :returns (event pseudo-event-formp)
@@ -204,200 +280,206 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (set-ignore-ok t)
+       (set-irrelevant-formals-ok t)
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        ,@(and
           samep
-          `((define ,<type1>-const ((x natp))
-              :guard (,<type1>-integerp x)
-              :returns (result ,<type1>p)
-              :short ,(str::cat "Integer constant of " type1-string ".")
-              (,<type1> x)
-              :no-function t)))
+          `((atc-defun-integer
+             ,<type1>-const
+             :arg-type natp
+             :guard (,<type1>-integerp x)
+             :res-type ,<type1>p
+             :short ,(str::cat "Integer constant of " type1-string ".")
+             :body (,<type1> x)
+             :no-fix t)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,boolean-from-<type1> ((x ,<type1>p))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if a value of " type1-string " is not 0.")
-         (/= (,<type1>->get x) 0)
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,boolean-from-<type1>
+        :arg-type ,<type1>p
+        :res-type booleanp
+        :short ,(str::cat "Check if a value of " type1-string " is not 0.")
+        :body (/= (,<type1>->get x) 0))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type1>-integer-value ((x ,<type1>p))
-         :returns (ival integerp)
-         :short ,(str::cat "Turn a value of "
-                           type1-string
-                           " into an ACL2 integer value.")
-         (,<type1>->get x)
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,<type1>-integer-value
+        :arg-type ,<type1>p
+        :res-type integerp
+        :short ,(str::cat "Turn a value of "
+                          type1-string
+                          " into an ACL2 integer value.")
+        :body (,<type1>->get x))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,plus-<type1> ((x ,<type1>p))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Unary plus of a value of "
-                           type1-string
-                           " [C:6.5.3].")
-         ,(if samep
-              `(,<type1>-fix x)
-            `(,plus-<type> (,<type>-from-<type1> x)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,plus-<type1>
+        :arg-type ,<type1>p
+        :res-type ,<type>p
+        :short ,(str::cat "Unary plus of a value of "
+                          type1-string
+                          " [C:6.5.3].")
+        :body ,(if samep
+                   `(,<type1>-fix x)
+                 `(,plus-<type> (,<type>-from-<type1> x))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           signedp
-          `((define ,minus-<type1>-okp ((x ,<type1>p))
-              :returns (yes/no booleanp)
-              :short ,(str::cat "Check if the unary minus of a value of "
-                                type1-string
-                                " is well-defined.")
-              ,(if samep
-                   `(,<type1>-integerp (- (,<type1>->get x)))
-                 `(,minus-<type>-okp (,<type>-from-<type1> x)))
-              :hooks (:fix)
-              :no-function t)))
+          `((atc-defun-integer
+             ,minus-<type1>-okp
+             :arg-type ,<type1>p
+             :res-type booleanp
+             :short ,(str::cat "Check if the unary minus of a value of "
+                               type1-string
+                               " is well-defined.")
+             :body ,(if samep
+                        `(,<type1>-integerp (- (,<type1>->get x)))
+                      `(,minus-<type>-okp (,<type>-from-<type1> x))))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,minus-<type1> ((x ,<type1>p))
-         ,@(and signedp `(:guard (,minus-<type1>-okp x)))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Unary minus of a value of "
-                           type1-string
-                           " [C:6.5.3].")
-         ,(if samep
-              `(,(if signedp <type1> <type1>-mod) (- (,<type1>->get x)))
-            `(,minus-<type> (,<type>-from-<type1> x)))
-         ,@(and
-            signedp
-            `(:guard-hints (("Goal" :in-theory (enable ,minus-<type1>-okp)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,minus-<type1>
+        :arg-type ,<type1>p
+        ,@(and signedp `(:guard (,minus-<type1>-okp x)))
+        :res-type ,<type>p
+        :short ,(str::cat "Unary minus of a value of "
+                          type1-string
+                          " [C:6.5.3].")
+        :body ,(if samep
+                   `(,(if signedp <type1> <type1>-mod) (- (,<type1>->get x)))
+                 `(,minus-<type> (,<type>-from-<type1> x)))
+        ,@(and
+           signedp
+           `(:guard-hints (("Goal" :in-theory (enable ,minus-<type1>-okp))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitnot-<type1> ((x ,<type1>p))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Bitwise complement of a value of "
-                           type1-string
-                           " [C:6.5.3].")
-         ,(if samep
-              `(,(if signedp <type1> <type1>-mod) (lognot (,<type1>->get x)))
-            `(,bitnot-<type> (,<type>-from-<type1> x)))
-         ,@(and samep
-                signedp
-                `(:guard-hints
-                  (("Goal" :in-theory (enable ,<type1>-integerp-alt-def
-                                              ,<type1>->get
-                                              ,<type1>p
-                                              (:e ,<type>-min)
-                                              (:e ,<type>-max))))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,bitnot-<type1>
+        :arg-type ,<type1>p
+        :res-type ,<type>p
+        :short ,(str::cat "Bitwise complement of a value of "
+                          type1-string
+                          " [C:6.5.3].")
+        :body ,(if samep
+                   `(,(if signedp <type1> <type1>-mod)
+                     (lognot (,<type1>->get x)))
+                 `(,bitnot-<type> (,<type>-from-<type1> x)))
+        ,@(and samep
+               signedp
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,<type1>-integerp-alt-def
+                                             ,<type1>->get
+                                             ,<type1>p
+                                             (:e ,<type>-min)
+                                             (:e ,<type>-max)))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,lognot-<type1> ((x ,<type1>p))
-         :returns (result sintp)
-         :short ,(str::cat "Logical complement of a value of "
-                           type1-string
-                           " [C:6.5.3].")
-         (sint-from-boolean (= (,<type1>->get x) 0))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,lognot-<type1>
+        :arg-type ,<type1>p
+        :res-type sintp
+        :short ,(str::cat "Logical complement of a value of "
+                          type1-string
+                          " [C:6.5.3].")
+        :body (sint-from-boolean (= (,<type1>->get x) 0)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-<type1>-okp ((x ,<type1>p) (y integerp))
-         ,@(and samep
-                (not signedp)
-                `((declare (ignore x))))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the left shift of a value of "
-                           type1-string
-                           " by an integer is well-defined.")
-         ,(if samep
-              (if signedp
-                  `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
-                        (>= (,<type1>->get x) 0)
-                        (,<type1>-integerp (* (,<type1>->get x)
-                                              (expt 2 (ifix y)))))
-                `(integer-range-p 0 (,<type1>-bits) (ifix y)))
-            `(,shl-<type>-okp (,<type>-from-<type1> x) (ifix y)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shl-<type1>-okp
+        :arg1-type ,<type1>p
+        :arg2-type integerp
+        :res-type booleanp
+        :short ,(str::cat "Check if the left shift of a value of "
+                          type1-string
+                          " by an integer is well-defined.")
+        :body ,(if samep
+                   (if signedp
+                       `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
+                             (>= (,<type1>->get x) 0)
+                             (,<type1>-integerp (* (,<type1>->get x)
+                                                   (expt 2 (ifix y)))))
+                     `(integer-range-p 0 (,<type1>-bits) (ifix y)))
+                 `(,shl-<type>-okp (,<type>-from-<type1> x) (ifix y))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-<type1> ((x ,<type1>p) (y integerp))
-         :guard (,shl-<type1>-okp x y)
-         :returns (result ,<type>p)
-         :short ,(str::cat "Left shift of a value of "
-                           type1-string
-                           " by an integer [C:6.5.7].")
-         ,(if samep
-              `(,(if signedp <type1> <type1>-mod) (* (,<type1>->get x)
-                                                     (expt 2 (ifix y))))
-            `(,shl-<type> (,<type>-from-<type1> x) y))
-         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp)))
-         ,@(and (not signedp)
-                '(:prepwork
-                  ((local (include-book "arithmetic-3/top" :dir :system)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shl-<type1>
+        :arg1-type ,<type1>p
+        :arg2-type integerp
+        :guard (,shl-<type1>-okp x y)
+        :res-type ,<type>p
+        :short ,(str::cat "Left shift of a value of "
+                          type1-string
+                          " by an integer [C:6.5.7].")
+        :body ,(if samep
+                   `(,(if signedp <type1> <type1>-mod) (* (,<type1>->get x)
+                                                          (expt 2 (ifix y))))
+                 `(,shl-<type> (,<type>-from-<type1> x) y))
+        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp)))
+        ,@(and (not signedp)
+               '(:prepwork
+                 ((local (include-book "arithmetic-3/top" :dir :system))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-<type1>-okp ((x ,<type1>p) (y integerp))
-         ,@(and samep
-                (not signedp)
-                `((declare (ignore x))))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the right shift of a value of "
-                           type1-string
-                           " by an integer is well-defined.")
-         ,(if samep
-              (if signedp
-                  `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
-                        (>= (,<type1>->get x) 0))
-                `(integer-range-p 0 (,<type1>-bits) (ifix y)))
-            `(,shr-<type>-okp (,<type>-from-<type1> x) (ifix y)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shr-<type1>-okp
+        :arg1-type ,<type1>p
+        :arg2-type integerp
+        :res-type booleanp
+        :short ,(str::cat "Check if the right shift of a value of "
+                          type1-string
+                          " by an integer is well-defined.")
+        :body ,(if samep
+                   (if signedp
+                       `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
+                             (>= (,<type1>->get x) 0))
+                     `(integer-range-p 0 (,<type1>-bits) (ifix y)))
+                 `(,shr-<type>-okp (,<type>-from-<type1> x) (ifix y))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-<type1> ((x ,<type1>p) (y integerp))
-         :guard (,shr-<type1>-okp x y)
-         :returns (result ,<type>p)
-         :short ,(str::cat "Right shift of a value of "
-                           type1-string
-                           " by an integer C:6.5.7].")
-         ,(if samep
-              `(,(if signedp <type1> <type1>-mod) (truncate (,<type1>->get x)
-                                                            (expt 2 (ifix y))))
-            `(,shr-<type> (,<type>-from-<type1> x) y))
-         :guard-hints (("Goal"
-                        :in-theory (enable ,@(if (and samep
-                                                      signedp)
-                                                 (list shr-<type1>-okp
-                                                       <type1>-integerp
-                                                       <type1>->get
-                                                       <type1>p)
-                                               (list shr-<type1>-okp)))))
-         ,@(and
-            signedp
-            '(:prepwork
-              ((local
-                (include-book "kestrel/arithmetic-light/expt" :dir :system))
-               (local
-                (include-book "kestrel/arithmetic-light/truncate" :dir :system)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shr-<type1>
+        :arg1-type ,<type1>p
+        :arg2-type integerp
+        :guard (,shr-<type1>-okp x y)
+        :res-type ,<type>p
+        :short ,(str::cat "Right shift of a value of "
+                          type1-string
+                          " by an integer C:6.5.7].")
+        :body ,(if samep
+                   `(,(if signedp <type1> <type1>-mod)
+                     (truncate (,<type1>->get x) (expt 2 (ifix y))))
+                 `(,shr-<type> (,<type>-from-<type1> x) y))
+        :guard-hints (("Goal"
+                       :in-theory (enable ,@(if (and samep
+                                                     signedp)
+                                                (list shr-<type1>-okp
+                                                      <type1>-integerp
+                                                      <type1>->get
+                                                      <type1>p)
+                                              (list shr-<type1>-okp)))))
+        ,@(and
+           signedp
+           '(:prepwork
+             ((local
+               (include-book "kestrel/arithmetic-light/expt" :dir :system))
+              (local
+               (include-book "kestrel/arithmetic-light/truncate" :dir :system))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -532,468 +614,509 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       ,@(and
-          signedp
-          `((define ,add-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-              :returns (yes/no booleanp)
-              :short ,(str::cat "Check if the addition of a value of "
-                                type1-string
-                                " and a value of "
-                                type2-string
-                                " is well-defined.")
-              ,(if samep
-                   `(,<type>-integerp (+ (,<type1>->get x)
-                                         (,<type2>->get y)))
-                 `(,add-<type>-<type>-okp
-                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix)
-              :no-function t)))
-
-       ;;;;;;;;;;;;;;;;;;;;
-
-       (define ,add-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         ,@(and signedp `(:guard (,add-<type1>-<type2>-okp x y)))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Addition of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.6].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (+ (,<type1>->get x)
-                                                   (,<type2>->get y)))
-            `(,add-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and signedp
-                `(:guard-hints
-                  (("Goal" :in-theory (enable ,add-<type1>-<type2>-okp)))))
-         :hooks (:fix)
-         :no-function t)
+       (set-ignore-ok t)
+       (set-irrelevant-formals-ok t)
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           signedp
-          `((define ,sub-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-              :returns (yes/no booleanp)
-              :short ,(str::cat "Check if the subtraction of a value of "
-                                type1-string
-                                " and a value of "
-                                type2-string
-                                " is well-defined.")
-              ,(if samep
-                   `(,<type>-integerp (- (,<type1>->get x)
-                                         (,<type2>->get y)))
-                 `(,sub-<type>-<type>-okp
-                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix)
-              :no-function t)))
+          `((atc-defun-integer
+             ,add-<type1>-<type2>-okp
+             :arg1-type ,<type1>p
+             :arg2-type ,<type2>p
+             :res-type booleanp
+             :short ,(str::cat "Check if the addition of a value of "
+                               type1-string
+                               " and a value of "
+                               type2-string
+                               " is well-defined.")
+             :body
+             ,(if samep
+                  `(,<type>-integerp (+ (,<type1>->get x)
+                                        (,<type2>->get y)))
+                `(,add-<type>-<type>-okp
+                  ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                  ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,sub-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         ,@(and signedp `(:guard (,sub-<type1>-<type2>-okp x y)))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Subtraction of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.6].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (- (,<type1>->get x)
-                                                   (,<type2>->get y)))
-            `(,sub-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and signedp
-                `(:guard-hints
-                  (("Goal" :in-theory (enable ,sub-<type1>-<type2>-okp)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,add-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        ,@(and signedp `(:guard (,add-<type1>-<type2>-okp x y)))
+        :res-type ,<type>p
+        :short ,(str::cat "Addition of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.6].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (+ (,<type1>->get x)
+                                                  (,<type2>->get y)))
+           `(,add-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and signedp
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,add-<type1>-<type2>-okp))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        ,@(and
           signedp
-          `((define ,mul-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-              :returns (yes/no booleanp)
-              :short ,(str::cat "Check if the multiplication of a value of "
-                                type1-string
-                                " and a value of "
-                                type2-string
-                                " is well-defined.")
-              ,(if samep
-                   `(,<type>-integerp (* (,<type1>->get x)
-                                         (,<type2>->get y)))
-                 `(,mul-<type>-<type>-okp
-                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-              :hooks (:fix)
-              :no-function t)))
+          `((atc-defun-integer
+             ,sub-<type1>-<type2>-okp
+             :arg1-type ,<type1>p
+             :arg2-type ,<type2>p
+             :res-type booleanp
+             :short ,(str::cat "Check if the subtraction of a value of "
+                               type1-string
+                               " and a value of "
+                               type2-string
+                               " is well-defined.")
+             :body
+             ,(if samep
+                  `(,<type>-integerp (- (,<type1>->get x)
+                                        (,<type2>->get y)))
+                `(,sub-<type>-<type>-okp
+                  ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                  ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,mul-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         ,@(and signedp `(:guard (,mul-<type1>-<type2>-okp x y)))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Multiplication of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.5].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (* (,<type1>->get x)
-                                                   (,<type2>->get y)))
-            `(,mul-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and signedp
-                `(:guard-hints
-                  (("Goal" :in-theory (enable ,mul-<type1>-<type2>-okp)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,sub-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        ,@(and signedp `(:guard (,sub-<type1>-<type2>-okp x y)))
+        :res-type ,<type>p
+        :short ,(str::cat "Subtraction of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.6].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (- (,<type1>->get x)
+                                                  (,<type2>->get y)))
+           `(,sub-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and signedp
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,sub-<type1>-<type2>-okp))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,div-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-         ,@(and samep
-                (not signedp)
-                `((declare (ignore x))))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the division of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " is well-defined.")
-         ,(if samep
-              (if signedp
-                  `(and (not (equal (,<type2>->get y) 0))
-                        (,<type>-integerp (truncate (,<type1>->get x)
-                                                    (,<type2>->get y))))
-                `(not (equal (,<type2>->get y) 0)))
-            `(,div-<type>-<type>-okp
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+       ,@(and
+          signedp
+          `((atc-defun-integer
+             ,mul-<type1>-<type2>-okp
+             :arg1-type ,<type1>p
+             :arg2-type ,<type2>p
+             :res-type booleanp
+             :short ,(str::cat "Check if the multiplication of a value of "
+                               type1-string
+                               " and a value of "
+                               type2-string
+                               " is well-defined.")
+             :body
+             ,(if samep
+                  `(,<type>-integerp (* (,<type1>->get x)
+                                        (,<type2>->get y)))
+                `(,mul-<type>-<type>-okp
+                  ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+                  ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,div-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :guard (,div-<type1>-<type2>-okp x y)
-         :returns (result ,<type>p)
-         :short ,(str::cat "Division of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.5].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (truncate (,<type1>->get x)
-                                                          (,<type2>->get y)))
-            `(,div-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :guard-hints (("Goal" :in-theory (enable ,div-<type1>-<type2>-okp)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,mul-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        ,@(and signedp `(:guard (,mul-<type1>-<type2>-okp x y)))
+        :res-type ,<type>p
+        :short ,(str::cat "Multiplication of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.5].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (* (,<type1>->get x)
+                                                  (,<type2>->get y)))
+           `(,mul-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and signedp
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,mul-<type1>-<type2>-okp))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,rem-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-         ,@(and samep
-                (not signedp)
-                `((declare (ignore x))))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the remainder of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " is well-defined.")
-         ,(if samep
-              (if signedp
-                  `(and (not (equal (,<type2>->get y) 0))
-                        (,<type>-integerp (rem (,<type1>->get x)
-                                               (,<type2>->get y))))
-                `(not (equal (,<type2>->get y) 0)))
-            `(,rem-<type>-<type>-okp
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,div-<type1>-<type2>-okp
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type booleanp
+        :short ,(str::cat "Check if the division of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " is well-defined.")
+        :body
+        ,(if samep
+             (if signedp
+                 `(and (not (equal (,<type2>->get y) 0))
+                       (,<type>-integerp (truncate (,<type1>->get x)
+                                                   (,<type2>->get y))))
+               `(not (equal (,<type2>->get y) 0)))
+           `(,div-<type>-<type>-okp
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,rem-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :guard (,rem-<type1>-<type2>-okp x y)
-         :returns (result ,<type>p)
-         :short ,(str::cat "Remainder of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.5].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (rem (,<type1>->get x)
-                                                     (,<type2>->get y)))
-            `(,rem-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,div-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :guard (,div-<type1>-<type2>-okp x y)
+        :res-type ,<type>p
+        :short ,(str::cat "Division of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.5].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (truncate (,<type1>->get x)
+                                                         (,<type2>->get y)))
+           `(,div-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        :guard-hints (("Goal" :in-theory (enable ,div-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the left shift of a value of "
-                           type1-string
-                           " by a value of "
-                           type2-string
-                           " is well-defined.")
-         (,shl-<type1>-okp x (,<type2>-integer-value y))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,rem-<type1>-<type2>-okp
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type booleanp
+        :short ,(str::cat "Check if the remainder of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " is well-defined.")
+        :body
+        ,(if samep
+             (if signedp
+                 `(and (not (equal (,<type2>->get y) 0))
+                       (,<type>-integerp (rem (,<type1>->get x)
+                                              (,<type2>->get y))))
+               `(not (equal (,<type2>->get y) 0)))
+           `(,rem-<type>-<type>-okp
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shl-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :guard (,shl-<type1>-<type2>-okp x y)
-         :returns (result ,<ptype1>p)
-         :short ,(str::cat "Left shift of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.7].")
-         (,shl-<type1> x (,<type2>-integer-value y))
-         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,rem-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :guard (,rem-<type1>-<type2>-okp x y)
+        :res-type ,<type>p
+        :short ,(str::cat "Remainder of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.5].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (rem (,<type1>->get x)
+                                                    (,<type2>->get y)))
+           `(,rem-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-<type1>-<type2>-okp ((x ,<type1>p) (y ,<type2>p))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if the right shift of a value of "
-                           type1-string
-                           " by a value of "
-                           type2-string
-                           " is well-defined.")
-         (,shr-<type1>-okp x (,<type2>-integer-value y))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shl-<type1>-<type2>-okp
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type booleanp
+        :short ,(str::cat "Check if the left shift of a value of "
+                          type1-string
+                          " by a value of "
+                          type2-string
+                          " is well-defined.")
+        :body (,shl-<type1>-okp x (,<type2>-integer-value y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (define ,shr-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :guard (,shr-<type1>-<type2>-okp x y)
-         :returns (result ,<ptype1>p)
-         :short ,(str::cat "Right shift of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.7].")
-         (,shr-<type1> x (,<type2>-integer-value y))
-         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp)))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,shl-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :guard (,shl-<type1>-<type2>-okp x y)
+        :res-type ,<ptype1>p
+        :short ,(str::cat "Left shift of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.7].")
+        :body (,shl-<type1> x (,<type2>-integer-value y))
+        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,lt-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Less-than relation of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.8].")
-         ,(if samep
-              `(if (< (,<type1>->get x)
+       (atc-defun-integer
+        ,shr-<type1>-<type2>-okp
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type booleanp
+        :short ,(str::cat "Check if the right shift of a value of "
+                          type1-string
+                          " by a value of "
+                          type2-string
+                          " is well-defined.")
+        :body (,shr-<type1>-okp x (,<type2>-integer-value y)))
+
+       ;;;;;;;;;;;;;;;;;;;;
+
+       (atc-defun-integer
+        ,shr-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :guard (,shr-<type1>-<type2>-okp x y)
+        :res-type ,<ptype1>p
+        :short ,(str::cat "Right shift of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.7].")
+        :body (,shr-<type1> x (,<type2>-integer-value y))
+        :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (atc-defun-integer
+        ,lt-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Less-than relation of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.8].")
+        :body
+        ,(if samep
+             `(if (< (,<type1>->get x)
+                     (,<type2>->get y))
+                  (sint 1)
+                (sint 0))
+           `(,lt-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (atc-defun-integer
+        ,gt-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Greater-than relation of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.8].")
+        :body
+        ,(if samep
+             `(if (> (,<type1>->get x)
+                     (,<type2>->get y))
+                  (sint 1)
+                (sint 0))
+           `(,gt-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (atc-defun-integer
+        ,le-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Less-than-or-equal-to relation of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.8].")
+        :body
+        ,(if samep
+             `(if (<= (,<type1>->get x)
                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,lt-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+                  (sint 1)
+                (sint 0))
+           `(,le-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,gt-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Greater-than relation of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.8].")
-         ,(if samep
-              `(if (> (,<type1>->get x)
+       (atc-defun-integer
+        ,ge-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Greater-than-or-equal-to relation of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.8].")
+        :body
+        ,(if samep
+             `(if (>= (,<type1>->get x)
                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,gt-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+                  (sint 1)
+                (sint 0))
+           `(,ge-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,le-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Less-than-or-equal-to relation of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.8].")
-         ,(if samep
-              `(if (<= (,<type1>->get x)
-                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,le-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,eq-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Equality of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.9].")
+        :body
+        ,(if samep
+             `(if (= (,<type1>->get x)
+                     (,<type2>->get y))
+                  (sint 1)
+                (sint 0))
+           `(,eq-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,ge-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Greater-than-or-equal-to relation of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.8].")
-         ,(if samep
-              `(if (>= (,<type1>->get x)
-                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,ge-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,eq-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Equality of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.9].")
-         ,(if samep
-              `(if (= (,<type1>->get x)
+       (atc-defun-integer
+        ,ne-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type sintp
+        :short ,(str::cat "Non-equality of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.9].")
+        :body
+        ,(if samep
+             `(if (/= (,<type1>->get x)
                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,eq-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+                  (sint 1)
+                (sint 0))
+           `(,ne-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,ne-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result sintp)
-         :short ,(str::cat "Non-equality of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.9].")
-         ,(if samep
-              `(if (/= (,<type1>->get x)
-                       (,<type2>->get y))
-                   (sint 1)
-                 (sint 0))
-            `(,ne-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,bitand-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type ,<type>p
+        :short ,(str::cat "Bitwise conjunction of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.10].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (logand (,<type1>->get x)
+                                                       (,<type2>->get y)))
+           `(,bitand-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and
+           samep
+           `(:prepwork
+             ((local (include-book "ihs/logops-lemmas" :dir :system)))
+             :guard-hints
+             (("Goal"
+               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitand-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Bitwise conjunction of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.10].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (logand (,<type1>->get x)
-                                                        (,<type2>->get y)))
-            `(,bitand-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and
-            samep
-            `(:prepwork
-              ((local (include-book "ihs/logops-lemmas" :dir :system)))
-              :guard-hints
-              (("Goal"
-                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,bitxor-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type ,<type>p
+        :short ,(str::cat "Bitwise exclusive disjunction of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.11].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (logxor (,<type1>->get x)
+                                                       (,<type2>->get y)))
+           `(,bitxor-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and
+           samep
+           `(:prepwork
+             ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+             :guard-hints
+             (("Goal"
+               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,bitxor-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Bitwise exclusive disjunction of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.11].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (logxor (,<type1>->get x)
-                                                        (,<type2>->get y)))
-            `(,bitxor-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and
-            samep
-            `(:prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
-              :guard-hints
-              (("Goal"
-                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix)
-         :no-function t)
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,bitior-<type1>-<type2> ((x ,<type1>p) (y ,<type2>p))
-         :returns (result ,<type>p)
-         :short ,(str::cat "Bitwise inclusive disjunction of a value of "
-                           type1-string
-                           " and a value of "
-                           type2-string
-                           " [C:6.5.12].")
-         ,(if samep
-              `(,(if signedp <type> <type>-mod) (logior (,<type1>->get x)
-                                                        (,<type2>->get y)))
-            `(,bitior-<type>-<type>
-              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-         ,@(and
-            samep
-            `(:prepwork
-              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
-              :guard-hints
-              (("Goal"
-                :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get)))))
-         :hooks (:fix)
-         :no-function t)
+       (atc-defun-integer
+        ,bitior-<type1>-<type2>
+        :arg1-type ,<type1>p
+        :arg2-type ,<type2>p
+        :res-type ,<type>p
+        :short ,(str::cat "Bitwise inclusive disjunction of a value of "
+                          type1-string
+                          " and a value of "
+                          type2-string
+                          " [C:6.5.12].")
+        :body
+        ,(if samep
+             `(,(if signedp <type> <type>-mod) (logior (,<type1>->get x)
+                                                       (,<type2>->get y)))
+           `(,bitior-<type>-<type>
+             ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and
+           samep
+           `(:prepwork
+             ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+             :guard-hints
+             (("Goal"
+               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
