@@ -515,22 +515,12 @@
    (xdoc::p
     "We need to turn the index @($i$), diminished by one,
      into a byte sequence consisting of 32 bits, i.e. 4 bytes.
-     There seems to be a bit of ambiguity on how to do that.
-     The meaning of this kind of diagrams (i.e. boxes)
-     is explained in the last two paragraphs [ZPS:5.2].
-     First, take @($i - 1$), and turn it into a 32-bit unsigned integer;
-     [ZPS] does not explicitly say that, but the diagram shows 32 bits
-     (presumably it is envisioned that this integer will never exceed 32 bits).
      The first paragraph of [ZPS:5.2] says that, unless otherwise specified,
      integers are encoded in little endian bytes of fixed length;
-     but here we need bits, so perhaps we should pick little endian bits.
-     Once we have bits, the last two paragraphs of [ZPS:5.2] apply:
-     we convert to bytes, with each byte in big endian.
-     This seems a bit involved; we should confirm and/or test this."))
+     thus, we take the little endian byte representation of @($i-1$)."))
   (b* ((i1 (1- i))
        (i1-32bit (mod i1 (expt 2 32)))
-       (bits (acl2::nat=>lebits 32 i1-32bit))
-       (m (acl2::bits=>bebytes bits)))
+       (m (acl2::nat=>lebytes 4 i1-32bit)))
     (find-group-hash d m))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
