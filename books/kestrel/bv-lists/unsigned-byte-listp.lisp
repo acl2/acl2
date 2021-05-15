@@ -90,3 +90,9 @@
                   (< (nfix n) (len x))))
   :hints (("Goal" :in-theory (e/d ( nth)
                                   ()))))
+
+(defthmd all-unsigned-byte-p-when-unsigned-byte-listp
+  (implies (unsigned-byte-listp size x)
+           (all-unsigned-byte-p size x))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p
+                                     unsigned-byte-listp))))
