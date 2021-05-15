@@ -1288,7 +1288,7 @@
                  xor-idiom-special
                  xor-idiom-special-2
                  xor-idiom-special-3
-                 unsigned-byte-p-32-of-slice-33-1
+                 acl2::unsigned-byte-p-of-slice-one-more
                  ACL2::GETBIT-TOO-HIGH
                  add-of-mul-of-256-becomes-bvcat
                  )

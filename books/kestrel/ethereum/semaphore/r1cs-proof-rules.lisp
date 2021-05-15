@@ -1851,11 +1851,6 @@
                   (bitxor z (bvplus 1 x y))))
   :hints (("Goal" :in-theory (e/d (bitxor BVXOR) (ACL2::BVXOR-1-BECOMES-BITXOR)))))
 
-(defthm unsigned-byte-p-32-of-slice-33-1
-  (equal (unsigned-byte-p 32 (slice 33 1 x))
-         (equal 0 (getbit 33 x)))
-  :hints (("Goal" :in-theory (enable getbit))))
-
 (defthm add-of-mul-of-256-becomes-bvcat
   (implies (and (unsigned-byte-p 8 x)
                 (unsigned-byte-p 24 y)
