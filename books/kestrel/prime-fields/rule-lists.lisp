@@ -12,41 +12,41 @@
 
 (defun add-and-mul-normalization-rules ()
   (declare (xargs :guard t))
-  '(pfield::add-associative
-    pfield::add-commutative-axe
-    pfield::add-commutative-2-axe
-    pfield::mul-associative
-    pfield::mul-commutative-axe
-    pfield::mul-commutative-2-axe))
+  '(add-associative
+    add-commutative-axe
+    add-commutative-2-axe
+    mul-associative
+    mul-commutative-axe
+    mul-commutative-2-axe))
 
 (defun prime-field-proof-rules ()
   (declare (xargs :guard t))
-  '(pfield::mul-of-1-arg1
-    pfield::mul-of-1-arg2
-    pfield::add-of-0-arg1
-    pfield::add-of-0-arg2
-    pfield::mul-constant-opener
-    pfield::add-constant-opener
-    pfield::fep-constant-opener
-    pfield::fep-of-mul
-    pfield::fep-of-add
-    pfield::integerp-of-mul
-    pfield::pow-opener
-    pfield::pow-of-0-arg2
-    pfield::add-commutative-axe
-    pfield::add-commutative-2-axe
-    pfield::mul-associative
-    pfield::mul-of-mod-arg1
-    pfield::mul-of-mod-arg2
+  '(mul-of-1-arg1
+    mul-of-1-arg2
+    add-of-0-arg1
+    add-of-0-arg2
+    mul-constant-opener
+    add-constant-opener
+    fep-constant-opener
+    fep-of-mul
+    fep-of-add
+    integerp-of-mul
+    pow-opener
+    pow-of-0-arg2
+    add-commutative-axe
+    add-commutative-2-axe
+    mul-associative
+    mul-of-mod-arg1
+    mul-of-mod-arg2
     ;; this one has a free var which can be expensive to relieve.  we could specialize it for the prime of interest if we need it:
-    ;;pfield::integerp-when-fep
+    ;;integerp-when-fep
     ))
 
 (defun bitp-idiom-rules ()
   (declare (xargs :guard t))
-  '(pfield::bitp-idiom-1
-    pfield::bitp-idiom-1-alt
-    pfield::bitp-idiom-2
-    pfield::bitp-idiom-2-alt
-    pfield::bitp-idiom-with-constant-1
-    pfield::bitp-idiom-with-constant-1-alt))
+  '(bitp-idiom-1
+    bitp-idiom-1-alt
+    bitp-idiom-2
+    bitp-idiom-2-alt
+    bitp-idiom-with-constant-1
+    bitp-idiom-with-constant-1-alt))

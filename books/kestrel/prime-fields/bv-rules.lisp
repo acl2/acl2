@@ -341,13 +341,13 @@
                                    ACL2::BVXOR-BLAST
                                    acl2::bvcat
                                    acl2::logapp
-                                   pfield::add-of-+-arg1
-                                   pfield::add-of-+-arg2
+                                   add-of-+-arg1
+                                   add-of-+-arg2
                                    acl2::bitxor-of-1-becomes-bitnot-arg1
                                    acl2::bitxor-of-1-becomes-bitnot-arg2
                                    acl2::bitnot-becomes-subtract)
                                   ( ;ACL2::BVCAT-OF-+-HIGH ;looped
-                                   pfield::ADD-SAME-ARG1-ARG3
+                                   ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1)))))
 
 ;;extend the mask and the BVXOR by 1 bit
@@ -374,17 +374,17 @@
                                    acl2::bvcat
                                    mul
                                    acl2::logapp
-                                   pfield::ADD-OF-+-ARG1
-                                   pfield::ADD-OF-+-ARG2
+                                   ADD-OF-+-ARG1
+                                   ADD-OF-+-ARG2
                                    ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG1
                                    acl2::bitnot-becomes-subtract
                                    acl2::bvxor-of-+-of-1-split
-                                   pfield::add-of---arg1-fixed)
+                                   add-of---arg1-fixed)
                                   (;ACL2::BVCAT-OF-+-HIGH
-                                   pfield::ADD-SAME-ARG1-ARG3
+                                   ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
                                    ;ACL2::BVCAT-OF-*-LOW
-                                   ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
+                                   ;EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
 ;; in this one, the bit is not negated
@@ -407,17 +407,17 @@
   :hints (("Goal" :in-theory (e/d ( ;ACL2::BVXOR-BLAST
                                    acl2::bvcat
                                    acl2::logapp
-                                   pfield::ADD-OF-+-ARG1
-                                   pfield::ADD-OF-+-ARG2
+                                   ADD-OF-+-ARG1
+                                   ADD-OF-+-ARG2
                                    ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG1
                                    acl2::bitnot-becomes-subtract
                                    acl2::bvxor-of-+-of-1-split
                                    mul)
                                   ( ;ACL2::BVCAT-OF-+-HIGH
-                                   pfield::ADD-SAME-ARG1-ARG3
+                                   ADD-SAME-ARG1-ARG3
                                    ACL2::MOD-OF-MINUS-ARG1
                                    ;;ACL2::BVCAT-OF-*-LOW
-                                   ;;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
+                                   ;;EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
 ;; todo: these may allow us to first go to bvcats of bitnots before introducing xor masks:
@@ -674,13 +674,13 @@
            :in-theory (enable add neg acl2::bvcat acl2::bitnot))))
 
 ;not true?
-;; (DEFTHM PFIELD::MUL-WHEN-NOT-fep-ARG1-CHEAP
-;;   (IMPLIES (NOT (fep PFIELD::X PFIELD::P))
-;;            (EQUAL (MUL PFIELD::X PFIELD::Y PFIELD::P)
-;;                   (MUL 0 PFIELD::Y PFIELD::P)))
+;; (DEFTHM MUL-WHEN-NOT-fep-ARG1-CHEAP
+;;   (IMPLIES (NOT (fep X P))
+;;            (EQUAL (MUL X Y P)
+;;                   (MUL 0 Y P)))
 ;;   :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (1)))
 ;;   :HINTS (("Goal"
-;;            :use (:instance ACL2::MOD-OF-*-OF-MOD-2 (y pfield::x) (x pfield::y) (z pfield::p))
+;;            :use (:instance ACL2::MOD-OF-*-OF-MOD-2 (y x) (x y) (z p))
 ;;            :IN-THEORY (E/d (MUL fep) (ACL2::MOD-OF-*-OF-MOD-2
 ;;                                       ACL2::MOD-OF-*-OF-MOD)))))
 
@@ -692,5 +692,5 @@
 ;;   :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
 ;;            :in-theory (e/d ()
 ;;                            (constrain-to-be-bit-correct
-;;                             PFIELD::NEG-OF-* ;looped
+;;                             NEG-OF-* ;looped
 ;;                             )))))

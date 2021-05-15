@@ -62,7 +62,7 @@
                               (not (equal "" package)))))
   (if (zp n)
       nil
-    (let* ((fep-val (pfield::neg (expt 2 n) prime))
+    (let* ((fep-val (neg (expt 2 n) prime))
            (neg-val (- fep-val prime))
            (base-name (concatenate 'string "-2^" (acl2::nat-to-string n)))
            (fep-defconst-print-name (concatenate 'string "*" base-name "*"))
@@ -88,7 +88,7 @@
                               (not (equal "" package)))))
   (if (zp n)
       nil
-    (let* ((fep-val (pfield::inv (expt 2 n) prime))
+    (let* ((fep-val (inv (expt 2 n) prime))
            (neg-val (- fep-val prime))
            (base-name (concatenate 'string "1/2^" (acl2::nat-to-string n)))
            (fep-defconst-print-name (concatenate 'string "*" base-name "*"))
@@ -114,7 +114,7 @@
                               (not (equal "" package)))))
   (if (zp n)
       nil
-    (let* ((fep-val (pfield::neg (pfield::inv (expt 2 n) prime) prime))
+    (let* ((fep-val (neg (inv (expt 2 n) prime) prime))
            (neg-val (- fep-val prime)) ;; equivalent value
            (base-name (concatenate 'string "-1/2^" (acl2::nat-to-string n)))
            (fep-defconst-print-name (concatenate 'string "*" base-name "*"))

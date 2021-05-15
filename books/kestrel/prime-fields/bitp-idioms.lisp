@@ -26,7 +26,7 @@
            (equal (equal 0 (mul x (add p-1 x p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::mul-of-add-arg2)))))
+                                  (mul-of-add-arg2)))))
 
 ;; Just commutes the MUL in the LHS
 (defthm bitp-idiom-1-alt
@@ -47,7 +47,7 @@
            (equal (equal 0 (mul x (add 1 (neg x p) p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::mul-of-add-arg2)))))
+                                  (mul-of-add-arg2)))))
 
 ;; Just commutes the MUL in the lhs
 (defthm bitp-idiom-2-alt
@@ -73,10 +73,10 @@
   :hints (("Goal" :use (:instance bitp-idiom-1
                                   (p-1 (+ -1 p))
                                   (x (add k1 x p)))
-           :in-theory (e/d (pfield::add-of-+-arg2)
+           :in-theory (e/d (add-of-+-arg2)
                            (bitp-idiom-1
-                            pfield::mul-of-add-arg2
-                            pfield::mul-of-add-arg1
+                            mul-of-add-arg2
+                            mul-of-add-arg1
                             ;; prevent loops:
                             ;;acl2::+-of-minus
                             acl2::mod-of-minus-arg1)))))
@@ -102,30 +102,30 @@
                                 (neg x p)
                                 p))
                   (bitp x)))
-  :hints (("Goal" :in-theory (e/d (bitp) (pfield::mul-of-add-arg1
-                                          pfield::mul-of-add-arg2)))))
+  :hints (("Goal" :in-theory (e/d (bitp) (mul-of-add-arg1
+                                          mul-of-add-arg2)))))
 
 (defthm bitp-idiom-with-added-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep k-1)))
-                (equal k-1 (pfield::sub k 1 p))
+                (equal k-1 (sub k 1 p))
 ;                (fep k p)
                 (primep p))
            (equal (equal 0 (mul (add k x p) (add k-1 x p) p))
                   (bitp (add k x p))))
-  :hints (("Goal" :use (:instance PFIELD::BITP-IDIOM-1
+  :hints (("Goal" :use (:instance BITP-IDIOM-1
                                   (x (add k x p))
                                   (p-1 -1)
                                   (p p))
-           :in-theory (disable PFIELD::BITP-IDIOM-1
+           :in-theory (disable BITP-IDIOM-1
 ;                               ACL2::BITP-BECOMES-UNSIGNED-BYTE-P
-                               PFIELD::MUL-OF-ADD-ARG1
-                               PFIELD::MUL-OF-ADD-ARG2))))
+                               MUL-OF-ADD-ARG1
+                               MUL-OF-ADD-ARG2))))
 
 (defthm bitp-idiom-with-added-constant-alt
   (implies (and (syntaxp (and (quotep k)
                               (quotep k-1)))
-                (equal k-1 (pfield::sub k 1 p))
+                (equal k-1 (sub k 1 p))
 ;                (fep k p)
                 (primep p))
            (equal (equal 0 (mul (add k-1 x p) (add k x p) p))

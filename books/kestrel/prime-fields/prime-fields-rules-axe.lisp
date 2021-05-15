@@ -20,84 +20,84 @@
 (acl2::def-constant-opener fep)
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-add
+(defthmd integerp-of-add
   (integerp (add x y p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-add
+(defthmd rationalp-of-add
   (rationalp (add x y p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-sub
+(defthmd integerp-of-sub
   (integerp (sub x y p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-sub
+(defthmd rationalp-of-sub
   (rationalp (sub x y p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-neg
+(defthmd integerp-of-neg
   (integerp (neg x p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-neg
+(defthmd rationalp-of-neg
   (rationalp (neg x p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-mul
+(defthmd integerp-of-mul
   (integerp (mul x y p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-mul
+(defthmd rationalp-of-mul
   (rationalp (mul x y p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-pow
+(defthmd integerp-of-pow
   (integerp (pow x n p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-pow
+(defthmd rationalp-of-pow
   (rationalp (pow x n p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-inv
+(defthmd integerp-of-inv
   (integerp (inv x p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-inv
+(defthmd rationalp-of-inv
   (rationalp (inv x p)))
 
 ;; only needed by axe
-(defthmd pfield::integerp-of-div
+(defthmd integerp-of-div
   (integerp (div x y p)))
 
 ;; only needed by axe
-(defthmd pfield::rationalp-of-div
+(defthmd rationalp-of-div
   (rationalp (div x y p)))
 
 ;; only for use by Axe
-(defthmd pfield::add-commutative-axe
+(defthmd add-commutative-axe
   (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'add x y acl2::dag-array))
            (equal (add x y p)
                   (add y x p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
-(defthmd pfield::add-commutative-2-axe
+(defthmd add-commutative-2-axe
   (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'add x y acl2::dag-array))
            (equal (add x (add y z p) p)
                   (add y (add x z p) p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
-(defthmd pfield::mul-commutative-axe
+(defthmd mul-commutative-axe
   (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'mul x y acl2::dag-array))
            (equal (mul x y p)
                   (mul y x p)))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
 ;; only for use by Axe
-(defthmd pfield::mul-commutative-2-axe
+(defthmd mul-commutative-2-axe
   (implies (acl2::axe-syntaxp (acl2::should-commute-args-dag 'mul x y acl2::dag-array))
            (equal (mul x (mul y z p) p)
                   (mul y (mul x z p) p)))
