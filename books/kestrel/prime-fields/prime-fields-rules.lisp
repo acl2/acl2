@@ -1108,3 +1108,26 @@
                 )
            (equal (add x y p)
                   (add x free p))))
+
+;gen the -1
+(defthm add-of-+-of--1
+  (implies (integerp x)
+           (equal (add x (+ -1 p) p)
+                  (add x -1 p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-+-of-p-arg2
+  (equal (add x (+ y p) p)
+         (add x y p))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of---of-p-arg2
+  (implies (posp p)
+           (equal (add x (- p) p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of---same-arg2
+  (equal (add k (- k) p)
+         0)
+  :hints (("Goal" :in-theory (enable add))))

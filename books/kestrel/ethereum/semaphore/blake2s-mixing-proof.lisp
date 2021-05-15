@@ -1293,8 +1293,8 @@
                  add-of-mul-of-256-becomes-bvcat
                  )
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
-               (r1cs::bitp-idiom-1
-                r1cs::bitp-idiom-2)
+               (pfield::bitp-idiom-1
+                pfield::bitp-idiom-2)
                ;; introduce bvcats:
                ( ;; These get the process started, by combining 2 bits:
                 add-of-mul-and-mul-when-bitps-and-adjacent-coeffs

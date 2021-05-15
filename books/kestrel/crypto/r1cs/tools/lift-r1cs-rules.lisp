@@ -1,6 +1,15 @@
+; Rules for lifting R1CSes into logic (with Axe)
+;
+; Copyright (C) 2021 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "R1CS")
 
-;; todo: reduce:
 (include-book "../gadgets")
 (include-book "../gadgets/xor-rules")
 (include-book "kestrel/axe/axe-syntax" :dir :system)
@@ -44,92 +53,14 @@
                        p)))
   :hints (("Goal" :in-theory (enable mul acl2::mod-sum-cases))))
 
-;gen the -1
-(defthm add-of-+-of--1
-  (implies (integerp x)
-           (equal (add x (+ -1 p) p)
-                  (add x -1 p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of-+-of-p-arg2
-  (equal (add x (+ y p) p)
-         (add x y p))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of---of-p-arg2
-  (implies (posp p)
-           (equal (add x (- p) p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of---same-arg2
-  (equal (add k (- k) p)
-         0)
-  :hints (("Goal" :in-theory (enable add))))
-
-;; 0 = x*(x-1) iff (x is 0 or 1)
-(defthm bitp-idiom-1
-  (implies (and (syntaxp (and (quotep p-1)
-                              (quotep p)))
-                (equal p-1 (+ -1 p))
-                (fep x p)
-                (rtl::primep p))
-           (equal (equal 0 (mul x (add p-1 x p) p))
-                  (bitp x)))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::MUL-OF-ADD-ARG2)))))
-
-(defthm bitp-idiom-2
-  (implies (and (syntaxp (and (quotep p-1)
-                              (quotep p)))
-                (equal p-1 (+ -1 p))
-                (fep x p)
-                (rtl::primep p))
-           (equal (equal 0 (mul (add p-1 x p) x p))
-                  (bitp x)))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::MUL-OF-ADD-ARG2)))))
-
-(defthm bitp-idiom-with-constant-1
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (equal k1 (+ 1 k2))
-                (fep k2 p) ;(integerp k2)
-                (fep x p)
-                (rtl::primep p))
-           (equal (equal 0 (mul (add k1 x p) (add k2 x p) p))
-                  (bitp (add k1 x p))))
-  :hints (("Goal" :use (:instance bitp-idiom-1
-                                  (p-1 (+ -1 p))
-                                  (x (add k1 x p)))
-           :in-theory (e/d (pfield::add-of-+-arg2)
-                           (bitp-idiom-1
-                            pfield::mul-of-add-arg2
-                            pfield::mul-of-add-arg1
-                            ;; prevent loops:
-                            ;;acl2::+-of-minus
-                            acl2::mod-of-minus-arg1)))))
-
-(defthm bitp-idiom-with-constant-2
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (equal k1 (+ 1 k2))
-                (fep k2 p) ;(integerp k2)
-                (fep x p)
-                (rtl::primep p))
-           (equal (equal 0 (mul (add k2 x p) (add k1 x p) p))
-                  (bitp (add k1 x p))))
-  :hints (("Goal" :use (:instance bitp-idiom-with-constant-1)
-           :in-theory (disable bitp-idiom-with-constant-1))))
-
 (defthm equal-of-add-of---and-0
- (implies (and (posp p)
-               (integerp x)
-               (integerp k))
-          (equal (equal (add x (- k) p) 0)
-                 (equal (mod (ifix x) p)
-                        (mod (ifix k) p))))
- :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
+  (implies (and (posp p)
+                (integerp x)
+                (integerp k))
+           (equal (equal (add x (- k) p) 0)
+                  (equal (mod (ifix x) p)
+                         (mod (ifix k) p))))
+  :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
 
 (defthmd add-of-unary---arg2
   (equal (add x (- k) p)
@@ -301,19 +232,6 @@
            (not (fep x p)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm mod-when-<-of-0
-  (implies (and (< (- y) x)
-                (< x 0)
-                (integerp x)
-                (posp y))
-           (equal (mod x y)
-                  (+ x y)))
-  :hints (("Goal" :use (:instance ACL2::MOD-WHEN-<
-                                  (x (+ X Y))
-                                  (y y))
-           :in-theory (disable ACL2::MOD-WHEN-<
-                               PFIELD::MOD-WHEN-FEP))))
-
 (defthmd bitp-of-add-of-constant-2
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 (- k))
@@ -443,15 +361,7 @@
   (("Goal"
     :in-theory (enable mul neg pfield::sub))))
 
-(defthm bitp-idiom
-  (implies (and (rtl::primep p)
-                (fep x p))
-           (equal (equal 0 (mul (add 1 (neg x p) p)
-                                        (neg x p)
-                                        p))
-                  (bitp x)))
-  :hints (("Goal" :in-theory (e/d (bitp) (pfield::mul-of-add-arg1
-                                          pfield::mul-of-add-arg2)))))
+
 
 
 (defthm bitp-of-bitxor

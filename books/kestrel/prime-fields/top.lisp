@@ -19,3 +19,5 @@
 (include-book "doc")
 (include-book "rule-lists")
 (include-book "printing")
+
+(include-book "bitp-idioms")

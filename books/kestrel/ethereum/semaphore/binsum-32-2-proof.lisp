@@ -225,8 +225,8 @@
                  acl2::bvcat-numeric-bound
                  ACL2::NOT-<-OF-BVCAT-AND-0)
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
-               (r1cs::bitp-idiom-1
-                r1cs::bitp-idiom-2)
+               (pfield::bitp-idiom-1
+                pfield::bitp-idiom-2)
                (pfield::mul-of-power-of-2-when-bitp ; introduces bvcat
                 pfield::mul-of-negative-power-of-2-when-bitp ; introduces bvcat and bitnot
                 pfield::add-commutative-2-when-constant

@@ -994,30 +994,6 @@
                   (slice 32 0 x)))
   :hints (("Goal" :in-theory (enable slice))))
 
-(encapsulate ()
-  (local (include-book "kestrel/axe/rules3" :dir :system))
-;cherry pick:
-  (DEFTHM
-    ACL2::UNSIGNED-BYTE-P-TIGHTEN-WHEN-SLICE-IS-0
-    (IMPLIES (AND (EQUAL 0 (SLICE ACL2::K ACL2::FREE ACL2::X))
-                  (EQUAL ACL2::K (+ -1 ACL2::SIZE))
-                  (POSP ACL2::SIZE)
-                  (< ACL2::FREE ACL2::SIZE)
-                  (NATP ACL2::FREE))
-             (EQUAL (UNSIGNED-BYTE-P ACL2::SIZE ACL2::X)
-                    (UNSIGNED-BYTE-P ACL2::FREE ACL2::X)))
-    :HINTS
-    (("Goal"
-      :USE (:INSTANCE ACL2::SPLIT-WITH-BVCAT
-                      (ACL2::HS (- ACL2::SIZE ACL2::FREE))
-                      (ACL2::LS ACL2::FREE))
-      :IN-THEORY
-      (E/D NIL
-           (ACL2::BVCHOP-CONTRACT-HACK-GEN
-            ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
-            ACL2::EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-            ACL2::BVCHOP-TIGHTEN-WHEN-SLICE-0))))))
-
 (defthmd bitp-of-add-of-mul-of--2-becomes-equal-of-slice
   (implies (and (syntaxp (quotep k))
                 (equal k (- p 2)) ;to make this rule not prime-specific

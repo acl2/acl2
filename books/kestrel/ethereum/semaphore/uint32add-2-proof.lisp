@@ -237,8 +237,8 @@
                  ACL2::BVCAT-OF-BVCHOP-high
                  )
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
-               (r1cs::bitp-idiom-1
-                r1cs::bitp-idiom-2)
+               (pfield::bitp-idiom-1
+                pfield::bitp-idiom-2)
                ;; introduce bvcats:
                (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
                 add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt

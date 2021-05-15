@@ -216,8 +216,8 @@
                  acl2::getbit-0-of-bitnot
                  )
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
-               (r1cs::bitp-idiom-1
-                r1cs::bitp-idiom-2)
+               (pfield::bitp-idiom-1
+                pfield::bitp-idiom-2)
                ;; introduce xors:
                (pfield::xor-idiom-1
                 pfield::xor-idiom-2

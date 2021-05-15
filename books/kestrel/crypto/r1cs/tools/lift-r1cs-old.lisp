@@ -23,6 +23,7 @@
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system) ; brings in skip-proofs
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
+(include-book "kestrel/prime-fields/bitp-idioms" :dir :system)
 (include-book "kestrel/prime-fields/rules2" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 

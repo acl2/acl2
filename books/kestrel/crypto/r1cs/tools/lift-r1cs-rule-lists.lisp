@@ -73,10 +73,10 @@
   (append '(acl2::lookup-equal-of-filter-and-combine-symbol-alists-safe
             pfield::neg-of-neg
             pfield::equal-of-add-of-add-of-neg-arg2-arg2
-            bitp-idiom-1
-            bitp-idiom-2
-            bitp-idiom-with-constant-1
-            bitp-idiom-with-constant-2
+            pfield::bitp-idiom-1
+            pfield::bitp-idiom-2
+            pfield::bitp-idiom-with-constant-1
+            pfield::bitp-idiom-with-constant-2
             mul-normalize-constant-arg1
             add-of-constant-normalize-to-fep ;todo: normalize to small pos or neg numbers instead?
             pfield::mul-of--1-becomes-neg-gen ;todo: be consistent about negative constants
