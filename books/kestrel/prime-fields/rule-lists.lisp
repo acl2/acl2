@@ -48,5 +48,5 @@
     bitp-idiom-1-alt
     bitp-idiom-2
     bitp-idiom-2-alt
-    bitp-idiom-with-constant-1
-    bitp-idiom-with-constant-1-alt))
+    bitp-idiom-1-with-added-constant
+    bitp-idiom-1-with-added-constant-alt))

@@ -61,12 +61,10 @@
 ;; In this variant, the value being constrained to be a bit is of the form (add
 ;; <constant> <something>) and the <constant> has been combined with the p-1
 ;; constant from the normal rule.
-(defthm bitp-idiom-with-constant-1
+(defthm bitp-idiom-1-with-added-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
-                (equal k1 (+ 1 k2))
-                (fep k2 p) ;(integerp k2)
-                (fep x p)
+                (equal k2 (sub k1 1 p))
                 (rtl::primep p))
            (equal (equal 0 (mul (add k1 x p) (add k2 x p) p))
                   (bitp (add k1 x p))))
@@ -82,19 +80,17 @@
                             acl2::mod-of-minus-arg1)))))
 
 ;; Just commutes the MUL in the lhs.
-(defthm bitp-idiom-with-constant-1-alt
+(defthm bitp-idiom-1-with-added-constant-alt
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
-                (equal k1 (+ 1 k2))
-                (fep k2 p) ;(integerp k2)
-                (fep x p)
+                (equal k2 (sub k1 1 p))
                 (rtl::primep p))
            (equal (equal 0 (mul (add k2 x p) (add k1 x p) p))
                   (bitp (add k1 x p))))
-  :hints (("Goal" :use (:instance bitp-idiom-with-constant-1)
+  :hints (("Goal" :use (:instance bitp-idiom-1-with-added-constant)
            :in-theory '(mul-commutative))))
 
-;; Or pull the neg out of the mul
+;; Or pull the neg out of the mul, or TODO drop the neg: 0=x*-y iif 0=x*y
 (defthm bitp-idiom
   (implies (and (rtl::primep p)
                 (fep x p))
@@ -104,31 +100,3 @@
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (bitp) (mul-of-add-arg1
                                           mul-of-add-arg2)))))
-
-(defthm bitp-idiom-with-added-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k-1)))
-                (equal k-1 (sub k 1 p))
-;                (fep k p)
-                (primep p))
-           (equal (equal 0 (mul (add k x p) (add k-1 x p) p))
-                  (bitp (add k x p))))
-  :hints (("Goal" :use (:instance BITP-IDIOM-1
-                                  (x (add k x p))
-                                  (p-1 -1)
-                                  (p p))
-           :in-theory (disable BITP-IDIOM-1
-;                               ACL2::BITP-BECOMES-UNSIGNED-BYTE-P
-                               MUL-OF-ADD-ARG1
-                               MUL-OF-ADD-ARG2))))
-
-(defthm bitp-idiom-with-added-constant-alt
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k-1)))
-                (equal k-1 (sub k 1 p))
-;                (fep k p)
-                (primep p))
-           (equal (equal 0 (mul (add k-1 x p) (add k x p) p))
-                  (bitp (add k x p))))
-  :hints (("Goal" :use (:instance bitp-idiom-with-added-constant)
-           :in-theory '(mul-commutative))))
