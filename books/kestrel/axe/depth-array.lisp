@@ -64,7 +64,7 @@
           (let ((depth (aref1 depth-array-name depth-array item)))
             (if (or (not depth)
                     (< new-depth depth))
-                (set-depths-of-nodenums-if-lower depth-array-name new-depth (rest items) (aset1-safe depth-array-name depth-array item new-depth) depth-array-len)
+                (set-depths-of-nodenums-if-lower depth-array-name new-depth (rest items) (aset1 depth-array-name depth-array item new-depth) depth-array-len)
               (set-depths-of-nodenums-if-lower depth-array-name new-depth (rest items) depth-array depth-array-len)))
         ;;item is a quoted constant, so skip it:
         (set-depths-of-nodenums-if-lower depth-array-name new-depth (rest items) depth-array depth-array-len)))))
@@ -203,8 +203,8 @@
   (let* ((max-nodenum (maxelem starting-nodes))
          (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))
          (depth-array (aset1-list 'depth-array depth-array starting-nodes 1))
-         ;; (depth-array (aset1-safe 'depth-array depth-array smaller-nodenum 1))
-         ;; (depth-array (aset1-safe 'depth-array depth-array larger-nodenum 1))
+         ;; (depth-array (aset1 'depth-array depth-array smaller-nodenum 1))
+         ;; (depth-array (aset1 'depth-array depth-array larger-nodenum 1))
          )
     (make-depth-array-aux max-nodenum dag-array-name dag-array 'depth-array depth-array dag-len 1)))
 
