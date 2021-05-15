@@ -84,3 +84,6 @@
 (sig update-nth (nat :a (listof :a)) => (listof :a) ;new: check
      :satisfies (<= x1 (len x3)))
 
+;; This is in sorting/sorting.lisp
+; (sig evens ((listof :a)) => (listof :a))
+; (sig odds ((listof :a)) => (listof :a))
