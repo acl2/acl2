@@ -14881,21 +14881,6 @@
                (take n b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-
-
-;gen to deal with more that just 1 top bit
-(defthm unsigned-byte-p-of-slice-one-more
-  (implies (and (equal (- high low) size)
-                (natp high)
-                (natp low)
-                (<= low high))
-           (equal (unsigned-byte-p size (slice high low x))
-                  (equal 0 (getbit high x))))
-  :hints (("Goal" :use (:instance split-bv (y (slice high low x)) (n (+ 1 (- low) high)) (m (- high low)))
-           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
-
-
-
 ;slow?
 (defthm unsigned-byte-p-of-+
   (implies (and (unsigned-byte-p (+ -1 size) x)

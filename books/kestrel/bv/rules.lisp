@@ -8506,3 +8506,24 @@
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs (- size free)) (ls free))
            :in-theory (e/d () (equal-of-bvchop-and-bvchop-same)))))
+
+(defthm unsigned-byte-p-of-slice-lemma
+  (implies (and (unsigned-byte-p (+ n low) x)
+                (natp n)
+                (natp low)
+                (natp high)
+                )
+           (equal (unsigned-byte-p n (slice high low x))
+                  t))
+  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
+
+;gen to deal with more that just 1 top bit
+(defthm unsigned-byte-p-of-slice-one-more
+  (implies (and (equal (- high low) size)
+                (natp high)
+                (natp low)
+                (<= low high))
+           (equal (unsigned-byte-p size (slice high low x))
+                  (equal 0 (getbit high x))))
+  :hints (("Goal" :use (:instance split-bv (y (slice high low x)) (n (+ 1 (- low) high)) (m (- high low)))
+           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))

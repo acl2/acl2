@@ -234,18 +234,6 @@
 
 (theory-invariant (incompatible (:rewrite logapp-0) (:rewrite times-4-becomes-logapp)))
 
-;move
-(defthm unsigned-byte-p-of-slice-lemma
-  (implies (and (unsigned-byte-p (+ n low) x)
-                (natp n)
-                (natp low)
-                (natp high)
-                )
-           (equal (unsigned-byte-p n (slice high low x))
-                  t))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
-
-
 (defthm logext-of-plus-of-logext
   (implies (and (<= smallsize bigsize)
                 (integerp smallsize)
