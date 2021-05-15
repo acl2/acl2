@@ -288,7 +288,7 @@
                 (rtl::primep p)
                 (< n p)
                 (> p 2))
-           (natp (acl2::mod-expt-fast n(+ 1/2 (* 1/2 q)) p)))
+           (natp (acl2::mod-expt-fast n (+ 1/2 (* 1/2 q)) p)))
   :hints (("Goal"
            :in-theory (enable acl2::not-evenp-when-oddp)
            ))

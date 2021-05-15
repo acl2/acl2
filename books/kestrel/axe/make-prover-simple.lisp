@@ -1148,7 +1148,7 @@
         ;;              (let ((new-nodenum (lookup-eq-safe2 expr embedded-dag-var-alist 'merge-embedded-dag-into-dag-for-basic-prover))) ;drop the -safe?
         ;;                (merge-embedded-dag-into-dag-for-basic-prover (cdr rev-dag)
         ;;                                                            renaming-array-name
-        ;;                                                            (aset1-safe renaming-array-name renaming-array2 nodenum new-nodenum)
+        ;;                                                            (aset1 renaming-array-name renaming-array2 nodenum new-nodenum)
         ;;                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
         ;;                                                            embedded-dag-var-alist
         ;;                                                            rule-alist
@@ -1159,7 +1159,7 @@
         ;;            (if (quotep expr)
         ;;                (merge-embedded-dag-into-dag-for-basic-prover (cdr rev-dag)
         ;;                                                            renaming-array-name
-        ;;                                                            (aset1-safe renaming-array-name renaming-array2 nodenum expr)
+        ;;                                                            (aset1 renaming-array-name renaming-array2 nodenum expr)
         ;;                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
         ;;                                                            embedded-dag-var-alist
         ;;                                                            rule-alist
@@ -1189,7 +1189,7 @@
         ;;                      (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
         ;;                    (merge-embedded-dag-into-dag-for-basic-prover (cdr rev-dag)
         ;;                                                                renaming-array-name
-        ;;                                                                (aset1-safe renaming-array-name renaming-array2 nodenum new-nodenum-or-quotep)
+        ;;                                                                (aset1 renaming-array-name renaming-array2 nodenum new-nodenum-or-quotep)
         ;;                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
         ;;                                                                embedded-dag-var-alist
         ;;                                                                rule-alist

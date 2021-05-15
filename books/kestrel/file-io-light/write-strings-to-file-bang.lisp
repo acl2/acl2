@@ -16,9 +16,11 @@
 (defttag file-io!)
 
 ;; Writes the STRINGS to file FILENAME, overwriting its previous contents.
-;; Returns (mv erp state).  The ttag is needed because this calls
-;; open-output-channel!, but that makes this version usable during make-event
-;; expansion, clause-processors, etc.
+;; Effectively, all the STRINGS get concatenated and the result becomes the new
+;; contents of the file.  Returns (mv erp state).  CTX is a context for error
+;; printing.  The ttag is needed because this calls open-output-channel!, but
+;; that makes this version usable during make-event expansion,
+;; clause-processors, etc.
 (defund write-strings-to-file! (strings filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (string-listp strings)
