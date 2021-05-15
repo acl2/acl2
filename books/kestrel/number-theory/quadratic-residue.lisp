@@ -24,19 +24,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  ;; We use arithmetic-3 locally here because it prevents later definitions
-  ;; from being accepted.
-  (local (include-book "arithmetic-3/top" :dir :system))
 
   ;; This means "p is an odd prime and there is a number z such that z*z = a mod p"
   (defun has-square-root? (a p)
-    (declare (xargs :guard (and (natp a) (natp p) (< 2 p) (< a p)
-                                (oddp p) (rtl::primep p))))
+    (declare (xargs :guard (and (natp a)
+                                (rtl::primep p)
+                                (not (equal p 2))
+                                (< a p))))
     (and (rtl::primep p)
          (or (= a 0)
              (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
-                    1))))
-  )
+                    1)))))
 
 ;; rtl::residue considers 0 not to be a quadratic residue,
 ;; but 0*0 = 0 so we consider it a square root.
@@ -75,7 +73,6 @@
 (defthm residue-meaning
   (implies (and (rtl::primep p)
                 (not (equal p 2))
-                (oddp p)
                 (natp m) (< m p)
                 (not (equal 0 m)) ; This is needed because rtl::residue
                                   ; returns false for m=0.
@@ -89,7 +86,6 @@
 (defthmd residue-meaning-backwards
   (implies (and (rtl::primep p)
                 (not (equal p 2))
-                (oddp p)
                 (natp m) (< m p)
                 (not (equal 0 m)))
            (equal (has-square-root? m p)
@@ -106,7 +102,7 @@
 
 (defthm no-square-root-forall
   (implies (and (not (has-square-root? x p))
-                (< 2 p)
+                (not (equal p 2))
                 (natp y) (< y p)
                 (rtl::primep p))
            (not (equal x (mod (* y y) p)))
@@ -123,6 +119,6 @@
   (implies (and (equal x (mod (* y y) p))
                 (integerp y)
                 (rtl::primep p)
-                (< 2 p))
+                (not (equal p 2)))
            (has-square-root? x p))
   :hints (("Goal" :use (:instance no-square-root-forall (y (mod y p))))))
