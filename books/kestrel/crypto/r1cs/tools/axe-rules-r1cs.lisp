@@ -50,6 +50,11 @@
                 (acl2::memberp x free))
            (fep x p)))
 
+(defthm natp-when-fe-listp-and-memberp
+  (implies (and (fe-listp free p)
+                (acl2::memberp x free))
+           (natp x)))
+
 ;; Try this after most rules, since it requires searching through assumptions:
 (table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
 

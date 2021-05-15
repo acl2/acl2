@@ -71,6 +71,10 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable fep))))
 
+(defthmd <-when-fep
+  (implies (fep x p)
+           (< x p)))
+
 ;; 0 is in the field
 (defthm fep-of-0
   (implies (posp p)
