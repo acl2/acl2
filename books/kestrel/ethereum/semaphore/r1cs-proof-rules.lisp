@@ -28,6 +28,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ;for ACL2::COMMUTATIVITY-2-OF-+-WHEN-CONSTANT??
+(local (include-book "kestrel/bv/logtail" :dir :system))
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
 
 ;todo: file these:
@@ -817,13 +818,6 @@
   :hints (("Goal" :use (:instance acl2::split-bv-with-logapp (x x)
                                   (size 32))
            :in-theory (enable bvcat acl2::logapp))))
-
-;move and gen
-(defthm equal-of-0-and-logtail-33
-  (implies (natp x)
-           (equal (EQUAL 0 (ACL2::LOGTAIL 33 x))
-                  (unsigned-byte-p 33 x)))
-  :hints (("Goal" :in-theory (enable ACL2::LOGTAIL))))
 
 (defthmd equal-of-logtail-and-constant
   (implies (and (syntaxp (quotep k))
