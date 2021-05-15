@@ -8493,3 +8493,16 @@
            (equal (booland (not (sbvlt size k x)) (not (equal k x)))
                   (sbvlt size x k)))
   :hints (("Goal" :use (:instance svblt-trichotomy (y k)))))
+
+;disable?
+(defthm unsigned-byte-p-tighten-when-slice-is-0
+  (implies (and (equal 0 (slice k free x))
+                (equal k (+ -1 size))
+                (posp size)
+                (< free size)
+                (natp free))
+           (equal (unsigned-byte-p size x)
+                  (unsigned-byte-p free x)))
+  :hints (("Goal"
+           :use (:instance split-with-bvcat (hs (- size free)) (ls free))
+           :in-theory (e/d () (equal-of-bvchop-and-bvchop-same)))))

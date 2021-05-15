@@ -1717,20 +1717,6 @@
            :use (:instance split-with-bvcat (hs 1) (ls 31))
            :in-theory (e/d () (BVCHOP-CONTRACT-HACK-GEN REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1)))))
 
-(defthm UNSIGNED-BYTE-P-tighten-when-slice-is-0
-  (implies (and (equal 0 (slice k free x))
-                (equal k (+ -1 size))
-                (posp size)
-                (< free size)
-                (natp free))
-           (equal (UNSIGNED-BYTE-P size x)
-                  (UNSIGNED-BYTE-P free x)))
-  :hints (("Goal"
-           :use (:instance split-with-bvcat (hs (- size free)) (ls free))
-           :in-theory (e/d () (BVCHOP-CONTRACT-HACK-GEN REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
-                                                        EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                                         BVCHOP-TIGHTEN-WHEN-SLICE-0)))))
-
 (defthm bv-3-2-1-hack
   (implies (and (bvlt size 1 x)
                 (not (bvlt size 3 x))
