@@ -137,15 +137,6 @@
 ;; (equal '1368015184586208377692962645747596915105636153469842199510504144919754569108
 ;;        (pfield::neg (pfield::inv #x100000000 21888242871839275222246405745257275088548364400416034343698204186575808495617) 21888242871839275222246405745257275088548364400416034343698204186575808495617))
 
-;fix name
-(defthm mul-of-+-same-arg1
-  (implies (and (integerp x)
-                ;(integerp y)
-                (integerp p))
-           (equal (mul (+ x p) y p)
-                  (mul x y p)))
-  :hints (("Goal" :in-theory (enable mul))))
-
 ;very odd
 (defthmd add-of-mul-normalize-coeffs
   (implies (and (primep p)

@@ -1131,3 +1131,11 @@
   (equal (add k (- k) p)
          0)
   :hints (("Goal" :in-theory (enable add))))
+
+(defthm mul-of-+-same-arg2
+  (implies (and (integerp x)
+                ;(integerp y)
+                (integerp p))
+           (equal (mul (+ x p) y p)
+                  (mul x y p)))
+  :hints (("Goal" :in-theory (enable mul))))
