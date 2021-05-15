@@ -41,3 +41,12 @@
     ;; this one has a free var which can be expensive to relieve.  we could specialize it for the prime of interest if we need it:
     ;;pfield::integerp-when-fep
     ))
+
+(defun bitp-idiom-rules ()
+  (declare (xargs :guard t))
+  '(pfield::bitp-idiom-1
+    pfield::bitp-idiom-1-alt
+    pfield::bitp-idiom-2
+    pfield::bitp-idiom-2-alt
+    pfield::bitp-idiom-with-constant-1
+    pfield::bitp-idiom-with-constant-1-alt))

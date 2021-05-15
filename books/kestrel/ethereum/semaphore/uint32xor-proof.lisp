@@ -217,7 +217,7 @@
                  )
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
                (pfield::bitp-idiom-1
-                pfield::bitp-idiom-2)
+                pfield::bitp-idiom-1-alt)
                ;; introduce xors:
                (pfield::xor-idiom-1
                 pfield::xor-idiom-2

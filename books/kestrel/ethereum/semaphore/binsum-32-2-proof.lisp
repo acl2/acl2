@@ -226,7 +226,7 @@
                  ACL2::NOT-<-OF-BVCAT-AND-0)
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
                (pfield::bitp-idiom-1
-                pfield::bitp-idiom-2)
+                pfield::bitp-idiom-1-alt)
                (pfield::mul-of-power-of-2-when-bitp ; introduces bvcat
                 pfield::mul-of-negative-power-of-2-when-bitp ; introduces bvcat and bitnot
                 pfield::add-commutative-2-when-constant

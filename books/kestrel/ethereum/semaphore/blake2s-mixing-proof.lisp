@@ -1294,7 +1294,7 @@
                  )
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
                (pfield::bitp-idiom-1
-                pfield::bitp-idiom-2)
+                pfield::bitp-idiom-1-alt)
                ;; introduce bvcats:
                ( ;; These get the process started, by combining 2 bits:
                 add-of-mul-and-mul-when-bitps-and-adjacent-coeffs

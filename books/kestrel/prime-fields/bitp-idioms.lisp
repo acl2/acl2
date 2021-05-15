@@ -8,11 +8,15 @@
 ;; fact that a value is a bit.  These are useful for verifying R1CSes, etc.
 
 ;; The basic patterns for expressing (bitp x) are:
-;; 0 = x*(x-1)
-;; 0 = x*(1-x)
-;; where * and - are of course modulo the prime.
+; 0 = x*(x-1)
+; 0 = x*(1-x)
+;; where * and - are of course modulo the prime.  This takes advantage of the
+;; fact that a product is 0 iff one (or both) of the factors is 0.
 
-;; 0 = x*(x-1) iff (x is 0 or 1)
+;; Note that our normal form expands SUB to ADD and NEG, so SUB doesn't appear
+;; much in these rules.
+
+;; Recognizes 0 = x*(-1 + x)
 (defthm bitp-idiom-1
   (implies (and (syntaxp (and (quotep p-1)
                               (quotep p)))
@@ -22,9 +26,10 @@
            (equal (equal 0 (mul x (add p-1 x p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::MUL-OF-ADD-ARG2)))))
+                                  (pfield::mul-of-add-arg2)))))
 
-(defthm bitp-idiom-2
+;; Just commutes the MUL in the LHS
+(defthm bitp-idiom-1-alt
   (implies (and (syntaxp (and (quotep p-1)
                               (quotep p)))
                 (equal p-1 (+ -1 p))
@@ -32,9 +37,30 @@
                 (rtl::primep p))
            (equal (equal 0 (mul (add p-1 x p) x p))
                   (bitp x)))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                  (pfield::MUL-OF-ADD-ARG2)))))
+  :hints (("Goal" :use bitp-idiom-1
+           :in-theory '(mul-commutative))))
 
+;; Recognizes 0 = x*(1 + -x)
+(defthm bitp-idiom-2
+  (implies (and (fep x p)
+                (rtl::primep p))
+           (equal (equal 0 (mul x (add 1 (neg x p) p) p))
+                  (bitp x)))
+  :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                  (pfield::mul-of-add-arg2)))))
+
+;; Just commutes the MUL in the lhs
+(defthm bitp-idiom-2-alt
+  (implies (and (fep x p)
+                (rtl::primep p))
+           (equal (equal 0 (mul (add 1 (neg x p) p) x p))
+                  (bitp x)))
+  :hints (("Goal" :use bitp-idiom-2
+           :in-theory '(mul-commutative))))
+
+;; In this variant, the value being constrained to be a bit is of the form (add
+;; <constant> <something>) and the <constant> has been combined with the p-1
+;; constant from the normal rule.
 (defthm bitp-idiom-with-constant-1
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
@@ -55,7 +81,8 @@
                             ;;acl2::+-of-minus
                             acl2::mod-of-minus-arg1)))))
 
-(defthm bitp-idiom-with-constant-2
+;; Just commutes the MUL in the lhs.
+(defthm bitp-idiom-with-constant-1-alt
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (equal k1 (+ 1 k2))

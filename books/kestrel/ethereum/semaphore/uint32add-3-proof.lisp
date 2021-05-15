@@ -271,7 +271,7 @@
                  pfield::mod-of-add)
  :rule-lists '( ;; recognize bitp idioms before we start changing things:
                (pfield::bitp-idiom-1
-                pfield::bitp-idiom-2)
+                pfield::bitp-idiom-1-alt)
                ;; introduce bvcats:
                (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
                 add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-alt
