@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,3 +34,11 @@
   (exists (r) (and (fep r p)
                    (equal (mul r r p) x)))
   :skolem-name pfield-square->root)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield-squarep-of-0
+  (implies (posp p)
+           (pfield-squarep 0 p))
+  :enable fep
+  :use (:instance pfield-squarep-suff (r 0) (x 0)))
