@@ -53,8 +53,22 @@
                                       32)
                     (acl2::hex-string-to-bytes! "c59f682376d137f3f255e671e207d1f2374ebe504e9314208a52d9f88d69e8c8"))
 
-;; Test with personalization and 64 bytes of input.
-;; Result checked against both Python and Rust implementations.
+;; Tests with personalization and 64 bytes of input.
+;; Results checked against both Python and Rust implementations.
+(acl2::assert-equal (blake2s-extended (acl2::integers-from-to 0 63)
+                                      nil ;key
+                                      nil ;salt
+                                      '(90 99 97 115 104 105 118 107) ; personalization "Zcashivk"
+                                      32)
+                    (acl2::hex-string-to-bytes! "97003C098756F0BD29F4452D60D20F5BAC523BD57E95FAF29995B68A26FD9890"))
+
+(acl2::assert-equal (blake2s-extended (acl2::integers-from-to 0 63)
+                                      nil ;key
+                                      nil ;salt
+                                      '(90 99 97 115 104 95 110 102) ; personalization "Zcash_nf"
+                                      32)
+                    (acl2::hex-string-to-bytes! "39E2285CE1EC3BA3BCA8F58C3B3E4E9BCCF19D7B1EB0B086FDA7E39EA853D36A"))
+
 (acl2::assert-equal (blake2s-extended (acl2::integers-from-to 0 63)
                                       nil ;key
                                       nil ;salt
