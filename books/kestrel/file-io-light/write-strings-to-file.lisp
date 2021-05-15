@@ -13,11 +13,14 @@
 (include-book "write-strings-to-channel")
 (local (include-book "std/io/base" :dir :system)) ;for reasoning support
 
-;returns (mv erp state)
+;; Writes the STRINGS to FILENAME, overwriting its previous contents.
+;; Effectively, all the STRINGS get concatenated and the result becomes the new
+;; contents of the file.  Returns (mv erp state).  CTX is a context for error
+;; printing.
 (defund write-strings-to-file (strings filename ctx state)
-  (declare (xargs :stobjs state
-                  :guard (and (string-listp strings)
-                              (stringp filename))))
+  (declare (xargs :guard (and (string-listp strings)
+                              (stringp filename))
+                  :stobjs state))
   (mv-let (channel state)
     (open-output-channel filename :character state)
     (if (not channel)

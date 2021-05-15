@@ -15,7 +15,7 @@
 ;; For now, we use the version of primep from the RTL library.
 
 (defthm not-equal-of-least-divisor-same-when-divides
-  (implies (and (integerp (/ n factor))
+  (implies (and (integerp (/ n factor)) ; factor is a free var
                 (natp n)
                 (natp k)
                 (natp factor)
@@ -25,7 +25,7 @@
   :hints (("Goal" :in-theory (enable rtl::least-divisor rtl::divides))))
 
 (defthm not-primep-when-divides
-  (implies (and (integerp (/ n factor))
+  (implies (and (integerp (/ n factor)) ; factor is a free var
                 (natp n)
                 (natp factor)
                 (<= 2 factor)
