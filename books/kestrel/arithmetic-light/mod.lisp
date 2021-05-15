@@ -721,3 +721,16 @@
                 (integerp z))
            (equal (mod (+ x y (* z p)) p)
                   (mod (+ x y) p))))
+
+;; when x is negative, but not too negative, modding by y just adds y
+(defthm mod-when-<-of-0
+  (implies (and (< x 0)
+                (< (- y) x)
+                (integerp x)
+                (posp y))
+           (equal (mod x y)
+                  (+ x y)))
+  :hints (("Goal" :use (:instance acl2::mod-when-<
+                                  (x (+ x y))
+                                  (y y))
+           :in-theory (disable acl2::mod-when-<))))
