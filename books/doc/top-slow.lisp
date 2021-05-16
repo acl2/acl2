@@ -346,6 +346,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "acl2s/doc" :dir :system)
+(include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "projects/doc" :dir :system)
 

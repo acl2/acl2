@@ -248,6 +248,7 @@
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "acl2s/doc" :dir :system)
+(include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
@@ -619,4 +620,3 @@
 
 (collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
 ||#
-
