@@ -282,3 +282,9 @@
   (implies (unsigned-byte-p size free)
            (not (< size 0)))
   :rule-classes (:forward-chaining))
+
+(defthm unsigned-byte-p-of-if
+  (equal (unsigned-byte-p size (if test x y))
+         (if test
+             (unsigned-byte-p size x)
+           (unsigned-byte-p size y))))
