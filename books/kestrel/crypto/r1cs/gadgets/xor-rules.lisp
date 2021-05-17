@@ -17,10 +17,15 @@
 
 ;; See also ../sparse/gadgets/xor.lisp
 
+;; TODO: Move all these xor idioms to the prime-fields library.
+
 ;; TODO: Standardize these names
 ;; TODO: Disable these rules?
 ;; TODO: Perhaps add more rules (e.g., ones with (mul 2 (mul a b p) p)).
 ;; TODO: Perhaps drop rules that deal with terms not in normal form
+
+;; The basic pattern for c=bitxor(a,b) is c = a + b - 2ab, where a and b are
+;; bits and all the operations are done modulo the prime.
 
 ;; a+b-(a+a)b=c -> c=bitxor(a,b)
 (defthm bitxor-constraint-intro
