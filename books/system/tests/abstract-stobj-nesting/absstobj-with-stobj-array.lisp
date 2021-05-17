@@ -488,14 +488,13 @@
                    (mv val1 val2 top)))
       (list val1 val2))))
 
-; Invariant-risk catches the following error because, as shown below,
-; resize-subs has invariant-risk.
-
-(must-fail (value (read-only-stobj-let-test 1 1))
-           :expected :hard)
+; There is no need to mark the function defined just above with invariant-risk.
 
 (assert! (equal (getpropc 'read-only-stobj-let-test 'invariant-risk)
-                'resize-subs))
+                nil))
+
+(assert! (equal (read-only-stobj-let-test 1 1)
+                '(nil nil)))
 
 ; Let's see now that there is no invariant-risk when the operation in question
 ; doesn't resize.

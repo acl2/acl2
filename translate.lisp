@@ -11365,9 +11365,18 @@
                               #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
-             (if (eq (car (get (the-live-var stobj)
-                               'redundant-raw-lisp-discriminator))
-                     'defabsstobj)
+             (if (and (eq (car (get (the-live-var stobj)
+                                    'redundant-raw-lisp-discriminator))
+                          'defabsstobj)
+
+; When an abstract stobj's update is incomplete, the resulting state should be
+; considered an illegal state (see the Essay on Illegal-states) since the
+; abstract stobj recognizer might not hold for the corresponding live stobj.
+; However, if we know that the stobj has not been updated -- because none of
+; the producer variables represents a child stobj (by virtue of being in
+; bound-vars) -- then we do not need to mess with illegal states here.
+
+                      (intersectp-eq bound-vars producer-vars))
                  (with-inside-absstobj-update (gensym) (gensym) x form0)
                form0))))))
 

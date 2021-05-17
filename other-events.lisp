@@ -20825,7 +20825,7 @@
    guard-pre ; result of restating the guard on f$a in terms of formals
    guard-post ; restating guard-pre using stp instead of st$ap
    guard-thm guard-thm-p
-   stobjs-in-posn stobjs-in-exec stobjs-out logic exec
+   stobjs-in-posn stobjs-in-exec stobjs-in-logic stobjs-out logic exec
    correspondence preserved
    protect
    updater)
@@ -21287,7 +21287,7 @@
                                                         formals
                                                         (guard logic nil wrld))))
                             (cond
-                             ((member-eq st$c (stobjs-in logic wrld))
+                             ((member-eq st$c stobjs-in-logic)
                               (er-cmp ctx
                                       "the :LOGIC function ~x0 for export ~x1 ~
                                        ~ declares as a stobj the formal ~
@@ -21306,7 +21306,8 @@
                                      :GUARD-THM guard-thm
                                      :GUARD-THM-P (if type :SKIP guard-thm-p)
                                      :STOBJS-IN-POSN posn-exec
-                                     :STOBJS-IN-EXEC (stobjs-in exec wrld)
+                                     :STOBJS-IN-EXEC stobjs-in-exec
+                                     :STOBJS-IN-LOGIC stobjs-in-logic
                                      :STOBJS-OUT
                                      (substitute st st$c stobjs-out-exec)
                                      :LOGIC logic
@@ -21856,40 +21857,59 @@
                                     protect-default congruent-to see-doc ctx
                                     wrld2 state nil nil))))))
 
-(defun defabsstobj-axiomatic-defs (st$c methods)
+(defun defabsstobj-axiomatic-defs (methods)
   (cond
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
-              (mv-let (name formals guard-post logic exec stobjs)
+              (mv-let (name formals guard-post logic stobjs-in-logic)
                 (mv (access absstobj-method method :NAME)
                     (access absstobj-method method :FORMALS)
                     (access absstobj-method method :GUARD-POST)
                     (access absstobj-method method :LOGIC)
-                    (access absstobj-method method :EXEC)
-                    (remove1 st$c (collect-non-x
-                                   nil
-                                   (access absstobj-method method
-                                           :STOBJS-IN-EXEC))))
-                `(,name ,formals
-                        (declare (xargs ,@(and stobjs
-                                               `(:STOBJS ,stobjs))
-                                        :GUARD ,guard-post))
+                    (access absstobj-method method :STOBJS-IN-LOGIC))
+                `(,name
+                  ,formals
+                  (declare
+                   (xargs :GUARD ,guard-post
+                          ,@(let ((stobjs (remove-eq nil stobjs-in-logic)))
 
-; We use prog2$ here, rather than just returning its last argument, because we
-; want to track functions that might be called in raw Lisp, in particular for
-; avoiding the violation of important invariants; see put-invariant-risk.
-; Actually we already take measures to put invariant-risk; see
-; put-defabsstobj-invariant-risk.  But it seems harmless to add the prog2$
-; call, which is removed for most purposes by remove-guard-holders; so we
-; include it for robustness.  We use non-exec for two reasons: in case EXEC
-; returns multiple values or a stobj, and in case the stobjs-out of LOGIC
-; doesn't agree with the stobjs-out of NAME.
+; This stobj declaration is potentially bogus, since there is no requirement
+; about which stobjs are declared for the :logic function (for the abstract
+; stobj primitive that is being defined here).  However, we avoid a potential
+; error when translating the body by having the stobjs-in for the primitive
+; match the stobjs-in for its body (below, i.e., the corresponding call of the
+; :logic function for that primitive).
 
-; We formerly used mbe, but that caused a soundness bug; see :DOC note-8-4.
+; Note that we use put-absstobjs-in-and-outs to set the stobjs-in and
+; stobjs-out after the definitions are admitted, thus overriding this
+; potentially bogus :stobjs declaration.  !! Mention this in :doc defabbstobj,
+; suggesting that one use :doc args rather than :pe to see the stobjs involved.
 
-                        (non-exec (prog2$ (,exec ,@formals)
-                                          (,logic ,@formals))))))
-            (defabsstobj-axiomatic-defs st$c (cdr methods))))))
+; Given the signature mismatch between the primitive and its :logic function,
+; there could be concern about inappropriate calls of the :logic function on
+; live stobjs.  This would involve calling the *1* function for the primitive,
+; which could happen in particular when there is invariant-risk.  However, *1*
+; calls don't happen where there are live stobj inputs: as noted in
+; ev-fncall-creator-er-msg, "ACL2 does not support non-compliant live stobj
+; manipulation."
+
+                              (and stobjs `(:stobjs ,stobjs)))))
+
+; In Version_8.3 we had (mbe :logic (,logic ,@formals) :exec (,exec ,@formals))
+; below, but that caused a soundness bug; see :DOC note-8-4.  We tried changing
+; that to (prog2$ (,exec ,@formals) (,logic ,@formals)), in some github
+; versions after that.  But then we realized that the call of exec, which was
+; intended to help track invariant-risk, was unnecessary because invariant-risk
+; for abstract stobjs is already handled by put-defabsstobj-invariant-risk.  By
+; avoiding such a prog$ call, we avoided having to deal with the possibility
+; that exec doesn't return a single non-stobj value, as required by prog2$.
+; (We considered making an exception in translate11, which might work; but its
+; seems best to avoid such a complication.  We also tried using a non-exec
+; wrapper, but that interfered with some proofs when executing abstract stobj
+; primitives in the logic.)
+
+                        (,logic ,@formals))))
+            (defabsstobj-axiomatic-defs (cdr methods))))))
 
 (defun with-inside-absstobj-update (temp saved name form)
 
@@ -22149,25 +22169,23 @@
                         (access absstobj-method (car methods) :updater))
                  (make-absstobj-tuples (cdr methods))))))
 
-(defun put-defabsstobj-invariant-risk (st-name methods wrld)
+(defun put-defabsstobj-invariant-risk (methods wrld)
 
-; See put-invariant-risk.
+; See also put-invariant-risk.  Invariant-risk from a stobj export fn trivially
+; derives from the invariant-risk of its :exec function fn_E, since a call of
+; fn in raw Lisp is just the corresponding call of fn_E.
 
   (cond ((endp methods) wrld)
-        (t (let* ((method (car methods))
-                  (guard (access absstobj-method method :GUARD-POST)))
+        (t (let ((method (car methods)))
              (put-defabsstobj-invariant-risk
-              st-name
               (cdr methods)
-              (cond ((or (equal guard *t*)
-                         (not (member-eq st-name
-                                         (access absstobj-method method
-                                                 :STOBJS-OUT))))
-                     wrld)
-                    (t (putprop (access absstobj-method method :NAME)
-                                'invariant-risk
-                                (access absstobj-method method :NAME)
-                                wrld))))))))
+              (let ((invariant-risk
+                     (getpropc (access absstobj-method method :EXEC)
+                               'invariant-risk nil wrld)))
+                (cond (invariant-risk
+                       (putprop (access absstobj-method method :NAME)
+                                'invariant-risk invariant-risk wrld))
+                      (t wrld))))))))
 
 (defun intersperse (lst1 lst2)
   (declare (xargs :guard (and (true-listp lst1)
@@ -22303,7 +22321,7 @@
                                    (defabsstobj-logic-subst methods0)
                                    methods0))
                          (wrld1 (cddr missing/methods/wrld1))
-                         (ax-def-lst (defabsstobj-axiomatic-defs st$c methods))
+                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
                          (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
@@ -22336,6 +22354,11 @@
                          (or (ld-skip-proofsp state) t)
                          (current-package state)
                          (list 'defstobj st-name names) ; ee-entry
+
+; Warning: Don't change the following list of events without first considering
+; whether that invalidates the translation of definitions for logic rather than
+; execution (by use of inside-defabsstobj in translate-bodies1).
+
                          (append
                           (pairlis-x1 'defun ax-def-lst)
                           `((encapsulate
@@ -22361,7 +22384,6 @@
                                 (getpropc st$c 'non-memoizable nil wrld2))
                                (wrld3
                                 (put-defabsstobj-invariant-risk
-                                 st-name
                                  methods
                                  (putprop
                                   st-name 'congruent-stobj-rep

@@ -1365,12 +1365,12 @@
    (t
     (flet ((reason-string
             (erp scons-term-p wrld state)
-            (let* ((fn
-                    (and (consp erp)
-                         (eq (car erp)
-                             'ev-fncall-null-body-er)
-                         (symbolp (cdr erp))
-                         (cdr erp))))
+            (let* ((fn (and (consp erp)
+                            (eq (car erp)
+                                'ev-fncall-null-body-er)
+                            (symbolp (cdr erp))
+                            (cdr erp)))
+                   (fn (if (eq fn :non-exec) 'non-exec fn)))
               (and fn
                    (let* ((non-executablep
                            (getpropc fn 'non-executablep nil wrld))
@@ -1380,9 +1380,11 @@
                                     "Failed attempt (when building a term) to ~
                                      call "
                                   "Failed attempt to call "))
-                          (str1 (if non-executablep
-                                    "non-executable function "
-                                  "constrained function ")))
+                          (str1 (if (eq fn 'non-exec)
+                                    ""
+                                  (if non-executablep
+                                      "non-executable function "
+                                    "constrained function "))))
                      (if skip-pkg-prefix
                          (concatenate 'string str0 str1 (symbol-name fn))
                        (concatenate 'string

@@ -749,6 +749,44 @@ Summary
 Form:  ( INCLUDE-BOOK "two-usuallyequal-nums-stobj" ...)
 Rules: NIL
  "two-usuallyequal-nums-stobj.lisp"
+ACL2 !>>(DEFUN INTERRUPT-0 (TWO-USUALLYEQUAL-NUMS)
+               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                          (VAL)
+                          (LET* ((OLD (N$VAL N$))
+                                 (V (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                            (N$VAL N$))))
+                                (DECLARE (IGNORE OLD))
+                                V)
+                          (MV VAL TWO-USUALLYEQUAL-NUMS)))
+
+Since INTERRUPT-0 is non-recursive, its admission is trivial.  We observe
+that the type of INTERRUPT-0 is described by the theorem 
+(AND (CONSP (INTERRUPT-0 TWO-USUALLYEQUAL-NUMS))
+     (TRUE-LISTP (INTERRUPT-0 TWO-USUALLYEQUAL-NUMS))).
+We used primitive type reasoning.
+
+(INTERRUPT-0 TWO-USUALLYEQUAL-NUMS) => (MV * TWO-USUALLYEQUAL-NUMS).
+
+Computing the guard conjecture for INTERRUPT-0....
+
+The guard conjecture for INTERRUPT-0 is trivial to prove.  INTERRUPT-0
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN INTERRUPT-0 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ INTERRUPT-0
+ACL2 !>>(INTERRUPT-0 TWO-USUALLYEQUAL-NUMS)
+
+
+HARD ACL2 ERROR in TOP:  Interrupt!
+
+
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
+gv, see :DOC trace, and see :DOC wet.
+
 ACL2 !>>(VALUE-TRIPLE
              (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
                     '(:N 0 :N2 0 :VALID NIL))

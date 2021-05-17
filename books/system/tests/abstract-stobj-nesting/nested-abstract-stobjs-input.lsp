@@ -259,6 +259,26 @@ ACL2 !>
 
 (include-book "two-usuallyequal-nums-stobj")
 
+(defun interrupt-0 (two-usuallyequal-nums)
+
+; Unlike the two exampes below, there is no :illegal-state here: ACL2 knows
+; that no update has been interrupted, since the producer variables are
+; disjoint from those bound in the bindings.
+
+  (declare (xargs :stobjs two-usuallyequal-nums))
+  (stobj-let ((n$ (uenslot1 two-usuallyequal-nums)))
+             (val) ; producer variable is not bound above
+             (let* ((old (n$val n$))
+                    (v (prog2$ (er hard? 'top "Interrupt!")
+                               (n$val n$))))
+		(declare (ignore old))
+               v)
+             (mv val two-usuallyequal-nums)))
+
+; An interrupt is caused by the ER call above, but we are not left in an
+; :illegal state.
+(interrupt-0 two-usuallyequal-nums)
+
 (value-triple (equal (fields-of-two-usuallyequal-nums two-usuallyequal-nums)
                      '(:N 0 :N2 0 :VALID NIL))
               :check t)
@@ -279,8 +299,7 @@ ACL2 !>
                n$)
              two-usuallyequal-nums))
 
-; Causes hard error (!! but perhaps needn't do so, an observation that I
-; believe is essentially due to Sol Swords):
+; Causes hard error and puts us into an :illegal-state:
 (interrupt-1 two-usuallyequal-nums)
 
 :continue-from-illegal-state
@@ -296,7 +315,7 @@ ACL2 !>
                n$)
              two-usuallyequal-nums))
 
-; Causes hard error:
+; Causes hard error and puts us into an :illegal-state:
 (interrupt-2 two-usuallyequal-nums)
 
 :continue-from-illegal-state
