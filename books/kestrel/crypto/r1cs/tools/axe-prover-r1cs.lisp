@@ -18,5 +18,5 @@
 
 (make-prover-simple r1cs
                     axe-evaluator-r1cs
-                    eval-axe-syntaxp-expr-r1cs
-                    eval-axe-bind-free-function-application-basic)
+                    r1cs
+                    basic)
