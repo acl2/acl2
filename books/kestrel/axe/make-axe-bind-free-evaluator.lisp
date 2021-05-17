@@ -69,7 +69,8 @@
          :hints (("Goal" :use (:instance ,(pack$ 'symbol-alistp-of- eval-axe-bind-free-function-application-fn))
                   :in-theory (disable ,(pack$ 'symbol-alistp-of- eval-axe-bind-free-function-application-fn))))))))
 
-(defmacro make-axe-bind-free-evaluator (suffix fns &key
-                                               (enables 'nil) ;for proving the generated function returns an alist
-                                               )
+(defmacro make-axe-bind-free-evaluator (suffix
+                                        fns &key
+                                        (enables 'nil) ;for proving the generated function returns an alist
+                                        )
   `(make-event (make-axe-bind-free-evaluator-fn ,suffix ,fns ,enables (w state))))

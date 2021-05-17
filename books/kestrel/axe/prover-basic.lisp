@@ -25,5 +25,5 @@
 ;; make-prover-simple-fn.
 (make-prover-simple basic
                     axe-evaluator-basic
-                    eval-axe-syntaxp-expr-basic
-                    eval-axe-bind-free-function-application-basic)
+                    basic
+                    basic)

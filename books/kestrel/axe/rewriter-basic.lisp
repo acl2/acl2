@@ -26,5 +26,5 @@
 ;; simplify-term-basic, simp-term-basic, and simp-terms-basic.
 (make-rewriter-simple basic
                       axe-evaluator-basic
-                      eval-axe-syntaxp-expr-basic
-                      eval-axe-bind-free-function-application-basic)
+                      basic
+                      basic)
