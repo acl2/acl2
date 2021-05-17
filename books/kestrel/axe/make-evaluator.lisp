@@ -174,6 +174,10 @@
 (defun make-evaluator-fn (base-name ;a symbol
                           arity-fn-call-alist-alist ;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them
                           )
+  (declare (xargs :guard (and (symbolp base-name)
+                              (alistp arity-fn-call-alist-alist))
+                  :verify-guards nil ; todo
+                  ))
   (let* ((apply-function-name (pack$ 'apply- base-name))
          (apply-function-to-quoted-args-name (pack$ 'apply- base-name '-to-quoted-args))
          (eval-function-name (pack$ 'eval- base-name))
@@ -491,8 +495,8 @@
 ;apply and eval are mutually recursive, but if eval is about to call apply on a function other than traced-fn, it just calls the non-traced version
 ;this requires that the non-tracing version of the same evalutor be submitted first?
 
-(defun add-tracing-to-evaluator (base-name ;a symbol
-                                 )
+(defun add-tracing-to-evaluator (base-name)
+  (declare (xargs :guard (symbolp base-name)))
   (let* ((apply-function-name (pack$ 'apply- base-name))
          (apply-with-tracing-function-name (pack$ 'apply- base-name '-with-tracing))
          (eval-with-tracing-function-name (pack$ 'eval- base-name '-with-tracing))

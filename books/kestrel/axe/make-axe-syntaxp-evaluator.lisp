@@ -27,9 +27,11 @@
 (local (in-theory (disable myquotep)))
 
 ;name clash with std
-(defthm symbol-listp-of-take-alt
-  (implies (symbol-listp x)
-           (symbol-listp (take n x))))
+;move
+(local
+ (defthm symbol-listp-of-take-alt
+   (implies (symbol-listp x)
+            (symbol-listp (take n x)))))
 
 (defthm integer-listp-of-strip-cars-of-acons-unique
   (implies (and (integer-listp (strip-cars alist))
@@ -65,15 +67,15 @@
 
 (defthmd vars-in-terms-opener
   (implies (consp terms)
-           (equal (VARS-IN-TERMS terms)
-                  (union-equal (VARS-IN-TERM (FIRST TERMS))
-                               (VARS-IN-TERMS (REST TERMS)))))
-  :hints (("Goal" :in-theory (enable VARS-IN-TERMS))))
+           (equal (vars-in-terms terms)
+                  (union-equal (vars-in-term (first terms))
+                               (vars-in-terms (rest terms)))))
+  :hints (("Goal" :in-theory (enable vars-in-terms))))
 
 ;; Here, the arities exclude the final dag-array formal, if present.  This
-;; arity thus corresponds to the number of args stored in for the call in the
+;; arity thus corresponds to the number of args stored for the call in the
 ;; axe-syntaxp hyp.
-(defun bind-fns-to-arities (fns wrld acc)
+(defund bind-fns-to-arities (fns wrld acc)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld)
                               (alistp acc))))
@@ -94,11 +96,13 @@
 
 (defthm alistp-of-bind-fns-to-arities
   (implies (alistp acc)
-           (alistp (bind-fns-to-arities fns wrld acc))))
+           (alistp (bind-fns-to-arities fns wrld acc)))
+  :hints (("Goal" :in-theory (enable bind-fns-to-arities))))
 
 (defthm integer-listp-of-strip-cars-of-bind-fns-to-arities
   (implies (integer-listp (strip-cars acc))
-           (integer-listp (strip-cars (bind-fns-to-arities fns wrld acc)))))
+           (integer-listp (strip-cars (bind-fns-to-arities fns wrld acc))))
+  :hints (("Goal" :in-theory (enable bind-fns-to-arities))))
 
 (defthmd symbol-listp-of-lookup-equal
   (implies (symbol-list-listp (strip-cdrs alist))
@@ -110,9 +114,10 @@
 (defthm symbol-list-listp-of-strip-cdrs-of-bind-fns-to-arities
   (implies (and (symbol-list-listp (strip-cdrs acc))
                 (symbol-listp fns))
-           (symbol-list-listp (strip-cdrs (bind-fns-to-arities fns wrld acc)))))
+           (symbol-list-listp (strip-cdrs (bind-fns-to-arities fns wrld acc))))
+  :hints (("Goal" :in-theory (enable bind-fns-to-arities))))
 
-(defun make-axe-syntaxp-evaluator-args (formals num)
+(defund make-axe-syntaxp-evaluator-args (formals num)
   (declare (xargs :guard (and (symbol-listp formals)
                               (natp num))))
   (if (endp formals)
@@ -127,7 +132,7 @@
                    (lookup-eq ,arg alist)))))
           (make-axe-syntaxp-evaluator-args (rest formals) (+ 1 num)))))
 
-(defun make-axe-syntaxp-evaluator-case-for-arity-aux (arity fns wrld)
+(defund make-axe-syntaxp-evaluator-case-for-arity-aux (arity fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (natp arity)
                               (plist-worldp wrld))))
@@ -145,7 +150,7 @@
        `(,fn (,fn ,@(make-axe-syntaxp-evaluator-args non-dag-array-formals 0) ,@dag-array-formals))
        (make-axe-syntaxp-evaluator-case-for-arity-aux arity (rest fns) wrld)))))
 
-(defun make-axe-syntaxp-evaluator-case-for-arity (arity fns eval-axe-syntaxp-function-application-fn wrld)
+(defund make-axe-syntaxp-evaluator-case-for-arity (arity fns eval-axe-syntaxp-function-application-fn wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (natp arity)
                               (plist-worldp wrld))))
@@ -157,7 +162,7 @@
     `(er hard? ',eval-axe-syntaxp-function-application-fn "Unrecognized function in axe-syntaxp rule: ~x0." fn)))
 
 ;; args up through arity-1 are bound to vars arg0 ... arg(arity-1) in the overarching term
-(defun make-axe-syntaxp-evaluator-cases (current-arity max-arity arity-alist eval-axe-syntaxp-function-application-fn wrld)
+(defund make-axe-syntaxp-evaluator-cases (current-arity max-arity arity-alist eval-axe-syntaxp-function-application-fn wrld)
   (declare (xargs :guard (and (natp current-arity)
                               (integerp max-arity)
                               (alistp arity-alist)
@@ -175,7 +180,7 @@
          (declare (ignorable args ,(pack$ 'arg current-arity)))
          ,(make-axe-syntaxp-evaluator-cases (+ 1 current-arity) max-arity arity-alist eval-axe-syntaxp-function-application-fn wrld)))))
 
-(defun max-val (vals current-max)
+(defund max-val (vals current-max)
   (declare (xargs :guard (and (rational-listp vals)
                               (rationalp current-max))))
   (if (endp vals)
@@ -186,7 +191,7 @@
   (implies (and (integerp current-max)
                 (integer-listp vals))
            (integerp (max-val vals current-max)))
-  :hints (("Goal" :in-theory (enable integer-listp))))
+  :hints (("Goal" :in-theory (enable integer-listp max-val))))
 
 (defthmd natp-of-lookup-equal-when-all-dargp-of-strip-cdrs-when-member-equal
   (implies (and (all-dargp (strip-cdrs alist))
@@ -202,12 +207,12 @@
                    (lookup-equal key alist))))
   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cars largest-non-quotep))))
 
-(defun make-axe-syntaxp-evaluator-fn (tag fns wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (symbolp tag)
+(defund make-axe-syntaxp-evaluator-fn (suffix fns wrld)
+  (declare (xargs :guard (and (symbolp suffix)
+                              (symbol-listp fns)
                               (plist-worldp wrld))))
-  (b* ((eval-axe-syntaxp-function-application-fn (pack$ 'eval-axe-syntaxp-function-application- tag))
-       (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- tag))
+  (b* ((eval-axe-syntaxp-function-application-fn (pack$ 'eval-axe-syntaxp-function-application- suffix))
+       (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- suffix))
        (arity-alist (bind-fns-to-arities fns wrld nil))
        (arity-0-fns (lookup 0 arity-alist))
        (arity-1-fns (lookup 1 arity-alist))
@@ -284,5 +289,5 @@
              (not (not (,eval-axe-syntaxp-expr-fn (farg1 expr) alist dag-array)))
              (t (,eval-axe-syntaxp-function-application-fn fn (fargs expr) alist dag-array))))))))
 
-(defmacro make-axe-syntaxp-evaluator (tag fns)
-  `(make-event (make-axe-syntaxp-evaluator-fn ,tag ,fns (w state))))
+(defmacro make-axe-syntaxp-evaluator (suffix fns)
+  `(make-event (make-axe-syntaxp-evaluator-fn ,suffix ,fns (w state))))
