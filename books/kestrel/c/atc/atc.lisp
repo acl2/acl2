@@ -1274,7 +1274,7 @@
                (er-soft+ ctx t (list (irr-expr) (irr-type))
                          "When generating C code for the function ~x0, ~
                           two branches ~x1 and ~x2 of a conditional term ~
-                          have different types ~x3 and ~x4;
+                          have different types ~x3 and ~x4; ~
                           use conversion operations, if needed, ~
                           to make the branches of the same type."
                          fn then else then-type else-type)))
@@ -1359,7 +1359,7 @@
        (b* (((when (not (symbolp boolean-from-type)))
              (er-soft+ ctx t (irr-expr)
                        "When generating C code for the function ~x0, ~
-                        at a point where
+                        at a point where ~
                         a boolean ACL2 term is expected, ~
                         the term ~x1 is encountered instead."
                        fn term))
@@ -1371,7 +1371,7 @@
                           (atc-integer-fixtype-to-type type)))
              (er-soft+ ctx t (irr-expr)
                        "When generating C code for the function ~x0, ~
-                        at a point where
+                        at a point where ~
                         a boolean ACL2 term is expected, ~
                         the term ~x1 is encountered instead."
                        fn term))
@@ -1380,7 +1380,7 @@
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
-                    at a point where
+                    at a point where ~
                     a boolean ACL2 term is expected, ~
                     the term ~x1 is encountered instead."
                    fn term))))
@@ -1751,7 +1751,7 @@
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
                          two branches ~x1 and ~x2 of a conditional term ~
-                         have different types ~x3 and ~x4;
+                         have different types ~x3 and ~x4; ~
                          use conversion operations, if needed, ~
                          to make the branches of the same type."
                         fn then else then-type else-type))
