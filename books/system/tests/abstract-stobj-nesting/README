@@ -3,3 +3,89 @@ abstract stobjs.  It could probably be significantly more complete,
 and some of the books surely duplicate testing that is done in others.
 But it seemed reasonable to keep these as regression tests in the
 community books.
+
+Below is a summary developed in May 2021 (perhaps not kept up-to-date)
+of some of what is tested in this directory.
+
+------------------------------
+abs-abs.lisp
+
+; This book illustrates that even when the "corresponding concrete stobj" for
+; an abstract stobj is itself an abstract stobj, one can use an export
+; :updater.
+
+------------------------------
+absstobj-with-stobj-array.lisp
+
+Logic-exec signature mismatch (update-subs$ai)
+
+Aliasing in stobj-let (explicit in foo-fails-1, implicit in
+foo-fails-2)
+
+Simplification of logical version of stobj-let in a proof
+(top-test-logic)
+
+; Test invariant-risk detection using a program-mode wrapper.
+
+; There is no need to mark the function defined just above with invariant-risk.
+
+------------------------------
+aliasing-tests-input.lsp
+
+Various tests where the same concrete stobj is ultimately accessed.
+An error occurs if and only if there are at least two bound variables
+that access the same ultimate concrete stobj field and at least one of
+those is updated.
+
+------------------------------
+input-signature-mismatch-with-logic-ok.lisp
+
+Stobj argument mismatch is OK
+
+------------------------------
+nested-abstract-stobjs-input.lsp
+
+; Examples 1 and 2 address aliasing when two child stobj fields of an abstract
+; stobj are implemented by the same child stobj of a concrete stobj....
+
+; Examples 3 and 4 deal with interrupts that put one into an :illegal-state.
+
+; Example 5 ... causes the error message resulting from the :logic and :exec
+; functions taking different numbers of arguments.
+
+------------------------------
+swap-stobjs-test.lisp
+
+; This book illustrates a successful use of swap-stobjs on stobj fields of an
+; abstract stobj.
+
+------------------------------
+two-ordered-nums-stobj.lisp
+
+Variant of two-usuallyequal-nums-stobj.lisp that requires the first
+child stobj to hold a number that is less than the other's.  As noted
+just above the definition of the :logic recognizer,
+two-ordered-nums$ap:
+
+;; A two-ordered-nums contains three fields (valid slot1 . slot2).  Valid
+;; is Boolean, slot1 and slot2 are natural numbers, and they must be equal if
+;; valid is T.
+
+------------------------------
+two-usuallyequal-nums-stobj-simpler.lisp
+
+; (Comment from Matt Kaufmann: I wrote this slightly simpler version of
+; two-usuallyequal-nums-stobj.lisp to convince myself that we can use ordinary
+; stobjs for the stobj fields, rather than abstract stobjs.)
+
+------------------------------
+two-usuallyequal-nums-stobj.lisp
+
+As noted just above the definition of the :logic recognizer,
+two-usuallyequal-nums$ap:
+
+;; A two-usuallyequal-nums contains three fields (valid slot1 . slot2).  Valid
+;; is Boolean, and slot1 and slot2 are n$ stobjs that must be equal if valid is
+;; T.
+
+------------------------------

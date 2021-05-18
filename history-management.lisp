@@ -2839,12 +2839,6 @@
                                      state)
                        (value mods)))))))
 
-(defun alist-to-doublets (alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        (t (cons (list (caar alist) (cdar alist))
-                 (alist-to-doublets (cdr alist))))))
-
 (defun print-system-attachments-summary (state)
   (cond
    ((f-get-global 'boot-strap-flg state)

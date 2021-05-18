@@ -5,13 +5,16 @@
 ; This file illustrates some ACL2 protections against potential unsoundness
 ; with nested abstract stobjs.
 
-; The first two examples address aliasing when two child stobj fields of an
-; abstract stobj are implemented by the same child stobj of a concrete stobj.
-; Thanks to Sol Swords for supplying the stobj-let form for the first example
-; below, which provided critical guidance in the development of the appropriate
-; check.
+; Examples 1 and 2 address aliasing when two child stobj fields of an abstract
+; stobj are implemented by the same child stobj of a concrete stobj.  Thanks to
+; Sol Swords for supplying the stobj-let form for the first example below,
+; which provided critical guidance in the development of the appropriate check.
 
-; The third example deals with invariant-risk violastions.
+; Examples 3 and 4 deal with interrupts that put one into an :illegal-state.
+
+; Example 5 isn't about nesting of stobjs, but is convenient to put into this
+; file.  It causes the error message resulting from the :logic and :exec
+; functions taking different numbers of arguments.
 
 ; For a more complex example of nested abstract stobjs, see community book
 ; two-usuallyequal-nums-stobj.lisp.
@@ -358,6 +361,49 @@ ACL2 !>
 (assert-event (equal (fields-of-two-ordered-nums two-ordered-nums)
                      '(:N 3 :N2 3 :VALID T)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Example 5
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We do not permit mismatches due to different input arities.  This is a
+; variation of a test in the book input-signature-mismatch-with-logic-ok.lisp
+; (and hence isn't really about stobj fields of abstract stobjs, in spite of
+; being in this directory), which we place in this -input.lsp file simply so
+; that we can check the error message.
+
+(defstobj st1 fld1)
+
+(defstobj st3$c (fld3 :type (array t (8))))
+
+(defun st3$ap (x)
+  (declare (xargs :guard t))
+  (declare (ignore x))
+  t)
+
+(defun create-st3$a ()
+  (declare (xargs :guard t))
+  nil)
+
+(defun st3$corr (st3$c st3$a)
+  (declare (xargs :stobjs st3$c
+                  :guard t))
+  (declare (ignore st3$c st3$a))
+  t)
+
+(defun bad3$a (x y st3$a)
+  (declare (xargs :guard (and (natp x) (< x 8))))
+  (mv x (and y st3$a nil)))
+
+(defun bad3$c (x y st1 st3$c)
+  (declare (xargs :stobjs (st1 st3$c)
+                  :guard (and (natp x) (< x 8)))
+           (ignore st1))
+  (let ((st3$c (update-fld3i x y st3$c)))
+    (mv x st3$c)))
+
+(defabsstobj st3
+  :exports ((bad3 :logic bad3$a :exec bad3$c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Use a trust tag to avoid certification failure.
