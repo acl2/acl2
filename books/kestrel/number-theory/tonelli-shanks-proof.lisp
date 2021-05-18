@@ -283,22 +283,7 @@
               )))
    ))
 
-(local
- (encapsulate
-   ()
-   (local (include-book "kestrel/number-theory/divides" :dir :system))
-   (local (include-book "kestrel/crypto/ecurve/primes" :dir :system))
 
-   (defthm primep-implies
-     (implies (and (rtl::primep p)
-                   (< 2 p))
-              (and (oddp p)
-                   (integerp p)))
-     :hints (("Goal"
-              :in-theory (e/d (rtl::primep) (oddp))
-              ))
-     )
-   ))
 
 (encapsulate
   ()
@@ -347,7 +332,7 @@
      :hints (("Goal"
               :cases ((equal (mod y p) 1)
                       (equal (mod y p) (mod -1 p)))
-              :use ((:instance primep-implies (p p))
+              :use (
                     (:instance mod-*a-b= (a y) (b y) (c p))
                     (:instance mod-*mod-a*mod-b= (a y) (b y) (c p)))
               :in-theory (e/d () (mod))
@@ -402,7 +387,7 @@
                    (not (equal (least-repeated-square-aux i tt^2^i m p) 0)))
               (< x (least-repeated-square-aux i tt^2^i m p)))
      :hints (("Goal"
-              :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
+              :in-theory (e/d () (y^2=1modp mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
               ))))
 
   (local
@@ -440,7 +425,7 @@
                                (i (+ (- i) (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p) 1)))
                     (:instance least-repeated-square-aux-lemma1 (i (+ i 1)) (x i)
                                (m m) (p p) (tt^2^i (mod (* tt tt) p))))
-              :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
+              :in-theory (e/d () (y^2=1modp mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
               ))))
 
   (defthmd least-repeated-square-aux-lemma3
@@ -456,7 +441,7 @@
                   (< i m)))
     :hints (("Goal"
              :use ((:instance least-repeated-square-aux-lemma2))
-             :in-theory (e/d (acl2::expt) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
+             :in-theory (e/d (acl2::expt) (y^2=1modp mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
              )))
 
   (local
@@ -475,7 +460,6 @@
                               (p p) (lrs (least-repeated-square-aux 1 tt m p)))
               :in-theory (e/d (acl2::mod-expt-fast)
                               (y^2=1modp
-                               primep-implies
                                mod-*a-b=
                                mod-*mod-a*mod-b=
                                mod-times-mod))))
@@ -494,7 +478,6 @@
                               (lrs (least-repeated-square-aux 1 tt m p))))
              :in-theory (e/d (acl2::mod-expt-fast)
                              (y^2=1modp
-                              primep-implies
                               mod-*a-b=
                               mod-*mod-a*mod-b=
                               mod-times-mod))
@@ -522,7 +505,6 @@
                    )
              :in-theory (e/d (acl2::mod-expt-fast)
                              (y^2=1modp
-                              primep-implies
                               mod-*a-b=
                               mod-*mod-a*mod-b=
                               mod-times-mod))))))
@@ -555,7 +537,6 @@
                                (i i) (lrs (least-repeated-square-aux i tt m p))))
               :in-theory (e/d (acl2::mod-expt-fast least-repeated-square-aux)
                               (y^2=1modp
-                               primep-implies
                                mod-*a-b=
                                mod-*mod-a*mod-b=
                                mod-times-mod))))))
