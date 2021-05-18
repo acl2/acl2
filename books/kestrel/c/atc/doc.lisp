@@ -483,7 +483,8 @@
        This converts a boolean term
        to a pure C-valued term.")
      (xdoc::li
-      "A call of @(tsee if) on
+      "A call of @(tsee condexpr) on
+       a call of @(tsee if) on
        (i) a test that is a boolean term and
        (ii) branches that are pure C-valued terms.
        This represents a C @('?:') conditional expression
