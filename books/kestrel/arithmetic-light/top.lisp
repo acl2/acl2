@@ -39,6 +39,7 @@
 (include-book "times-and-divides")
 (include-book "complex")
 (include-book "less-than")
+(include-book "less-than-or-equal")
 (include-book "realpart")
 (include-book "imagpart")
 (include-book "even-and-odd")
