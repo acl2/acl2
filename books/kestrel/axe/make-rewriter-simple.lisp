@@ -78,20 +78,6 @@
              (< x y)
            (< x z))))
 
-(defthmd <=-trans
-  (implies (and (<= x free)
-                (<= free y))
-           (<= x y)))
-
-(defthmd <=-trans-2
-  (implies (and (<= free y)
-                (<= x free))
-           (<= x y)))
-
-;dup?
-(defthm not-equal-self
-  (not (< x x)))
-
 ;; Can't be local
 (defun simplify-trees-and-add-to-dag-induct (trees count)
   (declare (xargs :measure (len trees)))
@@ -371,6 +357,8 @@
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
        (local (include-book "kestrel/lists-light/nth" :dir :system))
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
@@ -2742,8 +2730,8 @@
                                    symbolp-when-member-equal
                                    not-equal-when-member-equal
                                    not-equal-when-member-equal-alt
-                                   <=-trans
-                                   <=-trans-2)
+                                   <=-transitive-1
+                                   <=-transitive-2)
                                   (dargp-less-than
                                    natp
                                    quotep
@@ -4037,7 +4025,7 @@
                                    cadr-becomes-nth-of-1
                                    memoizationp-when-maybe-memoizationp
                                    tree-to-memoizep ;todo
-                                   <=-trans ;drop?
+                                   <=-transitive-1 ;drop?
                                    symbolp-when-member-equal)
                                   (dargp
                                    dargp-less-than
