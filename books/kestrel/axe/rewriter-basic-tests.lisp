@@ -83,7 +83,7 @@
         (equal res ''2))))
 
 ;;;
-;;; tests of simplify-term
+;;; tests of simplify-term-basic
 ;;;
 
 (assert!
