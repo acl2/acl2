@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; Recognize and alist from symbols to pseudo-terms
+;; Recognize an alist from symbols to pseudo-terms
 (defund symbol-term-alistp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
