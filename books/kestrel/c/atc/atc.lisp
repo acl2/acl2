@@ -1709,7 +1709,14 @@
    (xdoc::p
     "If the term does not have any of the forms above,
      we treat it as a C-valued term.
-     We translate it to an expression
+     But we must check that @('xforming') is @('nil'),
+     because if we are transforming some variables,
+     and the two cases described in the previous two paragraphs do not apply,
+     then the term is illegal:
+     any term transforming one or more variables must end with
+     the one variable or with an @(tsee mv) of the two or more variables.
+     If @('xforming') is @('nil'),
+     we translate the term to an expression
      and we generate a @('return') statement with that expression.
      For the limit, we need 1 to go from @(tsee exec-block-item-list)
      to @(tsee exec-block-item),
@@ -1873,6 +1880,12 @@
                    (>= (len terms) 2)
                    (equal terms xforming)))
         (acl2::value (list nil nil 0)))
+       ((unless (null xforming))
+        (er-soft+ ctx t (list nil (irr-type) 0)
+                  "A statement term transforming ~x0 in the function ~x1 ~
+                   does not end with the transformed variables, ~
+                   but with the term ~x2 instead."
+                  xforming fn term))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term inscope fn prec-fns ctx state))
        ((when erp) (mv erp (list nil (irr-type) 0) state))
