@@ -82,7 +82,7 @@
        The file may or may not exist:
        if it does not exist, it is created;
        if it exists, it is overwritten.
-       The file must include a @('.c') extension."))
+       The file name must include a @('.c') extension."))
 
     (xdoc::desc
      "@(':proofs') &mdash; default @('t')"
