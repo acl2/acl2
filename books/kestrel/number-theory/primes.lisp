@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
+(include-book "primep-def")
+(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
 
 ;; For now, we use the version of primep from the RTL library.
 

@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "primep-def")
+
 (include-book "divides")
 (include-book "primes")
 (include-book "mod")
