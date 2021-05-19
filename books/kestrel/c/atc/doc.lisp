@@ -32,7 +32,7 @@
 
     (xdoc::p
      "This manual page contains user-level reference documentation for ATC.
-      Usera who are new to ATC should start with the "
+      Users who are new to ATC should start with the "
      (xdoc::seetopic "atc-tutorial" "tutorial")
      ", which provides user-level pedagogical information
       on how ATC works and how to use ATC effectively.")
