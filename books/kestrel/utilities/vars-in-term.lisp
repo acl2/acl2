@@ -28,7 +28,7 @@
        (if (eq 'quote fn)
            nil
          ;; We do not include free vars in lambda bodies, because lambdas in
-         ;; ACL2 should always be closed:
+         ;; pseudo-terms should always be closed:
          (vars-in-terms (fargs term))))))
 
  (defund vars-in-terms (terms)
@@ -62,12 +62,6 @@
     (true-listp (vars-in-terms terms))
     :flag vars-in-terms)
   :hints (("Goal" :in-theory (enable vars-in-term vars-in-terms))))
-
-(defthm subsetp-equal-of-vars-in-term-of-car
-  (implies (consp terms)
-           (subsetp-equal (vars-in-term (car terms))
-                          (vars-in-terms terms)))
-  :hints (("Goal" :in-theory (enable vars-in-terms))))
 
 (defthm subsetp-equal-of-vars-in-term-of-car
   (implies (consp terms)
