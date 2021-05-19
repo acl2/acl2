@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "vars-in-term")
+(include-book "kestrel/terms-light/vars-in-term" :dir :system)
 
 ;; Checks that all free vars in lambda bodies are among the corresponding lambda vars
 (mutual-recursion

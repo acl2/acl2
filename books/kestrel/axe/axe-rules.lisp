@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
-(include-book "kestrel/utilities/vars-in-term" :dir :system)
+(include-book "kestrel/terms-light/vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv

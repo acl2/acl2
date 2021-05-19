@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "vars-in-term")
+(include-book "kestrel/terms-light/vars-in-term" :dir :system)
 
 ;; Note that this avoids doing any consing (e.g., to construct the list of vars
 ;; in the term, or to extract the strip-cars of the alist).

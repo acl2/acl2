@@ -16,7 +16,6 @@
 (include-book "substitution")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
-;(include-book "vars-in-term")
 (local (include-book "../alists-light/pairlis-dollar"))
 (local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
