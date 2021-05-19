@@ -36,11 +36,21 @@
                                   (k 2))
            :in-theory (e/d (rtl::primep) (not-equal-of-least-divisor-same-when-divides)))))
 
+;; Since the rules below target oddp.
+(in-theory (disable oddp))
+
+;; Disabled by default, but see oddp-when-primep-cheap below.
+(defthmd oddp-when-primep
+  (implies (rtl::primep n)
+           (equal (oddp n)
+                  (not (equal n 2))))
+  :hints (("Goal" :in-theory (e/d (oddp) (not-primep-when-divides))
+           :use (:instance not-primep-when-divides
+                           (factor 2)))))
+
 (defthm oddp-when-primep-cheap
   (implies (rtl::primep n)
            (equal (oddp n)
                   (not (equal n 2))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (disable not-primep-when-divides)
-           :use (:instance not-primep-when-divides
-                           (factor 2)))))
+  :hints (("Goal" :by oddp-when-primep)))
