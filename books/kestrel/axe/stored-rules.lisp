@@ -60,20 +60,20 @@
              (rule-symbol (stored-rule-symbol item)))
          (and (pseudo-term-listp lhs-args) ;should be lambda-free
               (axe-rule-hyp-listp hyps)
-              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
+              (bound-vars-suitable-for-hypsp (free-vars-in-terms lhs-args) hyps)
               (pseudo-termp rhs)
-              (subsetp-equal (vars-in-term rhs)
-                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
+              (subsetp-equal (free-vars-in-term rhs)
+                             (bound-vars-after-hyps (free-vars-in-terms lhs-args) hyps))
               (symbolp rule-symbol)))))
 
 (defthm stored-axe-rulep-of-make-stored-rule
   (equal (stored-axe-rulep (make-stored-rule lhs-args hyps rule-symbol rhs))
          (and (pseudo-term-listp lhs-args)
               (axe-rule-hyp-listp hyps)
-              (bound-vars-suitable-for-hypsp (vars-in-terms lhs-args) hyps)
+              (bound-vars-suitable-for-hypsp (free-vars-in-terms lhs-args) hyps)
               (pseudo-termp rhs)
-              (subsetp-equal (vars-in-term rhs)
-                             (bound-vars-after-hyps (vars-in-terms lhs-args) hyps))
+              (subsetp-equal (free-vars-in-term rhs)
+                             (bound-vars-after-hyps (free-vars-in-terms lhs-args) hyps))
               (symbolp rule-symbol)))
   :hints (("Goal" :in-theory (enable make-stored-rule
                                      stored-axe-rulep
@@ -236,6 +236,6 @@
 (defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
   (implies (stored-axe-rulep stored-rule)
            (bound-vars-suitable-for-hypsp
-            (vars-in-terms (stored-rule-lhs-args stored-rule))
+            (free-vars-in-terms (stored-rule-lhs-args stored-rule))
             (stored-rule-hyps stored-rule)))
   :hints (("Goal" :in-theory (enable stored-axe-rulep))))

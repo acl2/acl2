@@ -122,55 +122,55 @@
            :in-theory (disable lambda-free-termp-of-expand-lambdas-in-term))))
 
 (local
- (defthm subsetp-equal-of-vars-in-term-of-assoc-equal-and-vars-in-terms-of-strip-cdrs
+ (defthm subsetp-equal-of-free-vars-in-term-of-assoc-equal-and-free-vars-in-terms-of-strip-cdrs
    (implies (and (member-equal term (strip-cars alist))
                  (assoc-equal term alist))
-            (subsetp-equal (vars-in-term (cdr (assoc-equal term alist)))
-                           (vars-in-terms (strip-cdrs alist))))
-   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal vars-in-terms)))))
+            (subsetp-equal (free-vars-in-term (cdr (assoc-equal term alist)))
+                           (free-vars-in-terms (strip-cdrs alist))))
+   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal free-vars-in-terms)))))
 
 ;move
-(defthm-flag-vars-in-term
-  (defthm subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (vars-in-term term)
+(defthm-flag-free-vars-in-term
+  (defthm subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (free-vars-in-term term)
                             (strip-cars alist))
-             (subsetp-equal (vars-in-term (my-sublis-var alist term))
-                            (vars-in-terms (strip-cdrs alist))))
-    :flag vars-in-term)
-  (defthm subsetp-equal-of-vars-in-term-of-my-sublis-var-lst-and-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (vars-in-terms terms)
+             (subsetp-equal (free-vars-in-term (my-sublis-var alist term))
+                            (free-vars-in-terms (strip-cdrs alist))))
+    :flag free-vars-in-term)
+  (defthm subsetp-equal-of-free-vars-in-term-of-my-sublis-var-lst-and-free-vars-in-terms-of-strip-cdrs
+    (implies (subsetp-equal (free-vars-in-terms terms)
                             (strip-cars alist))
-             (subsetp-equal (vars-in-terms (my-sublis-var-lst alist terms))
-                            (vars-in-terms (strip-cdrs alist))))
-    :flag vars-in-terms)
+             (subsetp-equal (free-vars-in-terms (my-sublis-var-lst alist terms))
+                            (free-vars-in-terms (strip-cdrs alist))))
+    :flag free-vars-in-terms)
   :hints (("Goal" :in-theory (enable my-sublis-var
                                      my-sublis-var-lst
-                                     vars-in-term
-                                     vars-in-terms))))
+                                     free-vars-in-term
+                                     free-vars-in-terms))))
 
 ;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
 ;; closed).  Note that expanding lambdas can remove free vars, since some
 ;; lambda formals may not appear in the lambda body (so their actuals are
 ;; effectively dropped).
 (defthm-flag-expand-lambdas-in-term
-  (defthm subsetp-equal-of-vars-in-term-of-expand-lambdas-in-term-and-vars-in-term
+  (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term-and-free-vars-in-term
     (implies (and (pseudo-termp term)
                   (lambdas-closed-in-termp term))
-             (subsetp-equal (vars-in-term (expand-lambdas-in-term term))
-                            (vars-in-term term)))
+             (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
+                            (free-vars-in-term term)))
     :flag expand-lambdas-in-term)
-  (defthm subsetp-equal-of-vars-in-terms-of-expand-lambdas-in-terms-and-vars-in-terms
+  (defthm subsetp-equal-of-free-vars-in-terms-of-expand-lambdas-in-terms-and-free-vars-in-terms
     (implies (and (pseudo-term-listp terms)
                   (lambdas-closed-in-termsp terms))
-             (subsetp-equal (vars-in-terms (expand-lambdas-in-terms terms))
-                            (vars-in-terms terms)))
+             (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
+                            (free-vars-in-terms terms)))
     :flag expand-lambdas-in-terms)
-  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs
+  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs
                                            (term (expand-lambdas-in-term (caddr (car term))))
                                            (alist (pairlis$ (cadr (car term))
                                                             (expand-lambdas-in-terms (cdr term))))))
-           ("Goal" :in-theory (e/d (vars-in-term
+           ("Goal" :in-theory (e/d (free-vars-in-term
                                     expand-lambdas-in-term
                                     expand-lambdas-in-terms
                                     lambdas-closed-in-termp)
-                                   (subsetp-equal-of-vars-in-term-of-my-sublis-var-and-vars-in-terms-of-strip-cdrs)))))
+                                   (subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs)))))

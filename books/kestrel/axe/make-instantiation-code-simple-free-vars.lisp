@@ -214,7 +214,7 @@
                         (all-dargp (strip-cdrs alist))
                         (alistp alist))
                    (equal (axe-tree-vars (,instantiate-hyp-name term alist interpreted-function-alist))
-                          (set-difference-equal (vars-in-term term)
+                          (set-difference-equal (free-vars-in-term term)
                                                 (strip-cars alist))))
           :flag ,instantiate-hyp-name)
         (defthm ,(pack$ 'all-axe-tree-vars-of-mv-nth-1-of- instantiate-hyp-lst-name)
@@ -222,10 +222,10 @@
                         (all-dargp (strip-cdrs alist))
                         (alistp alist))
                    (equal (axe-tree-vars-lst (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist)))
-                          (set-difference-equal (vars-in-terms terms)
+                          (set-difference-equal (free-vars-in-terms terms)
                                                 (strip-cars alist))))
           :flag ,instantiate-hyp-lst-name)
-        :hints (("Goal" :expand ((vars-in-terms terms))
+        :hints (("Goal" :expand ((free-vars-in-terms terms))
                  :in-theory (enable ,instantiate-hyp-name
                                            ,instantiate-hyp-lst-name
                                            assoc-equal-iff-member-equal-of-strip-cars

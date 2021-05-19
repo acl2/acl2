@@ -65,12 +65,12 @@
 
 ;(local (in-theory (enable assoc-equal-iff)))
 
-(defthmd vars-in-terms-opener
+(defthmd free-vars-in-terms-opener
   (implies (consp terms)
-           (equal (vars-in-terms terms)
-                  (union-equal (vars-in-term (first terms))
-                               (vars-in-terms (rest terms)))))
-  :hints (("Goal" :in-theory (enable vars-in-terms))))
+           (equal (free-vars-in-terms terms)
+                  (union-equal (free-vars-in-term (first terms))
+                               (free-vars-in-terms (rest terms)))))
+  :hints (("Goal" :in-theory (enable free-vars-in-terms))))
 
 ;; Here, the arities exclude the final dag-array formal, if present.  This
 ;; arity thus corresponds to the number of args stored for the call in the
@@ -241,15 +241,15 @@
                                      (list-of-variables-and-constantsp args)
                                      (symbol-alistp alist)
                                      (all-dargp (strip-cdrs alist))
-                                     (subsetp-eq (vars-in-terms args) (strip-cars alist))
+                                     (subsetp-eq (free-vars-in-terms args) (strip-cars alist))
                                      ;; special treatment to optimize handling of axe-quotep:
                                      (implies (eq fn 'axe-quotep) (variablep (first args)))
                                      (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep (strip-cdrs alist)))))
                          :guard-hints (("Goal" :in-theory (e/d (list-of-variables-and-constantsp
-                                                                vars-in-terms-opener)
+                                                                free-vars-in-terms-opener)
                                                                (dargp))
-                                        :expand ((vars-in-terms args)
-                                                 (vars-in-term (car args))))))
+                                        :expand ((free-vars-in-terms args)
+                                                 (free-vars-in-term (car args))))))
                   (ignorable dag-array))
          (if (atom args)
              ;; arity 0 case:
@@ -275,9 +275,9 @@
                                      (axe-syntaxp-exprp expr)
                                      (symbol-alistp alist)
                                      (all-dargp (strip-cdrs alist))
-                                     (subsetp-eq (vars-in-term expr) (strip-cars alist))
+                                     (subsetp-eq (free-vars-in-term expr) (strip-cars alist))
                                      (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep (strip-cdrs alist)))))
-                         :guard-hints (("Goal" :in-theory (enable vars-in-term axe-syntaxp-exprp axe-syntaxp-function-applicationp)
+                         :guard-hints (("Goal" :in-theory (enable free-vars-in-term axe-syntaxp-exprp axe-syntaxp-function-applicationp)
                                         :expand (axe-syntaxp-exprp expr)
                                         :do-not '(generalize eliminate-destructors)))))
          (let ((fn (ffn-symb expr)))

@@ -43,15 +43,15 @@
     (implies (and (pseudo-termp term)
                   (alistp alist))
              (iff (all-vars-in-term-bound-in-alistp term alist)
-                  (subsetp-equal (vars-in-term term) (strip-cars alist))))
+                  (subsetp-equal (free-vars-in-term term) (strip-cars alist))))
     :flag all-vars-in-term-bound-in-alistp)
   (defthm all-vars-in-terms-bound-in-alistp-correct
     (implies (and (pseudo-term-listp terms)
                   (alistp alist))
              (iff (all-vars-in-terms-bound-in-alistp terms alist)
-                  (subsetp-equal (vars-in-terms terms) (strip-cars alist))))
+                  (subsetp-equal (free-vars-in-terms terms) (strip-cars alist))))
     :flag all-vars-in-terms-bound-in-alistp)
   :hints (("Goal" :in-theory (enable all-vars-in-term-bound-in-alistp
                                      all-vars-in-terms-bound-in-alistp
-                                     vars-in-term
-                                     vars-in-terms))))
+                                     free-vars-in-term
+                                     free-vars-in-terms))))

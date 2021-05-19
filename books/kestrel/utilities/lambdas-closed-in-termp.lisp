@@ -24,7 +24,7 @@
          (and (lambdas-closed-in-termsp (fargs term))
               (if (consp fn) ; fn is (lambda (...vars...) body)
                   (and (lambdas-closed-in-termp (third fn))
-                       (subsetp-equal (vars-in-term (third fn))
+                       (subsetp-equal (free-vars-in-term (third fn))
                                       (second fn)))
                 t))))))
  (defund lambdas-closed-in-termsp (terms)

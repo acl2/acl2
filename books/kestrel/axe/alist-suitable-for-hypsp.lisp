@@ -55,7 +55,7 @@
 (defthm alist-suitable-for-hypsp-when-axe-sytaxp-car
   (implies (equal :axe-syntaxp (car (car hyps)))
            (equal (alist-suitable-for-hypsp alist hyps)
-                  (and (subsetp-equal (vars-in-term (cdr (car hyps))) (strip-cars alist))
+                  (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) (strip-cars alist))
                        (alist-suitable-for-hypsp alist (cdr hyps)))))
   :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp))))
 
@@ -75,19 +75,19 @@
                        bound-vars-suitable-for-hypp
                        axe-rule-hypp))))
 
-(defthm subsetp-equal-of-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
+(defthm subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
   (implies (and (eq :axe-bind-free (ffn-symb (first hyps)))
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)
                 (symbol-alistp alist))
            ;(all-vars-in-terms-bound-in-alistp (fargs (cadr (first hyps))) ;strip the :axe-bind-free
 ;                                   alist)
-           (subsetp-equal (vars-in-terms (fargs (cadr (first hyps)))) (strip-cars alist))
+           (subsetp-equal (free-vars-in-terms (fargs (cadr (first hyps)))) (strip-cars alist))
            )
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
                            (axe-rule-hyp-listp hyps)
-                           (vars-in-term (cadr (car hyps))))
+                           (free-vars-in-term (cadr (car hyps))))
            :in-theory (enable ;all-vars-in-term-bound-in-alistp
                        alist-suitable-for-hypsp
                        bound-vars-suitable-for-hypsp
@@ -109,7 +109,7 @@
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
                            (axe-rule-hyp-listp hyps)
-                           (vars-in-term (cadr (car hyps))))
+                           (free-vars-in-term (cadr (car hyps))))
            :in-theory (enable ;all-vars-in-term-bound-in-alistp
                        alist-suitable-for-hypsp
                        bound-vars-suitable-for-hypsp
@@ -144,7 +144,7 @@
                 (axe-rule-hyp-listp hyps)
                 (symbol-alistp alist)
                 (perm (strip-cars result)
-                      (set-difference-equal (vars-in-term (cdr (car hyps)))
+                      (set-difference-equal (free-vars-in-term (cdr (car hyps)))
                                             (strip-cars alist)))
                 )
            (alist-suitable-for-hypsp (append result alist)
@@ -152,7 +152,7 @@
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
                            (axe-rule-hyp-listp hyps)
-                           (vars-in-term (cadr (car hyps))))
+                           (free-vars-in-term (cadr (car hyps))))
            :in-theory (enable ;all-vars-in-term-bound-in-alistp
                        alist-suitable-for-hypsp
                        bound-vars-suitable-for-hypsp
@@ -181,7 +181,7 @@
 ;;                        bound-vars-suitable-for-hypp
 ;;                        axe-rule-hypp))))
 
-(defthm subsetp-equal-of-vars-in-term-of-car-and-strip-cars-when-normal
+(defthm subsetp-equal-of-free-vars-in-term-of-car-and-strip-cars-when-normal
   (implies (and (not (eq :axe-syntaxp (ffn-symb (first hyps))))
                 (not (eq :axe-bind-free (ffn-symb (first hyps))))
                 (not (eq :free-vars (ffn-symb (first hyps))))
@@ -189,7 +189,7 @@
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)
                 (symbol-alistp alist))
-           (subsetp-equal (vars-in-term (first hyps)) (strip-cars alist)))
+           (subsetp-equal (free-vars-in-term (first hyps)) (strip-cars alist)))
   :hints (("Goal" :expand ((bound-vars-suitable-for-hypsp (strip-cars alist)
                                                           hyps)
                            (axe-rule-hyp-listp hyps))
@@ -264,7 +264,7 @@
                 ;; (no-duplicatesp-equal (strip-cars alist)) ;gen?
                 ;;(not (intersection-equal (strip-cars alist) (axe-tree-vars hyp)))
                 (equal (axe-tree-vars hyp)
-                       (set-difference-equal (vars-in-term (cdr (car hyps)))
+                       (set-difference-equal (free-vars-in-term (cdr (car hyps)))
                                              (strip-cars alist))))
            (alist-suitable-for-hyp-tree-and-hypsp alist
                                                   hyp ;instantiated

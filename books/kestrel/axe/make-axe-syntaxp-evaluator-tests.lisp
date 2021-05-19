@@ -33,12 +33,12 @@
                   (AXE-SYNTAXP-EXPRP EXPR)
                   (SYMBOL-ALISTP ALIST)
                   (ALL-DARGP (STRIP-CDRS ALIST))
-                  (SUBSETP-EQ (VARS-IN-TERM EXPR)
+                  (SUBSETP-EQ (FREE-VARS-IN-TERM EXPR)
                               (STRIP-CARS ALIST))
                   (PSEUDO-DAG-ARRAYP 'DAG-ARRAY DAG-ARRAY (+ 1 (LARGEST-NON-QUOTEP (STRIP-CDRS ALIST)))))
              :GUARD-HINTS
              (("Goal"
-               :IN-THEORY (ENABLE VARS-IN-TERM AXE-SYNTAXP-EXPRP
+               :IN-THEORY (ENABLE FREE-VARS-IN-TERM AXE-SYNTAXP-EXPRP
                                   AXE-SYNTAXP-FUNCTION-APPLICATIONP)
                :EXPAND (AXE-SYNTAXP-EXPRP EXPR)
                :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)))))
@@ -64,7 +64,7 @@
                         (LIST-OF-VARIABLES-AND-CONSTANTSP ARGS)
                         (SYMBOL-ALISTP ALIST)
                         (ALL-DARGP (STRIP-CDRS ALIST))
-                        (SUBSETP-EQ (VARS-IN-TERMS ARGS)
+                        (SUBSETP-EQ (FREE-VARS-IN-TERMS ARGS)
                                     (STRIP-CARS ALIST))
                         (IMPLIES (EQ FN 'AXE-QUOTEP)
                                  (VARIABLEP (FIRST ARGS)))
@@ -77,10 +77,10 @@
                    (("Goal"
                      :IN-THEORY
                      (E/D
-                      (LIST-OF-VARIABLES-AND-CONSTANTSP VARS-IN-TERMS-OPENER)
+                      (LIST-OF-VARIABLES-AND-CONSTANTSP FREE-VARS-IN-TERMS-OPENER)
                       (DARGP))
-                     :EXPAND ((VARS-IN-TERMS ARGS)
-                              (VARS-IN-TERM (CAR ARGS))))))
+                     :EXPAND ((FREE-VARS-IN-TERMS ARGS)
+                              (FREE-VARS-IN-TERM (CAR ARGS))))))
     (IGNORABLE DAG-ARRAY))
    (IF
     (ATOM ARGS)

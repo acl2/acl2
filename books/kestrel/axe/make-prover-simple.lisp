@@ -455,7 +455,7 @@
     (:t equiv-listp)
     equiv-listp-of-cdr
     equiv-listp-of-get-equivs
-    subsetp-equal-of-vars-in-term-of-car-and-strip-cars-when-normal
+    subsetp-equal-of-free-vars-in-term-of-car-and-strip-cars-when-normal
     all-vars-in-terms-bound-in-alistp-correct
     all-vars-in-term-bound-in-alistp-correct))
 
@@ -2191,7 +2191,7 @@
                                alist-suitable-for-hypsp-after-matching
                                alist-suitable-for-hypsp-of-cdr-of-car-when-normal
                                alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
-                               subsetp-equal-of-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
+                               subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
                                ,(pack$ 'axe-tree-vars-of- instantiate-hyp-free-vars-name))
                   ;; :in-theory (e/d (bounded-axe-treep-when-natp-strong
                   ;;                  <-OF-+-OF-1-STRENGTHEN-2
@@ -2564,7 +2564,7 @@
                                alist-suitable-for-hypsp-after-matching
                                alist-suitable-for-hypsp-of-cdr-of-car-when-normal
                                alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
-                               subsetp-equal-of-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
+                               subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-bind-free
                                ,(pack$ 'axe-tree-vars-of- instantiate-hyp-free-vars-name)
                                )
                   ;; :in-theory (e/d (bounded-axe-treep-when-natp-strong

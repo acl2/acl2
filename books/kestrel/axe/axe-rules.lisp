@@ -336,21 +336,21 @@
       (:axe-syntaxp
        (let ((syntaxp-expr (cdr hyp))) ;; strip off the :AXE-SYNTAXP; dag-array formals have been removed from the calls in this
          ;; All vars mentioned must be bound:
-         (subsetp-equal (vars-in-term syntaxp-expr) bound-vars)))
+         (subsetp-equal (free-vars-in-term syntaxp-expr) bound-vars)))
       (:axe-bind-free
        (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
               (vars-to-bind (cddr hyp)))
          (and ;; All vars mentioned must be bound:
-          (subsetp-equal (vars-in-term bind-free-expr) bound-vars)
+          (subsetp-equal (free-vars-in-term bind-free-expr) bound-vars)
           ;; Vars to be bound now must not already be bound:
           (not (intersection-eq vars-to-bind bound-vars)))))
       ;; a hyp marked with :free-vars must have at least 1 free var:
       (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
-                         (hyp-vars (vars-in-term expr))
+                         (hyp-vars (free-vars-in-term expr))
                          (free-vars (set-difference-eq hyp-vars bound-vars)))
                     (if free-vars t nil)))
       ;; a hyp not marked with :free-vars must have no free vars:
-      (otherwise (let* ((hyp-vars (vars-in-term hyp)))
+      (otherwise (let* ((hyp-vars (free-vars-in-term hyp)))
                    (subsetp-equal hyp-vars bound-vars))))))
 
 (defcong perm equal (bound-vars-suitable-for-hypp bound-vars hyp) 1
@@ -370,7 +370,7 @@
                       ;; some vars get bound:
                       (append vars-to-bind bound-vars)))
     (:free-vars (let* ((expr (cdr hyp))  ;; (:free-vars . expr)
-                       (hyp-vars (vars-in-term expr))
+                       (hyp-vars (free-vars-in-term expr))
                        (free-vars (set-difference-eq hyp-vars bound-vars)))
                   ;; some vars get bound:
                   (append free-vars bound-vars)))
@@ -450,7 +450,7 @@
 (defthm bound-vars-suitable-for-hypsp-when-axe-sytaxp-car
   (implies (equal :axe-syntaxp (car (car hyps)))
            (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
-                  (and (subsetp-equal (vars-in-term (cdr (car hyps))) bound-vars)
+                  (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) bound-vars)
                        (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp
                                      bound-vars-after-hyp
@@ -461,7 +461,7 @@
                 (not (equal :axe-bind-free (car (car hyps))))
                 (not (equal :free-vars (car (car hyps)))))
            (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
-                  (and (subsetp-equal (vars-in-term (cdr (car hyps))) bound-vars)
+                  (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) bound-vars)
                        (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))
   :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp
                                      bound-vars-after-hyp
@@ -483,8 +483,8 @@
   (implies (and (equal :free-vars (car (car hyps)))
                 (no-duplicatesp-equal bound-vars))
            (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
-                  (and (set-difference-equal (vars-in-term (cdr (car hyps))) bound-vars) ;at least one free var
-                       (bound-vars-suitable-for-hypsp (union-equal (set-difference-equal (vars-in-term (cdr (car hyps)))
+                  (and (set-difference-equal (free-vars-in-term (cdr (car hyps))) bound-vars) ;at least one free var
+                       (bound-vars-suitable-for-hypsp (union-equal (set-difference-equal (free-vars-in-term (cdr (car hyps)))
                                                                                          bound-vars)
                                                                    bound-vars)
                                                       (cdr hyps)))))
@@ -498,7 +498,7 @@
   (implies (and (equal :free-vars (car (car hyps)))
 ;                (no-duplicatesp-equal bound-vars)
                 (bound-vars-suitable-for-hypsp bound-vars hyps))
-           (bound-vars-suitable-for-hypsp (append (set-difference-equal (vars-in-term (cdr (car hyps)))
+           (bound-vars-suitable-for-hypsp (append (set-difference-equal (free-vars-in-term (cdr (car hyps)))
                                                                         bound-vars)
                                                   bound-vars)
                                           (cdr hyps)))
@@ -545,7 +545,7 @@
          (and (axe-rule-lhsp lhs)
               (pseudo-termp rhs)
               (axe-rule-hyp-listp hyps)
-              (bound-vars-suitable-for-hypsp (vars-in-term lhs) hyps)
-              (subsetp-equal (vars-in-term rhs)
-                             (bound-vars-after-hyps (vars-in-term lhs) hyps))
+              (bound-vars-suitable-for-hypsp (free-vars-in-term lhs) hyps)
+              (subsetp-equal (free-vars-in-term rhs)
+                             (bound-vars-after-hyps (free-vars-in-term lhs) hyps))
               ))))

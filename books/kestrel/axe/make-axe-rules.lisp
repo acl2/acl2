@@ -60,11 +60,11 @@
   :hints (("Goal" :in-theory (enable state-p1))))
 
 ;move
-(defthm vars-in-terms-when-equal-of-0-and-len
+(defthm free-vars-in-terms-when-equal-of-0-and-len
   (implies (equal 0 (len terms))
-           (equal (vars-in-terms terms)
+           (equal (free-vars-in-terms terms)
                   nil))
-  :hints (("Goal" :in-theory (enable vars-in-terms))))
+  :hints (("Goal" :in-theory (enable free-vars-in-terms))))
 
 ;; (defthm all-vars-of-cons
 ;;   (equal (all-vars (cons fn args))
@@ -185,7 +185,7 @@
         (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         (mv erp nil))
        ;; Check that all vars that remain in EXPR are bound:
-       (mentioned-vars (vars-in-term expr))
+       (mentioned-vars (free-vars-in-term expr))
        ((when (not (subsetp-eq mentioned-vars bound-vars)))
         (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or by preceding hyps."
             hyp rule-symbol (set-difference-eq mentioned-vars bound-vars))
@@ -303,17 +303,17 @@
   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp))))
 
 ;zz
-;; (defthm subsetp-equal-of-vars-in-term-of-mv-nth-1-of-process-syntaxp-argument
+;; (defthm subsetp-equal-of-free-vars-in-term-of-mv-nth-1-of-process-syntaxp-argument
 ;;   (implies (and (not (mv-nth 0 (process-syntaxp-argument term rule-symbol)))
-;;                 (subsetp-equal (vars-in-term term)
+;;                 (subsetp-equal (free-vars-in-term term)
 ;;                                (cons 'dag-array bound-vars))
 ;;                 (pseudo-termp term))
-;;            (subsetp-equal (vars-in-term (mv-nth 1 (process-syntaxp-argument term rule-symbol)))
+;;            (subsetp-equal (free-vars-in-term (mv-nth 1 (process-syntaxp-argument term rule-symbol)))
 ;;                           bound-vars))
-;;   :hints (("Goal" :expand (vars-in-terms (cdr term))
+;;   :hints (("Goal" :expand (free-vars-in-terms (cdr term))
 ;;            :in-theory (enable process-syntaxp-argument
 ;;                               myquotep
-;;                               vars-in-term))))
+;;                               free-vars-in-term))))
 
 ;;;
 ;;; make-axe-rule-hyps-for-hyp
@@ -383,7 +383,7 @@
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
                  ;; Drops dag-array formals passed a last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
-                 (mentioned-vars (vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
+                 (mentioned-vars (free-vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
                                )
                  ((when (not (subsetp-eq mentioned-vars allowed-vars)))
@@ -407,7 +407,7 @@
                     (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-bind-free argument ~x0 in rule ~x1." axe-bind-free-expr rule-symbol)
                     (mv :bad-bind-free-argument *unrelievable-hyps* bound-vars))
                    (axe-bind-free-expr (process-axe-bind-free-function-application axe-bind-free-expr wrld))
-                   (mentioned-vars (vars-in-term axe-bind-free-expr))
+                   (mentioned-vars (free-vars-in-term axe-bind-free-expr))
                    (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
                                  )
                    ((when (not (subsetp-eq mentioned-vars allowed-vars)))
@@ -456,7 +456,7 @@
                  ((when (fquotep hyp))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 (hyp-vars (vars-in-term hyp))
+                 (hyp-vars (free-vars-in-term hyp))
                  (free-vars (set-difference-eq hyp-vars bound-vars)))
               (if free-vars
                   ;; Normal hyp with free vars that will get bound by matching with assumptions:
@@ -482,7 +482,7 @@
                              (eql 2 (len (fargs hyp))) ;for guard proofs
                              (atom (farg1 hyp))
                              (not (member-eq (farg1 hyp) bound-vars))
-                             (subsetp-eq (vars-in-term (farg2 hyp))
+                             (subsetp-eq (free-vars-in-term (farg2 hyp))
                                          bound-vars)
                              ;;(cw "Note: Binding hyp ~x0 detected in rule ~x1.~%" hyp rule-symbol) ;todo: add a print option?
                              )
@@ -789,9 +789,9 @@
                 )
            (bound-vars-suitable-for-hypsp bound-vars (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
   :hints (("Goal" ;:expand (EXPAND-LAMBDAS-IN-TERM HYP)
-           :expand ((VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
-                    (VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
-                    ;(VARS-IN-TERMS (CDDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+           :expand ((FREE-VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
+                    (FREE-VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+                    ;(FREE-VARS-IN-TERMS (CDDR (EXPAND-LAMBDAS-IN-TERM HYP)))
                     )
            :in-theory (enable make-axe-rule-hyps-for-hyp
                               bound-vars-suitable-for-hypp
@@ -800,25 +800,25 @@
 
 (local (in-theory (disable INTERSECTION-EQUAL))) ;prevent indution
 
-(defthm vars-in-term-when-unary
+(defthm free-vars-in-term-when-unary
   (implies (and (equal 2 (len term))
                 (equal fn (car term))
                 (not (eq 'quote fn))
                 )
-           (equal (VARS-IN-TERM term)
-                  (VARS-IN-TERM (cadr term)))))
+           (equal (FREE-VARS-IN-TERM term)
+                  (FREE-VARS-IN-TERM (cadr term)))))
 
-;; use rule about (vars-in-terms (expand-lambdas-in-terms terms))
+;; use rule about (free-vars-in-terms (expand-lambdas-in-terms terms))
 (defthm mv-nth-2-of-make-axe-rule-hyps-for-hyp
   (implies (and (pseudo-termp hyp)
                 (not (mv-nth 0 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
            (equal (mv-nth 2 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))
                   (bound-vars-after-hyps bound-vars (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld)))))
   :hints (("Goal" :expand ((FNS-IN-TERM HYP)
-                           ;(VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
-                           ;(VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
-                           ;(VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
-                           ;(VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+                           ;(FREE-VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
+                           ;(FREE-VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
+                           ;(FREE-VARS-IN-TERM (EXPAND-LAMBDAS-IN-TERM HYP))
+                           ;(FREE-VARS-IN-TERMS (CDR (EXPAND-LAMBDAS-IN-TERM HYP)))
                            )
            :in-theory (enable bound-vars-after-hyps
                               bound-vars-after-hyp
@@ -1020,7 +1020,7 @@
                               (symbolp rule-symbol)
                               (plist-worldp wrld))))
   (b* ((- (and print (cw "(Making Axe rule: ~x0.)~%" rule-symbol)))
-       (lhs-vars (vars-in-term lhs))
+       (lhs-vars (free-vars-in-term lhs))
        ;; Process and check the HYPS:
        ((mv erp processed-hyps bound-vars) (make-axe-rule-hyps hyps lhs-vars rule-symbol wrld nil))
        ((when erp) (mv erp nil))
@@ -1029,7 +1029,7 @@
         (er hard? 'make-axe-rule "Bad vars in loop-stoppers in rule ~x0." rule-symbol)
         (mv :bad-loop-stoppers nil))
        ;; Check the RHS:
-       (rhs-vars (vars-in-term rhs))
+       (rhs-vars (free-vars-in-term rhs))
        ((when (not (subsetp-eq rhs-vars bound-vars)))
         (er hard? 'make-axe-rule "The RHS, ~x0, of rule ~x1 has free vars (namely, ~x2) that are not bound by the LHS or the hyps (which together bind ~x3)."
             rhs rule-symbol (set-difference-eq rhs-vars bound-vars) bound-vars)
@@ -1071,7 +1071,7 @@
 (defthm rule-hyps-of-mv-nth-1-of-make-axe-rule
   (implies (not (mv-nth 0 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
            (equal (rule-hyps (mv-nth 1 (make-axe-rule lhs rhs rule-symbol hyps extra-hyps print wrld)))
-                  (append extra-hyps (mv-nth 1 (make-axe-rule-hyps hyps (vars-in-term lhs) rule-symbol wrld nil)))))
+                  (append extra-hyps (mv-nth 1 (make-axe-rule-hyps hyps (free-vars-in-term lhs) rule-symbol wrld nil)))))
   :hints (("Goal" :in-theory (enable rule-hyps make-axe-rule))))
 
 (defthm axe-rulep-of-mv-nth-1-of-make-axe-rule

@@ -48,13 +48,13 @@
                                      (list-of-variables-and-constantsp args)
                                      (symbol-alistp alist)
                                      (all-dargp (strip-cdrs alist))
-                                     (subsetp-eq (vars-in-terms args) (strip-cars alist))
+                                     (subsetp-eq (free-vars-in-terms args) (strip-cars alist))
                                      (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep (strip-cdrs alist)))))
                          :guard-hints (("Goal" :in-theory (e/d (list-of-variables-and-constantsp
-                                                                vars-in-terms-opener)
+                                                                free-vars-in-terms-opener)
                                                                (dargp))
-                                        :expand ((vars-in-terms args)
-                                                 (vars-in-term (car args))))))
+                                        :expand ((free-vars-in-terms args)
+                                                 (free-vars-in-term (car args))))))
                   (ignorable dag-array))
          ,(make-axe-syntaxp-evaluator-cases 0 max-arity arity-alist eval-axe-bind-free-function-application-fn wrld))
 
