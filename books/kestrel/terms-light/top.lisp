@@ -11,4 +11,4 @@
 (in-package "ACL2")
 
 (include-book "bound-vars-in-term")
-(include-book "vars-in-term") ;todo: rename free-vars-in-term
+(include-book "free-vars-in-term")

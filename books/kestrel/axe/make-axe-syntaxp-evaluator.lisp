@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
-(include-book "kestrel/terms-light/vars-in-term" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "axe-syntax-functions") ;for axe-quotep, since we treat it specially here
 (include-book "axe-rules") ;for LIST-OF-VARIABLES-AND-CONSTANTSP, todo: reduce?
 (local (include-book "kestrel/lists-light/len" :dir :system))

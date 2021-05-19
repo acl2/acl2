@@ -19,7 +19,7 @@
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
 (include-book "axe-tree-vars")
-(include-book "kestrel/terms-light/vars-in-term" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 (defthmd assoc-equal-iff-member-equal-of-strip-cars
