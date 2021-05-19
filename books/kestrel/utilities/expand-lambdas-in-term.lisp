@@ -21,6 +21,8 @@
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 
+;; Substitution doesn't introduce lambdas if there were none to start with and
+;; there are none in the alist being used for substitution.
 (defthm-flag-my-sublis-var
   (defthm lambda-free-termp-of-my-sublis-var
     (implies (and (lambda-free-termp form)
@@ -35,34 +37,33 @@
   :hints (("Goal" :in-theory (enable my-sublis-var
                                      my-sublis-var-lst))))
 
-;(later we may handle non-pseudo-terms that still include lets).
-;This is similar to remove-lambdas, but we don't use remove-lambdas,
-;because it has to preserve quote normal form. For example:
-;(remove-lambdas '((lambda (x y) (binary-+ x y)) '1 '2)) produces '3
-;whereas we want (binary-+ '1 '2).
+;; Expands away all lambdas in TERM (beta reduction).  This is similar to the
+;; built-in function REMOVE-LAMBDAS, but that one does more (to preserve quote
+;; normal form). For example: (remove-lambdas '((lambda (x y) (binary-+ x y))
+;; '1 '2)) produces '3 whereas we want (binary-+ '1 '2).
 (mutual-recursion
  (defund expand-lambdas-in-term (term)
-   (declare (xargs :measure (acl2-count term)
-                   :guard (pseudo-termp term)
-                   :verify-guards nil)) ;see verify-guards form below
-   (if (variablep term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :measure (acl2-count term)
+                   :verify-guards nil ; done below
+                   ))
+   (if (or (variablep term)
+           (fquotep term))
        term
-     (if (quotep term)
-         term
-       ;;it's a function call (maybe a lambda application):
-       (let* ((args (fargs term))
-              (args (expand-lambdas-in-terms args)) ;process the args first
-              (fn (ffn-symb term)))
-         (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
-             (let* ((lambda-body (expand-lambdas-in-term (lambda-body fn)))) ;;apply recursively to the lambda body
-               ;; beta-reduce (TODO: Make a simple version of subcor-var and call that here):
-               (my-sublis-var (pairlis$ (lambda-formals fn) args) lambda-body))
-           ;;not a lambda application, so just rebuild the function call:
-           `(,fn ,@args))))))
+     ;;it's a function call (maybe a lambda application):
+     (let* ((args (fargs term))
+            (args (expand-lambdas-in-terms args)) ;process the args first
+            (fn (ffn-symb term)))
+       (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
+           (let* ((lambda-body (expand-lambdas-in-term (lambda-body fn)))) ;;apply recursively to the lambda body
+             ;; beta-reduce (TODO: Make a simple version of subcor-var and call that here):
+             (my-sublis-var (pairlis$ (lambda-formals fn) args) lambda-body))
+         ;;not a lambda application, so just rebuild the function call:
+         `(,fn ,@args)))))
 
  (defund expand-lambdas-in-terms (terms)
-   (declare (xargs :measure (acl2-count terms)
-                   :guard (pseudo-term-listp terms)))
+   (declare (xargs :guard (pseudo-term-listp terms)
+                   :measure (acl2-count terms)))
    (if (endp terms)
        nil
      (cons (expand-lambdas-in-term (first terms))
@@ -84,6 +85,7 @@
   :hints (("Goal" :induct (len terms)
            :in-theory (enable len expand-lambdas-in-terms))))
 
+;; Expanding lambdas preserves pseudo-termp.
 (defthm-flag-expand-lambdas-in-term
   (defthm pseudo-termp-of-expand-lambdas-in-term
     (implies (pseudo-termp term)
@@ -103,6 +105,7 @@
          (expand-lambdas-in-term (car terms)))
   :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
 
+;; Expanding lambdas creates a lambda-free term.
 (defthm-flag-expand-lambdas-in-term
   (defthm lambda-free-termp-of-expand-lambdas-in-term
     (implies (pseudo-termp term)
@@ -115,6 +118,7 @@
   :hints (("Goal" :in-theory (enable expand-lambdas-in-term
                                      expand-lambdas-in-terms))))
 
+;; Since the new term is lambda-free
 (defthm not-consp-of-car-of-expand-lambdas-in-term
   (implies (pseudo-termp term)
            (not (consp (car (expand-lambdas-in-term term)))))

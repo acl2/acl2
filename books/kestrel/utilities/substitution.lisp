@@ -11,17 +11,8 @@
 
 (in-package "ACL2")
 
-;; STATUS: IN-PROGRESS
-
 (include-book "symbol-term-alistp")
 (include-book "tools/flag" :dir :system)
-
-;move
-(defthm pseudo-termp-of-assoc-equal
-  (implies (and (pseudo-term-listp (strip-cdrs alist))
-                (assoc-equal term alist))
-           (pseudo-termp (cdr (assoc-equal term alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
 
 ;; See also the built-in function sublis-var.  It evaluates ground applications of certain functions:
 ;; (sublis-var (acons 'a ''3 nil) '(binary-+ a a)) = '6
@@ -39,7 +30,7 @@
 (mutual-recursion
  (defund my-sublis-var (alist form) ;todo: call this 'term'?
    (declare (xargs :measure (acl2-count form)
-                   :guard (and (symbol-alistp alist)
+                   :guard (and (symbol-alistp alist) ; usually a symbol-term-alistp
                                (pseudo-termp form))))
    (cond ((variablep form)
           (let ((a (assoc-eq form alist)))
@@ -85,26 +76,10 @@
 (defthm-flag-my-sublis-var
   (defthm pseudo-termp-of-my-sublis-var
     (implies (and (pseudo-termp form)
-                  (pseudo-term-listp (strip-cdrs alist)))
-             (pseudo-termp (my-sublis-var alist form)))
-    :flag my-sublis-var)
-  (defthm pseudo-term-listp-of-my-sublis-var-lst
-    (implies (and (pseudo-term-listp l)
-                  (pseudo-term-listp (strip-cdrs alist)))
-             (pseudo-term-listp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst)
-           :expand ((pseudo-termp (cons (car form) (my-sublis-var-lst alist (cdr form))))))))
-
-;drop this or the one above?
-(defthm-flag-my-sublis-var
-  (defthm pseudo-termp-of-my-sublis-var2
-    (implies (and (pseudo-termp form)
                   (symbol-term-alistp alist))
              (pseudo-termp (my-sublis-var alist form)))
     :flag my-sublis-var)
-  (defthm pseudo-term-listp-of-my-sublis-var-lst2
+  (defthm pseudo-term-listp-of-my-sublis-var-lst
     (implies (and (pseudo-term-listp l)
                   (symbol-term-alistp alist))
              (pseudo-term-listp (my-sublis-var-lst alist l)))
