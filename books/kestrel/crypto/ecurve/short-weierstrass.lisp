@@ -12,7 +12,7 @@
 
 (in-package "ECURVE")
 
-(include-book "primes")
+(include-book "kestrel/number-theory/primep-def" :dir :system)
 (include-book "points")
 
 (include-book "centaur/fty/top" :dir :system)
@@ -23,6 +23,7 @@
 (local (include-book "short-weierstrass-closure-simp"))
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (local (include-book "kestrel/prime-fields/equal-of-add-rules" :dir :system))
+(local (include-book "kestrel/number-theory/primes" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
