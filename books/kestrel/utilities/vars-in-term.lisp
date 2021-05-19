@@ -74,15 +74,15 @@
                  (vars-in-terms terms))
   :hints (("Goal" :in-theory (enable vars-in-terms))))
 
-(defthm subsetp-equal-of-vars-in-terms-of-cdr-chain
-  (implies (subsetp-equal (vars-in-terms terms) vars)
-           (subsetp-equal (vars-in-terms (cdr terms)) vars))
-  :hints (("Goal" :in-theory (enable vars-in-terms))))
-
 (defthm subsetp-equal-of-vars-in-terms-of-car-chain
   (implies (and (subsetp-equal (vars-in-terms terms) vars)
                 (consp terms))
            (subsetp-equal (vars-in-term (car terms)) vars))
+  :hints (("Goal" :in-theory (enable vars-in-terms))))
+
+(defthm subsetp-equal-of-vars-in-terms-of-cdr-chain
+  (implies (subsetp-equal (vars-in-terms terms) vars)
+           (subsetp-equal (vars-in-terms (cdr terms)) vars))
   :hints (("Goal" :in-theory (enable vars-in-terms))))
 
 (defthm vars-in-term-when-not-consp-cheap
