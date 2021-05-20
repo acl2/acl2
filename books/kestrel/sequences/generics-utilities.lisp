@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/substitution" :dir :system) ; for my-sublis-var
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system) ; for my-sublis-var
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;(theory-invariant (incompatible (:definition len) (:rewrite len-of-nthcdr-better)))

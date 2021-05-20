@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "substitution")
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
 (local (include-book "../alists-light/pairlis-dollar"))

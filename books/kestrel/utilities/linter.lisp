@@ -72,7 +72,7 @@
 (include-book "my-get-event")
 (include-book "defun-events")
 (include-book "world")
-(include-book "substitution")
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
 
 (defun all-defuns-in-world (world triple-to-stop-at whole-world acc)

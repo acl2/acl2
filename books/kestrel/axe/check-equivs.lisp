@@ -13,7 +13,7 @@
 (include-book "equivs")
 
 (include-book "kestrel/utilities/make-var-names" :dir :system)
-(include-book "kestrel/utilities/substitution" :dir :system)
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

@@ -12,3 +12,4 @@
 
 (include-book "bound-vars-in-term")
 (include-book "free-vars-in-term")
+(include-book "sublis-var-simple")

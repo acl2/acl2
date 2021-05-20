@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "symbol-term-alistp")
+(include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
 
 ;; See also the built-in function sublis-var.  It evaluates ground applications of certain functions:

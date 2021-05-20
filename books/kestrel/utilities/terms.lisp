@@ -15,7 +15,7 @@
 
 (include-book "forms") ;for farg1, etc.
 (include-book "kestrel/alists-light/lookup" :dir :system)
-(include-book "substitution")
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "symbol-term-alistp")
 (include-book "expand-lambdas-in-term")
 (include-book "tools/flag" :dir :system)

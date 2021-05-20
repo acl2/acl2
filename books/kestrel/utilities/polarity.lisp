@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "translate")
-(include-book "kestrel/utilities/substitution" :dir :system)
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 
 ;; This book contains utilities to support "polarity-based rewriting," in which
 ;; how you want to rewrite a term depends on whether it appears as a hypothesis
