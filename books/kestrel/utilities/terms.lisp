@@ -433,7 +433,7 @@
          (formals (second lambda-part))
          (body (car (last lambda-part))) ;previously we took the third part, but declares sometime intervene?
          (actuals (cdr lambda-expr)))
-    (my-sublis-var (pairlis$ formals actuals)
+    (sublis-var-simple (pairlis$ formals actuals)
                    body)))
 
 ;; where should this go?
@@ -575,24 +575,24 @@
   (implies (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
            (not (member-equal fn (fns-in-term (cdr (assoc-equal form alist)))))))
 
-(defthm-flag-my-sublis-var
-  (defthm not-member-equal-of-fns-in-term-of-my-sublis-var
+(defthm-flag-sublis-var-simple
+  (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple
     (implies (and (not (member-equal fn (fns-in-term form)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
                   (pseudo-termp form))
-             (not (member-equal fn (fns-in-term (my-sublis-var alist form)))))
-    :flag my-sublis-var)
-  (defthm not-member-equal-of-fns-in-term-of-my-sublis-var-lst
+             (not (member-equal fn (fns-in-term (sublis-var-simple alist form)))))
+    :flag sublis-var-simple)
+  (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple-lst
     (implies (and (not (member-equal fn (fns-in-terms l)))
                   (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
                   (pseudo-term-listp l))
-             (not (member-equal fn (fns-in-terms (my-sublis-var-lst alist l)))))
-    :flag my-sublis-var-lst)
+             (not (member-equal fn (fns-in-terms (sublis-var-simple-lst alist l)))))
+    :flag sublis-var-simple-lst)
   :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR FORM)
-                                              (MY-SUBLIS-VAR-LST ALIST (CDR FORM)))))
+                                              (SUBLIS-VAR-SIMPLE-LST ALIST (CDR FORM)))))
            :in-theory (enable fns-in-term
-                              my-sublis-var
-                              my-sublis-var-lst))))
+                              sublis-var-simple
+                              sublis-var-simple-lst))))
 
 (defthm-flag-expand-lambdas-in-term
   (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term

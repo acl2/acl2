@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; Similar to my-sublis-var-and-eval-basic, but this one also returns a free-vars flag.
+;; Similar to sublis-var-and-eval-basic, but this one also returns a free-vars flag.
 
 ;; This version uses the basic evaluator.
 

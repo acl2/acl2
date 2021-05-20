@@ -953,7 +953,7 @@
 ;;          (formals (second lambda-expr))
 ;;          ;; don't need the declares here
 ;;          (body (car (last lambda-expr))))
-;;         (my-sublis-var (pairlis$ formals actuals) ;;Darn.  We'll need a version of my-sublis-var that handles untranslated terms...
+;;         (sublis-var-simple (pairlis$ formals actuals) ;;Darn.  We'll need a version of sublis-var-simple that handles untranslated terms...
 ;;                        body)))
 
 (defun def-untranslated-term-fold-fn (base-name

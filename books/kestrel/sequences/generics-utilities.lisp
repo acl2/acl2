@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/terms-light/sublis-var-simple" :dir :system) ; for my-sublis-var
+(include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;(theory-invariant (incompatible (:definition len) (:rewrite len-of-nthcdr-better)))
@@ -32,7 +32,7 @@
                               (pseudo-termp term))))
   (if (endp items)
       nil
-    (cons (my-sublis-var (acons var (car items) nil) term)
+    (cons (sublis-var-simple (acons var (car items) nil) term)
           (wrap-list term var (cdr items)))))
 
 ;put the items in for var in the terms that are also in targets, leave the others untouched
@@ -44,7 +44,7 @@
   (if (endp items)
       nil
     (cons (if (member-equal (car items) targets)
-              (my-sublis-var (acons var (car items) nil) term)
+              (sublis-var-simple (acons var (car items) nil) term)
             (car items))
           (wrap-targets term var (cdr items) targets))))
 
@@ -55,7 +55,7 @@
   (if (endp items)
       nil
     (cons (if (equal (car items) target)
-              (my-sublis-var (acons var (car items) nil) term)
+              (sublis-var-simple (acons var (car items) nil) term)
             (car items))
           (wrap-target term var target (cdr items)))))
 

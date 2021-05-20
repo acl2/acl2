@@ -143,7 +143,7 @@
 (include-book "merge-sort-less-than-rules")
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
-(include-book "my-sublis-var-and-eval-basic")
+(include-book "sublis-var-and-eval-basic")
 (include-book "no-atoms")
 (include-book "node-replacement-alist")
 (include-book "node-replacement-array2")

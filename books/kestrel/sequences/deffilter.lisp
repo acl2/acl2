@@ -259,7 +259,7 @@
        (cars (wrap-list '(first x) 'x list-formals))
        (recursive-call-args (wrap-targets '(rest x) 'x all-formals list-formals))
        (termination-test (make-or atom-tests))
-       (element-test (my-sublis-var (pairlis$ list-formals cars) term)) ;might test several elements
+       (element-test (sublis-var-simple (pairlis$ list-formals cars) term)) ;might test several elements
        (defun `(defund ,filter-fn (,@all-formals)
                  ,@(if declares
                        `((declare ,@declares ;(xargs :normalize nil)
@@ -342,8 +342,8 @@
                      (fresh-var-alist ;(acons list-formal fresh-var
                       (pairlis$ fixed-formals fresh-vars) ;)
                       )
-                     (fresh-formals (my-sublis-var-lst fresh-var-alist all-formals))
-                     (fresh-term (my-sublis-var fresh-var-alist term))
+                     (fresh-formals (sublis-var-simple-lst fresh-var-alist all-formals))
+                     (fresh-term (sublis-var-simple fresh-var-alist term))
                      (fixed-formal-bindings (make-doublets fresh-vars fixed-formals))
                      (bindings `((generic-predicate (lambda (,list-formal) ,fresh-term))
                                  (generic-filter (lambda (,list-formal) (,filter-fn ,@fresh-formals)))
@@ -364,7 +364,7 @@
                 `(
                   ,@(if forall-fn
                         `((defthm ,(pack$ forall-fn '- filter-fn)
-                            (,forall-fn ,@(my-sublis-var-lst
+                            (,forall-fn ,@(sublis-var-simple-lst
                                            (acons list-formal `(,filter-fn ,@all-formals) nil)
                                            all-formals))
                             :hints (("Goal" :use (:instance (:functional-instance generic-forall-of-generic-filter ,@bindings)
@@ -411,7 +411,7 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-idempotent)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(,filter-fn ,@all-formals) nil)
                                           all-formals))
                            (,filter-fn ,@all-formals))
@@ -421,10 +421,10 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-cons)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(cons ,fresh-var ,list-formal) nil)
                                           all-formals))
-                           (if ,(my-sublis-var (acons list-formal fresh-var nil)
+                           (if ,(sublis-var-simple (acons list-formal fresh-var nil)
                                                term)
                                (cons ,fresh-var (,filter-fn ,@all-formals))
                              (,filter-fn ,@all-formals)))
@@ -435,11 +435,11 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-append)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(append ,list-formal ,fresh-var) nil)
                                           all-formals))
                            (append (,filter-fn ,@all-formals)
-                                   (,filter-fn ,@(my-sublis-var-lst
+                                   (,filter-fn ,@(sublis-var-simple-lst
                                                   (acons list-formal fresh-var nil)
                                                   all-formals))))
                     :hints (("Goal" :use (:instance (:functional-instance generic-filter-of-append ,@bindings)
@@ -449,11 +449,11 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-revappend)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(revappend ,list-formal ,fresh-var) nil)
                                           all-formals))
                            (revappend (,filter-fn ,@all-formals)
-                                      (,filter-fn ,@(my-sublis-var-lst
+                                      (,filter-fn ,@(sublis-var-simple-lst
                                                      (acons list-formal fresh-var nil)
                                                      all-formals))))
                     :hints (("Goal" :use (:instance (:functional-instance generic-filter-of-revappend ,@bindings)
@@ -463,10 +463,10 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-remove1)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(remove1-equal ,fresh-var ,list-formal) nil)
                                           all-formals))
-                           (if ,(my-sublis-var (acons list-formal fresh-var nil)
+                           (if ,(sublis-var-simple (acons list-formal fresh-var nil)
                                                term)
                                (remove1-equal ,fresh-var (,filter-fn ,@all-formals))
                              (,filter-fn ,@all-formals)))
@@ -477,10 +477,10 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-remove-equal)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(remove-equal ,fresh-var ,list-formal) nil)
                                           all-formals))
-                           (if ,(my-sublis-var (acons list-formal fresh-var nil)
+                           (if ,(sublis-var-simple (acons list-formal fresh-var nil)
                                                term)
                                (remove-equal ,fresh-var (,filter-fn ,@all-formals))
                              (,filter-fn ,@all-formals)))
@@ -491,7 +491,7 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-true-list-fix)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal `(true-list-fix ,list-formal) nil)
                                           all-formals))
                            (,filter-fn ,@all-formals))
@@ -510,7 +510,7 @@
                              ,@theory)))
 
                   (defthm ,(pack$ filter-fn '-of-nil)
-                    (equal (,filter-fn ,@(my-sublis-var-lst
+                    (equal (,filter-fn ,@(sublis-var-simple-lst
                                           (acons list-formal nil nil)
                                           all-formals))
                            nil)
@@ -520,8 +520,8 @@
                              ,@theory)))
 
                   (defthm ,(pack$ 'use- filter-fn)
-                    (implies (memberp x (,filter-fn ,@(my-sublis-var-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals)))
-                             ,(my-sublis-var (acons list-formal 'x nil) term)) ;fixme what if term is not suitable to be a rewrite rule?
+                    (implies (memberp x (,filter-fn ,@(sublis-var-simple-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals)))
+                             ,(sublis-var-simple (acons list-formal 'x nil) term)) ;fixme what if term is not suitable to be a rewrite rule?
                     ;; avoid illegal rewrite rules (fixme print a warning) fixme: would like this test to apply to the macro-expanded body:
                     ,@(if (or (symbolp term) (member-eq (ffn-symb term) '(if or
 ;and ;I think and is actually okay

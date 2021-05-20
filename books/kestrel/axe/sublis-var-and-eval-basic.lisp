@@ -1,4 +1,4 @@
-; A variant of my-sublis-var-and-eval that uses the basic evaluator.
+; A variant of sublis-var-and-eval that uses the basic evaluator.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
@@ -21,5 +21,5 @@
 (include-book "evaluator-basic")
 (include-book "make-substitution-code-simple")
 
-;; Make a version of my-sublis-var-and-eval, etc that use the basic evaluator:
+;; Make a version of sublis-var-and-eval, etc that use the basic evaluator:
 (make-substitution-code-simple basic axe-evaluator-basic)

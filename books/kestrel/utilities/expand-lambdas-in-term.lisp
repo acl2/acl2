@@ -23,19 +23,19 @@
 
 ;; Substitution doesn't introduce lambdas if there were none to start with and
 ;; there are none in the alist being used for substitution.
-(defthm-flag-my-sublis-var
-  (defthm lambda-free-termp-of-my-sublis-var
+(defthm-flag-sublis-var-simple
+  (defthm lambda-free-termp-of-sublis-var-simple
     (implies (and (lambda-free-termp form)
                   (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termp (my-sublis-var alist form)))
-    :flag my-sublis-var)
-  (defthm lambda-free-termsp-of-my-sublis-var-lst
+             (lambda-free-termp (sublis-var-simple alist form)))
+    :flag sublis-var-simple)
+  (defthm lambda-free-termsp-of-sublis-var-simple-lst
     (implies (and (lambda-free-termsp l)
                   (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termsp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst))))
+             (lambda-free-termsp (sublis-var-simple-lst alist l)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst))))
 
 ;; Expands away all lambdas in TERM (beta reduction).  This is similar to the
 ;; built-in function REMOVE-LAMBDAS, but that one does more (to preserve quote
@@ -57,7 +57,7 @@
        (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            (let* ((lambda-body (expand-lambdas-in-term (lambda-body fn)))) ;;apply recursively to the lambda body
              ;; beta-reduce (TODO: Make a simple version of subcor-var and call that here):
-             (my-sublis-var (pairlis$ (lambda-formals fn) args) lambda-body))
+             (sublis-var-simple (pairlis$ (lambda-formals fn) args) lambda-body))
          ;;not a lambda application, so just rebuild the function call:
          `(,fn ,@args)))))
 
@@ -135,20 +135,20 @@
 
 ;move
 (defthm-flag-free-vars-in-term
-  (defthm subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs
+  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
     (implies (subsetp-equal (free-vars-in-term term)
                             (strip-cars alist))
-             (subsetp-equal (free-vars-in-term (my-sublis-var alist term))
+             (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
                             (free-vars-in-terms (strip-cdrs alist))))
     :flag free-vars-in-term)
-  (defthm subsetp-equal-of-free-vars-in-term-of-my-sublis-var-lst-and-free-vars-in-terms-of-strip-cdrs
+  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
     (implies (subsetp-equal (free-vars-in-terms terms)
                             (strip-cars alist))
-             (subsetp-equal (free-vars-in-terms (my-sublis-var-lst alist terms))
+             (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
                             (free-vars-in-terms (strip-cdrs alist))))
     :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst
                                      free-vars-in-term
                                      free-vars-in-terms))))
 
@@ -169,7 +169,7 @@
              (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
                             (free-vars-in-terms terms)))
     :flag expand-lambdas-in-terms)
-  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs
+  :hints ( ("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
                                            (term (expand-lambdas-in-term (caddr (car term))))
                                            (alist (pairlis$ (cadr (car term))
                                                             (expand-lambdas-in-terms (cdr term))))))
@@ -177,4 +177,4 @@
                                     expand-lambdas-in-term
                                     expand-lambdas-in-terms
                                     lambdas-closed-in-termp)
-                                   (subsetp-equal-of-free-vars-in-term-of-my-sublis-var-and-free-vars-in-terms-of-strip-cdrs)))))
+                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs)))))

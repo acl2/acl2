@@ -103,7 +103,7 @@
                  (term (translate-term term 'want-to-strengthen (w state))) ;TODO: Can we do this once, when the rule is created?
                  ;; Apply the unify subst (so the user doesn't have to give a term with backquote):
                  (unify-subst (mfc-unify-subst mfc))
-                 (term (my-sublis-var unify-subst term)) ;TODO, can we save the consing here?
+                 (term (sublis-var-simple unify-subst term)) ;TODO, can we save the consing here?
                  (not-flg/atm (mfc-current-literal2 mfc))
                  (not-flg (car not-flg/atm))
                  (current-literal-core (cdr not-flg/atm)))
@@ -129,7 +129,7 @@
                  (term (translate-term term 'want-to-weaken (w state)))
                  ;; Apply the unify subst (so the user doesn't have to give a term with backquote):
                  (unify-subst (mfc-unify-subst mfc))
-                 (term (my-sublis-var unify-subst term))
+                 (term (sublis-var-simple unify-subst term))
                  (not-flg/atm (mfc-current-literal2 mfc))
                  (not-flg (car not-flg/atm))
                  (current-literal-core (cdr not-flg/atm)))

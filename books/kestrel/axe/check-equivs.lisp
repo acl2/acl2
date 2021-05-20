@@ -36,7 +36,7 @@
     (let* ((arg (first args))
            (equiv-for-arg (first arg-equivs))
            (equiv-arg (pack$ arg '-equiv))
-           (equiv-args (my-sublis-var-lst (acons arg equiv-arg nil)
+           (equiv-args (sublis-var-simple-lst (acons arg equiv-arg nil)
                                           all-args)))
       (cons `(thm
               (implies (,equiv-for-arg ,arg ,equiv-arg)

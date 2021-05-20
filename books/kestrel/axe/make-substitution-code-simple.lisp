@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; This book provides a tool that, given the name of an evaluator, makes a
-;; version of my-sublis-var-and-eval that uses it.
+;; version of sublis-var-and-eval that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (include-book "all-dargp-less-than")
@@ -22,8 +22,8 @@
 (defun make-substitution-code-simple-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-base-name))))
-  (let ((my-sublis-var-and-eval-name (pack$ 'my-sublis-var-and-eval- suffix))
-        (my-sublis-var-and-eval-lst-name (pack$ 'my-sublis-var-and-eval- suffix '-lst))
+  (let ((sublis-var-and-eval-name (pack$ 'sublis-var-and-eval- suffix))
+        (sublis-var-and-eval-lst-name (pack$ 'sublis-var-and-eval- suffix '-lst))
         (apply-axe-evaluator-to-quoted-args-name (pack$ 'apply- evaluator-base-name '-to-quoted-args)))
     `(encapsulate ()
        (local (include-book "kestrel/axe/replace-var-rules" :dir :system))
@@ -33,7 +33,7 @@
        ;; This handles lambda applications correctly (by handling their args) but does not beta reduce.
        (mutual-recursion
         ;; Returns a new term.
-        (defund ,my-sublis-var-and-eval-name (alist ;maps vars to nodenums/quoteps
+        (defund ,sublis-var-and-eval-name (alist ;maps vars to nodenums/quoteps
                                               term interpreted-function-alist)
           (declare (xargs :verify-guards nil ;done below
                           :guard (and (symbol-alistp alist)
@@ -47,9 +47,9 @@
                      (if (and (eq fn 'if) ;; TODO: consider also handling bvif, boolif, myif, maybe boolor and booland...
                               (= 3 (len (fargs term))))
                          (let* ((test (second term))
-                                (test-result (,my-sublis-var-and-eval-name alist test interpreted-function-alist)))
+                                (test-result (,sublis-var-and-eval-name alist test interpreted-function-alist)))
                            (if (quotep test-result)
-                               (,my-sublis-var-and-eval-name alist (if (unquote test-result) ;if the test is not nil
+                               (,sublis-var-and-eval-name alist (if (unquote test-result) ;if the test is not nil
                                                                        (third term) ;then part
                                                                      (fourth term) ;else part
                                                                      )
@@ -57,13 +57,13 @@
                              ;;couldn't resolve if-test:
                              (list 'if
                                    test-result
-                                   (,my-sublis-var-and-eval-name alist (third term) interpreted-function-alist) ;then part
-                                   (,my-sublis-var-and-eval-name alist (fourth term) interpreted-function-alist) ;else part
+                                   (,sublis-var-and-eval-name alist (third term) interpreted-function-alist) ;then part
+                                   (,sublis-var-and-eval-name alist (fourth term) interpreted-function-alist) ;else part
                                    )))
                        ;;regular function call or lambda
                        ;; Substitute in the args:
                        (mv-let (ground-termp args)
-                         (,my-sublis-var-and-eval-lst-name alist (fargs term) interpreted-function-alist)
+                         (,sublis-var-and-eval-lst-name alist (fargs term) interpreted-function-alist)
                          (if ground-termp
                              (mv-let (erp res)
                                (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)
@@ -76,7 +76,7 @@
                            (cons fn args))))))))
 
         ;; Returns (mv ground-termp args).
-        (defund ,my-sublis-var-and-eval-lst-name (alist terms interpreted-function-alist)
+        (defund ,sublis-var-and-eval-lst-name (alist terms interpreted-function-alist)
           (declare (xargs
                     :verify-guards nil
                     :guard (and (symbol-alistp alist)
@@ -85,82 +85,82 @@
                                 (interpreted-function-alistp interpreted-function-alist))))
           (if (atom terms)
               (mv t nil)
-            (let ((new-car (,my-sublis-var-and-eval-name alist (first terms) interpreted-function-alist)))
+            (let ((new-car (,sublis-var-and-eval-name alist (first terms) interpreted-function-alist)))
               (mv-let (cdr-ground-termp new-cdr)
-                (,my-sublis-var-and-eval-lst-name alist (rest terms) interpreted-function-alist)
+                (,sublis-var-and-eval-lst-name alist (rest terms) interpreted-function-alist)
                 (mv (and cdr-ground-termp (quotep new-car))
                     (cons new-car new-cdr)))))))
 
-       (make-flag ,my-sublis-var-and-eval-name)
+       (make-flag ,sublis-var-and-eval-name)
 
-       (defthm ,(pack$ 'len-of-mv-nth-1-of- my-sublis-var-and-eval-lst-name)
-         (equal (len (mv-nth 1 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
+       (defthm ,(pack$ 'len-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+         (equal (len (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
                 (len terms))
-         :hints (("Goal" :induct (len terms) :in-theory (enable ,my-sublis-var-and-eval-lst-name (:i len)))))
+         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len)))))
 
-       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- my-sublis-var-and-eval-lst-name)
-         (true-listp (mv-nth 1 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
-         :hints (("Goal" :induct (len terms) :in-theory (enable ,my-sublis-var-and-eval-lst-name (:i len)))))
+       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+         (true-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)))
+         :hints (("Goal" :induct (len terms) :in-theory (enable ,sublis-var-and-eval-lst-name (:i len)))))
 
-       (,(pack$ 'defthm-flag- my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'myquotep-of- my-sublis-var-and-eval-name)
-           (implies (and (eq 'quote (car (,my-sublis-var-and-eval-name alist term interpreted-function-alist)))
+       (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
+         (defthm ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
+           (implies (and (eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
                          (all-dargp (strip-cdrs alist))
                          (pseudo-termp term))
-                    (myquotep (,my-sublis-var-and-eval-name alist term interpreted-function-alist)))
-           :flag ,my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- my-sublis-var-and-eval-lst-name)
-           (implies (and (mv-nth 0 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) ;means ground term
+                    (myquotep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
+           :flag ,sublis-var-and-eval-name)
+         (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and (mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) ;means ground term
                          (all-dargp (strip-cdrs alist))
                          (pseudo-term-listp terms))
-                    (all-myquotep (mv-nth 1 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
-           :flag ,my-sublis-var-and-eval-lst-name)
-         :hints (("Goal" :in-theory (e/d (,my-sublis-var-and-eval-name ,my-sublis-var-and-eval-lst-name
+                    (all-myquotep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
+           :flag ,sublis-var-and-eval-lst-name)
+         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name
                                                                        myquotep-when-dargp)
                                          (myquotep)))))
 
-       (verify-guards ,my-sublis-var-and-eval-name
+       (verify-guards ,sublis-var-and-eval-name
          :hints (("Goal"
-                  :use (:instance ,(pack$ 'myquotep-of- my-sublis-var-and-eval-name)
+                  :use (:instance ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
                                   (term (cadr term)))
-                  :in-theory (disable myquotep symbol-alistp strip-cdrs ,(pack$ 'myquotep-of- my-sublis-var-and-eval-name)))))
+                  :in-theory (disable myquotep symbol-alistp strip-cdrs ,(pack$ 'myquotep-of- sublis-var-and-eval-name)))))
 
-       (,(pack$ 'defthm-flag- my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'axe-treep-of- my-sublis-var-and-eval-name)
-           (implies (and ;(eq 'quote (car (,my-sublis-var-and-eval-name alist term interpreted-function-alist)))
+       (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
+         (defthm ,(pack$ 'axe-treep-of- sublis-var-and-eval-name)
+           (implies (and ;(eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
                      (all-dargp (strip-cdrs alist))
                      (pseudo-termp term))
-                    (axe-treep (,my-sublis-var-and-eval-name alist term interpreted-function-alist)))
-           :flag ,my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-axe-treep-of-mv-nth-1-of- my-sublis-var-and-eval-lst-name)
-           (implies (and ;(mv-nth 0 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
+                    (axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
+           :flag ,sublis-var-and-eval-name)
+         (defthm ,(pack$ 'all-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and ;(mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
                      (all-dargp (strip-cdrs alist))
                      (pseudo-term-listp terms))
-                    (all-axe-treep (mv-nth 1 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
-           :flag ,my-sublis-var-and-eval-lst-name)
-         :hints (("Goal" :in-theory (e/d (,my-sublis-var-and-eval-name ,my-sublis-var-and-eval-lst-name)
-                                         (myquotep ,(pack$ 'myquotep-of- my-sublis-var-and-eval-name) axe-treep)))))
+                    (all-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
+           :flag ,sublis-var-and-eval-lst-name)
+         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name)
+                                         (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name) axe-treep)))))
 
-       (,(pack$ 'defthm-flag- my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'bounded-axe-treep-of- my-sublis-var-and-eval-name)
-           (implies (and ;(eq 'quote (car (,my-sublis-var-and-eval-name alist term interpreted-function-alist)))
+       (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
+         (defthm ,(pack$ 'bounded-axe-treep-of- sublis-var-and-eval-name)
+           (implies (and ;(eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
                      (all-dargp-less-than (strip-cdrs alist) dag-len)
                      (pseudo-termp term))
-                    (bounded-axe-treep (,my-sublis-var-and-eval-name alist term interpreted-function-alist) dag-len))
-           :flag ,my-sublis-var-and-eval-name)
-         (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- my-sublis-var-and-eval-lst-name)
-           (implies (and ;(mv-nth 0 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
+                    (bounded-axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist) dag-len))
+           :flag ,sublis-var-and-eval-name)
+         (defthm ,(pack$ 'all-bounded-axe-treep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and ;(mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))
                      (all-dargp-less-than (strip-cdrs alist) dag-len)
                      (pseudo-term-listp terms))
-                    (all-bounded-axe-treep (mv-nth 1 (,my-sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
-           :flag ,my-sublis-var-and-eval-lst-name)
-         :hints (("Goal" :in-theory (e/d (,my-sublis-var-and-eval-name
-                                          ,my-sublis-var-and-eval-lst-name
+                    (all-bounded-axe-treep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) dag-len))
+           :flag ,sublis-var-and-eval-lst-name)
+         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name
+                                          ,sublis-var-and-eval-lst-name
                                           bounded-axe-treep-when-dargp-less-than
                                           ;;bounded-axe-treep-when-natp
                                           ;;bounded-axe-treep-when-not-consp
                                           )
-                                         (myquotep ,(pack$ 'myquotep-of- my-sublis-var-and-eval-name)
+                                         (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
                                                    bounded-axe-treep
                                                    natp))))))))
 (defmacro make-substitution-code-simple (suffix

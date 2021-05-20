@@ -19,16 +19,16 @@
 ;; It does not resolve IFs when the test is a constant:
 ;; (sublis-var (acons 'a ''3 nil) '(if (equal '3 a) x y)) = (IF 'T X Y)
 
-;; See also Axe functions like my-sublis-var-and-eval-basic, which can evaluate
+;; See also Axe functions like sublis-var-and-eval-basic, which can evaluate
 ;; certain ground function applications and simplify IFs with constant tests.
 
 ;; Apply ALIST to replace free variables in FORM.  Free variables not bound in ALIST are left alone.
 ;; This function is simpler than sublis-var and, unlike sublis-var, doesn't evaluate functions applied to constant arguments.
 ;; TODO: Consider simplifying IFs whose tests are constants (i.e., don't build both branches of such an IF).
 ;; TODO: Rename sublis-var-simple?
-;TODO change the formals of my-sublis-var and my-sublis-var-lst to be term and terms, not form and l?
+;TODO change the formals of sublis-var-simple and sublis-var-simple-lst to be term and terms, not form and l?
 (mutual-recursion
- (defund my-sublis-var (alist form) ;todo: call this 'term'?
+ (defund sublis-var-simple (alist form) ;todo: call this 'term'?
    (declare (xargs :measure (acl2-count form)
                    :guard (and (symbol-alistp alist) ; usually a symbol-term-alistp
                                (pseudo-termp form))))
@@ -38,96 +38,96 @@
          ((fquotep form) form)
          (t (cons ;try fcons-term
              (ffn-symb form)
-             (my-sublis-var-lst alist (fargs form))))))
+             (sublis-var-simple-lst alist (fargs form))))))
 
- (defund my-sublis-var-lst (alist l)
+ (defund sublis-var-simple-lst (alist l)
    (declare (xargs :measure (acl2-count l)
                    :guard (and (symbol-alistp alist)
                                (pseudo-term-listp l))))
    (if (endp l) ;(null l)
        nil
-     (cons (my-sublis-var alist (car l))
-           (my-sublis-var-lst alist (cdr l))))))
+     (cons (sublis-var-simple alist (car l))
+           (sublis-var-simple-lst alist (cdr l))))))
 
-(make-flag my-sublis-var)
+(make-flag sublis-var-simple)
 
-(defthm-flag-my-sublis-var
-  (defthm my-sublis-var-of-nil
+(defthm-flag-sublis-var-simple
+  (defthm sublis-var-simple-of-nil
     (implies (pseudo-termp form)
-             (equal (my-sublis-var nil form)
+             (equal (sublis-var-simple nil form)
                     form))
-    :flag my-sublis-var)
-  (defthm my-sublis-var-lst-of-nil
+    :flag sublis-var-simple)
+  (defthm sublis-var-simple-lst-of-nil
     (implies (pseudo-term-listp l)
-             (equal (my-sublis-var-lst nil l)
+             (equal (sublis-var-simple-lst nil l)
                     l))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst))))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst))))
 
-(defthm true-listp-of-my-sublis-var-lst
-  (true-listp (my-sublis-var-lst alist terms)))
+(defthm true-listp-of-sublis-var-simple-lst
+  (true-listp (sublis-var-simple-lst alist terms)))
 
-(defthm len-of-my-sublis-var-lst
-  (equal (len (my-sublis-var-lst alist l))
+(defthm len-of-sublis-var-simple-lst
+  (equal (len (sublis-var-simple-lst alist l))
          (len l))
-  :hints (("Goal" :in-theory (enable my-sublis-var-lst))))
+  :hints (("Goal" :in-theory (enable sublis-var-simple-lst))))
 
-(defthm-flag-my-sublis-var
-  (defthm pseudo-termp-of-my-sublis-var
+(defthm-flag-sublis-var-simple
+  (defthm pseudo-termp-of-sublis-var-simple
     (implies (and (pseudo-termp form)
                   (symbol-term-alistp alist))
-             (pseudo-termp (my-sublis-var alist form)))
-    :flag my-sublis-var)
-  (defthm pseudo-term-listp-of-my-sublis-var-lst
+             (pseudo-termp (sublis-var-simple alist form)))
+    :flag sublis-var-simple)
+  (defthm pseudo-term-listp-of-sublis-var-simple-lst
     (implies (and (pseudo-term-listp l)
                   (symbol-term-alistp alist))
-             (pseudo-term-listp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :in-theory (enable my-sublis-var
-                                     my-sublis-var-lst)
-           :expand ((pseudo-termp (cons (car form) (my-sublis-var-lst alist (cdr form))))))))
+             (pseudo-term-listp (sublis-var-simple-lst alist l)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst)
+           :expand ((pseudo-termp (cons (car form) (sublis-var-simple-lst alist (cdr form))))))))
 
-(defthm car-of-my-sublis-var
-  (equal (car (my-sublis-var alist form))
+(defthm car-of-sublis-var-simple
+  (equal (car (sublis-var-simple alist form))
          (if (variablep form)
              (if (assoc-eq form alist)
                  (cadr (assoc-eq form alist))
                nil)
            (car form)))
-  :hints (("Goal" :in-theory (enable my-sublis-var))))
+  :hints (("Goal" :in-theory (enable sublis-var-simple))))
 
-(defthm consp-of-my-sublis-var
+(defthm consp-of-sublis-var-simple
   (implies (consp term)
-           (consp (my-sublis-var alist term)))
-  :hints (("Goal" :expand ((my-sublis-var alist term)))))
+           (consp (sublis-var-simple alist term)))
+  :hints (("Goal" :expand ((sublis-var-simple alist term)))))
 
-(defthm cdr-of-my-sublis-var
-  (equal (cdr (my-sublis-var alist form))
+(defthm cdr-of-sublis-var-simple
+  (equal (cdr (sublis-var-simple alist form))
          (if (variablep form)
              (if (assoc-eq form alist)
                  (cddr (assoc-eq form alist))
                nil)
            (if (equal 'quote (car form))
                (cdr form)
-             (my-sublis-var-lst alist (cdr form)))))
-  :hints (("Goal" :in-theory (enable my-sublis-var))))
+             (sublis-var-simple-lst alist (cdr form)))))
+  :hints (("Goal" :in-theory (enable sublis-var-simple))))
 
-(defthm car-of-my-sublis-var-lst
+(defthm car-of-sublis-var-simple-lst
   (implies (consp l)
-           (equal (car (my-sublis-var-lst alist l))
-                  (my-sublis-var alist (car l))))
-  :hints (("Goal" :expand (my-sublis-var-lst alist l)
-           :in-theory (enable my-sublis-var-lst))))
+           (equal (car (sublis-var-simple-lst alist l))
+                  (sublis-var-simple alist (car l))))
+  :hints (("Goal" :expand (sublis-var-simple-lst alist l)
+           :in-theory (enable sublis-var-simple-lst))))
 
-(defthm-flag-my-sublis-var
-  (defthm my-sublis-var-of-nil
+(defthm-flag-sublis-var-simple
+  (defthm sublis-var-simple-of-nil
     (implies (pseudo-termp form)
-             (equal (my-sublis-var nil form)
+             (equal (sublis-var-simple nil form)
                     form))
-    :flag my-sublis-var)
-  (defthm my-sublis-var-lst-of-nil
+    :flag sublis-var-simple)
+  (defthm sublis-var-simple-lst-of-nil
     (implies (pseudo-term-listp l)
-             (equal (my-sublis-var-lst nil l)
+             (equal (sublis-var-simple-lst nil l)
                     l))
-    :flag my-sublis-var-lst))
+    :flag sublis-var-simple-lst))

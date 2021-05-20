@@ -495,7 +495,7 @@
    (not (possibly-negated-mbtp term))
    (b* (
         ;; Apply the subst before checking:
-        (term (my-sublis-var subst term))
+        (term (sublis-var-simple subst term))
         ;; Get the type:
         ((mv type-set &)
          (type-set term nil nil type-alist (ens state) (w state) nil nil nil))
@@ -612,13 +612,13 @@
                       (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
                           (check-call-of-fmt-function term thing-being-checked)
                         (if (eq fn 'equal)
-                            (check-call-of-equal (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                            (check-call-of-equal (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
                           (if (eq fn 'eql)
-                              (check-call-of-eql (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                              (check-call-of-eql (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
                             (if (eq fn 'eq)
-                                (check-call-of-eq (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                                (check-call-of-eq (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
                               (if (eq fn '=)
-                                  (check-call-of-= (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                                  (check-call-of-= (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
                                 (if (eq fn 'hard-error)
                                     (check-call-of-hard-error term thing-being-checked suppress)
                                   (if (eq fn 'illegal)
@@ -627,7 +627,7 @@
                                         (check-term (lambda-body fn)
                                                     ;; new subst, since we are in a lambda body
                                                     (pairlis$ (lambda-formals fn)
-                                                              (my-sublis-var-lst subst (fargs term)))
+                                                              (sublis-var-simple-lst subst (fargs term)))
                                                     type-alist iff-flag thing-being-checked suppress state)
                                       (and (not (member-eq :ground-term suppress))
                                            (quote-listp (fargs term))
