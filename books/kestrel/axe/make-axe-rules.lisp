@@ -539,13 +539,6 @@
 
 ;(local (in-theory (disable pairlis$))) ;prevent inductions
 
-(defthm car-of-my-sublis-var-lst
-  (implies (consp l)
-           (equal (car (my-sublis-var-lst alist l))
-                  (my-sublis-var alist (car l))))
-  :hints (("Goal" :expand (my-sublis-var-lst alist l)
-           :in-theory (enable my-sublis-var-lst))))
-
 (defthm lambda-free-termp-of-cadr
   (implies (and (pseudo-termp term)
                 (lambda-free-termp term)
