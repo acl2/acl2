@@ -2987,7 +2987,7 @@
 
 ;gen?
 (defthm expt-combine-hack2
-  (Implies (integerp n)
+  (implies (integerp n)
            (equal (* (EXPT 2 N)
                      (/ (EXPT 2 (+ -1 N)))
                      x)

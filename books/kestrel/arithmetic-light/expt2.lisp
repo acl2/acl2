@@ -147,12 +147,12 @@
                                   ()))))
 
 (defthmd expt-diff-collect
-  (Implies (and (integerp m)
+  (implies (and (integerp m)
                 (integerp n))
-           (equal (* (/ (EXPT 2 N)) (EXPT 2 m))
+           (equal (* (/ (expt 2 n)) (expt 2 m))
                   (expt 2 (- m n))))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  (NORMALIZE-FACTORS-GATHER-EXPONENTS)))))
+                                  (normalize-factors-gather-exponents)))))
 
 ;;move and gen
 (defthm equal-of-expt-same
