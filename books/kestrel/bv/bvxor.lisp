@@ -133,6 +133,12 @@
   :hints (("Goal" :in-theory (e/d (natp) (unsigned-byte-p-of-bvxor))
            :use (:instance unsigned-byte-p-of-bvxor (y y) (x x) (size size)))))
 
+(defthm unsigned-byte-p-of-bvxor-alt
+  (implies (and (unsigned-byte-p size x)
+                (unsigned-byte-p size y))
+           (unsigned-byte-p size (bvxor size2 x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
 (defthm bvxor-cancel
   (equal (equal (bvxor size x y) (bvxor size x z))
          (equal (bvchop size y) (bvchop size z)))
