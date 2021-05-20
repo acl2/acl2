@@ -48,6 +48,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable last))))
 
+;; Also in books/std/lists/last.lisp?
 (defthm consp-of-last
   (equal (consp (last l))
          (consp l))
@@ -63,4 +64,10 @@
          (if (consp l)
              1
            0))
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm acl2-count-of-last-linear
+  (<= (acl2-count (last x))
+      (acl2-count x))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable last))))
