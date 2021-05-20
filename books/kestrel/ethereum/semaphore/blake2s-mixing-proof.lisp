@@ -1271,7 +1271,7 @@
                  ACL2::GETBIT-OF-BVCAT-ALL
                  ACL2::BVCHOP-CHOP-LEADING-CONSTANT
                  UNICITY-OF-0
-                 fix-when-integerp
+                 acl2::fix-when-integerp
                  add-of-neg-of-bvplus-lemma
                  add-of-neg-of-bvplus-lemma2
                  add-of-neg-of-bvplus-lemma3
