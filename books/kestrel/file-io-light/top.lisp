@@ -21,6 +21,8 @@
 (include-book "write-strings-to-channel")
 (include-book "write-strings-to-file")
 (include-book "write-strings-to-file-bang")
+
+(include-book "file-write-date-dollar")
 (include-book "file-length-dollar")
 
 (include-book "read-object-from-file")
