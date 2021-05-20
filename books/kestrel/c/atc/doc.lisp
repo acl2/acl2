@@ -289,7 +289,9 @@
      (xdoc::li
       "A term @('(let ((var term)) body)'),
        where @('var') is the same as some ACL2 variable in scope
-       (function parameters and variables bound in enclosing @(tsee let)s),
+       (function parameters and variables bound in enclosing @(tsee let)s)
+       that must be the same C scope if @('vars') is not @('nil')
+       and @('var') is not among @('vars'),
        @('term') is a C-valued term that differs from @('var')
        and whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
@@ -302,6 +304,13 @@
        While in ACL2 the @('var') in this term
        is distinct from and shadows the one in scope,
        it represents the same variable in C.
+       Note the restriction,
+       when @('vars') is not @('nil') and @('var') is not among @('vars'),
+       that the variable is in the same C scope:
+       under those conditions,
+       the C code represented by this @(tsee let)
+       may be following by more C code
+       that may reference the old value of the variable.
        In translated terms,
        @('(let ((var term)) body)') is @('((lambda (var) body) term)');
        this is the pattern that ATC looks for.")

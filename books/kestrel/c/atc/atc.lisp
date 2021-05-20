@@ -605,7 +605,18 @@
 
 (std::deflist atc-var-list-inscopep (x inscope)
   :guard (and (symbol-listp x) (atc-symbol-type-alist-listp inscope))
+  :short "Check if a list of variables are in scope."
   (atc-var-inscopep x inscope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-var-innermost-scopep ((var symbolp)
+                                  (inscope atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is in the current (i.e. innermost) scope."
+  (and (consp inscope)
+       (assoc-eq var (car inscope))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1843,7 +1854,18 @@
                 (acl2::value (list items type limit))))
              (prev-type (atc-get-var var inscope))
              ((when (typep prev-type))
-              (b* (((mv erp (list rhs-expr rhs-type rhs-limit) state)
+              (b* (((when (and (consp xforming)
+                               (not (member-eq var xforming))
+                               (not (atc-var-innermost-scopep var inscope))))
+                    (er-soft+ ctx t (list nil (irr-type) 0)
+                              "The variable ~x0 in the function ~x1 ~
+                               is bound in an outer scope ~
+                               and thus cannot be assigned inside ~
+                               a term that transforms some variables ~x2, ~
+                               because in ACL2 it retains the old value ~
+                               in the code that follows the transformation."
+                              var fn xforming))
+                   ((mv erp (list rhs-expr rhs-type rhs-limit) state)
                     (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
                    ((unless (equal prev-type rhs-type))
