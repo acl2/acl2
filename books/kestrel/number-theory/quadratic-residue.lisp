@@ -23,18 +23,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-
-  ;; This means "p is an odd prime and there is a number z such that z*z = a mod p"
-  (defun has-square-root? (a p)
-    (declare (xargs :guard (and (natp a)
-                                (rtl::primep p)
-                                (not (equal p 2))
-                                (< a p))))
-    (and (rtl::primep p)
-         (or (= a 0)
-             (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
-                    1)))))
+;; This means "p is an odd prime and there is a number z such that z*z = a mod p"
+(defund has-square-root? (a p)
+  (declare (xargs :guard (and (natp a)
+                              (rtl::primep p)
+                              (not (equal p 2))
+                              (< a p))))
+  (and (rtl::primep p)
+       (or (= a 0)
+           (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
+                  1))))
 
 ;; rtl::residue considers 0 not to be a quadratic residue,
 ;; but 0*0 = 0 so we consider it a square root.
@@ -42,7 +40,8 @@
 ;;
 (defthm has-square-root-of-0?
   (implies (rtl::primep p)
-           (has-square-root? 0 p)))
+           (has-square-root? 0 p))
+  :hints (("Goal" :in-theory (enable has-square-root?))))
 
 
 
@@ -70,7 +69,7 @@
 ;; 2. prove that (not (has-square-root? m p)) implies (not (rtl::residue m p))
 ;; See rtl::euler-criterion
 
-(defthm residue-meaning
+(defthmd residue-meaning
   (implies (and (rtl::primep p)
                 (not (equal p 2))
                 (natp m) (< m p)
@@ -89,7 +88,8 @@
                 (natp m) (< m p)
                 (not (equal 0 m)))
            (equal (has-square-root? m p)
-                  (rtl::residue m p))))
+                  (rtl::residue m p)))
+  :hints (("Goal" :in-theory (enable residue-meaning))))
 
 (theory-invariant (incompatible (:rewrite residue-meaning) (:rewrite residue-meaning-backwards)))
 

@@ -19,6 +19,8 @@
 
 (include-book "kestrel/number-theory/tonelli-shanks" :dir :system)
 
+(local (in-theory (enable has-square-root? residue-meaning)))
+
 (defxdoc+ tonelli-shanks-algorithm-is-correct
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   :short "Proof of correctness of the Tonelli-Shanks Modular Square Root Algorithm."

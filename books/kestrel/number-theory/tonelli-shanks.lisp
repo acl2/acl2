@@ -35,6 +35,8 @@
 
 (local (in-theory (enable acl2::integerp-of-*-of-1/2-becomes-evenp)))
 
+(local (in-theory (enable has-square-root? residue-meaning)))
+
 (defxdoc tonelli-shanks-modular-sqrt-algorithm
   :parents (acl2::number-theory)
   :short "Tonelli-Shanks Modular Square Root Algorithm."
