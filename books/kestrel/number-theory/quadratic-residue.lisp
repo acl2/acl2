@@ -19,12 +19,24 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (include-book "euler2-support")
-
+(include-book "std/util/define" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This means "p is an odd prime and there is a number z such that z*z = a mod p"
-(defund has-square-root? (a p)
+(define has-square-root? ((a natp) (p natp))
+  :returns (y/n booleanp)
+  :parents (acl2::number-theory)
+  :short "Modular square root"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Checks if @('a') has a modular square root in the field
+     @($\\mathbb{F}_p$), using Euler's criterion.")
+   (xdoc::p
+    "@('p') must be an odd prime.<br/>
+     @('0') is considered to have a square root."))
   (declare (xargs :guard (and (natp a)
                               (rtl::primep p)
                               (not (equal p 2))
