@@ -562,6 +562,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-get-var-check-innermost ((var symbolp)
+                                     (inscope atc-symbol-type-alist-listp))
+  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+               (innermostp booleanp))
+  :short "Obtain the type of a variable from the symbol table,
+          and indicate whether the variable is in the innermost scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to define @(tsee atc-get-vars-check-innermost).
+     See that function's documentation for motivation."))
+  (atc-get-var-check-innermost-aux var inscope t)
+
+  :prepwork
+  ((define atc-get-var-check-innermost-aux
+     ((var symbolp)
+      (inscope atc-symbol-type-alist-listp)
+      (innermostp booleanp))
+     :returns (mv (type? type-optionp
+                         :hyp (atc-symbol-type-alist-listp inscope))
+                  (innermostp booleanp :hyp (booleanp innermostp)))
+     (b* (((when (endp inscope)) (mv nil nil))
+          (scope (car inscope))
+          (type? (cdr (assoc-eq var scope)))
+          ((when (typep type?)) (mv type? innermostp)))
+       (atc-get-var-check-innermost-aux var (cdr inscope) nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-vars-check-innermost ((vars symbol-listp)
+                                      (inscope atc-symbol-type-alist-listp))
+  :returns (mv (type?-list type-option-listp
+                           :hyp (atc-symbol-type-alist-listp inscope))
+               (innermostp-list boolean-listp))
+  :short "Lift @(tsee atc-get-var-check-innermost) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when we encounter a @(tsee mv-let) in code generation.
+     We need to ensure that all the variables are in scope,
+     and we need to know which ones are in the innermost scope.
+     This function returns that information."))
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv type? innermostp)
+        (atc-get-var-check-innermost (car vars) inscope))
+       ((mv type?-list innermostp-list)
+        (atc-get-vars-check-innermost (cdr vars) inscope)))
+    (mv (cons type? type?-list)
+        (cons innermostp innermostp-list)))
+  ///
+
+  (defret len-of-atc-get-vars-check-innermost.type?-list
+    (equal (len type?-list)
+           (len vars)))
+
+  (defret len-of-atc-get-vars-check-innermost.innermostp-list
+    (equal (len innermostp-list)
+           (len vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-add-var ((var symbolp)
                      (type typep)
                      (inscope atc-symbol-type-alist-listp))
@@ -577,46 +638,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-var-newp ((var-name stringp) (inscope atc-symbol-type-alist-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a variable name is not already in the symbol table."
+(define atc-check-var ((var symbolp) (inscope atc-symbol-type-alist-listp))
+  :returns (mv (type? type-optionp :hyp (atc-symbol-type-alist-listp inscope))
+               (innermostp booleanp)
+               (errorp booleanp))
+  :short "Check a variable against a symbol table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that no variable in the table
-     has the given string as @(tsee symbol-name).
-     This is because the package name of ACL2 symbols
-     is ignored for the purpose of representing C variables:
-     only the symbol name is used,
-     and thus all the symbol names must be distinct."))
-  (or (endp inscope)
-      (and (not (member-equal var-name
-                              (symbol-name-lst (strip-cars (car inscope)))))
-           (atc-var-newp var-name (cdr inscope)))))
+    "This is used when we encounter a @(tsee let) in code generation.
+     We need to decide how to treat the @(tsee let)
+     based on whether the variable is new or not,
+     and whether if not new it is in the innermost scope or not,
+     and whether if new there is a different variable with the same symbol name.
+     This function checks all of these conditions.")
+   (xdoc::p
+    "If the variable is in the symbol table, we return its type,
+     along with a flag indicating whether
+     the variable is in the innermost scope.
+     If the symbol table contains
+     a different variable with the same symbol name,
+     we return an indication of error;
+     this is because ACL2 variables represent C variables
+     whose names are just the symbol names of the ACL2 variables,
+     which therefore must be distinct for different ACL2 variables.")
+   (xdoc::p
+    "It is an invariant that
+     all the variables in the symbol table have distinct symbol names."))
+  (atc-check-var-aux var inscope t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-var-inscopep ((var symbolp) (inscope atc-symbol-type-alist-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a variable is in scope."
-  (and (atc-get-var var inscope) t))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist atc-var-list-inscopep (x inscope)
-  :guard (and (symbol-listp x) (atc-symbol-type-alist-listp inscope))
-  :short "Check if a list of variables are in scope."
-  (atc-var-inscopep x inscope))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-var-innermost-scopep ((var symbolp)
-                                  (inscope atc-symbol-type-alist-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a variable is in the current (i.e. innermost) scope."
-  (and (consp inscope)
-       (assoc-eq var (car inscope))
-       t))
+  :prepwork
+  ((define atc-check-var-aux ((var symbolp)
+                              (inscope atc-symbol-type-alist-listp)
+                              (innermostp booleanp))
+     :returns (mv (type? type-optionp
+                         :hyp (atc-symbol-type-alist-listp inscope))
+                  (innermostp booleanp :hyp (booleanp innermostp))
+                  (errorp booleanp))
+     :parents nil
+     (b* (((when (endp inscope)) (mv nil nil nil))
+          (scope (car inscope))
+          (type? (cdr (assoc-eq var scope)))
+          ((when (typep type?)) (mv type? innermostp nil))
+          ((when (member-equal (symbol-name var)
+                               (symbol-name-lst (strip-cars scope))))
+           (mv nil nil t)))
+       (atc-check-var-aux var (cdr inscope) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1559,6 +1626,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-var-assignablep ((var symbolp)
+                             (innermostp booleanp)
+                             (xforming symbol-listp))
+  :returns (yes/no booleanp :hyp (booleanp innermostp))
+  :short "Check if a variable is assignable,
+          based on whether it is in the innermost scope
+          and based on the variables being currently transformed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A variable may be destructively assigned to
+     if any of the following conditions apply:
+     (i) it is declared in the innermost scope,
+     because in that case it cannot be accessed after exiting the scope;
+     (ii) it is being transformed,
+     because in that case its modified value is returned
+     and used in subsequent code;
+     (iii) no variable is being transformed,
+     because in that case there is no subsequent code."))
+  (or innermostp
+      (and (member-eq var xforming) t)
+      (null xforming)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-vars-assignablep ((var-list symbol-listp)
+                              (innermostp-list boolean-listp)
+                              (xforming symbol-listp))
+  :guard (equal (len var-list) (len innermostp-list))
+  :returns (yes/no booleanp :hyp (boolean-listp innermostp-list))
+  :short "Lift @(tsee atc-var-assignablep) to lists."
+  (or (endp var-list)
+      (and
+       (atc-var-assignablep (car var-list) (car innermostp-list) xforming)
+       (atc-vars-assignablep (cdr var-list) (cdr innermostp-list) xforming))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-xforming-term-for-let ((term pseudo-termp))
   :returns (yes/no booleanp)
   :short "Check if a term @('term') has the basic structure
@@ -1794,11 +1899,18 @@
                          term)
                   (list nil (irr-type) 0)
                   state))
-             ((unless (atc-var-list-inscopep vars inscope))
+             ((mv type?-list innermostp-list)
+              (atc-get-vars-check-innermost vars inscope))
+             ((when (member-eq nil type?-list))
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
-                         an MV-LET has been encountered ~
-                         not all of whose variables ~x1 are in scope."
+                         an attempt is made to modify the variables ~x1, ~
+                         not all of which are in scope."))
+             ((unless (atc-vars-assignablep vars innermostp-list xforming))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an attempt is made to modify the variables ~x1, ~
+                         not all of which are assignable."
                         fn vars))
              ((unless (atc-xforming-term-for-let val))
               (er-soft+ ctx t (list nil (irr-type) 0)
@@ -1818,15 +1930,24 @@
           (acl2::value (list items type limit))))
        ((mv okp var val body) (atc-check-let term))
        ((when okp)
-        (b* ((var-name (symbol-name var))
-             ((when (atc-var-newp var-name inscope))
-              (b* (((unless (atc-ident-stringp var-name))
+        (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
+             ((when errorp)
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         a new variable ~x1 has been encountered ~
+                         that has the same symbol name as, ~
+                         but different package name from, ~
+                         a variable already in scope. ~
+                         This is disallowed."
+                        fn var))
+             ((when (not type?))
+              (b* (((unless (atc-ident-stringp (symbol-name var)))
                     (er-soft+ ctx t (list nil (irr-type) 0)
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
                                must be a portable ASCII C identifier, ~
                                but it is not."
-                              var-name var fn))
+                              (symbol-name var) var fn))
                    ((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-cval val inscope fn prec-fns ctx state))
                    ((when erp) (mv erp (list nil (irr-type) 0) state))
@@ -1852,6 +1973,12 @@
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
+             ((unless (atc-var-assignablep var innermostp xforming))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an attempt is being made ~
+                         to modify a non-assignable variable ~x1."
+                        fn var))
              (xforming-val (atc-xforming-term-for-let val))
              ((when xforming-val)
               (b* (((er (list xform-items & xform-limit))
@@ -1862,48 +1989,32 @@
                    (type body-type)
                    (limit (+ xform-limit body-limit)))
                 (acl2::value (list items type limit))))
-             (prev-type (atc-get-var var inscope))
-             ((when (typep prev-type))
-              (b* (((when (and (consp xforming)
-                               (not (member-eq var xforming))
-                               (not (atc-var-innermost-scopep var inscope))))
-                    (er-soft+ ctx t (list nil (irr-type) 0)
-                              "The variable ~x0 in the function ~x1 ~
-                               is bound in an outer scope ~
-                               and thus cannot be assigned inside ~
-                               a term that transforms some variables ~x2, ~
-                               because in ACL2 it retains the old value ~
-                               in the code that follows the transformation."
-                              var fn xforming))
-                   ((mv erp (list rhs-expr rhs-type rhs-limit) state)
-                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
-                   ((when erp) (mv erp (list nil (irr-type) 0) state))
-                   ((unless (equal prev-type rhs-type))
-                    (er-soft+ ctx t (list nil (irr-type) 0)
-                              "The type ~x0 of the term ~x1 ~
-                               assigned to the LET variable ~x2 ~
-                               of the function ~x3 ~
-                               differs from the type ~x4 ~
-                               of a variable with the same symbol in scope."
-                              rhs-type val var fn prev-type))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (expr-ident (make-ident :name var-name))
-                         :arg2 rhs-expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
-                   ((er (list body-items body-type body-limit))
-                    (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
-                   (type body-type)
-                   (limit (+ 1 (max (+ 1 1 1 rhs-limit)
-                                    body-limit))))
-                (acl2::value (list (cons item body-items)
-                                   type
-                                   limit)))))
-          (mv (raise "Internal error: variable ~x0 is not new but has no type."
-                     var)
-              (list nil (irr-type) 0)
-              state)))
+             (prev-type type?)
+             ((mv erp (list rhs-expr rhs-type rhs-limit) state)
+              (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+             ((when erp) (mv erp (list nil (irr-type) 0) state))
+             ((unless (equal prev-type rhs-type))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "The type ~x0 of the term ~x1 ~
+                         assigned to the LET variable ~x2 ~
+                         of the function ~x3 ~
+                         differs from the type ~x4 ~
+                         of a variable with the same symbol in scope."
+                        rhs-type val var fn prev-type))
+             (asg (make-expr-binary
+                   :op (binop-asg)
+                   :arg1 (expr-ident (make-ident :name (symbol-name var)))
+                   :arg2 rhs-expr))
+             (stmt (stmt-expr asg))
+             (item (block-item-stmt stmt))
+             ((er (list body-items body-type body-limit))
+              (atc-gen-stmt body inscope xforming fn prec-fns ctx state))
+             (type body-type)
+             (limit (+ 1 (max (+ 1 1 1 rhs-limit)
+                              body-limit))))
+          (acl2::value (list (cons item body-items)
+                             type
+                             limit))))
        ((when (and (symbolp term)
                    (equal xforming (list term))))
         (acl2::value (list nil nil 0)))

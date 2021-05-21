@@ -81,6 +81,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist type-option-list
+  :short "Fixtype of lists of optional types."
+  :elt-type type-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred type-option-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset type-option-set
   :short "Fixtype of sets of optional types."
   :elt-type type-option
