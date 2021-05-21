@@ -214,7 +214,8 @@
       is defined below, along with the notions of
       C-valued terms,
       pure C-valued terms,
-      and boolean terms.")
+      boolean terms,
+      and assignable variable.")
 
     (xdoc::p
      "A <i>statement term transforming variables</i> @('vars'),
@@ -288,11 +289,7 @@
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
-       where @('var') is the same as some ACL2 variable in scope
-       (function parameters and variables bound in enclosing @(tsee let)s)
-       that is additionally in the same C scope
-       if @('vars') is not @('nil')
-       and @('var') is not among @('vars'),
+       where @('var') is assignable,
        @('term') is a C-valued term that differs from @('var')
        and whose C type is the same as the C local variable represented by
        the aforementioned ACL2 variable in scope, and
@@ -302,23 +299,12 @@
        represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
        followed by the C code represented by @('body').
-       While in ACL2 the @('var') in this term
-       is distinct from and shadows the one in scope,
-       it represents the same variable in C.
-       Note the restriction,
-       when @('vars') is not @('nil') and @('var') is not among @('vars'),
-       that the variable is in the same C scope:
-       under those conditions,
-       the C code represented by this @(tsee let)
-       may be following by more C code
-       that may reference the old value of the variable.
        In translated terms,
        @('(let ((var term)) body)') is @('((lambda (var) body) term)');
        this is the pattern that ATC looks for.")
      (xdoc::li
       "A term @('(let ((var term)) body)'),
-       where @('var') is the same as some ACL2 variable in scope
-       (function parameters and variables bound in enclosing @(tsee let)s),
+       where @('var') is assignable,
        @('term') is a statement term transforming @('var')
        that is an @(tsee if) whose test is a boolean term
        (not a @('(mbt ...)') or @('(mbt$ ...)')), and
@@ -332,8 +318,7 @@
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
        where @('n') &gt; 1,
-       each @('vari') is the same as some ACL2 variable in scope
-       (function parameters and variables bound in enclosing @(tsee let)s),
+       each @('vari') is assignable,
        @('term') is a statement term transforming @('(var1 ... varn)')
        that is an @(tsee if) whose test is a boolean term
        (not a @('(mbt ...)') or @('(mbt$ ...)')), and
@@ -539,6 +524,42 @@
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(if x x y)'):
        these are the patterns that ATC looks for."))
+
+    (xdoc::p
+     "A variable @('var') bound in
+      a @(tsee let) or @(tsee mv-let) in a target function @('fni')
+      is <i>assignable</i> when it is in scope,
+      i.e. it is identical to a function parameter
+      or to a variable bound in an enclosing @(tsee let) or @(tsee mv-let),
+      and additionally any of the conditions given below holds.
+      The conditions make reference to the C scopes
+      represented by the ACL2 terms that
+      the @(tsee let) or @(tsee mv-let) is part of:
+      a function body is a C scope,
+      and each @(tsee if) branch whose test is a boolean term
+      (i.e. whose test is not @(tsee mbt) or @(tsee mbt$))
+      forms a new C scope.
+      The conditions are the following:")
+    (xdoc::ul
+     (xdoc::li
+      "The function parameter or outer variable
+       is in the same C scope where @('var') occurs.")
+     (xdoc::li
+      "The variable @('var') is among @('vars'),
+       i.e. it is being transformed.")
+     (xdoc::li
+      "No variables are being transformed, i.e. @('vars') is @('nil')."))
+    (xdoc::p
+     "Any of these conditions ensures that, in the ACL2 code,
+      the old value of the variable cannot be accessed after the new binding:
+      (i) if the first condition holds,
+      the new binding hides the old variable;
+      (ii) if the second condition holds,
+      it means that the outer binding will receive the value
+      at the end of the transformation; and
+      (iii) if the third condition holds,
+      there is no subsequent code because there is no transformation.
+      These justify destructively updating the variable in the C code.")
 
     (xdoc::p
      "Statement terms represent C statements,
