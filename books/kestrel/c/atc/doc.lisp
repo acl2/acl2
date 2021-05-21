@@ -290,7 +290,8 @@
       "A term @('(let ((var term)) body)'),
        where @('var') is the same as some ACL2 variable in scope
        (function parameters and variables bound in enclosing @(tsee let)s)
-       that must be the same C scope if @('vars') is not @('nil')
+       that is additionally in the same C scope
+       if @('vars') is not @('nil')
        and @('var') is not among @('vars'),
        @('term') is a C-valued term that differs from @('var')
        and whose C type is the same as the C local variable represented by
@@ -319,7 +320,8 @@
        where @('var') is the same as some ACL2 variable in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
        @('term') is a statement term transforming @('var')
-       that is not a C-valued term, and
+       that is an @(tsee if) whose test is a boolean term
+       (not a @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term transforming variables @('vars').
        This represents the C code represented by @('term'),
        which may modify the variable represented by @('var'),
@@ -332,7 +334,9 @@
        where @('n') &gt; 1,
        each @('vari') is the same as some ACL2 variable in scope
        (function parameters and variables bound in enclosing @(tsee let)s),
-       @('term') is a statement term transforming @('(var1 ... varn)'), and
+       @('term') is a statement term transforming @('(var1 ... varn)')
+       that is an @(tsee if) whose test is a boolean term
+       (not a @('(mbt ...)') or @('(mbt$ ...)')), and
        @('body') is a statement term transforming variables @('vars').
        This represents the C code represented by @('term'),
        which may modify the variables represented by @('var1'), ..., @('varn'),

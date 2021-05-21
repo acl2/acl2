@@ -1559,24 +1559,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-must-be-stmt-term-not-cval ((term pseudo-termp))
+(define atc-xforming-term-for-let ((term pseudo-termp))
   :returns (yes/no booleanp)
-  :short "Perform a shallow check that a term is a statement term
-          that is not a C-valued term."
+  :short "Check if a term @('term') has the basic structure
+          required for being a transforming term in
+          @('(let ((var term)) body)')
+          or @('(mv-let (var1 ... varn) term body)')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used by @(tsee atc-gen-stmt) to distinguish two cases
-     in the treatment of @(tsee let) terms where the variable is in scope.
-     The check just serves to distinguish the two cases,
-     each of which performs a complete validation of the term;
-     so it is fine for the check to be shallow.")
-   (xdoc::p
-    "The check succeeds when the term is a call of
-     an @(tsee if) or a lambda expression."))
+    "This is explained in the user documentation.
+     Here we perform a shallow check,
+     because we will examine the term in full detail
+     when recursively generating C code from it.
+     In essence, here we check that the term is
+     an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$)."))
   (case-match term
-    ((if/lambda . &) (or (eq if/lambda 'if)
-                         (consp if/lambda)))
+    ((fn test . &) (and (eq fn 'if)
+                        (case-match test
+                          ((fn . &) (not (member-eq fn '(mbt mbt$))))
+                          (& t))))
     (& nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1798,6 +1800,14 @@
                          an MV-LET has been encountered ~
                          not all of whose variables ~x1 are in scope."
                         fn vars))
+             ((unless (atc-xforming-term-for-let val))
+              (er-soft+ ctx t (list nil (irr-type) 0)
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         whose transforming term ~x1 ~
+                         to which the variables are bound ~
+                         does not have the required form."
+                        fn val))
              ((er (list xform-items & xform-limit))
               (atc-gen-stmt val inscope vars fn prec-fns ctx state))
              ((er (list body-items body-type body-limit))
@@ -1842,8 +1852,8 @@
                 (acl2::value (list (cons item body-items)
                                    type
                                    limit))))
-             (stmt-not-cval (atc-must-be-stmt-term-not-cval val))
-             ((when stmt-not-cval)
+             (xforming-val (atc-xforming-term-for-let val))
+             ((when xforming-val)
               (b* (((er (list xform-items & xform-limit))
                     (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
                    ((er (list body-items body-type body-limit))
