@@ -297,6 +297,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (enable add mul))))
 
+;distributivity
 (defthm mul-of-add-arg1
   (implies (posp p)
            (equal (mul (add y1 y2 p) x p)
@@ -683,6 +684,17 @@
   :hints (("Goal"
            :use (:instance mul-of-inv-mul-of-inv (a z) (x y) (p p))
            :in-theory (e/d (div) (mul-of-inv-mul-of-inv)))))
+
+(defthmd equal-of-div-alt
+  (implies (and (not (equal 0 z)) ;exclude odd case
+                (fep z p)
+                (fep y p)
+                (rtl::primep p))
+           (equal (equal x (div y z p))
+                  (and (fep x p)
+                       (equal (mul x z p)
+                              (mod y p)))))
+  :hints (("Goal" :in-theory (enable equal-of-div))))
 
 ;gen?
 (defthm mul-of--1-becomes-neg
@@ -1139,3 +1151,25 @@
            (equal (mul (+ x p) y p)
                   (mul x y p)))
   :hints (("Goal" :in-theory (enable mul))))
+
+;distributivity
+;but often sub will be enabled
+(defthm mul-of-sub-arg1
+  (implies (posp p)
+           (equal (mul (sub y1 y2 p) x p)
+                  (sub (mul y1 x p)
+                       (mul y2 x p)
+                       p)))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (enable sub))))
+
+;distributivity
+;but often sub will be enabled
+(defthm mul-of-sub-arg2
+  (implies (posp p)
+           (equal (mul x (sub y1 y2 p) p)
+                  (sub (mul x y1 p)
+                       (mul x y2 p)
+                       p)))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (enable sub))))
