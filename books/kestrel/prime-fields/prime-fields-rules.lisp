@@ -694,7 +694,7 @@
 
 ;; p-1 represents -1.
 (defthm mul-of--1-becomes-neg-alt
-  (Implies (and (posp p)
+  (implies (and (posp p)
                 (integerp x))
            (equal (mul (+ -1 p) x p)
                   (neg x p)))

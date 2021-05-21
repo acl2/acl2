@@ -68,10 +68,10 @@
   :hints (("Goal" :in-theory (enable natp))))
 
 (defthm not-<-of-car-when-nat-listp
-  (Implies (and (syntaxp k)
+  (implies (and (syntaxp k)
                 (<= k 0)
                 (nat-listp x))
-           (not (< (CAR x) k)))
+           (not (< (car x) k)))
   :hints (("Goal" :in-theory (enable nat-listp))))
 
 ;strip off any number of nested calls to not

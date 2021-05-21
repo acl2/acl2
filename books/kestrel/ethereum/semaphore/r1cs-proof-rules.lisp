@@ -22,6 +22,7 @@
 ;(include-book "kestrel/crypto/r1cs/tools/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for ACL2::BVXOR-WITH-SMALLER-ARG-1, drop
 ;(include-book "kestrel/axe/rules3" :dir :system) ;for ACL2::PLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1
+(include-book "kestrel/utilities/fix" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
@@ -1300,8 +1301,7 @@
                             ) ((:e pfield::pow) ;todo
                             (:e pfield::inv)    ;todo
                             (:e pfield::div)    ;todo
-                            ))))
-  )
+                            )))))
 
 (defthm bvchop-32-of-add-when-unsigned-byte-p-33
   (implies (and (unsigned-byte-p 33 (add x y p))
@@ -1323,7 +1323,7 @@
 (defthmd bvplus-35-tighten-to-34
   (implies (and (unsigned-byte-p 33 x)
                 (unsigned-byte-p 33 y))
-           (equal (BVPLUS 35 x y)
+           (equal (bvplus 35 x y)
                   (bvplus 34 x y)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
@@ -1337,7 +1337,7 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm add-of-+-same-arg1-arg1
-  (Implies (posp p)
+  (implies (posp p)
            (equal (add (+ p x) y p)
                   (add x y p)))
   :hints (("Goal" :in-theory (enable add))))
@@ -1647,7 +1647,7 @@
 
 ;;slow
 (defthm mod-of-sum-of-mod-4
-  (Implies (and (Integerp x)
+  (implies (and (Integerp x)
                 (Integerp y)
                 (Integerp z)
                 (Integerp w)
@@ -1815,11 +1815,6 @@
                                        )
                                   (;acl2::getbit-0-of-bvplus
                                    )))))
-
-(defthm fix-when-integerp
-  (implies (integerp x)
-           (equal (fix x)
-                  x)))
 
 (defthmd bvchop-of-if
   (equal (bvchop size (if test x y))

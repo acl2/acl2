@@ -392,9 +392,9 @@
   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
 (defthm eqlable-listp-of-mv-nth-0-of-split-list-fast
-  (Implies (EQLABLE-LISTP LST)
-           (EQLABLE-LISTP (MV-NTH 0 (SPLIT-LIST-FAST LST))))
-  :hints (("Goal" :in-theory (enable SPLIT-LIST-FAST))))
+  (implies (eqlable-listp lst)
+           (eqlable-listp (mv-nth 0 (split-list-fast lst))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
 
 (defthm eqlable-listp-of-mv-nth-1-of-split-list-fast
   (implies (eqlable-listp lst)
