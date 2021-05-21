@@ -344,6 +344,55 @@
              top))
 )
 
+(defstobj sub3$c fld3$c :congruent-to sub$c)
+
+; Compare the following with foo-alt below it; they are the same except that
+; part of the guard has been commented out in the first (failed) version.  That
+; guard guarantees that the index k, where we update, is distinct from the
+; read-only indices.
+
+(must-fail
+(defun foo-fails-3 (k n m top)
+  (declare (xargs :stobjs top
+                  :guard (and (natp k) (natp n) (natp m)
+                              (< k (subs-length top))
+                              (< n (subs-length top))
+                              (< m (subs-length top))
+                              ;; (not (equal k m))
+                              ;; (not (equal k n))
+                              )))
+  (stobj-let ((sub1$c (subsi k top))
+              (sub2$c (subs2i n top))
+              (sub3$c (subs2i m top)))
+             (sub1$c val2 val3)
+             (let* ((val1 (fld0$c sub1$c))
+                    (val2 (fld0$c sub2$c))
+                    (val3 (fld0$c sub3$c))
+                    (sub1$c (update-fld0$c (+ 1 (ifix val1)) sub1$c)))
+               (mv sub1$c val2 val3))
+             top))
+)
+
+(defun foo-alt (k n m top)
+  (declare (xargs :stobjs top
+                  :guard (and (natp k) (natp n) (natp m)
+                              (< k (subs-length top))
+                              (< n (subs-length top))
+                              (< m (subs-length top))
+                              (not (equal k m))
+                              (not (equal k n))
+                              )))
+  (stobj-let ((sub1$c (subsi k top))
+              (sub2$c (subs2i n top))
+              (sub3$c (subs2i m top)))
+             (sub1$c val2 val3)
+             (let* ((val1 (fld0$c sub1$c))
+                    (val2 (fld0$c sub2$c))
+                    (val3 (fld0$c sub3$c))
+                    (sub1$c (update-fld0$c (+ 1 (ifix val1)) sub1$c)))
+               (mv sub1$c val2 val3))
+             top))
+
 (defun foo (n m top)
   (declare (xargs :stobjs top
                   :guard (and (natp n) (natp m)
@@ -476,7 +525,8 @@
            :expected :hard)
 
 (defun read-only-stobj-let-test (i j)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :guard (and (natp i) (natp j))))
   (with-local-stobj top
     (mv-let (val1 val2 top)
       (let ((top (resize-subs (1+ (max i j)) top)))
@@ -495,6 +545,11 @@
 
 (assert! (equal (read-only-stobj-let-test 1 1)
                 '(nil nil)))
+
+; The following succeeds even though the guard does not imply (not (equal i
+; j)), because there are no child stobj updates (in particular, of the same
+; concrete stobj field).
+(verify-termination read-only-stobj-let-test) ; and guards
 
 ; Let's see now that there is no invariant-risk when the operation in question
 ; doesn't resize.

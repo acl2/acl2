@@ -15,7 +15,8 @@ Summary
 Form:  ( DEFSTOBJ SUB$C ...)
 Rules: NIL
  SUB$C
-ACL2 !>>(DEFSTOBJ TOP$C (SUB0$C :TYPE SUB$C))
+ACL2 !>>(DEFSTOBJ TOP$C (SUB0$C :TYPE SUB$C)
+                  MISC$C)
 
 Summary
 Form:  ( DEFSTOBJ TOP$C ...)
@@ -45,7 +46,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(DEFUN TOP$AP (X)
                (DECLARE (XARGS :GUARD T))
                (AND (CONSP X)
-                    (NULL (CDR X))
+                    (CONSP (CDR X))
+                    (NULL (CDDR X))
                     (SUB$AP (CAR X))))
 
 Since TOP$AP is non-recursive, its admission is trivial.  We observe
@@ -64,7 +66,7 @@ Rules: ((:TYPE-PRESCRIPTION SUB$AP))
  TOP$AP
 ACL2 !>>(DEFUN CREATE-TOP$A
                NIL (DECLARE (XARGS :GUARD T))
-               (LIST (LIST NIL)))
+               (LIST (LIST NIL) NIL))
 
 Since CREATE-TOP$A is non-recursive, its admission is trivial.  We
 observe that the type of CREATE-TOP$A is described by the theorem 
@@ -109,7 +111,7 @@ ACL2 !>>(DEFUN-NX
              UPDATE-SUB0$A (SUB$C X)
              (DECLARE (XARGS :STOBJS SUB$C
                              :GUARD (AND (TOP$AP X) (NATP (FLD0$C SUB$C)))))
-             (LIST SUB$C))
+             (LIST SUB$C (CADR X)))
 
 Since UPDATE-SUB0$A is non-recursive, its admission is trivial.  We
 observe that the type of UPDATE-SUB0$A is described by the theorem
@@ -120,13 +122,63 @@ We used primitive type reasoning.
 
 Computing the guard conjecture for UPDATE-SUB0$A....
 
-The guard conjecture for UPDATE-SUB0$A is trivial to prove.  UPDATE-SUB0$A
-is compliant with Common Lisp.
+The non-trivial part of the guard conjecture for UPDATE-SUB0$A is
+
+Goal
+(AND (IMPLIES (AND (NATP (FLD0$C SUB$C))
+                   (TOP$AP X)
+                   (SUB$CP SUB$C)
+                   (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (NATP (FLD0$C SUB$C))
+                   (TOP$AP X)
+                   (SUB$CP SUB$C)
+                   (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for UPDATE-SUB0$A.  
+UPDATE-SUB0$A is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN UPDATE-SUB0$A ...)
-Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUN-NX UPDATE-SUB0$A)
+ACL2 !>>(DEFUN MISC$A (X)
+               (DECLARE (XARGS :GUARD (TOP$AP X)))
+               (CADR X))
+
+Since MISC$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of MISC$A.
+
+Computing the guard conjecture for MISC$A....
+
+The non-trivial part of the guard conjecture for MISC$A is
+
+Goal
+(AND (IMPLIES (AND (TOP$AP X) (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (TOP$AP X) (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for MISC$A.  MISC$A is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN MISC$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION TOP$AP))
+ MISC$A
 ACL2 !>>(DEFUN-NX TOP-CORR (TOP$C X)
                   (DECLARE (XARGS :STOBJS TOP$C))
                   (EQUAL TOP$C X))
@@ -219,7 +271,9 @@ Rules: ((:DEFINITION FLD0$C)
         (:DEFINITION UPDATE-SUB0$A)
         (:DEFINITION UPDATE-SUB0$C)
         (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
  UPDATE-SUB0{CORRESPONDENCE}
 ACL2 !>>(DEFTHM EQUAL-LEN-1
                 (EQUAL (EQUAL (LEN X) 1)
@@ -369,6 +423,8 @@ Rules: ((:DEFINITION ATOM)
         (:DEFINITION UPDATE-SUB0$C)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB0-AGAIN{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB0-AGAIN{PRESERVED}
@@ -400,6 +456,44 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE CDR-CONS)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB0-AGAIN{PRESERVED}
+ACL2 !>>(DEFTHM MISC{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                         (EQUAL (MISC$C TOP$C) (MISC$A TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION NATP))
+
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+Subgoal 1
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MISC{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION MISC$A)
+        (:DEFINITION MISC$C)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NATP))
+ MISC{CORRESPONDENCE}
 ACL2 !>>(DEFABSSTOBJ TOP
                      :RECOGNIZER (TOPP :LOGIC TOP$AP :EXEC TOP$CP)
                      :CREATOR (CREATE-TOP :LOGIC CREATE-TOP$A
@@ -412,7 +506,8 @@ ACL2 !>>(DEFABSSTOBJ TOP
                                            :EXEC SUB0$C
                                            :UPDATER UPDATE-SUB0)
                                (UPDATE-SUB0 :LOGIC UPDATE-SUB0$A
-                                            :EXEC UPDATE-SUB0$C)))
+                                            :EXEC UPDATE-SUB0$C)
+                               (MISC :LOGIC MISC$A :EXEC MISC$C)))
 
 Summary
 Form:  ( DEFABSSTOBJ TOP ...)
@@ -586,16 +681,21 @@ ACL2 !>>(DEFTHM UPDATE-SUB02{CORRESPONDENCE}
                          (TOP-CORR (UPDATE-SUB0 SUB$C TOP)
                                    (UPDATE-SUB0$A SUB$C TOP2)))
                 :RULE-CLASSES NIL)
+Goal'
 
 Q.E.D.
 
 Summary
 Form:  ( DEFTHM UPDATE-SUB02{CORRESPONDENCE} ...)
 Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION NATP)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
         (:DEFINITION TOP-CORR)
         (:DEFINITION UPDATE-SUB0)
         (:DEFINITION UPDATE-SUB0$A)
-        (:EXECUTABLE-COUNTERPART IF))
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
  UPDATE-SUB02{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB02{PRESERVED}
                 (IMPLIES (AND (SUB$CP SUB$C)
@@ -994,7 +1094,7 @@ ACL2 !>>(ASSERT-EVENT
                     '(:N 4 :N2 3 :VALID T)))
  :PASSED
 ACL2 !>>(UBT 'START-EXAMPLE-3)
- V        29:x(DEFUN FOO2 (TOP2) ...)
+ V        31:x(DEFUN FOO2 (TOP2) ...)
 ACL2 !>>(INCLUDE-BOOK "two-ordered-nums-stobj")
 
 Summary
@@ -1266,8 +1366,9 @@ ACL2 !>>(DEFABSSTOBJ ST3
 
 
 ACL2 Error in ( DEFABSSTOBJ ST3 ...):  The :LOGIC and :EXEC functions
-for a field must have the same length.  However, this fails for field
-(BAD3 :LOGIC BAD3$A :EXEC BAD3$C), as the input signatures are as follows.
+for a field must have input signatures of the same length.  However,
+this fails for field descriptor (BAD3 :LOGIC BAD3$A :EXEC BAD3$C),
+as the input signatures are as follows.
 
 BAD3$A (:LOGIC):
 (* * *)
@@ -1283,6 +1384,119 @@ Form:  ( DEFABSSTOBJ ST3 ...)
 Rules: NIL
 
 ACL2 Error in ( DEFABSSTOBJ ST3 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN BIND-NON-CHILD-STOBJ-FIELD (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP))
+                           (MISC-VAL (MISC TOP)))
+                          (SUB$C SUB$C-VAL VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-VAL (FLD0$C SUB$C)))
+                                (MV SUB$C SUB$C-VAL MISC-VAL))
+                          (MV TOP SUB$C-VAL MISC-VAL)))
+
+
+ACL2 Error in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  The name MISC
+is not the name of a field accessor for the stobj TOP.  Note that even
+though MISC is an abstract stobj primitive (for TOP), it is not an
+accessor because it is not associated with an :UPDATER.  The form 
+(STOBJ-LET ((SUB$C (SUB0 TOP))
+            (MISC-VAL (MISC TOP)))
+           (SUB$C SUB$C-VAL VAL)
+           (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                  (SUB$C-VAL (FLD0$C SUB$C)))
+                 (MV SUB$C SUB$C-VAL MISC-VAL))
+           (MV TOP SUB$C-VAL MISC-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN BIND-NON-FUNCTION (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP))
+                           (MISC-VAL (ABC TOP)))
+                          (SUB$C SUB$C-VAL VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-VAL (FLD0$C SUB$C)))
+                                (MV SUB$C SUB$C-VAL MISC-VAL))
+                          (MV TOP SUB$C-VAL MISC-VAL)))
+
+
+ACL2 Error in ( DEFUN BIND-NON-FUNCTION ...):  The name ABC is not
+the name of a field accessor for the stobj TOP.  The form 
+(STOBJ-LET ((SUB$C (SUB0 TOP))
+            (MISC-VAL (ABC TOP)))
+           (SUB$C SUB$C-VAL VAL)
+           (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                  (SUB$C-VAL (FLD0$C SUB$C)))
+                 (MV SUB$C SUB$C-VAL MISC-VAL))
+           (MV TOP SUB$C-VAL MISC-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN BIND-NON-FUNCTION ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN BIND-NON-FUNCTION ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN SUB0-VAL (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP)))
+                          (SUB$C-VAL)
+                          (FLD0$C SUB$C)
+                          SUB$C-VAL))
+
+Since SUB0-VAL is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of SUB0-VAL.
+
+(SUB0-VAL TOP) => *.
+
+Computing the guard conjecture for SUB0-VAL....
+
+The guard conjecture for SUB0-VAL is trivial to prove.  SUB0-VAL is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SUB0-VAL ...)
+Rules: NIL
+ SUB0-VAL
+ACL2 !>>(DEFUN BIND-NON-FIELD-FUNCTION (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP))
+                           (VAL (SUB0-VAL TOP)))
+                          (SUB$C SUB$C-VAL VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-VAL (FLD0$C SUB$C)))
+                                (MV SUB$C SUB$C-VAL MISC-VAL))
+                          (MV TOP SUB$C-VAL MISC-VAL)))
+
+
+ACL2 Error in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  The name SUB0-VAL
+is not the name of a field accessor for the stobj TOP.  The form 
+(STOBJ-LET ((SUB$C (SUB0 TOP))
+            (VAL (SUB0-VAL TOP)))
+           (SUB$C SUB$C-VAL VAL)
+           (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                  (SUB$C-VAL (FLD0$C SUB$C)))
+                 (MV SUB$C SUB$C-VAL MISC-VAL))
+           (MV TOP SUB$C-VAL MISC-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN BIND-NON-FIELD-FUNCTION ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTTAG :BOGUS-CERT)

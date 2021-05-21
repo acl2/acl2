@@ -9,6 +9,7 @@
 ; provided critical guidance in the development of the appropriate check.
 
 ; Included are tests showing that aliasing is OK in read-only situations.
+; For some such tests involving arrays, see absstobj-with-stobj-array.lisp.
 
 (in-package "ACL2")
 

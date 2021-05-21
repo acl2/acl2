@@ -20,7 +20,8 @@ absstobj-with-stobj-array.lisp
 Logic-exec signature mismatch (update-subs$ai)
 
 Aliasing in stobj-let (explicit in foo-fails-1, implicit in
-foo-fails-2)
+foo-fails-2 and foo-fails-3, ok when aliasing only involves read as in
+foo, foo-alt, and read-only-stobj-let-test; etc.)
 
 Simplification of logical version of stobj-let in a proof
 (top-test-logic)
@@ -52,6 +53,8 @@ nested-abstract-stobjs-input.lsp
 
 ; Example 5 ... causes the error message resulting from the :logic and :exec
 ; functions taking different numbers of arguments.
+
+; Example 6 shows an error when attempting to bind other than a child stobj.
 
 ------------------------------
 swap-stobjs-test.lisp

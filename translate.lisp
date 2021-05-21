@@ -11080,28 +11080,55 @@
   (st$c . absstobj-tuples)
   t)
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist)
+(defun split-values-by-keys (keys alist lst1 lst2)
+
+; This function partitions the values of alist into (mv lst1' lst2'), where
+; lst1' accumulates into lst1 the values associated with keys and lst2'
+; accumulates into lst2 the rest.
+
+  (declare (xargs :guard (and (true-listp keys)
+                              (symbol-alistp alist))))
+  (cond ((endp alist) (mv lst1 lst2))
+        ((member-eq (caar alist) keys)
+         (split-values-by-keys keys (cdr alist)
+                               (cons (cdar alist) lst1)
+                               lst2))
+        (t
+         (split-values-by-keys keys (cdr alist)
+                               lst1
+                               (cons (cdar alist) lst2)))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist producer-vars)
   (cond
    ((endp alist) nil)
-   (t (let ((indices (cdar alist)))
-        (cond
-         ((or (null (cdr indices))
+   (t
+    (let ((pairs (cdar alist)))
+      (cond
+       ((or (null (cdr pairs))
+            (let ((indices (strip-cdrs pairs)))
               (and (nat-listp indices)
-                   (no-duplicatesp indices)))
-          (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)))
-         (t (cons `(with-guard-checking
+                   (no-duplicatesp indices))))
+        (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                           producer-vars))
+       (t
+        (mv-let (producer-indices other-indices)
+          (split-values-by-keys producer-vars pairs nil nil)
+          (cond
+           ((null producer-indices)
+            (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                               producer-vars))
+           (t
+            (cons `(with-guard-checking
                     t
 
 ; The use below of with-guard-checking guarantees that the guard will be
-; checked by running chk-no-duplicatesp inside *1* code for stobj-let.  We are
-; relying on invariant-risk handling to ensure that the *1* function is
-; executed when there are updates, and hence those no-duplicatesp checks will
-; be performed.  Invariant-risk plays its usual role for :program-mode
-; wrappers, hence causes the no-duplicatesp checks to be enforced.  Note that
-; the no-duplicates checks are performed even when there are only accesses but
-; no updates (because invariant-risk is placed then, too); we do not (yet)
-; avoid the no-duplicatesp checks when there are no updates.  !! I've written
-; to Sol Swords to see what he thinks about making such exceptions.
+; checked by running chk-no-stobj-array-index-aliasing inside *1* code for
+; stobj-let.  We are relying on invariant-risk handling to ensure that the *1*
+; function is executed when there are updates, and hence those no-duplicatesp
+; checks will be performed.  Invariant-risk plays its usual role for
+; :program-mode wrappers, hence causes the no-duplicatesp checks to be
+; enforced.  Note that the no-duplicates checks are avoided when there are only
+; accesses but no updates.
 
 ; We considered a simpler approach: (or (no-duplicatesp-eql-exec lst) (er hard
 ; ...)).  However, the error didn't occur during proofs, and as a result the
@@ -11111,17 +11138,15 @@
 ; cost of seeing lots of error messages during the proof.  Rather than think
 ; all that through, we reverted to the approach below, which relies on guard
 ; checking (which fails silently during proofs) to enforce the lack of
-; duplicate array indices; see chk-no-duplicatesp.  Note that these checks are
-; skipped in raw Lisp, since raw-Lisp stobj-let does not include them.  But as
-; noted above, we can rely on invariant-risk.
+; duplicate array indices; see chk-no-stobj-array-index-aliasing.  Note that
+; these checks are skipped in raw Lisp, since raw-Lisp stobj-let does not
+; include them.  But as noted above, we can rely on invariant-risk.
 
-                    (chk-no-duplicatesp
-
-; The use of reverse is just aesthetic, to preserve the original order.
-
-                     (list ,@(reverse indices))))
+                    (chk-no-stobj-array-index-aliasing
+                     (list ,@producer-indices)
+                     (list ,@other-indices)))
                   (no-duplicatesp-checks-for-stobj-let-actuals/alist
-                   (cdr alist)))))))))
+                   (cdr alist) producer-vars)))))))))))
 
 (defun concrete-accessor (accessor tuples-lst)
 
@@ -11136,7 +11161,15 @@
              (assert$ accessor$c
                       (concrete-accessor accessor$c (cdr tuples-lst)))))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals-1 (exprs tuples-lst alist)
+(defun absstobj-tuples-lst (st wrld)
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (cond ((null abs-info) nil)
+          (t (cons (access absstobj-info abs-info :absstobj-tuples)
+                   (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
+                                        wrld))))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals-1
+    (bound-vars exprs producer-vars tuples-lst alist)
 
 ; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
 ; st: st$c is just st if st is a concrete stobj, and otherwise (recursively)
@@ -11156,14 +11189,18 @@
 
   (cond
    ((endp exprs)
-    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist alist)))
+    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                alist producer-vars)))
       (if (cdr lst)
           (cons 'progn$ lst)
         (car lst))))
    (t (no-duplicatesp-checks-for-stobj-let-actuals-1
+       (cdr bound-vars)
        (cdr exprs)
+       producer-vars
        tuples-lst
-       (let ((expr (car exprs)))
+       (let ((bound-var (car bound-vars))
+             (expr (car exprs)))
          (cond
           ((eql (length expr) 3) ; array case, (fldi index st)
            (let* ((name (car expr))
@@ -11176,20 +11213,15 @@
                   (fld$c (concrete-accessor name tuples-lst))
                   (entry (assoc-eq fld$c alist)))
              (put-assoc-eq fld$c
-                           (cons index (cdr entry))
+                           (cons (cons bound-var index) (cdr entry))
                            alist)))
           (t alist)))))))
 
-(defun absstobj-tuples-lst (st wrld)
-  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
-    (cond ((null abs-info) nil)
-          (t (cons (access absstobj-info abs-info :absstobj-tuples)
-                   (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
-                                        wrld))))))
-
-(defun no-duplicatesp-checks-for-stobj-let-actuals (exprs st wrld)
+(defun no-duplicatesp-checks-for-stobj-let-actuals
+    (bound-vars exprs producer-vars st wrld)
   (let ((tuples-lst (absstobj-tuples-lst st wrld)))
-    (no-duplicatesp-checks-for-stobj-let-actuals-1 exprs tuples-lst nil)))
+    (no-duplicatesp-checks-for-stobj-let-actuals-1
+     bound-vars exprs producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
 
@@ -11222,7 +11254,7 @@
     (parse-stobj-let x)
     (declare (ignore corresp-accessor-fns))
     (cond
-     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil))
+     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
      (t (let* ((guarded-producer
                 `(check-vars-not-free (,stobj) ,producer))
                (guarded-consumer
@@ -11240,7 +11272,7 @@
                          ,updated-guarded-consumer))
                      (t `(let ((,(car producer-vars) ,guarded-producer))
                            ,updated-guarded-consumer))))))
-          (mv form actuals stobj))))))
+          (mv form bound-vars actuals producer-vars stobj))))))
 
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
@@ -11287,7 +11319,7 @@
 
 ; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
-; example let us to add the call of memoize-flush in flush-form, below.  A
+; example led us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
 ; for allowing memoization of functions that take a stobj argument even when
 ; that stobj has a child stobj that is :non-memoizable.
@@ -11403,8 +11435,14 @@
 
    (let ((abs-info (getpropc stobj 'absstobj-info nil wrld)))
      (cond
-      (abs-info (cdddr (assoc-eq fn (access absstobj-info abs-info
-                                            :absstobj-tuples))))
+      (abs-info
+
+; Stobj is an abstract stobj.  The cdddr of the tuple for fn is the
+; corresponding updater, if any -- for an abstract stobj, having an updater is
+; equivalent to fn being a field accessor, as required for accessor calls in
+; stobj-let bindings.
+
+       (cdddr (assoc-eq fn (access absstobj-info abs-info :absstobj-tuples))))
       (t (and
 
 ; At this point, fn could still be a constant.
@@ -11441,7 +11479,7 @@
               (eq st stobj) ; guaranteed by parse-stobj-let
               (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
                      (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1.~@2"
+                           for the stobj ~x1.~@2~@3"
                           accessor acc-stobj
                           (if (eq acc-stobj stobj)
                               ""
@@ -11449,7 +11487,20 @@
                                   in this case ~x0, determines the stobj with ~
                                   which all other accessors must be ~
                                   associated, namely ~x1.)"
-                                 first-acc acc-stobj))))
+                                 first-acc acc-stobj))
+                          (let* ((abs-info (getpropc st 'absstobj-info nil
+                                                     wrld))
+                                 (tuples (and abs-info
+                                              (access absstobj-info abs-info
+                                                      :absstobj-tuples))))
+                            (cond
+                             ((assoc-eq accessor tuples)
+                              (msg "  Note that even though ~x0 is an ~
+                                      abstract stobj primitive (for ~x1), it ~
+                                      is not an accessor because it is not ~
+                                      associated with an :UPDATER."
+                                   accessor st))
+                             (t "")))))
                     ((not (stobjp var t wrld))
                      (msg "The stobj-let bound variable ~x0 is not the name ~
                            of a known single-threaded object in the current ~
@@ -11652,7 +11703,8 @@
 ; We ensure, in the abstract stobj case, that two different accessors aren't
 ; aliases for the same underlying concrete stobj accessor.  This notion of
 ; "underlying" refers to following the chain of foundational stobjs until a
-; concrete stobj is reached.
+; concrete stobj is reached.  (This is the notion of "ultimately underlies"
+; introduced in no-duplicatesp-checks-for-stobj-let-actuals-1.)
 
 ; Note that this function checks (by way of chk-stobj-let/accessors1) for
 ; aliasing in the form of explicit duplication of accessors (modulo the
@@ -16552,7 +16604,9 @@
               (let ((actual-stobjs-out
                      (translate-deref stobjs-out bindings))
                     (dups-check
-                     (no-duplicatesp-checks-for-stobj-let-actuals actuals
+                     (no-duplicatesp-checks-for-stobj-let-actuals bound-vars
+                                                                  actuals
+                                                                  producer-vars
                                                                   stobj
                                                                   wrld))
                     (producer-stobjs

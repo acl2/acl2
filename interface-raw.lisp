@@ -1512,31 +1512,19 @@
 ; Stobj-let is rather complicated, so we prefer to take advantage of the logic
 ; code for that macro.
 
-    (mv-let (temp1 actuals stobj)
+    (mv-let (temp1 bound-vars actuals producer-vars stobj)
       (stobj-let-fn x)
       (let ((temp2 (oneify temp1 fns w program-p)))
-        (case-match temp2
-
-; Warning: Keep these cases in sync with stobj-let-fn.
-
-          (('let bindings ('declare ('ignorable . &)) . rest)
-           (let ((dups-check (no-duplicatesp-checks-for-stobj-let-actuals
-                              actuals stobj w)))
-             (cond (dups-check `(let* ,bindings
-                                  (prog2$ (flet ((chk-no-duplicatesp
-                                                  (lst)
-                                                  (,(*1*-symbol
-                                                     'chk-no-duplicatesp)
-                                                   lst)))
-                                            ,dups-check)
-                                          ,@rest)))
-                   (t `(let* ,bindings ,@rest)))))
-          (& (interface-er "Implementation error: unexpected form of ~
-                            stobj-let encountered by oneify!.~|~%Stobj-let ~
-                            form:~|~y0~%Output of stobj-let-fn:~|~y1~%Output ~
-                            of oneify on that output:~|~y2~%Please contact ~
-                            the ACL2 implementors."
-                           x temp1 temp2))))))
+        (let ((dups-check (no-duplicatesp-checks-for-stobj-let-actuals
+                           bound-vars actuals producer-vars stobj w)))
+          (cond (dups-check `(prog2$ (flet ((chk-no-stobj-array-index-aliasing
+                                             (x1 x2)
+                                             (,(*1*-symbol
+                                                'chk-no-stobj-array-index-aliasing)
+                                              x1 x2)))
+                                       ,dups-check)
+                                     temp2))
+                (t temp2))))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par
            (granularity-decl (and (eq (car x) 'plet)

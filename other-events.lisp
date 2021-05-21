@@ -18880,9 +18880,9 @@
 ; Warning: Each updater definition should immediately follow the corresponding
 ; accessor definition, so that this is the case for the list of definitions
 ; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
-; 'stobj property laid down by defstobj-fn, and function
-; chk-stobj-let/updaters1 assumes that it will find each updater definition in
-; that property immediately after the corresponding accessor definition.
+; 'stobj property laid down by defstobj-fn, and function chk-stobj-updaters1
+; assumes that it will find each updater definition in that property
+; immediately after the corresponding accessor definition.
 
   (cond
    ((endp field-templates)
@@ -19169,9 +19169,9 @@
 ; follow the corresponding accessor definition, as guaranteed by the call of
 ; defstobj-field-fns-axiomatic-defs, below.  This is important because
 ; defstobj-axiomatic-defs provides the 'stobj property laid down by
-; defstobj-fn, and the function chk-stobj-let/updaters1 assumes that it will
-; find each updater definition in that property immediately after the
-; corresponding accessor definition.
+; defstobj-fn, and the function chk-stobj-updaters1 assumes that it will find
+; each updater definition in that property immediately after the corresponding
+; accessor definition.
 
 ; See the Essay on Defstobj Definitions.
 
@@ -21252,11 +21252,11 @@
                                (not (equal (length stobjs-in-logic)
                                            (length stobjs-in-exec))))
                           (er-cmp ctx
-                                  "The :LOGIC and ~
-                                   :EXEC functions for a field must ~
-                                   have the same length.  However, ~
-                                   this fails for field ~x0, as the ~
-                                   input signatures are as follows.~|~%~x1 ~
+                                  "The :LOGIC and :EXEC functions for a field ~
+                                   must have input signatures of the same ~
+                                   length.  However, this fails for field ~
+                                   descriptor ~x0, as the input signatures ~
+                                   are as follows.~|~%~x1 ~
                                    (:LOGIC):~|~X25~|~%~x3 ~
                                    (:EXEC):~|~X45~|~%~@6"
                                   field0 logic
@@ -21272,8 +21272,9 @@
                                    :EXEC functions for an abstract stobj ~
                                    export must have the same length.  ~
                                    However, the output signatures are as ~
-                                   follows for field ~x0 of abstract stobj ~
-                                   ~x1.~|~%~x2 (:LOGIC):~|~X36~|~%~x4 ~
+                                   follows for field descriptor ~x0 of ~
+                                   abstract stobj ~x1.~|~%~x2 ~
+                                   (:LOGIC):~|~X36~|~%~x4 ~
                                    (:EXEC):~|~X56~|~%~@7"
                                   field0 st
                                   logic (prettyify-stobj-flags stobjs-out-logic)
@@ -21882,8 +21883,7 @@
 
 ; Note that we use put-absstobjs-in-and-outs to set the stobjs-in and
 ; stobjs-out after the definitions are admitted, thus overriding this
-; potentially bogus :stobjs declaration.  !! Mention this in :doc defabbstobj,
-; suggesting that one use :doc args rather than :pe to see the stobjs involved.
+; potentially bogus :stobjs declaration.
 
 ; Given the signature mismatch between the primitive and its :logic function,
 ; there could be concern about inappropriate calls of the :logic function on
@@ -22698,9 +22698,9 @@
 
   (declare (ignore args))
   #+acl2-loop-only
-  (mv-let (form actuals stobj)
+  (mv-let (form bound-vars actuals producer-vars stobj)
     (stobj-let-fn x)
-    (declare (ignore actuals stobj))
+    (declare (ignore bound-vars actuals producer-vars stobj))
     form)
   #-acl2-loop-only
   (stobj-let-fn-raw x))

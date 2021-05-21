@@ -16,6 +16,8 @@
 ; file.  It causes the error message resulting from the :logic and :exec
 ; functions taking different numbers of arguments.
 
+; Example 6 shows an error when attempting to bind other than a child stobj.
+
 ; For a more complex example of nested abstract stobjs, see community book
 ; two-usuallyequal-nums-stobj.lisp.
 
@@ -26,7 +28,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defstobj sub$c fld0$c)
-(defstobj top$c (sub0$c :type sub$c))
+(defstobj top$c (sub0$c :type sub$c) misc$c)
 
 (defun sub$ap (x)
   (declare (xargs :guard t))
@@ -38,12 +40,13 @@
 (defun top$ap (x)
   (declare (xargs :guard t))
   (and (consp x)
-       (null (cdr x))
+       (consp (cdr x))
+       (null (cddr x))
        (sub$ap (car x))))
 
 (defun create-top$a ()
   (declare (xargs :guard t))
-  (list (list nil)))
+  (list (list nil) nil))
 
 (defun sub0$a (x)
   (declare (xargs :guard (top$ap x)))
@@ -53,7 +56,11 @@
   (declare (xargs :stobjs sub$c
                   :guard (and (top$ap x)
                               (natp (fld0$c sub$c)))))
-  (list sub$c))
+  (list sub$c (cadr x)))
+
+(defun misc$a (x)
+  (declare (xargs :guard (top$ap x)))
+  (cadr x))
 
 (defun-nx top-corr (top$c x)
   (declare (xargs :stobjs top$c))
@@ -114,6 +121,11 @@
                  (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
         :RULE-CLASSES NIL)
 
+(DEFTHM MISC{CORRESPONDENCE}
+        (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                 (EQUAL (MISC$C TOP$C) (MISC$A TOP)))
+        :RULE-CLASSES NIL)
+
 ; The child stobj fields sub0 and sub0-again both correspond to the same stobj
 ; field, sub0$c, of a concrete stobj, top$c.
 (defabsstobj top
@@ -122,7 +134,8 @@
   :corr-fn top-corr
   :exports ((sub0 :logic sub0$a :exec sub0$c :updater update-sub0)
             (sub0-again :logic sub0$a :exec sub0$c :updater update-sub0)
-            (update-sub0 :logic update-sub0$a :exec update-sub0$c)))
+            (update-sub0 :logic update-sub0$a :exec update-sub0$c)
+            (misc :logic misc$a :exec misc$c)))
 
 ; The following event succeeds; no surprises here.  But below we show how an
 ; attempt to update both stobj fields fails, as it should.
@@ -139,9 +152,8 @@
 (defstobj sub$c-cong fld0$c-cong :congruent-to sub$c)
 
 ; The following fails, as it should, with this message:
-;   ACL2 Error in ( DEFUN FOO-BAD ...):  The accessors SUB0 and SUB0-AGAIN
-;   ultimately invoke the same accessor, SUB0$C, of the same concrete stobj,
-;   TOP$C.  The form ....
+;   ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let bindings [...]
+;   ultimately access the same field SUB0$C of concrete stobj TOP$C....
 ; FAILS!
 (defun foo-bad (top)
   (declare (xargs :stobjs top))
@@ -237,9 +249,8 @@ ACL2 !>
 	     (mv top2 sub$c-val)))
 
 ; The following fails, as it should, with this message:
-;   ACL2 Error in ( DEFUN FOO2-BAD ...):  The accessors SUB02 and SUB02-AGAIN
-;   ultimately invoke the same accessor, SUB0$C, of the same concrete stobj,
-;   TOP$C.  The form 
+;   ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let bindings [...]
+;   ultimately access the same field SUB0$C of concrete stobj TOP$C....
 ;;; FAILS!
 (defun foo2-bad (top2)
   (declare (xargs :stobjs top2))
@@ -361,7 +372,6 @@ ACL2 !>
 (assert-event (equal (fields-of-two-ordered-nums two-ordered-nums)
                      '(:N 3 :N2 3 :VALID T)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Example 5
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -402,8 +412,59 @@ ACL2 !>
   (let ((st3$c (update-fld3i x y st3$c)))
     (mv x st3$c)))
 
+; Fails due to mismatcch
 (defabsstobj st3
   :exports ((bad3 :logic bad3$a :exec bad3$c)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Example 6
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Here is a variant of foo, above, that attempts to bind to other than a child
+; stobj.
+; FAILS:
+(defun bind-non-child-stobj-field (top)
+  (declare (xargs :stobjs top))
+  (stobj-let ((sub$c (sub0 top))
+              (misc-val (misc top)))
+	     (sub$c sub$c-val val)
+	     (let* ((sub$c (update-fld0$c 1 sub$c))
+		    (sub$c-val (fld0$c sub$c)))
+	       (mv sub$c sub$c-val misc-val))
+	     (mv top sub$c-val misc-val)))
+
+; Here is a variant of foo, above, that attempts to bind to a non-field.
+; FAILS:
+(defun bind-non-function (top)
+  (declare (xargs :stobjs top))
+  (stobj-let ((sub$c (sub0 top))
+              (misc-val (abc top)))
+	     (sub$c sub$c-val val)
+	     (let* ((sub$c (update-fld0$c 1 sub$c))
+		    (sub$c-val (fld0$c sub$c)))
+	       (mv sub$c sub$c-val misc-val))
+	     (mv top sub$c-val misc-val)))
+
+; As above, but try to bind to a function call,
+; (foo (top) => (mv top sub$c-val)).
+
+(defun sub0-val (top)
+  (declare (xargs :stobjs top))
+  (stobj-let ((sub$c (sub0 top)))
+	     (sub$c-val)
+	     (fld0$c sub$c)
+	     sub$c-val))
+
+; FAILS:
+(defun bind-non-field-function (top)
+  (declare (xargs :stobjs top))
+  (stobj-let ((sub$c (sub0 top))
+              (val (sub0-val top)))
+	     (sub$c sub$c-val val)
+	     (let* ((sub$c (update-fld0$c 1 sub$c))
+		    (sub$c-val (fld0$c sub$c)))
+	       (mv sub$c sub$c-val misc-val))
+	     (mv top sub$c-val misc-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Use a trust tag to avoid certification failure.
