@@ -13,6 +13,9 @@
 
 (include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
 
+(include-book "std/testing/must-succeed-star" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Some examples to test code generation for assignments to local variables.
@@ -109,3 +112,53 @@ On macOS or Linux, you can compile and run this code as follows:
   ./assign
 
 |#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Examples of invalid ACL2 representations of C code that must be rejected.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The transforming term for |x| does not end with |x|.
+
+(must-succeed*
+ (defun |foo| (|x| |y|)
+   (declare (xargs :guard (and (c::uintp |x|) (c::uintp |y|))))
+   (let ((|x| (let ((|w| (c::add-uint-uint |x| |y|)))
+                |w|)))
+     (c::add-uint-uint |x| (c::uint-const 7))))
+ (must-fail
+  (c::atc |foo| :output-file "foo.c")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The transforming term bound to |x| is not an IF.
+
+(must-succeed*
+ (defun |foo| (|x| |y|)
+   (declare (xargs :guard (and (c::uintp |x|) (c::uintp |y|))))
+   (let ((|x| (let* ((|y| (c::uint-const 0))
+                     (|x| (c::add-uint-uint |x| |y|)))
+                |x|)))
+     (c::add-uint-uint |x| |y|)))
+ (must-fail
+  (c::atc |foo| :output-file "foo.c" :proofs nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The inner binding of |y| is invalid because |y| is in scope,
+; but not in the same scope as where the inner binding occurs,
+; and |y| is not being transformed (only |x| is).
+
+(must-succeed*
+ (defun |foo| (|x|)
+   (declare (xargs :guard (c::sintp |x|)))
+   (let ((|y| (c::bitnot-sint |x|)))
+     (let ((|x| (if (c::boolean-from-sint |y|)
+                    (let* ((|y| (c::sint-const 0))
+                           (|x| |y|))
+                      |x|)
+                  |x|)))
+       (c::bitand-sint-sint |x| |y|))))
+ (must-fail
+  (c::atc |foo| :output-file "foo.c" :proofs nil)))
