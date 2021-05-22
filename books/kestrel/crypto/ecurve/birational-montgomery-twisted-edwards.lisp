@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,13 +50,25 @@
      via the rational formulas plus a few special explicit cases.")
    (xdoc::p
     "Here we define these mappings.
-     We plan to prove properties of them at some point."))
+     We plan to prove properties of them at some point.")
+   (xdoc::p
+    "In certain cases, these birational mappings may be scaled.
+     See for instance "
+    (xdoc::ahref
+     "https://math.stackexchange.com/questions/1391732/birational-equvalence-of-twisted-edwards-and-montgomery-curves"
+     "this page")
+    ".
+     Thus, our ACL2 functions that define the mappings
+     take an additional scaling factor as argument.
+     This can be set to 1 for the non-scaled mappings."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define montgomery-to-twisted-edwards ((mcurve montgomery-curvep))
+(define montgomery-to-twisted-edwards ((mcurve montgomery-curvep)
+                                       (scaling posp))
+  :guard (fep scaling (montgomery-curve->p mcurve))
   :returns (tecurve twisted-edwards-curvep)
   :short "Map a Montgomery curve to a twisted Edwards curve."
   :long
@@ -68,6 +80,10 @@
      which are well-defined because @($B \\neq 0$).
      The prime is of course unchanged.")
    (xdoc::p
+    "We also allow a non-zero scaling factor to be applied to @($B$)
+     in the calculation of @($a$) and @($d$).
+     This can be set to 1.")
+   (xdoc::p
     "The guard proofs require to show that @($a$) and @($d$) are not 0,
      which follows from the conditions on @($A$).
      It also requires showing that @($a \\neq d$):
@@ -78,8 +94,9 @@
      so we use a local lemma to reduce this to @($p \\neq 4$),
      and another local lemma to show that 4 is not prime."))
   (b* (((montgomery-curve mcurve) mcurve)
-       (a (div (add mcurve.a 2 mcurve.p) mcurve.b mcurve.p))
-       (d (div (sub mcurve.a 2 mcurve.p) mcurve.b mcurve.p)))
+       (b (mul (acl2::pos-fix scaling) mcurve.b mcurve.p))
+       (a (div (add mcurve.a 2 mcurve.p) b mcurve.p))
+       (d (div (sub mcurve.a 2 mcurve.p) b mcurve.p)))
     (make-twisted-edwards-curve :p mcurve.p :a a :d d))
   :hooks (:fix)
   :prepwork
@@ -102,8 +119,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep))
-  :guard (twisted-edwards-curve-primep tecurve)
+(define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep)
+                                       (scaling posp))
+  :guard (and (twisted-edwards-curve-primep tecurve)
+              (fep scaling (twisted-edwards-curve->p tecurve)))
   :returns (mcurve montgomery-curvep)
   :short "Map a twisted Edwards curve to a Montgomery curve."
   :long
@@ -114,6 +133,10 @@
      @($A = 2 (a + d) / (a - d)$) and @($B = 4 / (a - d)$),
      which are well-defined because @($a \\neq d$).")
    (xdoc::p
+    "We also allow a non-zero scaling factor to be applied to @($B$)
+     after its calculation from @($a$) and @($d$).
+     This can be set to 1.")
+   (xdoc::p
     "The guard proofs require to show that
      @($A$) is neither 2 nor -2 and @($B$) is not 0.
      This is carried out via a number of rules from the prime fields library,
@@ -123,8 +146,9 @@
        (a-d (sub tecurve.a tecurve.d tecurve.p))
        (a+d (add tecurve.a tecurve.d tecurve.p))
        (ma (mul 2 (div a+d a-d tecurve.p) tecurve.p))
-       (mb (div (mod 4 tecurve.p) a-d tecurve.p)))
-    (make-montgomery-curve :p tecurve.p :a ma :b mb))
+       (mb (div (mod 4 tecurve.p) a-d tecurve.p))
+       (b (mul (acl2::pos-fix scaling) mb tecurve.p)))
+    (make-montgomery-curve :p tecurve.p :a ma :b b))
   :guard-hints (("Goal" :in-theory (enable twisted-edwards-curve-primep)))
   :hooks (:fix)
   :prepwork
@@ -161,13 +185,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define montgomery-point-to-twisted-edwards-point ((point pointp)
-                                                   (curve montgomery-curvep))
+                                                   (curve montgomery-curvep)
+                                                   (scaling posp))
   :guard (and (point-on-montgomery-p point curve)
               (not (eq (point-kind point) :infinite))
               (not (equal (point-finite->x point)
                           (neg 1 (montgomery-curve->p curve))))
               (not (equal (point-finite->y point)
-                          0)))
+                          0))
+              (fep scaling (montgomery-curve->p curve)))
   :returns (point1 pointp)
   :short "Map a point on a Montgomery curve to
           the corresponding point on the corresponding twisted Edwards curve."
@@ -178,18 +204,23 @@
      the points for which the rational formulas work.
      That is, we require the denominators to be non-zero in the guard.")
    (xdoc::p
-    "It remains to prove that the resulting point in on the curve
-     @('(montgomery-to-twisted-edwards curve)').
+    "We also allow a non-zero scaling factor to be applied to the abscissa
+     after its calculation from the Montgomery coordinates.
+     This can be set to 1.")
+   (xdoc::p
+    "It remains to prove that the resulting point is on
+     the twisted Edwards curve corresponding to the Montgomery curve.
      It also remains to extend the mapping to other points
      (the ones for which the rational formulas do not work)."))
   (b* ((p (montgomery-curve->p curve))
        (mx (point-finite->x point))
        (my (point-finite->y point))
        (tex (div mx my p))
+       (x (mul (acl2::pos-fix scaling) tex p))
        (tey (div (sub mx 1 p)
                  (add mx 1 p)
                  p)))
-    (point-finite tex tey))
+    (point-finite x tey))
   :guard-hints (("Goal" :in-theory (enable point-on-montgomery-p)))
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
@@ -199,11 +230,13 @@
 
 (define twisted-edwards-point-to-montgomery-point
   ((point pointp)
-   (curve twisted-edwards-curvep))
+   (curve twisted-edwards-curvep)
+   (scaling posp))
   :guard (and (twisted-edwards-curve-primep curve)
               (point-on-twisted-edwards-p point curve)
               (not (equal (point-finite->x point) 0))
-              (not (equal (point-finite->y point) 1)))
+              (not (equal (point-finite->y point) 1))
+              (fep scaling (twisted-edwards-curve->p curve)))
   :returns (point1 pointp)
   :short "Map a point on a Twisted Edwards curve to
           the corresponding point on the corresponding Montgomery curve."
@@ -214,8 +247,12 @@
      the points for which the rational formulas work.
      That is, we require the denominators to be non-zero in the guard.")
    (xdoc::p
-    "It remains to prove that the resulting point in on the curve
-     @('(montgomery-to-twisted-edwards curve)').
+    "We also allow a non-zero scaling factor to be applied to the ordinate
+     after its calculation from the twisted Edwards coordinates.
+     This can be set to 1.")
+   (xdoc::p
+    "It remains to prove that the resulting point is on
+     the Montgomery curve corresponding to the twisted Edwards curve.
      It also remains to extend the mapping to other points
      (the ones for which the rational formulas do not work)."))
   (b* ((p (twisted-edwards-curve->p curve))
@@ -228,8 +265,9 @@
                 (mul (sub 1 tey p)
                      tex
                      p)
-                p)))
-    (point-finite mx my))
+                p))
+       (y (mul (acl2::pos-fix scaling) my p)))
+    (point-finite mx y))
   :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p
                                            twisted-edwards-curve-primep)))
   :prepwork
