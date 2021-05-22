@@ -16,6 +16,15 @@
                     open-channel-listp
                     open-channel1))
 
+;move?
+(local
+ (defthm assoc-equal-when-ordered-symbol-alistp-and-symbol-<-of-caar
+   (implies (and (ordered-symbol-alistp alist)
+                 (symbol-< key (car (car alist))))
+            (equal (assoc-equal key alist)
+                   nil))
+   :hints (("Goal" :in-theory (enable ordered-symbol-alistp assoc-equal)))))
+
 ;; We give this notion a name that we can keep disabled, since it is an unwieldy conjunction.
 (defund channel-headerp (header)
   (declare (xargs :guard t))
@@ -82,3 +91,14 @@
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
   :hints (("Goal" :in-theory (enable open-channels-p))))
+
+(defthm equal-of-add-pair-same
+  (implies (open-channels-p channels)
+           (equal (equal (add-pair channel value channels) channels)
+                  (and (assoc-eq channel channels)
+                       (equal value (cdr (assoc-eq channel channels))))))
+  :hints (("Goal" ;:induct (add-pair channel value channel)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable add-pair
+                              open-channel-listp
+                              open-channels-p))))
