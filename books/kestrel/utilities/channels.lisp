@@ -70,8 +70,7 @@
 
 (defthm typed-io-listp-of-cdddr-of-assoc-equal-and-cadr-of-cadr-of-assoc-equal
   (implies (and (symbolp channel)
-                (open-channel-listp channels)
-                (cddr (assoc-equal channel channels)))
+                (open-channel-listp channels))
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
   :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp))))
@@ -79,8 +78,7 @@
 ;; different hyp
 (defthm typed-io-listp-of-cdddr-of-assoc-equal-and-cadr-of-cadr-of-assoc-equal-2
   (implies (and (symbolp channel)
-                (open-channels-p channels)
-                (cddr (assoc-equal channel channels)))
+                (open-channels-p channels))
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
   :hints (("Goal" :in-theory (enable open-channels-p))))
