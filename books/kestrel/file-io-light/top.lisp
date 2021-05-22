@@ -13,6 +13,10 @@
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
+
+(include-book "read-byte-dollar")
+(include-book "read-object")
+
 (include-book "write-byte-dollar")
 (include-book "write-bytes-to-channel")
 (include-book "write-bytes-to-file")
