@@ -20,6 +20,19 @@
 (local (include-book "channels"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+;; Disable predicates on state components (TODO: Add more)
+(in-theory (disable open-channels-p
+                    ordered-symbol-alistp
+                    all-boundp
+                    32-bit-integer-listp
+                    file-clock-p
+                    read-files-p
+                    readable-files-p
+                    writeable-files-p
+                    written-files-p))
+
+(local (in-theory (disable assoc-equal nth update-nth)))
+
 ;; since the state is a true-list
 (defthm true-listp-of-update-open-input-channels
   (implies (true-listp st)
@@ -190,18 +203,16 @@
             (equal (length x)
                    (len x)))))
 
-(defthm ordered-symbol-alistp-of-add-pair
-  (implies (ordered-symbol-alistp x)
-           (equal (ordered-symbol-alistp (add-pair key val x))
-                  (symbolp key)))
-  :hints (("Goal" :in-theory (enable add-pair ordered-symbol-alistp))))
+(defthm open-channels-p-of-open-input-channels
+  (implies (state-p1 state)
+           (open-channels-p (open-input-channels state))))
 
-;; Implied by OPEN-CHANNELS-P
+;; implied by open-channels-p
 (defthm ordered-symbol-alistp-of-open-input-channels
   (implies (state-p1 state)
            (ordered-symbol-alistp (open-input-channels state))))
 
-;; Implied by OPEN-CHANNELS-P
+;; implied by open-channels-p
 (defthm open-channel-listp-of-open-input-channels
   (implies (state-p1 state)
            (open-channel-listp (open-input-channels state)))
@@ -218,32 +229,9 @@
   (implies (and (readable-files-p readable-files)
                 (equal typ (second key)))
            (typed-io-listp (cdr (assoc-equal key readable-files)) typ))
-  :hints (("Goal" :in-theory (enable readable-files-p member-equal))))
+  :hints (("Goal" :in-theory (enable readable-files-p member-equal assoc-equal))))
 
-;; Stuff about open-channels
-
-;;gen?
-(defthm open-channels-p-of-add-pair
-  (implies (and (state-p1 state)
-                (member-eq typ '(:character :byte :object))
-                (stringp file-name)
-                (file-clock-p file-clock)
-                (symbolp channel)
-                (readable-files-p readable-files))
-           (open-channels-p (add-pair
-                             channel
-                             (cons (list :header typ file-name file-clock)
-                                   (cdr (assoc-equal (list file-name typ file-clock)
-                                                     readable-files)))
-                             (open-input-channels state))))
-  :hints (("Goal" :in-theory (disable open-input-channels len
-                                      make-input-channel
-                                      ;;open-channels-p
-                                      readable-files
-                                      file-clock
-                                      ))))
-
-;; Disable the accessors and updaters of the fields of state:
+;; DISABLE the accessors and updaters of the fields of state:
 (in-theory (disable open-input-channels
                     open-output-channels
                     global-table
@@ -275,3 +263,13 @@
                     ;; update-writeable-files
                     update-list-all-package-names-lst
                     update-user-stobj-alist1))
+
+
+
+;move up?
+(defthm state-p1-of-update-open-input-channels
+  (implies (state-p1 state)
+           (equal (state-p1 (update-open-input-channels x state))
+                  (open-channels-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  ()))))
