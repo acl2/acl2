@@ -2,5 +2,9 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-(28-Apr-2021) Changes that cause a clash with the dependency hacks
-present in books/std/strings/pretty-program.lisp .
+[Late Fri May 21 2021]
+
+Significant changes to abstract stobjs seem to require cleaning the
+books.  (Although an "everything" regression passed after cleanning
+the books, certification failed for books/centaur/gl/hyp-fix.lisp.  So
+it seems safest and simplest just to clean the books.
