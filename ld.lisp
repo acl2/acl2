@@ -3868,7 +3868,7 @@
        (pprogn
         (fms "Guard-checking-on already has value ~x0.~%~%"
              (list (cons #\0 flg))
-             *standard-co* state nil)
+             (standard-co state) state nil)
         (value :invisible)))
       ((null flg)
        (pprogn (f-put-global 'guard-checking-on nil state)
@@ -3876,7 +3876,7 @@
                      except for self-recursive calls.  To avoid guard ~
                      checking entirely, :SET-GUARD-CHECKING :NONE.  See :DOC ~
                      set-guard-checking.~%~%"
-                    nil *standard-co* state nil)
+                    nil (standard-co state) state nil)
                (value :invisible)))
       ((eq flg :none)
        (pprogn (f-put-global 'guard-checking-on :none state)
@@ -3885,7 +3885,7 @@
                      while continuing to mask guard violations, ~
                      :SET-GUARD-CHECKING NIL.  See :DOC ~
                      set-guard-checking.~%~%"
-                    nil *standard-co* state nil)
+                    nil (standard-co state) state nil)
                (value :invisible)))
       (t (pprogn
           (f-put-global 'guard-checking-on flg state)
@@ -3893,12 +3893,12 @@
                    (cond ((member-eq current-flg '(nil :none))
                           (fms "Turning guard checking on, value ~x0.~%~%"
                                (list (cons #\0 flg))
-                               *standard-co* state nil))
+                               (standard-co state) state nil))
                          (t
                           (fms "Leaving guard checking on, but changing value ~
                                 to ~x0.~%~%"
                                (list (cons #\0 flg))
-                               *standard-co* state nil))))
+                               (standard-co state) state nil))))
           (value :invisible))))))
 
 ; Next: dmr

@@ -10,6 +10,9 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
 ACL2 !>>(SET-GAG-MODE NIL)
 <state>
 ACL2 !>>(SET-GUARD-CHECKING :ALL)
+
+Leaving guard checking on, but changing value to :ALL.
+
 ACL2 !>>(DEFUN AP (X Y)
                (IF (ENDP X)
                    Y (CONS (CAR X) (AP (CDR X) Y))))

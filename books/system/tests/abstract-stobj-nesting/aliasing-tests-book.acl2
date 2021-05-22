@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "aliasing-tests")
+
+; cert-flags: ? t :ttags (:bogus-cert)
+
+; Help dependency scanner.
+#||
+(depends-on "aliasing-tests-input.lsp")
+(depends-on "aliasing-tests-log.txt")
+||#

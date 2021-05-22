@@ -4419,17 +4419,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
 
-(defun chk-no-duplicatesp (lst)
-
-; This function is used in the implementation of stobj-let.  Do not modify it
-; without seeing where it is used and understand the implications of the
-; change.
-
-  (declare (xargs :guard (and (eqlable-listp lst)
-                              (no-duplicatesp lst)))
-           (ignore lst))
-  nil)
-
 ; Rassoc
 
 (defun r-eqlable-alistp (x)
@@ -8007,7 +7996,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (t dcls)))
     (hard-error (car form)
                 "The declarations are ill-formed for the form,~%~x0."
-                form)))
+                (list (cons #\0 form)))))
 
 (defun defun-nx-form (form)
   (declare (xargs :guard (and (true-listp form)
@@ -8674,6 +8663,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               :exec  (intersectp-eql-exec x y)))
    (t ; (equal test 'equal)
     `(intersectp-equal ,x ,y))))
+
+(defun chk-no-stobj-array-index-aliasing (producers others)
+
+; This function is used in the implementation of stobj-let.  Do not modify it
+; without seeing where it is used and understand the implications of the
+; change.
+
+  (declare (xargs :guard (and (eqlable-listp producers)
+                              (no-duplicatesp producers)
+                              (eqlable-listp others)
+                              (not (intersectp producers others))))
+           (ignore producers others))
+  nil)
 
 (defun make-fmt-bindings (chars forms)
   (declare (xargs :guard (and (true-listp chars)
@@ -28357,13 +28359,13 @@ Lisp definition."
 ; with a few orienting remarks, and then we summarize how we manage illegal
 ; states.
 
-; An abstract stobj export may update its stobj non-atomically, in which case
-; an incomplete update may result in a state where that abstract stobj does not
-; satisfy its recognizer.  (See the discussion of :protect in :DOC
-; defabsstobj.)  The resulting illegal state is marked by ACL2 as an
-; illegal-state, from which continuing is at one's own risk.  Moreover, ACL2
-; requires the user to submit the form, (continue-from-illegal-state), before
-; LD will accept further input.
+; An abstract stobj export or stobj-let form may update its stobj
+; non-atomically, in which case an incomplete update may result in a state
+; where that abstract stobj does not satisfy its recognizer.  (See the
+; discussion of :protect in :DOC defabsstobj.)  The resulting illegal state is
+; marked by ACL2 as an illegal-state, from which continuing is at one's own
+; risk.  Moreover, ACL2 requires the user to submit the form,
+; (continue-from-illegal-state), before LD will accept further input.
 
 ; If an execution is incomplete, there was presumably an error or a call of
 ; throw that took us out of the execution.  Because we extend the content of
@@ -28393,7 +28395,7 @@ Lisp definition."
 ;     re-entry to the proof-builder (see the calls of illegal-state-p in
 ;     pc-main-loop).
 
-; (c) When ld-read-eval-print runs chk-absstobj-invariants to check whether
+; (c) Ld-read-eval-print runs chk-absstobj-invariants to check whether
 ;     *inside-absstobj-update* shows that a non-interruptable abstract stobj
 ;     update didn't complete.  If we are not already at the top level, we will
 ;     abort to the top level (with (abort!), as mentioned above).  Otherwise

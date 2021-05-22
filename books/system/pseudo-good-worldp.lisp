@@ -1356,9 +1356,13 @@
 (defun absstobj-infop (val)
   (and (weak-absstobj-info-p val)
        (symbolp (access absstobj-info val :st$c))
-       (let ((logic-exec-pairs (access absstobj-info val :logic-exec-pairs)))
-         (and (symbol-alistp logic-exec-pairs)
-              (r-symbol-alistp logic-exec-pairs)))))
+       (let ((absstobj-tuples (access absstobj-info val :absstobj-tuples)))
+         (and (symbol-alistp absstobj-tuples)
+              (let ((cdrs (strip-cdrs absstobj-tuples)))
+                (and (symbol-alistp cdrs)
+                     (let ((cddrs (strip-cdrs cdrs)))
+                       (and (symbol-alistp cddrs)
+                            (r-symbol-alistp cddrs)))))))))
 
 ;-----------------------------------------------------------------
 ; ACCESSOR-NAMES

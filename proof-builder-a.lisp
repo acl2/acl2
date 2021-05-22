@@ -1193,23 +1193,33 @@
                      ((natp temp) "")
                      (t ; absstobj-debug case
                       (let* ((inner temp)
-                             (inner (loop (if (atom inner)
-                                              (return inner)
-                                            (pop inner)))))
+                             (inner
+                              (loop (if (or (atom inner)
+                                            (eq (car inner) 'stobj-let))
+                                        (return inner)
+                                      (pop inner)))))
                         (msg "Evaluation was aborted under ~@0~@1"
-                             (msg "a call of abstract stobj export ~x0."
-                                  inner)
+                             (cond ((symbolp inner)
+                                    (msg "a call of abstract stobj export ~x0."
+                                         inner))
+                                   (t
+                                    (msg "a non-atomic child stobj update of ~
+                                          an abstract stobj from the ~
+                                          following stobj-let form: ~x0."
+                                         inner)))
                              (cond
-                              ((atom temp) ; i.e., (symbolp temp)
+                              ((or (atom temp) ; i.e., (symbolp temp)
+                                   (eq (car temp) 'stobj-let))
                                "")
                               (t
                                (msg "~|Moreover, it appears that evaluation ~
                                      was aborted within the following stack ~
-                                     of stobj updater calls (innermost call ~
-                                     appearing first): ~x0."
+                                     of calls (innermost call appearing ~
+                                     first): ~x0."
                                     (let ((y nil))
                                       (loop
-                                       (if (atom temp)
+                                       (if (or (atom temp)
+                                               (eq (car temp) 'stobj-let))
                                            (return (nreverse
                                                     (cons temp y)))
                                          (push (pop temp) y))))))))))))))

@@ -257,22 +257,24 @@ the other keyword arguments are unused.  For example:</p>
            '(local (def-ruleset! clone-stobj-tmp-rules nil))
            (clone-stobj-rewrites new-defs old-defs))))
 
-(defun clone-absstobj-exports (exports logic-exec renaming concrete world)
+(defun clone-absstobj-exports (exports absstobj-tuples renaming concrete world)
   (b* (((when (atom exports)) nil)
-       ((cons logic exec) (car logic-exec))
+       ((list* ?!name logic exec updater) (car absstobj-tuples))
        (new-sym (clone-stobj-change-symbol (car exports) renaming))
        (protect (acl2::unprotected-export-p concrete exec world)))
-    (cons `(,new-sym :logic ,logic :exec ,exec :protect ,protect)
+    (cons `(,new-sym :logic ,logic :exec ,exec
+                     ,@(and updater `(:updater ,updater))
+                     :protect ,protect)
           (clone-absstobj-exports
-           (cdr exports) (cdr logic-exec) renaming concrete world))))
+           (cdr exports) (cdr absstobj-tuples) renaming concrete world))))
 
 (defun clone-absstobj-fn (stobjname name renaming user-exports world)
   (b* ((abs-info (fgetprop stobjname 'acl2::absstobj-info nil world))
        (stobj-info (fgetprop stobjname 'acl2::stobj nil world))
        (`(,concrete
-          (,recog-logic . ,recog-exec)
-          (,create-logic . ,create-exec)
-          . ,export-logic-exec)
+          (,?!recog-name ,recog-logic ,recog-exec)
+          (,?!creator-name ,create-logic ,create-exec)
+          . ,export-absstobj-tuples)
         abs-info)
        (`(,& ,?pred ,?create . ,exports) stobj-info)
        (exports (or user-exports exports))
@@ -282,7 +284,8 @@ the other keyword arguments are unused.  For example:</p>
        :concrete ,concrete
        :recognizer (,recognizer :logic ,recog-logic :exec ,recog-exec)
        :creator (,creator :logic ,create-logic :exec ,create-exec)
-       :exports ,(clone-absstobj-exports exports export-logic-exec renaming
+       :exports ,(clone-absstobj-exports exports export-absstobj-tuples
+                                         renaming
                                          ;; needed for computing :protect args
                                          concrete world)
        :congruent-to ,stobjname)))

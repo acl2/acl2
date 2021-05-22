@@ -10326,6 +10326,9 @@
   `(fcons-term* 'return-last ',fn ,@args))
 
 (defmacro prog2$-call (x y)
+
+; Warning: Keep this in sync with the handlng of 'return-last in oneify.
+
   `(fcons-term* 'return-last ''progn ,x ,y))
 
 (defun dcl-guardian (term-lst)
@@ -11476,7 +11479,7 @@
 ; X is a stobj-let form.  We return (mv erp bound-vars actuals stobj
 ; producer-vars producer updaters corresponding-accessor-fns consumer), where
 ; erp is either a msg or nil, and when erp is nil:
-; - bound-vars is a list of symbols, without duplicates;
+; - bound-vars is a list of symbols;
 ; - actuals is a corresponding list of untranslated field accessors;
 ; - stobj is the stobj accessed by those field accessors;
 ; - producer-vars is the true-list of producer variables
@@ -11535,7 +11538,7 @@
                  (arglistp producer-vars)))
        (mv (illegal-stobj-let-msg
             "The producer-variables of a STOBJ-LET form must be a non-empty ~
-             list of legal variable names."
+             list of legal variable names without duplicates."
             x)
            nil nil nil nil nil nil nil nil))
       (t (mv-let
@@ -11555,53 +11558,161 @@
             x)
            nil nil nil nil nil nil nil nil))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist)
-  (cond ((endp alist) nil)
-        (t (let ((indices (cdar alist)))
-             (cond ((or (null (cdr indices))
-                        (and (nat-listp indices)
-                             (no-duplicatesp indices)))
-                    (no-duplicatesp-checks-for-stobj-let-actuals/alist
-                     (cdr alist)))
-                   (t (cons `(with-guard-checking
-                              t
+(defun split-values-by-keys (keys alist lst1 lst2)
 
-; This use of with-guard-checking guarantees that the guard will be checked by
-; running chk-no-duplicatesp inside *1* code for stobj-let.  (See a comment
-; near the end of stobj-let-fn for how handling of invariant-risk guarantees
-; that such *1* code is run under program-mode wrappers.)
+; This function partitions the values of alist into (mv lst1' lst2'), where
+; lst1' accumulates into lst1 the values associated with keys and lst2'
+; accumulates into lst2 the rest.
 
-                              (chk-no-duplicatesp
+  (declare (xargs :guard (and (true-listp keys)
+                              (symbol-alistp alist))))
+  (cond ((endp alist) (mv lst1 lst2))
+        ((member-eq (caar alist) keys)
+         (split-values-by-keys keys (cdr alist)
+                               (cons (cdar alist) lst1)
+                               lst2))
+        (t
+         (split-values-by-keys keys (cdr alist)
+                               lst1
+                               (cons (cdar alist) lst2)))))
 
-; The use of reverse is just aesthetic, to preserve the original order.
+(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist producer-vars)
+  (cond
+   ((endp alist) nil)
+   (t
+    (let ((pairs (cdar alist)))
+      (cond
+       ((or (null (cdr pairs))
+            (let ((indices (strip-cdrs pairs)))
+              (and (nat-listp indices)
+                   (no-duplicatesp indices))))
+        (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                           producer-vars))
+       (t
+        (mv-let (producer-indices other-indices)
+          (split-values-by-keys producer-vars pairs nil nil)
+          (cond
+           ((null producer-indices)
+            (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                               producer-vars))
+           (t
+            (cons `(with-guard-checking
+                    t
 
-                               (list ,@(reverse indices))))
-                            (no-duplicatesp-checks-for-stobj-let-actuals/alist
-                             (cdr alist)))))))))
+; The use below of with-guard-checking guarantees that the guard will be
+; checked by running chk-no-stobj-array-index-aliasing inside *1* code for
+; stobj-let.  We are relying on invariant-risk handling to ensure that the *1*
+; function is executed when there are updates, and hence those no-duplicatesp
+; checks will be performed.  Invariant-risk plays its usual role for
+; :program-mode wrappers, hence causes the no-duplicatesp checks to be
+; enforced.  Note that the no-duplicates checks are avoided when there are only
+; accesses but no updates.
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals (exprs alist)
+; We considered a simpler approach: (or (no-duplicatesp-eql-exec lst) (er hard
+; ...)).  However, the error didn't occur during proofs, and as a result the
+; theorem true-and-false-is-contradictory-2 in community book
+; books/system/tests/nested-stobj-tests.lisp succeeded with that change.  The
+; failure was restored by changing (er hard ...) to (er hard! ...), but at the
+; cost of seeing lots of error messages during the proof.  Rather than think
+; all that through, we reverted to the approach below, which relies on guard
+; checking (which fails silently during proofs) to enforce the lack of
+; duplicate array indices; see chk-no-stobj-array-index-aliasing.  Note that
+; these checks are skipped in raw Lisp, since raw-Lisp stobj-let does not
+; include them.  But as noted above, we can rely on invariant-risk.
 
-; Alist associates array field accessor names with lists of index terms.
+                    (chk-no-stobj-array-index-aliasing
+                     (list ,@producer-indices)
+                     (list ,@other-indices)))
+                  (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                   (cdr alist) producer-vars)))))))))))
 
-  (cond ((endp exprs)
-         (no-duplicatesp-checks-for-stobj-let-actuals/alist alist))
-        (t (let ((expr (car exprs)))
-             (no-duplicatesp-checks-for-stobj-let-actuals
-              (cdr exprs)
-              (cond
-               ((eql (length expr) 3) ; array case, (fldi index st)
-                (let* ((key (car expr))
-                       (index (cadr expr))
-                       (index (if (consp index)
-                                  (assert$ (and (eq (car index) 'quote)
-                                                (natp (cadr index)))
-                                           (cadr index))
-                                index))
-                       (entry (assoc-eq key alist)))
-                  (put-assoc-eq key
-                                (cons index (cdr entry))
-                                alist)))
-               (t alist)))))))
+(defun concrete-accessor (accessor tuples-lst)
+
+; Accessor is a stobj accessor for a stobj st.  Tuples-lst is nil if st is a
+; concrete stobj; otherwise its car is the :absstobj-tuples field of the
+; 'absstobj-info property of st and its cdr is (recursively) a list of such
+; tuples starting with the underlying stobj for st.
+
+  (cond ((endp tuples-lst) accessor)
+        (t (let* ((tuples (car tuples-lst))
+                  (accessor$c (caddr (assoc-eq accessor tuples))))
+             (assert$ accessor$c
+                      (concrete-accessor accessor$c (cdr tuples-lst)))))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals-1
+    (bound-vars exprs producer-vars tuples-lst alist)
+
+; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
+; st: st$c is just st if st is a concrete stobj, and otherwise (recursively)
+; st$c is the concrete stobj that ultimately underlies the foundational stobj
+; for st.
+
+; Function chk-stobj-let/accessors1 checks for explicit duplication of
+; accessors in the bindings of a stobj-let form, F.  The present function, by
+; contrast, deals with duplicate indices for accessing array fields of the
+; stobj that ultimately underlies st.  We return either nil or a term, chk,
+; that serves as such a check for duplicate indices: if chk is not nil then F
+; is treated as (prog2$ chk F) by translate and oneify.
+
+; Alist accumulates an association of array field accessor names with
+; corresponding lists of index terms.  Those accessor names are for the
+; concrete stobj that ultimately underlies the stobj st.
+
+  (cond
+   ((endp exprs)
+    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                alist producer-vars)))
+      (if (cdr lst)
+          (cons 'progn$ lst)
+        (car lst))))
+   (t (no-duplicatesp-checks-for-stobj-let-actuals-1
+       (cdr bound-vars)
+       (cdr exprs)
+       producer-vars
+       tuples-lst
+       (let ((bound-var (car bound-vars))
+             (expr (car exprs)))
+         (cond
+          ((eql (length expr) 3) ; array case, (fldi index st)
+           (let* ((name (car expr))
+                  (index (cadr expr))
+                  (index (if (consp index)
+                             (assert$ (and (eq (car index) 'quote)
+                                           (natp (cadr index)))
+                                      (cadr index))
+                           index))
+                  (fld$c (concrete-accessor name tuples-lst))
+                  (entry (assoc-eq fld$c alist)))
+             (put-assoc-eq fld$c
+                           (cons (cons bound-var index) (cdr entry))
+                           alist)))
+          (t alist)))))))
+
+(defrec absstobj-info
+
+; For a given abstract stobj st, the 'absstobj-info property is one of these
+; records, where st$c is the corresponding foundational stobj and
+; absstobj-tuples is a list of tuples (name logic exec . updater), where
+; updater is non-nil only when name is a child stobj accessor (hence exec is a
+; child stobj accessofr for st$c).  The first tuple is for the recognizer, the
+; second is for the creator, and the rest are for the exports, in order of
+; the exports in the original defabsstobj event.
+
+  (st$c . absstobj-tuples)
+  t)
+
+(defun absstobj-tuples-lst (st wrld)
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (cond ((null abs-info) nil)
+          (t (cons (access absstobj-info abs-info :absstobj-tuples)
+                   (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
+                                        wrld))))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals
+    (bound-vars exprs producer-vars st wrld)
+  (let ((tuples-lst (absstobj-tuples-lst st wrld)))
+    (no-duplicatesp-checks-for-stobj-let-actuals-1
+     bound-vars exprs producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
 
@@ -11612,6 +11723,20 @@
 ; function.  We call stobj-let-fn in oneify, so we need that logical code even
 ; in raw Lisp.
 
+; Warning: This function does not do all necessary checks.  Among the checks
+; missing here but performed by translate11 (via chk-stobj-let) are duplicate
+; accessor expressions in the bindings, which could lead to aliasing errors.
+; The anti-aliasing check for duplicate array indices, which laid down in the
+; translation of a stobj-let expression after the chk-stobj-let check passes,
+; is also missing in this function.  Many of the checks need the world, which
+; is not available in stobj-let-fn; in particular, aliasing need not be
+; lexical, as two different accessors can lead via a chain of foundational
+; stobjs (available in the world) to the same access of a single concrete
+; stobj.
+
+; Our use in oneify requires the actuals and stobj, so we return those as well
+; in the non-error case.
+
 ; See the Essay on Nested Stobjs.
 
   (mv-let
@@ -11619,43 +11744,33 @@
          corresp-accessor-fns consumer)
     (parse-stobj-let x)
     (declare (ignore corresp-accessor-fns))
-    (cond (msg (er hard 'stobj-let "~@0" msg))
-          (t
-           (let* ((guarded-producer
-                   `(check-vars-not-free (,stobj) ,producer))
-                  (guarded-consumer
-                   `(check-vars-not-free ,bound-vars ,consumer))
-                  (updated-guarded-consumer
-                   `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
-                      ,guarded-consumer))
-                  (form
-                   `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
-                      (declare (ignorable ,@bound-vars))
-                      ,(cond
-                        ((cdr producer-vars)
-                         `(mv-let ,producer-vars
-                            ,guarded-producer
-                            ,updated-guarded-consumer))
-                        (t `(let ((,(car producer-vars) ,guarded-producer))
-                              ,updated-guarded-consumer))))))
-             `(progn$ ,@(no-duplicatesp-checks-for-stobj-let-actuals actuals
-                                                                     nil)
-
-; Warning: Think carefully before modifying how the no-dupslicates test just
-; above is worked into this logical code.  A concern is whether a program-mode
-; wrapper will be able to circumvent this check.  Fortunately, the check only
-; needs to be done if there are updater calls in form, in which case there is
-; invariant-risk that will cause execution of this code as *1* code.  A concern
-; is that if the no-dups-exprs check is buried in a function call, perhaps that
-; call would somehow avoid that check by being executed in raw Lisp.
-
-                      ,form))))))
+    (cond
+     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
+     (t (let* ((guarded-producer
+                `(check-vars-not-free (,stobj) ,producer))
+               (guarded-consumer
+                `(check-vars-not-free ,bound-vars ,consumer))
+               (updated-guarded-consumer
+                `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
+                   ,guarded-consumer))
+               (form
+                `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
+                   (declare (ignorable ,@bound-vars))
+                   ,(cond
+                     ((cdr producer-vars)
+                      `(mv-let ,producer-vars
+                         ,guarded-producer
+                         ,updated-guarded-consumer))
+                     (t `(let ((,(car producer-vars) ,guarded-producer))
+                           ,updated-guarded-consumer))))))
+          (mv form bound-vars actuals producer-vars stobj))))))
 
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
   (assert name)
   (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
-    (assert (eq (car d) 'defstobj))
+    (assert (member (car d) '(defstobj defabsstobj)
+                    :test #'eq))
     (assert (cdr d))
     (access defstobj-redundant-raw-lisp-discriminator-value
             (cdr d)
@@ -11688,7 +11803,7 @@
 
 ; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
-; example let us to add the call of memoize-flush in flush-form, below.  A
+; example led us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
 ; for allowing memoization of functions that take a stobj argument even when
 ; that stobj has a child stobj that is :non-memoizable.
@@ -11750,7 +11865,7 @@
                         (not (non-memoizable-stobj-raw stobj))
                         `(memoize-flush ,(congruent-stobj-rep-raw
                                           stobj))))
-                  (form
+                  (form0
                    `(let* ,(pairlis$ bound-vars (pairlis$ actuals nil))
                       (declare (ignorable ,@bound-vars))
                       ,(cond
@@ -11766,9 +11881,28 @@
                               #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
-             form)))))
+             (if (and (eq (car (get (the-live-var stobj)
+                                    'redundant-raw-lisp-discriminator))
+                          'defabsstobj)
+
+; When an abstract stobj's update is incomplete, the resulting state should be
+; considered an illegal state (see the Essay on Illegal-states) since the
+; abstract stobj recognizer might not hold for the corresponding live stobj.
+; However, if we know that the stobj has not been updated -- because none of
+; the producer variables represents a child stobj (by virtue of being in
+; bound-vars) -- then we do not need to mess with illegal states here.
+
+                      (intersectp-eq bound-vars producer-vars))
+                 (with-inside-absstobj-update (gensym) (gensym) x form0)
+               form0))))))
 
 (defun stobj-field-accessor-p (fn stobj wrld)
+
+; Return non-nil when fn is a child accessor (not updater) for the given stobj.
+; If stobj is an abstract stobj, this means that fn is an export with an
+; :updater field.  For more background see the Essay on the Correctness of
+; Abstract Stobjs.
+
   (and
 
 ; We believe that the first check is subsumed by the others, but we leave it
@@ -11781,14 +11915,28 @@
 
    (member-eq fn (cdddr (getpropc stobj 'stobj nil wrld)))
 
+; The remaining tests are different for concrete and abstract stobjs.
+
+   (let ((abs-info (getpropc stobj 'absstobj-info nil wrld)))
+     (cond
+      (abs-info
+
+; Stobj is an abstract stobj.  The cdddr of the tuple for fn is the
+; corresponding updater, if any -- for an abstract stobj, having an updater is
+; equivalent to fn being a field accessor, as required for accessor calls in
+; stobj-let bindings.
+
+       (cdddr (assoc-eq fn (access absstobj-info abs-info :absstobj-tuples))))
+      (t (and
+
 ; At this point, fn could still be a constant.
 
-   (function-symbolp fn wrld)
+          (function-symbolp fn wrld)
 
 ; Now distinguish accessors from updaters.
 
-   (not (eq (car (stobjs-out fn wrld))
-            stobj))))
+          (not (eq (car (stobjs-out fn wrld))
+                   stobj))))))))
 
 (defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
                                      wrld)
@@ -11802,6 +11950,10 @@
 ; that this is congruent to stobj.  First-acc is the first accessor, which is
 ; just used in the error message when another accessor's stobj doesn't match.
 
+; We do an additional check in chk-stobj-let/accessors to ensure, in the
+; abstract stobj case, that two different accessors aren't aliases for the same
+; underlying concrete stobj accessor.  See chk-stobj-let/accessors
+
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
                   (actual (car actuals))
@@ -11811,7 +11963,7 @@
               (eq st stobj) ; guaranteed by parse-stobj-let
               (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
                      (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1.~@2"
+                           for the stobj ~x1.~@2~@3"
                           accessor acc-stobj
                           (if (eq acc-stobj stobj)
                               ""
@@ -11819,7 +11971,20 @@
                                   in this case ~x0, determines the stobj with ~
                                   which all other accessors must be ~
                                   associated, namely ~x1.)"
-                                 first-acc acc-stobj))))
+                                 first-acc acc-stobj))
+                          (let* ((abs-info (getpropc st 'absstobj-info nil
+                                                     wrld))
+                                 (tuples (and abs-info
+                                              (access absstobj-info abs-info
+                                                      :absstobj-tuples))))
+                            (cond
+                             ((assoc-eq accessor tuples)
+                              (msg "  Note that even though ~x0 is an ~
+                                      abstract stobj primitive (for ~x1), it ~
+                                      is not an accessor because it is not ~
+                                      associated with an :UPDATER."
+                                   accessor st))
+                             (t "")))))
                     ((not (stobjp var t wrld))
                      (msg "The stobj-let bound variable ~x0 is not the name ~
                            of a known single-threaded object in the current ~
@@ -11849,27 +12014,28 @@
 ; to become smarter.
 
                      (msg "The bindings of a stobj-let must contain no ~
-                           duplicated actuals, but in the following form, the ~
-                           actual ~x0 is bound more than once."
+                           duplicated expressions, but in the following form, ~
+                           more than one variable is bound to the expression, ~
+                           ~x0."
                           actual))
                     (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
                                                wrld))))))))
 
-(defun chk-stobj-let/updaters1 (updaters accessors lst)
+(defun chk-stobj-updaters1 (accessors updaters lst source)
 
 ; Lst is the cdddr of the 'stobj property of a stobj in an implicit world,
 ; accessors is a list of field accessors for that stobj, and updaters is a list
-; of the same length as accessors.  We check for each i < (length accessors),
-; the ith updater is indeed the stobj field updater corresponding to the ith
-; accessor.  Recall that the 'stobj property is a list of the form
+; of the same length as accessors.  We check that for each i < (length
+; accessors), the ith updater is indeed the stobj field updater corresponding
+; to the ith accessor.  Recall that the 'stobj property is a list of the form
 ; (*the-live-var* recognizer creator ...), and that each field updater
-; immediately follows the corresponding field accessor in that list.
+; immediately follows the corresponding field accessor in that list.  Source is
+; as in chk-stobj-updaters.
 
   (cond ((endp updaters) nil)
-        (t (let* ((updater-expr (car updaters))
-                  (updater (car updater-expr))
+        (t (let* ((updater (car updaters))
                   (accessor (car accessors))
                   (accessor-tail (member-eq (car accessors) lst))
                   (actual-updater (cadr accessor-tail)))
@@ -11881,21 +12047,166 @@
               accessor-tail
               (cond
                ((eq updater actual-updater)
-                (chk-stobj-let/updaters1 (cdr updaters) (cdr accessors) lst))
-               (t (msg "The stobj-let bindings have specified that the stobj ~
-                        field updater corresponding to accessor ~x0 is ~x1, ~
-                        but the actual corresponding updater is ~x2."
-                       accessor updater actual-updater))))))))
+                (chk-stobj-updaters1 (cdr accessors) (cdr updaters)
+                                     lst source))
+               (t (msg "The ~@0 have specified that the stobj ~
+                        field updater corresponding to accessor ~x1 is ~x2, ~
+                        but the actual corresponding updater is ~x3."
+                       source accessor updater actual-updater))))))))
 
-(defun chk-stobj-let/updaters (updaters corresp-accessor-fns stobj wrld)
-  (chk-stobj-let/updaters1
+(defun chk-stobj-updaters (accessors updaters stobj wrld source)
+
+; Source is a string or message such as "stobj-let bindings" or "defabsstobj
+; exports", indicating (as a plural noun phrase) what has specified that the
+; given updater functions are supposed to correspond to the given accessor
+; functions.
+
+  (chk-stobj-updaters1
+   accessors
    updaters
-   corresp-accessor-fns
-   (cdddr ; optimization: pop live-var, recognizer, and creator
-    (getpropc stobj 'stobj nil wrld))))
+   (cdddr ; pop live-var, recognizer, and creator
+    (getpropc stobj 'stobj nil wrld))
+   source))
 
-(defun chk-stobj-let (bound-vars actuals stobj updaters corresp-accessor-fns
-                                 known-stobjs wrld)
+(defun chk-stobj-let/updaters (updater-calls corresp-accessor-fns stobj wrld)
+  (chk-stobj-updaters corresp-accessor-fns
+                      (strip-cars updater-calls)
+                      stobj wrld "stobj-let bindings"))
+
+(defun alist-to-doublets (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (alist-to-doublets (cdr alist))))))
+
+(defun chk-stobj-let/accessors2 (alist producer-vars wrld)
+
+; Alist contains entries (fn$c (var1 . expr1) (var2 . expr2) ... (varn
+; . exprn)), where each expri is a call of a child stobj accessor that
+; ultimately invokes the concrete stobj field accessor, fn$c.  If n > 1 and
+; some vari is in producer-vars, then we return a message that reports aliasing
+; involving the field accessed by fn$c that is not completely read-only.
+; Otherwise we return nil.
+
+  (cond
+   ((endp alist) nil)
+   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars wrld))
+             (key (caar alist))
+             (indexp (consp key))
+             (fn$c (if indexp
+                       (car key)
+                     key))
+             (pairs (and (cdr (cdar alist)) ; not just one pair
+                         (reverse (cdar alist))))
+             (bad-vars (strip-cars (restrict-alist producer-vars pairs)))
+             (msg2 (and bad-vars
+                        (msg "The stobj-let bindings ~x0 ultimately access ~
+                              the same field ~x1 of concrete stobj ~x2~@3.  ~
+                              Since variable~#4~[ ~&4 is~/s ~&4 are~] to be ~
+                              updated (i.e., ~#4~[it is~/they are~] among the ~
+                              stobj-let form's producer variables), this ~
+                              aliasing is illegal."
+                             (alist-to-doublets pairs)
+                             fn$c
+                             (getpropc fn$c 'stobj-function nil wrld)
+                             (if indexp
+                                 " (with identical array indices)"
+                               "")
+                             bad-vars))))
+        (cond
+         ((null msg1) msg2)
+         ((null msg2) msg1)
+         (t (msg "~@0~|Also: ~@1" msg2 msg1)))))))
+
+(defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars
+                                            tuples tuples-lst wrld alist)
+
+; Tuples is the :absstobj-tuples field of an absstobj-info record for an
+; abstract stobj st, actuals is the values in the bindings of a stobj-let form,
+; and tuples-lst is the list of :absstobj-tuples for the chain of foundational
+; stobjs starting with the foundational stobj for st.  We look for aliasing
+; caused by ultimately invoking the same concrete stobj export).  However we do
+; not handle aliasing caused by non-identiccal array indices; for that, see
+; no-duplicatesp-checks-for-stobj-let-actuals-1, which generates guard
+; obligations rather than causing an error like the present function (but more
+; precisely, the present function can return a msg, which is passed up the call
+; chain until causing an error in defabsstobj-fn1).
+
+; We assume that we are here because of a chk-stobj-let call that invoked
+; chk-stobj-let/accessors after a corresponding check already done with
+; chk-stobj-let/bindings (see comment on assert$ below).
+
+; Note that duplicated actuals are already checked in chk-stobj-let/bindings;
+; here we are checking that two (distinct) actuals do not represent the same
+; update for the same concrete stobj.  We could actually avoid that previous
+; check in the case of abstract stobjs because the check is done here, but we
+; need the other check anyhow for concrete stobjs.  The price seems small for
+; the duplicated effort here, so we aren't concerned about that.
+
+  (cond
+   ((endp bound-vars) ; equivalently, (endp actuals)
+    (chk-stobj-let/accessors2 alist producer-vars wrld))
+   (t (let* ((var (car bound-vars))
+             (actual (car actuals))
+             (fn (car actual))
+             (tuple (assoc-eq fn tuples))
+             (fn$c0 (caddr tuple))
+             (fn$c (concrete-accessor fn$c0 tuples-lst))
+             (index (and (= (length actual) 3)
+                         (cadr actual)))
+             (key (if index
+                      (cons fn$c index) ; array case
+                    fn$c))
+             (new (cons var actual))
+             (old (cdr (assoc-equal key alist))))
+        (chk-stobj-let/accessors1 (cdr bound-vars) (cdr actuals) producer-vars
+                                  tuples tuples-lst wrld
+                                  (put-assoc-equal key
+                                                   (cons new old)
+                                                   alist))))))
+
+(defun collect-some-triples-with-non-nil-cdddrs (keys alist)
+
+; Collect each triple from alist that has a non-nil cdddr and whose car belongs
+; to keys.
+
+  (cond ((endp alist) nil)
+        ((and (cdddr (car alist))
+              (member-eq (caar alist) keys))
+         (cons (car alist)
+               (collect-some-triples-with-non-nil-cdddrs keys (cdr alist))))
+        (t (collect-some-triples-with-non-nil-cdddrs keys (cdr alist)))))
+
+(defun chk-stobj-let/accessors (st bound-vars actuals producer-vars wrld)
+
+; This function adds checks on the given actuals of the bindings of a stobj-let
+; form for stobj st, beyond those in chk-stobj-let/bindings.  It returns a msgp
+; to print upon failure, else nil.  This function is only relevant for abstract
+; stobjs: it always returns nil if st is a concrete stobj.
+
+; We ensure, in the abstract stobj case, that two different accessors aren't
+; aliases for the same underlying concrete stobj accessor.  This notion of
+; "underlying" refers to following the chain of foundational stobjs until a
+; concrete stobj is reached.  (This is the notion of "ultimately underlies"
+; introduced in no-duplicatesp-checks-for-stobj-let-actuals-1.)
+
+; Note that this function checks (by way of chk-stobj-let/accessors1) for
+; aliasing in the form of explicit duplication of accessors (modulo the
+; corresponding underlying concrete stobj accessor) in the bindings of a
+; stobj-let form.  See no-duplicatesp-checks-for-stobj-let-actuals-1 for how we
+; deal with duplicate array indices by generating a runtime check that, in
+; turn, generates a suitable guard obligation.
+
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (and abs-info ; st is an abstract stobj
+         (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
+                (st$c (access absstobj-info abs-info :st$c))
+                (tuples-lst (absstobj-tuples-lst st$c wrld)))
+           (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                     tuples tuples-lst wrld nil)))))
+
+(defun chk-stobj-let (bound-vars actuals stobj producer-vars updaters
+                                 corresp-accessor-fns known-stobjs wrld)
 
 ; The inputs (other than wrld) have been returned by parse-stobj-let, so we
 ; know that some basic syntactic requirements have been met.  Others are to be
@@ -11907,10 +12218,6 @@
     (msg
      "The name ~x0 is being used as a single-threaded object.  But in the ~
       current context, ~x0 is not a declared stobj name."
-     stobj))
-   ((getpropc stobj 'absstobj-info nil wrld)
-    (msg
-     "The name ~x0 is the name of an abstract stobj."
      stobj))
    (t (let* ((first-actual (car actuals))
              (first-accessor (car first-actual))
@@ -11925,6 +12232,8 @@
            stobj acc-stobj first-accessor bound-vars actuals wrld))
          ((chk-stobj-let/updaters
            updaters corresp-accessor-fns acc-stobj wrld))
+         ((chk-stobj-let/accessors acc-stobj bound-vars actuals producer-vars
+                                   wrld))
          (t nil))))))
 
 (defun all-nils-or-x (x lst)
@@ -11936,19 +12245,61 @@
          (all-nils-or-x x (cdr lst)))
         (t nil)))
 
+(defun absstobj-field-fn-of-stobj-type-p (fn tuples)
+
+; Fn is an exported function for some abstract stobj st, and at the top level,,
+; exports is the list of exported functions for st (including fn) and tuples is
+; the cddr of the :absstobj-tuples field of the absstobj-info property of st.
+; Hence tuples is a list of elements (name logic exec . updater) corresponding
+; to the exported functions; see absstobj-info.  We return t when fn is a child
+; stobj accessor or updater, else nil.  We do this by cdring through tuples,
+; looking for the tuple corresponding to fn, which should be among the exports.
+; We return t if we find that fn is a stobj field accessor (as evidenced by
+; presence of a non-nil updater component of the corresponding tuple) or a
+; stobj field updater (as evidenced by finding fn as such an updater
+; component).
+
+  (cond
+   ((endp tuples)
+    (er hard 'absstobj-field-fn-of-stobj-type-p
+        "Implementation error: Failed to find ~x0 among the exports of an ~
+         (implicit) abstract stobj."
+        fn))
+   (t (let* ((tuple (car tuples))
+             (updater (cdddr tuple)))
+        (cond ((eq fn (car tuple))
+               (and updater t))
+              ((eq fn updater)
+               t)
+              (t (absstobj-field-fn-of-stobj-type-p fn (cdr tuples))))))))
+
 (defun stobj-field-fn-of-stobj-type-p (fn wrld)
 
-; Return true if for some concrete stobj st, fn is the accessor or updater for
-; a field fld of st of stobj type.  For fn the accessor or updater for fld,
-; this is equivalent to taking or returning that stobj type, respectively,
-; which is equivalent to taking or returning some stobj other than st.
-; Abstract stobjs are not a concern here; they don't have "fields".
+; Fn is a function symbol of wrld.  Return true if for some stobj st (concrete
+; or abstract), fn is the accessor or updater for a field fld of st of stobj
+; type.  For fn the accessor or updater for fld, this is equivalent to taking
+; or returning that stobj type, respectively, which is equivalent to taking or
+; returning some stobj other than st.  Note that all of this applies not only
+; to concrete stobjs, but also to abstract stobjs with child stobj fields
+; (whose accessors have the :UPDATER keyword in their function specs, and whose
+; updaters are the values of those :UPDATER keywords).
 
   (let ((st (getpropc fn 'stobj-function nil wrld)))
     (and st
-         (not (getpropc st 'absstobj-info nil wrld))
-         (or (not (all-nils-or-x st (stobjs-in fn wrld)))
-             (not (all-nils-or-x st (stobjs-out fn wrld)))))))
+         (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+           (cond
+            (abs-info ; st is an abstract stobj
+             (let ((stobj-prop (getpropc st 'stobj nil wrld)))
+               (and (not (eq fn (cadr stobj-prop)))  ; recognizer
+                    (not (eq fn (caddr stobj-prop))) ; creator
+                    (absstobj-field-fn-of-stobj-type-p
+                     fn
+; We take the cddr to remove the tuples for the recognizer and creator.
+                     (cddr (access absstobj-info abs-info
+                                   :absstobj-tuples))))))
+            (t ; st is a concrete stobj
+             (or (not (all-nils-or-x st (stobjs-in fn wrld)))
+                 (not (all-nils-or-x st (stobjs-out fn wrld))))))))))
 
 (defun stobj-recognizer-p (fn wrld)
 
@@ -16698,8 +17049,9 @@
                   directly, as in the top-level loop."
                  x))
       (t
-       (let ((msg (chk-stobj-let bound-vars actuals stobj updaters
-                                 corresp-accessor-fns known-stobjs wrld)))
+       (let ((msg (chk-stobj-let bound-vars actuals stobj producer-vars
+                                 updaters corresp-accessor-fns known-stobjs
+                                 wrld)))
          (cond
           (msg (trans-er ctx
                          "~@0"
@@ -16752,9 +17104,12 @@
                                                     state-vars)))))
               (let ((actual-stobjs-out
                      (translate-deref stobjs-out bindings))
-                    (no-dups-exprs
-                     (no-duplicatesp-checks-for-stobj-let-actuals actuals
-                                                                  nil))
+                    (dups-check
+                     (no-duplicatesp-checks-for-stobj-let-actuals bound-vars
+                                                                  actuals
+                                                                  producer-vars
+                                                                  stobj
+                                                                  wrld))
                     (producer-stobjs
                      (collect-non-x
                       nil
@@ -16821,9 +17176,9 @@
                                       tbody2 tactuals stobjs-out bindings
                                       known-stobjs flet-alist ctx wrld
                                       state-vars)))
-                   (cond (no-dups-exprs
+                   (cond (dups-check
                           (trans-er-let*
-                           ((chk (translate11 (cons 'and no-dups-exprs)
+                           ((chk (translate11 dups-check 
                                               nil ; ilk
                                               '(nil) bindings known-stobjs
                                               flet-alist cform ctx wrld
@@ -17289,10 +17644,7 @@
                  (erp targ2 targ2-bindings)
                  (translate11 arg2
                               nil ; ilk
-                              (if (and (eq key 'progn)
-                                       (inside-defabsstobj wrld))
-                                  t
-                                '(nil))
+                              '(nil)
                               bindings known-stobjs flet-alist x
                               ctx wrld state-vars)
                  (declare (ignore targ2-bindings))

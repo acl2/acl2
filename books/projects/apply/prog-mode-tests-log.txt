@@ -234,6 +234,11 @@ neither a function nor macro definition in ACL2.  Please define it.
 See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 
@@ -243,6 +248,9 @@ neither a function nor macro definition in ACL2.  Please define it.
 See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -301,6 +309,11 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER1 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 
 
@@ -310,6 +323,9 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER1 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -372,6 +388,11 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER2 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 
 
@@ -381,6 +402,9 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER2 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 
@@ -584,6 +608,11 @@ ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
 on HELLO because HELLO is not a known function symbol.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 
 
@@ -591,6 +620,9 @@ ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
 on HELLO because HELLO is not a known function symbol.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 
@@ -751,6 +783,11 @@ a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 
@@ -773,6 +810,9 @@ a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -831,6 +871,11 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER1 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 
 
@@ -840,6 +885,9 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER1 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -910,6 +958,11 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER2 "Mary and Tom").
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 
 
@@ -919,6 +972,9 @@ See :DOC near-misses.  Note:  this error occurred in the context
 (CALLER2 "Mary and Tom").
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 
@@ -1136,6 +1192,11 @@ ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
 on HELLO because HELLO has not been badged.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 
 
@@ -1143,6 +1204,9 @@ ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
 on HELLO because HELLO has not been badged.
 
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 
@@ -1244,6 +1308,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 1> (ACL2_*1*_ACL2::HELLO "John")
@@ -1252,6 +1321,9 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
 ((HI "John") (HI "Mary"))
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -1307,6 +1379,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -1314,6 +1391,9 @@ ACL2 >>>(CALLER1 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -1372,6 +1452,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -1379,6 +1464,9 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 
@@ -1671,11 +1759,19 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 
@@ -1792,6 +1888,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 1> (ACL2_*1*_ACL2::HELLO "John")
@@ -1800,6 +1901,9 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
 ((HI "John") (HI "Mary"))
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -1855,6 +1959,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -1862,6 +1971,9 @@ ACL2 >>>(CALLER1 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -1920,6 +2032,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -1927,6 +2044,9 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 
@@ -2219,11 +2339,19 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 
@@ -2330,6 +2458,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 1> (ACL2_*1*_ACL2::HELLO "John")
@@ -2338,6 +2471,9 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
 ((HI "John") (HI "Mary"))
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -2385,6 +2521,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -2392,6 +2533,9 @@ ACL2 >>>(CALLER1 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -2442,6 +2586,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -2449,6 +2598,9 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
@@ -2838,11 +2990,19 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
@@ -2984,6 +3144,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
                COLLECT (HELLO E))
 1> (ACL2_*1*_ACL2::HELLO "John")
@@ -2992,6 +3157,9 @@ ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
 ((HI "John") (HI "Mary"))
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER1 (E)
                 (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
                 (APPLY$ 'HELLO (LIST E)))
@@ -3049,6 +3217,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER1 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
   2> (CALLER1 "Mary and Tom")
@@ -3058,6 +3231,9 @@ ACL2 >>>(CALLER1 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(DEFUN CALLER2 (E)
                 (DECLARE (XARGS :GUARD (SYMBOLP E)
                                 :VERIFY-GUARDS NIL))
@@ -3138,6 +3314,11 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER2 "Mary and Tom")
 1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
   2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
@@ -3145,6 +3326,9 @@ ACL2 >>>(CALLER2 "Mary and Tom")
 <1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
                      '(HI JOHN)))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
@@ -3554,11 +3738,19 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>>(CALLER3 "Mary and Tom")
 1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
 <1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
 (HI "Mary and Tom")
 ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
 ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
 Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)

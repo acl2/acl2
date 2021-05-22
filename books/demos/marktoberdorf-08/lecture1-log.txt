@@ -10,6 +10,11 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
 ACL2 !>>(SET-GAG-MODE NIL)
 <state>
 ACL2 !>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>'(END OF SETUP)
 (END OF SETUP)
 ACL2 >>(CONS 2 NIL)
