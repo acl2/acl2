@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "jubjub")
 
-(include-book "kestrel/crypto/ecurve/birational-montgomery-twisted-edwards" :dir :system)
+(include-book "kestrel/crypto/ecurve/montgomery" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,16 +32,55 @@
     ", there is also a Montgomery form of Jubjub
      @($\\mathbb{M}$) [ZPS:A.2].
      Here we define it, using our general mapping,
-     and show some properties of it."))
+     and show some properties of it.
+     This mapping uses a scaling factor,
+     which ensures that the resulting Montgomery @($B$) is 1."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define jubjub-montgomery-a ()
+  :returns (a (fep a (jubjub-q))
+              :hints (("Goal" :in-theory (enable fep jubjub-q))))
+  :short "The Jubjub coefficient @($A_\\mathbb{M}$) [ZPS:A.2]."
+  40962
+  ///
+
+  (defrule jubjub-montgomery-a-not-plus-two
+    (not (equal (jubjub-montgomery-a) 2)))
+
+  (defrule jubjub-montgomery-a-not-minus-two
+    (not (equal (jubjub-montgomery-a) (neg 2 (jubjub-q))))
+    :enable jubjub-q)
+
+  (in-theory (disable (:e jubjub-montgomery-a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-montgomery-b ()
+  :returns (b (fep b (jubjub-q))
+              :hints (("Goal" :in-theory (enable fep jubjub-q))))
+  :short "The Jubjub coefficient @($B_\\mathbb{M}$) [ZPS:A.2]."
+  1
+  ///
+
+  (defrule jubjub-montgomery-b-not-zero
+    (not (equal (jubjub-montgomery-b) 0)))
+
+  (in-theory (disable (:e jubjub-montgomery-b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define jubjub-montgomery-curve ()
   :returns (curve ecurve::montgomery-curvep)
-  :short "The Jubjub curve in Montgomery form."
-  (ecurve::twisted-edwards-to-montgomery (jubjub-curve))
+  :short "The Jubjub curve in Montgomery form [ZPS:A.2]."
+  (ecurve::make-montgomery-curve :a (jubjub-montgomery-a)
+                                 :b (jubjub-montgomery-b)
+                                 :p (jubjub-q))
+  :guard-hints (("Goal"
+                 :use jubjub-montgomery-a-not-minus-two
+                 :in-theory (enable neg)))
   ///
   (in-theory (disable (:e jubjub-montgomery-curve))))
 
