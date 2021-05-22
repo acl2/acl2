@@ -12,6 +12,7 @@
 
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/channels" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
@@ -54,8 +55,11 @@
                 (stringp file-name)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (e/d (open-input-channel state-p1)
-                                  (all-boundp
+  :hints (("Goal" :in-theory (e/d (open-input-channel
+                                   state-p1
+                                   channel-headerp)
+                                  (add-pair
+                                   all-boundp
                                    file-clock-p
                                    len
                                    length
