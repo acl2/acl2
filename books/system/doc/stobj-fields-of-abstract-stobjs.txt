@@ -58,7 +58,7 @@ July 2021.  The Possible Future Work may come later.
   the bindings, including duplicate array accesses (checked at guard
   verification and runtime), and all of that involving the accesses of the
   ultimate foundational stobj (a notion I should define in the :doc,
-  probably).
+  probably).  Except that's relaxed when there are no producers involved.
 
 - In (defxdoc nested-stobjs ...), in displays under the "Precise
   documentation" section, (let BINDINGS ...) needs clarification: in that
@@ -167,14 +167,25 @@ July 2021.  The Possible Future Work may come later.
 ============================================================
 
 - Although we have relaxed the stobj-let aliasing restrictions as in
-  the release note just below, it is probably still illegal for the
-  stobj-let bindings to include two identical expressions.  Consider
-  relaxing that too (again, if updates won't cause problems).  Here's
-  that release note.
-  .....
-  [Stobj-let] now allows aliases in the bindings in some cases where
-  this is safe because updating is not involved.  Thanks to Sol
-  Swords for suggesting such a change.
+  the release note just below, it is still illegal for the stobj-let
+  bindings to include two identical expressions, as in the following.
+
+  (defstobj sub1 fld1)
+  (defstobj sub2 fld2 :congruent-to sub1)
+  (defstobj top (sub :type sub1))
+  (defun foo (top)
+    (declare (xargs :stobjs top))
+    (stobj-let ((sub1 (sub top))
+                (sub2 (sub top)))
+               (val1 val2)
+               (mv (fld1 sub1)
+                   (fld2 sub2))
+               (mv val1 val2 top)))
+
+  Consider relaxing that too (again, if updates won't cause problems).
+  Here's that release note.  .....  [Stobj-let] now allows aliases in
+  the bindings in some cases where this is safe because updating is
+  not involved.  Thanks to Sol Swords for suggesting such a change.
 
 - Consider rethinking the elimination of the guard check (done around
   May 21, 2021) in put-defabsstobj-invariant-risk.  If the guard is
