@@ -612,12 +612,29 @@
                                   (p p))
            :in-theory (disable mul-of-inv-mul-of-inv))))
 
+;move?
+(defthm minus1-linear
+  (= (minus1 p) (+ -1 p))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable minus1))))
+
+;; a bit odd, but we should not usually be calling inv on 0
+(defthm inv-of-0
+  (implies (primep p)
+           (equal (inv 0 p)
+                  (if (equal p 2)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (enable inv))))
+
 (defthm inv-of-inv
-  (implies (and (not (equal 0 a))
-                (fep a p)
+  (implies (and (fep a p)
                 (rtl::primep p))
            (equal (inv (inv a p) p)
-                  a)))
+                  (if (equal p 2)
+                      1
+                    a)))
+  :hints (("Goal" :cases ((equal 0 a)))))
 
 (defthm mul-of-0
   (equal (mul 0 y p)
@@ -888,11 +905,6 @@
            :in-theory (enable mul
                               pow-of-*-arg1))))
 
-;move
-(defthm minus1-linear
-  (= (minus1 p) (+ -1 p))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable minus1))))
 
 ;; todo: consider enabling
 (defthmd inv-of-mul
@@ -951,15 +963,6 @@
                   (and (fep x p)
                        (equal 0 (mod y p)))))
   :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
-
-;; a bit odd, but we should not usually be calling inv on 0
-(defthm inv-of-0
-  (implies (primep p)
-           (equal (inv 0 p)
-                  (if (equal p 2)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable inv))))
 
 (defthm neg-of-2
   (implies (integerp x)
