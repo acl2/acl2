@@ -45,6 +45,13 @@
            (true-listp (update-file-clock x st)))
   :hints (("Goal" :in-theory (enable update-file-clock))))
 
+;; since the state is a true-list
+(defthm true-listp-of-update-read-files
+  (implies (true-listp st)
+           (true-listp (update-read-files x st)))
+  :hints (("Goal" :in-theory (enable update-read-files))))
+
+
 (defthm len-of-update-open-input-channels
   (implies (state-p1 state)
            (equal (len (update-open-input-channels x state))
@@ -56,6 +63,37 @@
            (equal (len (update-file-clock x state))
                   (len state)))
   :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm len-of-update-read-files
+  (implies (state-p1 state)
+           (equal (len (update-read-files x state))
+                  (len state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+;; Conjuncts of state-p
+
+(defthm read-files-p-of-read-files
+  (implies (state-p1 state)
+           (read-files-p (read-files state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm readable-files-p-of-readable-files
+  (implies (state-p1 state)
+           (readable-files-p (readable-files state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm open-channels-p-of-open-input-channels
+  (implies (state-p1 state)
+           (open-channels-p (open-input-channels state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm file-clock-p-of-file-clock
+  (implies (state-p1 state)
+           (file-clock-p (file-clock state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+
+
 
 ;; Read-over-write theorems for states (different fields)
 
@@ -171,6 +209,64 @@
   (equal (list-all-package-names-lst (update-file-clock x st))
          (list-all-package-names-lst st)))
 
+(defthm global-table-of-update-read-files
+  (equal (global-table (update-read-files x st))
+         (global-table st)))
+
+(defthm readable-files-of-update-read-files
+  (equal (readable-files (update-read-files x st))
+         (readable-files st)))
+
+(defthm big-clock-entry-of-update-read-files
+  (equal (big-clock-entry (update-read-files x st))
+         (big-clock-entry st)))
+
+(defthm writeable-files-of-update-read-files
+  (equal (writeable-files (update-read-files x st))
+         (writeable-files st)))
+
+(defthm file-clock-of-update-read-files
+  (equal (file-clock (update-read-files x st))
+         (file-clock st)))
+
+(defthm written-files-of-update-read-files
+  (equal (written-files (update-read-files x st))
+         (written-files st)))
+
+(defthm idates-of-update-read-files
+  (equal (idates (update-read-files x st))
+         (idates st)))
+
+(defthm t-stack-of-update-read-files
+  (equal (t-stack (update-read-files x st))
+         (t-stack st)))
+
+(defthm 32-bit-integer-stack-of-update-read-files
+  (equal (32-bit-integer-stack (update-read-files x st))
+         (32-bit-integer-stack st)))
+
+(defthm user-stobj-alist1-of-update-read-files
+  (equal (user-stobj-alist1 (update-read-files x st))
+         (user-stobj-alist1 st)))
+
+(defthm acl2-oracle-of-update-read-files
+  (equal (acl2-oracle (update-read-files x st))
+         (acl2-oracle st)))
+
+(defthm open-output-channels-of-update-read-files
+  (equal (open-output-channels (update-read-files x st))
+         (open-output-channels st)))
+
+(defthm open-input-channels-of-update-read-files
+  (equal (open-input-channels (update-read-files x st))
+         (open-input-channels st)))
+
+
+
+(defthm list-all-package-names-lst-of-update-read-files
+  (equal (list-all-package-names-lst (update-read-files x st))
+         (list-all-package-names-lst st)))
+
 ;; read-over-write rules (same field)
 
 (defthm file-clock-of-update-file-clock
@@ -181,16 +277,12 @@
   (equal (open-input-channels (update-open-input-channels x state))
          x))
 
-(defthm state-p1-of-update-file-clock
-  (implies (state-p1 state)
-           (equal (state-p1 (update-file-clock x state))
-                  (file-clock-p x)))
-  :hints (("Goal" :in-theory (enable state-p1))))
 
-(defthm readable-files-p-of-readable-files
+(defthm read-files-of-update-read-files
   (implies (state-p1 state)
-           (readable-files-p (readable-files state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+           (equal (read-files (update-read-files x state))
+                  x))
+  :hints (("Goal" :in-theory (enable read-files update-read-files))))
 
 (defthm file-clock-p-of-+-of-1
   (implies (file-clock-p x)
@@ -203,9 +295,7 @@
             (equal (length x)
                    (len x)))))
 
-(defthm open-channels-p-of-open-input-channels
-  (implies (state-p1 state)
-           (open-channels-p (open-input-channels state))))
+
 
 ;; implied by open-channels-p
 (defthm ordered-symbol-alistp-of-open-input-channels
@@ -264,8 +354,6 @@
                     update-list-all-package-names-lst
                     update-user-stobj-alist1))
 
-
-
 ;move up?
 (defthm state-p1-of-update-open-input-channels
   (implies (state-p1 state)
@@ -273,3 +361,55 @@
                   (open-channels-p x)))
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   ()))))
+
+(defthm state-p1-of-update-read-files
+  (implies (state-p1 state)
+           (equal (state-p1 (update-read-files x state))
+                  (read-files-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  (true-listp)))))
+
+(defthm state-p1-of-update-file-clock
+  (implies (state-p1 state)
+           (equal (state-p1 (update-file-clock x state))
+                  (file-clock-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  (true-listp)))))
+
+(defthm read-files-p-of-cons
+  (equal (read-files-p (cons item read-files))
+         (and (read-file-listp1 item)
+              (read-files-p read-files)))
+  :hints (("Goal" :in-theory (enable read-files-p))))
+
+(local
+ (defthm integerp-of-+
+   (implies (and (integerp x)
+                 (integerp y))
+            (integerp (+ x y)))))
+
+(defthmd integerp-when-file-clock-p
+  (implies (file-clock-p file-clock)
+           (integerp file-clock))
+  :hints (("Goal" :in-theory (enable file-clock-p))))
+
+;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
+(defthm state-p1-of-close-input-channel
+  (implies (and (symbolp channel)
+                (open-input-channel-p1 channel typ state) ;type is a free var
+                (member-equal typ '(:byte :character :object))
+                (state-p1 state))
+           (state-p1 (close-input-channel channel state)))
+  :hints (("Goal" :in-theory (enable close-input-channel
+                                     stringp-of-caddr-when-channel-headerp
+                                     integerp-of-cadddr-when-channel-headerp
+                                     integerp-when-file-clock-p))))
+
+;avoids free var
+(defthm state-p1-of-close-input-channel-alt
+  (implies (and (symbolp channel)
+                (open-input-channel-any-p1 channel state)
+                (state-p1 state))
+           (state-p1 (close-input-channel channel state)))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
+                                  (open-input-channel-p1)))))
