@@ -587,7 +587,7 @@
   ;; which imply the conditions on the components in the theorems above.
   ;; We also eliminate the use of oncurvep.
 
-  (defruledl d.x1.x2.y1.y2-not-one-on-curve-and-points
+  (defruled d.x1.x2.y1.y2-not-one-on-curve-and-points
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-curve-primep curve)
                   (twisted-edwards-curve-completep curve)
@@ -620,7 +620,7 @@
              point-on-twisted-edwards-p
              fep))
 
-  (defruledl d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
+  (defruled d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-curve-primep curve)
                   (twisted-edwards-curve-completep curve)
