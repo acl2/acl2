@@ -10,11 +10,16 @@
 
 (in-package "ACL2")
 
+;; See also channel-contents.lisp
+
+(include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
+
 ;; So the rules in this book fire
 (in-theory (disable open-channels-p
                     add-pair
                     open-channel-listp
-                    open-channel1))
+                    open-channel1
+                    close-input-channel))
 
 ;move?
 (local
@@ -34,6 +39,16 @@
        (member-eq (cadr header) *file-types*)
        (stringp (caddr header))
        (integerp (cadddr header))))
+
+(defthmd stringp-of-caddr-when-channel-headerp
+  (implies (channel-headerp header)
+           (stringp (caddr header)))
+  :hints (("Goal" :in-theory (enable channel-headerp))))
+
+(defthmd integerp-of-cadddr-when-channel-headerp
+  (implies (channel-headerp header)
+           (integerp (cadddr header)))
+  :hints (("Goal" :in-theory (enable channel-headerp))))
 
 (defthm open-channel-listp-of-add-pair
   (implies (open-channel-listp l)
@@ -102,3 +117,57 @@
            :in-theory (enable add-pair
                               open-channel-listp
                               open-channels-p))))
+
+(defthm true-list-of-cddr-of-assoc-equal-when-open-channel-listp
+  (implies (open-channel-listp channels)
+           (true-listp (cddr (assoc-equal channel channels))))
+  :hints (("Goal" :in-theory (enable open-channel-listp open-channel1))))
+
+(defthmd nat-listp-when-typed-io-listp-of-byte
+  (implies (typed-io-listp vals :byte)
+           (nat-listp vals))
+  :hints (("Goal" :in-theory (enable typed-io-listp nat-listp))))
+
+(defthmd unsigned-byte-listp-when-typed-io-listp-of-byte
+  (implies (typed-io-listp vals :byte)
+           (unsigned-byte-listp 8 vals))
+  :hints (("Goal" :in-theory (enable typed-io-listp unsigned-byte-listp))))
+
+(defthm nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
+  (implies (and (open-channel-listp channels)
+                (equal (cadr (cadr (assoc-equal channel channels))) :byte))
+           (nat-listp (cddr (assoc-equal channel channels))))
+  :hints (("Goal" :in-theory (enable open-channel-listp
+                                     open-channel1
+                                     nat-listp-when-typed-io-listp-of-byte))))
+
+(defthm unsigned-byte-listp-of-cddr-of-assoc-equal-when-open-channel-listp
+  (implies (and (open-channel-listp channels)
+                (equal (cadr (cadr (assoc-equal channel channels))) :byte))
+           (unsigned-byte-listp 8 (cddr (assoc-equal channel channels))))
+  :hints (("Goal" :in-theory (enable open-channel-listp
+                                     open-channel1
+                                     unsigned-byte-listp-when-typed-io-listp-of-byte))))
+
+(defthm open-channel-listp-of-cons
+  (equal (open-channel-listp (cons ch chs))
+         (and (open-channel1 (cdr ch))
+              (open-channel-listp chs)))
+  :hints (("Goal" :in-theory (enable open-channel-listp))))
+
+(defthm ordered-symbol-alistp-of-remove1-assoc-equal
+  (implies (ordered-symbol-alistp channels)
+           (ordered-symbol-alistp (remove1-assoc-equal channel channels)))
+  :hints (("Goal" :in-theory (enable ordered-symbol-alistp))))
+
+(defthm open-channel-listp-of-remove1-assoc-equal
+  (implies (open-channel-listp channels)
+           (open-channel-listp (remove1-assoc-equal channel channels)))
+  :hints (("Goal" :in-theory (enable open-channel-listp))))
+
+(local (in-theory (disable ordered-symbol-alistp)))
+
+(defthm open-channels-p-of-remove1-assoc-equal
+  (implies (open-channels-p channels)
+           (open-channels-p (remove1-assoc-equal channel channels)))
+  :hints (("Goal" :in-theory (enable open-channels-p))))
