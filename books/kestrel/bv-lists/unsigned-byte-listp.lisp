@@ -16,18 +16,10 @@
 ;; functions.
 
 (include-book "all-unsigned-byte-p")
+(include-book "unsigned-byte-listp-def")
 (local (include-book "../utilities/equal-of-booleans"))
 
-;unlike all-unsigned-byte-p, this one implies true-listp.
-;also in std/typed-lists/unsigned-byte-listp.lisp
-(defund unsigned-byte-listp (n x)
-;  (declare (type t n x))
-  (if (atom x)
-      (null x)
-      (and (unsigned-byte-p n (car x))
-           (unsigned-byte-listp n (cdr x)))))
 
-(verify-guards unsigned-byte-listp)
 
 (defthmd unsigned-byte-listp-rewrite
   (equal (unsigned-byte-listp n x)
@@ -70,6 +62,12 @@
          (and (unsigned-byte-listp width (true-list-fix x))
               (unsigned-byte-listp width y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp append))))
+
+(defthm unsigned-byte-listp-of-revappend
+  (equal (unsigned-byte-listp width (revappend x y))
+         (and (unsigned-byte-listp width (true-list-fix x))
+              (unsigned-byte-listp width y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp revappend))))
 
 ;; The version of this in std is a :forward-chaining rule for some reason
 (defthm unsigned-byte-p-of-car-when-unsigned-byte-listp-2
