@@ -50,7 +50,7 @@
   :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1 open-input-channel))))
 
 (defthm state-p1-of-mv-nth-1-of-open-input-channel
-  (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+  (implies (and ;; (mv-nth 0 (open-input-channel file-name typ state)) ;no error
                 (member-eq typ '(:character :byte :object))
                 (stringp file-name)
                 (state-p1 state))
