@@ -1312,7 +1312,7 @@
                      ;;  10)
                      ) ;; OLD: crunching is less important now that we substitute first with lits that were just rebuilt
                 ;; Crunch the dag:
-                (b* ((- (cw " (Crunching: ..."))
+                (b* ((- (cw " (Crunching: ...")) ;paren closed below
                      ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                       (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
                      ;; TODO: Prove that this can't happen.  Need to know that
@@ -1322,7 +1322,7 @@
                                       (all-< literal-nodenums dag-len))))
                       (er hard? 'substitute-vars2 "Bad nodenum after crunching.")
                       (mv (erp-t) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                     (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
+                     (- (cw "Done (new dag-len: ~x0).)~%" dag-len)))
                   (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
               ;; No change:
               (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))

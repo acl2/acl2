@@ -513,5 +513,5 @@
     (b* ((- (cw " (Crunching: ...")) ;; matching paren printed below
          ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums)
           (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array nodenums))
-         (- (cw "Done (new dag-len: ~x0).~%" dag-len)))
+         (- (cw "Done (new dag-len: ~x0).)~%" dag-len)))
       (mv (erp-nil) nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
