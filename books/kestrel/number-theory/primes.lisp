@@ -54,3 +54,18 @@
                   (not (equal n 2))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :by oddp-when-primep)))
+
+(defthmd evenp-when-primep
+  (implies (rtl::primep n)
+           (equal (evenp n)
+                  (equal n 2)))
+  :hints (("Goal" :use (:instance oddp-when-primep)
+           :in-theory (e/d (oddp)
+                           (oddp-when-primep-cheap)))))
+
+(defthm evenp-when-primep-cheap
+  (implies (rtl::primep n)
+           (equal (evenp n)
+                  (equal n 2)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (e/d (evenp-when-primep) (evenp)))))
