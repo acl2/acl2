@@ -590,6 +590,14 @@
            (equal (equal 0 (add (neg x p) y p))
                   (equal x y))))
 
+;commutes the lhs
+(defthm pfield::equal-of-add-of-neg-2-and-0
+  (implies (and (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal (add (neg x p) y p) 0)
+                  (equal x y))))
+
 (defthm mul-when-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
