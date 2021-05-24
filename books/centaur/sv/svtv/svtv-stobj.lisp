@@ -172,7 +172,7 @@
                     (natp modidx)))))
 
 
-  (defthm moddb-totalwites-when-flatten-okp
+  (defthm moddb-totalwires-when-flatten-okp
     (implies (svtv-data$c-flatten-okp svtv-data$c flatten)
              (b* ((moddb (svtv-data$c->moddb svtv-data$c))
                   (aliases (svtv-data$c->aliases svtv-data$c))
@@ -614,137 +614,49 @@
             :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
                    (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
                                                      (svtv-data$c->aliases x)
-                                                     (svtv-data$c->flatnorm-setup x)))))))))
+                                                     (svtv-data$c->flatnorm-setup x))))))))
+
+  (defthm moddb-ok-when-svtv-data$ap
+    (implies (and (svtv-data$ap x)
+                  (svtv-data$c->flatten-validp x))
+             (and (moddb-basics-ok (svtv-data$c->moddb x))
+                  (moddb-mods-ok (svtv-data$c->moddb x))))
+    :hints(("Goal" :in-theory (e/d (svtv-data$c-flatten-okp)
+                                   (svtv-data$ap-implies-flatten-okp
+                                    svtv-data$ap))
+            :use svtv-data$ap-implies-flatten-okp)))
+
+  (defthm moddb-index-when-svtv-data$ap
+    (implies (and (svtv-data$ap x)
+                  (svtv-data$c->flatten-validp x))
+             (b* ((moddb (svtv-data$c->moddb x))
+                  (modidx (moddb-modname-get-index (design->top (svtv-data$c->design x)) moddb)))
+               (and modidx
+                    (natp modidx))))
+    :hints(("Goal" :in-theory (e/d (svtv-data$c-flatten-okp)
+                                   (svtv-data$ap-implies-flatten-okp
+                                    svtv-data$ap))
+            :use svtv-data$ap-implies-flatten-okp))
+    :rule-classes (:rewrite :type-prescription))
+
+
+  (defthm moddb-totalwires-when-svtv-data$ap
+    (implies (and (svtv-data$ap x)
+                  (svtv-data$c->flatten-validp x))
+             (b* ((moddb (svtv-data$c->moddb x))
+                  (aliases (svtv-data$c->aliases x))
+                  (modidx (moddb-modname-get-index (design->top (svtv-data$c->design x)) moddb)))
+               (<= (moddb-mod-totalwires modidx moddb)
+                   (len aliases))))
+    :hints(("Goal" :in-theory (e/d (svtv-data$c-flatten-okp)
+                                   (svtv-data$ap-implies-flatten-okp
+                                    svtv-data$ap))
+            :use svtv-data$ap-implies-flatten-okp))
+    :rule-classes (:rewrite :linear)))
 
 
 
 
-(define svtv-data$c-compute-flatten (svtv-data$c)
-  :guard (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
-  :returns (mv err new-svtv-data$c)
-  (b* ((design (svtv-data$c->design svtv-data$c)))
-    (stobj-let ((moddb (svtv-data$c->moddb svtv-data$c))
-                (aliases (svtv-data$c->aliases svtv-data$c)))
-               (err flatten moddb aliases)
-               (svtv-design-flatten design)
-               (b* ((svtv-data$c (update-svtv-data$c->flatten flatten svtv-data$c))
-                    ((when err)
-                     (mv err svtv-data$c))
-                    (svtv-data$c (update-svtv-data$c->flatten-validp t svtv-data$c)))
-                 (mv nil svtv-data$c))))
-  ///
-  (defret <fn>-preserves-svtv-data$ap
-    (implies (and (svtv-data$ap svtv-data$c)
-                  (not (svtv-data$c->flatnorm-validp svtv-data$c))
-                  (not (svtv-data$c->namemap-validp svtv-data$c)))
-             (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (e/d (svtv-data$c-flatten-okp
-                                      normalize-stobjs-of-svtv-design-flatten)
-                                   (svtv-data$ap-implies-flatten-okp))
-            :use ((:instance svtv-data$ap-implies-flatten-okp (x svtv-data$c)))
-            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->flatten-validp t x)))
-                     (:free (fl x) (svtv-data$ap (update-svtv-data$c->flatten fl x)))))))
-
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :flatten))
-                  (not (equal key :flatten-validp))
-                  (not (equal key :moddb))
-                  (not (equal key :aliases)))
-             (equal (svtv-data$c-get k new-svtv-data$c)
-                    (svtv-data$c-get key svtv-data$c))))
-
-  (defret flatten-validp-of-<fn>
-    (implies (not err)
-             (svtv-data$c->flatten-validp new-svtv-data$c))))
-
-(define svtv-data$a-compute-flatten ((x svtv-data$ap))
-  :guard (and (not (svtv-data$a->flatnorm-validp x))
-              (not (svtv-data$a->namemap-validp x)))
-  :enabled t :hooks nil
-  (b* (((mv a b) (non-exec (svtv-data$c-compute-flatten x))))
-    (mv a b)))
-
-
-(define svtv-data$c-compute-flatnorm (svtv-data$c)
-  :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
-              (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
-  :returns new-svtv-data$c
-  (b* ((flatten (svtv-data$c->flatten svtv-data$c))
-       (flatnorm-setup (svtv-data$c->flatnorm-setup svtv-data$c)))
-    (stobj-let ((aliases (svtv-data$c->aliases svtv-data$c)))
-               (assigns)
-               (svtv-normalize-assigns flatten aliases flatnorm-setup)
-               (b* ((svtv-data$c (update-svtv-data$c->flatnorm assigns svtv-data$c)))
-                 (update-svtv-data$c->flatnorm-validp t svtv-data$c))))
-  ///
-  (defret <fn>-preserves-svtv-data$ap
-    (implies (and (svtv-data$ap svtv-data$c)
-                  (not (svtv-data$c->phase-fsm-validp svtv-data$c)))
-             (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (enable svtv-data$c-flatnorm-okp)
-            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->flatnorm-validp t x)))))))
-
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :flatnorm))
-                  (not (equal key :flatnorm-validp)))
-             (equal (svtv-data$c-get k new-svtv-data$c)
-                    (svtv-data$c-get key svtv-data$c))))
-
-  (defret flatnorm-validp-of-<fn>
-    (svtv-data$c->flatnorm-validp new-svtv-data$c)))
-
-(define svtv-data$a-compute-flatnorm ((x svtv-data$ap))
-  :guard (and (svtv-data$a->flatten-validp x)
-              (not (svtv-data$a->phase-fsm-validp x)))
-  :enabled t :hooks nil
-  (non-exec (svtv-data$c-compute-flatnorm x)))
-
-
-(define svtv-data$c-compute-namemap (svtv-data$c)
-  :returns (mv err new-svtv-data$c)
-  :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
-              (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c)))
-  (b* ((user-names (svtv-data$c->user-names svtv-data$c))
-       (design (svtv-data$c->design svtv-data$c)))
-    (stobj-let ((moddb (svtv-data$c->moddb svtv-data$c))
-                (aliases (svtv-data$c->aliases svtv-data$c)))
-               (errs lhsmap)
-               (svtv-namemap->lhsmap user-names
-                                     (moddb-modname-get-index (design->top design) moddb)
-                                     moddb aliases)
-               (b* (((when errs)
-                     (mv (msg-list errs) svtv-data$c))
-                    (svtv-data$c (update-svtv-data$c->namemap lhsmap svtv-data$c))
-                    (svtv-data$c (update-svtv-data$c->namemap-validp t svtv-data$c)))
-                 (mv nil svtv-data$c))))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :namemap))
-                  (not (equal key :namemap-validp)))
-             (equal (svtv-data$c-get k new-svtv-data$c)
-                    (svtv-data$c-get key svtv-data$c))))
-
-  (defret namemap-validp-of-<fn>
-    (implies (not err)
-             (svtv-data$c->namemap-validp new-svtv-data$c)))
-
-  (defret <fn>-preserves-svtv-data$ap
-    (implies (and (svtv-data$ap svtv-data$c)
-                  (svtv-data$c->flatten-validp svtv-data$c)
-                  (not (svtv-data$c->pipeline-validp svtv-data$c)))
-             (svtv-data$ap new-svtv-data$c))
-    :hints(("Goal" :in-theory (enable svtv-data$c-namemap-okp)
-            :expand ((:free (x) (svtv-data$ap (update-svtv-data$c->namemap-validp t x))))))))
-
-(define svtv-data$a-compute-namemap ((x svtv-data$ap))
-  :guard (and (svtv-data$a->flatten-validp x)
-              (not (svtv-data$a->pipeline-validp x)))
-  :enabled t :hooks nil
-  (b* (((mv a b) (non-exec (svtv-data$c-compute-namemap x))))
-    (mv a b)))
 
                     
                  
@@ -1137,6 +1049,80 @@
 
 
 
+(define svtv-data$a->moddb ((x svtv-data$ap))
+  :enabled t
+  (non-exec (svtv-data$c->moddb x)))
+
+(define svtv-data$a->aliases ((x svtv-data$ap))
+  :enabled t
+  (non-exec (svtv-data$c->aliases x)))
+
+(encapsulate nil
+  (defthm moddb-when-flatten-okp
+    (implies (svtv-data$c-flatten-okp x flatten)
+             (equal (svtv-data$c->moddb x)
+                    (mv-nth 2 (svtv-design-flatten
+                               (svtv-data$c->design x)
+                               :moddb nil :aliases nil))))
+    :hints(("Goal" :in-theory (enable svtv-data$c-flatten-okp))))
+
+  (defthm update-moddb-preserves-svtv-data$ap
+    (implies (and (svtv-data$ap x)
+                  (and (or (not (svtv-data$a->flatten-validp x))
+                           (equal moddb
+                                  (mv-nth 2 (svtv-design-flatten (svtv-data$c->design x)
+                                                                 :moddb nil :aliases nil))))
+                       (not (svtv-data$a->namemap-validp x))))
+             (svtv-data$ap (update-svtv-data$c->moddb moddb x)))
+    :hints(("Goal" :in-theory (enable svtv-data$ap)))))
+
+(define update-svtv-data$a->moddb (moddb (x svtv-data$ap))
+  :guard (and (or (not (svtv-data$a->flatten-validp x))
+                  (non-exec (equal moddb
+                                   (mv-nth 2 (svtv-design-flatten
+                                              (svtv-data$a->design x)
+                                              :moddb nil :aliases nil)))))
+              (not (svtv-data$a->namemap-validp x)))
+  :hooks nil
+  :enabled t
+  (non-exec (update-svtv-data$c->moddb moddb x)))
+
+(encapsulate nil
+  (defthm aliases-when-flatten-okp
+    (implies (svtv-data$c-flatten-okp x flatten)
+             (equal (svtv-data$c->aliases x)
+                    (mv-nth 3 (svtv-design-flatten
+                               (svtv-data$c->design x)
+                               :moddb nil :aliases nil))))
+    :hints(("Goal" :in-theory (enable svtv-data$c-flatten-okp))))
+
+  (defthm update-aliases-preserves-svtv-data$ap
+    (implies (and (svtv-data$ap x)
+                  (and (or (not (svtv-data$a->flatten-validp x))
+                           (equal aliases
+                                  (mv-nth 3 (svtv-design-flatten (svtv-data$c->design x)
+                                                                 :moddb nil :aliases nil))))
+                       (not (svtv-data$a->namemap-validp x))
+                       ;; (not (svtv-data$a->phase-fsm-validp x))
+                       (not (svtv-data$a->flatnorm-validp x))
+                       ))
+             (svtv-data$ap (update-svtv-data$c->aliases aliases x)))
+    :hints(("Goal" :in-theory (enable svtv-data$ap)))))
+
+(define update-svtv-data$a->aliases (aliases (x svtv-data$ap))
+  :guard (and (or (not (svtv-data$a->flatten-validp x))
+                  (non-exec (equal aliases
+                                   (mv-nth 3 (svtv-design-flatten (svtv-data$c->design x)
+                                                                  :moddb nil :aliases nil)))))
+              (not (svtv-data$a->namemap-validp x))
+              ;; (not (svtv-data$a->phase-fsm-validp x))
+              (not (svtv-data$a->flatnorm-validp x)))
+  :hooks nil
+  :enabled t
+  (non-exec (update-svtv-data$c->aliases aliases x)))
+
+
+
 (defsection svtv-data
   (local (in-theory (disable (create-svtv-data$a)
                              (create-svtv-data$c)
@@ -1250,15 +1236,145 @@
                   (svtv-data-cycle-fsm-okp :logic svtv-data$a-cycle-fsm-okp :exec svtv-data$c-cycle-fsm-okp)
                   (svtv-data-pipeline-okp :logic svtv-data$a-pipeline-okp :exec svtv-data$c-pipeline-okp)
 
-                  (svtv-data-compute-flatten :logic svtv-data$a-compute-flatten
-                                             :exec svtv-data$c-compute-flatten :protect t)
-                  (svtv-data-compute-flatnorm :logic svtv-data$a-compute-flatnorm
-                                             :exec svtv-data$c-compute-flatnorm :protect t)
-                  (svtv-data-compute-namemap :logic svtv-data$a-compute-namemap
-                                             :exec svtv-data$c-compute-namemap :protect t)
+                  ;; (svtv-data-compute-flatten :logic svtv-data$a-compute-flatten
+                  ;;                            :exec svtv-data$c-compute-flatten :protect t)
+                  ;; (svtv-data-compute-flatnorm :logic svtv-data$a-compute-flatnorm
+                  ;;                            :exec svtv-data$c-compute-flatnorm :protect t)
+                  ;; (svtv-data-compute-namemap :logic svtv-data$a-compute-namemap
+                  ;;                            :exec svtv-data$c-compute-namemap :protect t)
                   
+                  (svtv-data->moddb :logic svtv-data$a->moddb :exec svtv-data$c->moddb
+                                    :updater update-svtv-data->moddb)
+                  (svtv-data->aliases :logic svtv-data$a->aliases :exec svtv-data$c->aliases
+                                    :updater update-svtv-data->aliases)
+                  (update-svtv-data->moddb :logic update-svtv-data$a->moddb
+                                           :exec update-svtv-data$c->moddb)
+                  (update-svtv-data->aliases :logic update-svtv-data$a->aliases
+                                             :exec update-svtv-data$c->aliases)
+                  
+
                   ,@(make-svtv-data-updater-defs *svtv-data-nonstobj-fields*)
                   ))))
+
+
+
+
+
+
+
+
+(define svtv-data-compute-flatten (svtv-data)
+  :guard (and (not (svtv-data->flatnorm-validp svtv-data))
+              (not (svtv-data->namemap-validp svtv-data)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap
+                                          normalize-stobjs-of-svtv-design-flatten
+                                          svtv-data$c-flatten-okp))))
+  :guard-debug t
+  :returns (mv err new-svtv-data)
+  (b* ((design (svtv-data->design svtv-data)))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (err flatten moddb aliases)
+               (svtv-design-flatten design)
+               (b* ((svtv-data (update-svtv-data->flatten flatten svtv-data))
+                    ((when err)
+                     (mv err svtv-data))
+                    (svtv-data (update-svtv-data->flatten-validp t svtv-data)))
+                 (mv nil svtv-data))))
+  ///
+  (defret <fn>-preserves-svtv-data$ap
+    (implies (and (svtv-data$ap svtv-data)
+                  (not (svtv-data$c->flatnorm-validp svtv-data))
+                  (not (svtv-data$c->namemap-validp svtv-data)))
+             (svtv-data$ap new-svtv-data))
+    :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatten-okp
+                                      normalize-stobjs-of-svtv-design-flatten))))
+
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatten))
+                  (not (equal key :flatten-validp))
+                  (not (equal key :moddb))
+                  (not (equal key :aliases)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret flatten-validp-of-<fn>
+    (implies (not err)
+             (svtv-data$c->flatten-validp new-svtv-data))))
+
+
+(define svtv-data-compute-flatnorm (svtv-data)
+  :guard (and (svtv-data->flatten-validp svtv-data)
+              (not (svtv-data->phase-fsm-validp svtv-data)))
+  :returns new-svtv-data
+  (b* ((flatten (svtv-data->flatten svtv-data))
+       (flatnorm-setup (svtv-data->flatnorm-setup svtv-data)))
+    (stobj-let ((aliases (svtv-data->aliases svtv-data)))
+               (assigns)
+               (svtv-normalize-assigns flatten aliases flatnorm-setup)
+               (b* ((svtv-data (update-svtv-data->flatnorm assigns svtv-data)))
+                 (update-svtv-data->flatnorm-validp t svtv-data))))
+  ///
+  (defret <fn>-preserves-svtv-data$ap
+    (implies (and (svtv-data$ap svtv-data)
+                  (not (svtv-data$c->phase-fsm-validp svtv-data)))
+             (svtv-data$ap new-svtv-data))
+    :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatnorm-okp))))
+
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm))
+                  (not (equal key :flatnorm-validp)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret flatnorm-validp-of-<fn>
+    (svtv-data$c->flatnorm-validp new-svtv-data)))
+
+
+
+(define svtv-data-compute-namemap (svtv-data)
+  :returns (mv err new-svtv-data)
+  :guard (and (svtv-data->flatten-validp svtv-data)
+              (not (svtv-data->pipeline-validp svtv-data)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable normalize-stobjs-of-svtv-design-flatten
+                                          svtv-data$c-namemap-okp
+                                          svtv-data$c-flatten-okp))))
+  (b* ((user-names (svtv-data->user-names svtv-data))
+       (design (svtv-data->design svtv-data)))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (errs lhsmap)
+               (svtv-namemap->lhsmap user-names
+                                     (moddb-modname-get-index (design->top design) moddb)
+                                     moddb aliases)
+               (b* (((when errs)
+                     (mv (msg-list errs) svtv-data))
+                    (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
+                    (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
+                 (mv nil svtv-data))))
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :namemap))
+                  (not (equal key :namemap-validp)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret namemap-validp-of-<fn>
+    (implies (not err)
+             (svtv-data$c->namemap-validp new-svtv-data)))
+
+  (defret <fn>-preserves-svtv-data$ap
+    (implies (and (svtv-data$ap svtv-data)
+                  (svtv-data$c->flatten-validp svtv-data)
+                  (not (svtv-data$c->pipeline-validp svtv-data)))
+             (svtv-data$ap new-svtv-data))
+    :hints(("Goal" :in-theory (enable svtv-data$ap
+                                      svtv-data$c-namemap-okp)))))
 
 
 

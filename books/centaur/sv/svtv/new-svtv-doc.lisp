@@ -206,11 +206,6 @@ phases to be run.</li>
 
 </ul>
 
-<p>Note that for now, the moddb and aliases sub-stobjs must be recreated in
-order to run these.  However, this only needs to be done once; if the correct
-moddb and aliases have already been computed, the argument @(':skip-flatten t')
-may be given, saving this step, which might take several seconds otherwise.</p>
-
 <p>A common debug loop to be stuck in is finding the right set of signals to
 set in order to get a hardware module to produce a desired result.  In each
 iteration, we find a signal that wasn't previously driven (by examining a VCD,
@@ -231,15 +226,14 @@ provide a congruent stobj to use in place of @('svtv-data')).</li>
 <li>@('svtv-data-debug-defsvtv$') dumps a VCD for the pipeline; it takes a
 @('defsvtv$') or @('defsvtv$-phasewise') form and keyword arguments
 @(':env') (an environment binding the input variables of the SVTV),
-@(':filename') (for the VCD file), @(':skip-flatten'), and the stobjs
-@('svtv-data'), @('moddb'), @('aliases'), @('vcd-wiremap'), and
+@(':filename') (for the VCD file), and the stobjs
+@('svtv-data'), @('vcd-wiremap'), and
 @('vcd-vals').  (The stobjs do not need to be initialized.)</li>
 
 <li>@('svtv-data-chase-defsvtv$') sets up a @(see svtv-chase) REPL for a run of
 the pipeline; it takes a @('defsvtv$') or @('defsvtv$-phasewise') form and
 keyword arguments @(':env') (an environment binding the input variables of the
-SVTV), @(':skip-flatten'), and the stobjs @('svtv-data'), @('moddb'),
-@('aliases'), and @('svtv-chase-data'). (The stobjs do not need to be
+SVTV), and the stobjs @('svtv-data') and @('svtv-chase-data'). (The stobjs do not need to be
 initialized.)</li>
          
 </ul>

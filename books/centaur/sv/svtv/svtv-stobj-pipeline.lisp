@@ -69,7 +69,7 @@
               ;; (svtv-data->namemap-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :guard-debug t
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
@@ -105,7 +105,7 @@
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data)))))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :returns new-svtv-data
   (if (and (equal (pipeline-setup-fix pipeline-setup)
                   (svtv-data->pipeline-setup svtv-data))

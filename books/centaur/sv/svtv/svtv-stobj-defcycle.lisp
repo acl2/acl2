@@ -45,6 +45,7 @@
                                  ((monotonify booleanp) 't)
                                  ((rewrite-phases booleanp) 't)
                                  ((rewrite-cycle booleanp) 't)
+                                 ((skip-cycle booleanp) 'nil)
                                  ((cycle-simp svex-simpconfig-p) 't))
   :guard (modalist-addr-p (design->modalist design))
   :returns (mv err new-svtv-data)
@@ -55,20 +56,23 @@
        (svtv-data (svtv-data-maybe-compute-flatnorm svtv-data (make-flatnorm-setup :monotonify monotonify)))
        (svtv-data (svtv-data-maybe-compute-phase-fsm svtv-data))
        (svtv-data (svtv-data-maybe-rewrite-phase-fsm rewrite-phases svtv-data :verbosep t))
-       (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp))
+       (svtv-data (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp :skip skip-cycle))
+       ((when skip-cycle)
+        (mv nil svtv-data))
        (svtv-data (svtv-data-maybe-rewrite-cycle-fsm rewrite-cycle svtv-data)))
     (mv nil svtv-data))
   ///
   (defret <fn>-correct
     (implies (not err)
              (and (equal (svtv-data$c->design new-svtv-data) (design-fix design))
-                  (equal (svtv-data$c->cycle-phases new-svtv-data) (svtv-cyclephaselist-fix phases))
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
-                  (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t)))))
+                  (equal (svtv-data$c->cycle-phases new-svtv-data) (svtv-cyclephaselist-fix phases))
+                  (implies (not skip-cycle)
+                           (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 
-(defun defcycle-fn (name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp stobj)
+(defun defcycle-fn (name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj)
   `(make-event
     (b* (((mv err ,stobj)
           (svtv-data-defcycle-core ,design ,phases
@@ -76,6 +80,7 @@
                                    :rewrite-phases ,rewrite-phases
                                    :rewrite-cycle ,rewrite-cycle
                                    :cycle-simp ,cycle-simp
+                                   :skip-cycle ,skip-cycle
                                    :monotonify ,monotonify))
          ((when err)
           (mv err nil state ,stobj))
@@ -108,7 +113,8 @@
                          (rewrite-phases 't)
                          (rewrite-cycle 't)
                          (cycle-simp 't)
+                         (skip-cycle 'nil)
                          (stobj 'svtv-data))
-  (defcycle-fn name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp stobj))
+  (defcycle-fn name design phases names names-p monotonify rewrite-phases rewrite-cycle cycle-simp skip-cycle stobj))
 
 ;; Doc in new-svtv-doc.lisp

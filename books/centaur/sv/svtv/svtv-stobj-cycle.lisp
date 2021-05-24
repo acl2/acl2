@@ -224,7 +224,8 @@
 
 (define svtv-data-maybe-compute-cycle-fsm ((phases svtv-cyclephaselist-p)
                                            svtv-data
-                                           (simp svex-simpconfig-p))
+                                           (simp svex-simpconfig-p)
+                                           &key (skip 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatnorm-validp svtv-data))
   :returns new-svtv-data
@@ -234,6 +235,7 @@
       svtv-data
     (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
          (svtv-data (update-svtv-data->cycle-phases phases svtv-data))
+         ((when skip) svtv-data)
          (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
       (svtv-data-compute-cycle-fsm svtv-data simp)))
   ///
@@ -247,7 +249,8 @@
                     (svtv-data$c-get key svtv-data))))
 
   (defret cycle-fsm-validp-of-<fn>
-    (svtv-data$c->cycle-fsm-validp new-svtv-data))
+    (implies (not skip)
+             (svtv-data$c->cycle-fsm-validp new-svtv-data)))
 
   (defret cycle-phases-validp-of-<fn>
     (equal (svtv-data$c->cycle-phases new-svtv-data)

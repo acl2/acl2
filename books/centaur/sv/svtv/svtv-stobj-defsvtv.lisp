@@ -302,6 +302,15 @@
     (equal (svex-alist-keys (pipeline-setup->initst setup))
            (svarlist-fix statevars) )))
   
+
+(defthm svex-alist-keys-of-svtv-data->cycle-nextstate
+  (implies (and (svtv-data$ap svtv-data)
+                ;; (svtv-data$c->base-fsm-validp svtv-data)
+                (svtv-data$c->cycle-fsm-validp svtv-data))
+           (equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
+                  (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+
 (define defsvtv-compute-pipeline ((outs+ true-list-listp)
                                   (ins true-list-listp)
                                   (overrides true-list-listp)
@@ -372,6 +381,10 @@
     (er hard? 'make-defsvtv-args! "Arguments must be a keyword/value-list~%")))
 
 
+
+
+
+
 (define svtv-data-to-svtv ((x defsvtv-args-p)
                            svtv-data)
   :returns (svtv svtv-p)
@@ -403,13 +416,12 @@
                :expanded-overrides expanded-overrides
                :nphases nphases)))
 
-
-
 ;; Does everything EXCEPT compute the pipeline.
 (define defsvtv-stobj-pipeline-setup ((x defsvtv-args-p)
                                       ;; (keep-final-state)
                                       ;; (keep-all-states)
-                                      svtv-data)
+                                      svtv-data
+                                      &key ((skip-cycle booleanp) 'nil))
   :guard (modalist-addr-p (design->modalist (defsvtv-args->design x)))
   :guard-hints (("goal" :do-not-induct t))
   :returns (mv err
@@ -428,7 +440,8 @@
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
                                  :cycle-simp x.cycle-simp
-                                 :monotonify x.monotonify))
+                                 :monotonify x.monotonify
+                                 :skip-cycle skip-cycle))
        
        ((when err)
         (mv err nil svtv-data))
@@ -439,8 +452,7 @@
         (mv err nil svtv-data))
 
        (namemap (svtv-data->namemap svtv-data))
-       (fsm (svtv-data->cycle-fsm svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate fsm)))
+       (statevars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
        (pipeline-setup (defsvtv-compute-pipeline-setup
                          outs+ x.inputs x.overrides x.initial-state-vars statevars namemap)))
     (mv nil pipeline-setup svtv-data))
@@ -449,7 +461,7 @@
     (implies (not err)
              (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
                     (svex-alist-keys (base-fsm->nextstate
-                                      (svtv-data->cycle-fsm new-svtv-data))))))
+                                      (svtv-data->phase-fsm new-svtv-data))))))
 
   (defret validp-of-<fn>
     (implies (not err)
@@ -464,8 +476,8 @@
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
-                  (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t)))))
-
+                  (implies (not skip-cycle)
+                           (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 
 
 (define defsvtv-stobj-main ((x defsvtv-args-p)
@@ -474,6 +486,7 @@
                             svtv-data)
   :guard (modalist-addr-p (design->modalist (defsvtv-args->design x)))
   :guard-hints (("goal" :do-not-induct t))
+  :guard-debug t
   :returns (mv err
                (svtv (implies (not err) (svtv-p svtv)))
                (new-svtv-data))

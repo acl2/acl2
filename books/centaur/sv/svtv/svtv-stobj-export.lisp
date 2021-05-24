@@ -534,7 +534,7 @@
        :pkg-sym ',name))))
 
 (def-svtv-data-import test-svtv-data-obj
-  :hints (("goal" :in-theory (enable svtv-data$c-compute-flatten
+  :hints (("goal" :in-theory (enable svtv-data-compute-flatten
                                      NORMALIZE-STOBJS-OF-SVTV-DESIGN-FLATTEN
                                      svtv-data$c-namemap-okp
                                      svtv-data$c-cycle-fsm-okp
