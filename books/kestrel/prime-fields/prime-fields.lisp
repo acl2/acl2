@@ -1,6 +1,6 @@
 ; Prime fields library
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,10 +21,11 @@
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
 
-(include-book "kestrel/number-theory/primes" :dir :system)
 ;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
 (include-book "../../arithmetic-3/floor-mod/mod-expt-fast") ;just provides mod-expt-fast
 (include-book "../utilities/smaller-termp")
+(include-book "fep")
+(include-book "minus1")
 (local (include-book "support"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/expt"))
@@ -32,106 +33,7 @@
 
 (in-theory (disable (:e rtl::primep)))
 
-(in-theory (disable mod)) ;since some rules in this file introduce mod
-
 (defmacro primep (x) `(rtl::primep ,x))
-
-;;;
-;;; fep ("field element predicate")
-;;;
-
-;; Recognize an element of the field. "fep" = "field element predicate"
-(defund fep (x p)
-  (declare (xargs :guard (integerp p)))
-  (and (natp x)
-       (< x p)))
-
-(defthm fep-fw-to-natp
-  (implies (fep x p)
-           (natp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable fep))))
-
-(defthm fep-fw-to-bound
-  (implies (fep x p)
-           (< x p))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable fep))))
-
-(defthmd <-when-fep
-  (implies (fep x p)
-           (< x p)))
-
-;; 0 is in the field
-(defthm fep-of-0
-  (implies (posp p)
-           (fep 0 p))
-  :hints (("Goal" :in-theory (enable fep))))
-
-;; 1 is in the field
-(defthm fep-of-1
-  (implies (and (integerp p)
-                (< 1 p))
-           (fep 1 p))
-  :hints (("Goal" :in-theory (enable fep))))
-
-;; For when X is constant but P is not.  P may often be a constrained function
-;; (e.g., a large prime) about which we have a strong :linear rule.
-(defthm fep-when-constant
-  (implies (and (syntaxp (quotep x))
-                (< x p))
-           (equal (fep x p)
-                  ;; Gets evaluated:
-                  (natp x)))
-  :hints (("Goal" :in-theory (enable fep))))
-
-;; This breaks the abstraction a bit, but mod can appear when add, sub, or neg
-;; is applied to constant arguments, or when we don't know that things are
-;; field elements.
-(defthm fep-of-mod
-  (implies (and (integerp x)
-                (posp p))
-           (fep (mod x p) p))
-  :hints (("Goal" :in-theory (enable fep))))
-
-;; combines 2 steps, dropping the mod and dropping the ifix.
-(defthmd mod-of-ifix-when-fep
-  (implies (fep x p)
-           (equal (mod (ifix x) p)
-                  x))
-  :hints (("Goal" :in-theory (enable fep))))
-
-;;;
-;;; minus1
-;;;
-
-;; this is equal to p-1, but it can help to think of it as "negative 1"
-(defund minus1 (p)
-  (declare (xargs :guard (integerp p)))
-  (+ -1 p))
-
-(defthm integerp-of-minus1
-  (implies (integerp p)
-           (integerp (minus1 p)))
-  :hints (("Goal" :in-theory (enable fep minus1))))
-
-;; -1 is in the field
-(defthm fep-of-minus1
-  (implies (posp p)
-           (fep (minus1 p) p))
-  :hints (("Goal" :in-theory (enable fep minus1))))
-
-(defthm not-equal-of-0-and-minus1
-  (implies (< 1 p)
-           (not (equal 0 (minus1 p))))
-  :hints (("Goal" :in-theory (enable fep minus1))))
-
-(defthm natp-of-one-less-than-minus1
-  (implies (and (integerp p)
-                (< 1 p))
-           (natp (+ -1 (minus1 p))) ;the addition here is not the field addition
-           )
-  :hints (("Goal" :in-theory (enable minus1))))
 
 ;;;
 ;;; pos-fix
