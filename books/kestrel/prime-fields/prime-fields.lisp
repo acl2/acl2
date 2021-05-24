@@ -21,7 +21,8 @@
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
 
-(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
+(include-book "kestrel/number-theory/primes" :dir :system)
+;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
 (include-book "../../arithmetic-3/floor-mod/mod-expt-fast") ;just provides mod-expt-fast
 (include-book "../utilities/smaller-termp")
 (local (include-book "support"))
@@ -34,20 +35,6 @@
 (in-theory (disable mod)) ;since some rules in this file introduce mod
 
 (defmacro primep (x) `(rtl::primep ,x))
-
-;;;
-;;; prime
-;;;
-
-(defthm primep-forward-to-posp
-  (implies (primep x)
-           (posp x))
-  :rule-classes :forward-chaining)
-
-(defthm primep-forward-to-bound
-  (implies (primep x)
-           (<= 2 x))
-  :rule-classes :forward-chaining)
 
 ;;;
 ;;; fep ("field element predicate")
