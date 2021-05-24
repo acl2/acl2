@@ -47,14 +47,12 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
-
 (def-rp-rule$ t t
   merge-adder-or-is-adder-or$
   (equal (merge-adder-or a b)
          (adder-or$ a b))
   :hints (("Goal"
            :in-theory (e/d (merge-adder-or) ()))))
-
 
 (def-rp-rule$ t t
   and$-is-adder-and$
@@ -80,7 +78,6 @@
   :hints (("Goal"
            :in-theory (e/d (sum adder-b+
                                 merge-adder-b+) ()))))
-
 
 (def-rp-rule$ t t
   s-c-res-to-adder-sum
@@ -162,7 +159,6 @@
 (rp-attach-sc c-spec-to-adder-f2-with-hyp
               c-spec-to-adder-f2-with-hyp-side-cond)
 
-
 (def-rp-rule$ t t
   quarternaryp-lemma-for-adder-sum-0
   (implies (and (bitp a))
@@ -180,8 +176,6 @@
                 (bitp b)
                 (bitp c))
            (quarternaryp (adder-sum a b c))))
-
-
 
 (def-rp-rule$ t t
   s-c-spec-to-adder-sum
@@ -215,7 +209,6 @@
 
 (rp-attach-sc m2-of-f2-for-adder
               m2-of-f2-for-adder-side-cond)
-              
 
 (def-rp-rule$ t t
   c-s-spec-to-adder-sum
@@ -238,9 +231,6 @@
                             sum
                             merge-adder-sum
                             adder-sum) ()))))
-
-
-
 
 (def-rp-rule$ t t
   adder-sum-comm1
@@ -420,7 +410,6 @@
   (rp-attach-sc adder-and-of-subtracted-2
                 adder-and-of-subtracted-2-side-cond))||#
 
-
   ;; (def-rp-rule$ t t
   ;;   adder-or-of-subtracted
   ;;   (implies (and (bitp a)
@@ -495,7 +484,7 @@
            :in-theory (e/d (f2
                             adder-and
                             ifix
-                             sum) ()))))
+                            sum) ()))))
 
 (def-rp-rule$ t t
   bin-and-is-c-1
@@ -507,7 +496,7 @@
            :in-theory (e/d (f2
                             adder-and
                             ifix
-                             sum) ()))))
+                            sum) ()))))
 
 (def-rp-rule$ t t
   bin-and-is-c-2
@@ -520,9 +509,7 @@
            :in-theory (e/d (f2
                             adder-and
                             ifix
-                             sum) ()))))
-
-
+                            sum) ()))))
 
 (defthmd bin-and-is-c-sc
   (implies (and (bitp a)
@@ -565,7 +552,7 @@
                   (f2 (merge-adder-sum a1 a2 b))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -578,7 +565,7 @@
                   (f2 (merge-adder-sum a1 a2 b))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -592,7 +579,6 @@
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
 
-                               
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -633,7 +619,7 @@
                   (f2 (merge-adder-sum a1 a2 b))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -648,7 +634,7 @@
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
                                adder-and
-                               
+
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -665,7 +651,7 @@
            :in-theory (e/d (f2 adder-or
                                bitp
                                adder-and
-                               
+
                                m2 sum ifix) ()))))
 
 (def-rp-rule$ t t
@@ -679,7 +665,7 @@
                   (f2 (merge-adder-sum a1 a2 (adder-or x y)))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                bitp
                                m2 sum ifix) ()))))
 
@@ -697,7 +683,7 @@
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
                                adder-and
-                               
+
                                bitp
                                or$
                                m2 sum ifix) ()))))
@@ -707,11 +693,14 @@
   (implies t
            (and (equal (adder-or$ (adder-and$ single x)
                                   (adder-and$ single y))
+                       (adder-and$ single (adder-or$ x y)))
+                (equal (adder-or$ (adder-and$ x single)
+                                  (adder-and$ y single))
                        (adder-and$ single (adder-or$ x y)))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
                                adder-and
-                               
+
                                bitp
                                and$
                                or$
@@ -725,7 +714,7 @@
            (bitp (f2 (merge-adder-sum a1 a2 (adder-or x y)))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                m2 sum ifix) ()))))
 
 (defthmd bin-or-p2-v2-sc
@@ -737,7 +726,7 @@
            (bitp (f2 (merge-adder-sum a1 a2 (adder-or x (adder-and$ c-in y))))))
   :hints (("Goal"
            :in-theory (e/d (f2 adder-or
-                               
+
                                bitp
                                m2 sum ifix) ()))))
 
@@ -860,28 +849,31 @@
   :hints (("Goal"
            :in-theory (e/d (adder-sum
                             ifix) ()))))
+(progn
+  (def-rp-rule$ t t
+    from-adder-or-and-to-f2
+    (implies (and (bitp x)
+                  (bitp a)
+                  (bitp b))
+             (and (equal (adder-or$ (adder-and$ a x)
+                                    (adder-and$ b (adder-or$ x a)))
+                         (f2 (merge-adder-sum a b x)))
+                  (equal (adder-or$ (adder-and$ a x)
+                                    (adder-and$ b (adder-or$ a x)))
+                         (f2 (merge-adder-sum a b x)))))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
 
-(def-rp-rule$ t t
-  some-combination-1
-  (implies (and (bitp x)
-                (bitp a)
-                (bitp b))
-           (equal (adder-or$ (adder-and$ a x)
-                             (adder-and$ b (adder-or$ x a)))
-                  (f2 (merge-adder-sum a b x))))
-  :hints (("Goal"
-           :in-theory (e/d (bitp) ()))))
+  (defthmd from-adder-or-and-to-f2-side-cond
+    (implies (and (bitp x)
+                  (bitp a)
+                  (bitp b))
+             (bitp (f2 (merge-adder-sum a b x))))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
 
-(defthmd some-combination-1-side-cond
-  (implies (and (bitp x)
-                (bitp a)
-                (bitp b))
-           (bitp (f2 (merge-adder-sum a b x))))
-  :hints (("Goal"
-           :in-theory (e/d (bitp) ()))))
-
-(rp-attach-sc some-combination-1
-              some-combination-1-side-cond)
+  (rp-attach-sc from-adder-or-and-to-f2
+                from-adder-or-and-to-f2-side-cond))
 
 (progn
   (def-rp-rule$ t t
@@ -964,7 +956,6 @@
     (equal (adder-and x x)
            (bit-fix x))))
 
-
 (def-rp-rule
   bitp-of-binary-fncs
   (and (bitp (binary-not x))
@@ -973,6 +964,174 @@
        (bitp (binary-xor x y))
        (bitp (binary-? x y z))
        (bitp (bit-of x y))))
+
+(def-rp-rule bit-of-adder-mux
+  (and (implies (posp position)
+                (equal (bit-of (adder-mux s i0 i1) position)
+                       0))
+       (equal (bit-of (adder-mux s i0 i1) 0)
+              (adder-mux s i0 i1)))
+  :hints (("goal"
+           :cases ((equal (adder-mux s i0 i1) 0))
+           :in-theory (e/d (adder-mux bit-fix bit-of)
+                           (bitp)))))
+
+(def-rp-rule adder-fncs-to-adder-mux
+  (and (equal (adder-or (adder-and i0 (binary-not s))
+                        (adder-and i1 s))
+              (adder-mux s i0 i1))
+       (equal (adder-or (adder-and i1 s)
+                        (adder-and i0 (binary-not s)))
+              (adder-mux s i0 i1)))
+  :hints (("Goal"
+           :in-theory (e/d (adder-or
+                            adder-and
+                            binary-not
+                            and$
+                            or$
+                            bitp
+                            bit-fix
+                            adder-mux)
+                           ()))))
+
+(def-rp-rule binary-xor-of-1-2
+  (and (equal (binary-xor 1 x)
+              (binary-not x))
+       (equal (binary-xor x 1)
+              (binary-not x)))
+  :hints (("Goal"
+           :in-theory (e/d (binary-not
+                            binary-xor)
+                           ()))))
+
+(def-rp-rule bianry-xor-from-defs-for-adder
+  (and (equal (adder-or (adder-and x (binary-not y))
+                        (adder-and (binary-not x) y))
+              (binary-xor x y))
+       (equal (adder-or (adder-and x (binary-not y))
+                        (adder-and y (binary-not x)))
+              (binary-xor x y)))
+  :hints (("Goal"
+           :in-theory (e/d (adder-and
+                            binary-xor
+                            binary-not
+                            binary-and
+                            binary-or
+                            bit-fix
+                            bitp
+                            adder-or)
+                           ()))))
+
+(def-rp-rule binary-xor-from-defs-for-adder-2
+  (and (equal (adder-or (adder-and$ x y (binary-not z))
+                        (adder-and z (binary-not (adder-and x y))))
+              (binary-xor (adder-and x y) z))
+       (equal (adder-or (adder-and z (binary-not (adder-and x y)))
+                        (adder-and$ x y (binary-not z)))
+              (binary-xor (adder-and x y) z)))
+  :hints (("Goal"
+           :in-theory (e/d (adder-and
+                            binary-xor
+                            binary-not
+                            binary-and
+                            binary-or
+                            bit-fix
+                            bitp
+                            adder-or)
+                           ()))))
+
+(def-rp-rule m2-of-m2
+  (and (equal (m2 (m2 x))
+              (m2 x))
+       (equal (m2 (sum (m2 x) y))
+              (m2 (sum x y))))
+  :hints (("Goal"
+           :in-theory (e/d (m2 sum) ()))))
+
+(def-rp-rule adder-or-reduction
+  (and (equal (adder-or (adder-and x y) x)
+              (bit-fix x))
+       (equal (adder-or (adder-and x y) (adder-or x z))
+              (adder-or x z))
+       (equal (adder-or x (adder-and x y))
+              (bit-fix x))
+       (equal (adder-or x (adder-or (adder-and x y) z))
+              (adder-or x z))
+       (equal (adder-or (adder-and x (binary-not y))
+                        (adder-and x y))
+              (bit-fix x)))
+  :hints (("Goal"
+           :in-theory (e/d (adder-or
+                            adder-and
+                            binary-or
+                            binary-and
+                            bit-fix not$
+                            ) ()))))
+
+(progn
+  (def-rp-rule build-f2-from-ors
+    (implies (and (bitp z)
+                  (bitp x)
+                  (bitp y))
+             (and (equal (adder-or
+                          (adder-and (adder-or x y) z)
+                          (adder-and y (adder-and x (binary-not z))))
+                         (f2 (merge-adder-sum x y z)))
+                  (equal (adder-or
+                          (adder-and (adder-or x y) z)
+                          (adder-and x (adder-and y (binary-not z))))
+                         (f2 (merge-adder-sum x y z)))
+                  (equal (adder-or
+                          (adder-and x (adder-and y (binary-not z)))
+                          (adder-and (adder-or x y) z))
+                         (f2 (merge-adder-sum x y z)))))
+    :hints (("Goal"
+             :in-theory (e/d (adder-or
+                              adder-and
+                              and$
+                              or$
+                              bit-fix
+                              bitp
+                              binary-not)
+                             ()))))
+
+  (defthm build-f2-from-ors-side-cond
+    (implies (and (bitp z)
+                  (bitp x)
+                  (bitp y))
+             (bitp (f2 (merge-adder-sum x y z))))
+    :rule-classes nil
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
+
+  (rp-attach-sc build-f2-from-ors
+                build-f2-from-ors-side-cond))
+
+
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (def-rp-rule$ t t
+    m2-of-1
+    (equal (m2 (adder-b+ 1 x))
+           (binary-not (m2 x)))
+    :hints (("Goal"
+             :in-theory (e/d (m2
+                              binary-not
+                              adder-sum)
+                             ()))))
+
+  (def-rp-rule$ t t
+    f2-of-1
+    (implies (and (bitp x)
+                  (bitp y))
+             (equal (f2 (adder-sum 1 x y))
+                    (adder-or x y)))
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ())))))
 
 (progn
   (defconst *adder-rules*
@@ -1000,7 +1159,7 @@
       ;; adder-sum-comm2
       ;; adder-sum-reorder
 
-      some-combination-1
+      from-adder-or-and-to-f2
 
       bin-or-p1
       bin-or-p1a
@@ -1008,17 +1167,17 @@
       bin-or-p1b-v2
       bin-or-p1b-v3
       bin-or-p1c
-    
+
       bin-or-p2c
 
       bitp-of-binary-fncs
       bin-xor-is-s
       sum-is-adder-b+
-      
+
       bin-and-is-c-1
       bin-and-is-c-2
       #|b-and-pair-is-c||#
-      
+
       b-or-reorder
       b-or-comm1
       b-or-comm2
@@ -1028,7 +1187,6 @@
       dummy-adder-final-step1
 
       bin-or-p3
-    
 
       adder-sum-of-nil
       adder-sum-of-nil-2
@@ -1082,7 +1240,10 @@
 
       m2-of-f2-for-adder
       m2-of-ifix
-      
+
+      f2-of-1
+      m2-of-1
+
       ))
 
   (deftheory adder-rules
