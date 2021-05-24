@@ -78,7 +78,8 @@
   :returns (hash integerp)
   (b* (((mv hash &)
         (and-list-hash-aux lst)))
-    hash))
+    hash
+    ))
   #|(if (atom lst)
       0
     (b* ((rest (and-list-hash (cdr lst)))
