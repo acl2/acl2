@@ -7807,6 +7807,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (list arg))
         (t :fail)))
 
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (consp x)
+           (stringp (car x))
+           (character-alistp (cdr x)))))
+
+(defun ctxp (x)
+  (declare (xargs :guard t))
+  (or (symbolp x)
+      (and (consp x)
+           (symbolp (car x)))
+      (msgp x)))
+
 (defun with-output-fn (ctx0 args off on gag-mode stack summary-on summary-off
                             evisc ctx kwds)
   (declare (xargs :mode :program
@@ -7836,9 +7850,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (list (cons #\0 'with-output) ; ctx, presumably
                             (cons #\1 (car args)))))
          ((eq (car args) :ctx)
-          (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                          summary-on summary-off evisc (cadr args)
-                          (cons (car args) kwds)))
+          (cond ((ctxp (cadr args))
+                 (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                 summary-on summary-off evisc (cadr args)
+                                 (cons (car args) kwds)))
+                (t (hard-error ctx0
+                               illegal-value-string
+                               (list (cons #\0 (cadr args))
+                                     (cons #\1 :ctx))))))
          ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
           (with-output-fn ctx0 (cddr args) off on gag-mode stack
                           summary-on summary-off (cadr args) ctx

@@ -9,7 +9,6 @@
 (verify-termination zero-one-or-more) ; and guards
 (verify-termination standard-evisc-tuplep) ; and guards
 (verify-termination fmt-var) ; and guards
-(verify-termination msgp) ; and guards
 
 ; Start termination and guards for find-alternative-skip.
 

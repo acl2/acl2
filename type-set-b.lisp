@@ -7324,8 +7324,8 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; Changed the assumptions based on rational to realp.
 
-(defun assume-true-false-<
-  (not-flg arg1 arg2 ts1 ts2 type-alist ttree xttree w)
+(defun assume-true-false-< (not-flg arg1 arg2 ts1 ts2 type-alist ttree xttree
+                                    w)
 
 ; This function returns an extended type-alist by assuming (< ts1 ts2) true if
 ; not-flg is nil, but assuming (< ts1 ts2) false if not-flg is not nil.  It
@@ -7342,90 +7342,131 @@
 ; * if arg1 is positive then arg2 is positive
 ; * if arg1 is in the nonnegatives then arg2 is strictly positive
 ; * if arg2 is in the nonpositives then arg1 is strictly negative
-; When we say "arg1 is in the nonnegatives" we mean to include the
-; case where arg1 is strictly positive.  Note also that if arg1 may be
-; negative, then arg2 could be anything (given that we've made the
-; normalization for integers above).  Thus, the above two cases are as
-; strong as we can be.
+; When we say "arg1 is in the nonnegatives" we mean to include the case where
+; arg1 is strictly positive.  Note also that if arg1 may be negative, then arg2
+; could be anything (given that we've made the normalization in
+; assume-true-false-rec before calling this function).  Thus, the above two
+; cases are as strong as we can be.
 
-; When we assume (< arg1 arg2) false we find it easier to think about
-; assuming (<= arg2 arg1) true:
+; When we assume (< arg1 arg2) false we find it easier to think about assuming
+; (<= arg2 arg1) true:
 ; * if arg1 is negative, then arg2 is negative
 ; * if arg1 is nonpositive, then arg2 is nonpositive
 ; * if arg2 is nonnegative, then arg1 is nonnegative
-; Note that if arg1 may be positive then arg2 could be anything, so
-; there are no other cases we can express.
+; Note that if arg1 may be positive then arg2 could be anything, so there are
+; no other cases we can express.
 
   (cond
-   ((and
-     (not not-flg)
-     (ts-subsetp ts1
-                 (ts-union #+:non-standard-analysis
-                           *ts-non-negative-real*
-                           #-:non-standard-analysis
-                           *ts-non-negative-rational*
-                           (ts-complement *ts-acl2-number*)))
-     (ts-intersectp
-      ts2
-      (ts-complement
-       #+:non-standard-analysis
-       (ts-union *ts-positive-real* *ts-complex*)
-       #-:non-standard-analysis
-       (ts-union *ts-positive-rational* *ts-complex-rational*))))
+   ((not not-flg) ; Assume that (< ts1 ts2) is true.
+    (let ((strongp (and (or (ts-subsetp ts1 *ts-positive-integer*)
+                            (and (quotep arg1)
+                                 (rationalp (unquote arg1))
+                                 (<= 1 (unquote arg1))))
+                        (ts-intersectp ts2 *ts-one*))))
+      (cond
+; assuming true: if arg1 is at least 1 then arg2 is positive and not 1
+       (strongp
 
-; The test says: We are dealing with (< arg1 arg2) where arg1 is non-negative
-; or a non-number.  We are thus allowed to deduce that arg2 is strictly
-; positive or complex.  That is, we may delete the non-positive reals
-; and non-numbers from its existing type-set.  If that doesn't change
-; anything, we don't want to do it, so we have the third conjunct above that
-; says arg2 contains some non-positive reals or some non-numbers.
+; The test implies that we are dealing with (< arg1 arg2) where arg1 is a
+; positive integer.  We are thus allowed to deduce that arg2 is positive or
+; complex, but not 1.  That is, we may delete the non-positive reals,
+; non-numbers, and 1 from its existing type-set.  We know that *ts-one* is
+; included in ts2 (by the second condition of strongp), so the intersection
+; below is strictly smaller than ts2.  (The next case handles similar cases
+; without involving 1.)
 
-; A worry is that the intersection below is empty.  Can that happen?  If it
-; did, then we would have that arg1 is a non-negative real or a non-number,
-; and arg2 is a non-positive real or a non-number.  Supposedly type-set-<
+; This case allows us, for example, to prove (thm (implies (< 5/2 x) (equal
+; (foo (bitp x)) (foo nil)))) where we have introduced (defstub foo (x) t).
+
+; A worry is that the intersection below replaces ts2 by *ts-empty*.  Can that
+; happen?  If it did, then we would have that arg1 is a positive integer, and
+; arg2 is a non-positive real or a non-number or 1.  Supposedly type-set-<
 ; would have then reported that (< arg1 arg2) must be false and mbf would be t.
 ; So the empty intersection cannot arise.
 
-    (extend-type-alist
-     ;;*** -simple
-     arg2
-     (ts-intersection ts2
-                      #+:non-standard-analysis
-                      (ts-union *ts-positive-real* *ts-complex*)
-                      #-:non-standard-analysis
-                      (ts-union *ts-positive-rational* *ts-complex-rational*))
-     (cons-tag-trees ttree xttree)
-     type-alist w))
+        (extend-type-alist
+         ;;*** -simple
+         arg2
+         (ts-intersection ts2
+                          (ts-complement *ts-one*)
+                          #+:non-standard-analysis
+                          (ts-union *ts-positive-real*
+                                    *ts-complex*)
+                          #-:non-standard-analysis
+                          (ts-union *ts-positive-rational*
+                                    *ts-complex-rational*))
+         (cons-tag-trees ttree xttree)
+         type-alist w))
+; assuming true: if arg1 is nonnegative then arg2 is positive
+       ((and (ts-subsetp ts1
+                         (ts-union #+:non-standard-analysis
+                                   *ts-non-negative-real*
+                                   #-:non-standard-analysis
+                                   *ts-non-negative-rational*
+                                   (ts-complement *ts-acl2-number*)))
+             (ts-intersectp
+              ts2
+              (ts-complement
+               #+:non-standard-analysis
+               (ts-union *ts-positive-real* *ts-complex*)
+               #-:non-standard-analysis
+               (ts-union *ts-positive-rational* *ts-complex-rational*))))
 
-; The remaining cases are analogous to that above.
+; The test says: We are dealing with (< arg1 arg2) where arg1 is non-negative
+; or a non-number.  We are thus allowed to deduce that arg2 is strictly
+; positive or complex.  That is, we may delete the non-positive reals and
+; non-numbers from its existing type-set.  If that doesn't change anything, we
+; don't want to do it, so we have the conjunct immediately above that says arg2
+; contains some non-positive reals or some non-numbers.
 
-   ((and (not not-flg)
-         (ts-subsetp ts2
-                     (ts-union #+:non-standard-analysis
-                               *ts-non-positive-real*
-                               #-:non-standard-analysis
-                               *ts-non-positive-rational*
-                               (ts-complement *ts-acl2-number*)))
-         (ts-intersectp
-          ts1
-          (ts-complement
-           #+:non-standard-analysis
-           (ts-union *ts-negative-real* *ts-complex*)
-           #-:non-standard-analysis
-           (ts-union *ts-negative-rational* *ts-complex-rational*))))
-    (extend-type-alist
-     ;;*** -simple
-     arg1
-     (ts-intersection ts1
-                      #+:non-standard-analysis
-                      (ts-union *ts-negative-real* *ts-complex*)
-                      #-:non-standard-analysis
-                      (ts-union *ts-negative-rational*
-                                *ts-complex-rational*))
-     (cons-tag-trees ttree xttree)
-     type-alist w))
-   ((and not-flg
-         (ts-subsetp ts1
+; A worry is that the intersection below is empty.  Can that happen?  If it
+; did, then we would have that arg1 is a non-negative real or a non-number, and
+; arg2 is a non-positive real or a non-number.  Supposedly type-set-< would
+; have then reported that (< arg1 arg2) must be false and mbf would be t.  So
+; the empty intersection cannot arise.
+
+        (extend-type-alist
+         ;;*** -simple
+         arg2
+         (ts-intersection ts2
+                          #+:non-standard-analysis
+                          (ts-union *ts-positive-real* *ts-complex*)
+                          #-:non-standard-analysis
+                          (ts-union *ts-positive-rational*
+                                    *ts-complex-rational*))
+         (cons-tag-trees ttree xttree)
+         type-alist w))
+; assuming true: if arg2 is not positive then arg1 is negative
+       ((and (ts-subsetp ts2
+                         (ts-union #+:non-standard-analysis
+                                   *ts-non-positive-real*
+                                   #-:non-standard-analysis
+                                   *ts-non-positive-rational*
+                                   (ts-complement *ts-acl2-number*)))
+             (ts-intersectp
+              ts1
+              (ts-complement
+               #+:non-standard-analysis
+               (ts-union *ts-negative-real* *ts-complex*)
+               #-:non-standard-analysis
+               (ts-union *ts-negative-rational* *ts-complex-rational*))))
+        (extend-type-alist
+         ;;*** -simple
+         arg1
+         (ts-intersection ts1
+                          #+:non-standard-analysis
+                          (ts-union *ts-negative-real* *ts-complex*)
+                          #-:non-standard-analysis
+                          (ts-union *ts-negative-rational*
+                                    *ts-complex-rational*))
+         (cons-tag-trees ttree xttree)
+         type-alist w))
+       (t type-alist))))
+
+; The remaining cases assume that (< ts1 ts2) is false.
+
+; assuming false: if arg1 is negative then arg2 is negative
+   ((and (ts-subsetp ts1
                      #+:non-standard-analysis
                      *ts-negative-real*
                      #-:non-standard-analysis
@@ -7453,8 +7494,8 @@
                                 *ts-negative-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
-   ((and not-flg
-         (ts-subsetp ts1
+; assuming false: if arg1 is not positive then arg2 is not positive
+   ((and (ts-subsetp ts1
                      (ts-union #+:non-standard-analysis
                                *ts-non-positive-real*
                                #-:non-standard-analysis
@@ -7484,8 +7525,8 @@
                      #-:non-standard-analysis *ts-positive-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
-   ((and not-flg
-         (ts-subsetp ts2
+; assuming false: if arg2 is positive then arg1 is positive
+   ((and (ts-subsetp ts2
                      #+:non-standard-analysis *ts-positive-real*
                      #-:non-standard-analysis *ts-positive-rational*)
          (ts-intersectp ts1
@@ -7507,8 +7548,8 @@
                 *ts-positive-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
-   ((and not-flg
-         (ts-subsetp
+; assuming false: if arg2 is nonnegative then arg1 is nonnegative
+   ((and (ts-subsetp
           ts2
           (ts-complement
            #+:non-standard-analysis
@@ -10781,11 +10822,11 @@
                              (mv (not xnot-flg) (fargn x 2) *0* ts2 *ts-zero*))
                             (t (mv xnot-flg (fargn x 1) (fargn x 2) ts1 ts2)))
 
-; Foreshadow 1:  Note that if neither of the newly bound arg1 nor arg2
-; is *0* then not-flg is xnot-flg and arg1 and arg2 are the corresponding
-; arguments of x.  That is because on the first two of the three branches
-; of the cond above, one of the two args is set to *0*.  We use this curious
-; fact below.
+; Foreshadow 1: Note that if neither of the newly bound arg1 nor arg2 is *0*
+; and arg1 is not *1* then not-flg is xnot-flg and arg1 and arg2 are the
+; corresponding arguments of x.  That is because on all but the last branch of
+; the cond above, arg1 or arg2 is set to *0* or arg1 is set to *1*.  We use
+; this curious fact below.
 
 ; In the mv-let below we effectively implement the fact that, when x is of type
 ; *ts-integer* (< 0 (+ 1 x)) is ~(< x 0).  The symmetric equivalence of (< (+
@@ -11138,15 +11179,15 @@
                                xnot-flg ; = not-flg
                                x        ; = (mcons-term* '< arg1 arg2)
 
-; Once upon a time we had (mcons-term* '< arg1 arg2), above, instead of x.
-; But we claim that not-flg is xnot-flg and that arg1 and arg2 are the
-; corresponding arguments of x so that x is equal to (mcons-term* '< arg1 arg2).
-; The proof is as follows.  We are in the t clause of a cond.  The preceding
-; tests establish that neither arg1 nor arg2 is *0* here.  Hence, by
-; Foreshadow 2 above we conclude that not-flg, arg1 and arg2 are
-; unchanged from their values at Foreshadow 1.  But at Foreshadow 1 we
-; see that if neither arg is *0* not-flg is xnot-flg and arg1 and arg2 are
-; the corresponding components of x.  Q.E.D.
+; Once upon a time we had (mcons-term* '< arg1 arg2), above, instead of x.  But
+; we claim that not-flg is xnot-flg and that arg1 and arg2 are the
+; corresponding arguments of x so that x is equal to (mcons-term* '< arg1
+; arg2).  The proof is as follows.  We are in the t clause of a cond.  The
+; preceding tests establish that neither arg1 nor arg2 is *0* here, nor is arg1
+; *1* here.  Hence, by Foreshadow 2 above we conclude that not-flg, arg1 and
+; arg2 are unchanged from their values at Foreshadow 1.  But at Foreshadow 1 we
+; see that if neither arg is *0* and arg1 is not *1*, then not-flg is xnot-flg
+; and arg1 and arg2 are the corresponding components of x.  Q.E.D.
 
                                xttree force-flg dwp type-alist ancestors ens w
                                pot-lst pt backchain-limit)

@@ -3305,13 +3305,6 @@
   (ppr2 (ppr1 x (print-base) (print-radix) width rpc state eviscp)
         col channel state eviscp))
 
-(defun msgp (x)
-  (declare (xargs :guard t))
-  (or (stringp x)
-      (and (consp x)
-           (stringp (car x))
-           (character-alistp (cdr x)))))
-
 (defun scan-past-empty-fmt-directives (s alist i maximum)
 
 ; We return a natural number j with i <= j < maximum, such that fmt printing of
@@ -4739,7 +4732,11 @@
 ; We print no other words, spaces or punctuation.  We return the new
 ; col and state.
 
-  (declare (type (signed-byte 30) col))
+  (declare (type (signed-byte 30) col)
+           (xargs :guard
+                  (and (ctxp ctx)
+                       (symbolp channel)
+                       (open-output-channel-p channel :character state))))
 
 ; The following bit of raw-Lisp code can be useful when observing
 ; "ACL2 Error in T:".
@@ -4774,7 +4771,11 @@
 ; We print the phrase " in ctx:  ", if ctx is non-nil, and return
 ; the new col and state.
 
-  (declare (type (signed-byte 30) col))
+  (declare (type (signed-byte 30) col)
+           (xargs :guard
+                  (and (ctxp ctx)
+                       (symbolp channel)
+                       (open-output-channel-p channel :character state))))
   (the2s
    (signed-byte 30)
    (cond ((null ctx)
