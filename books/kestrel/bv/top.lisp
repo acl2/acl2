@@ -73,6 +73,7 @@
 (include-book "bvmult")
 (include-book "bvmod")
 (include-book "bvdiv")
+(include-book "bvdiv-rules")
 (include-book "overflow-and-underflow")
 
 ;; Signed arithmetic operations:
