@@ -24,6 +24,7 @@
 ;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
 (include-book "../../arithmetic-3/floor-mod/mod-expt-fast") ;just provides mod-expt-fast
 (include-book "../utilities/smaller-termp")
+(include-book "../utilities/pos-fix")
 (include-book "fep")
 (include-book "minus1")
 (local (include-book "support"))
@@ -34,21 +35,6 @@
 (in-theory (disable (:e rtl::primep)))
 
 (defmacro primep (x) `(rtl::primep ,x))
-
-;;;
-;;; pos-fix
-;;;
-
-(defun pos-fix (x)
-  (declare (xargs :guard t))
-  (if (posp x)
-      x
-    1))
-
-(defthm pos-fix-when-posp
-  (implies (posp x)
-           (equal (pos-fix x)
-                  x)))
 
 ;;;
 ;;; add
