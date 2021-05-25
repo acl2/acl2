@@ -1196,3 +1196,12 @@
            (equal (equal x (* 2 (floor x 2)))
                   (evenp x)))
   :hints (("Goal" :in-theory (enable evenp floor))))
+
+;; Not sure exactly where this should go
+(defthm unsigned-byte-p-of-floor
+  (implies (and (unsigned-byte-p size x)
+                (natp y))
+           (unsigned-byte-p size (floor x y)))
+  :hints (("Goal"
+           :cases ((equal 0 y))
+           :in-theory (enable unsigned-byte-p))))

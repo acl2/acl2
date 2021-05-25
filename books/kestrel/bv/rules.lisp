@@ -6246,15 +6246,6 @@
            (not (< size k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm unsigned-byte-p-of-floor
-  (implies (and (unsigned-byte-p size x)
-                (natp size)
-                (natp y))
-           (unsigned-byte-p size (floor x y)))
-  :hints (("Goal"
-           :cases ((equal 0 y))
-           :in-theory (enable unsigned-byte-p))))
-
 (defthm bvdiv-and-bvmod-relationship-helper
   (implies (and (natp size)
 ;               (unsigned-byte-p size x)
