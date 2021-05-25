@@ -363,10 +363,13 @@
 ;proved by ihs/quotient-remainder-lemmas
 (defthm floor-of-floor
   (implies (and (rationalp i)
-                (posp j1)
-                (posp j2))
+                (natp j1)
+                (natp j2))
            (equal (floor (floor i j1) j2)
-                  (floor i (* j1 j2)))))
+                  (floor i (* j1 j2))))
+  :hints (("Goal" :cases ((and (equal j1 0) (equal j2 0))
+                          (and (not (equal j1 0)) (equal j2 0))
+                          (and (not (equal j1 0)) (not (equal j2 0)))))))
 
 (local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
 
