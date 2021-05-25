@@ -133,8 +133,7 @@
 (defthmd sbvlt-transitive-core-3
   (implies (and (not (sbvlt size free y))
                 (not (sbvlt size x free)))
-           (equal (sbvlt size x y)
-                  nil))
+           (not (sbvlt size x y)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-transitive-3-a
@@ -143,8 +142,7 @@
                 (not (sbvlt size free y))
                 (syntaxp (quotep free))
                 (not (sbvlt size k free)))
-           (equal (sbvlt size k y)
-                  nil))
+           (not (sbvlt size k y)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-transitive-3-b
@@ -153,8 +151,7 @@
                 (not (sbvlt size x free))
                 (syntaxp (quotep free))
                 (not (sbvlt size free k)))
-           (equal (sbvlt size x k)
-                  nil))
+           (not (sbvlt size x k)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant
@@ -198,8 +195,7 @@
                 (syntaxp (and (quotep free)
                               (quotep freesize)))
                 (sbvlt freesize k free))
-           (equal (equal k x)
-                  nil)))
+           (not (equal k x))))
 
 ;; Rewrite sbvlt to < when possible
 (defthmd sbvlt-becomes-<
