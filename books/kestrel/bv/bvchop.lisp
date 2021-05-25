@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvchop.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvchop-def")
 (include-book "../arithmetic-light/power-of-2p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/times-and-divides"))
 (local (include-book "../arithmetic-light/divides"))
@@ -233,12 +234,13 @@
 
 (defthmd bvchop-of-sum-cases
   (implies (and (integerp i2)
-                (integerp i1)
-                (natp size))
+                (integerp i1))
            (equal (bvchop size (+ i1 i2))
-                  (if (< (+ (bvchop size i1) (bvchop size i2)) (expt 2 size))
-                      (+ (bvchop size i1) (bvchop size i2))
-                    (+ (- (expt 2 size)) (bvchop size i1) (bvchop size i2)))))
+                  (if (not (natp size))
+                      0
+                    (if (< (+ (bvchop size i1) (bvchop size i2)) (expt 2 size))
+                        (+ (bvchop size i1) (bvchop size i2))
+                      (+ (- (expt 2 size)) (bvchop size i1) (bvchop size i2))))))
   :hints (("Goal" :in-theory (enable bvchop mod-sum-cases))))
 
 (defthm bvchop-of-minus-of-bvchop
@@ -741,3 +743,29 @@
            (equal (bvchop size i)
                   i))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm bvchop-of-both-sides
+  (implies (equal x y)
+           (equal (bvchop size x)
+                  (bvchop size y)))
+  :rule-classes nil)
+
+(defthmd bvchop-upper-bound-3
+  (implies (and (<= (+ -1 (expt 2 n)) k)
+                (integerp k)
+                (natp n))
+           (not (< k (bvchop n x))))
+  :hints (("Goal" :cases ((<= low high))
+           :use (:instance bound-when-usb (x (bvchop n x)))
+           :in-theory (disable bound-when-usb))))
+
+;bozo more like this?
+(defthmd bvchop-upper-bound-3-constant-version
+  (implies (and (syntaxp (quotep k))
+                (<= (+ -1 (expt 2 n)) k)
+                (integerp k)
+                (natp n))
+           (not (< k (bvchop n x))))
+  :hints (("Goal" :cases ((<= low high))
+           :use (:instance bound-when-usb (x (bvchop n x)))
+           :in-theory (disable bound-when-usb))))

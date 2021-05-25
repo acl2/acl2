@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -499,3 +499,25 @@
            (equal (slice n n x) 1))
   :hints (("Goal" :use (:instance usb1-cases (x (slice n n x)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthmd slice-bound-3
+  (implies (and (<= (+ -1 (expt 2 (+ 1 high (- low)))) k)
+            ;    (<= low high)
+                (integerp k)
+                (natp high)
+                (natp low))
+           (not (< k (slice high low x))))
+  :hints (("Goal" :cases ((<= low high))
+           :use (:instance bound-when-usb (x (slice high low x))
+                                  (n (+ 1 high (- low))))
+           :in-theory (disable bound-when-usb))))
+
+(defthmd slice-bound-3-constant-version
+  (implies (and (syntaxp (quotep k))
+                (<= (+ -1 (expt 2 (+ 1 high (- low)))) k)
+;    (<= low high)
+                (integerp k)
+                (natp high)
+                (natp low))
+           (not (< k (slice high low x))))
+  :hints (("Goal" :by slice-bound-3)))

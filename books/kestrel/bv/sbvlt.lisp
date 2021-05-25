@@ -96,7 +96,8 @@
                               (quotep size)))
                 (not (sbvlt size y free))
                 (syntaxp (quotep free))
-                (sbvlt size k free))
+                (sbvlt size k free) ; gets computed
+                )
            (sbvlt size k y))
   :hints (("Goal" :in-theory (enable sbvlt-transitive-core-1))))
 
@@ -105,7 +106,8 @@
                               (quotep size)))
                 (sbvlt size free y)
                 (syntaxp (quotep free))
-                (not (sbvlt size free k)))
+                (not (sbvlt size free k)) ; gets computed
+                )
            (sbvlt size k y))
   :hints (("Goal" :in-theory (enable sbvlt-transitive-core-2))))
 
@@ -114,7 +116,8 @@
                               (quotep size)))
                 (sbvlt size x free)
                 (syntaxp (quotep free))
-                (not (sbvlt size k free)))
+                (not (sbvlt size k free)) ; gets computed
+                )
            (sbvlt size x k))
   :hints (("Goal" :in-theory (enable sbvlt-transitive-core-1))))
 
@@ -123,12 +126,12 @@
                               (quotep size)))
                 (not (sbvlt size free x))
                 (syntaxp (quotep free))
-                (sbvlt size free k))
+                (sbvlt size free k) ; gets computed
+                )
            (sbvlt size x k))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-
-;fixme make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
+;fixme make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?) see sbvlt-false-when-sbvlt-gen
 ;;y<=free and free<=x imply y<=x
 (defthmd sbvlt-transitive-core-3
   (implies (and (not (sbvlt size free y))
@@ -141,7 +144,8 @@
                               (quotep size)))
                 (not (sbvlt size free y))
                 (syntaxp (quotep free))
-                (not (sbvlt size k free)))
+                (not (sbvlt size k free)) ; gets computed
+                )
            (not (sbvlt size k y)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
@@ -150,7 +154,8 @@
                               (quotep size)))
                 (not (sbvlt size x free))
                 (syntaxp (quotep free))
-                (not (sbvlt size free k)))
+                (not (sbvlt size free k)) ; gets computed
+                )
            (not (sbvlt size x k)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
@@ -188,6 +193,7 @@
                   (sbvlt size x 0)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
+;rename
 ;fffixme more like this (> instead of <, not a negated sbvlt, bvlt instead of sbvlt)
 (defthm equal-constant-when-not-sbvlt
   (implies (and (syntaxp (quotep k))
@@ -195,6 +201,16 @@
                 (syntaxp (and (quotep free)
                               (quotep freesize)))
                 (sbvlt freesize k free))
+           (not (equal k x))))
+
+;renam
+; when free<x and k<=free, we know x<>k
+(defthm equal-of-constant-when-sbvlt
+  (implies (and (syntaxp (quotep k))
+                (sbvlt freesize free x) ;2 free vars here
+                (syntaxp (quotep free))
+                (syntaxp (quotep freesize))
+                (sbvle freesize k free)) ;gets computed
            (not (equal k x))))
 
 ;; Rewrite sbvlt to < when possible
