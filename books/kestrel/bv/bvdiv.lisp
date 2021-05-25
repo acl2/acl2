@@ -105,6 +105,7 @@
                     1)))
   :hints (("Goal" :in-theory (enable bvdiv))))
 
-(defthm bvdiv-of-1
+;; x/1 becomes x (roughly)
+(defthm bvdiv-of-1-arg3
   (equal (bvdiv size x 1)
          (bvchop size x)))
