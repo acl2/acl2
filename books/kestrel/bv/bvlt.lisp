@@ -1,7 +1,7 @@
 ; Unsigned bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -841,3 +841,15 @@
      :in-theory
      (e/d (bvlt bvchop-of-sum-cases)
           (<-becomes-bvlt <-becomes-bvlt-alt)))))
+
+;rename
+(defthm bvlt-false-when-bvlt-better
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (bvlt size free x) ; free < x
+                (syntaxp (quotep free))
+                (bvle size k (bvplus size 1 free)) ; k <= free+1, gets computed
+                )
+           (not (bvlt size x k))) ; not(x < k), i.e., x>=k
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))

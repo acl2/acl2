@@ -473,3 +473,11 @@
 (defthm logext-not-nil2
   (equal (equal nil (logext n x))
          nil))
+
+;; A bit odd
+(defthm logext-of-0-arg1
+  (equal (logext 0 x)
+         (if (equal (getbit 0 x) 1)
+             -1
+           0))
+  :hints (("Goal" :in-theory (enable logext))))

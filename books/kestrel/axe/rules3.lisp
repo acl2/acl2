@@ -17921,17 +17921,6 @@
 
 ;; new stuff (file these into good libraries, but first file getbit-of-bvplus-split)
 
-(defthm bvlt-false-when-bvlt-better
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (bvlt size free x) ; free < x
-                (syntaxp (quotep free))
-                (bvle size k (bvplus size 1 free)) ; k <= free+1, gets computed
-                (posp size) ;todo gen
-                )
-           (not (bvlt size x k))) ; not(x < k), i.e., x>=k
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
-
 (defthm bvlt-of-bvplus-trim-special
   (implies (posp size)
            (equal (bvlt (+ -1 size) (bvplus size x y) z)
@@ -17963,7 +17952,27 @@
          (bvlt size x (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+; free<x and k<=1+free imply k<=x
+(defthmd sbvlt-transitive-core-4
+  (implies (and (sbvlt size free x) ; free < x
+                (sbvle size y (bvplus size 1 free)) ; y <= free+1
+                (posp size) ; gen?
+                )
+           (not (sbvlt size x y))) ; not(x < y), i.e., x>=y
+  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite
+                                   getbit-of-bvplus-split
+                                   ;bvlt-of-bvuminus-arg2
+                                   posp
+                                   bvlt-of-bvplus-of-1-gen
+                                   )
+                                  (bvlt-false-when-bvlt-better))
+           :cases ((equal size 0))
+           :use (:instance bvlt-false-when-bvlt-better (size (+ -1 size)) (k y)))))
+
 ;todo replace sbvlt-false-when-sbvlt over in bresenham
+; free<x and k<=1+free imply k<=x
+;todo: name this sbvlt-transitive-4-a?
+;todo: make an -alt version?
 (defthm sbvlt-false-when-sbvlt-gen
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -17973,14 +17982,7 @@
                 (posp size) ;todo gen
                 )
            (not (sbvlt size x k))) ; not(x < k), i.e., x>=k
-  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite
-                                   GETBIT-OF-BVPLUS-SPLIT
-                                   ;BVLT-OF-BVUMINUS-ARG2
-                                   posp
-                                   bvlt-of-bvplus-of-1-gen
-                                   )
-                                  (bvlt-false-when-bvlt-better))
-           :use (:instance bvlt-false-when-bvlt-better (size (+ -1 size))))))
+  :hints (("Goal" :use (:instance sbvlt-transitive-core-4 (y k)))))
 
 (defthm <-of-bvchop-when-<-of-bvchop-shorter-cheap
   (implies (< (bvchop 31 x) (bvchop 31 y))

@@ -281,7 +281,19 @@
      bvor-of-bvashr-and-bvshl-alt ;; introduces leftrotate
 
      not-sbvlt-when-sbvlt-rev-cheap-2
-     equal-of-constant-when-sbvlt
+     equal-of-constant-when-sbvlt ; rename
+     equal-constant-when-not-sbvlt ; rename
+     not-sbvlt-same
+     sbvlt-of-bvchop-arg2
+     sbvlt-of-bvchop-arg3
+     sbvlt-transitive-1-a ;these are new
+     sbvlt-transitive-2-a
+     sbvlt-transitive-1-b
+     sbvlt-transitive-2-b
+     sbvlt-transitive-3-a
+     sbvlt-transitive-3-b
+     sbvlt-transitive-another-cheap ;    sbvlt-transitive-another ;;trying to remove this Mon Feb  1 17:00:34 2016
+
      bvif-of-equal-1-0                       ;Mon Apr 25 14:56:14 2016
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
      equal-of-constant-and-bitxor-of-constant ;Sun Apr 24 19:42:42 2016
@@ -379,16 +391,12 @@
      bvif-of-0-arg1
      bvlt-when-not-posp
 
-     equal-constant-when-not-sbvlt      ;Fri Dec 17 02:10:32 2010
+
      equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
 ;equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
 
      equal-of-slice-and-slice    ;Tue Dec 14 22:39:31 2010
      equal-of-slice-and-slice-alt ;Tue Dec 14 22:39:31 2010
-
-     not-sbvlt-same
-     sbvlt-of-bvchop-arg2
-     sbvlt-of-bvchop-arg3
 
      getbit-of-bvcat-all ;newly moved here
 
@@ -435,15 +443,7 @@
      bvlt-transitive-2-a
      bvlt-transitive-2-b
 
-     sbvlt-transitive-1-a ;these are new
-     sbvlt-transitive-2-a
-     sbvlt-transitive-1-b
-     sbvlt-transitive-2-b
-     sbvlt-transitive-3-a
-     sbvlt-transitive-3-b
-
-     sbvlt-transitive-another-cheap ;    sbvlt-transitive-another ;;trying to remove this Mon Feb  1 17:00:34 2016
-     not-equal-max-int-when-<=      ;new
+     not-equal-max-int-when-<=      ;new, rename
 
      repeatbit-of-1     ;new
      lg                 ;new
@@ -520,7 +520,7 @@
      equal-of-bvnot-and-bvxor-ones
      equal-of-bvxor-ones-and-bvnot
      bvlt-of-constant-when-too-narrow
-     equal-of-maxint-when-sbvlt ;Sun Oct 26 16:32:40 2014
+     equal-of-maxint-when-sbvlt ;Sun Oct 26 16:32:40 2014 ; rename
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
      ;; rules about bvsx:

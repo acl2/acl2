@@ -6850,10 +6850,10 @@
                   (equal 1 (getbit (+ -1 size) k))))
   :hints (("Goal" :in-theory (enable logext))))
 
+;rename
 (defthm equal-of-maxint-when-sbvlt
   (implies (sbvlt 32 x y)
-           (equal (equal 2147483647 (bvchop 32 x))
-                  nil))
+           (not (equal 2147483647 (bvchop 32 x))))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
 
 (defthm bvchop-plus-1-split
@@ -7992,15 +7992,6 @@
   (equal (< (bvchop 32 x) (bvplus 32 1 x))
          (not (equal (bvchop 32 x) 4294967295)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
-
-; when free<x and k<=free, we know x<>k
-(defthm equal-of-constant-when-sbvlt
-  (implies (and (syntaxp (quotep k))
-                (sbvlt freesize free x) ;2 free vars here
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (sbvle freesize k free)) ;gets computed
-           (not (equal k x))))
 
 ;helpful for termination proofs
 (defthm <-of-bvminus-and-bvminus-same
