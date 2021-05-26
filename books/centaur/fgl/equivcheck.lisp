@@ -74,7 +74,8 @@ theorem with @('top-level-equal').</p>"
   (equal x y))
 
 (defevaluator repl-equal-ev repl-equal-ev-list ((equal x y) (top-level-equal x y)
-                                                (if x y z) (implies x y))
+                                                (if x y z) (implies x y)
+                                                (return-last x y z))
   :namedp t)
 (local (acl2::def-join-thms repl-equal-ev))
 (local (acl2::def-ev-pseudo-term-fty-support repl-equal-ev repl-equal-ev-list))
@@ -93,11 +94,24 @@ theorem with @('top-level-equal').</p>"
                                        'implies
                                        (list (first x.args)
                                              (replace-equal-with-top-level-equal-rec (second x.args)))))
-                  ((eq x.fn 'if) (pseudo-term-fncall
-                                  'if
-                                  (list (first x.args)
-                                        (replace-equal-with-top-level-equal-rec (second x.args))
-                                        (replace-equal-with-top-level-equal-rec (third x.args)))))
+                  ((eq x.fn 'if)
+                   (if (equal (third x.args) ''nil)
+                       ;; and
+                       (pseudo-term-fncall
+                        'if
+                        (list (replace-equal-with-top-level-equal-rec (first x.args))
+                              (replace-equal-with-top-level-equal-rec (second x.args))
+                              ''nil))
+                     (pseudo-term-fncall
+                      'if
+                      (list (first x.args)
+                            (replace-equal-with-top-level-equal-rec (second x.args))
+                            (replace-equal-with-top-level-equal-rec (third x.args))))))
+                  ((eq x.fn 'return-last)
+                   (pseudo-term-fncall 'return-last
+                                       (list (first x.args)
+                                             (second x.args)
+                                             (replace-equal-with-top-level-equal-rec (third x.args)))))
                   (t (pseudo-term-fix x)))
     :lambda (pseudo-term-lambda
              x.formals
