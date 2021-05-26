@@ -12,11 +12,11 @@
 
 ;; Common proof tools and utilities for R1CS proofs.  Doesn't include many rules (yet).
 
-(include-book "kestrel/crypto/r1cs/tools/axe-prover-r1cs" :dir :system)
-(include-book "kestrel/ethereum/semaphore/proof-tools" :dir :system)
-(include-book "kestrel/ethereum/semaphore/json-to-r1cs/load-circom-json" :dir :system)
+(include-book "lift-semaphore-r1cs")
+(include-book "verify-semaphore-r1cs")
+(include-book "printing")
+(include-book "json-to-r1cs/load-circom-json")
 (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
-(include-book "kestrel/ethereum/semaphore/printing" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/axe/conjoin-term-with-dag" :dir :system)
 (include-book "kestrel/crypto/r1cs/fe-listp-fast" :dir :system)

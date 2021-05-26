@@ -13,5 +13,6 @@
 (defpkg "PFIELD"
   (append '(ffn-symb
             smaller-termp
-            mod-expt-fast)
+            mod-expt-fast
+            pos-fix)
           *acl2-exports*))

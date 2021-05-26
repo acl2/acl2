@@ -10777,7 +10777,7 @@
                  (t nil))
            (value monitored-runes-alist)))))))))
 
-(defun monitor-fn (x expr state)
+(defun monitor-fn (x expr quietp state)
 
 ; If we are not in a wormhole, get into one.  Then we set brr-monitored-runes
 ; appropriately.  We always print the final value of brr-monitored-runes to the
@@ -10788,8 +10788,9 @@
     (er-progn
      (monitor1 x expr 'monitor state)
      (prog2$
-      (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-      (value :invisible))))
+      (and (not quietp)
+           (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
+      (value (if quietp t :invisible)))))
    (t (prog2$
        (brr-wormhole
         '(lambda (whs)
@@ -10798,10 +10799,11 @@
         `(er-progn
           (monitor1 ',x ',expr 'monitor state)
           (prog2$
-           (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
+           (and (not ',quietp)
+                (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
            (value nil)))
         nil)
-       (value :invisible)))))
+       (value (if quietp t :invisible))))))
 
 (defun unmonitor-fn (x ctx state)
   (cond
@@ -10847,7 +10849,7 @@
       nil)
      (value :invisible)))))
 
-(defun brr-fn (flg state)
+(defun brr-fn (flg quietp state)
   (cond
    #+acl2-par
    ((and flg
@@ -10859,18 +10861,24 @@
     (pprogn
      (f-put-global 'gstackp t state)
      (maybe-initialize-brr-evisc-tuple state)
-     (prog2$
-      (cw "Use :a! to exit break-rewrite.~|See :DOC set-brr-evisc-tuple and ~
-           :DOC iprint to control suppression of details when ~
-           printing.~|~%The monitored runes are:~%")
-      (er-progn
-       (monitored-runes-fn state)
-       (value t)))))
+     (cond
+      (quietp (value t))
+      (t
+       (prog2$ (cw "Use :a! to exit break-rewrite.~|See :DOC ~
+                    set-brr-evisc-tuple and :DOC iprint to control ~
+                    suppression of details when printing.~|~%The monitored ~
+                    runes are:~%")
+               (er-progn (monitored-runes-fn state)
+                         (value t)))))))
    (t (pprogn (f-put-global 'gstackp nil state)
               (value nil)))))
 
-(defmacro brr (flg)
-  `(brr-fn ,flg state))
+(defmacro brr (flg &optional quietp)
+  `(brr-fn ,flg ,quietp state))
+
+(defmacro monitor! (x expr)
+  `(er-progn (brr t t)
+             (monitor ,x ,expr t)))
 
 (defmacro brr@ (sym)
   (declare (xargs :guard (member-eq sym '(:target
@@ -10899,8 +10907,8 @@
         (:final-ttree '(get-brr-local 'final-ttree state))
         (otherwise '(get-brr-global 'brr-gstack state))))
 
-(defmacro monitor (x expr)
-  `(monitor-fn ,x ,expr state))
+(defmacro monitor (x expr &optional quietp)
+  `(monitor-fn ,x ,expr ,quietp state))
 
 (defmacro unmonitor (rune)
   `(unmonitor-fn ,rune 'unmonitor state))

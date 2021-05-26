@@ -52,7 +52,7 @@
     pfield::neg-of-mul-of-add-of-neg-arg2-arg2
     pfield::integerp-of-add
     pfield::neg-when-constant-arg1
-    pfield::pos-fix-when-posp
+    acl2::pos-fix-when-posp
     pfield::mod-of-neg
     pfield::mod-when-fep
     pfield::fep-of-add

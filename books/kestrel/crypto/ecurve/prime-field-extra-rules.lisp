@@ -130,7 +130,8 @@
                   (equal a b)))
   :use ((:instance mul-of-div-same-arg1-arg2 (a a) (b c))
         (:instance mul-of-div-same-arg1-arg2 (a b) (b c)))
-  :disable mul-of-div-same-arg1-arg2)
+  :disable (mul-of-div-same-arg1-arg2
+            pfield::mul-of-div-same-arg2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

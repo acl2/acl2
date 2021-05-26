@@ -363,10 +363,13 @@
 ;proved by ihs/quotient-remainder-lemmas
 (defthm floor-of-floor
   (implies (and (rationalp i)
-                (posp j1)
-                (posp j2))
+                (natp j1)
+                (natp j2))
            (equal (floor (floor i j1) j2)
-                  (floor i (* j1 j2)))))
+                  (floor i (* j1 j2))))
+  :hints (("Goal" :cases ((and (equal j1 0) (equal j2 0))
+                          (and (not (equal j1 0)) (equal j2 0))
+                          (and (not (equal j1 0)) (not (equal j2 0)))))))
 
 (local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
 
@@ -1196,3 +1199,12 @@
            (equal (equal x (* 2 (floor x 2)))
                   (evenp x)))
   :hints (("Goal" :in-theory (enable evenp floor))))
+
+;; Not sure exactly where this should go
+(defthm unsigned-byte-p-of-floor
+  (implies (and (unsigned-byte-p size x)
+                (natp y))
+           (unsigned-byte-p size (floor x y)))
+  :hints (("Goal"
+           :cases ((equal 0 y))
+           :in-theory (enable unsigned-byte-p))))

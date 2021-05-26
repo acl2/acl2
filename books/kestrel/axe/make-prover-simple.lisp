@@ -3830,6 +3830,7 @@
        ;;                             rationalp-when-natp-for-axe)
        ;;                            (natp)))))
 
+       ;; Consider each of the RULE-ALISTS in order, for each applying the TACTIC.  TODO: What if the :tactic doesn't include :rewrite?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries), where if ERP
        ;; is-non-nil, then an error occurred and the other return values are irrelevant.  Otherwise, if PROVEDP is non-nil, then we proved the clause and the
        ;; other return values are irrelevant.  Otherwise, LITERAL-NODENUMS represent the simplified clause.
@@ -4021,7 +4022,7 @@
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries), where if ERP
        ;; is-non-nil, then an error occurred and the other return values are irrelevant.  Otherwise, if PROVEDP is non-nil, then we proved the clause and the
        ;; other return values are irrelevant.  Otherwise, LITERAL-NODENUMS represent the simplified clause.
-       ;; TODO: Get rid of tjis wrapper function.
+       ;; TODO: Get rid of this wrapper function.
        (defund ,prove-case-name (literal-nodenums
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  tactic
@@ -4423,7 +4424,7 @@
                           (,prove-true-case-name nodenum ;; to be assumed true
                                                  literal-nodenums
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                 tactic
+                                                 tactic ; same as applied to the original proof
                                                  rule-alists
                                                  interpreted-function-alist
                                                  monitored-symbols
@@ -4457,7 +4458,7 @@
                               (,prove-false-case-name nodenum ;; to be assumed true
                                                       literal-nodenums
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      tactic
+                                                      tactic ; same as applied to the original proof
                                                       rule-alists
                                                       interpreted-function-alist
                                                       monitored-symbols

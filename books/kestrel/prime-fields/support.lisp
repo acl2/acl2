@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
 (local (include-book "../arithmetic-light/times"))
 
 ;why needed?
