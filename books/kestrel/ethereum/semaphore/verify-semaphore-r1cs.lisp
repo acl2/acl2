@@ -10,19 +10,7 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "kestrel/crypto/r1cs/tools/lift-r1cs" :dir :system)
 (include-book "kestrel/crypto/r1cs/tools/verify-r1cs" :dir :system)
-
-;; A thin wrapper around lift-r1cs-new that sets the prime for semaphore.
-;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
-(defmacro lift-semaphore-r1cs (name-of-defconst vars constraints &rest args)
-  `(r1cs::lift-r1cs-new ,name-of-defconst
-                        ,vars
-                        ,constraints
-                        ;; This is baby-jubjub-prime:
-                        21888242871839275222246405745257275088548364400416034343698204186575808495617
-                        :package "ZKSEMAPHORE"
-                        ,@args))
 
 ;; A wrapper of verify-r1cs that specializes it for the semaphore prime
 (acl2::defmacrodoc verify-semaphore-r1cs (lifted-r1cs ; a DAG
