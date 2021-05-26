@@ -3542,7 +3542,9 @@
                                          (cons #\1 (cadr val)))
                                    0
                                    :fmt-control-alist
-                                   (list (cons 'print-base base)))
+                                   (list (cons 'print-base base)
+                                         (cons 'current-package
+                                               (current-package state))))
                    (declare (ignore col))
                    str)
            fn))
