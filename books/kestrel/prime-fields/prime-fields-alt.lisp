@@ -13,7 +13,8 @@
 ;; This book defines the finite field containing integers less than some
 ;; arbitrary prime where all operations are done modulo the prime.
 
-(include-book "support")
+(include-book "kestrel/number-theory/primes" :dir :system)
+(local (include-book "support"))
 (local (include-book "../number-theory/divides"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/times"))

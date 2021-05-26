@@ -16,7 +16,8 @@
 (include-book "pedersen-hash")
 (include-book "prime-field-abbreviations")
 (include-book "printing")
-(include-book "proof-tools") ; TODO: Name conflict on perm
+(include-book "lift-semaphore-r1cs") ; TODO: Name conflict on perm
+(include-book "verify-semaphore-r1cs")
 
 (include-book "json-to-r1cs/top")
 

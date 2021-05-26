@@ -69,3 +69,15 @@
                   (equal n 2)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (e/d (evenp-when-primep) (evenp)))))
+
+;;todo: combine these 2 rules:
+
+(defthm primep-forward-to-posp
+  (implies (rtl::primep x)
+           (posp x))
+  :rule-classes :forward-chaining)
+
+(defthm primep-forward-to-bound
+  (implies (rtl::primep x)
+           (<= 2 x))
+  :rule-classes :forward-chaining)
