@@ -1133,6 +1133,20 @@
     :hints (("Goal"
              :in-theory (e/d (bitp) ())))))
 
+
+(def-rp-rule
+  f2-of-m2-merge
+  (and (equal (adder-sum (f2 x) (f2 (adder-sum (m2 x) y)))
+              (f2 (merge-adder-sum x y)))
+       (equal (adder-sum (f2 (adder-sum (m2 x) y)) (f2 x) )
+              (f2 (merge-adder-sum x y)))
+       (equal (adder-sum (f2 x) (f2 (adder-sum (m2 x) y)) other)
+              (merge-adder-sum (f2 (merge-adder-sum x y)) other))
+       (equal (adder-sum (f2 (adder-sum (m2 x) y)) (f2 x) other)
+              (merge-adder-sum (f2 (merge-adder-sum x y)) other)))
+  :hints (("Goal"
+           :in-theory (e/d (f2 m2 -- adder-sum) ()))))
+
 (progn
   (defconst *adder-rules*
     '(bits-is-bit-of

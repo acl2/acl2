@@ -174,15 +174,19 @@
 
 (def-rp-rule binary-xor-of-1
   (implies (bitp x)
-           (equal (rp::binary-xor 1 x)
-                  (rp::binary-not x)))
+           (and (equal (rp::binary-xor 1 x)
+                       (rp::binary-not x))
+                (equal (rp::binary-xor x 1)
+                       (rp::binary-not x))))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
 (progn
   (def-rp-rule binary-xor-1-of-s
-    (equal (binary-xor 1 (s hash-code pp c/d))
-           (sum 1 (-- (s hash-code pp c/d))))
+    (and (equal (binary-xor 1 (s hash-code pp c/d))
+                (sum 1 (-- (s hash-code pp c/d))))
+         (equal (binary-xor (s hash-code pp c/d) 1)
+                (sum 1 (-- (s hash-code pp c/d)))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2)
                              ()))))

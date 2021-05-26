@@ -637,6 +637,30 @@
 
 
 
+
+(local
+ (defthmd m2-is-bit-of-0
+   (implies (integerp x)
+            (equal (m2 x)
+                   (bit-of x 0)))
+   :hints (("goal"
+            :in-theory (e/d (m2
+                             bit-of
+                             logbit
+                             logbitp
+                             oddp
+                             evenp
+                             mod floor
+                             (:rewrite acl2::|(* y x)|)
+                             (:rewrite acl2::|(floor x 1)|)
+                             (:rewrite acl2::|(mod x 2)| . 1)
+                             )
+                            (mod2-is-m2
+                             +-is-sum
+                             floor2-if-f2
+                             
+                             logbit-is-bits))))))
+
 (define 4vec-adder ((x integerp)
                     (y integerp)
                     (carry-in integerp)
@@ -652,7 +676,20 @@
                          (4vec-adder (svl::4vec-rsh 1 x)
                                      (svl::4vec-rsh 1 y)
                                      (c-spec sum)
-                                     (1- size))))))
+                                     (1- size)))))
+  ///
+  (def-rp-rule 2vec-adder-is-4vec-adder ;; for backwards compatibility
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp carry-in)
+                  (natp size))
+             (equal (2vec-adder x y carry-in size)
+                    (4vec-adder x y carry-in size)))
+    :hints (("Goal"
+             :in-theory (e/d (2vec-adder
+                              m2-is-bit-of-0
+                              )
+                             ())))))
 
 (encapsulate
   nil
