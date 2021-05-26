@@ -11,6 +11,7 @@
 (in-package "ZKSEMAPHORE")
 
 (include-book "kestrel/crypto/r1cs/tools/lift-r1cs" :dir :system)
+
 ;; A thin wrapper around lift-r1cs-new that sets the prime for semaphore.
 ;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
 (defmacro lift-semaphore-r1cs (name-of-defconst vars constraints &rest args)
