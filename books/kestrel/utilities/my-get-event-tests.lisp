@@ -73,14 +73,14 @@
                                     (PSEUDO-TERM-LISTP (CDR LST))))))))
 
 ;; Test on a built-in :program mode function:
-(assert-equal
- (my-get-event 'translate (w state))
- '(defun translate
-      (x stobjs-out
-         logic-modep known-stobjs ctx w state)
-    (cmp-to-error-triple@par
-     (translate-cmp x stobjs-out logic-modep known-stobjs
-                    ctx w (default-state-vars t)))))
+(assert-equal ; Matt K. mod: avoid translate, to avoid ACL2(p) error
+ (my-get-event 'translatable-p (w state))
+ '(defun translatable-p (form stobjs-out bindings known-stobjs ctx wrld)
+    (mv-let (erp val bindings)
+      (translate1-cmp form stobjs-out bindings known-stobjs ctx wrld
+                      (default-state-vars nil))
+      (declare (ignore val bindings))
+      (null erp))))
 
 ;; Test on a name that was introduced with defuns:
 (deftest
