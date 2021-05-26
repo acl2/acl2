@@ -85,16 +85,12 @@
       (temp-dir-name state)
       (temp-dir-name state)
       ;;make sure the parent directory of the temp-dir (e.g., /tmp) exists: ;;TODO; Skip this step?
-      (mv-let
+      (mv-let ;(cw "(Using temporary directory ~x0.)~%" temp-dir-name)
         (erp val state)
-        (sys-call* "mkdir" `("-p" ,*system-temp-dir-no-slash*) state)
+        (sys-call* "mkdir" (list "-p" temp-dir-name) state)
         (declare (ignore erp val)) ;todo: check erp
-        (mv-let ;(cw "(Using temporary directory ~x0.)~%" temp-dir-name)
-          (erp val state)
-          (sys-call* "mkdir" (list "-p" temp-dir-name) state)
-          (declare (ignore erp val)) ;todo: check erp
-          (let ((state (f-put-global 'temp-dir-exists t state)))
-            (mv temp-dir-name state)))))))
+        (let ((state (f-put-global 'temp-dir-exists t state)))
+          (mv temp-dir-name state))))))
 
 (defthm stringp-of-mv-nth-0-of-maybe-make-temp-dir
   (stringp (mv-nth 0 (maybe-make-temp-dir state)))
