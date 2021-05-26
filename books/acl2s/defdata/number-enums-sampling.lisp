@@ -3,6 +3,8 @@
  "../portcullis")
 (begin-book t);$ACL2s-Preamble$|#
 
+; cert_param: (non-acl2r)
+
 (in-package "ACL2S")
 (set-verify-guards-eagerness 2)
 
@@ -67,10 +69,10 @@
 (defun pos-multiple-of-threep (v)
   (if (posp v)
     (equal 0 (mod v 3))
-    nil)) 
+    nil))
 
 (defun nth-pos-multiple-of-three (n)
- (if (natp n) 
+ (if (natp n)
    (* 3 (1+ n))
    3))
 
@@ -83,7 +85,7 @@
 
 (defun negp (x)
   (declare (xargs :guard t))
-  (and (integerp x) 
+  (and (integerp x)
        (< x 0)))
 
 (defun nth-neg-builtin (n)
@@ -92,7 +94,7 @@
 
 (defun non-pos-integerp (x)
   (declare (xargs :guard t))
-  (and (integerp x) 
+  (and (integerp x)
        (<= x 0)))
 
 (defun nth-non-pos-integer-builtin (n)
@@ -101,7 +103,7 @@
 
 (defun non-0-integerp (x)
   (declare (xargs :guard t))
-  (and (integerp x) 
+  (and (integerp x)
        (/= x 0)))
 
 (defun nth-non-0-integer-builtin (n)
@@ -120,7 +122,7 @@
       mag
       (- -1 mag))))
 
-(def-const *init-hash-num* 
+(def-const *init-hash-num*
   (floor (* 61803095516164791237/100000000000000000000 (expt 2 64)) 1))
 
 (defun simple-hash (n range)
@@ -137,7 +139,7 @@
     (+ lo (simple-hash n range))))
 
 (local (include-book "arithmetic-5/top" :dir :system))
-       
+
 (defun bitsize-aux (n acc)
   (declare (xargs :guard (and (natp n) (posp acc))))
   (if (and (integerp n) (> n 1))
@@ -167,7 +169,7 @@
     (if (<= size stop-bits)
         1
       (- size (1- stop-bits)))))
-    
+
 ; (rounds 0 1023 10)
 ; (rounds 0 1024 10)
 
@@ -209,32 +211,32 @@
 
 #|
 (encapsulate nil
-  (local 
+  (local
    (include-book "arithmetic-5/top" :dir :system))
 
   (defthm nth-pos-multiple-three-type
     (pos-multiple-of-threep (nth-pos-multiple-of-three n)))
-  
-  
+
+
   (defthm nth-pos-multiple-of-three-index
     (implies (natp n)
              (equal (pos-multiple-of-three-index (nth-pos-multiple-of-three n))
                     n)))
-  
+
   (defthm pos-multiple-of-three-index-nth
     (implies (pos-multiple-of-threep i)
              (equal (nth-pos-multiple-of-three (pos-multiple-of-three-index i))
-                    i)))    
+                    i)))
 
-  
+
   (defthm nth-integer-index
-    (implies 
+    (implies
      (and (integerp n)
           (>= n 0))
      (equal (integer-index (nth-integer n))
             n)))
   (defthm integer-index-nth
-    (implies 
+    (implies
      (integerp i)
      (equal (nth-integer (integer-index i))
             i))))
@@ -279,7 +281,7 @@
  (defthm len-base-defdata-isort3
    (implies (and (nat-listp l) (cddr l)) (cddr (base-defdata-isort l)))
    :rule-classes ((:forward-chaining) (:rewrite)))
-  
+
  (defthm weighted-split-nat--nat-listp-fc
    (nat-listp (defdata::weighted-split-nat weights x))
    :rule-classes ((:forward-chaining
@@ -310,7 +312,7 @@
            (natp (car l)))
   :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((car l)))))
-                                                     
+
 (defthm base-defdata-isort-elements2
   (implies (and (nat-listp l)
                 (cdr l))
@@ -332,7 +334,7 @@
            (natp (car )))
   :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((car l)))))
-                                                     
+
 (defthm wsn-elements2
   (implies (and (nat-listp l)
                 (cdr l))
@@ -363,7 +365,7 @@
   (equal (len (defdata::weighted-split-nat weights x))
          (max 1 (len weights)))))
 
-(thm 
+(thm
   (EQUAL (LEN (DEFDATA::WEIGHTED-SPLIT-NAT l n))
          (max 1 (len l)))
   :hints (("goal" :in-theory (enable defdata::weighted-split-nat)))))
@@ -384,7 +386,7 @@
   (implies (posp x)
            (acl2-numberp x))
   :rule-classes ((:rewrite) (:forward-chaining)))
- 
+
 (defthm integerp-implies-acl2-numberp
   (implies (integerp x)
            (acl2-numberp x))
@@ -460,8 +462,8 @@ this as a type.
 
 #|
 
-Notice that this is the same as neg-ratio, since a 
-ratio can't be an integer! So, I'm removing this 
+Notice that this is the same as neg-ratio, since a
+ratio can't be an integer! So, I'm removing this
 as a type.
 
 (defun non-pos-ratiop (x)
@@ -491,7 +493,7 @@ as a type.
 
 (defun neg-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x) 
+  (and (rationalp x)
        (< x 0)))
 
 (defun nth-neg-rational-builtin (n)
@@ -503,7 +505,7 @@ as a type.
 
 (defun pos-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x) 
+  (and (rationalp x)
        (> x 0)))
 
 (defun nth-pos-rational-builtin (n)
@@ -515,7 +517,7 @@ as a type.
 
 (defun non-neg-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x) 
+  (and (rationalp x)
        (>= x 0)))
 
 (defun nth-non-neg-rational-builtin (n)
@@ -527,7 +529,7 @@ as a type.
 
 (defun non-pos-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x) 
+  (and (rationalp x)
        (<= x 0)))
 
 (defun nth-non-pos-rational-builtin (n)
@@ -539,7 +541,7 @@ as a type.
 
 (defun non-0-rationalp (x)
   (declare (xargs :guard t))
-  (and (rationalp x) 
+  (and (rationalp x)
        (/= x 0)))
 
 (defun nth-non-0-rational-builtin (n)
@@ -595,7 +597,7 @@ as a type.
        ((list n1 n2) (defdata::split-nat 2 n)))
     (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
 
-;; (encapsulate 
+;; (encapsulate
 ;;  ((nth-acl2-number (n) t :guard (natp n)))
 ;;  (local (defun nth-acl2-number (n)
 ;;           (declare (xargs :guard (natp n)))
@@ -630,7 +632,7 @@ as a type.
     (rational (nth-rational-between n lo hi))
     (complex-rational (nth-complex-rational-between n lo hi))
     (t (nth-acl2-number-between n lo hi))))
-  
+
 (defmacro nth-number-between (n lo hi &key type)
   `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
 
