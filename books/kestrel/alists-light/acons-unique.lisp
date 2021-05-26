@@ -39,3 +39,9 @@
            (no-duplicatesp-equal (strip-cars (acons-unique key val alist))))
   :hints (("Goal" :in-theory (enable acons-unique
                                      not-member-equal-of-strip-cars-of-acons-unique))))
+
+(defthm symbol-alistp-of-acons-unique
+  (implies (symbol-alistp alist)
+           (equal (symbol-alistp (acons-unique key val alist))
+                  (symbolp key)))
+  :hints (("Goal" :in-theory (enable acons-unique))))
