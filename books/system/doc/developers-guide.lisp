@@ -1973,6 +1973,21 @@
  some function was passed incorrectly, perhaps in the wrong argument
  position.</p>
 
+ <p>In rare cases an error may occur for which the backtrace isn't helpful or
+ even makes little sense.  Something to try is to build with safety 3, for
+ example as follows.</p>
+
+ @({
+ make ACL2_SAFETY=3 PREFIX=safety-3-
+ })
+
+ <p>If your test case involves including books, then also clean the books or
+ use @(tsee set-compiler-enabled) to avoid loading their compiled files.  Then
+ try again with the new executable; of course, if you cleaned the books, then
+ first recertify as appropriate using the new executable.  ACL2 will run more
+ slowly, but in return it will do a lot more checking along the way and might
+ well provide a much better backtrace than before.</p>
+
  <p>If you are reading this and have more debugging suggestions, by all means
  consider adding them here!</p>
 
