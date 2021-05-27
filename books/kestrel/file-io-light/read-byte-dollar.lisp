@@ -40,8 +40,8 @@
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-byte$
   (implies (and (symbolp channel)
                 (state-p1 state)
-                (open-input-channel-p1 channel :byte state))
-           (open-input-channel-p1 channel :byte (mv-nth 1 (read-byte$ channel state))))
+                (open-input-channel-p1 channel typ state))
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-byte$ channel state))))
   :hints (("Goal" :in-theory (enable read-byte$))))
 
 ;; Because it's an open :byte channel
