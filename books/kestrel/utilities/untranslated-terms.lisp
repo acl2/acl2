@@ -1,6 +1,6 @@
 ; Utilities for dealing with untranslated terms
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,12 +33,14 @@
 (include-book "map-symbol-name")
 (include-book "legal-variable-listp")
 (include-book "quote")
+(include-book "lets")
+(include-book "lambdas")
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-;(include-book "../library-wrappers/flag")
+;(include-book "kestrel/library-wrappers/my-make-flag" :dir :system)
 (include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
 (local (include-book "std/lists/last" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
@@ -51,16 +53,6 @@
 (in-theory (disable butlast))
 (in-theory (disable last))
 (in-theory (disable member-equal))
-
-;this matches something in STD
-(defthm true-listp-when-symbol-listp
-  (implies (symbol-listp x)
-           (true-listp x))
-  :rule-classes :compound-recognizer)
-
-(defthmd true-listp-when-symbol-listp-rewrite-unlimited
-  (implies (symbol-listp x)
-           (true-listp x)))
 
 (defthm acl2-count-of-car-of-last-of-fargs
   (implies (consp x)
@@ -240,7 +232,9 @@
 ;(defforall-simple untranslated-TERM-supported-bstar-binderp)
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
-
+;;;
+;;; untranslated-variablep
+;;;
 
 ;; An untranslated variable is a symbol, with several additional restrictions.
 ;; For example, t and nil are constants, as are keywords (all of these things
@@ -265,6 +259,10 @@
                   (legal-variable-name-in-acl2-packagep str)))
   :hints (("Goal" :in-theory (enable untranslated-variablep))))
 
+;;;
+;;; untranslated-constantp
+;;;
+
 ;; Recognize an untranslated term that is a constant
 (defund untranslated-constantp (x)
   (declare (xargs :guard t))
@@ -277,6 +275,7 @@
                ;; TODO: Consider disallowing *
                (legal-constantp1 x)))
       (myquotep x)))
+
 ;; (defthm car-when-untranslated-constantp
 ;;   (implies (untranslated-constantp x)
 ;;            (equal (car x)
@@ -310,34 +309,7 @@
 ;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
 ;ttodo: add support for case, mv-let, and more constructs.
 
-;; Basically the same as lambda-formals, but this one is a function, so we can
-;; disable it.
-(defund ulambda-formals (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)))
-  (farg1 fn))
 
-;; These will be IGNORE or IGNORABLE declares.
-;; I think only untranslated lambdas have them (translated lambdas seem to do it with HIDE).
-(defund ulambda-declares (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)
-                  ))
-  (butlast (rest (fargs fn)) 1))
-
-;; Get the body of an untranslated lambda.  Note that it may be preceeded by
-;; declares.
-(defund ulambda-body (fn)
-  (declare (xargs :guard ;(untranslated-lambda-exprp fn)
-                  (true-listp fn)
-                  ))
-  (car (last (fargs fn))))
-
-(defthm acl2-count-of-ulambda-body-linear-weak
-  (<= (acl2-count (ulambda-body term))
-      (acl2-count term))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable ulambda-body))))
 
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
@@ -522,16 +494,11 @@
   :hints (("Goal" :expand (untranslated-termp (cons fn args))
            :in-theory (enable member-equal))))
 
-
 (defthm untranslated-termp-of-ulambda-body
   (implies (untranslated-lambda-exprp lambda)
            (untranslated-termp (ulambda-body lambda)))
   :hints (("Goal" :expand (untranslated-lambda-exprp lambda)
            :in-theory (enable ulambda-body untranslated-lambda-exprp))))
-
-(defund make-ulambda (formals declares body)
-  (declare (xargs :guard (true-listp declares))) ;strengthen?
-  `(lambda ,formals ,@declares ,body))
 
 (defthm untranslated-lambda-exprp-of-make-ulambda
   (equal (untranslated-lambda-exprp (make-ulambda formals declares body))
@@ -634,12 +601,6 @@
 (defthm UNTRANSLATED-TERM-LISTP-of-remove
   (implies (UNTRANSLATED-TERM-LISTP x)
            (UNTRANSLATED-TERM-LISTP (REMOVE-EQUAL a x))))
-
-;; Returns a possibly-empty list of declares
-;; TODO: Also make a let-bindings and a let-body?
-(defun let-declares (term)
-  (declare (xargs :guard (true-listp term)))
-  (butlast (rest (fargs term)) 1))
 
 (local (in-theory (disable symbol-alistp)))
 
@@ -992,7 +953,7 @@
 ;;          (formals (second lambda-expr))
 ;;          ;; don't need the declares here
 ;;          (body (car (last lambda-expr))))
-;;         (my-sublis-var (pairlis$ formals actuals) ;;Darn.  We'll need a version of my-sublis-var that handles untranslated terms...
+;;         (sublis-var-simple (pairlis$ formals actuals) ;;Darn.  We'll need a version of sublis-var-simple that handles untranslated terms...
 ;;                        body)))
 
 (defun def-untranslated-term-fold-fn (base-name

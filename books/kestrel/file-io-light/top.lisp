@@ -13,6 +13,10 @@
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
+
+(include-book "read-byte-dollar")
+(include-book "read-object")
+
 (include-book "write-byte-dollar")
 (include-book "write-bytes-to-channel")
 (include-book "write-bytes-to-file")
@@ -21,4 +25,13 @@
 (include-book "write-strings-to-channel")
 (include-book "write-strings-to-file")
 (include-book "write-strings-to-file-bang")
+
+(include-book "file-write-date-dollar")
 (include-book "file-length-dollar")
+
+(include-book "read-object-from-file")
+(include-book "read-file-into-byte-list")
+(include-book "read-file-into-character-list")
+(include-book "read-file-into-stobj")
+
+(include-book "doc")

@@ -33,7 +33,7 @@ logic must set the op-code to ALU-INC-OP whenever the ZERO flag is T.
  FM9001   Mode  Prop  Gen C-in  C-out  Ovfl  Comment
  opcode         aab   aab
  3210            n     nn
-                         
+
  0000     f     tff   ttf   x   f      f     Move
  0001     t     -f+   ttf   t   co     *     Increment
  0010     t     tft   ftt   c   co     *     AddC
@@ -47,8 +47,8 @@ logic must set the op-code to ALU-INC-OP whenever the ZERO flag is T.
  1010     f     tff   ttf   x   a0     f     Move (LSR)
  1011     f     tff   fft   x   f      f     XOR
  1100     f     tft   ttf   x   f      f     Or
- 1101     f     fff   ftt   x   f      f     And 
- 1110     f     ftf   ttf   x   f      f     Not 
+ 1101     f     fff   ftt   x   f      f     And
+ 1110     f     ftf   ttf   x   f      f     Not
  1111     f     tff   ttf   x   f      f     Move
 
  ZERO     t     fff   fff   t   f      f     ZERO
@@ -98,7 +98,7 @@ x100.a.b.~out + x100.~a.~b.out     Add,Addc
          (op1   (b-not op1-))
          (op2   (b-not op2-))
          (op3   (b-not op3-)))
-     (let ((out0 (b-nand3 (b-nand4 op0- op1- op2 op3) 
+     (let ((out0 (b-nand3 (b-nand4 op0- op1- op2 op3)
                           (b-nand op1 op3-)
                           (b-nand3 op2- op3- swap)))
            (out1 (b-nor op2- (b-nor op3- (b-nor op0 op1-))))

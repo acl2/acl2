@@ -90,8 +90,8 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
            nil)
           ((atom x)
            t)
-          ((and (digitp (car x))
-                (digitp (car y)))
+          ((and (dec-digit-char-p (car x))
+                (dec-digit-char-p (car y)))
            (b* (((mv v1 l1 rest-x) (parse-nat-from-charlist x 0 0))
                 ((mv v2 l2 rest-y) (parse-nat-from-charlist y 0 0)))
 
@@ -133,30 +133,30 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
     ()
     (local (defthm char<-nonsense-2
              (implies (and (char< a y)
-                           (not (digitp a))
-                           (digitp y)
-                           (digitp z))
+                           (not (dec-digit-char-p a))
+                           (dec-digit-char-p y)
+                           (dec-digit-char-p z))
                       (char< a z))
              :rule-classes ((:rewrite :backchain-limit-lst 0))
-             :hints(("Goal" :in-theory (enable char< digitp)))))
+             :hints(("Goal" :in-theory (enable char< dec-digit-char-p)))))
 
     (local (defthm char<-nonsense-3
              (implies (and (char< y a)
-                           (not (digitp a))
-                           (digitp x)
-                           (digitp y))
+                           (not (dec-digit-char-p a))
+                           (dec-digit-char-p x)
+                           (dec-digit-char-p y))
                       (char< x a))
              :rule-classes ((:rewrite :backchain-limit-lst 0))
-             :hints(("Goal" :in-theory (enable char< digitp)))))
+             :hints(("Goal" :in-theory (enable char< dec-digit-char-p)))))
 
     (local (defthm char<-nonsense-4
              (implies (and (char< x y)
-                           (not (digitp y))
-                           (digitp x)
-                           (digitp z))
+                           (not (dec-digit-char-p y))
+                           (dec-digit-char-p x)
+                           (dec-digit-char-p z))
                       (not (char< y z)))
              :rule-classes ((:rewrite :backchain-limit-lst 0))
-             :hints(("Goal" :in-theory (enable digitp char<)))))
+             :hints(("Goal" :in-theory (enable dec-digit-char-p char<)))))
 
 
 
@@ -168,9 +168,9 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                                       char<-trichotomy-strong
                                       char<-transitive)
                                      (expt charlistnat<-antisymmetric
-                                           take-leading-digits-when-digit-listp
+                                           take-leading-dec-digit-chars-when-dec-digit-char-listp
                                            default-+-2 default-+-1
-                                           BOUND-OF-LEN-OF-TAKE-LEADING-DIGITS
+                                           BOUND-OF-LEN-OF-TAKE-LEADING-DEC-DIGIT-CHARS
                                            LEN-OF-PARSE-NAT-FROM-CHARLIST))
               :induct t
               :expand ((:free (y) (charlistnat< x y))
@@ -180,32 +180,32 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 
 
     ;; (local (defthm crock
-    ;;          (implies (and (equal (take-leading-digits y)
-    ;;                               (take-leading-digits x))
+    ;;          (implies (and (equal (take-leading-dec-digit-chars y)
+    ;;                               (take-leading-dec-digit-chars x))
     ;;                        (charlisteqv (skip-leading-digits x)
     ;;                                     (skip-leading-digits y)))
     ;;                   (charlisteqv x y))
     ;;          :hints(("Goal"
     ;;                  :induct (my-induction x y)
-    ;;                  :expand ((take-leading-digits x)
-    ;;                           (take-leading-digits y)
+    ;;                  :expand ((take-leading-dec-digit-chars x)
+    ;;                           (take-leading-dec-digit-chars y)
     ;;                           (skip-leading-digits x)
     ;;                           (skip-leading-digits y))))))
 
     ;; (local (defthm lemma-3
-    ;;          (implies (and (equal (len (take-leading-digits y))
-    ;;                               (len (take-leading-digits x)))
-    ;;                        (equal (digit-list-value (take-leading-digits y))
-    ;;                               (digit-list-value (take-leading-digits x)))
+    ;;          (implies (and (equal (len (take-leading-dec-digit-chars y))
+    ;;                               (len (take-leading-dec-digit-chars x)))
+    ;;                        (equal (dec-digit-chars-value (take-leading-dec-digit-chars y))
+    ;;                               (dec-digit-chars-value (take-leading-dec-digit-chars x)))
     ;;                        (charlisteqv (skip-leading-digits x)
     ;;                                     (skip-leading-digits y)))
     ;;                   (equal (charlisteqv x y)
     ;;                          t))
     ;;          :hints(("Goal"
     ;;                  :in-theory (enable chareqv
-    ;;                                     take-leading-digits
+    ;;                                     take-leading-dec-digit-chars
     ;;                                     skip-leading-digits
-    ;;                                     digit-list-value)))))
+    ;;                                     dec-digit-chars-value)))))
     ;; (defthm charlistnat<-trichotomy-weak
     ;;   (implies (and (not (charlistnat< x y))
     ;;                 (not (charlistnat< y x)))
@@ -218,11 +218,11 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 
   (encapsulate
     ()
-    (local (defthm digit-list-value-max
-             (< (digit-list-value x) (expt 10 (len x)))
-             :hints(("Goal" :in-theory (enable digit-list-value)))
+    (local (defthm dec-digit-chars-value-max
+             (< (dec-digit-chars-value x) (expt 10 (len x)))
+             :hints(("Goal" :in-theory (enable dec-digit-chars-value)))
              :rule-classes :linear))
-    
+
     (local (defthmd equal-of-sum-digits-lemma1
              (implies (and (posp b)
                            (natp big1)
@@ -272,51 +272,51 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
              (implies (and (equal (len x) (len y))
                            (character-listp x)
                            (character-listp y)
-                           (digit-listp x)
-                           (digit-listp y))
-                      (equal (equal (digit-list-value x)
-                                    (digit-list-value y))
+                           (dec-digit-char-listp x)
+                           (dec-digit-char-listp y))
+                      (equal (equal (dec-digit-chars-value x)
+                                    (dec-digit-chars-value y))
                              (equal x y)))
              :hints(("Goal"
                      :induct (my-induction x y)
-                     :in-theory (enable digit-listp
-                                        digit-list-value
+                     :in-theory (enable dec-digit-char-listp
+                                        dec-digit-chars-value
                                         commutativity-of-+))
                     (and stable-under-simplificationp
                          '(:use ((:instance equal-of-sum-digits
                                   (b (expt 10 (len (cdr x))))
-                                  (little1 (digit-list-value (cdr x)))
-                                  (little2 (digit-list-value (cdr y)))
-                                  (big1 (digit-val (car x)))
-                                  (big2 (digit-val (car y))))))))))
+                                  (little1 (dec-digit-chars-value (cdr x)))
+                                  (little2 (dec-digit-chars-value (cdr y)))
+                                  (big1 (dec-digit-char-value (car x)))
+                                  (big2 (dec-digit-char-value (car y))))))))))
 
     (local (defthm crock
-             (implies (and (equal (take-leading-digits y)
-                                  (take-leading-digits x))
+             (implies (and (equal (take-leading-dec-digit-chars y)
+                                  (take-leading-dec-digit-chars x))
                            (charlisteqv (skip-leading-digits x)
                                         (skip-leading-digits y)))
                       (charlisteqv x y))
              :hints(("Goal"
                      :induct (my-induction x y)
-                     :expand ((take-leading-digits x)
-                              (take-leading-digits y)
+                     :expand ((take-leading-dec-digit-chars x)
+                              (take-leading-dec-digit-chars y)
                               (skip-leading-digits x)
                               (skip-leading-digits y))))))
 
     (local (defthm lemma-3
-             (implies (and (equal (len (take-leading-digits y))
-                                  (len (take-leading-digits x)))
-                           (equal (digit-list-value (take-leading-digits y))
-                                  (digit-list-value (take-leading-digits x)))
+             (implies (and (equal (len (take-leading-dec-digit-chars y))
+                                  (len (take-leading-dec-digit-chars x)))
+                           (equal (dec-digit-chars-value (take-leading-dec-digit-chars y))
+                                  (dec-digit-chars-value (take-leading-dec-digit-chars x)))
                            (charlisteqv (skip-leading-digits x)
                                         (skip-leading-digits y)))
                       (equal (charlisteqv x y)
                              t))
              :hints(("Goal"
                      :in-theory (enable chareqv
-                                        take-leading-digits
+                                        take-leading-dec-digit-chars
                                         skip-leading-digits
-                                        digit-list-value)))))
+                                        dec-digit-chars-value)))))
 
     (defthm charlistnat<-trichotomy-weak
       (implies (and (not (charlistnat< x y))
@@ -324,8 +324,8 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                (equal (charlisteqv x y)
                       t))
       :hints(("Goal" :in-theory (e/d (char<-trichotomy-strong)
-                                     (BOUND-OF-LEN-OF-TAKE-LEADING-DIGITS
-                                      TAKE-LEADING-DIGITS-WHEN-DIGIT-LISTP
+                                     (BOUND-OF-LEN-OF-TAKE-LEADING-DEC-DIGIT-CHARS
+                                      TAKE-LEADING-DEC-DIGIT-CHARS-WHEN-DEC-DIGIT-CHAR-LISTP
                                       ACL2::RIGHT-CANCELLATION-FOR-+
                                       CHARLISTNAT<-ANTISYMMETRIC
                                       CHARLISTNAT<-IRREFLEXIVE
@@ -413,8 +413,8 @@ one index.</p>"
                   nil)
                  ((zp (- xl xn))
                   t)
-                 ((and (digitp (char x xn))
-                       (digitp (char y yn)))
+                 ((and (dec-digit-char-p (char x xn))
+                       (dec-digit-char-p (char y yn)))
                   (b* (((mv v1 l1)
                         (parse-nat-from-string x 0 0 xn xl))
                        ((mv v2 l2)
@@ -453,10 +453,10 @@ one index.</p>"
                            (type (unsigned-byte 8) code-y))
                   (cond
                    ((and
-                     ;; (digitp (char x xn))
+                     ;; (dec-digit-char-p (char x xn))
                      (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code-x))
                      (<= (the (unsigned-byte 8) code-x) (the (unsigned-byte 8) 57))
-                     ;; (digitp (char y yn))
+                     ;; (dec-digit-char-p (char y yn))
                      (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code-y))
                      (<= (the (unsigned-byte 8) code-y) (the (unsigned-byte 8) 57)))
                     (b* (((mv v1 l1)
@@ -504,12 +504,12 @@ one index.</p>"
   (encapsulate
     nil
     (local (in-theory (disable acl2::nth-when-bigger
-                               take-leading-digits-when-digit-listp
-                               digit-listp-when-not-consp
+                               take-leading-dec-digit-chars-when-dec-digit-char-listp
+                               dec-digit-char-listp-when-not-consp
                                (:type-prescription character-listp)
                                (:type-prescription eqlable-listp)
                                (:type-prescription atom-listp)
-                               (:type-prescription digitp$inline)
+                               (:type-prescription dec-digit-char-p$inline)
                                (:type-prescription strnat<-aux)
                                (:type-prescription char<)
                                default-char-code
@@ -531,16 +531,16 @@ one index.</p>"
                                )))
     (verify-guards strnat<-aux
       :hints((and stable-under-simplificationp
-                  '(:in-theory (enable digitp
-                                       digit-val
+                  '(:in-theory (enable dec-digit-char-p
+                                       dec-digit-char-value
                                        char-fix
                                        char<))))))
 
   (local (defthm skip-leading-digits-to-nthcdr
            (implies (force (true-listp x))
                     (equal (skip-leading-digits x)
-                           (nthcdr (len (take-leading-digits x)) x)))
-           :hints(("Goal" :in-theory (enable skip-leading-digits take-leading-digits)))))
+                           (nthcdr (len (take-leading-dec-digit-chars x)) x)))
+           :hints(("Goal" :in-theory (enable skip-leading-digits take-leading-dec-digit-chars)))))
 
   (defthm strnat<-aux-correct
     (implies (and (stringp x)
@@ -564,8 +564,8 @@ one index.</p>"
                              )
                             (charlistnat<-antisymmetric
                              charlistnat<-trichotomy-strong
-                             take-leading-digits-when-digit-listp
-                             digit-listp-when-not-consp
+                             take-leading-dec-digit-chars-when-dec-digit-char-listp
+                             dec-digit-char-listp-when-not-consp
                              charlistnat<
                              (:definition strnat<-aux)
                              default-+-1 default-+-2
@@ -617,4 +617,3 @@ pretty fast.</p>"
     (implies (and (strnat< y z)
                   (strnat< x y))
              (strnat< x z))))
-

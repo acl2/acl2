@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,9 @@
 
 (local (include-book "times"))
 (local (include-book "complex"))
-(local (include-book "../library-wrappers/arithmetic-inequalities"))
+(local (include-book "minus"))
+(local (include-book "../library-wrappers/arithmetic-inequalities")) ; todo: drop
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; Exported in times-and-divides.lisp
 (local
@@ -24,7 +26,13 @@
 
 (defthm /-of-/
   (equal (/ (/ x))
-         (fix x)))
+         (fix x))
+  :hints (("Goal"
+           :use (:instance equal-of-*-and-*-cancel
+                           (x (/ x))
+                           (y (/ (/ x)))
+                           (z x))
+           :in-theory (disable equal-of-*-and-*-cancel))))
 
 (defthm equal-of-/-constant
   (implies (syntaxp (quotep k))
@@ -132,6 +140,60 @@
            (equal (integerp (* (/ y) x))
                   (equal 0 x))))
 
+(defthmd integerp-squeeze-gen
+  (implies (and (< low x)
+                (< x (+ 1 low))
+                (integerp low))
+           (not (integerp x))))
+
+;todo: handle the other cases
+(defthm <-of-*-of-/-and-1-when-neg
+  (implies (and (< x 0)
+                (< y 0)
+                (rationalp y)
+                (rationalp x)
+                )
+           (equal (< (* x (/ y)) 1)
+                  (< y x)))
+  :hints (("Goal"
+           :use ((:instance <-of-*-and-*-cancel-gen
+                            (x1 (* x (/ y)))
+                            (x2 1)
+                            (y (- y)))))))
+
+;todo: handle the other cases
+(defthm integerp-of-*-of-/-when-<-and-negative
+  (implies (and (< y x)
+                (<= x 0)
+                (<= y 0)
+                (rationalp y)
+                (rationalp x))
+           (equal (integerp (* (/ y) x))
+                  (or (equal x 0)
+                      (equal y 0))))
+  :hints (("Goal" :use (:instance integerp-squeeze-gen
+                                  (low 0)
+                                  (x (* (/ y) x))))))
+
+;;comutes the args to * in the lhs
+(defthm integerp-of-*-of-/-when-<-and-negative-alt
+  (implies (and (< y x)
+                (<= x 0)
+                (<= y 0)
+                (rationalp y)
+                (rationalp x))
+           (equal (integerp (* x (/ y)))
+                  (or (equal x 0)
+                      (equal y 0))))
+  :hints (("Goal" :use (:instance integerp-squeeze-gen
+                                  (low 0)
+                                  (x (* (/ y) x))))))
+
+
+
+
+
+
 ;;;
 ;;; Characterize division of complex numbers
 ;;;
@@ -201,3 +263,128 @@
                               (+ (* c c) (* d d))))))
   :hints (("Goal" :use (:instance /-of-complex-and-complex-step1)
            :in-theory (enable complex-opener))))
+
+(defthm <-of-*-of-/-arg1
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< (* x (/ y)) z)
+                  (if (< 0 y)
+                      (< x (* y z))
+                    (if (equal 0 y)
+                        (< 0 z)
+                      (< (* y z) x)))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
+                                  (x1 (* x (/ y))) (x2 z) (y y))
+           :in-theory (disable <-of-*-and-*-cancel-gen))))
+
+;; commutes the * in the lhs
+(defthm <-of-*-of-/-arg1-alt
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< (* (/ y) x) z)
+                  (if (< 0 y)
+                      (< x (* y z))
+                    (if (equal 0 y)
+                        (< 0 z)
+                      (< (* y z) x)))))
+  :hints (("Goal" :use (:instance <-of-*-of-/-arg1))))
+
+(defthm <-of-*-of-/-arg2
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< z (* x (/ y)))
+                  (if (< 0 y)
+                      (< (* y z) x)
+                    (if (equal 0 y)
+                        (< z 0)
+                      (< x (* y z))))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
+                                  (x1 z)
+                                  (x2 (* x (/ y))))
+           :in-theory (disable <-of-*-and-*-cancel-gen
+                               <-*-/-RIGHT
+                               <-OF-*-OF-/-arg1))))
+
+;; commutes the * in the lhs
+(defthm <-of-*-of-/-arg2-alt
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< z (* (/ y) x))
+                  (if (< 0 y)
+                      (< (* y z) x)
+                    (if (equal 0 y)
+                        (< z 0)
+                      (< x (* y z))))))
+  :hints (("Goal" :use (:instance <-of-*-of-/-arg2)
+           :in-theory (disable <-of-*-of-/-arg2))))
+
+;combine with rules above?
+(defthm integerp-of-*-of-/-when-<-and-mixed-1
+  (implies (and (< x (- y))
+                (<= 0 x)
+                (<= y 0)
+                (rationalp y)
+                (rationalp x))
+           (equal (integerp (* x (/ y)))
+                  (or (equal x 0)
+                      (equal y 0))))
+  :hints (("Goal" :use (:instance integerp-squeeze-gen
+                                  (low 0)
+                                  (x (* (/ (- y)) x))))))
+
+(defthm integerp-of-*-of-/-when-<-and-mixed-2
+  (implies (and (< (- x) y)
+                (<= x 0)
+                (<= 0 y)
+                (rationalp y)
+                (rationalp x))
+           (equal (integerp (* x (/ y)))
+                  (or (equal x 0)
+                      (equal y 0))))
+  :hints (("Goal" :use (:instance integerp-squeeze-gen
+                                  (low 0)
+                                  (x (* (/ (- y)) x))))))
+
+(defthm /-of--
+  (implies (rationalp x)
+           (equal (/ (- x))
+                  (- (/ x)))))
+
+(defthm /-of-*
+  (equal (/ (* x y))
+         (* (/ x) (/ y))))
+
+;gen?
+(defthm <-of-/-and-constant
+  (implies (and (syntaxp (quotep k))
+                ;(syntaxp (not (quotep x))) ;needed?
+                (< 0 x)
+                (< 0 k)
+                (rationalp k)
+                (rationalp x)
+                )
+           (equal (< k (/ x))
+                  (< x (/ k))))
+  :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
+  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
+                                  (z (/ x k))
+                                  (x k) (y (/ x))))))
+
+;gen?
+(defthm /-equal-constant-alt
+  (implies (and (syntaxp (quotep k))
+                (< 0 x)
+                (< 0 k)
+                (rationalp k)
+                (rationalp x)
+                )
+           (equal (< (/ x) k)
+                  (< (/ k) x)))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
+                                  (z (/ x k))
+                                  (y k) (x (/ x))))))

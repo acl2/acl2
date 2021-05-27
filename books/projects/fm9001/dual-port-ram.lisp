@@ -24,7 +24,7 @@
 
 ;; updates the state of the RAM.
 
-;; The ARGS are assumed to be structured as follows: 
+;; The ARGS are assumed to be structured as follows:
 
 ;; 0..(ADDRESS-LINES - 1)               -- A (read port) address.
 ;; ADDRESS-LINES..(2*ADDRESS-LINES - 1) -- B (write port) address.
@@ -61,7 +61,7 @@
                  (equal (len val) bits))
             val
           ;; Return an unknown proper list of the right length if we don't read
-          ;; a proper list of the right length. 
+          ;; a proper list of the right length.
           (make-list bits :initial-element *x*))))))
 
 (defthm true-listp-dual-port-ram-value

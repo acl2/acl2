@@ -475,6 +475,7 @@ my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
+my $STACK_TRACES   = $ENV{"NO_STACK_TRACES"} ? 0 : 1;
 
 # Figure out what ACL2 points to before we switch directories.
 
@@ -580,7 +581,7 @@ $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'prove)\n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
-$instrs .= "(set-debugger-enable :bt)\n";
+$instrs .= "(set-debugger-enable :bt)\n" if ($STACK_TRACES);
 $instrs .= "(acl2::in-package \"ACL2\")\n\n";
 $instrs .= "(set-ld-error-action (quote (:exit 1)) state)\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");

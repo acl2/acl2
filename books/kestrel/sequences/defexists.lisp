@@ -132,7 +132,6 @@
                 (natp start) ;drop?
                 (< end (len x)))
            (generic-exists x))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance generic-exists-of-take (n (+ (- START) 1 END))
                            (x (NTHCDR START X)))
@@ -167,7 +166,7 @@
                     (if ,(make-or atom-tests)
                         nil
 ;use a let incase a formal appears more than once?
-                      (if ,(my-sublis-var (pairlis$ list-formals cars) term)
+                      (if ,(sublis-var-simple (pairlis$ list-formals cars) term)
                           t
                         (,exists-fn ,@recursive-call-args)))))
          (theory `(:in-theory (union-theories '(,exists-fn) (theory 'minimal-theory))))
@@ -184,18 +183,18 @@
                        (fresh-var-alist ;(acons list-formal fresh-var
                         (pairlis$ fixed-formals fresh-vars) ;)
                         )
-                       (fresh-formals (my-sublis-var-lst fresh-var-alist all-formals))
-                       (fresh-term (my-sublis-var fresh-var-alist term))
+                       (fresh-formals (sublis-var-simple-lst fresh-var-alist all-formals))
+                       (fresh-term (sublis-var-simple fresh-var-alist term))
                        (fixed-formal-bindings (make-doublets fresh-vars fixed-formals))
                        (bindings `((generic-predicate (lambda (,list-formal) ,fresh-term))
                                    (generic-exists (lambda (,list-formal) (,exists-fn ,@fresh-formals)))))
                        (bindings-no-fresh `((generic-predicate (lambda (,list-formal) ,term))
                                             (generic-exists (lambda (,list-formal) (,exists-fn ,@all-formals))))))
                   `((defthm ,(pack$ exists-fn '-of-cons)
-                      (equal (,exists-fn ,@(my-sublis-var-lst
+                      (equal (,exists-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(cons ,fresh-var ,list-formal) nil)
                                             all-formals))
-                             (if ,(my-sublis-var (acons list-formal fresh-var nil)
+                             (if ,(sublis-var-simple (acons list-formal fresh-var nil)
                                                  term)
                                  t
                                (,exists-fn ,@all-formals)))
@@ -206,11 +205,11 @@
                                ,@theory)))
 
                     (defthm ,(pack$ exists-fn '-of-append)
-                      (equal (,exists-fn ,@(my-sublis-var-lst
+                      (equal (,exists-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(append ,list-formal ,fresh-var) nil)
                                             all-formals))
                              (or (,exists-fn ,@all-formals)
-                                 (,exists-fn ,@(my-sublis-var-lst
+                                 (,exists-fn ,@(sublis-var-simple-lst
                                                 (acons list-formal fresh-var nil)
                                                 all-formals))))
                       :hints (("Goal" :use (:instance (:functional-instance generic-exists-of-append ,@bindings)
@@ -221,10 +220,10 @@
 
                     (defthm ,(pack$ exists-fn '-of-revappend)
                       (implies (or (,exists-fn ,@all-formals)
-                                   (,exists-fn ,@(my-sublis-var-lst
+                                   (,exists-fn ,@(sublis-var-simple-lst
                                                   (acons list-formal fresh-var nil)
                                                   all-formals)))
-                               (,exists-fn ,@(my-sublis-var-lst
+                               (,exists-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(revappend ,list-formal ,fresh-var) nil)
                                               all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance generic-exists-of-revappend ,@bindings)
@@ -234,7 +233,7 @@
                                ,@theory)))
 
                     (defthm ,(pack$ exists-fn '-of-cdr)
-                      (implies (,exists-fn ,@(my-sublis-var-lst
+                      (implies (,exists-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(cdr ,list-formal) nil)
                                               all-formals))
                                (,exists-fn ,@all-formals))
@@ -245,7 +244,7 @@
 
                     ;;from here down, the fresh var name should be nXXX?
                     (defthm ,(pack$ exists-fn '-of-nthcdr)
-                      (implies (,exists-fn ,@(my-sublis-var-lst
+                      (implies (,exists-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(nthcdr ,fresh-var ,list-formal) nil)
                                               all-formals))
                                (,exists-fn ,@all-formals))
@@ -256,7 +255,7 @@
                                ,@theory)))
 
                     (defthm ,(pack$ exists-fn '-of-firstn)
-                      (implies (,exists-fn ,@(my-sublis-var-lst
+                      (implies (,exists-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(firstn ,fresh-var (double-rewrite ,list-formal)) nil)
                                               all-formals))
                                (,exists-fn ,@all-formals))
@@ -267,7 +266,7 @@
                                ,@theory)))
 
                     (defthm ,(pack$ exists-fn '-of-take)
-                      (implies (and (,exists-fn ,@(my-sublis-var-lst
+                      (implies (and (,exists-fn ,@(sublis-var-simple-lst
                                                    (acons list-formal `(take ,fresh-var ,list-formal) nil)
                                                    all-formals))
                                     (<= ,fresh-var (len (double-rewrite ,list-formal))))
@@ -281,7 +280,7 @@
                     (defthmd ,(pack$ exists-fn '-when-perm)
                       (implies (perm ,list-formal ,fresh-var)
                                (equal (,exists-fn ,@all-formals)
-                                      (,exists-fn ,@(my-sublis-var-lst
+                                      (,exists-fn ,@(sublis-var-simple-lst
                                                      (acons list-formal fresh-var nil)
                                                      all-formals))))
                       :hints (("Goal" :use (:instance (:functional-instance generic-exists-when-perm ,@bindings)
@@ -291,7 +290,7 @@
                                ,@theory)))
 
                     (defthm ,(pack$ exists-fn '-of-true-list-fix)
-                      (equal (,exists-fn ,@(my-sublis-var-lst
+                      (equal (,exists-fn ,@(sublis-var-simple-lst
                                             (acons list-formal `(true-list-fix ,list-formal) nil)
                                             all-formals))
                              (,exists-fn ,@all-formals))
@@ -309,7 +308,7 @@
                                                       (,fresh-var ,(pack-in-package-of-symbol exists-fn list-formal '-equiv))
                                                       ))))
                     (defthm ,(pack$ exists-fn '-reverse-list)
-                      (equal (,exists-fn ,@(my-sublis-var-lst
+                      (equal (,exists-fn ,@(sublis-var-simple-lst
                                               (acons list-formal `(reverse-list ,list-formal) nil)
                                               all-formals))
                              (,exists-fn ,@all-formals))
@@ -328,9 +327,9 @@
                                ,@theory)))
 
                     (defthm ,(pack$ 'use- exists-fn)
-                      (implies (and ,(my-sublis-var (acons list-formal 'x nil) term)
+                      (implies (and ,(sublis-var-simple (acons list-formal 'x nil) term)
                                     (memberp x ,(pack$ 'free- list-formal)))
-                               (,exists-fn ,@(my-sublis-var-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals))) ;fixme what if term is not suitable to be a rewrite rule?
+                               (,exists-fn ,@(sublis-var-simple-lst (acons list-formal (pack$ 'free- list-formal) nil) all-formals))) ;fixme what if term is not suitable to be a rewrite rule?
                       ;; avoid illegal rewrite rules (fixme print a warning) fixme: would like this test to apply to the macro-expanded body:
                       ,@(if (or (symbolp term) (member-eq (ffn-symb term) '(if or
                                                                                ;and ;I think and is actually okay

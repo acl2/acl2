@@ -432,7 +432,7 @@
   (must-fail (isodata f ((x (oldp newp forth back))))))
 
  ;; OLDP is a lambda expression in program mode:
- (must-fail (isodata f ((x ((lambda (x) (assert-event x)) newp forth back)))))
+ (must-fail (isodata f ((x ((lambda (x) (digit-char-p x)) newp forth back)))))
 
  ;; OLDP is a non-unary lambda expression:
  (must-fail (isodata f ((x ((lambda (x y) (+ x y)) newp forth back)))))
@@ -455,7 +455,7 @@
  (must-fail (isodata f ((x (list newp forth back)))))
 
  ;; OLDP is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (assert-event newp forth back)))))
+ (must-fail (isodata f ((x (digit-char-p newp forth back)))))
 
  ;; OLDP is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -511,7 +511,7 @@
   (must-fail (isodata f ((x (natp newp forth back))))))
 
  ;; NEWP is a lambda expression in program mode:
- (must-fail (isodata f ((x (natp (lambda (x) (assert-event x)) forth back)))))
+ (must-fail (isodata f ((x (natp (lambda (x) (digit-char-p x)) forth back)))))
 
  ;; NEWP is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp (lambda (x y) (+ x y)) forth back)))))
@@ -534,7 +534,7 @@
  (must-fail (isodata f ((x (natp list forth back)))))
 
  ;; NEWP is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp assert-event forth back)))))
+ (must-fail (isodata f ((x (natp digit-char-p forth back)))))
 
  ;; NEWP is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -590,7 +590,7 @@
   (must-fail (isodata f ((x (natp natp forth back))))))
 
  ;; FORTH is a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp (lambda (x) (assert-event x)) back)))))
+ (must-fail (isodata f ((x (natp natp (lambda (x) (digit-char-p x)) back)))))
 
  ;; FORTH is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp natp (lambda (x y) (+ x y)) back)))))
@@ -613,7 +613,7 @@
  (must-fail (isodata f ((x (natp natp list back)))))
 
  ;; FORTH is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp assert-event back)))))
+ (must-fail (isodata f ((x (natp natp digit-char-p back)))))
 
  ;; FORTH is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -670,7 +670,7 @@
 
  ;; BACK is a lambda expression in program mode:
  (must-fail
-  (isodata f ((x (natp natp identity (lambda (x) (assert-event x)))))))
+  (isodata f ((x (natp natp identity (lambda (x) (digit-char-p x)))))))
 
  ;; BACK is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp natp identity (lambda (x y) (+ x y)))))))
@@ -693,7 +693,7 @@
  (must-fail (isodata f ((x (natp natp identity list)))))
 
  ;; BACK is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp identity assert-event)))))
+ (must-fail (isodata f ((x (natp natp identity digit-char-p)))))
 
  ;; BACK is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*

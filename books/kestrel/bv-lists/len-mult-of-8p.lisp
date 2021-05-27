@@ -55,4 +55,5 @@
   (implies (and (len-mult-of-8p x)
                 (len-mult-of-8p y))
            (len-mult-of-8p (append x y)))
-    :hints (("Goal" :in-theory (enable len-mult-of-8p))))
+  :hints (("Goal" :in-theory (enable len-mult-of-8p
+                                     mod-sum-cases))))

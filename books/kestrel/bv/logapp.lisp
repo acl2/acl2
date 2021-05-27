@@ -101,7 +101,7 @@
                 (natp size2))
            (equal (mod (logapp size i j) (expt 2 size2))
                   (mod i (expt 2 size2))))
-  :hints (("Goal" :in-theory (enable logapp))))
+  :hints (("Goal" :in-theory (e/d (logapp) (EQUAL-OF-MOD-OF-+-AND-MOD-CANCEL)))))
 
 (defthm mod-of-logapp-2
   (implies (and (< size size2) ;this case
@@ -215,3 +215,9 @@
   (equal (loghead n x)
          (bvchop n x))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm logapp-minus-1-negative
+  (implies (integerp x)
+           (< (logapp n x -1) 0))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable logapp))))

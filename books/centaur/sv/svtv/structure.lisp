@@ -31,8 +31,10 @@
 
 (in-package "SV")
 (include-book "../mods/lhs")
+(include-book "print")
 (include-book "../svex/lists")
 (include-book "centaur/fty/baselists" :dir :system)
+(include-book "std/strings/hexify" :dir :system)
 
 (defxdoc structure.lisp :parents (svex-stvs))
 (local (xdoc::set-default-parents structure.lisp))
@@ -205,7 +207,8 @@
 (defprod svtv
   ((name           symbolp)
    (outexprs       svex-alist-p)
-   (nextstate      svex-alist-p "NIL if not defined with :state-machine t")
+   (nextstate      svex-alist-p "NIL if not defined with :state-machine t or :keep-final-state t")
+   (states         svex-alistlist-p "NIL if not defined with :keep-all-states t")
    (inmasks        svar-boolmasks-p)
    (outmasks       svar-boolmasks-p)
    (orig-ins       true-list-listp)
@@ -215,3 +218,10 @@
    (expanded-ins         svtv-lines-p)
    (expanded-overrides   svtv-lines-p)
    (nphases        natp)))
+
+
+
+
+
+
+

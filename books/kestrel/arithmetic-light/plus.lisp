@@ -43,6 +43,26 @@
            (equal (+ k1 k2 i)
                   (+ (+ k1 k2) i))))
 
+(defthm equal-of-+-cancel-same
+  (equal (equal (+ x y) x)
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-alt
+  (equal (equal x (+ x y))
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-alt-2
+  (equal (equal x (+ y x))
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-3
+  (equal (equal (+ y x) x)
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
 (defthm equal-of-+-and-+-cancel-1
   (equal (equal (+ x y1) (+ x y2))
          (equal (fix y1) (fix y2))))
@@ -83,6 +103,10 @@
   (equal (< (+ x y) (+ x z))
          (< y z))
   :hints (("Goal" :cases ((< y z)))))
+
+(defthm <-of-+-arg2-same-arg2
+  (equal (< y (+ x y))
+         (< 0 x)))
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
@@ -151,3 +175,9 @@
                 (integerp y))
            (equal (< x (+ 1 y))
                   (<= x y))))
+
+;; Needed?
+(defthmd binary-+-bring-constant-forward
+  (implies (syntaxp (quotep x))
+           (equal (+ y x)
+                  (+ x y))))

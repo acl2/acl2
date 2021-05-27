@@ -135,6 +135,46 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   (xdoc::p
+    "This is a library about the C language.
+     It contains a formalization of (some aspects of) the C language
+     and ATC (`ACL2 To C'), a C code generator for ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
+
+   (xdoc::p
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This is a library to support proofs in the style of Isabelle's
+     Isar (Intelligent Semi-Automated Reasoning) language.
+     It is just a small step in that direction for now.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
@@ -147,11 +187,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags Library"))
 
    (xdoc::p
     "This is a library that represents bags (a.k.a. multisets)
-     as non-strictly ordered lists.
+     as non-strictly-ordered lists.
      Thus, they capture (up to isomorphism) the mathematical notion of bag;
      in particular, bag equality is @(tsee equal).")
 
@@ -160,6 +200,34 @@
     (xdoc::seetopic "set::std/osets" "the library of ordered sets")
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "mimc::mimc" "MiMC Library"))
+
+   (xdoc::p
+    "This is a library that formally specifies and implements
+     the Minimal Multiplicative Complexity (MiMC) hash function
+     as used by "
+    (xdoc::seetopic "zksemaphore::semaphore" "Ethereum's Semaphore")
+     ". "
+     "This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "This is a library that introduces and formalizes
+     the notion of PFCS (Prime Field Constraint Systems),
+     which generalize R1CS and possibly other constraint systems
+     for zero-knowledge proofs.
+     This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,6 +252,24 @@
      the Solidity language for Ethereum smart contracts.
      It includes a formalization of some aspects of the language.
      There are plans to extend this to cover more aspects.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "This library can be used to read in sections of ELF/Mach-O files into ACL2.
+     An older version of these books used to live in the @(tsee x86isa::x86isa)
+     library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This is a library about the Zcash blockchain currency,
+     which is based on zero-knowledge proofs.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,26 +316,21 @@
 
    (xdoc::p
     "A new transformation has been added:
-     @(tsee apt::divconq), the `divide-and-conquer transformation'.
-     This is a start towards a class of transformations
-     to apply algorithm schemas to non-executable specifications.
-     Given a functional specification consisting of an input/output relation
-     (e.g. consisting of a precondition and postcondition),
+     @(tsee apt::schemalg), the `schematic algorithm transformation'.
+     This transformation applies algorithm schemas
+     to non-executable specifications:
+     given a functional specification
+     (e.g. consisting of an input/output relation,
+     possibly as a precondition and postcondition),
      this transformation partially determines the solution
-     as a recursive function that follows a divide-and-conquer schema
-     (i.e. decompose the problem,
-     solve the sub-problems,
-     and compose the sub-solutions to obtain a solution).
-     Currently the schema is limited to list fold,
-     i.e. the decomposition is @(tsee cdr)
-     (i.e. the same recursive structure of many list operations,
-     such as @(tsee len));
-     support for additional schemas is planned.
-     The partial determination of the solution via the schema
-     amounts to decomposing the initial specification
-     into sub-specifications
-     that can be recursively subjected to APT transformations.
-     This divide-and-conquer transformation is currently realized
+     and generates sub-specifications that, once recursively solve,
+     provide a solution to the initial specification.
+     In particular, divide-and-conquer algorithm schemas are supported:
+     the schema is a recursive function that
+     decompose the input,
+     solve the sub-input(s),
+     and composes the sub-output(s) to obtain an output.
+     This schematic algorithm transformation is currently realized
      using " (xdoc::seetopic "soft::soft" "SOFT") " to represent
      specifications and algorithm schemas,
      with specifications as second-order functions
@@ -335,7 +416,25 @@
       by removing the applicability condition that required
       the restriction predicate to be boolean-valued.
       The new function now uses @(tsee mbt$) instead of @(tsee mbt),
-      thus obviating the need for the removed applicability condition."))
+      thus obviating the need for the removed applicability condition.")
+    (xdoc::li
+     "The @(':thm-name') and @(':thm-enable') inputs have been renamed to
+      @(':old-to-new-name') and @(':old-to-new-enable'),
+      in line with other transformations.
+      Besides the name change, these two inputs now support
+      the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
@@ -436,6 +535,53 @@
      with explanatory comments.
      This could serve as a preliminary tutorial.")
 
+   (xdoc::p
+    "New design notes about specifications and refinements have been added,
+     along with a manual page that describes various forms of specifications.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
+   (xdoc::p
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::montgomery" "Montgomery curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The file
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+     has been added.
+     It introduced some parameters of the BLS12-377 elliptic curve.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
+    " has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
@@ -452,6 +598,9 @@
 
    (xdoc::p
     "Some theorems about hex-prefix encoding have been added.")
+
+   (xdoc::p
+    "A sub-library for the Semaphore gadget has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -474,20 +623,34 @@
      whose general form section should be normally a small fraction.")
 
    (xdoc::p
-    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
-     has been simplified by removing its
-     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.
-     This constructor has also been extended with a @(':default-parent') option.
-     A function has been also added to construct a common kind of items.")
-
-   (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
      has been extended with an additional option.")
 
    (xdoc::p
+    "New XDOC constructors have been added
+     and some XDOC constructors have been improve.")
+
+   (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
      to improve the robustness of proofs generated by event macros.")
+
+   (xdoc::p
+    "Utilities have been added to generate various kinds of event forms
+     from attributes of the event forms.")
+
+   (xdoc::p
+    "Some general XDOC topics about event macros have been added,
+     which can be referenced by the user documentation of event macros.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "exld::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "ELF reader now gets the contents of all the sections listed in
+    the headers of a given ELF binary. Also, the package name has been
+    changed from @('EL') to @('EXLD').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,6 +682,16 @@
 
    (xdoc::p
     "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
+   (xdoc::p
+    "@(tsee fty::deflist) has been extended to generate a theorem
+     about the list fixer applied to @(tsee repeat).")
+
+   (xdoc::p
+    "A macro @(tsee fty::defsubtype) has been added.")
+
+   (xdoc::p
+    "A macro @(tsee fty::defunit) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,6 +873,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "rstobj2::defrstobj"
+                             "Record-like Stobjs"))
+
+   (xdoc::p
+    "Add support for defining fields based off child stobjs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
 
    (xdoc::p
@@ -775,8 +956,32 @@
 
    (xdoc::p
     "A new utility @(tsee check-if-call) has been added,
-     to check if a term is a all of @(tsee if)
+     to check if a term is a call of @(tsee if)
      and to return its three arguments if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-and-call) has been added,
+     to check if a term is a (translated) call of @(tsee and)
+     and to return its two conjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-or-call) has been added,
+     to check if a term is a (translated) call of @(tsee or)
+     and to return its two disjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt$-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt$)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A theorem about the built-in @('flatten-ands-in-lit') has been added,
+     in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
    (xdoc::p
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
@@ -791,9 +996,17 @@
      This helps making the calling code more concise and less error-prone.")
 
    (xdoc::p
+    "The utility @(tsee install-not-normalized) now uses the untranslated
+     version of the original body in the generated definition.")
+
+   (xdoc::p
     "A new utility @(tsee if-tree-leaf-terms) has been added,
      to collect the leaf sub-terms of a term
      according to the @(tsee if) tree structure of the term.")
+
+   (xdoc::p
+    "The utility @('acceptable-rewrite-rulep') has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -808,6 +1021,11 @@
     "The relocation stub @('[books]/misc/assert.lisp')
      for books that are now in Std/testing
      has been removed.")
+
+   (xdoc::p
+    "The event macros @(tsee assert!) and @(tsee assert!-stobj) no longer
+     invoke @(tsee make-event), but rather, create direct calls of @(tsee
+     assert-event).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -879,6 +1097,22 @@
      to mimic the @(tsee mv) return specifier notation
      for tuple (i.e. list) results, useful inside error triples.")
 
+   (xdoc::p
+    "The macro @(tsee std::define-sk) has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
+
+   (xdoc::p
+    "A new event macro @(tsee add-io-pairs) has been added, to speed
+     up a function using verified input-output pairs.  Related
+     utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
+     @(tsee show-io-pairs), and @(tsee get-io-pairs).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmin-int) has been added,
+     to declarative define the minimum of
+     a (possibly infinite) set of integers.
+     This is similar to @(tsee defmax-nat).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -910,7 +1144,34 @@
 
    (xdoc::p
     "See @(see rewrite$) for a flexible, convenient interface to the ACL2
-     rewriter that can be called programmatically.")
+     rewriter that can be called programmatically.  See @(see rewrite$-hyps)
+     for a related utility that rewrites a list of hypotheses.")
+
+   (xdoc::p
+    "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
+     suitable for use within @(tsee make-event).")
+
+   (xdoc::p
+    "There are some changes in the utility @(tsee make-flag) (descibed in more
+     detail in its documentation).  (1) The value for keyword argument
+     @(':flag-mapping') is now expected to be a list of doublets, @('(old
+     new)').  The use of a list of cons pairs @('(old . new')) is still
+     permitted for now, but is deprecated and will likely be unsupported with a
+     future ACL2 release.  (2) The keyword argument, @(':last-body'), has been
+     replaced by @(':body'), where: value @('nil') has the same meaning as
+     before; the value @('t') that was supplied to @(':last-body') is supplied
+     as @(':last') to the new keyword, @(':body'); and a new form, a list of
+     doublets, is permitted for specifying which @(see definition) rules to
+     use.  (3) The tool is more robust when @(see xargs) declaration
+     @(':normalize nil') is involved.")
+
+   (xdoc::p
+    "The utility @(tsee install-not-normalized) now takes an additional keyword
+     argument, @(':enable'), specifying whether the generated @(tsee defthm)
+     event is enabled.  In addition to Boolean values, it allows the default
+     value, @(':auto'), specifying that the new rule is enabled if and only if
+     the original defintion is enabled.  This is a change in default behavior,
+     since before, the new rule was always enabled.")
 
    ))
 

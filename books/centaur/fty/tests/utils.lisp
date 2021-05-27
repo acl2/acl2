@@ -41,7 +41,7 @@
      :off :all
      :gag-mode t
      :on (error summary)
-     :summary (acl2::form acl2::time)
+     :summary-off (:other-than acl2::form acl2::time)
      (encapsulate ()
        (with-output :off :all :on (error)
          ,event))))

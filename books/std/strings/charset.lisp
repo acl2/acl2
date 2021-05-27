@@ -340,7 +340,7 @@ automatically.</p>")
       (eql x #\Space)
       (eql x #\Tab)))
 
-(defcharset nondigit (not (str::digitp x)))
+(defcharset nondigit (not (str::digit-char-p x)))
 
 (defcharset any t)
 

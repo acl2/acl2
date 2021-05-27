@@ -271,17 +271,9 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     :measure (svex-count x)
     (svex-case x
       :call (b* ((args (svexlist-reduce-consts x.args))
-                 ((when (svexlist-variable-free-p args))
-                  (svex-quote (svex-apply x.fn (svexlist-eval args nil))))
-                 (args-eval (svexlist-xeval args))
-                 (res (svex-apply
-                       (case x.fn
-                         (=== '==)
-                         (==? 'safer-==?)
-                         (otherwise x.fn))
-                       args-eval)))
-              (if (4vec-xfree-p res)
-                  (svex-quote res)
+                 (val (svex-fn/args-xeval x.fn args)))
+              (if (4vec-xfree-p val)
+                  (svex-quote val)
                 (svex-call x.fn args)))
       :otherwise (svex-fix x)))
   (define svexlist-reduce-consts ((x svexlist-p))
@@ -297,16 +289,24 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
   (local (in-theory (disable svex-reduce-consts
                              svexlist-reduce-consts)))
 
+  (local (defthm svex-fn/args-xeval-is-xeval
+           (equal (svex-fn/args-xeval fn args)
+                  (svex-xeval (svex-call fn args)))
+           :hints(("Goal" :in-theory (enable svex-xeval svex-call-xeval)))))
+
+  (local (defthm svex-apply-when-4vec-xfree-of-minval
+           (implies (and (syntaxp (not (equal env ''nil)))
+                         (4vec-xfree-p (svex-xeval (svex-call fn args))))
+                    (equal (svex-apply fn (svexlist-eval args env))
+                           (svex-xeval (svex-call fn args))))
+           :hints (("goal" :use ((:instance svex-eval-when-4vec-xfree-of-minval
+                                  (n (svex-call fn args))))))))
+         
 
   (defthm-svex-reduce-consts-flag
     (defthm svex-reduce-consts-correct
       (equal (svex-eval (svex-reduce-consts x) env)
              (svex-eval x env))
-      :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable svex-eval-when-4vec-xfree-of-minval-apply
-                                        svex-eval-when-4vec-xfree-of-minval-apply-===
-                                        svex-eval-when-4vec-xfree-of-minval-apply-==?
-                                        eval-when-svexlist-variable-free-p))))
       :flag svex-reduce-consts)
     (defthm svexlist-reduce-consts-correct
       (equal (svexlist-eval (svexlist-reduce-consts x) env)
@@ -1819,12 +1819,7 @@ the way.</li>
           :hints(("Goal" :in-theory (enable sv::svex-alist-vars))))))
 
 
-(fty::deflist vl-datatypelist :elt-type vl-datatype
-  ///
-  (defthm vl-datatypelist-fix-of-repeat
-    (equal (vl-datatypelist-fix (repeat n x))
-           (repeat n (vl-datatype-fix x)))
-    :hints(("Goal" :in-theory (enable repeat)))))
+(fty::deflist vl-datatypelist :elt-type vl-datatype)
 
 (define vl-datatypelist-resolved-p ((x vl-datatypelist-p))
   (if (atom x)
@@ -4384,11 +4379,24 @@ functions can assume all bits of it are good.</p>"
          (vttree nil)
          (opacity (vl-expr-opacity x))
          (packedp (vl-datatype-packedp type))
-         ((when (and packedp
-                     (not (eq opacity :special))
-                     (not (vl-expr-case x :vl-pattern))
-                     ;; note: qmark might have a pattern inside it
-                     (not (vl-expr-case x :vl-qmark))))
+         (selfdetp (and packedp
+                        (not (eq opacity :special))
+                        (not (vl-expr-case x :vl-pattern))
+                        (or (not (vl-expr-case x :vl-qmark))
+                            ;; It used to be that when we had a qmark
+                            ;; expression, we never went the self-determined
+                            ;; route because there could have been patterns
+                            ;; inside the branches.  This led to bugs due to
+                            ;; not propagating the type/size information
+                            ;; between the branches -- e.g.
+                            ;; 1'b1 ? signed'(a[3:0]) : 8'
+                            ;; would produce signx(4,a) where it should have
+                            ;; produced zerox(4,a).
+                             (b* (((mv & class) (vl-expr-typedecide x ss scopes)))
+                               ;; We omit these warnings for now, we'll get
+                               ;; them elsewhere.
+                               (vl-integer-arithclass-p class)))))
+         ((when selfdetp)
           ;; A non-special opacity generally means the expression is
           ;; vector-like, and I think that if the datatype is packed we get the
           ;; right results by simply treating the expression as a vector with
@@ -4441,6 +4449,7 @@ functions can assume all bits of it are good.</p>"
         :vl-qmark
         (b* (((vmv vttree test-svex ?test-size)
               (vl-expr-to-svex-selfdet x.test nil ss scopes))
+
              ((vmv vttree type-err1 then-svex)
               ;; BOZO should we really pass the lhs down here?  Maybe?
               (vl-expr-to-svex-datatyped x.then lhs type ss scopes
@@ -4450,22 +4459,28 @@ functions can assume all bits of it are good.</p>"
               (vl-expr-to-svex-datatyped x.else lhs type ss scopes
                                          :compattype compattype
                                          :explicit-cast-p explicit-cast-p))
+
              (svex (sv::svcall sv::? test-svex then-svex else-svex))
 
-             ;; [Jared] historically we didn't need to do anything special
-             ;; here, but in commit aad0bcb6b181dcba68385ff764a967a3528db506 we
-             ;; tweaked the check for vector-like expressions above (packed,
-             ;; non-special, not pattern, not qmark) to include ?: expressions
-             ;; in order to support expressions like a ? '{...} : '{...}.
-             ;; Unfortunately, that means we no longer get fussy size warnings
-             ;; for expressions like a ? b[3:0] : c[7:0] and similar.
-             ;;
-             ;; As a dumb way to restore these warnings, we now explicitly call
-             ;; vl-expr-selfsize here, even though we don't care what size it
-             ;; thinks things are.  We are just using it to generate warnings.
-             ;; See vl-expr-selfsize for details and note that it properly
-             ;; doesn't cause a warning if the arguments don't have self-sizes.
-             ((wvmv vttree ?ignored-size) (vl-expr-selfsize x ss scopes))
+             ;; [Sol] Tweaked the check above again -- now we actually run
+             ;; typedecide to see if the qmark produces an integer-class object
+             ;; and use vl-expr-to-svex-selfdet if so, so I think we should get
+             ;; the right warnings now without doing this extra thing.
+             ;; 
+             ;; ;; [Jared] historically we didn't need to do anything special
+             ;; ;; here, but in commit aad0bcb6b181dcba68385ff764a967a3528db506 we
+             ;; ;; tweaked the check for vector-like expressions above (packed,
+             ;; ;; non-special, not pattern, not qmark) to include ?: expressions
+             ;; ;; in order to support expressions like a ? '{...} : '{...}.
+             ;; ;; Unfortunately, that means we no longer get fussy size warnings
+             ;; ;; for expressions like a ? b[3:0] : c[7:0] and similar.
+             ;; ;;
+             ;; ;; As a dumb way to restore these warnings, we now explicitly call
+             ;; ;; vl-expr-selfsize here, even though we don't care what size it
+             ;; ;; thinks things are.  We are just using it to generate warnings.
+             ;; ;; See vl-expr-selfsize for details and note that it properly
+             ;; ;; doesn't cause a warning if the arguments don't have self-sizes.
+             ;; ((wvmv vttree ?ignored-size) (vl-expr-selfsize x ss scopes))
 
              (type-err (vl-type-error-qmark-combine x type-err1 type-err2)))
           (mv vttree type-err svex))
@@ -5078,15 +5093,13 @@ functions can assume all bits of it are good.</p>"
                                     LHS expression ~a1: ~@2"
                     :args (list type (vl-expr-fix x) (or err (vmsg "unsizeable"))))
             nil nil))
-       (lhssvex (sv::svex-concat size
-                                 (sv::svex-lhsrewrite svex size)
-                                 (sv::svex-z)))
-       ((unless (sv::lhssvex-p lhssvex))
+       (lhssvex (sv::svex-lhsrewrite svex size))
+       ((unless (sv::lhssvex-bounded-p size lhssvex))
         (mv (vfatal :type :vl-expr->svex-lhs-fail
                     :msg "Not a supported LHS expression: ~a0"
                     :args (list (vl-expr-fix x)))
             nil nil)))
-    (mv vttree (sv::svex->lhs lhssvex) type))
+    (mv vttree (sv::svex->lhs-bound size lhssvex) type))
   ///
   (defret vl-expr-to-svex-lhs-type-size-ok
     (implies type

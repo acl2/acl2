@@ -147,6 +147,10 @@ expect or preserve @(see fast-alists)."
   (mbe :logic (consp (hons-assoc-equal (svar-fix var) env))
        :exec (consp (assoc-equal var env)))
   ///
+  (defthm svex-env-boundp-of-nil
+    (not (svex-env-boundp k nil))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
   (deffixequiv svex-env-boundp))
 
 (define svex-env-fastlookup ((var svar-p)
@@ -201,6 +205,7 @@ expect or preserve @(see fast-alists)."
     (<         4vec-<              (x y)               "less than")
     (==        4vec-==             (x y)               "equality")
     (===       4vec-===            (x y)               "case equality (scary verilog semantics)")
+    (===*      4vec-===*           (x y)               "modified case equality (x-monotonic if y is constant)")
     (==?       4vec-wildeq         (x y)               "wildcard equality (scary verilog semantics)")
     (safer-==? 4vec-wildeq-safe    (x y)               "wildcard equality (X-monotonic version)")
     (==??      4vec-symwildeq      (x y)               "wildcard equality for casez")
@@ -209,6 +214,8 @@ expect or preserve @(see fast-alists)."
     (?         4vec-?              (test then else)    "if-then-else")
     (?*        4vec-?*             (test then else)    "if-then-else (for statements)")
     (bit?      4vec-bit?           (test then else)    "bitwise if-then-else")
+    (bit?!     4vec-bit?!          (test then else)    "bitwise if-then-else, only chooses then[i] when test[i]===1")
+    (?!        4vec-?!             (test then else)    "procedural if-then-else, only chooses then when test has a definite 1 bit")
     (partsel   4vec-part-select    (lsb width in)      "part select")
     (partinst  4vec-part-install   (lsb width in val)  "part install")))
 
@@ -401,6 +408,15 @@ svex-eval).</p>"
                        (case x.fn
                          (? (4vec-? test then else))
                          (?* (4vec-?* test then else)))))
+                    (?!
+                     (b* (((unless (eql (len x.args) 3))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((4vec test))
+                          (testvec (logand test.upper test.lower))
+                          ((when (eql testvec 0))
+                           (svex-eval (third x.args) env)))
+                       (svex-eval (second x.args) env)))
                     (bit?
                      (b* (((unless (eql (len x.args) 3))
                            (svex-apply x.fn (svexlist-eval x.args env)))
@@ -412,6 +428,18 @@ svex-eval).</p>"
                        (4vec-bit? test
                                   (svex-eval (second x.args) env)
                                   (svex-eval (third x.args) env))))
+                    (bit?!
+                     (b* (((unless (eql (len x.args) 3))
+                           (svex-apply x.fn (svexlist-eval x.args env)))
+                          (test (svex-eval (first x.args) env))
+                          ((when (eql test -1))
+                           (svex-eval (second x.args) env))
+                          ((4vec test))
+                          ((when (eql (logand test.upper test.lower) 0))
+                           (svex-eval (third x.args) env)))
+                       (4vec-bit?! test
+                                   (svex-eval (second x.args) env)
+                                   (svex-eval (third x.args) env))))
                     (bitand
                      (b* (((unless (eql (len x.args) 2))
                            (svex-apply x.fn (svexlist-eval x.args env)))
@@ -473,6 +501,17 @@ svex-eval).</p>"
                                 (4vec-fix then))))
            :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
 
+  (local (defthm 4vec-bit?!-cases
+           (and (implies (equal (logand (4vec->upper test)
+                                        (4vec->lower test))
+                                0)
+                         (equal (4vec-bit?! test then else)
+                                (4vec-fix else)))
+                (implies (equal test -1)
+                         (equal (4vec-bit?! test then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
+
   (local (defthm 4vec-?*-cases
            (and (implies (equal (4vec->upper (3vec-fix test)) 0)
                          (equal (4vec-?* test then else)
@@ -496,7 +535,7 @@ svex-eval).</p>"
 
   (verify-guards svex-eval
     :hints((and stable-under-simplificationp
-                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth)
+                '(:in-theory (e/d (svex-apply len 4veclist-nth-safe nth 4vec-?!)
                                   (svex-eval))
                   :expand ((svexlist-eval (svex-call->args x) env)
                            (svexlist-eval (cdr (svex-call->args x)) env)
@@ -657,6 +696,11 @@ svex-eval).</p>"
              (if xk (svex-eval xk env) (4vec-x))))
     :hints(("Goal" :in-theory (enable svex-env-lookup svex-lookup))))
 
+  (defthm svex-env-boundp-of-svex-alist-eval
+    (iff (svex-env-boundp k (svex-alist-eval x env))
+         (svex-lookup k x))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup))))
+
   (defthm svex-alist-eval-of-append
     (equal (svex-alist-eval (append a b) env)
            (append (svex-alist-eval a env)
@@ -753,16 +797,25 @@ is being given the right number of arguments.</p>
 (define svexlist-unquote ((x svexlist-p))
   :prepwork ((local (in-theory (enable svexlist-quotesp))))
   :guard (svexlist-quotesp x)
+  :verify-guards nil
   :returns (objs 4veclist-p)
   :hooks ((:fix :hints (("goal" :expand ((svexlist-fix x))))))
-  (if (atom x)
-      nil
-    (cons (svex-quote->val (car x))
-          (svexlist-unquote (cdr x))))
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (svex-quote->val (car x))
+                      (svexlist-unquote (cdr x))))
+       :exec x)
   ///
+  (local (defret <fn>-is-4veclist-fix
+           (implies (svexlist-quotesp x)
+                    (equal objs (svexlist-fix x)))
+           :hints(("Goal" :in-theory (enable svexlist-quotesp svexlist-fix svex-fix svex-quote->val)))))
+  (verify-guards svexlist-unquote
+    :hints(("Goal" :in-theory (enable svex-quote->val svex-kind svexlist-p svex-p))))
 
   (defthm svexlist-unquote-correct
     (implies (svexlist-quotesp x)
              (equal (svexlist-eval x env)
                     (svexlist-unquote x)))
-    :hints(("Goal" :in-theory (enable svexlist-eval svex-eval)))))
+    :hints(("Goal" :in-theory (e/d (svexlist-eval svex-eval)
+                                   (svexlist-unquote-is-4veclist-fix))))))

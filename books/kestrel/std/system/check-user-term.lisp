@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Matt Kaufmann
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,35 +50,30 @@
     (xdoc::seetopic "mv" "multiple values")
     ".")
    (xdoc::p
-    "The @(':stobjs-out') and @('((:stobjs-out . :stobjs-out))') arguments
-     passed to @('translate1-cmp') as bindings
-     mean that the term is checked to be valid for evaluation.
-     This is stricter than checking the term to be valid for use in a theorem,
-     and weaker than checking the term to be valid
-     for use in the body of an executable function;
-     these different checks are performed by passing different values
-     to the second and third arguments of @('translate1-cmp')
-     (see the ACL2 source code for details).
-     However, for terms whose functions are all in logic mode,
-     validity for evaluation and validity for executable function bodies
-     should coincide.")
+    "We create a fresh function symbol @('fn')
+     and pass it to @('translate1-cmp') as stobjs-out and binding.
+     This means that we are checking that the term
+     can be used in a function body.
+     This is stricter than checking the term to be valid
+     for use in a @(tsee defthm) and @(tsee defun-nx).")
    (xdoc::p
     "If @('translate1-cmp') is successful,
-     it returns updated bindings that associate @(':stobjs-out')
+     it returns updated bindings that associate @('fn')
      to the output stobjs of the term.")
    (xdoc::p
     "The @(tsee check-user-term) function does not terminate
      if the translation expands an ill-behaved macro that does not terminate."))
-  (mv-let (ctx term/message bindings)
-    (translate1-cmp x
-                    :stobjs-out
-                    '((:stobjs-out . :stobjs-out))
-                    t
-                    __function__
-                    wrld
-                    (default-state-vars nil))
-    (declare (ignore ctx))
-    (if (pseudo-termp term/message)
-        (mv term/message
-            (cdr (assoc :stobjs-out bindings)))
-      (mv term/message nil))))
+  (let ((fn (gen-new-name '__fn__ wrld)))
+    (mv-let (ctx term/message bindings)
+      (translate1-cmp x
+                      fn
+                      `((,fn . ,fn))
+                      t
+                      __function__
+                      wrld
+                      (default-state-vars nil))
+      (declare (ignore ctx))
+      (if (pseudo-termp term/message) ; could probably instead check ctx = nil
+          (mv term/message
+              (cdr (assoc fn bindings)))
+        (mv term/message nil)))))

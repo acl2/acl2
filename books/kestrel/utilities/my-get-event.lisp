@@ -12,27 +12,19 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; A tool to get the event (defun or mutual-recursion) corresponding to a given
-;; name, in untranslated form.
+;; A tool to get the event (defun or mutual-recursion or defuns) corresponding
+;; to a given name, in untranslated form.  This works better than the built-in
+;; utility get-event (e.g., on built-in functions introduced in :program mode
+;; and later lifted to :logic mode), such as all-vars1.
+
+;; TODO: If a function was introduced in :program mode and later lifted to
+;; :logic mode, the result of my-get-event may contain :mode :program in the
+;; xargs.  We could consider removing this.
+
+;; TODO: We could consider changing DEFUNS to MUTUAL-RECURSION in the result,
+;; but functions defined with DEFUNS seem rare.
 
 (include-book "std/util/bstar" :dir :system) ;could drop even this
-
-;; ;dup in axe
-;; (DEFUN CONS-ONTO-ALL (ITEM LSTS)
-;;   (IF (ENDP LSTS)
-;;       NIL
-;;       (CONS (CONS ITEM (CAR LSTS))
-;;             (CONS-ONTO-ALL ITEM (CDR LSTS)))))
-
-;; ;like get-event but turns a defuns into a mutual recursion (TODO: think about this more)
-;; ;; get-event doesn't work too well when the function was originally introduced in program mode and later lifted to logic mode.
-;; ;;TODO: this should also remove program mode from all the xargs?
-;; (defun my-get-event (name wrld)
-;;   (declare (xargs :mode :program))
-;;   (let ((event (get-event name wrld)))
-;;     (if (eq 'defuns (ffn-symb event))
-;;         `(mutual-recursion ,@(cons-onto-all 'defun (fargs event)))
-;;       event)))
 
 ;; Similar to get-event-tuple in books/std/util/defredundant.lisp but without
 ;; some cruft that brings in dependencies.
@@ -57,10 +49,6 @@
            (get-event-tuple2 name (acl2::scan-to-event (cdr ev-world))))
           (t tuple))))
 
-;; TODO: Is there still an issue with a 'defuns' event (need to
-;; change to a mutual-recursion?)  TODO: Perhaps this should remove the :mode
-;; :program xargs for defuns / mutual-recursions that have been lifted to logic
-;; mode.
 (defun my-get-event (name wrld)
   (declare (xargs :mode :program))
   (let ((event (access-event-tuple-form (get-event-tuple2 name wrld))))
@@ -71,6 +59,3 @@
                                 )))
         (er hard 'my-get-event "Unxpected kind of event for ~x0: ~x1" name event)
       event)))
-
-;(my-get-event 'pseudo-termp (w state))
-;(my-get-event 'optimize-stobj-recognizers1-lst (w state))

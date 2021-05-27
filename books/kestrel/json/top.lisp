@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 (include-book "parser-output-to-abstract-syntax")
+(include-book "light-ast-check")
+(include-book "json-bstar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

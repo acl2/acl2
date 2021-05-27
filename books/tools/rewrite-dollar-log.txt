@@ -1,0 +1,2317 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE EVENT))
+ (PROOF-TREE EVENT)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(INCLUDE-BOOK "rewrite-dollar")
+
+Summary
+Form:  ( INCLUDE-BOOK "rewrite-dollar" ...)
+Rules: NIL
+ "rewrite-dollar.lisp"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-eval-to"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-eval-to" ...)
+Rules: NIL
+ "[books]/std/testing/must-eval-to.lisp"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Rules: NIL
+ "[books]/std/testing/must-fail.lisp"
+ACL2 !>>(DEFMACRO
+         MF (FORM &KEY (EXPECTED ':SOFT))
+         (CONS
+          'MUST-FAIL
+          (CONS
+           FORM
+           (CONS
+            ':EXPECTED
+            (CONS
+                 EXPECTED
+                 (CONS ':WITH-OUTPUT-OFF
+                       (CONS (CONS 'PROOF-TREE
+                                   (CONS 'EVENT
+                                         (CONS 'SUMMARY
+                                               (CONS 'PROOF-BUILDER
+                                                     (CONS 'HISTORY 'NIL)))))
+                             'NIL)))))))
+
+Summary
+Form:  ( DEFMACRO MF ...)
+Rules: NIL
+ MF
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(CONS (CAR X) (CDR X)))
+                      '((IF (CONSP X) X '(NIL))
+                        ((:REWRITE CONS-CAR-CDR))))
+ ((IF (CONSP X) X '(NIL))
+  ((:REWRITE CONS-CAR-CDR)))
+ACL2 !>>(MF (REWRITE$ '(APPEND (APPEND X Y) Z)))
+
+
+ACL2 Error in REWRITE$:  The first argument of rewrite$ must be a term
+unless :translate is specifed, but (APPEND (APPEND X Y) Z) is not a
+term.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(APPEND (APPEND X Y) Z)
+                                :TRANSLATE T)
+                      '((BINARY-APPEND (BINARY-APPEND X Y) Z)
+                        NIL))
+ ((BINARY-APPEND (BINARY-APPEND X Y) Z)
+  NIL)
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(CONS (CAR X) (CDR X))
+                                :HYPS '((CONSP X) (< '0 (CAR X))))
+                      '(X ((:REWRITE CONS-CAR-CDR))))
+ (X ((:REWRITE CONS-CAR-CDR)))
+ACL2 !>>(MF (REWRITE$ '(CONS (CAR X) (CDR X))
+                      :HYPS '((CONSP X) (< 0 (CAR X)))))
+
+
+ACL2 Error in REWRITE$:  A supplied list of terms included the following,
+which is not a term: (< 0 (CAR X)).  Specify :translate t to avoid
+this error.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND X Y)
+                                :EXPAND '((APPEND X Y)))
+                      '((IF (CONSP X)
+                            (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                            Y)
+                        ((:DEFINITION BINARY-APPEND))))
+ ((IF (CONSP X)
+      (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+      Y)
+  ((:DEFINITION BINARY-APPEND)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(APPEND (APPEND X Y) Z)
+                                :TRANSLATE T
+                                :UNTRANSLATE T)
+                      '((APPEND (APPEND X Y) Z) NIL))
+ ((APPEND (APPEND X Y) Z) NIL)
+ACL2 !>>(WITH-OUTPUT :OFF PROVE
+                     (DEFTHM APPEND-ASSOC
+                             (EQUAL (APPEND (APPEND X Y) Z)
+                                    (APPEND X Y Z))))
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+Summary
+Form:  ( DEFTHM APPEND-ASSOC ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ APPEND-ASSOC
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z))
+                      '((BINARY-APPEND X (BINARY-APPEND Y Z))
+                        ((:REWRITE APPEND-ASSOC))))
+ ((BINARY-APPEND X (BINARY-APPEND Y Z))
+  ((:REWRITE APPEND-ASSOC)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                :IN-THEORY '(DISABLE APPEND-ASSOC))
+                      '((BINARY-APPEND (BINARY-APPEND X Y) Z)
+                        NIL))
+ ((BINARY-APPEND (BINARY-APPEND X Y) Z)
+  NIL)
+ACL2 !>>(ENCAPSULATE
+             NIL
+             (ADD-DEFAULT-HINTS '('(:IN-THEORY (DISABLE APPEND-ASSOC))))
+             (MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z))
+                           '((BINARY-APPEND (BINARY-APPEND X Y) Z)
+                             NIL))
+             (MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                     :DEFAULT-HINTS-P NIL)
+                           '((BINARY-APPEND X (BINARY-APPEND Y Z))
+                             ((:REWRITE APPEND-ASSOC)))))
+('(:IN-THEORY (DISABLE APPEND-ASSOC)))
+((BINARY-APPEND (BINARY-APPEND X Y) Z)
+ NIL)
+((BINARY-APPEND X (BINARY-APPEND Y Z))
+ ((:REWRITE APPEND-ASSOC)))
+
+ACL2 Observation in ( ENCAPSULATE NIL (ADD-DEFAULT-HINTS ...) ...):
+The submitted encapsulate event has created no new ACL2 events, and
+thus is leaving the ACL2 logical world unchanged.  See :DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (ADD-DEFAULT-HINTS ...) ...)
+Rules: NIL
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(WITH-OUTPUT :OFF PROVE
+                     (DEFTHM APPEND-ASSOC-WITH-FORCE
+                             (IMPLIES (FORCE (TRUE-LISTP X))
+                                      (EQUAL (APPEND (APPEND X Y) Z)
+                                             (APPEND X Y Z)))))
+
+ACL2 Warning [Subsume] in ( DEFTHM APPEND-ASSOC-WITH-FORCE ...):  The
+previously added rule APPEND-ASSOC subsumes a newly proposed :REWRITE
+rule generated from APPEND-ASSOC-WITH-FORCE, in the sense that the
+old rule rewrites a more general target.  Because the new rule will
+be tried first, it may nonetheless find application.
+
+
+Summary
+Form:  ( DEFTHM APPEND-ASSOC-WITH-FORCE ...)
+Rules: ((:DEFINITION FORCE)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:REWRITE APPEND-ASSOC))
+Warnings:  Subsume
+ APPEND-ASSOC-WITH-FORCE
+ACL2 !>>(MUST-EVAL-TO
+             (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                       :IN-THEORY '(DISABLE APPEND-ASSOC-WITH-FORCE))
+             '((BINARY-APPEND X (BINARY-APPEND Y Z))
+               ((:REWRITE APPEND-ASSOC))))
+ ((BINARY-APPEND X (BINARY-APPEND Y Z))
+  ((:REWRITE APPEND-ASSOC)))
+ACL2 !>>(MF (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)))
+
+<<Rewrite$ NOTE:>>
+Rewriting is complete for the input term, but it remains to prove the
+goal generated by cleaning up one forced hypothesis, as follows:
+
+(TRUE-LISTP X)
+
+
+<<Rewrite$ NOTE:>>
+Beginning forcing round.
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (TRUE-LISTP X). 
+This suggestion was produced using the :induction rule TRUE-LISTP.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit TRUE-LISTP.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+
+([ A key checkpoint while proving *1 (descended from Goal):
+
+Subgoal *1/2'
+(IMPLIES (NOT (CONSP X)) (NOT X))
+
+A goal of NIL, Subgoal *1/2'', has been generated!  Obviously, the
+proof attempt has failed.
+
+])
+
+
+ACL2 Error in REWRITE$:  Rewriting has failed because of failure to
+prove all of the assumptions forced during rewriting.  Either disable
+forcing (see :DOC disable-forcing) or, if you are willing to ignore
+the forced assumptions, specify option :PROVE-FORCED-ASSUMPTIONS NIL
+for rewrite$.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                :PROVE-FORCED-ASSUMPTIONS NIL)
+                      '((BINARY-APPEND X (BINARY-APPEND Y Z))
+                        ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+                         (:EXECUTABLE-COUNTERPART FORCE))
+                        (((((0) NIL . 0)
+                           (:REWRITE APPEND-ASSOC-WITH-FORCE)
+                           BINARY-APPEND (BINARY-APPEND X Y)
+                           Z))
+                         (TRUE-LISTP X))))
+ ((BINARY-APPEND X (BINARY-APPEND Y Z))
+  ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+   (:EXECUTABLE-COUNTERPART FORCE))
+  (((((0) NIL . 0)
+     (:REWRITE APPEND-ASSOC-WITH-FORCE)
+     BINARY-APPEND (BINARY-APPEND X Y)
+     Z))
+   (TRUE-LISTP X)))
+ACL2 !>>(MUST-EVAL-TO
+             (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                       :HYPS '((SYMBOL-LISTP X))
+                       :PROVE-FORCED-ASSUMPTIONS :NONE-FORCED)
+             '((BINARY-APPEND X (BINARY-APPEND Y Z))
+               ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+                (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+                (:TYPE-PRESCRIPTION SYMBOL-LISTP))))
+ ((BINARY-APPEND X (BINARY-APPEND Y Z))
+  ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+   (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+   (:TYPE-PRESCRIPTION SYMBOL-LISTP)))
+ACL2 !>>(MUST-EVAL-TO
+             (REWRITE$ '(BINARY-APPEND (BINARY-APPEND X Y) Z)
+                       :ALIST '((X NTH A B))
+                       :HYPS '((SYMBOL-LISTP (NTH A B))))
+             '((BINARY-APPEND (NTH A B)
+                              (BINARY-APPEND Y Z))
+               ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+                (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+                (:TYPE-PRESCRIPTION SYMBOL-LISTP))))
+ ((BINARY-APPEND (NTH A B)
+                 (BINARY-APPEND Y Z))
+  ((:REWRITE APPEND-ASSOC-WITH-FORCE)
+   (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+   (:TYPE-PRESCRIPTION SYMBOL-LISTP)))
+ACL2 !>>(MUST-EVAL-TO
+             (REWRITE$ '(APPEND (APPEND X Y) Z)
+                       :ALIST '((X REVERSE U))
+                       :HYPS '((CONSP U))
+                       :TRANSLATE T
+                       :UNTRANSLATE T)
+             '((APPEND (REVERSE U) Y Z)
+               ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+                (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+                (:DEFINITION REVERSE)
+                (:DEFINITION NOT)
+                (:REWRITE APPEND-ASSOC-WITH-FORCE)
+                (:EXECUTABLE-COUNTERPART FORCE)
+                (:DEFINITION TRUE-LISTP)
+                (:FAKE-RUNE-FOR-TYPE-SET NIL)
+                (:TYPE-PRESCRIPTION REVERSE))))
+Goal'
+ ((APPEND (REVERSE U) Y Z)
+  ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+   (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+   (:DEFINITION REVERSE)
+   (:DEFINITION NOT)
+   (:REWRITE APPEND-ASSOC-WITH-FORCE)
+   (:EXECUTABLE-COUNTERPART FORCE)
+   (:DEFINITION TRUE-LISTP)
+   (:FAKE-RUNE-FOR-TYPE-SET NIL)
+   (:TYPE-PRESCRIPTION REVERSE)))
+ACL2 !>>(MUST-EVAL-TO
+             (REWRITE$ '(APPEND (APPEND X Y) Z)
+                       :ALIST '((X REVERSE U))
+                       :HYPS '((CONSP U))
+                       :REPEAT 2
+                       :TRANSLATE T
+                       :UNTRANSLATE T)
+             '((APPEND (REVAPPEND U NIL) Y Z)
+               ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+                (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+                (:DEFINITION NOT)
+                (:DEFINITION REVERSE)
+                (:REWRITE APPEND-ASSOC-WITH-FORCE)
+                (:EXECUTABLE-COUNTERPART FORCE)
+                (:DEFINITION TRUE-LISTP)
+                (:FAKE-RUNE-FOR-TYPE-SET NIL)
+                (:TYPE-PRESCRIPTION REVERSE))))
+Goal'
+ ((APPEND (REVAPPEND U NIL) Y Z)
+  ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+   (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+   (:DEFINITION NOT)
+   (:DEFINITION REVERSE)
+   (:REWRITE APPEND-ASSOC-WITH-FORCE)
+   (:EXECUTABLE-COUNTERPART FORCE)
+   (:DEFINITION TRUE-LISTP)
+   (:FAKE-RUNE-FOR-TYPE-SET NIL)
+   (:TYPE-PRESCRIPTION REVERSE)))
+ACL2 !>>(MF (REWRITE$ '(APPEND (APPEND X Y) Z)
+                      :ALIST '((X REVERSE U))
+                      :HYPS '((CONSP U))
+                      :TRANSLATE T
+                      :UNTRANSLATE T
+                      :PROVE-FORCED-ASSUMPTIONS :NONE-FORCED))
+
+<<Rewrite$ NOTE:>>
+Rewriting is complete for the input term, but it remains to prove the
+goal generated by cleaning up one forced hypothesis, as follows:
+
+(IMPLIES (CONSP U) (OR (CONSP (REVERSE U)) (NOT (REVERSE U))))
+
+
+
+ACL2 Error in REWRITE$:  The call of rewrite$ has failed because there
+were forced assumptions and keyword option :PROVE-FORCED-ASSUMPTIONS
+:NONE-FORCED was supplied.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(ENCAPSULATE
+         NIL
+         (LOCAL (IN-THEORY (DISABLE REVERSE)))
+         (MUST-EVAL-TO
+              (REWRITE$ '(APPEND (APPEND X Y) Z)
+                        :ALIST '((X REVERSE U))
+                        :HYPS '((CONSP U))
+                        :IN-THEORY '(ENABLE REVERSE)
+                        :PROVE-FORCED-ASSUMPTIONS :SAME-HINTS
+                        :REPEAT 2
+                        :TRANSLATE T
+                        :UNTRANSLATE T)
+              '((APPEND (REVAPPEND U NIL) Y Z)
+                ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+                 (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+                 (:DEFINITION NOT)
+                 (:DEFINITION REVERSE)
+                 (:REWRITE APPEND-ASSOC-WITH-FORCE)
+                 (:EXECUTABLE-COUNTERPART FORCE)
+                 (:DEFINITION TRUE-LISTP)
+                 (:FAKE-RUNE-FOR-TYPE-SET NIL)
+                 (:TYPE-PRESCRIPTION REVERSE))))
+         (MUST-EVAL-TO
+          (REWRITE$
+            '(APPEND (APPEND X Y) Z)
+            :ALIST '((X REVERSE U))
+            :HYPS '((CONSP U))
+            :PROVE-FORCED-ASSUMPTIONS '(("Goal" :IN-THEORY (ENABLE REVERSE)))
+            :REPEAT 2
+            :TRANSLATE T
+            :UNTRANSLATE T)
+          '((APPEND (REVERSE U) Y Z)
+            ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+             (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+             (:DEFINITION REVERSE)
+             (:DEFINITION NOT)
+             (:REWRITE APPEND-ASSOC-WITH-FORCE)
+             (:EXECUTABLE-COUNTERPART FORCE)
+             (:DEFINITION TRUE-LISTP)
+             (:FAKE-RUNE-FOR-TYPE-SET NIL)
+             (:TYPE-PRESCRIPTION REVERSE)))))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+:CURRENT-THEORY-UPDATED
+Goal'
+((APPEND (REVAPPEND U NIL) Y Z)
+ ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+  (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+  (:DEFINITION NOT)
+  (:DEFINITION REVERSE)
+  (:REWRITE APPEND-ASSOC-WITH-FORCE)
+  (:EXECUTABLE-COUNTERPART FORCE)
+  (:DEFINITION TRUE-LISTP)
+  (:FAKE-RUNE-FOR-TYPE-SET NIL)
+  (:TYPE-PRESCRIPTION REVERSE)))
+Goal'
+((APPEND (REVERSE U) Y Z)
+ ((:TYPE-PRESCRIPTION TRUE-LISTP-REVAPPEND-TYPE-PRESCRIPTION)
+  (:EXECUTABLE-COUNTERPART TRUE-LISTP)
+  (:DEFINITION REVERSE)
+  (:DEFINITION NOT)
+  (:REWRITE APPEND-ASSOC-WITH-FORCE)
+  (:EXECUTABLE-COUNTERPART FORCE)
+  (:DEFINITION TRUE-LISTP)
+  (:FAKE-RUNE-FOR-TYPE-SET NIL)
+  (:TYPE-PRESCRIPTION REVERSE)))
+
+ACL2 Observation in ( ENCAPSULATE NIL (LOCAL ...) ...):  The submitted
+encapsulate event has created no new ACL2 events, and thus is leaving
+the ACL2 logical world unchanged.  See :DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(WITH-OUTPUT :OFF PROVE
+                     (DEFTHM MEMBER-APPEND
+                             (IFF (MEMBER A (APPEND X Y))
+                                  (OR (MEMBER A X) (MEMBER A Y)))))
+Goal'
+Subgoal 3
+Subgoal 2
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+Summary
+Form:  ( DEFTHM MEMBER-APPEND ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION IFF)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:INDUCTION MEMBER-EQUAL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+ MEMBER-APPEND
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER B (APPEND U V))
+                                :TRANSLATE T)
+                      '((MEMBER-EQUAL B (BINARY-APPEND U V))
+                        ((:DEFINITION MEMBER-EQL-EXEC$GUARD-CHECK)
+                         (:DEFINITION RETURN-LAST))))
+ ((MEMBER-EQUAL B (BINARY-APPEND U V))
+  ((:DEFINITION MEMBER-EQL-EXEC$GUARD-CHECK)
+   (:DEFINITION RETURN-LAST)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V)))
+                      '((MEMBER-EQUAL B (BINARY-APPEND U V))
+                        NIL))
+ ((MEMBER-EQUAL B (BINARY-APPEND U V))
+  NIL)
+ACL2 !>>(MF (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                      :MUST-REWRITE T))
+
+
+ACL2 Error in REWRITE$:  The term
+  (MEMBER-EQUAL B (BINARY-APPEND U V))
+failed to rewrite to a new term.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                                :EQUIV 'IFF
+                                :MUST-REWRITE T)
+                      '((IF (MEMBER-EQUAL B U)
+                            'T
+                            (MEMBER-EQUAL B V))
+                        ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+                         (:REWRITE MEMBER-APPEND))))
+ ((IF (MEMBER-EQUAL B U)
+      'T
+      (MEMBER-EQUAL B V))
+  ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+   (:REWRITE MEMBER-APPEND)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND X V))
+                                :ALIST '((X . U))
+                                :EQUIV 'IFF)
+                      '((IF (MEMBER-EQUAL B U)
+                            'T
+                            (MEMBER-EQUAL B V))
+                        ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+                         (:REWRITE MEMBER-APPEND))))
+ ((IF (MEMBER-EQUAL B U)
+      'T
+      (MEMBER-EQUAL B V))
+  ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+   (:REWRITE MEMBER-APPEND)))
+ACL2 !>>(MF (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND X V))
+                      :ALIST '((X . U))
+                      :EQUIV 'IFF
+                      :MUST-REWRITE T))
+
+
+ACL2 Error in REWRITE$:  It is illegal for rewrite$ to specify non-
+nil values for both :ALIST and :MUST-REWRITE.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                                :GENEQV *GENEQV-IFF*
+                                :UNTRANSLATE T)
+                      '((IF (MEMBER-EQUAL B U)
+                            T (MEMBER-EQUAL B V))
+                        ((:REWRITE MEMBER-APPEND))))
+ ((IF (MEMBER-EQUAL B U)
+      T (MEMBER-EQUAL B V))
+  ((:REWRITE MEMBER-APPEND)))
+ACL2 !>>(MUST-EVAL-TO
+         (REWRITE$
+            '(MEMBER-EQUAL B (BINARY-APPEND U V))
+            :GENEQV (FIND-RULES-OF-RUNE '(:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+                                        (W STATE))
+            :UNTRANSLATE T)
+         '((IF (MEMBER-EQUAL B U)
+               T (MEMBER-EQUAL B V))
+           ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+            (:REWRITE MEMBER-APPEND))))
+ ((IF (MEMBER-EQUAL B U)
+      T (MEMBER-EQUAL B V))
+  ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+   (:REWRITE MEMBER-APPEND)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                                :EQUIV 'IFF
+                                :UNTRANSLATE T)
+                      '((IF (MEMBER-EQUAL B U)
+                            T (MEMBER-EQUAL B V))
+                        ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+                         (:REWRITE MEMBER-APPEND))))
+ ((IF (MEMBER-EQUAL B U)
+      T (MEMBER-EQUAL B V))
+  ((:EQUIVALENCE IFF-IS-AN-EQUIVALENCE)
+   (:REWRITE MEMBER-APPEND)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(< X (1+ X))
+                                :HYPS '((RATIONALP X))
+                                :OBJ T
+                                :TRANSLATE T)
+                      '('T
+                        ((:FAKE-RUNE-FOR-LINEAR NIL)
+                         (:FAKE-RUNE-FOR-TYPE-SET NIL))))
+ ('T
+  ((:FAKE-RUNE-FOR-LINEAR NIL)
+   (:FAKE-RUNE-FOR-TYPE-SET NIL)))
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(< X (1+ X))
+                                :HYPS '((RATIONALP X))
+                                :TRANSLATE T)
+                      '((< X (BINARY-+ '1 X)) NIL))
+ ((< X (BINARY-+ '1 X)) NIL)
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y))
+                      :HYPS '((ATOM X) (CONSP X))))
+
+
+ACL2 Error in REWRITE$:  An attempt has been made to simplify the following
+hypotheses:
+
+((ATOM X) (CONSP X)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found using type-set reasoning, based perhaps on forward chaining.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y))
+                      :HYPS '((RATIONALP X)
+                              (< 7 (+ X Y))
+                              (< X 3)
+                              (< Y 2))
+                      :TRANSLATE T))
+
+
+ACL2 Error in REWRITE$:  An attempt has been made to simplify the following
+hypotheses:
+
+((RATIONALP X) (< '7 (BINARY-+ X Y)) (< X '3) (< Y '2)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found using linear arithmetic reasoning.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y))
+                      :HINTS (("Goal" :IN-THEORY (ENABLE NTH))))
+            :EXPECTED :HARD)
+
+
+ACL2 Error in macro expansion:  Illegal key/value args 
+(:HINTS (("Goal" :IN-THEORY (ENABLE NTH)))) in macro expansion of 
+(REWRITE$ '(CAR (CONS X Y)) :HINTS (("Goal" :IN-THEORY (ENABLE NTH)))).
+The argument list for REWRITE$ is 
+(TERM &KEY ALIST (CTX ''REWRITE$) HYPS EQUIV GENEQV BACKCHAIN-LIMIT-RW EXPAND 
+ HANDS-OFF IN-THEORY NO-THANKS NONLINEARP RESTRICT RW-CACHE-STATE (
+ DEFAULT-HINTS-P 'T) (PROVE-FORCED-ASSUMPTIONS 'T) TRANSLATE UNTRANSLATE 
+ MUST-REWRITE (REPEAT '1) (OBJ ''?) RREC (WRLD '(W STATE))).
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(CAR (CONS X Y))
+                                :EXPAND '((NTH N Z)))
+                      '(X ((:REWRITE CAR-CONS))))
+ (X ((:REWRITE CAR-CONS)))
+ACL2 !>>(MF
+         (REWRITE$
+          '(CAR (CONS X Y))
+          :EXPAND '((NTH N Z))
+          :RREC
+          (CONS
+           'REWRITE$-RECORD
+           (CONS
+            (CONS
+             (CONS ':STANDARD (CONS 'NIL ':ATOM))
+             (CONS
+              (ENS STATE)
+              (CONS
+               (CONS
+                'NIL
+                (CONS
+                 'NIL
+                 (CONS
+                  (CONS
+                   (CONS 'EQUAL ':NONE)
+                   (CONS
+                    (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
+                    (CONS
+                     (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
+                           'NIL)
+                     (CONS
+                      (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
+                      (CONS
+                       'IF
+                       (CONS
+                        (CONS 'CONSP (CONS 'L 'NIL))
+                        (CONS
+                         (CONS
+                          'IF
+                          (CONS
+                           (CONS 'ZP (CONS 'N 'NIL))
+                           (CONS
+                            (CONS 'CAR (CONS 'L 'NIL))
+                            (CONS
+                             (CONS
+                              'NTH
+                              (CONS (CONS 'BINARY-+
+                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
+                                                (CONS 'N 'NIL)))
+                                    (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
+                             'NIL))))
+                         (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
+                               'NIL))))))))
+                  'NIL)))
+               (CONS
+                (CONS 'T (CONS 'NIL 'NIL))
+                (CONS
+                 (CONS 'NIL 'NIL)
+                 (CONS
+                  (CONS (CONS 'T 'NIL) ':CLEAR)
+                  (CONS
+                   (CONS 'NIL 'NIL)
+                   (CONS
+                    (CONS
+                     (CONS '500 (CONS '100 'NIL))
+                     (CONS
+                      'SYS-CALL+
+                      (CONS
+                       'SYS-CALL*
+                       (CONS
+                        'SYS-CALL
+                        (CONS
+                         'SET-TEMP-TOUCHABLE-VARS
+                         (CONS
+                          'SET-TEMP-TOUCHABLE-FNS
+                          (CONS
+                           'SET-RAW-MODE-ON
+                           (CONS
+                            'REMOVE-UNTOUCHABLE-FN
+                            (CONS
+                             'OPEN-OUTPUT-CHANNEL!
+                             (CONS
+                              'HONS-CLEAR!
+                              (CONS
+                               'HONS-WASH!
+                               (CONS
+                                'COERCE-STATE-TO-OBJECT
+                                (CONS
+                                 'COERCE-OBJECT-TO-STATE
+                                 (CONS
+                                  'CREATE-STATE
+                                  (CONS
+                                   'USER-STOBJ-ALIST
+                                   (CONS
+                                    'F-PUT-LD-SPECIALS
+                                    (CONS
+                                     'EV-FNCALL
+                                     (CONS
+                                      'EV
+                                      (CONS
+                                       'EV-LST
+                                       (CONS
+                                        'EV-FNCALL!
+                                        (CONS
+                                         'EV-FNCALL-REC
+                                         (CONS
+                                          'EV-REC
+                                          (CONS
+                                           'EV-REC-LST
+                                           (CONS
+                                            'EV-REC-ACL2-UNWIND-PROTECT
+                                            (CONS
+                                             'EV-FNCALL-W
+                                             (CONS
+                                              'EV-FNCALL-W-BODY
+                                              (CONS
+                                               'EV-W
+                                               (CONS
+                                                'EV-W-LST
+                                                (CONS
+                                                 'SET-W
+                                                 (CONS
+                                                  'SET-W!
+                                                  (CONS
+                                                   'CLOAKED-SET-W!
+                                                   (CONS
+                                                    'INSTALL-EVENT
+                                                    (CONS
+                                                     'DEFUNS-FN1
+                                                     (CONS
+                                                      'PROCESS-EMBEDDED-EVENTS
+                                                      (CONS
+                                                       'ENCAPSULATE-PASS-2
+                                                       (CONS
+                                                        'INCLUDE-BOOK-FN1
+                                                        (CONS
+                                                         'MAYBE-ADD-COMMAND-LANDMARK
+                                                         (CONS
+                                                          'UBT-UBU-FN1
+                                                          (CONS
+                                                           'INSTALL-EVENT-DEFUNS
+                                                           (CONS
+                                                            'DEFTHM-FN1
+                                                            (CONS
+                                                             'DEFUNS-FN0
+                                                             (CONS
+                                                              'LD-READ-EVAL-PRINT
+                                                              (CONS
+                                                               'LD-LOOP
+                                                               (CONS
+                                                                'LD-FN-BODY
+                                                                (CONS
+                                                                 'LD-FN0
+                                                                 (CONS
+                                                                  'LD-FN1
+                                                                  (CONS
+                                                                   'UPDATE-USER-STOBJ-ALIST
+                                                                   (CONS
+                                                                    'BIG-N
+                                                                    (CONS
+                                                                     'DECREMENT-BIG-N
+                                                                     (CONS
+                                                                      'ZP-BIG-N
+                                                                      (CONS
+                                                                       'PROTECTED-EVAL
+                                                                       (CONS
+                                                                        'SET-SITE-EVISC-TUPLE
+                                                                        (CONS
+                                                                         'SET-EVISC-TUPLE-LST
+                                                                         (CONS
+                                                                          'SET-EVISC-TUPLE-FN1
+                                                                          (CONS
+                                                                           'SET-IPRINT-AR
+                                                                           (CONS
+                                                                            'INIT-IPRINT-FAL
+                                                                            (CONS
+                                                                             'UPDATE-IPRINT-FAL-REC
+                                                                             (CONS
+                                                                              'UPDATE-IPRINT-FAL
+                                                                              (CONS
+                                                                              \
+ 'INIT-IPRINT-FAL+
+                                                                              \
+ (CONS
+                                                                              \
+  'UNTOUCHABLE-MARKER
+                                                                              \
+  (CONS
+                                                                              \
+   'STOBJ-EVISCERATION-ALIST
+                                                                              \
+   (CONS
+                                                                              \
+    'TRACE-EVISCERATION-ALIST
+                                                                              \
+    (CONS
+                                                                              \
+     'UPDATE-ENABLED-STRUCTURE-ARRAY
+                                                                              \
+     (CONS
+                                                                              \
+      'APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                                                              \
+      (CONS
+                                                                              \
+       'DOPPELGANGER-APPLY$-USERFN
+                                                                              \
+       (CONS
+                                                                              \
+        'DOPPELGANGER-BADGE-USERFN
+                                                                              \
+        'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                    'NIL))))))))
+            (CONS
+             (CONS
+              (CONS
+               (CONS
+                (CONS ':STANDARD (CONS 'NIL ':ATOM))
+                (CONS
+                 (ENS STATE)
+                 (CONS
+                  (CONS 'NIL (CONS 'NIL 'NIL))
+                  (CONS
+                   (CONS 'NIL (CONS 'NIL 'NIL))
+                   (CONS
+                    (CONS 'NIL 'NIL)
+                    (CONS
+                     (CONS (CONS 'T 'NIL) ':CLEAR)
+                     (CONS
+                      (CONS 'NIL 'NIL)
+                      (CONS
+                       (CONS
+                        (CONS '500 (CONS '100 'NIL))
+                        (CONS
+                         'SYS-CALL+
+                         (CONS
+                          'SYS-CALL*
+                          (CONS
+                           'SYS-CALL
+                           (CONS
+                            'SET-TEMP-TOUCHABLE-VARS
+                            (CONS
+                             'SET-TEMP-TOUCHABLE-FNS
+                             (CONS
+                              'SET-RAW-MODE-ON
+                              (CONS
+                               'REMOVE-UNTOUCHABLE-FN
+                               (CONS
+                                'OPEN-OUTPUT-CHANNEL!
+                                (CONS
+                                 'HONS-CLEAR!
+                                 (CONS
+                                  'HONS-WASH!
+                                  (CONS
+                                   'COERCE-STATE-TO-OBJECT
+                                   (CONS
+                                    'COERCE-OBJECT-TO-STATE
+                                    (CONS
+                                     'CREATE-STATE
+                                     (CONS
+                                      'USER-STOBJ-ALIST
+                                      (CONS
+                                       'F-PUT-LD-SPECIALS
+                                       (CONS
+                                        'EV-FNCALL
+                                        (CONS
+                                         'EV
+                                         (CONS
+                                          'EV-LST
+                                          (CONS
+                                           'EV-FNCALL!
+                                           (CONS
+                                            'EV-FNCALL-REC
+                                            (CONS
+                                             'EV-REC
+                                             (CONS
+                                              'EV-REC-LST
+                                              (CONS
+                                               'EV-REC-ACL2-UNWIND-PROTECT
+                                               (CONS
+                                                'EV-FNCALL-W
+                                                (CONS
+                                                 'EV-FNCALL-W-BODY
+                                                 (CONS
+                                                  'EV-W
+                                                  (CONS
+                                                   'EV-W-LST
+                                                   (CONS
+                                                    'SET-W
+                                                    (CONS
+                                                     'SET-W!
+                                                     (CONS
+                                                      'CLOAKED-SET-W!
+                                                      (CONS
+                                                       'INSTALL-EVENT
+                                                       (CONS
+                                                        'DEFUNS-FN1
+                                                        (CONS
+                                                         'PROCESS-EMBEDDED-EVENTS
+                                                         (CONS
+                                                          'ENCAPSULATE-PASS-2
+                                                          (CONS
+                                                           'INCLUDE-BOOK-FN1
+                                                           (CONS
+                                                            'MAYBE-ADD-COMMAND-LANDMARK
+                                                            (CONS
+                                                             'UBT-UBU-FN1
+                                                             (CONS
+                                                              'INSTALL-EVENT-DEFUNS
+                                                              (CONS
+                                                               'DEFTHM-FN1
+                                                               (CONS
+                                                                'DEFUNS-FN0
+                                                                (CONS
+                                                                 'LD-READ-EVAL-PRINT
+                                                                 (CONS
+                                                                  'LD-LOOP
+                                                                  (CONS
+                                                                   'LD-FN-BODY
+                                                                   (CONS
+                                                                    'LD-FN0
+                                                                    (CONS
+                                                                     'LD-FN1
+                                                                     (CONS
+                                                                      'UPDATE-USER-STOBJ-ALIST
+                                                                      (CONS
+                                                                       'BIG-N
+                                                                       (CONS
+                                                                        'DECREMENT-BIG-N
+                                                                        (CONS
+                                                                         'ZP-BIG-N
+                                                                         (CONS
+                                                                          'PROTECTED-EVAL
+                                                                          (CONS
+                                                                           'SET-SITE-EVISC-TUPLE
+                                                                           (CONS
+                                                                            'SET-EVISC-TUPLE-LST
+                                                                            (CONS
+                                                                             'SET-EVISC-TUPLE-FN1
+                                                                             (CONS
+                                                                              'SET-IPRINT-AR
+                                                                              (CONS
+                                                                              \
+ 'INIT-IPRINT-FAL
+                                                                              \
+ (CONS
+                                                                              \
+  'UPDATE-IPRINT-FAL-REC
+                                                                              \
+  (CONS
+                                                                              \
+   'UPDATE-IPRINT-FAL
+                                                                              \
+   (CONS
+                                                                              \
+    'INIT-IPRINT-FAL+
+                                                                              \
+    (CONS
+                                                                              \
+     'UNTOUCHABLE-MARKER
+                                                                              \
+     (CONS
+                                                                              \
+      'STOBJ-EVISCERATION-ALIST
+                                                                              \
+      (CONS
+                                                                              \
+       'TRACE-EVISCERATION-ALIST
+                                                                              \
+       (CONS
+                                                                              \
+        'UPDATE-ENABLED-STRUCTURE-ARRAY
+                                                                              \
+        (CONS
+                                                                              \
+         'APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                                                              \
+         (CONS
+                                                                              \
+          'DOPPELGANGER-APPLY$-USERFN
+                                                                              \
+          (CONS
+                                                                              \
+           'DOPPELGANGER-BADGE-USERFN
+                                                                              \
+           'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                       'NIL))))))))
+               (CONS 'NIL 'NIL))
+              (CONS
+               (CONS 'NIL (CONS 'NIL 'NIL))
+               (CONS
+                (CONS 'NIL
+                      (CONS (CONS 'NIL 'NIL)
+                            (CONS (CONS 'NIL 'NIL)
+                                  (CONS 'NIL 'NIL))))
+                (CONS
+                 (CONS 'REWRITE$-LAST-LITERAL-FN 'NIL)
+                 (CONS
+                  'NIL
+                  (CONS
+                   (CONS
+                    (CONS
+                     (CONS (CONS '0 'NIL) (CONS 'NIL '0))
+                     (CONS
+                      (CONS
+                       ':EXPAND
+                       (CONS
+                        (CONS
+                         (CONS 'EQUAL ':NONE)
+                         (CONS
+                          (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
+                          (CONS
+                           (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
+                                 'NIL)
+                           (CONS
+                            (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
+                            (CONS
+                             'IF
+                             (CONS
+                              (CONS 'CONSP (CONS 'L 'NIL))
+                              (CONS
+                               (CONS
+                                'IF
+                                (CONS
+                                 (CONS 'ZP (CONS 'N 'NIL))
+                                 (CONS
+                                  (CONS 'CAR (CONS 'L 'NIL))
+                                  (CONS
+                                   (CONS
+                                    'NTH
+                                    (CONS
+                                     (CONS
+                                          'BINARY-+
+                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
+                                                (CONS 'N 'NIL)))
+                                     (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
+                                   'NIL))))
+                               (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
+                                     'NIL))))))))
+                        'NIL))
+                      'NIL))
+                    'NIL)
+                   'NIL))))))
+             'NIL)))))
+
+
+ACL2 Error in REWRITE$:  It is illegal for a call of rewrite$ to supply
+values both to :RREC and to :EXPAND.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF
+         (REWRITE$
+          '(CAR (CONS X Y))
+          :EXPAND '((NTH N Z))
+          :IN-THEORY '(ENABLE NTH)
+          :RREC
+          (CONS
+           'REWRITE$-RECORD
+           (CONS
+            (CONS
+             (CONS ':STANDARD (CONS 'NIL ':ATOM))
+             (CONS
+              (ENS STATE)
+              (CONS
+               (CONS
+                'NIL
+                (CONS
+                 'NIL
+                 (CONS
+                  (CONS
+                   (CONS 'EQUAL ':NONE)
+                   (CONS
+                    (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
+                    (CONS
+                     (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
+                           'NIL)
+                     (CONS
+                      (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
+                      (CONS
+                       'IF
+                       (CONS
+                        (CONS 'CONSP (CONS 'L 'NIL))
+                        (CONS
+                         (CONS
+                          'IF
+                          (CONS
+                           (CONS 'ZP (CONS 'N 'NIL))
+                           (CONS
+                            (CONS 'CAR (CONS 'L 'NIL))
+                            (CONS
+                             (CONS
+                              'NTH
+                              (CONS (CONS 'BINARY-+
+                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
+                                                (CONS 'N 'NIL)))
+                                    (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
+                             'NIL))))
+                         (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
+                               'NIL))))))))
+                  'NIL)))
+               (CONS
+                (CONS 'T (CONS 'NIL 'NIL))
+                (CONS
+                 (CONS 'NIL 'NIL)
+                 (CONS
+                  (CONS (CONS 'T 'NIL) ':CLEAR)
+                  (CONS
+                   (CONS 'NIL 'NIL)
+                   (CONS
+                    (CONS
+                     (CONS '500 (CONS '100 'NIL))
+                     (CONS
+                      'SYS-CALL+
+                      (CONS
+                       'SYS-CALL*
+                       (CONS
+                        'SYS-CALL
+                        (CONS
+                         'SET-TEMP-TOUCHABLE-VARS
+                         (CONS
+                          'SET-TEMP-TOUCHABLE-FNS
+                          (CONS
+                           'SET-RAW-MODE-ON
+                           (CONS
+                            'REMOVE-UNTOUCHABLE-FN
+                            (CONS
+                             'OPEN-OUTPUT-CHANNEL!
+                             (CONS
+                              'HONS-CLEAR!
+                              (CONS
+                               'HONS-WASH!
+                               (CONS
+                                'COERCE-STATE-TO-OBJECT
+                                (CONS
+                                 'COERCE-OBJECT-TO-STATE
+                                 (CONS
+                                  'CREATE-STATE
+                                  (CONS
+                                   'USER-STOBJ-ALIST
+                                   (CONS
+                                    'F-PUT-LD-SPECIALS
+                                    (CONS
+                                     'EV-FNCALL
+                                     (CONS
+                                      'EV
+                                      (CONS
+                                       'EV-LST
+                                       (CONS
+                                        'EV-FNCALL!
+                                        (CONS
+                                         'EV-FNCALL-REC
+                                         (CONS
+                                          'EV-REC
+                                          (CONS
+                                           'EV-REC-LST
+                                           (CONS
+                                            'EV-REC-ACL2-UNWIND-PROTECT
+                                            (CONS
+                                             'EV-FNCALL-W
+                                             (CONS
+                                              'EV-FNCALL-W-BODY
+                                              (CONS
+                                               'EV-W
+                                               (CONS
+                                                'EV-W-LST
+                                                (CONS
+                                                 'SET-W
+                                                 (CONS
+                                                  'SET-W!
+                                                  (CONS
+                                                   'CLOAKED-SET-W!
+                                                   (CONS
+                                                    'INSTALL-EVENT
+                                                    (CONS
+                                                     'DEFUNS-FN1
+                                                     (CONS
+                                                      'PROCESS-EMBEDDED-EVENTS
+                                                      (CONS
+                                                       'ENCAPSULATE-PASS-2
+                                                       (CONS
+                                                        'INCLUDE-BOOK-FN1
+                                                        (CONS
+                                                         'MAYBE-ADD-COMMAND-LANDMARK
+                                                         (CONS
+                                                          'UBT-UBU-FN1
+                                                          (CONS
+                                                           'INSTALL-EVENT-DEFUNS
+                                                           (CONS
+                                                            'DEFTHM-FN1
+                                                            (CONS
+                                                             'DEFUNS-FN0
+                                                             (CONS
+                                                              'LD-READ-EVAL-PRINT
+                                                              (CONS
+                                                               'LD-LOOP
+                                                               (CONS
+                                                                'LD-FN-BODY
+                                                                (CONS
+                                                                 'LD-FN0
+                                                                 (CONS
+                                                                  'LD-FN1
+                                                                  (CONS
+                                                                   'UPDATE-USER-STOBJ-ALIST
+                                                                   (CONS
+                                                                    'BIG-N
+                                                                    (CONS
+                                                                     'DECREMENT-BIG-N
+                                                                     (CONS
+                                                                      'ZP-BIG-N
+                                                                      (CONS
+                                                                       'PROTECTED-EVAL
+                                                                       (CONS
+                                                                        'SET-SITE-EVISC-TUPLE
+                                                                        (CONS
+                                                                         'SET-EVISC-TUPLE-LST
+                                                                         (CONS
+                                                                          'SET-EVISC-TUPLE-FN1
+                                                                          (CONS
+                                                                           'SET-IPRINT-AR
+                                                                           (CONS
+                                                                            'INIT-IPRINT-FAL
+                                                                            (CONS
+                                                                             'UPDATE-IPRINT-FAL-REC
+                                                                             (CONS
+                                                                              'UPDATE-IPRINT-FAL
+                                                                              (CONS
+                                                                              \
+ 'INIT-IPRINT-FAL+
+                                                                              \
+ (CONS
+                                                                              \
+  'UNTOUCHABLE-MARKER
+                                                                              \
+  (CONS
+                                                                              \
+   'STOBJ-EVISCERATION-ALIST
+                                                                              \
+   (CONS
+                                                                              \
+    'TRACE-EVISCERATION-ALIST
+                                                                              \
+    (CONS
+                                                                              \
+     'UPDATE-ENABLED-STRUCTURE-ARRAY
+                                                                              \
+     (CONS
+                                                                              \
+      'APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                                                              \
+      (CONS
+                                                                              \
+       'DOPPELGANGER-APPLY$-USERFN
+                                                                              \
+       (CONS
+                                                                              \
+        'DOPPELGANGER-BADGE-USERFN
+                                                                              \
+        'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                    'NIL))))))))
+            (CONS
+             (CONS
+              (CONS
+               (CONS
+                (CONS ':STANDARD (CONS 'NIL ':ATOM))
+                (CONS
+                 (ENS STATE)
+                 (CONS
+                  (CONS 'NIL (CONS 'NIL 'NIL))
+                  (CONS
+                   (CONS 'NIL (CONS 'NIL 'NIL))
+                   (CONS
+                    (CONS 'NIL 'NIL)
+                    (CONS
+                     (CONS (CONS 'T 'NIL) ':CLEAR)
+                     (CONS
+                      (CONS 'NIL 'NIL)
+                      (CONS
+                       (CONS
+                        (CONS '500 (CONS '100 'NIL))
+                        (CONS
+                         'SYS-CALL+
+                         (CONS
+                          'SYS-CALL*
+                          (CONS
+                           'SYS-CALL
+                           (CONS
+                            'SET-TEMP-TOUCHABLE-VARS
+                            (CONS
+                             'SET-TEMP-TOUCHABLE-FNS
+                             (CONS
+                              'SET-RAW-MODE-ON
+                              (CONS
+                               'REMOVE-UNTOUCHABLE-FN
+                               (CONS
+                                'OPEN-OUTPUT-CHANNEL!
+                                (CONS
+                                 'HONS-CLEAR!
+                                 (CONS
+                                  'HONS-WASH!
+                                  (CONS
+                                   'COERCE-STATE-TO-OBJECT
+                                   (CONS
+                                    'COERCE-OBJECT-TO-STATE
+                                    (CONS
+                                     'CREATE-STATE
+                                     (CONS
+                                      'USER-STOBJ-ALIST
+                                      (CONS
+                                       'F-PUT-LD-SPECIALS
+                                       (CONS
+                                        'EV-FNCALL
+                                        (CONS
+                                         'EV
+                                         (CONS
+                                          'EV-LST
+                                          (CONS
+                                           'EV-FNCALL!
+                                           (CONS
+                                            'EV-FNCALL-REC
+                                            (CONS
+                                             'EV-REC
+                                             (CONS
+                                              'EV-REC-LST
+                                              (CONS
+                                               'EV-REC-ACL2-UNWIND-PROTECT
+                                               (CONS
+                                                'EV-FNCALL-W
+                                                (CONS
+                                                 'EV-FNCALL-W-BODY
+                                                 (CONS
+                                                  'EV-W
+                                                  (CONS
+                                                   'EV-W-LST
+                                                   (CONS
+                                                    'SET-W
+                                                    (CONS
+                                                     'SET-W!
+                                                     (CONS
+                                                      'CLOAKED-SET-W!
+                                                      (CONS
+                                                       'INSTALL-EVENT
+                                                       (CONS
+                                                        'DEFUNS-FN1
+                                                        (CONS
+                                                         'PROCESS-EMBEDDED-EVENTS
+                                                         (CONS
+                                                          'ENCAPSULATE-PASS-2
+                                                          (CONS
+                                                           'INCLUDE-BOOK-FN1
+                                                           (CONS
+                                                            'MAYBE-ADD-COMMAND-LANDMARK
+                                                            (CONS
+                                                             'UBT-UBU-FN1
+                                                             (CONS
+                                                              'INSTALL-EVENT-DEFUNS
+                                                              (CONS
+                                                               'DEFTHM-FN1
+                                                               (CONS
+                                                                'DEFUNS-FN0
+                                                                (CONS
+                                                                 'LD-READ-EVAL-PRINT
+                                                                 (CONS
+                                                                  'LD-LOOP
+                                                                  (CONS
+                                                                   'LD-FN-BODY
+                                                                   (CONS
+                                                                    'LD-FN0
+                                                                    (CONS
+                                                                     'LD-FN1
+                                                                     (CONS
+                                                                      'UPDATE-USER-STOBJ-ALIST
+                                                                      (CONS
+                                                                       'BIG-N
+                                                                       (CONS
+                                                                        'DECREMENT-BIG-N
+                                                                        (CONS
+                                                                         'ZP-BIG-N
+                                                                         (CONS
+                                                                          'PROTECTED-EVAL
+                                                                          (CONS
+                                                                           'SET-SITE-EVISC-TUPLE
+                                                                           (CONS
+                                                                            'SET-EVISC-TUPLE-LST
+                                                                            (CONS
+                                                                             'SET-EVISC-TUPLE-FN1
+                                                                             (CONS
+                                                                              'SET-IPRINT-AR
+                                                                              (CONS
+                                                                              \
+ 'INIT-IPRINT-FAL
+                                                                              \
+ (CONS
+                                                                              \
+  'UPDATE-IPRINT-FAL-REC
+                                                                              \
+  (CONS
+                                                                              \
+   'UPDATE-IPRINT-FAL
+                                                                              \
+   (CONS
+                                                                              \
+    'INIT-IPRINT-FAL+
+                                                                              \
+    (CONS
+                                                                              \
+     'UNTOUCHABLE-MARKER
+                                                                              \
+     (CONS
+                                                                              \
+      'STOBJ-EVISCERATION-ALIST
+                                                                              \
+      (CONS
+                                                                              \
+       'TRACE-EVISCERATION-ALIST
+                                                                              \
+       (CONS
+                                                                              \
+        'UPDATE-ENABLED-STRUCTURE-ARRAY
+                                                                              \
+        (CONS
+                                                                              \
+         'APPLY-USER-STOBJ-ALIST-OR-KWOTE
+                                                                              \
+         (CONS
+                                                                              \
+          'DOPPELGANGER-APPLY$-USERFN
+                                                                              \
+          (CONS
+                                                                              \
+           'DOPPELGANGER-BADGE-USERFN
+                                                                              \
+           'NIL))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                       'NIL))))))))
+               (CONS 'NIL 'NIL))
+              (CONS
+               (CONS 'NIL (CONS 'NIL 'NIL))
+               (CONS
+                (CONS 'NIL
+                      (CONS (CONS 'NIL 'NIL)
+                            (CONS (CONS 'NIL 'NIL)
+                                  (CONS 'NIL 'NIL))))
+                (CONS
+                 (CONS 'REWRITE$-LAST-LITERAL-FN 'NIL)
+                 (CONS
+                  'NIL
+                  (CONS
+                   (CONS
+                    (CONS
+                     (CONS (CONS '0 'NIL) (CONS 'NIL '0))
+                     (CONS
+                      (CONS
+                       ':EXPAND
+                       (CONS
+                        (CONS
+                         (CONS 'EQUAL ':NONE)
+                         (CONS
+                          (CONS 'NTH (CONS 'N (CONS 'Z 'NIL)))
+                          (CONS
+                           (CONS (CONS ':DEFINITION (CONS 'NTH 'NIL))
+                                 'NIL)
+                           (CONS
+                            (CONS 'NTH (CONS 'N (CONS 'L 'NIL)))
+                            (CONS
+                             'IF
+                             (CONS
+                              (CONS 'CONSP (CONS 'L 'NIL))
+                              (CONS
+                               (CONS
+                                'IF
+                                (CONS
+                                 (CONS 'ZP (CONS 'N 'NIL))
+                                 (CONS
+                                  (CONS 'CAR (CONS 'L 'NIL))
+                                  (CONS
+                                   (CONS
+                                    'NTH
+                                    (CONS
+                                     (CONS
+                                          'BINARY-+
+                                          (CONS (CONS 'QUOTE (CONS '-1 'NIL))
+                                                (CONS 'N 'NIL)))
+                                     (CONS (CONS 'CDR (CONS 'L 'NIL)) 'NIL)))
+                                   'NIL))))
+                               (CONS (CONS 'QUOTE (CONS 'NIL 'NIL))
+                                     'NIL))))))))
+                        'NIL))
+                      'NIL))
+                    'NIL)
+                   'NIL))))))
+             'NIL)))))
+
+
+ACL2 Error in REWRITE$:  It is illegal for a call of rewrite$ to supply
+values both to :RREC and to :EXPAND or :IN-THEORY.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y)) :REPEAT -1))
+
+
+ACL2 Error in REWRITE$:  The :REPEAT argument must be a positive integer;
+-1 is thus illegal.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                      :EQUIV 'IFF
+                      :GENEQV *GENEQV-IFF*))
+
+
+ACL2 Error in REWRITE$:  It is illegal for a call of rewrite$ to include
+values for both the :EQUIV and :GENEQV options.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                      :EQUIV 17))
+
+
+ACL2 Error in REWRITE$:  The :EQUIV argument of rewrite$ must be a
+symbol, unlike 17.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(MEMBER-EQUAL B (BINARY-APPEND U V))
+                      :EQUIV 'FOO))
+
+
+ACL2 Error in REWRITE$:  The :EQUIV argument of rewrite$ must denote
+a known equivalence relation, unlike FOO.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y))
+                      :PROVE-FORCED-ASSUMPTIONS 'FOO))
+
+
+ACL2 Error in REWRITE$:  The :prove-forced-assumptions argument, FOO,
+is illegal.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y)) :RREC 17))
+
+
+ACL2 Error in REWRITE$:  The value of :RREC in a call of rewrite$ must
+have the shape of a rewrite$-record record, but that value has been
+supplied as 17, which fails to satisfy the predicate WEAK-REWRITE$-RECORD-P.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$ '(CAR (CONS X Y))
+                      :RREC (MAKE REWRITE$-RECORD :RCNST 23)))
+
+
+ACL2 Error in REWRITE$:  The value of :RREC in a call of rewrite$ must
+have an :RCNST field that is the shape of a rewrite-constant record.
+But that field has been supplied as 23, which fails to satisfy the
+predicate WEAK-REWRITE-CONSTANT-P.
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(IN-THEORY (DISABLE APPEND-ASSOC-WITH-FORCE))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER RREC)
+                   (MAKE-RREC NIL NIL NIL 'TOP
+                              (W STATE)
+                              STATE)))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-1*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-1* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-1*
+ACL2 !>>(MUST-EVAL-TO (REWRITE$ '(APPEND (APPEND X Y) Z)
+                                :TRANSLATE T
+                                :UNTRANSLATE T
+                                :RREC *RREC-1*)
+                      '((APPEND X Y Z)
+                        ((:REWRITE APPEND-ASSOC))))
+ ((APPEND X Y Z)
+  ((:REWRITE APPEND-ASSOC)))
+ACL2 !>>(DEFMACRO
+         MUST-EVAL-TO-RH (FORM RESULT)
+         (CONS
+          'MUST-EVAL-TO
+          (CONS
+           (CONS
+            'B*
+            (CONS
+             (CONS
+              (CONS
+               (CONS
+                 'ER
+                 (CONS (CONS 'LIST*
+                             (CONS 'HYPS
+                                   (CONS '?RREC
+                                         (CONS 'TTREE (CONS '?PAIRS 'NIL)))))
+                       'NIL))
+               (CONS FORM 'NIL))
+              'NIL)
+             (CONS (CONS 'VALUE
+                         (CONS (CONS 'LIST
+                                     (CONS 'HYPS (CONS 'TTREE 'NIL)))
+                               'NIL))
+                   'NIL)))
+           (CONS RESULT 'NIL))))
+
+Summary
+Form:  ( DEFMACRO MUST-EVAL-TO-RH ...)
+Rules: NIL
+ MUST-EVAL-TO-RH
+ACL2 !>>(DEFUN P1 (X) (SYMBOL-LISTP X))
+
+Summary
+Form:  ( DEFUN P1 ...)
+Rules: ((:TYPE-PRESCRIPTION SYMBOL-LISTP))
+ P1
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((P1 X)))
+                         '(((SYMBOL-LISTP X))
+                           ((LEMMA (:DEFINITION P1)))))
+ (((SYMBOL-LISTP X))
+  ((LEMMA (:DEFINITION P1))))
+ACL2 !>>(DEFUN P2 (X)
+               (AND (TRUE-LISTP X) (EQL (LEN X) 5)))
+
+Summary
+Form:  ( DEFUN P2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ P2
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((P1 X) (P2 X)))
+                         '(((SYMBOL-LISTP X)
+                            (TRUE-LISTP X)
+                            (EQUAL (LEN X) '5))
+                           ((LEMMA (:DEFINITION P2)
+                                   (:DEFINITION P1)))))
+ (((SYMBOL-LISTP X)
+   (TRUE-LISTP X)
+   (EQUAL (LEN X) '5))
+  ((LEMMA (:DEFINITION P2)
+          (:DEFINITION P1))))
+ACL2 !>>(MUST-EVAL-TO-RH
+             (REWRITE$-HYPS '((P1 X) (P2 X))
+                            :REPEAT 2)
+             '(((SYMBOL-LISTP X) (EQUAL (LEN X) '5))
+               ((LEMMA (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+                       (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+                       (:DEFINITION P2)
+                       (:DEFINITION P1))
+                (PT 0))))
+ (((SYMBOL-LISTP X) (EQUAL (LEN X) '5))
+  ((LEMMA (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
+          (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+          (:DEFINITION P2)
+          (:DEFINITION P1))
+   (PT 0)))
+ACL2 !>>(DEFUN P3 (X) (ATOM X))
+
+Summary
+Form:  ( DEFUN P3 ...)
+Rules: NIL
+ P3
+ACL2 !>>(DEFUN P4 (X) (P3 X))
+
+Summary
+Form:  ( DEFUN P4 ...)
+Rules: ((:TYPE-PRESCRIPTION P3))
+ P4
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((CONSP X) (NOT (P4 X))))
+                         '(((CONSP X))
+                           ((LEMMA (:DEFINITION P4)
+                                   (:DEFINITION P3)))))
+ (((CONSP X))
+  ((LEMMA (:DEFINITION P4)
+          (:DEFINITION P3))))
+ACL2 !>>(MF (REWRITE$-HYPS '((CONSP X) (P4 X))))
+
+
+ACL2 Error in REWRITE$-HYPS:  An attempt has been made to simplify
+the following hypotheses:
+
+((CONSP X) (P4 X)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found by rewriting a negated hypothesis, (NOT (P4 X)), to T.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MF (REWRITE$-HYPS '((P4 X) (CONSP X))))
+
+
+ACL2 Error in REWRITE$-HYPS:  An attempt has been made to simplify
+the following hypotheses:
+
+((P4 X) (CONSP X)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found by rewriting a negated hypothesis, (NOT (P4 X)), to T.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFTHM P3-FORWARD
+                (IMPLIES (P3 X) (NOT (CONSP X)))
+                :RULE-CLASSES :FORWARD-CHAINING)
+
+ACL2 Observation in ( DEFTHM P3-FORWARD ...):  The :TRIGGER-TERMS for
+the :FORWARD-CHAINING rule P3-FORWARD will consist of the list containing
+(P3 X).
+
+ACL2 Warning [Non-rec] in ( DEFTHM P3-FORWARD ...):  The term (P3 X)
+contains the function symbol P3, which has a non-recursive definition.
+Unless this definition is disabled, (P3 X) is unlikely ever to occur
+as a trigger for P3-FORWARD.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM P3-FORWARD ...)
+Rules: ((:DEFINITION NOT) (:DEFINITION P3))
+Warnings:  Non-rec
+ P3-FORWARD
+ACL2 !>>(IN-THEORY (DISABLE P3))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(MF (REWRITE$-HYPS '((P4 X) (CONSP X))))
+
+
+ACL2 Error in REWRITE$-HYPS:  An attempt has been made to simplify
+the following hypotheses:
+
+((P3 X) (CONSP X)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found using type-set reasoning, based perhaps on forward chaining.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((AND X Y))
+                                        :TRANSLATE T)
+                         '((X Y) NIL))
+ ((X Y) NIL)
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((IF X Y 'NIL)))
+                         '((X Y) NIL))
+ ((X Y) NIL)
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((NOT (IF X X Y))))
+                         '(((NOT X) (NOT Y)) NIL))
+ (((NOT X) (NOT Y)) NIL)
+ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((NOT (IF (NOT X) T Y)))
+                                        :TRANSLATE T)
+                         '((X (NOT Y))
+                           ((LEMMA (:DEFINITION NOT)))))
+ ((X (NOT Y))
+  ((LEMMA (:DEFINITION NOT))))
+ACL2 !>>(DEFMACRO
+         MUST-EVAL-TO-CONTEXT (FORM RESULT)
+         (CONS
+          'MUST-EVAL-TO
+          (CONS
+           (CONS
+            'ER-LET*
+            (CONS
+             (CONS (CONS 'X (CONS FORM 'NIL)) 'NIL)
+             (CONS
+              (CONS
+               'VALUE
+               (CONS
+                (CONS
+                    'LIST*
+                    (CONS (CONS 'CAR (CONS 'X 'NIL))
+                          (CONS (CONS 'ACCESS
+                                      (CONS 'REWRITE$-RECORD
+                                            (CONS (CONS 'CADR (CONS 'X 'NIL))
+                                                  (CONS ':TYPE-ALIST 'NIL))))
+                                (CONS (CONS 'CDDR (CONS 'X 'NIL))
+                                      'NIL))))
+                'NIL))
+              'NIL)))
+           (CONS RESULT 'NIL))))
+
+Summary
+Form:  ( DEFMACRO MUST-EVAL-TO-CONTEXT ...)
+Rules: NIL
+ MUST-EVAL-TO-CONTEXT
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
+                   (REWRITE$-HYPS NIL)))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-2*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-2* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-2*
+ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((CONSP (CAR (CONS X X))))
+                                                *RREC-2*)
+                              '(((CONSP X))
+                                ((X 3072))
+                                ((LEMMA (:REWRITE CAR-CONS)))))
+ (((CONSP X))
+  ((X 3072))
+  ((LEMMA (:REWRITE CAR-CONS))))
+ACL2 !>>(DEFUN P5 (X) (CONSP X))
+
+Summary
+Form:  ( DEFUN P5 ...)
+Rules: NIL
+ P5
+ACL2 !>>(DEFUN P6 (X)
+               (AND (CONSP X) (NATP (CAR X))))
+
+Summary
+Form:  ( DEFUN P6 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER))
+ P6
+ACL2 !>>(MAKE-EVENT
+         (B*
+          (((ER (LIST* HYPS RREC TTREE ?PAIRS))
+            (REWRITE$-HYPS '((P5 X) (P5 Y))
+                           :TRANSLATE T)))
+          (VALUE
+           (CONS
+            'PROGN
+            (CONS
+             (CONS
+              'ASSERT-EVENT
+              (CONS
+               (CONS
+                'EQUAL
+                (CONS
+                   (CONS 'QUOTE (CONS HYPS 'NIL))
+                   (CONS (CONS 'QUOTE
+                               (CONS (CONS (CONS 'CONSP (CONS 'X 'NIL))
+                                           (CONS (CONS 'CONSP (CONS 'Y 'NIL))
+                                                 'NIL))
+                                     'NIL))
+                         'NIL)))
+               'NIL))
+             (CONS
+              (CONS
+               'ASSERT-EVENT
+               (CONS
+                (CONS
+                 'EQUAL
+                 (CONS
+                  (CONS 'QUOTE (CONS TTREE 'NIL))
+                  (CONS
+                   (CONS
+                    'QUOTE
+                    (CONS
+                        (CONS (CONS 'LEMMA
+                                    (CONS (CONS ':DEFINITION (CONS 'P5 'NIL))
+                                          'NIL))
+                              'NIL)
+                        'NIL))
+                   'NIL)))
+                'NIL))
+              (CONS (CONS 'DEFCONST
+                          (CONS '*RREC-3*
+                                (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                      'NIL)))
+                    'NIL)))))))
+:PASSED
+:PASSED
+
+Summary
+Form:  ( DEFCONST *RREC-3* ...)
+Rules: NIL
+*RREC-3*
+
+Summary
+Form:  ( PROGN (ASSERT-EVENT ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-3*
+ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((P6 X) (P6 Y) (P6 Z))
+                                                *RREC-3*)
+                              '(((INTEGERP (CAR X))
+                                 (NOT (< (CAR X) '0))
+                                 (INTEGERP (CAR Y))
+                                 (NOT (< (CAR Y) '0))
+                                 (CONSP Z)
+                                 (INTEGERP (CAR Z))
+                                 (NOT (< (CAR Z) '0)))
+                                (((< (CAR Z) '0) 128)
+                                 ((CAR Z) 7)
+                                 ((CAR Z) 23)
+                                 (Z 3072)
+                                 ((< (CAR Y) '0) 128)
+                                 ((CAR Y) 7)
+                                 ((CAR Y) 23)
+                                 ((< (CAR X) '0) 128)
+                                 ((CAR X) 7)
+                                 ((CAR X) 23)
+                                 (Y 3072)
+                                 (X 3072))
+                                ((SPLITTER-IF-INTRO (:DEFINITION P6)
+                                                    (:DEFINITION NATP))
+                                 (LEMMA (:DEFINITION P6)
+                                        (:DEFINITION NATP)))))
+ (((INTEGERP (CAR X))
+   (NOT (< (CAR X) '0))
+   (INTEGERP (CAR Y))
+   (NOT (< (CAR Y) '0))
+   (CONSP Z)
+   (INTEGERP (CAR Z))
+   (NOT (< (CAR Z) '0)))
+  (((< (CAR Z) '0) 128)
+   ((CAR Z) 7)
+   ((CAR Z) 23)
+   (Z 3072)
+   ((< (CAR Y) '0) 128)
+   ((CAR Y) 7)
+   ((CAR Y) 23)
+   ((< (CAR X) '0) 128)
+   ((CAR X) 7)
+   ((CAR X) 23)
+   (Y 3072)
+   (X 3072))
+  ((SPLITTER-IF-INTRO (:DEFINITION P6)
+                      (:DEFINITION NATP))
+   (LEMMA (:DEFINITION P6)
+          (:DEFINITION NATP))))
+ACL2 !>>(DEFTHM P6-IMPLIES-P5 (IMPLIES (P6 X) (P5 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM P6-IMPLIES-P5 ...):  A :REWRITE
+rule generated from P6-IMPLIES-P5 will be triggered only by terms containing
+the function symbol P5, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM P6-IMPLIES-P5 ...):  The previously
+added rule P5 subsumes a newly proposed :REWRITE rule generated from
+P6-IMPLIES-P5, in the sense that the old rule rewrites a more general
+target.  Because the new rule will be tried first, it may nonetheless
+find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM P6-IMPLIES-P5 ...)
+Rules: ((:DEFINITION NATP)
+        (:DEFINITION P5)
+        (:DEFINITION P6)
+        (:TYPE-PRESCRIPTION P5))
+Warnings:  Subsume and Non-rec
+ P6-IMPLIES-P5
+ACL2 !>>(IN-THEORY (DISABLE P5 P6))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
+                   (REWRITE$-HYPS NIL)))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-4*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-4* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-4*
+ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((AND (P6 X) (P6 X)) (P5 X))
+                                                *RREC-4*
+                                                :TRANSLATE T)
+                              '(((P6 X))
+                                (((P6 X)
+                                  256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+                                ((LEMMA (:REWRITE P6-IMPLIES-P5)
+                                        (:TYPE-PRESCRIPTION P6)))))
+ (((P6 X))
+  (((P6 X)
+    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+  ((LEMMA (:REWRITE P6-IMPLIES-P5)
+          (:TYPE-PRESCRIPTION P6))))
+ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((AND (P6 X) (P6 X)) (P5 X))
+                                                *RREC-4*
+                                                :TRANSLATE T
+                                                :REPEAT 2)
+                              '(((P6 X))
+                                (((P6 X)
+                                  256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+                                ((LEMMA (:REWRITE P6-IMPLIES-P5)
+                                        (:TYPE-PRESCRIPTION P6)))))
+ (((P6 X))
+  (((P6 X)
+    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+  ((LEMMA (:REWRITE P6-IMPLIES-P5)
+          (:TYPE-PRESCRIPTION P6))))
+ACL2 !>>(MUST-EVAL-TO-CONTEXT
+           (REWRITE$-CONTEXT '((P5 X) (AND (P6 X) (P6 X)))
+                             *RREC-4*
+                             :TRANSLATE T
+                             :REPEAT 2)
+           '(((P5 X) (P6 X))
+             (((P6 X)
+               256 (LEMMA (:TYPE-PRESCRIPTION P6)))
+              ((P5 X)
+               256 (LEMMA (:TYPE-PRESCRIPTION P5))))
+             ((LEMMA (:TYPE-PRESCRIPTION P6))
+              (RW-CACHE-ANY-TAG T
+                                (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
+                                                ((X . X))
+                                                P6 X))))))
+ (((P5 X) (P6 X))
+  (((P6 X)
+    256 (LEMMA (:TYPE-PRESCRIPTION P6)))
+   ((P5 X)
+    256 (LEMMA (:TYPE-PRESCRIPTION P5))))
+  ((LEMMA (:TYPE-PRESCRIPTION P6))
+   (RW-CACHE-ANY-TAG T
+                     (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
+                                     ((X . X))
+                                     P6 X)))))
+ACL2 !>>(DEFTHM P6-IMPLIES-P5-FORWARD
+                (IMPLIES (P6 X) (P5 X))
+                :RULE-CLASSES :FORWARD-CHAINING)
+
+ACL2 Observation in ( DEFTHM P6-IMPLIES-P5-FORWARD ...):  The :TRIGGER-
+TERMS for the :FORWARD-CHAINING rule P6-IMPLIES-P5-FORWARD will consist
+of the list containing (P6 X).
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM P6-IMPLIES-P5-FORWARD ...)
+Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+ P6-IMPLIES-P5-FORWARD
+ACL2 !>>(IN-THEORY (DISABLE P6-IMPLIES-P5))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(DEFUN P7 (X)
+               (AND (P5 X) (INTEGERP (CAR X))))
+
+Summary
+Form:  ( DEFUN P7 ...)
+Rules: NIL
+ P7
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
+                   (REWRITE$-HYPS '((P6 X)))))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-5*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-5* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-5*
+ACL2 !>>(MUST-EVAL-TO-CONTEXT
+             (REWRITE$-CONTEXT '((P6 X) (P7 X))
+                               *RREC-5*)
+             '(((INTEGERP (CAR X)))
+               (((CAR X) 23)
+                ((P5 X)
+                 256
+                 (LEMMA (:TYPE-PRESCRIPTION P5)
+                        (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+                        (:TYPE-PRESCRIPTION P6))
+                 (PT 0))
+                ((P6 X)
+                 256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+               ((LEMMA (:DEFINITION P7)
+                       (:TYPE-PRESCRIPTION P5)
+                       (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+                       (:TYPE-PRESCRIPTION P6))
+                (PT 0))))
+ (((INTEGERP (CAR X)))
+  (((CAR X) 23)
+   ((P5 X)
+    256
+    (LEMMA (:TYPE-PRESCRIPTION P5)
+           (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+           (:TYPE-PRESCRIPTION P6))
+    (PT 0))
+   ((P6 X)
+    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+  ((LEMMA (:DEFINITION P7)
+          (:TYPE-PRESCRIPTION P5)
+          (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+          (:TYPE-PRESCRIPTION P6))
+   (PT 0)))
+ACL2 !>>(MUST-EVAL-TO (B* (((ER (LIST* ?LST RREC ?TTREE ?PAIRS))
+                            (REWRITE$-CONTEXT '((P7 X)) *RREC-5*)))
+                          (REWRITE$ '(LIST (NATP (CAR A)))
+                                    :ALIST '((A . X))
+                                    :RREC RREC
+                                    :TRANSLATE T
+                                    :UNTRANSLATE T))
+                      '((LIST (NOT (< (CAR X) 0)))
+                        ((:DEFINITION NATP))))
+ ((LIST (NOT (< (CAR X) 0)))
+  ((:DEFINITION NATP)))
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
+                   (REWRITE$-HYPS '((P6 X) (NATP (CAR X))))))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-6*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-6* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-6*
+ACL2 !>>(ASSERT-EVENT (EQUAL *REWRITE$-TRUE-CONTEXT* NIL))
+ :PASSED
+ACL2 !>>(MUST-EVAL-TO-CONTEXT
+             (REWRITE$-CONTEXT '((P5 X) (P7 X))
+                               *RREC-6*)
+             '(NIL (((P5 X)
+                     256
+                     (LEMMA (:TYPE-PRESCRIPTION P5)
+                            (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+                            (:TYPE-PRESCRIPTION P6))
+                     (PT 0))
+                    ((< (CAR X) '0) 128)
+                    ((CAR X) 7)
+                    ((CAR X) 23)
+                    ((P6 X)
+                     256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+                   ((LEMMA (:DEFINITION P7)
+                           (:TYPE-PRESCRIPTION P5)
+                           (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+                           (:TYPE-PRESCRIPTION P6))
+                    (PT 0))))
+ (NIL (((P5 X)
+        256
+        (LEMMA (:TYPE-PRESCRIPTION P5)
+               (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+               (:TYPE-PRESCRIPTION P6))
+        (PT 0))
+       ((< (CAR X) '0) 128)
+       ((CAR X) 7)
+       ((CAR X) 23)
+       ((P6 X)
+        256 (LEMMA (:TYPE-PRESCRIPTION P6))))
+      ((LEMMA (:DEFINITION P7)
+              (:TYPE-PRESCRIPTION P5)
+              (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
+              (:TYPE-PRESCRIPTION P6))
+       (PT 0)))
+ACL2 !>>(MAKE-EVENT
+             (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
+                   (REWRITE$-HYPS NIL)))
+                 (VALUE (CONS 'DEFCONST
+                              (CONS '*RREC-7*
+                                    (CONS (CONS 'QUOTE (CONS RREC 'NIL))
+                                          'NIL))))))
+
+Summary
+Form:  ( DEFCONST *RREC-7* ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (B* ...))
+Rules: NIL
+ *RREC-7*
+ACL2 !>>(MF (REWRITE$-CONTEXT '((NATP X)
+                                (NATP Y)
+                                (SYMBOLP X)
+                                (CONSP Z))
+                              *RREC-7*))
+
+
+ACL2 Error in REWRITE$-CONTEXT:  An attempt has been made to simplify
+the following hypotheses:
+
+((NATP X) (NATP Y) (SYMBOLP X) (CONSP Z)).
+
+However, that list is contradictory!  (Technical note: the contradiction
+was found by rewriting a contextual test term, (SYMBOLP X), to NIL.)
+
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(ASSERT-EVENT (EQUAL *REWRITE$-FALSE-CONTEXT* '('NIL)))
+ :PASSED
+ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((NATP X)
+                                                  (NATP Y)
+                                                  (SYMBOLP X)
+                                                  (CONSP Z))
+                                                *RREC-7*
+                                                :CONTRADICTION-OK T)
+                              '(('NIL)
+                                NIL
+                                ((SPLITTER-IF-INTRO (:DEFINITION NATP))
+                                 (LEMMA (:DEFINITION NATP)))))
+ (('NIL)
+  NIL
+  ((SPLITTER-IF-INTRO (:DEFINITION NATP))
+   (LEMMA (:DEFINITION NATP))))
+ACL2 !>>Bye.

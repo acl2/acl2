@@ -1,5 +1,5 @@
 # ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2020, Regents of the University of Texas
+# Copyright (C) 2021, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -20,11 +20,18 @@
 
 #  Example invocations for users:
 
-#   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Same as make.
-#   make all         ; Same as make large TAGS-acl2-doc
-#   make TAGS-acl2-doc ; Build tags-table for books (used by acl2-doc browser)
 #   make             ; Same as make all
-#   make clean-all   ; Remove all generated files in top-level directory and doc/
+#   make all         ; Same as make large, but also makes TAGS-acl2-doc if
+#                    ;   TAGS_ACL2_DOC is non-empty and not SKIP.  Most output
+#                    ;   goes to file make.log (customizable with
+#                    ;   ACL2_MAKE_LOG), including output from both large and
+#                    ;   TAGS-acl2-doc.
+#   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Most output
+#                    ;   goes to file make.log (customizable with
+#                    ;   ACL2_MAKE_LOG).
+#   make TAGS-acl2-doc ; Build tags-table for books (used by acl2-doc browser)
+#   make clean       ; Remove all generated files in top-level directory and doc/
+#   make clean-all   ; Same as above
 #   make distclean   ; Same as above
 #   make clean-lite  ; Same as clean-all, except do not delete *saved_acl2*
 #                    ; or doc.lisp.backup
@@ -99,6 +106,9 @@
 # perhaps other targets.
 export ACL2_CUSTOMIZATION ?= NONE
 
+# Log file for builds
+export ACL2_MAKE_LOG ?= make.log
+
 # Avoid escape characters in regression log:
 export CERT_PL_NO_COLOR ?= t
 
@@ -115,8 +125,6 @@ ACL2_WD := $(shell cygpath -m `pwd`)
 else
 ACL2_WD := $(shell pwd)
 endif
-
-$(info ACL2_WD is $(ACL2_WD))
 
 # The build of saved_acl2 may succeed even if the directory name has
 # spaces, but book certification will almost surely fail, so we
@@ -160,7 +168,6 @@ PREFIXsaved_acl2 := ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 := ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
 ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
-$(info ACL2 is $(ACL2))
 
 # One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
 # to provide a safety or :stack-access setting.  We recommend
@@ -242,13 +249,42 @@ sources_extra := GNUmakefile acl2-characters doc.lisp \
 ACL2_DEPS := $(sources) $(sources_extra)
 
 # Top (default) target:
+.PHONY: all
 all: large
-
 ifneq ($(TAGS_ACL2_DOC),)
 ifneq ($(TAGS_ACL2_DOC),SKIP)
-all: TAGS-acl2-doc
+ifeq ($(ACL2_MAKE_LOG),NONE)
+	@$(MAKE) TAGS-acl2-doc
+else
+	@echo -n Making TAGS-acl2-doc...
+	@$(MAKE) TAGS-acl2-doc >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\nERROR: See $(ACL2_MAKE_LOG)." ; exit 1)
+	@echo " done."
 endif
 endif
+endif
+
+# The following target is intended only for when $(ACL2_MAKE_LOG) is
+# not NONE.
+.PHONY: set-up-log
+set-up-log:
+	@if [ -f "$(ACL2_MAKE_LOG)".bak ] ; then \
+	rm -f "$(ACL2_MAKE_LOG)".bak ; \
+	fi
+	@if [ -f "$(ACL2_MAKE_LOG)" ] ; then \
+	cp -p "$(ACL2_MAKE_LOG)" "$(ACL2_MAKE_LOG)".bak ; \
+	fi
+	@echo "Preparing to build ${PREFIXsaved_acl2} (log file $(ACL2_MAKE_LOG))."
+	@if [ -f "$(ACL2_MAKE_LOG)" ] && [ "`(tail -1 "$(ACL2_MAKE_LOG)" 2>&1)`" = "Preparing to build ${PREFIXsaved_acl2} (log file $(ACL2_MAKE_LOG))." ]; then \
+	echo "" ;\
+	>&2 echo '** ABORTING: Shell output has been redirected to the file' $(ACL2_MAKE_LOG) . ;\
+	>&2 echo '             But this is illegal, because this "make" invocation' ;\
+	>&2 echo '             is already directing its output to that same file.' ;\
+	>&2 echo '             To change where this "make" invocation directs its output,' ;\
+	>&2 echo '             you may set "make" variable ACL2_MAKE_LOG to that desired' ;\
+	>&2 echo '             filename, but you are advised to consider simply avoiding' ;\
+	>&2 echo '             the redirection of shell output to $(ACL2_MAKE_LOG).' ;\
+	exit 1 ;\
+	fi
 
 # Build tags table for acl2-doc, with ACL2 topics first.
 TAGS-acl2-doc: $(ACL2_DEPS)
@@ -258,8 +294,8 @@ TAGS-acl2-doc: $(ACL2_DEPS)
 
 .PHONY: acl2r
 acl2r:
-	rm -f acl2r.lisp
-	$(MAKE) acl2r.lisp
+	@rm -f acl2r.lisp
+	@$(MAKE) --no-print-directory acl2r.lisp
 
 acl2r.lisp:
 # The various "startup" code below can be loaded as a first step in
@@ -331,16 +367,16 @@ do_saved:
 	cp *.lisp acl2-characters GNUmakefile saved/
 	chmod 666 saved/*
 
-# Keep the use of :COMPILED below in sync with ACL2 source function
-# note-compile-ok.
+# Keep the use of :COMPILED/:COMPILE-SKIPPED below in sync with ACL2
+# source function note-compile-ok.
 .PHONY: check_compile_ok
 check_compile_ok:
 	@if [ ! -f acl2-status.txt ] ; then \
 	echo 'Compile FAILED: file acl2-status.txt is missing.' ; \
 	exit 1 ; \
 	fi
-	@if [ `cat acl2-status.txt` != :COMPILED ] ; then \
-	echo 'Compile FAILED: acl2-status.txt should contain :COMPILED.' ; \
+	@if [ `cat acl2-status.txt` != :COMPILED ] && [ `cat acl2-status.txt` != :COMPILE-SKIPPED ] ; then \
+	echo 'Compile FAILED: acl2-status.txt should contain :COMPILED or (for some Lisps) :COMPILE-SKIPPED.' ; \
 	exit 1 ; \
 	fi
 
@@ -423,7 +459,7 @@ copy-distribution: acl2r.lisp
 #TAGS:
 #	@echo 'Skipping building of a tags table.'
 
-# We include acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
+# We build acl2r.lisp so that we build ACL2(h) and not ACL2(c), for example.
 TAGS:   $(ACL2_DEPS)
 	$(MAKE) acl2r
 	rm -f TAGS
@@ -529,6 +565,9 @@ check-books:
 	echo "ERROR: The system books directory, books/, does not exist." ;\
 	exit 1 ;\
 	fi
+	@echo ACL2_WD is $(ACL2_WD)
+	@echo ACL2 is $(ACL2)
+	@uname -a
 
 # The next target, DOC, is the target that should generally be used
 # for rebuilding the ACL2 User's Manual.
@@ -630,25 +669,13 @@ clean-lite:
 	   doc/*.log doc/TMP*
 	rm -rf doc/TEX doc/HTML doc/EMACS
 
-.PHONY: clean-all
-clean-all: clean-lite
+.PHONY: clean-all clean
+clean clean-all: clean-lite
 	rm -f *saved_acl2* doc.lisp.backup
 
 # Inspired by https://www.gnu.org/prep/standards/html_node/Standard-Targets.html:
 .PHONY: distclean
 distclean: clean-all
-
-# The following is deprecated and will eventually cause an error.
-# We print the warning at the end, so that it will be more likely
-# to be seen.
-.PHONY: clean
-clean:
-	@echo 'ERROR: The "clean" target of "make" has been deprecated'
-	@echo '       since ACl2 Version 7.4 (released in March, 2017).'
-	@echo '       Its replacement is target "clean-lite"; or, use'
-	@echo '       target "clean-all" (or equivalently, "distclean")'
-	@echo '       if you want a more thorough cleaning.'
-	@exit 1
 
 # The .NOTPARALLEL target avoids our doing any build process in
 # parallel.  Uses of makefiles in other directories, even if invoked
@@ -656,8 +683,34 @@ clean:
 # make documentation).
 .NOTPARALLEL:
 
+# Warning: Be careful about adding quotes on "echo" commands below.
+# Those don't seem to work well with the "-n" option in a Makefile on
+# at least one Mac.
 .PHONY: large
-large: acl2r full init
+large: acl2r
+ifeq ($(ACL2_MAKE_LOG),NONE)
+	$(MAKE) full init
+else
+	@$(MAKE) --no-print-directory set-up-log
+	@echo -n Compiling ...
+	@echo "-*- Mode: auto-revert -*-" > "$(ACL2_MAKE_LOG)"
+	@rm -f acl2-status.txt
+	@$(MAKE) full >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\nERROR: See $(ACL2_MAKE_LOG)." ; exit 1)
+# The "incomplete" case below shouldn't happen (unless maybe upon aborting).
+	@acl2_compile_status="`cat acl2-status.txt`" ;\
+	if [ "$$acl2_compile_status" = :COMPILED ] ; then \
+	echo " done." ;\
+	elif [ "$$acl2_compile_status" = :COMPILE-SKIPPED ] ; then \
+	echo " not performed for this host Lisp." ;\
+	else \
+	echo " incomplete." ;\
+	exit 1 ;\
+	fi
+	@echo -n Bootstrapping, then saving executable \(may take a few minutes\) ...
+	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
+	@echo " done."
+	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
+endif
 
 # The following target should be used with care, since it fails to
 # rebuild the desired executable when it already exists and is more
@@ -667,6 +720,9 @@ large: acl2r full init
 .PHONY: update
 update: $(PREFIXsaved_acl2)
 
+# Note: Below, the lines below "large" probably aren't needed, since
+# these variables can only be set on the command line.  But we'll
+# leave them in place for now.
 $(PREFIXsaved_acl2): $(ACL2_DEPS)
 	@$(MAKE) large \
 	PREFIX=$(PREFIX) \
@@ -706,14 +762,13 @@ large-acl2p:
 # included in other books.  Success can generally be determined by
 # checking for the absence of ** in the log, or by looking at the Unix
 # exit status.
+
 .PHONY: regression
 regression: check-books
-	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) regression ACL2=$(ACL2)
 
 .PHONY: regression-everything
 regression-everything: check-books
-	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) regression-everything ACL2=$(ACL2)
 
 # Do regression tests from scratch.

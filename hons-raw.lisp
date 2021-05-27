@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2285,21 +2285,51 @@
 ; alists that are bound to them.  This weaker criterion means that the progn
 ; below is adequate.
 
+(defvar *defeat-slow-alist-action*
+
+; Bind this to 'stolen to defeat the slow-alist-action only for stolen fast
+; alists, and to t to defeat the slow-alist-action unconditionally.
+
+  nil)
+
+(defun get-slow-alist-action (stolen-p state)
+
+; Stolen-p is t if we are determing the action on discovering a stolen
+; fast-alist, and is nil otherwise (i.e., slow hons-get).
+
+  (and (if stolen-p
+           (not *defeat-slow-alist-action*)
+         (not (eq *defeat-slow-alist-action* t)))
+       (let* ((alist   (table-alist 'hons (w state)))
+              (warning (hons-assoc-equal 'slow-alist-warning alist)))
+         (and (consp warning)
+              (cdr warning)))))
+
 (defun hl-slow-alist-warning (name)
 
 ; Formerly, name is the name of the function wherein we noticed a problem.
 ; However, for the user's sake we typically print a user-friendly version of
 ; the name, such as HONS-GET rather than HL-HSPACE-HONS-GET.
 
-  (let ((action (get-slow-alist-action *the-live-state*)))
+  (let ((action (get-slow-alist-action nil *the-live-state*)))
     (when action
-      (let ((normal-string "
+      (let* ((path (global-val 'include-book-path
+                              (w *the-live-state*)))
+             (book-string (if path
+                              (concatenate
+                               'string
+                               "
+This violation occurred while attempting to include the book:
+"
+                               (car path))
+                            ""))
+             (normal-string "
 *****************************************************************
 Fast alist discipline violated in ~a.
-See :DOC slow-alist-warning to suppress or break on this warning.
+See :DOC slow-alist-warning to suppress or break on this warning.~a
 *****************************************************************~%"))
         #-acl2-par
-        (format *error-output* normal-string name)
+        (format *error-output* normal-string name book-string)
         #+acl2-par
         (let ((prover-par (and (f-get-global 'waterfall-parallelism *the-live-state*)
                                (f-get-global 'in-prove-flg *the-live-state*))))
@@ -2309,7 +2339,7 @@ See :DOC slow-alist-warning to suppress or break on this warning.
 *****************************************************************
 Fast alist discipline violated in ~a.  (May be from
 ~aparallelism; see :DOC unsupported-~aparallelism-features.)
-See :DOC slow-alist-warning to suppress or break on this warning.
+See :DOC slow-alist-warning to suppress or break on this warning.~a
 *****************************************************************~%"
                          name
                          (if prover-par
@@ -2317,8 +2347,9 @@ See :DOC slow-alist-warning to suppress or break on this warning.
                            "")
                          (if prover-par
                              "waterfall-"
-                           "")))
-                (t (format *error-output* normal-string name)))))
+                           "")
+                         book-string))
+                (t (format *error-output* normal-string name book-string)))))
       (when (eq action :break)
         (format *error-output* "
 To avoid the following break and get only the above warning:~%  ~s~%"
@@ -2574,16 +2605,27 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 
 (defun hl-alist-stolen-warning (name)
   ;; Name is the name of the function wherein we noticed a problem.
-  (let ((action (get-slow-alist-action *the-live-state*)))
-    (when action
-      (format *error-output* "
+  (let ((action (get-slow-alist-action t *the-live-state*)))
+    (when (and action
+               (not (eq *defeat-slow-alist-action* 'stolen)))
+      (let ((path (global-val 'include-book-path
+                              (w *the-live-state*))))
+        (format *error-output* "
 *****************************************************************
 Fast alist stolen by ~a.
 See the documentation for fast alists for how to fix the problem,
-or suppress this warning message with~%  ~a~%
+or suppress this warning message with:~%  ~a~a
 ****************************************************************~%"
-              name
-              '(set-slow-alist-action nil))
+                name
+                '(set-slow-alist-action nil)
+                (if path
+                    (concatenate
+                     'string
+                     "
+This violation occurred while attempting to include the book:
+"
+                     (car path))
+                  "")))
       (when (eq action :break)
         (format *error-output* "
 To avoid the following break and get only the above warning:~%  ~s~%"

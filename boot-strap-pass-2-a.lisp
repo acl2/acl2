@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -96,6 +96,8 @@
 (verify-termination-boot-strap symbol-name-equal) ; and guards
 (verify-termination-boot-strap fix-pkg) ; and guards
 (verify-termination-boot-strap unmake-true-list-cons-nest) ; and guards
+(verify-termination-boot-strap dumb-negate-lit) ; and guards
+(verify-termination-boot-strap flatten-ands-in-lit) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -136,8 +138,8 @@
 ;;; (make-flag pseudo-termp-flg
 ;;;            pseudo-termp
 ;;;            :flag-var flg
-;;;            :flag-mapping ((pseudo-termp . term)
-;;;                           (pseudo-term-listp . list))
+;;;            :flag-mapping ((pseudo-termp term)
+;;;                           (pseudo-term-listp list))
 ;;;            :defthm-macro-name defthm-pseudo-termp
 ;;;            :local t)
 
@@ -186,8 +188,8 @@
 ;;; (make-flag var-counts1-flg
 ;;;            var-counts1
 ;;;            :flag-var flg
-;;;            :flag-mapping ((var-counts1 . term)
-;;;                           (var-counts1-lst . list))
+;;;            :flag-mapping ((var-counts1 term)
+;;;                           (var-counts1-lst list))
 ;;;            :defthm-macro-name defthm-var-counts1
 ;;;            :local t)
 
@@ -318,8 +320,8 @@
 ;;; (make-flag occur-cnt-bounded-flg
 ;;;            occur-cnt-bounded
 ;;;            :flag-var flg
-;;;            :flag-mapping ((occur-cnt-bounded . term)
-;;;                           (occur-cnt-bounded-lst . list))
+;;;            :flag-mapping ((occur-cnt-bounded term)
+;;;                           (occur-cnt-bounded-lst list))
 ;;;            :defthm-macro-name defthm-occur-cnt-bounded
 ;;;            :local t)
 

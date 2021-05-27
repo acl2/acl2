@@ -149,6 +149,7 @@
     FIRST-KEYWORD
     FLAMBDA-APPLICATIONP
     FLAMBDAP
+    FLATTEN-ANDS-IN-LIT
     FN-RUNE-NUME
     FN-SYMB
     FORMALS
@@ -201,6 +202,10 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
+
+    CTXP
+    DOUBLET-LISTP
+    MONITOR!
 
   ))
 

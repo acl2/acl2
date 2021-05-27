@@ -33,7 +33,7 @@
 (include-book "structure")
 (include-book "expand")
 (include-book "doc")
-(include-book "../svex/unroll")
+(include-book "compose-phases")
 (include-book "../mods/compile")
 (include-book "../svex/4vmask")
 (include-book "../svex/compose")
@@ -135,28 +135,19 @@
 
 
 
-(define lhatom->svex-zero ((x lhatom-p))
-  :returns (xx svex-p)
-  (lhatom-case x
-    :z (svex-quote 0)
-    :var (svex-rsh x.rsh (svex-var x.name))))
+;; (define lhatom->svex-zero ((x lhatom-p))
+;;   :returns (xx svex-p)
+;;   (lhatom-case x
+;;     :z (svex-quote 0)
+;;     :var (svex-rsh x.rsh (svex-var x.name))))
 
-(define lhrange->svex-zero ((x lhrange-p))
-  :returns (s svex-p)
-  (b* (((lhrange x) x))
-    (svex-concat x.w
-                 (lhatom->svex-zero x.atom)
-                 (svex-quote (4vec-z)))))
+;; (define lhrange->svex-zero ((x lhrange-p))
+;;   :returns (s svex-p)
+;;   (b* (((lhrange x) x))
+;;     (svex-concat x.w
+;;                  (lhatom->svex-zero x.atom)
+;;                  (svex-quote (4vec-z)))))
 
-(define lhs->svex-zero ((x lhs-p))
-  :returns (xx svex-p)
-  :prepwork ((local (in-theory (enable lhs-fix))))
-  (if (atom x)
-      (svex-quote 0)
-    (b* (((lhrange xf) (car x)))
-      (svex-concat xf.w
-                   (lhatom->svex-zero xf.atom)
-                   (lhs->svex-zero (cdr x))))))
 
 
 (define svtv-outputs->outalist ((x svtv-lines-p) (phase natp))
@@ -263,143 +254,33 @@
                       (prev-state svex-alist-p)
                       (updates svex-alist-p) (state-updates svex-alist-p)
                       (in-vars svarlist-p)
-                      (state-machine))
+                      (keep-final-state)
+                      (keep-all-states))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (mv (outalist svex-alist-p)
-               (final-state svex-alist-p))
+               (final-state svex-alist-p)
+               (all-states svex-alistlist-p))
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql nphases phase)))
-        (mv nil (and state-machine (sv::svex-alist-fix prev-state))))
+        (mv nil
+            (and keep-final-state
+                 (sv::svex-alist-fix prev-state))
+            (and keep-all-states
+                 (list (sv::svex-alist-fix prev-state)))))
        ((mv phase-outs next-state)
         (svtv-compile-phase phase ins overrides outs prev-state updates state-updates in-vars))
-       ((mv rest-outs final-state)
+       ((mv rest-outs final-state all-states)
         (svtv-compile (+ 1 (lnfix phase)) nphases ins overrides outs next-state
-                          updates state-updates in-vars state-machine)))
-    (mv (append phase-outs rest-outs) final-state)))
-
-
-(defthm svex-alist-p-of-nth
-  (implies (svex-alistlist-p x)
-           (svex-alist-p (nth n x)))
-  :hints(("Goal" :in-theory (enable svex-alistlist-p nth))))
+                          updates state-updates in-vars keep-final-state keep-all-states)))
+    (mv (append phase-outs rest-outs)
+        final-state
+        (and keep-all-states
+             (cons (sv::svex-alist-fix prev-state) all-states)))))
 
 
 
-(deffixcong svex-alistlist-equiv svex-alist-equiv (nth n x) x
-  :hints(("Goal" :in-theory (enable svex-alistlist-fix nth))))
 
-(defprod svtv-composedata
-  ((nextstates svex-alist-p)
-   (input-substs svex-alistlist-p)
-   (initst svex-alist-p))
-  :layout :tree)
-
-(defines svex-compose-svtv-phases
-  (define svex-compose-svtv-phases ((x svex-p)
-                                    (phase natp)
-                                    (data svtv-composedata-p))
-    :measure (acl2::nat-list-measure (list phase (svex-count x) 1))
-    :returns (new-x svex-p)
-    :verify-guards nil
-    (b* ((x (svex-fix x)))
-      (svex-case x
-        :quote x
-        :var (b* (((svtv-composedata data))
-                  (look (svex-fastlookup x.name data.nextstates))
-                  ((when look)
-                   ;; state var
-                   (if (zp phase)
-                       (b* ((look (svex-fastlookup x.name data.initst)))
-                         (or look (svex-x)))
-                     (svex-compose-svtv-phases look (1- phase) data))))
-               ;; input var
-               (b* ((inalist (nth phase (svex-alistlist-fix data.input-substs)))
-                    (look (svex-fastlookup x.name inalist)))
-                 (or look (svex-x)
-                     ;; (svex-var (svex-phase-var x.name phase))
-                     )))
-        :call (svex-compose-svtv-phases-call x phase data))))
-
-  (define svex-compose-svtv-phases-call ((x svex-p)
-                                         (phase natp)
-                                         (data svtv-composedata-p))
-    :measure (acl2::nat-list-measure (list phase (svex-count x) 0))
-    :returns (new-x svex-p)
-    :guard (svex-case x :call)
-    (b* (((unless (mbt (svex-case x :call))) (svex-fix x))
-         ((svex-call x)))
-      (svex-call x.fn (svexlist-compose-svtv-phases x.args phase data))))
-
-  (define svexlist-compose-svtv-phases ((x svexlist-p)
-                                        (phase natp)
-                                        (data svtv-composedata-p))
-    :measure (acl2::nat-list-measure (list phase (svexlist-count x) 1))
-    :returns (new-x svexlist-p)
-    (if (atom x)
-        nil
-      (cons (svex-compose-svtv-phases (car x) phase data)
-            (svexlist-compose-svtv-phases (cdr x) phase data))))
-  ///
-  (verify-guards svex-compose-svtv-phases)
-  (memoize 'svex-compose-svtv-phases-call)
-
-  (defthm-svex-compose-svtv-phases-flag
-    (defthm svex-compose-svtv-phases-correct
-      (equal (svex-eval (svex-compose-svtv-phases x phase data) env)
-             (b* (((svtv-composedata data)))
-               (svex-eval-unroll-multienv x phase data.nextstates
-                                          (svex-alistlist-eval data.input-substs env)
-                                          (svex-alist-eval data.initst env))))
-      :hints ('(:expand ((svex-compose-svtv-phases x phase data)
-                         (:free (ins initst nextstates phase) (svex-eval-unroll-multienv x phase nextstates ins initst))))
-              ;; (and stable-under-simplificationp
-              ;;      '(:in-theory (enable svex-eval)))
-              )
-      :flag svex-compose-svtv-phases)
-    (defthm svex-compose-svtv-phases-call-correct
-      (implies (svex-case x :call)
-               (equal (svex-eval (svex-compose-svtv-phases-call x phase data) env)
-                      (b* (((svtv-composedata data)))
-                        (svex-eval-unroll-multienv x phase data.nextstates
-                                                   (svex-alistlist-eval data.input-substs env)
-                                                   (svex-alist-eval data.initst env)))))
-      :hints ('(:expand ((svex-compose-svtv-phases-call x phase data)
-                         (:free (ins initst nextstates phase) (svex-eval-unroll-multienv x phase nextstates ins initst))))
-              (and stable-under-simplificationp
-                   '(:in-theory (enable svex-eval))))
-      :flag svex-compose-svtv-phases-call)
-    (defthm svexlist-compose-svtv-phases-correct
-      (equal (svexlist-eval (svexlist-compose-svtv-phases x phase data) env)
-             (b* (((svtv-composedata data)))
-               (svexlist-eval-unroll-multienv x phase data.nextstates
-                                          (svex-alistlist-eval data.input-substs env)
-                                          (svex-alist-eval data.initst env))))
-      :hints ('(:expand ((svexlist-compose-svtv-phases x phase data)
-                         (:free (nextstates ins initst) (svexlist-eval-unroll-multienv x phase nextstates ins initst)))))
-      :flag svexlist-compose-svtv-phases))
-
-  (deffixequiv-mutual svex-compose-svtv-phases))
-
-(define svex-alist-compose-svtv-phases ((x svex-alist-p)
-                                        (phase natp)
-                                        (data svtv-composedata-p))
-  :returns (new-x svex-alist-p)
-  :hooks nil
-  (if (atom x)
-      nil
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (cons (cons (caar x) (svex-compose-svtv-phases (cdar x) phase data))
-              (svex-alist-compose-svtv-phases (cdr x) phase data))
-      (svex-alist-compose-svtv-phases (cdr x) phase data)))
-  ///
-  (defretd svex-alist-compose-svtv-phases-correct
-    (equal new-x
-           (pairlis$ (svex-alist-keys x)
-                     (svexlist-compose-svtv-phases (svex-alist-vals x) phase data)))
-    :hints(("Goal" :in-theory (enable svexlist-compose-svtv-phases svex-alist-keys svex-alist-vals))))
-
-  (deffixequiv svex-alist-compose-svtv-phases :hints(("Goal" :in-theory (enable svex-alist-fix)))))
 
 
 (define svtv-allphases-inputs ((phase natp)
@@ -685,7 +566,9 @@
                       (design design-p)
                       (simplify)
                       (pre-simplify)
-                      (state-machine))
+                      (initial-state-vars)
+                      (keep-final-state)
+                      (keep-all-states))
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -758,7 +641,7 @@
        ;; Compute an initial state of all Xes, or nil (meaning don't substitute
        ;; the states) if free-initst
        (states (svex-alist-keys next-states))
-       (initst (if state-machine
+       (initst (if initial-state-vars
                    (make-fast-alist (pairlis$ states (svarlist-svex-vars states)))
                  (make-fast-alist (pairlis$ states (replicate (len states) (svex-quote (4vec-x)))))))
 
@@ -783,11 +666,20 @@
        (- (fast-alist-free updates)
           (clear-memoize-table 'svex-compose))
        ;; Unroll the FSM and collect the formulas for the output signals.
-       ((mv outexprs final-state)
-        (cwtime
-         (svtv-compile-lazy
-          nphases ins ovlines outs initst updates-for-outs next-states in-vars state-machine)
-         :mintime 1))
+       ((mv outexprs final-state all-states)
+        (if keep-all-states
+            (cwtime
+             (svtv-compile
+              0 nphases ins ovlines outs initst updates-for-outs next-states in-vars
+              keep-final-state t)
+             :mintime 1)
+          (b* (((mv outexprs final-state)
+                (cwtime
+                 (svtv-compile-lazy
+                  nphases ins ovlines outs initst updates-for-outs next-states in-vars
+                  keep-final-state)
+                 :mintime 1)))
+            (mv outexprs final-state nil))))
 
        (has-duplicate-outputs (acl2::hons-dups-p (svex-alist-keys outexprs)))
        ((when has-duplicate-outputs)
@@ -804,7 +696,8 @@
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
-                   :nextstate     final-state
+                   :nextstate      final-state
+                   :states         all-states
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
                    :orig-ins       orig-ins
@@ -1013,24 +906,16 @@
 
 
 
-(define defsvtv-fn ((name symbolp)
-                    (ins true-list-listp)
-                    (overrides true-list-listp)
-                    (outs true-list-listp)
-                    (internals true-list-listp)
-                    (design design-p)
-                    (design-const symbolp)
-                    labels
-                    simplify
-                    pre-simplify
-                    state-machine
-                    define-macros
-                    parents short long)
-  :guard (modalist-addr-p (design->modalist design))
-  :irrelevant-formals-ok t
+(define defsvtv-events ((svtv svtv-p)
+                        (design-const symbolp)
+                        labels
+                        define-macros
+                        parents short long)
   :hooks nil
-  ;; much of this copied from defstv
-  (b* ((?labels      (if (symbol-listp labels)
+  (b* (((svtv svtv))
+       (name svtv.name)
+                    
+       (?labels      (if (symbol-listp labels)
                         labels
                       (raise ":labels need to be a symbol-listp.")))
 
@@ -1043,11 +928,7 @@
                           ((not long)     "")
                           (t              (progn$ (raise ":long must be a string.")
                                                   ""))))
-
-       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify state-machine))
-       ((unless svtv)
-        (raise "failed to generate svtv"))
-
+    
        ;; Only now, after we've already compiled and processed the STV, do we
        ;; bother to generate the documentation.  We want to make sure it stays
        ;; in this order, because stv-to-xml doesn't have good error reporting.
@@ -1242,9 +1123,36 @@ defined with @(see sv::defsvtv).</p>"
                         :short ,short
                         :long ,long)
                      cmds))))
-
       `(with-output :off (event)
          (progn . ,cmds))))
+
+(define defsvtv-fn ((name symbolp)
+                    (ins true-list-listp)
+                    (overrides true-list-listp)
+                    (outs true-list-listp)
+                    (internals true-list-listp)
+                    (design design-p)
+                    (design-const symbolp)
+                    labels
+                    simplify
+                    pre-simplify
+                    state-machine
+                    initial-state-vars
+                    keep-final-state
+                    keep-all-states
+                    define-macros
+                    parents short long)
+  :guard (modalist-addr-p (design->modalist design))
+  :irrelevant-formals-ok t
+  :hooks nil
+  ;; much of this copied from defstv
+  (b* ((svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
+               (or state-machine initial-state-vars)
+               (or state-machine keep-final-state)
+               keep-all-states))
+       ((unless svtv)
+        (raise "failed to generate svtv")))
+    (defsvtv-events svtv design-const labels define-macros parents short long)))
 
 (defmacro defsvtv (name &key design mod
                         labels
@@ -1256,6 +1164,9 @@ defined with @(see sv::defsvtv).</p>"
                         short
                         long
                         state-machine
+                        initial-state-vars
+                        keep-final-state
+                        keep-all-states
                         (simplify 't)
                         (pre-simplify 't) ;; should this be t by default?
                         (define-macros 't))
@@ -1263,8 +1174,9 @@ defined with @(see sv::defsvtv).</p>"
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
                    ,(or design mod) ',(or design mod) ,labels ,simplify
-                   ,pre-simplify ,state-machine ,define-macros
-                   ',parents ,short ,long))))
+                   ,pre-simplify
+                   ,state-machine ,initial-state-vars ,keep-final-state ,keep-all-states
+                   ,define-macros ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)
@@ -1396,6 +1308,18 @@ then additional xdoc will also be generated to show a timing diagram.
 output svex expressions, which may be desirable if you are doing a
 decomposition proof.</li>
 
+<li>@(':initial-state-vars') is NIL by default; it can be set to T to set the
+initial state of the simulation to all free variables instead of all Xes.</li>
+
+<li>@(':keep-final-state') is NIL by default; it can be set to T to store the
+state after the final phase in the SVTV as @('(svtv->nextstate svtv)').</li>
+
+<li>@(':keep-all-states') is NIL by default; it can be set to T to store the
+sequence of @('nphases+1') states in the SVTV as @('(svtv->states svtv)').</li>
+
+<li>@(':state-machine') is NIL by default; if set to T, it is the same as
+setting @(':initial-state-vars') and @('keep-final-state') to T.</li>
+
 </ul>
 
 ")
@@ -1405,69 +1329,6 @@ decomposition proof.</li>
 
 
 
-
-(define svtv-print-alist ((al svex-env-p))
-  (if (atom al)
-      nil
-    (prog2$
-     (and (mbt (consp (car al)))
-          (if (2vec-p (cdar al))
-              (cw "  ~s0:~t1~s2~%" (caar al) 25 (str::hexify (2vec->val (cdar al))))
-            (cw "  ~s0:~t1(4v) ~s2~%~t3~s4~%" (caar al) 20 (str::hexify (4vec->upper (cdar al)))
-                25 (str::hexify (4vec->lower (cdar al))))))
-     (svtv-print-alist (cdr al)))))
-
-(define svtv-print-alist-readable-aux ((al svex-env-p) firstp)
-  (if (atom al)
-      nil
-    (progn$
-     (and (mbt (consp (car al)))
-          (let ((front (if firstp " ((" "  ("))
-                (back (if (consp (cdr al)) ")~%" "))~%")))
-            (cond
-             ((2vec-p (cdar al))
-              (progn$
-               (cw! front)
-               (acl2::fmt-to-comment-window!
-                "~x0 ~t1. ~s2"
-                (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                            #\5 #\6 #\7 #\8 #\9)
-                          (list (caar al) 23
-                                (str::hexify (2vec->val (cdar al)))))
-                3 nil nil)
-               (cw! back)))
-             (t
-              (let* ((upper (str::hexify (4vec->upper (cdar al))))
-                     (lower (str::hexify (4vec->lower (cdar al))))
-                     (mask  (str::hexify (logxor (4vec->upper (cdar al))
-                                                 (4vec->lower (cdar al)))))
-                     ;; padding for right-aligning the three values
-                     (ul (length upper)) (ll (length lower)) (ml (length mask))
-                     (maxl (max ml (max ul ll)))
-                     (pad-u (- maxl ul))
-                     (pad-l (- maxl ll))
-                     (pad-m (- maxl ml)))
-                (progn$
-                 (cw! front)
-                 (acl2::fmt-to-comment-window!
-                  "~x0 ~t1  ~_2~s3~%"
-                  (pairlis2 '(#\0 #\1 #\2 #\3 #\4
-                              #\5 #\6 #\7 #\8 #\9)
-                            (list (caar al) 23 pad-u upper))
-                  3 nil nil)
-                 (cw! "~t0. ~_1~s2" 23 pad-l lower)
-                 (cw! back)
-                 (cw! ";;;    non-Boolean mask: ~_0~s1~%" pad-m mask)))))))
-     (svtv-print-alist-readable-aux (cdr al) nil))))
-
-(define svtv-print-alist-readable ((al svex-env-p))
-  (svtv-print-alist-readable-aux al t))
-
-(define svtv-print-alists-readable ((als svex-envlist-p))
-  (if (atom als)
-      nil
-    (prog2$ (svtv-print-alist-readable (car als))
-            (svtv-print-alists-readable (cdr als)))))
 
 
 

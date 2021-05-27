@@ -105,7 +105,8 @@
   (implies (integerp i)
            (equal (mod (lognot i) 2)
                   (- 1 (mod i 2))))
-  :hints (("Goal" :in-theory (enable lognot))))
+  :hints (("Goal" :in-theory (enable lognot
+                                     mod-sum-cases))))
 
 (defthm <-of-lognot-and-expt
   (implies (and (natp n)
@@ -129,7 +130,9 @@
            (equal (floor (lognot i) (expt 2 n))
                   (lognot (floor i (expt 2 n)))))
   :hints (("Goal" :in-theory (e/d (lognot
-                                   floor-of-sum)
+                                   floor-of-sum
+                                   mod-sum-cases
+                                   floor-minus-eric-better)
                                   (floor-minus-arg1-hack)))))
 
 (defthm <-of---and-lognot

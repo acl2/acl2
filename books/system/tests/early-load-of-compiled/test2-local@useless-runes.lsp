@@ -1,0 +1,3 @@
+(T2L-FN
+ (1 1 (:TYPE-PRESCRIPTION T2L-FN))
+ )

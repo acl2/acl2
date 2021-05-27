@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
@@ -241,7 +242,7 @@
   :short "Process the @('(x1 ... xn)') input."
   (b* ((description "The second input")
        ((er &) (ensure-value-is-symbol-list$ x1...xn description t nil))
-       ((er &) (ensure-list-no-duplicates$ x1...xn description t nil)))
+       ((er &) (ensure-list-has-no-duplicates$ x1...xn description t nil)))
     (value nil)))
 
 (define defarbrec-process-body (body fn$ x1...xn$ ctx state)
@@ -346,7 +347,7 @@
                                              "The :UPDATE-NAMES input"
                                              t nil))
        (symbols (or update-names (defarbrec-default-update-names x1...xn$ fn$)))
-       ((er &) (ensure-list-no-duplicates$
+       ((er &) (ensure-list-has-no-duplicates$
                 symbols
                 "The list of symbols supplied as the :UPDATE-NAMES input"
                 t nil))

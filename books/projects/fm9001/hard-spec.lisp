@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -114,6 +114,11 @@
   (implies (bvp a)
            (equal (bvp (append a b))
                   (bvp b))))
+
+(defthm bvp-rev
+  (implies (bvp x)
+           (bvp (rev x)))
+  :hints (("Goal" :in-theory (enable rev))))
 
 (defthm bvp-is-true-listp
   (implies (bvp x)
@@ -229,7 +234,7 @@
 (defun b-or4 (a b c d)
   (declare (xargs :guard t))
   (or (bool-fix a) (bool-fix b) (bool-fix c) (bool-fix d)))
-    
+
 (defun b-xor (a b)
   (declare (xargs :guard t))
   (xor a b))
@@ -237,7 +242,7 @@
 (defun b-xor3 (a b c)
   (declare (xargs :guard t))
   (b-xor (b-xor a b) c))
-    
+
 (defun b-equv (a b)
   (declare (xargs :guard t))
   (if a (if b t nil) (if b nil t)))
@@ -246,7 +251,7 @@
 (defun b-equv3 (a b c)
   (declare (xargs :guard t))
   (b-equv a (b-xor b c)))
-    
+
 (defun b-and (a b)
   (declare (xargs :guard t))
   (and a (bool-fix b)))
@@ -296,7 +301,7 @@
     b-or b-or3 b-or4
     b-xor b-xor3
     b-equv b-equv3
-    b-and b-and3 b-and4 
+    b-and b-and3 b-and4
     b-nor b-nor3 b-nor4 b-nor5 b-nor6 b-nor8
     b-if))
 
@@ -436,7 +441,7 @@
   (bvp (v-buf a))
   :hints (("Goal" :in-theory (enable bvp)))
   :rule-classes (:rewrite :type-prescription))
-  
+
 (defthm bvp-v-not
   (bvp (v-not a))
   :hints (("Goal" :in-theory (enable bvp)))
@@ -736,7 +741,7 @@
 (defthm v-zp-v-xor-x-x
   (v-zp (v-xor x x))
   :hints (("Goal" :in-theory (enable v-xor))))
-       
+
 (defthm v-nzp-v-xor=not-equal
   (implies (bv2p a b)
            (equal (v-nzp (v-xor a b))
@@ -773,7 +778,7 @@
 
 (in-theory (disable v-negp v-negp-as-nth))
 
-;; SIGN-EXTEND 
+;; SIGN-EXTEND
 
 (defun sign-extend (v n)
   (declare (xargs :guard (natp n)))
@@ -910,7 +915,7 @@
            (equal (v-if c x y)
                   (if c x y)))
   :hints (("Goal" :in-theory (enable bvp v-if))))
-                 
+
 (defthm v-adder-works
   (implies (bv2p x y)
            (equal (v-to-nat (v-adder c x y))
@@ -943,10 +948,6 @@
            (equal (v-threefix v)
                   v))
   :hints (("Goal" :in-theory (enable bvp))))
-
-;; (defthm true-listp-v-threefix
-;;   (true-listp (v-threefix x))
-;;   :rule-classes :type-prescription)
 
 (defthm len-v-threefix
   (equal (len (v-threefix x))

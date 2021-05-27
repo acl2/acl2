@@ -46,7 +46,7 @@
             :induct t
             :expand ((term-depth x)
                      (term-depth (Car terms))))))
-  
+
   (defthm-term-depth-flag
     (defthm term-depth-of-subcor-var
       (implies (symbol-listp terms)
@@ -131,7 +131,7 @@
 ;;             :induct t
 ;;             :expand ((term-count x)
 ;;                      (term-count (Car terms))))))
-  
+
 ;;   (defthm-term-count-flag
 ;;     (defthm term-count-of-subcor-var
 ;;       (implies (symbol-listp terms)
@@ -345,7 +345,7 @@
                              (y-formals (lambda-formals y-fn))
                              (y-body (lambda-body y-fn)))
                          (and (mbt (symbol-listp y-formals))
-                              (eql (length x-formals) (length y-formals)) 
+                              (eql (length x-formals) (length y-formals))
                               (or
 
 ; (1) -- see above
@@ -403,7 +403,7 @@
          (t (and (l-obviously-equiv-terms (car x) (car y) nil)
                  (l-obviously-equiv-terms-lst (cdr x) (cdr y))))))
 
- 
+
  )
 
 
@@ -412,8 +412,8 @@
 (flag::make-flag l-obviously-equiv-terms-flag
                  l-obviously-equiv-terms
                  :flag-mapping
-                 ((l-obviously-equiv-terms . term)
-                  (l-obviously-equiv-terms-lst . list))
+                 ((l-obviously-equiv-terms term)
+                  (l-obviously-equiv-terms-lst list))
                  :hints (("goal" :do-not-induct t)))
 
 (defsection l-obviously-equiv-terms-guards
@@ -449,7 +449,7 @@
            (len x))
     :hints (("goal" :induct (len x)
              :in-theory (enable subcor-var-lst))))
-  
+
   (defthm-term-depth-flag subcor-var-pseudo-termp
     (defthm subcor-var-pseudo-termp
       (implies (and (pseudo-termp x)
@@ -461,7 +461,7 @@
                     (pseudo-term-listp terms))
                (pseudo-term-listp (subcor-var-lst vars terms x)))
       :flag term-list-depth))
-  
+
   (verify-guards l-obviously-equiv-terms))
 
 
@@ -655,7 +655,7 @@
         t
       (and (no-nils-pseudo-termp (car x))
            (no-nils-pseudo-term-listp (cdr x))))))
-           
+
 
 (defthm-term-depth-flag
   (defthm obv-ev-of-subcor-var
@@ -743,8 +743,8 @@
                            (obv-ev-lst x b))
                     t))
     :flag term-list-depth))
-             
-           
+
+
 (defthm eval-with-obviously-equal-lambda-args
   (implies (and (obviously-equal-lambda-args x-formals x-args
                                                y-formals y-args)
@@ -817,7 +817,7 @@
                             (set-equiv (all-vars1-lst lst acc)
                                        (append acc (all-vars1-lst lst nil)))))
            :rewrite :direct))
-  
+
   (local
    (defthm-all-vars1-flag
      (defthm all-vars1-accumulator-elim-lemma
@@ -927,7 +927,7 @@
                   (equal (arity (car x) w) 2))
              (and (termp (cadr x) w)
                   (termp (caddr x) w))))
-  
+
   (defthm termp-of-args-when-unary
     (implies (and (termp x w)
                   (consp x)
@@ -955,7 +955,7 @@
                     (subsetp x y))
            :hints(("Goal" :in-theory (enable set-difference$
                                              subsetp)))))
-  
+
   (defthm termp-when-lambda
     (implies (and (termp x w)
                   (consp (car x)))
@@ -1016,7 +1016,7 @@
 ;;                          (symbol-listp x))
 ;;                     (equal (nthcdr n x) nil))
 ;;            :hints(("Goal" :in-theory (enable len)))))
-  
+
 ;;   (local (defthm obv-ev-lst-of-cons-non-member
 ;;            (implies (and (not (member v x))
 ;;                          (symbol-listp x))
@@ -1090,7 +1090,7 @@
                           (y-formals (lambda-formals y-fn))
                           (y-body (lambda-body y-fn)))
                       (and (mbt (symbol-listp y-formals))
-                           (eql (length x-formals) (length y-formals)) 
+                           (eql (length x-formals) (length y-formals))
                            (list
 
 ; (1) -- see above
@@ -1105,7 +1105,7 @@
                                    x-args y-args a))
 
 ; (2) -- see above
-                            
+
                             (l-obviously-equiv-alist
                              x-body y-body iff-flg
                              (pairlis$ x-formals
@@ -1159,7 +1159,7 @@
           (implies (arglistp1 x)
                    (true-listp x))
           :rule-classes :compound-recognizer))
- 
+
  (local (in-theory (disable l-obviously-equiv-terms
                             l-obviously-equiv-terms-lst
                             pseudo-termp pseudo-term-listp
@@ -1194,7 +1194,7 @@
     :flag l-obviously-equiv-alist)
   :skip-others t)
 
- 
+
  (defthm-l-obviously-equiv-alist-flag l-obviously-equiv-terms-correct
   (defthm l-obviously-equiv-terms-correct
     (implies (and (equal (arity 'if w) 3)

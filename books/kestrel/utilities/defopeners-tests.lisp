@@ -118,28 +118,28 @@
 
 ;test of the mutual recursion version
 (deftest
-  (defopeners-mut-rec my-sublis-var)
+  (defopeners-mut-rec sublis-var-simple)
   (must-be-redundant
    (defthm
-     my-sublis-var-base-1
+     sublis-var-simple-base-1
      (implies (atom form)
-              (equal (my-sublis-var alist form)
+              (equal (sublis-var-simple alist form)
                      ((lambda (a form) (if a (cdr a) form))
                       (assoc-equal form alist)
                       form))))
    (defthm
-     my-sublis-var-base-2
+     sublis-var-simple-base-2
      (implies (and (not (atom form))
                    (eq 'quote (car form)))
-              (equal (my-sublis-var alist form) form)))
+              (equal (sublis-var-simple alist form) form)))
    (defthm
-     my-sublis-var-unroll
+     sublis-var-simple-unroll
      (implies (if (not (atom form))
                   (not (eq 'quote (car form)))
                 'nil)
-              (equal (my-sublis-var alist form)
+              (equal (sublis-var-simple alist form)
                      (cons (car form)
-                           (my-sublis-var-lst alist (cdr form))))))))
+                           (sublis-var-simple-lst alist (cdr form))))))))
 
 
 ;;test of the special handling for 0-ary functions (which get expanded during normalization)

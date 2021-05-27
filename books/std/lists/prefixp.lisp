@@ -122,12 +122,6 @@ the list @('y')."
     (prefixp x x)
     :hints(("Goal" :induct (len x))))
 
-  (local
-   (defthm nthcdr-when-atom
-     (implies (atom l)
-              (list-equiv (nthcdr n l) nil))
-     :hints (("goal" :in-theory (enable prefixp list-equiv)))))
-
   (defthm prefixp-of-append-arg2
     (equal (prefixp x (append y z))
            (or (prefixp x y)
@@ -136,25 +130,13 @@ the list @('y')."
                     (prefixp (nthcdr (len y) x) z))))
     :hints (("goal" :in-theory (enable prefixp nthcdr))))
 
-  (local (defthm equal-len-0
-           (equal (equal (len x) 0)
-                  (atom x))))
-
-  (defthm prefixp-of-append-when-same-length
-    (implies (equal (len x) (len y))
-             (equal (prefixp x (append y z))
-                    (prefixp x y)))
-    :hints(("Goal"
-            :induct (prefixp x y)
-            :in-theory (enable prefixp list-equiv))))
-
   (defthm prefixp-when-equal-lengths
-    (implies (equal (len x) (len y))
+    (implies (>= (len x) (len y))
              (equal (prefixp x y)
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
 
-  ;; Mihir M. mod: Eight lemmas are added below. prefixp-transitive generates
+  ;; Mihir M. mod: Nine lemmas are added below. prefixp-transitive generates
   ;; two rewrite rules which are identical except in how they bind the free
   ;; variable y; it is similar with prefixp-one-way-or-another and the free
   ;; variable z. In nth-when-prefixp, the rewrite rule is a little less general
@@ -220,7 +202,28 @@ the list @('y')."
            (and (<= (+ (len x) (len y)) (len z))
                 (equal (true-list-fix x)
                        (take (len x) z))
-                (prefixp (true-list-fix y)
-                         (nthcdr (len x) z))))
+                (prefixp y (nthcdr (len x) z))))
     :hints (("goal" :in-theory (enable prefixp)
-             :induct (prefixp x z)))))
+             :induct (prefixp x z))))
+
+  (defthm prefixp-when-prefixp
+    (implies (prefixp y x)
+             (equal (prefixp x y) (list-equiv x y)))
+    :hints (("goal" :in-theory (enable prefixp)))))
+
+(encapsulate
+  ()
+
+  (local (in-theory (enable element-list-p true-list-fix prefixp)))
+
+  (def-listp-rule element-list-p-when-prefixp
+    (implies (and (prefixp x y)
+                  (element-list-p y)
+                  (not (element-list-final-cdr-p t)))
+             (element-list-p (true-list-fix x)))
+    :name element-list-p-when-prefixp
+    :requirement (and true-listp (not single-var))
+    :body
+    (implies (and (prefixp x y)
+                  (element-list-p y))
+             (element-list-p (true-list-fix x)))))

@@ -12,74 +12,143 @@
 
 (in-package "ECURVE")
 
-(include-book "primes")
+(include-book "kestrel/number-theory/primep-def" :dir :system)
 (include-book "points")
+
+(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (local (include-book "kestrel/prime-fields/equal-of-add-rules" :dir :system))
+(local (include-book "kestrel/number-theory/primes" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Elliptic Curves over Prime Fields in Short Weierstrass Form
-; -----------------------------------------------------------
-;
-; This book specifies
-; elliptic curves over prime fields in short Weierstrass form.
-; The short Weierstrass form is y^2 = x^3 + ax + b,
-; with a, b, x, y in Fp and p > 3, where Fp is a prime field,
-; and where + and ^ (which is just iterated *) are field operations,
-; i.e. regular arithmetic operations mod p.
-
-; When p = 2 or p = 3, the elliptic curve equation has different forms.
-; We may generalize this library at some point to cover those forms,
-; and possibly also to cover non-prime finite fields.
-
-; See Neal Koblitz's book "A Course in Number Theory and Cryptography" (2nd Ed.)
-; for background on elliptic curves.
-
-; Our specification follows the SEC 1 standard,
-; available at http://www.secg.org/sec1-v2.pdf,
-; as well as the Johnson, Menezes, and Vanstone's
-; "The Elliptic Curve Digital Signature Algorithm (ECDSA)",
-; International Journal of Information Security,
-; August 2001, Volume 1, Issue 1, pages 33-63.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Top xdoc topic for this file.
-
-(defxdoc short-weierstrass
-  :parents (ecurve::elliptic-curves)
-  :short "A library for Short Weierstrass elliptic curves."
+(defxdoc+ short-weierstrass-curves
+  :parents (elliptic-curves)
+  :short "Elliptic curves over prime fields in short Weierstrass form."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This libray contains executable formal specifications of elliptic curve operations
-     on Short Weierstrass curves, which have the form")
-   (xdoc::@[] "y^2=x^3+ax+b")
-   (xdoc::p "where @('x') and @('y') are integers in @('\{0,..,p-1\}')
-             for an appropriate prime number @('p').")
-   (xdoc::p "For details see "
-            (xdoc::a :href "http://www.secg.org/sec1-v2.pdf"
-              "Standards for Efficient Cryptography 1 (SEC 1)")
-            ".")
-   (xdoc::p "The arguments @('a') and @('b') to the functions below
-             always refer to the coefficients in the equation above.")
-   (xdoc::p "The argument @('p') always refers to the prime number
-             that is the field order.")
-   (xdoc::p "See the source code for more extensive
-             discussion, references, and proved theorems.")
-   ))
-
-;; Order the subtopics according to the order in which they were defined.
-(xdoc::order-subtopics short-weierstrass
-  nil
-  t)
+    "We provide executable formal specifications of operations on
+     elliptic curves in short Weierstrass form,
+     which are described by the equation")
+   (xdoc::@[] "y^2 = x^3 + a x + b")
+   (xdoc::p
+    "where @($a$) and @($b$) are integers in a prime field @($\\{0,..,p-1\\}$)
+     for an appropriate prime number @($p > 3$),
+     satisfying the condition @($4 a^3 + 27 b^2 \\neq 0$),
+     and where @($x$) and @($y$) range over the same prime field.
+     The arithmetic operations in the equation above,
+     namely addition and power (i.e. iterated multiplication),
+     are prime field operations (i.e. modulo @($p$)).
+     Besides the finite points @($(x,y)$) that satisfy the equation,
+     the curve also includes a point at infinity.")
+   (xdoc::p
+    "When @($p = 2$) or @($p = 3$),
+     the elliptic curve equation has different forms,
+     not the short Weierstrass form.
+     We may extend our formalization to cover those curves in the future.
+     We may also extend it to cover curves over non-prime finite fields.")
+   (xdoc::p
+    "The condition @($4 a^3 + 27 b^2 \\neq 0$),
+     where the operations are again field operations,
+     means that the cubic equation on the right has no multiple roots.")
+   (xdoc::p
+    "See Neal Koblitz's book ``A Course in Number Theory and Cryptography''
+     (Second Edition) for background on elliptic curves.")
+   (xdoc::p
+    "Our formalization follows "
+    (xdoc::ahref "http://www.secg.org/sec1-v2.pdf"
+                 "Standards for Efficient Cryptography 1 (SEC 1)")
+    ", as well as
+     ``The Elliptic Curve Digital Signature Algorithm (ECDSA)'',
+     <i>International Journal of Information Security</i>,
+     August 2001, Volume 1, Issue 1, pages 33-63."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod short-weierstrass
+  :short "Fixtype of elliptic curves over prime fields
+          in short Weierstrass form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This kind of curve is specified by
+     the prime @($p$) and the coefficients @($a$) and @($b$);
+     see @(see short-weierstrass-curves).
+     Thus, we formalize a curve as a triple of these numbers,
+     via a fixtype product.")
+   (xdoc::p
+    "Because @('primep') is slow on large numbers,
+     we do not include this requirement into the fixtype;
+     otherwise, it may take a long time to construct a value of this fixtype
+     for a practical curve.
+     We just require @($p$) to be greater than 3;
+     see @(see short-weierstrass-curves).
+     We express the primality of @($p$) separately.")
+   (xdoc::p
+    "We require @($a$) and @($b$) to be in the prime field of @($p$).
+     We also require them to satisfy the condition ensuring that
+     the cubic equation has no multiple roots;
+     see @(see short-weierstrass-curves).
+     We express this condition by saying that
+     @($4 a^3 + 27 b^2 \\mod p > 0$),
+     where the operations are not field operations:
+     this formulation is equivalent to requiring @($4 a^3 + 27 b^2$)
+     with field operation to be different from 0.")
+   (xdoc::p
+    "To fix the three components to satisfy the requirements above,
+     we pick 5 for @($p$), 0 for @($a$), and 1 for @($b$).
+     It would be fine to pick 4 for @($p$) as far as this fixtype is concerned
+     (since primality is not captured in the fixtype requirements),
+     but we pick a prime (the smallest one above 3)
+     since we know that this should be a prime."))
+  ((p nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      p
+                    5))
+   (a nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      a
+                    0))
+   (b nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      b
+                    1)))
+  :require (and (> p 3)
+                (fep a p)
+                (fep b p)
+                (posp (mod (+ (* 4 a a a) (* 27 b b)) p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-weierstrass-primep ((curve short-weierstrass-p))
+  :returns (yes/no booleanp)
+  :short "Check that the prime of a short Weierstrass curve is prime."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is in a separate predicate
+     for the reason explained in @(tsee short-weierstrass)."))
+  (rtl::primep (short-weierstrass->p curve))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Uses of the following predicate will be replaced by SHORT-WEIERSTRASS-P
+; (see above), and the following predicate will be eventually eliminated.
 
 ;; Valid elliptic curve.
 ;; sec1-v2 section 2.2.1

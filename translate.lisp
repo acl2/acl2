@@ -2295,6 +2295,14 @@
 ; 'stobj-function property in wrld, then the returned definition is also the
 ; definition that is oneified to create the corresponding *1* function.
 
+; This function also returns the logical defun form submitted to ACL2 for fn,
+; if any, provided fn does not have property 'non-executablep.  (We use this
+; fact in the definition of logical-defun.)  To understand that restriction,
+; note that install-event-defuns stores the original defun event in the
+; function symbol's cltl-command except in the case that the function is
+; non-executable; and, cltl-def-from-name2 looks up the defun form in the
+; cltl-command.
+
   (cltl-def-from-name1 fn
                        (getpropc fn 'stobj-function nil wrld)
                        nil
@@ -2601,6 +2609,7 @@
         (& (mv nil nil nil nil nil nil)))))))
 
 (defun flatten-ands-in-lit (term)
+  (declare (xargs :guard (pseudo-termp term)))
   (case-match term
               (('if t1 t2 t3)
                (cond ((equal t2 *nil*)
@@ -2619,19 +2628,35 @@
     (append (flatten-ands-in-lit (car x))
             (flatten-ands-in-lit-lst (cdr x)))))
 
+; See the comment in Syntactically-Plausible-Lambda-Objectp (from which this
+; record gets its name) for an explanation of the fields.
+
+(defrec splo-extracts-tuple ((gflg . satisfies-exprs) . (guard . body)) t)
+
 (mutual-recursion
 
-(defun syntactically-plausible-lambda-objectp (x)
+(defun syntactically-plausible-lambda-objectp (gflg x)
 
 ; This function takes a purported lambda expression and determines if it is
 ; syntactically well-formed -- at least as far as that can be determined
-; without access to the world.  The result is either nil or a list of 3-tuples,
-; called the ``extracts'' of the lambda object.  Each 3-tuple is of the form
-; (satisfies-exprs guard . body).  Critically, the first such 3-tuple in the
-; extracts contains the satisfies-exprs, guard, and body of x itself; the
-; remaining 3-tuples are from lambda objects properly within x.  To confirm
+; without access to the world.  The result is either nil or a list, called the
+; ``extracts'' from the lambda object.  The extracts is a list of
+; splo-extracts-tuples, where the gflg field indicates whether the tuple comes
+; from a guard or not and the other fields, satisfies-exprs, guard, and body
+; are the corresponding parts of the TYPE, :GUARD, and body of the lambda
+; object.  (More on gflg below.)  Critically, the first splo-extracts-tuple in
+; the extracts contains the gflg, satisfies-exprs, guard, and body of x itself;
+; the remaining tuples are from lambda objects properly within x.  To confirm
 ; well-formedness all of the extracts must be checked for certain properties
-; wrt the world.
+; wrt the world.  The point of collecting these tuples is so that the lambda
+; cache can determine whether the lambda object is well-formed in a subsequent
+; world, without having to re-parse the object.  (It is possible a lambda
+; object was added to the cache even before every ``function'' symbol in it was
+; defined, or before they're all :logic mode, or before they're all guard
+; verified, or was added when it was perfectly well-formed but the world has
+; been undone since rendering it ill-formed.)  Roughly speaking, if a lambda
+; object is syntactically plausible and all the components of the
+; splo-extracts-tuples are terms in the world, the object is well-formed.
 
 ; We would like to believe that if x is syntactically plausible then there is
 ; some world in which it is well-formed.  But our plausibility check, which
@@ -2675,6 +2700,37 @@
 ; makes body and guard terms.  Any lambda that fails the vars checks will be
 ; correctly classed as :UGLY.
 
+; Now we discuss the gflg.  It was introduced for V8.4.  Prior to that,
+; syntactically-plausible-lambda-objectp built 3-tuples.  But then we allowed
+; :program mode functions to be badged.  This meant that well-formed lambda
+; objects no longer had to be in :logic mode.  However, their bodies have to be
+; badged.  Given that background, consider the (slightly cleaned-up)
+; translation of the loop$ below, where gp and mog are :program mode functions
+; and mog has been badged.
+
+; (loop$ for e in lst collect :guard (gp e) (mog e))
+
+; translates to
+
+; (COLLECT$
+;  '(LAMBDA (LOOP$-IVAR)
+;           (DECLARE (XARGS :GUARD ((LAMBDA (E) (GP E)) LOOP$-IVAR)
+;                           :SPLIT-TYPES T)
+;                    (IGNORABLE LOOP$-IVAR))
+;           ((LAMBDA (E) (MOG E)) LOOP$-IVAR))
+;  LST)
+
+; where we're removed the return-last cruft normally around the body.  Note
+; there are two interior lambdas, one for the :guard and one for the body.  For
+; the body, we will ultimately require that MOG be badged, though we can't
+; check that syntactically (it may become badged).  You might think we need GP
+; to be badged.  But you would be wrong!  In truth, these are two different
+; kinds of lambdas.  The one in the guard is an ACL2 lambda expression, but the
+; one in the body is interpreted by EV$ each time the outer lambda is applied
+; to an element of LST.  So both (GP E) and (MOG E) need to be :logic terms if
+; proofs are done with them, but MOG needs a badge and GP doesn't.  The role of
+; the gflg is to mark the tuples that come from :guards.
+
   (case-match x
     (('LAMBDA formals body)
      (if (and (arglistp formals)
@@ -2691,11 +2747,20 @@
 ; the lambda.
 
                 (subsetp-eq used-vars formals)))
-         (let ((ans (syntactically-plausible-lambda-objectsp-within body)))
+         (let ((ans (syntactically-plausible-lambda-objectsp-within gflg body)))
            (cond
             ((null ans) nil)
-            ((eq ans t) (list (list* nil *t* body)))
-            (t (cons (list* nil *t* body) ans))))
+            ((eq ans t) (list (make splo-extracts-tuple
+                                    :gflg gflg
+                                    :satisfies-exprs nil
+                                    :guard *t*
+                                    :body body)))
+            (t (cons (make splo-extracts-tuple
+                           :gflg gflg
+                           :satisfies-exprs nil
+                           :guard *t*
+                           :body body)
+                     ans))))
          nil))
     (('LAMBDA formals ('DECLARE . edcls) body)
      (if (arglistp formals)
@@ -2721,61 +2786,93 @@
                                         ignores)
                                        ignorables))))
                (let* ((ans1 (syntactically-plausible-lambda-objectsp-within
+                             t
                              guard))
                       (ans2 (if ans1
                                 (syntactically-plausible-lambda-objectsp-within
+                                 gflg
                                  body)
                                 nil)))
                  (cond
                   ((null ans2) nil)
                   ((eq ans1 t)
                    (if (eq ans2 t)
-                       (list (list* satisfies-exprs guard body))
-                       (cons (list* satisfies-exprs guard body) ans2)))
+                       (list (make splo-extracts-tuple
+                                   :gflg gflg
+                                   :satisfies-exprs satisfies-exprs
+                                   :guard guard
+                                   :body body))
+                       (cons (make splo-extracts-tuple
+                                   :gflg gflg
+                                   :satisfies-exprs satisfies-exprs
+                                   :guard guard
+                                   :body body)
+                             ans2)))
                   ((eq ans2 t)
-                   (cons (list* satisfies-exprs guard body) ans1))
-                  (t (cons (list* satisfies-exprs guard body)
+                   (cons (make splo-extracts-tuple
+                               :gflg gflg
+                               :satisfies-exprs satisfies-exprs
+                               :guard guard
+                               :body body)
+                         ans1))
+                  (t (cons (make splo-extracts-tuple
+                                 :gflg gflg
+                                 :satisfies-exprs satisfies-exprs
+                                 :guard guard
+                                 :body body)
                            (append ans1 ans2)))))
                nil))
          nil))
     (& nil)))
 
-(defun syntactically-plausible-lambda-objectsp-within (body)
+(defun syntactically-plausible-lambda-objectsp-within (gflg body)
 
 ; Body is a pseudo-termp and we call syntactically-plause-lambda-objectsp on
 ; every quoted lambda-like object in it and return one of nil (meaning we found
 ; a syntactically illegal quoted lambda-like object), t (meaning there were no
-; quoted lambda-like objects found), or a list of all the 4-tuples that need
-; further checking by well-formed-lambda-objectp1.
+; quoted lambda-like objects found), or a list of all the splo-extracts-tuples
+; that need further checking by well-formed-lambda-objectp1.
 
   (cond
    ((variablep body) t)
    ((fquotep body)
     (cond ((and (consp (unquote body))
                 (eq (car (unquote body)) 'lambda))
-           (syntactically-plausible-lambda-objectp (unquote body)))
+           (syntactically-plausible-lambda-objectp gflg (unquote body)))
           (t t)))
    ((flambda-applicationp body)
-    (let* ((ans1 (syntactically-plausible-lambda-objectp (ffn-symb body)))
-           (ans2 (if ans1
-                     (syntactically-plausible-lambda-objectsp-within-lst
-                      (fargs body))
-                     nil)))
+    (let* ((ans1
+            (syntactically-plausible-lambda-objectp
+             gflg
+             (ffn-symb body)))
+           (ans2
+            (if ans1
+                (syntactically-plausible-lambda-objectsp-within-lst
+                 gflg
+                 (fargs body))
+                nil)))
       (cond
        ((null ans2) nil) ; = (or (null ans1) (null ans2))
        ((eq ans1 t) ans2)
        ((eq ans2 t) ans1)
        (t (append ans1 ans2)))))
-   (t (syntactically-plausible-lambda-objectsp-within-lst (fargs body)))))
+   (t (syntactically-plausible-lambda-objectsp-within-lst
+       gflg
+       (fargs body)))))
 
-(defun syntactically-plausible-lambda-objectsp-within-lst (args)
+(defun syntactically-plausible-lambda-objectsp-within-lst (gflg args)
   (cond
    ((null args) t)
-   (t (let* ((ans1 (syntactically-plausible-lambda-objectsp-within (car args)))
-             (ans2 (if ans1
-                       (syntactically-plausible-lambda-objectsp-within-lst
-                        (cdr args))
-                       nil)))
+   (t (let* ((ans1
+              (syntactically-plausible-lambda-objectsp-within
+               gflg
+               (car args)))
+             (ans2
+              (if ans1
+                  (syntactically-plausible-lambda-objectsp-within-lst
+                   gflg
+                   (cdr args))
+                  nil)))
         (cond
          ((null ans2) nil)
          ((eq ans1 t) ans2)
@@ -2819,10 +2916,253 @@
 (defmacro all-fnnames-lst (lst)
   `(all-fnnames1 t ,lst nil))
 
+; Essay on the Badge-Table
+
+; The badge-table is a table.  It's :guard is badge-table-guard and the table
+; is initialized in apply.lisp.  The table has only one entry, named
+; :badge-userfn-structure.  (Once upon a time it had another entry but that
+; that was eliminated and we never simplified its structure.)  The
+; :badge-userfn-structure is an alist with entries of the form
+; (fn warrantp badge), where fn is a function symbol, warrantp is t or nil
+; indicating whether there is a warrant for fn, and badge is the apply$-badge
+; record for fn.
+
+; Note: As documented in apply-constraints.lisp, there are three categories of
+; function symbols known to apply$: primitives like CONS and BINARY-+, boot
+; functions like TAMEP and APPLY$ itself, and user-defined functions.
+; (Functions in the last category were necessarily defined by the user -- the
+; user might have taken a system function and converted it to :logic mode and
+; then successfully called defwarrant on it -- but we call the last category
+; ``user-defined'' because mostly they are!)  Badges for primitives and boot
+; functions are built-in.  The badge-table's job is to tell us the badges of
+; user-defined functions.
+
+; As of Version 8.3, every badged user-defined function had a warrant.  See
+; Badges versus Warrants in apply-constraints.lisp.  But this may change and
+; should not be assumed in the source code.  For example, currently defwarrant
+; insists that warrantable functions have a restricted form of measure,
+; permitting us to show that a model of apply$ could be admitted.  But we see
+; no reason why such a function couldn't be given a badge but no warrant.  Such
+; a function couldn't be apply$d but could be used in a function that is
+; apply$d.  (We once disallowed multi-valued functions to have warrants but
+; permitted them to be used in functions that did; but now apply$ handles
+; multi-valued functions.)  Or, perhaps we'll permit :program mode functions to
+; have badges so they can be handled by apply$ in the evaluation theory; they
+; would then have badges but not warrants (since warrants are necessarily
+; logical).  To allow such eventual extensions the :badge-userfn-structure
+; includes not just the badge but a flag indicating whether fn has been issued
+; a warrant.  If the warrantp flag is set for fn then its warrant function is
+; named APPLY$-WARRANT-fn.  See warrant-name.
+
+; On Why Warrantp is not in the Badge:
+
+; We decided not to put the warrantp flag into the badge because we didn't want
+; to change the structure of badges because there are places where car/cdr
+; nests are used instead of the record accessors in certain theorems.  Here is
+; a comment from books/apply-model-2/apply-prim.lisp:
+
+; ; Note: Unfortunately, record accessors translate into lambda applications.
+; ; :Rewrite rules handle this appropriately by beta reducing the lambda
+; ; applications in the conclusion.  But :linear rules do not.  So we've written
+; ; all the rules in terms of car/cdr nests rather than access terms. FTR:
+
+; ; (access apply$-badge x :arity) = (car (cdr x))
+; ; (access apply$-badge x :out-arity) = (car (cdr (cdr x)))
+; ; (access apply$-badge x :ilks) = (cdr (cdr (cdr x)))
+
+; The same violation of the record abstraction is known to occur in
+; books/projects/apply-model-2/ex1/doppelgangers.lisp
+; books/projects/apply-model-2/ex2/doppelgangers.lisp
+
+; In addition, there are numerous books where explicit badges are quoted,
+; as in books/projects/apply-model-2/ex2/defattach-demo.lisp where we show
+
+; (expected-to :succeed :evaluation
+;              (badge 'expt-5)
+;              '(APPLY$-BADGE 1 1 . T))
+
+; And explicit badges are displayed about a dozen times in
+; books/system/doc/acl2-doc.lisp.
+
+; On a more principled level, the idea of :program mode functions having badges
+; encourages the view that badges are a syntactic property having nothing to do
+; with logical justification and just recording whether a function maintains
+; the discipline that :FN arguments are treated exclusively as functions and
+; not sometimes as data.  Warrants, on the other hand, connect such functions
+; to the logic.
+
+; In any case, we decided not to put the warrantp flag into the badge!
+
+; The entries in the :badge-userfn-structure are tuples as built and accessed below.
+; You can think of them as though we defined
+
+; (defrec badge-userfn-structure-tuple (fn warrantp badge) t)
+
+; so that the fn is in the car, allowing lists of these tuples to be an alist
+; with function symbols as keys.  We define our own ``make'' and ``access''
+; macros, mainly so that we can use those macros in rewrite rules.  The defrec
+; access macros expand into let-forms which make them unsuitable for use in the
+; lhs.
+
+(defun make-badge-userfn-structure-tuple (fn warrantp badge)
+; Keep this function in sync with badge-table-guard and the recognizer below.
+; WARNING: keep fn in the car, as noted above.
+
+  (list fn warrantp badge))
+
+(defun put-badge-userfn-structure-tuple-in-alist (tuple alist)
+
+; This is the way we put a new tuple into the badge-table -- or change the
+; fields of an existing tuple for the fn.  However, if we know that fn is not
+; already bound in the alist, we can just cons the tuple on instead of using
+; this function.
+
+  (if (assoc-eq (car tuple) alist)
+      (put-assoc-eq (car tuple) (cdr tuple) alist)
+      (cons tuple alist)))
+
+(defun weak-badge-userfn-structure-tuplep (x)
+
+; We check that x is of the form (& & & . &) so that we can access the fn,
+; warrantp, and badge in guard-verified ways after checking this predicate.
+
+  (declare (xargs :mode :logic :guard t))
+  (and (consp x)
+       (consp (cdr x))
+       (consp (cddr x))))
+
+(defmacro access-badge-userfn-structure-tuple-warrantp (x)
+  `(cadr ,x))
+
+(defmacro access-badge-userfn-structure-tuple-badge (x)
+  `(caddr ,x))
+
+; On some occasions we may want to know both if a function has a badge and
+; whether it is warranted.  So we provide three accessors.
+
+; WARNING: These macros only recover badges for user-defined functions!  To get
+; the badge of any badged function, use executable-badge.  To get the warrant
+; name of any warranted function, use find-warrant-function-name.
+
+(defmacro get-warrantp (fn wrld)
+
+; Warning: This macro expects fn to be a userfn.  It fais for apply$ primitives
+; and boot functions!  To determine whether a given symbol has or needs a
+; warrant, use find-warrant-function-name.
+
+  `(access-badge-userfn-structure-tuple-warrantp
+    (assoc-eq ,fn
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table ,wrld))))))
+
 (defmacro get-badge (fn wrld)
-  `(cdr (assoc-eq ,fn
-                  (cdr (assoc-eq :badge-userfn-structure
-                                 (table-alist 'badge-table ,wrld))))))
+
+; Warning: This macro expects fn to be a userfn.  It fails for apply$
+; primitives and boot functions!  To find the badge, if any, of any symbol, use
+; executable-badge.
+
+  `(access-badge-userfn-structure-tuple-badge
+    (assoc-eq ,fn
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table ,wrld))))))
+
+(defmacro get-badge-and-warrantp (fn wrld)
+
+; Warning: This macro expects fn to be a userfn.  It fails for apply$
+; primitives and boot functions!
+
+  `(let ((temp (assoc-eq ,fn
+                         (cdr (assoc-eq :badge-userfn-structure
+                                        (table-alist 'badge-table ,wrld))))))
+     (mv (access-badge-userfn-structure-tuple-badge temp)
+         (access-badge-userfn-structure-tuple-warrantp temp))))
+
+(defun warrant-name (fn)
+
+; Warning: Keep this in sync with warrant-name-inverse.  This function is
+; purely syntactic.  There is no guarantee that the returned symbol is actually
+; the defwarrant-created warrant function of fn!  Fn may have no warrant!
+
+; From fn generate the name APPLY$-WARRANT-fn.
+
+  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
+                  :guard (symbolp fn)))
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "APPLY$-WARRANT-"
+                (symbol-name fn))
+   fn))
+
+(defun string-prefixp-1 (str1 i str2)
+  (declare (type string str1 str2)
+           (type (unsigned-byte 29) i)
+           (xargs :guard (and (<= i (length str1))
+                              (<= i (length str2)))))
+  (cond ((zpf i) t)
+        (t (let ((i (1-f i)))
+             (declare (type (unsigned-byte 29) i))
+             (cond ((eql (the character (char str1 i))
+                         (the character (char str2 i)))
+                    (string-prefixp-1 str1 i str2))
+                   (t nil))))))
+
+(defun string-prefixp (root string)
+
+; We return a result propositionally equivalent to
+;   (and (<= (length root) (length string))
+;        (equal root (subseq string 0 (length root))))
+; but, unlike subseq, without allocating memory.
+
+; At one time this was a macro that checked `(eql 0 (search ,root ,string
+; :start2 0)).  But it seems potentially inefficient to search for any match,
+; only to insist at the end that the match is at 0.
+
+  (declare (type string root string)
+           (xargs :guard (<= (length root) (fixnum-bound))))
+  (let ((len (length root)))
+    (and (<= len (length string))
+         (assert$ (<= len (fixnum-bound))
+                  (string-prefixp-1 root len string)))))
+
+(defun warrant-name-inverse (warrant-fn)
+
+; Warning: Keep this in sync with warrant-name (q.v.).
+
+  (declare (xargs :guard (symbolp warrant-fn)))
+  (let ((warrant-fn-name (symbol-name warrant-fn)))
+    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+         (intern-in-package-of-symbol
+          (subseq warrant-fn-name
+                  15 ; (length "APPLY$-WARRANT-")
+                  (length warrant-fn-name))
+          warrant-fn))))
+
+; Matt:  The following function used to be called warrantp.
+(defun warrant-function-namep (warrant-fn wrld)
+
+; We check whether warrant-fn is the warrant function of some function, fn.  If
+; fn has a warrant, its name is APPLY$-WARRANT-fn.  But having a name of that
+; shape is no guarantee that the function is the warrant function for fn.  (Fn
+; may have no warrant function and apply$-warrant-fn might have been --
+; maliciously! -- defined by the user.)  Thus, we answer this question by
+; recovering fn from warrant-fn and then looking in the badge-userfn-structure
+; to see whether fn has a warrant.
+
+; Note: We allow the user to define functions named APPLY$-WARRANT-fn
+; independently of warrants, but that would preclude the subsequent warranting
+; of fn.  We considered allowing the user to supply the name of the warrant
+; function for fn, instead of using the purely syntactic convention of
+; APPLY$-WARRANT-fn.  However, it would then be impossible to provide the macro
+; (warrant fn).  The table guard for badge-table, badge-table-guard, actually
+; confirms that if the warrantp flag is set by the user, indicating that fn has
+; a warrant, then the name of the warrant is indeed APPLY$-WARRANT-fn and that
+; that symbol is properly constrained as by defwarrant.
+
+  (declare (xargs :guard (and (symbolp warrant-fn)
+                              (plist-worldp wrld))))
+  (let ((fn (warrant-name-inverse warrant-fn)))
+    (and fn
+         (get-warrantp fn wrld))))
 
 ; We originally defined the apply$-badge and the commonly used generic badges in
 ; apply-prim.lisp but they're needed earlier now.
@@ -2848,6 +3188,14 @@
 
   `(cadr ,x))
 
+(defun weak-apply$-badge-p (x)
+  (declare (xargs :mode :logic :guard t))
+  (and (consp x)
+       (eq (car x) 'APPLY$-BADGE)
+       (let ((x (cdr x)))
+         (and (consp x)
+              (let ((x (cdr x))) (consp x))))))
+
 (defconst *generic-tame-badge-1*
   (MAKE APPLY$-BADGE :ARITY 1 :OUT-ARITY 1 :ILKS t))
 (defconst *generic-tame-badge-2*
@@ -2867,13 +3215,20 @@
 
 (defun executable-badge (fn wrld)
 
-; Find the badge, if any, for fn in wrld; else return nil.  Aside from
+; Find the badge, if any, for any fn in wrld; else return nil.  Aside from
 ; primitives and the apply$ boot functions, all badges are stored in the
 ; badge-table entry :badge-userfn-structure.
 
-; Aside: All badged functions have warrants except the primitives and the
-; apply$ boot functions, which have badges but don't have and don't need
-; warrants.
+; Note: The word ``executable'' in the name means this function is executable,
+; unlike its namesake, badge, which is just constrained.
+
+; Aside: The apply$ primitives have badges stored in the *badge-prim-falist*.
+; The apply$ boot functions have built-in badges as specified below.  All other
+; badged functions are in the :badge-userfn-structure of the badge-table.  The
+; apply$ primitives and boot functions do not have warrants and don't need
+; them.  The functions in :badge-userfn-structure may or may not have warrants,
+; depending on the warrantp flag of the entry for fn in the structure.  See the
+; Essay on the Badge-Table.
 
 ; There's nothing wrong with putting this in logic mode but we don't need it in
 ; logic mode here.  This function is only used by defwarrant, to analyze and
@@ -2909,6 +3264,41 @@
        (t (get-badge fn wrld)))))
    (t nil)))
 
+(defun find-warrant-function-name (fn wrld)
+
+; If fn has a warrant function, return the name of the warrant function.  If fn
+; is known to apply$ and needs no warrant, e.g., fn is CONS or fn is APPLY$,
+; etc., return t.  Else, return nil.  See executable-badge for further
+; discussion.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((and (global-val 'boot-strap-flg wrld)
+         (or (not (getpropc '*badge-prim-falist* 'const nil wrld))
+             (not (getpropc 'badge-table 'table-guard nil wrld))))
+    (er hard 'find-warrant-function-name
+        "It is illegal to call this function during boot strapping because ~
+         primitives have not yet been identified and warrants not yet ~
+         computed!"))
+   ((symbolp fn)
+    (let ((temp
+           (hons-get fn ; *badge-prim-falist* is not yet defined!
+                     (unquote
+                      (getpropc '*badge-prim-falist* 'const nil wrld)))))
+      (cond
+       (temp t)
+       ((eq fn 'BADGE) t)
+       ((eq fn 'TAMEP) t)
+       ((eq fn 'TAMEP-FUNCTIONP) t)
+       ((eq fn 'SUITABLY-TAMEP-LISTP) t)
+       ((eq fn 'APPLY$) t)
+       ((eq fn 'EV$) t)
+       (t (let ((temp (get-warrantp fn wrld)))
+            (cond
+             (temp (warrant-name fn))
+             (t nil)))))))
+   (t nil)))
+
 ; Compare this to the TAMEP clique.
 
 (defabbrev executable-tamep-lambdap (fn wrld)
@@ -2918,8 +3308,10 @@
 ; It does not check full well-formedness.  It is possible for an ill-formed
 ; lambda expression to pass this test!
 
-; Note: The word ``executable'' in the name means this function is executable,
-; not that the purported lambda expression is executable!
+; Note: The word ``executable'' in the name means this ``function'' is
+; executable, unlike its namesake tamep-lambdap which involves constrained
+; functions.  The same clarification applies to the mutually recursive clique
+; below.
 
 ; This function is one of the ways of recognizing a lambda object.  See the end
 ; of the Essay on Lambda Objects and Lambda$ for a discussion of the various
@@ -2999,20 +3391,27 @@
 
 (defun well-formed-lambda-objectp1 (extracts wrld)
 
-; Extracts is a non-nil list of 3-tuples, (satisfies-exprs guard . body), as
-; returned by a successful syntactically-plausible-lambda-objectp.  We check
-; that each 3-tuple contains truly well-formed components wrt wrld.
+; Extracts is a non-nil list splo-extracts-tuples, as returned by a successful
+; syntactically-plausible-lambda-objectp.  We check that each tuple contains
+; truly well-formed components wrt wrld.
 
-  (cond ((endp extracts) t)
-        (t (let ((satisfies-exprs (car (car extracts)))
-                 (guard (cadr (car extracts)))
-                 (body (cddr (car extracts))))
-             (and (term-listp satisfies-exprs wrld)
-                  (termp guard wrld)
-                  (null (collect-programs (all-fnnames guard) wrld))
-                  (termp body wrld)
-                  (executable-tamep body wrld)
-                  (well-formed-lambda-objectp1 (cdr extracts) wrld))))))
+  (cond
+   ((endp extracts) t)
+   (t (let ((gflg (access splo-extracts-tuple (car extracts) :gflg))
+            (satisfies-exprs
+             (access splo-extracts-tuple (car extracts) :satisfies-exprs))
+            (guard (access splo-extracts-tuple (car extracts) :guard))
+            (body (access splo-extracts-tuple (car extracts) :body)))
+        (and (term-listp satisfies-exprs wrld)
+             (termp guard wrld)
+; Prior to V8.4 we included:
+;                 (null (collect-programs (all-fnnames guard) wrld))
+; but now we allow :program mode fns in the guard (and body).  But this will
+; force the containing defun to be in :program mode too.
+             (termp body wrld)
+             (or gflg ; see syntactically-plausible-lambda-object
+                 (executable-tamep body wrld))
+             (well-formed-lambda-objectp1 (cdr extracts) wrld))))))
 
 (defun well-formed-lambda-objectp (x wrld)
 
@@ -3025,14 +3424,108 @@
 ; We do not check that the :guard and/or body are composed of guard verified
 ; functions, nor do we prove the guard conjectures for x.
 
-  (let ((extracts (syntactically-plausible-lambda-objectp x)))
+  (let ((extracts (syntactically-plausible-lambda-objectp nil x)))
 
 ; Extracts is either nil, indicating that the object x is not syntactically
-; plausible or is a list of 3-tuples, (satisfies-exprs guard . body), to be
-; checked wrt the wrld.
+; plausible or is a list of splo-extracts-tuples to be checked wrt the wrld.
 
     (and extracts
          (well-formed-lambda-objectp1 extracts wrld))))
+
+(defun all-fnnames! (lst-flg where-flg collect-flg
+                             term ilk wrld acc)
+
+; Roughly speaking, we collect every function symbol in term -- including those
+; occurring as quoted symbols in :FN slots and in well-formed quoted lambda
+; constants in :FN slots.  This is coded as a flagged mutually recursive
+; function with lst-flg = t meaning term is really a list of terms.
+
+; Where-flg controls from where we collect.  It can be:
+
+; :inside - only collect while inside a quoted well-formed object in an ilk :FN
+;   or :EXPR slot
+
+; :outside - only collect while outside those objects -- this is the same as
+;   all-fnnames and is only implemented because it's easy and symmetric
+
+; :both - collect both inside and outside.
+
+; Collect-flg is t if we are in a context in which we're collecting.
+
+; IMPORTANT NOTE: Think carefully about the initial values of where-flg and
+; collect-flg!  Typically, if you're processing a term, you're outside of
+; quoted functions and expressions, so if your where-flg = :INSIDE, your
+; initial collect-flg should be nil.  But if your where-flg = :OUTSIDE or :BOTH
+; your initial collect-flg should be t.
+
+; Term is either a term or a list of terms, ilk is the corresponding ilk or
+; list of ilks, and acc is our collection site.
+
+; Purpose: Certain of these sets of function symbols collected must be in
+; :logic mode and warranted for term to be considered :logic mode.  They are
+; the fns that are encountered by the rewriter if we rewrite this term.  When
+; this term is compiled, these are the fns that will be called directly.  We
+; don't collect the fn in (apply$ 'fn ...) or in (ev$ '(fn ...) ...) because
+; they are not called directly but only fed to apply$.
+
+; Warning: This function must not be called during boot-strap, so check
+; (global-val 'boot-strap-flg wrld) before calling this function.
+
+  (cond
+   (lst-flg ; term is a list of terms
+    (cond ((endp term) acc)
+          (t (all-fnnames! nil where-flg collect-flg
+                           (car term)
+                           (car ilk)
+                           wrld
+                           (all-fnnames! t where-flg collect-flg
+                                         (cdr term)
+                                         (cdr ilk)
+                                         wrld
+                                         acc)))))
+   ((variablep term) acc)
+   ((fquotep term)
+    (cond ((eq where-flg :outside) acc)
+          ((eq ilk :FN)
+           (let ((evg (unquote term)))
+             (cond
+              ((symbolp evg)
+               (add-to-set-eq evg acc))
+              ((and (consp evg)
+                    (eq (car evg) 'lambda)
+                    (well-formed-lambda-objectp evg wrld))
+               (all-fnnames! nil where-flg t
+                             (lambda-object-body evg)
+                             nil wrld acc))
+              (t acc))))
+          ((eq ilk :EXPR)
+           (let ((evg (unquote term)))
+             (cond
+              ((termp evg wrld)
+               (all-fnnames! nil where-flg t
+                             evg nil wrld acc))
+              (t acc))))
+          (t acc)))
+   ((lambda-applicationp term)
+    (all-fnnames! t where-flg collect-flg
+                  (fargs term)
+                  nil
+                  wrld
+                  (all-fnnames! nil where-flg collect-flg
+                                (lambda-body (ffn-symb term))
+                                nil wrld acc)))
+   (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
+        (all-fnnames!
+         t where-flg collect-flg
+         (fargs term)
+         (if (or (null bdg)
+                 (eq (access apply$-badge bdg :ilks) t))
+             nil
+             (access apply$-badge bdg :ilks))
+         wrld
+         (if collect-flg
+             (add-to-set-eq (ffn-symb term) acc)
+             acc))))))
 
 ; Essay on Cleaning Up Dirty Lambda Objects
 
@@ -3878,7 +4371,7 @@
 ; lambda-object-formals, -dcl, and -body) because those are :logic mode
 ; functions with a guard of T and are guard verified.  This function is in
 ; :program mode and if it had a guard it would be
-; (syntactically-plausible-lambda-objectp x).
+; (syntactically-plausible-lambda-objectp nil x).
 
   (or (cadr (assoc-keyword :guard
                            (cdr (assoc-eq 'xargs
@@ -4021,35 +4514,42 @@
 
 (defun unknown-constraints-table-guard (key val wrld)
   (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate.")
-        (ctx 'unknown-constraints-table-guard))
-    (and (eq key :supporters)
-         (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                            (global-val 'embedded-event-lst wrld))))
-           (cond
-            ((null ee-entries)
-             (er hard ctx er-msg
-                 "it is not being made in the scope of a non-trivial ~
-                  encapsulate"))
-            ((cdr ee-entries)
-             (er hard ctx er-msg
-                 (msg "it is being made in the scope of nested non-trivial ~
-                       encapsulates.  In particular, an enclosing encapsulate ~
-                       introduces function ~x0, while an encapsulate superior ~
-                       to that one introduces function ~x1"
-                      (caar (cadr (car ee-entries)))
-                      (caar (cadr (cadr ee-entries))))))
-            ((not (all-function-symbolps val wrld))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, is not a list of known function symbols"
-                      val)))
-            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                                 val))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, does not include all of the signature ~
-                       functions of the partial-encapsulate"
-                      val)))
-            (t t))))))
+                 because ~@0.  See :DOC partial-encapsulate."))
+    (cond
+     ((eq key :supporters)
+      (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                         (global-val 'embedded-event-lst wrld))))
+        (cond
+         ((null ee-entries)
+          (mv nil
+              (msg er-msg
+                   "it is not being made in the scope of a non-trivial ~
+                    encapsulate")))
+         ((cdr ee-entries)
+          (mv nil
+              (msg er-msg
+                   (msg "it is being made in the scope of nested non-trivial ~
+                         encapsulates.  In particular, an enclosing ~
+                         encapsulate introduces function ~x0, while an ~
+                         encapsulate superior to that one introduces function ~
+                         ~x1"
+                        (caar (cadr (car ee-entries)))
+                        (caar (cadr (cadr ee-entries)))))))
+         ((not (all-function-symbolps val wrld))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, is not a list of known function ~
+                         symbols"
+                        val))))
+         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                              val))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, does not include all of the ~
+                         signature functions of the partial-encapsulate"
+                        val))))
+         (t (mv t nil)))))
+     (t (mv nil nil)))))
 
 (table unknown-constraints-table nil nil
        :guard
@@ -4104,6 +4604,50 @@
                 (cons (car vars) non-exec-stobjs)
               non-exec-stobjs)))))
 
+(defun scan-to-event (wrld)
+
+; We roll back wrld to the first (list order traversal) event landmark
+; on it.
+
+  (cond ((null wrld) wrld)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value))
+         wrld)
+        (t (scan-to-event (cdr wrld)))))
+
+(defun logical-defun (fn wrld)
+
+; Returns the defun form for fn that was submitted to ACL2,, if there is one;
+; else nil.
+
+  (let ((ev (get-event fn wrld)))
+    (and (consp ev) ; presumably same as (not (null ev))
+         (case (car ev)
+           (defun ev)
+           (mutual-recursion (assoc-eq-cadr fn (cdr ev)))
+           ((defstobj defabsstobj)
+            (and (eq (cadr ev) ; expect true except for st itself
+                     (getpropc fn 'stobj-function nil wrld))
+                 (let* ((index (getpropc fn 'absolute-event-number nil wrld))
+                        (wrld2 (assert$
+                                index
+                                (lookup-world-index 'event index wrld)))
+                        (ev (get-event fn (scan-to-event (cdr wrld2)))))
+                   (and (eq (car ev) 'defun) ; always true?
+                        ev))))
+           (verify-termination-boot-strap
+
+; For some functions, like binary-append and apply$, we wind up in this case.
+; Note that the defun will declare :mode :logic even if the original did not;
+; that's because verify-termination-boot-strap uses the same definition as is
+; generated by verify-termination, which adds that declare form.  See comments
+; in cltl-def-from-name and check-some-builtins-for-executability for why we
+; can rely on getting the correct result from cltl-def-from-name (in short,
+; because we know that fn is not non-executable).
+
+            (cltl-def-from-name fn wrld))
+           (otherwise nil)))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -4128,29 +4672,17 @@
   (let ((trip (assoc-eq fn *primitive-formals-and-guards*)))
     (cond
      (trip (untranslate* (caddr trip) t wrld))
-     (t (let ((ev (get-event fn wrld)))
+     (t (let ((def (logical-defun fn wrld)))
           (cond
-           ((atom ev)
+           ((null def)
             (er hard! 'guard-raw
                 "Unable to find defining event for ~x0."
                 fn))
-           (t (let ((def ; strip off leading defun
-                     (case (car ev)
-                       (defun (cdr ev))
-                       (mutual-recursion (assoc-eq fn (strip-cdrs (cdr ev))))
-                       (verify-termination-boot-strap
-; For some functions, like apply$, we wind up in this case.
-                        (cdr (cltl-def-from-name fn wrld)))
-                       (otherwise (er hard! 'guard-raw
-                                      "Implementation error for ~x0: ~
-                                       Unexpected event type, ~x1"
-                                      `(guard-raw ',fn <wrld>)
-                                      (car ev))))))
-                (mv-let
-                 (dcls guard)
-                 (dcls-guard-raw-from-def def wrld)
-                 (declare (ignore dcls))
-                 guard)))))))))
+           (t (mv-let
+                (dcls guard)
+                (dcls-guard-raw-from-def (cdr def) wrld)
+                (declare (ignore dcls))
+                guard))))))))
 
 (defun ev-fncall-guard-er (fn args w user-stobj-alist latches extra)
 
@@ -6320,7 +6852,7 @@
 ;   they have been checked in whichever of the two worlds is the
 ;   extension.
 
-; Essay on Context-message Pairs
+; Essay on Context-message Pairs (cmp)
 
 ; Recall that translate returns state, which might be modified.  It can be
 ; useful to have a version of translate that does not return state, for example
@@ -7408,7 +7940,7 @@
 ;    (binary-+ '1 x))
 
 ; '(lambda (x)
-;    (declare (type integer x)           ; TYPE, IGNORE, IGNOREABLE allowed
+;    (declare (type integer x)           ; TYPE, IGNORE, IGNORABLE allowed
 ;             (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
 ;                    :split-types t))                       ; translated and
 ;   (binary-+ '1 x))                                        ; include types
@@ -9794,6 +10326,9 @@
   `(fcons-term* 'return-last ',fn ,@args))
 
 (defmacro prog2$-call (x y)
+
+; Warning: Keep this in sync with the handlng of 'return-last in oneify.
+
   `(fcons-term* 'return-last ''progn ,x ,y))
 
 (defun dcl-guardian (term-lst)
@@ -10944,7 +11479,7 @@
 ; X is a stobj-let form.  We return (mv erp bound-vars actuals stobj
 ; producer-vars producer updaters corresponding-accessor-fns consumer), where
 ; erp is either a msg or nil, and when erp is nil:
-; - bound-vars is a list of symbols, without duplicates;
+; - bound-vars is a list of symbols;
 ; - actuals is a corresponding list of untranslated field accessors;
 ; - stobj is the stobj accessed by those field accessors;
 ; - producer-vars is the true-list of producer variables
@@ -11003,7 +11538,7 @@
                  (arglistp producer-vars)))
        (mv (illegal-stobj-let-msg
             "The producer-variables of a STOBJ-LET form must be a non-empty ~
-             list of legal variable names."
+             list of legal variable names without duplicates."
             x)
            nil nil nil nil nil nil nil nil))
       (t (mv-let
@@ -11023,53 +11558,161 @@
             x)
            nil nil nil nil nil nil nil nil))))
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist)
-  (cond ((endp alist) nil)
-        (t (let ((indices (cdar alist)))
-             (cond ((or (null (cdr indices))
-                        (and (nat-listp indices)
-                             (no-duplicatesp indices)))
-                    (no-duplicatesp-checks-for-stobj-let-actuals/alist
-                     (cdr alist)))
-                   (t (cons `(with-guard-checking
-                              t
+(defun split-values-by-keys (keys alist lst1 lst2)
 
-; This use of with-guard-checking guarantees that the guard will be checked by
-; running chk-no-duplicatesp inside *1* code for stobj-let.  (See a comment
-; near the end of stobj-let-fn for how handling of invariant-risk guarantees
-; that such *1* code is run under program-mode wrappers.)
+; This function partitions the values of alist into (mv lst1' lst2'), where
+; lst1' accumulates into lst1 the values associated with keys and lst2'
+; accumulates into lst2 the rest.
 
-                              (chk-no-duplicatesp
+  (declare (xargs :guard (and (true-listp keys)
+                              (symbol-alistp alist))))
+  (cond ((endp alist) (mv lst1 lst2))
+        ((member-eq (caar alist) keys)
+         (split-values-by-keys keys (cdr alist)
+                               (cons (cdar alist) lst1)
+                               lst2))
+        (t
+         (split-values-by-keys keys (cdr alist)
+                               lst1
+                               (cons (cdar alist) lst2)))))
 
-; The use of reverse is just aesthetic, to preserve the original order.
+(defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist producer-vars)
+  (cond
+   ((endp alist) nil)
+   (t
+    (let ((pairs (cdar alist)))
+      (cond
+       ((or (null (cdr pairs))
+            (let ((indices (strip-cdrs pairs)))
+              (and (nat-listp indices)
+                   (no-duplicatesp indices))))
+        (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                           producer-vars))
+       (t
+        (mv-let (producer-indices other-indices)
+          (split-values-by-keys producer-vars pairs nil nil)
+          (cond
+           ((null producer-indices)
+            (no-duplicatesp-checks-for-stobj-let-actuals/alist (cdr alist)
+                                                               producer-vars))
+           (t
+            (cons `(with-guard-checking
+                    t
 
-                               (list ,@(reverse indices))))
-                            (no-duplicatesp-checks-for-stobj-let-actuals/alist
-                             (cdr alist)))))))))
+; The use below of with-guard-checking guarantees that the guard will be
+; checked by running chk-no-stobj-array-index-aliasing inside *1* code for
+; stobj-let.  We are relying on invariant-risk handling to ensure that the *1*
+; function is executed when there are updates, and hence those no-duplicatesp
+; checks will be performed.  Invariant-risk plays its usual role for
+; :program-mode wrappers, hence causes the no-duplicatesp checks to be
+; enforced.  Note that the no-duplicates checks are avoided when there are only
+; accesses but no updates.
 
-(defun no-duplicatesp-checks-for-stobj-let-actuals (exprs alist)
+; We considered a simpler approach: (or (no-duplicatesp-eql-exec lst) (er hard
+; ...)).  However, the error didn't occur during proofs, and as a result the
+; theorem true-and-false-is-contradictory-2 in community book
+; books/system/tests/nested-stobj-tests.lisp succeeded with that change.  The
+; failure was restored by changing (er hard ...) to (er hard! ...), but at the
+; cost of seeing lots of error messages during the proof.  Rather than think
+; all that through, we reverted to the approach below, which relies on guard
+; checking (which fails silently during proofs) to enforce the lack of
+; duplicate array indices; see chk-no-stobj-array-index-aliasing.  Note that
+; these checks are skipped in raw Lisp, since raw-Lisp stobj-let does not
+; include them.  But as noted above, we can rely on invariant-risk.
 
-; Alist associates array field accessor names with lists of index terms.
+                    (chk-no-stobj-array-index-aliasing
+                     (list ,@producer-indices)
+                     (list ,@other-indices)))
+                  (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                   (cdr alist) producer-vars)))))))))))
 
-  (cond ((endp exprs)
-         (no-duplicatesp-checks-for-stobj-let-actuals/alist alist))
-        (t (let ((expr (car exprs)))
-             (no-duplicatesp-checks-for-stobj-let-actuals
-              (cdr exprs)
-              (cond
-               ((eql (length expr) 3) ; array case, (fldi index st)
-                (let* ((key (car expr))
-                       (index (cadr expr))
-                       (index (if (consp index)
-                                  (assert$ (and (eq (car index) 'quote)
-                                                (natp (cadr index)))
-                                           (cadr index))
-                                index))
-                       (entry (assoc-eq key alist)))
-                  (put-assoc-eq key
-                                (cons index (cdr entry))
-                                alist)))
-               (t alist)))))))
+(defun concrete-accessor (accessor tuples-lst)
+
+; Accessor is a stobj accessor for a stobj st.  Tuples-lst is nil if st is a
+; concrete stobj; otherwise its car is the :absstobj-tuples field of the
+; 'absstobj-info property of st and its cdr is (recursively) a list of such
+; tuples starting with the underlying stobj for st.
+
+  (cond ((endp tuples-lst) accessor)
+        (t (let* ((tuples (car tuples-lst))
+                  (accessor$c (caddr (assoc-eq accessor tuples))))
+             (assert$ accessor$c
+                      (concrete-accessor accessor$c (cdr tuples-lst)))))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals-1
+    (bound-vars exprs producer-vars tuples-lst alist)
+
+; It is useful to introduce the notion that st$c "ultimately underlies" a stobj
+; st: st$c is just st if st is a concrete stobj, and otherwise (recursively)
+; st$c is the concrete stobj that ultimately underlies the foundational stobj
+; for st.
+
+; Function chk-stobj-let/accessors1 checks for explicit duplication of
+; accessors in the bindings of a stobj-let form, F.  The present function, by
+; contrast, deals with duplicate indices for accessing array fields of the
+; stobj that ultimately underlies st.  We return either nil or a term, chk,
+; that serves as such a check for duplicate indices: if chk is not nil then F
+; is treated as (prog2$ chk F) by translate and oneify.
+
+; Alist accumulates an association of array field accessor names with
+; corresponding lists of index terms.  Those accessor names are for the
+; concrete stobj that ultimately underlies the stobj st.
+
+  (cond
+   ((endp exprs)
+    (let ((lst (no-duplicatesp-checks-for-stobj-let-actuals/alist
+                alist producer-vars)))
+      (if (cdr lst)
+          (cons 'progn$ lst)
+        (car lst))))
+   (t (no-duplicatesp-checks-for-stobj-let-actuals-1
+       (cdr bound-vars)
+       (cdr exprs)
+       producer-vars
+       tuples-lst
+       (let ((bound-var (car bound-vars))
+             (expr (car exprs)))
+         (cond
+          ((eql (length expr) 3) ; array case, (fldi index st)
+           (let* ((name (car expr))
+                  (index (cadr expr))
+                  (index (if (consp index)
+                             (assert$ (and (eq (car index) 'quote)
+                                           (natp (cadr index)))
+                                      (cadr index))
+                           index))
+                  (fld$c (concrete-accessor name tuples-lst))
+                  (entry (assoc-eq fld$c alist)))
+             (put-assoc-eq fld$c
+                           (cons (cons bound-var index) (cdr entry))
+                           alist)))
+          (t alist)))))))
+
+(defrec absstobj-info
+
+; For a given abstract stobj st, the 'absstobj-info property is one of these
+; records, where st$c is the corresponding foundational stobj and
+; absstobj-tuples is a list of tuples (name logic exec . updater), where
+; updater is non-nil only when name is a child stobj accessor (hence exec is a
+; child stobj accessofr for st$c).  The first tuple is for the recognizer, the
+; second is for the creator, and the rest are for the exports, in order of
+; the exports in the original defabsstobj event.
+
+  (st$c . absstobj-tuples)
+  t)
+
+(defun absstobj-tuples-lst (st wrld)
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (cond ((null abs-info) nil)
+          (t (cons (access absstobj-info abs-info :absstobj-tuples)
+                   (absstobj-tuples-lst (access absstobj-info abs-info :st$c)
+                                        wrld))))))
+
+(defun no-duplicatesp-checks-for-stobj-let-actuals
+    (bound-vars exprs producer-vars st wrld)
+  (let ((tuples-lst (absstobj-tuples-lst st wrld)))
+    (no-duplicatesp-checks-for-stobj-let-actuals-1
+     bound-vars exprs producer-vars tuples-lst nil)))
 
 (defun stobj-let-fn (x)
 
@@ -11080,6 +11723,20 @@
 ; function.  We call stobj-let-fn in oneify, so we need that logical code even
 ; in raw Lisp.
 
+; Warning: This function does not do all necessary checks.  Among the checks
+; missing here but performed by translate11 (via chk-stobj-let) are duplicate
+; accessor expressions in the bindings, which could lead to aliasing errors.
+; The anti-aliasing check for duplicate array indices, which laid down in the
+; translation of a stobj-let expression after the chk-stobj-let check passes,
+; is also missing in this function.  Many of the checks need the world, which
+; is not available in stobj-let-fn; in particular, aliasing need not be
+; lexical, as two different accessors can lead via a chain of foundational
+; stobjs (available in the world) to the same access of a single concrete
+; stobj.
+
+; Our use in oneify requires the actuals and stobj, so we return those as well
+; in the non-error case.
+
 ; See the Essay on Nested Stobjs.
 
   (mv-let
@@ -11087,43 +11744,33 @@
          corresp-accessor-fns consumer)
     (parse-stobj-let x)
     (declare (ignore corresp-accessor-fns))
-    (cond (msg (er hard 'stobj-let "~@0" msg))
-          (t
-           (let* ((guarded-producer
-                   `(check-vars-not-free (,stobj) ,producer))
-                  (guarded-consumer
-                   `(check-vars-not-free ,bound-vars ,consumer))
-                  (updated-guarded-consumer
-                   `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
-                      ,guarded-consumer))
-                  (form
-                   `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
-                      (declare (ignorable ,@bound-vars))
-                      ,(cond
-                        ((cdr producer-vars)
-                         `(mv-let ,producer-vars
-                            ,guarded-producer
-                            ,updated-guarded-consumer))
-                        (t `(let ((,(car producer-vars) ,guarded-producer))
-                              ,updated-guarded-consumer))))))
-             `(progn$ ,@(no-duplicatesp-checks-for-stobj-let-actuals actuals
-                                                                     nil)
-
-; Warning: Think carefully before modifying how the no-dupslicates test just
-; above is worked into this logical code.  A concern is whether a program-mode
-; wrapper will be able to circumvent this check.  Fortunately, the check only
-; needs to be done if there are updater calls in form, in which case there is
-; invariant-risk that will cause execution of this code as *1* code.  A concern
-; is that if the no-dups-exprs check is buried in a function call, perhaps that
-; call would somehow avoid that check by being executed in raw Lisp.
-
-                      ,form))))))
+    (cond
+     (msg (mv (er hard 'stobj-let "~@0" msg) nil nil nil nil))
+     (t (let* ((guarded-producer
+                `(check-vars-not-free (,stobj) ,producer))
+               (guarded-consumer
+                `(check-vars-not-free ,bound-vars ,consumer))
+               (updated-guarded-consumer
+                `(let* ,(pairlis-x1 stobj (pairlis$ updaters nil))
+                   ,guarded-consumer))
+               (form
+                `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil)))
+                   (declare (ignorable ,@bound-vars))
+                   ,(cond
+                     ((cdr producer-vars)
+                      `(mv-let ,producer-vars
+                         ,guarded-producer
+                         ,updated-guarded-consumer))
+                     (t `(let ((,(car producer-vars) ,guarded-producer))
+                           ,updated-guarded-consumer))))))
+          (mv form bound-vars actuals producer-vars stobj))))))
 
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
   (assert name)
   (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
-    (assert (eq (car d) 'defstobj))
+    (assert (member (car d) '(defstobj defabsstobj)
+                    :test #'eq))
     (assert (cdr d))
     (access defstobj-redundant-raw-lisp-discriminator-value
             (cdr d)
@@ -11156,7 +11803,7 @@
 
 ; Here is a proof of nil in ACL2(h)  6.4 that exploits an unfortunate
 ; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
-; example let us to add the call of memoize-flush in flush-form, below.  A
+; example led us to add the call of memoize-flush in flush-form, below.  A
 ; comment in chk-stobj-field-descriptor explains how this flushing is important
 ; for allowing memoization of functions that take a stobj argument even when
 ; that stobj has a child stobj that is :non-memoizable.
@@ -11218,7 +11865,7 @@
                         (not (non-memoizable-stobj-raw stobj))
                         `(memoize-flush ,(congruent-stobj-rep-raw
                                           stobj))))
-                  (form
+                  (form0
                    `(let* ,(pairlis$ bound-vars (pairlis$ actuals nil))
                       (declare (ignorable ,@bound-vars))
                       ,(cond
@@ -11234,9 +11881,28 @@
                               #+hons
                               ,@(and flush-form (list flush-form))
                               ,updated-consumer))))))
-             form)))))
+             (if (and (eq (car (get (the-live-var stobj)
+                                    'redundant-raw-lisp-discriminator))
+                          'defabsstobj)
+
+; When an abstract stobj's update is incomplete, the resulting state should be
+; considered an illegal state (see the Essay on Illegal-states) since the
+; abstract stobj recognizer might not hold for the corresponding live stobj.
+; However, if we know that the stobj has not been updated -- because none of
+; the producer variables represents a child stobj (by virtue of being in
+; bound-vars) -- then we do not need to mess with illegal states here.
+
+                      (intersectp-eq bound-vars producer-vars))
+                 (with-inside-absstobj-update (gensym) (gensym) x form0)
+               form0))))))
 
 (defun stobj-field-accessor-p (fn stobj wrld)
+
+; Return non-nil when fn is a child accessor (not updater) for the given stobj.
+; If stobj is an abstract stobj, this means that fn is an export with an
+; :updater field.  For more background see the Essay on the Correctness of
+; Abstract Stobjs.
+
   (and
 
 ; We believe that the first check is subsumed by the others, but we leave it
@@ -11249,14 +11915,28 @@
 
    (member-eq fn (cdddr (getpropc stobj 'stobj nil wrld)))
 
+; The remaining tests are different for concrete and abstract stobjs.
+
+   (let ((abs-info (getpropc stobj 'absstobj-info nil wrld)))
+     (cond
+      (abs-info
+
+; Stobj is an abstract stobj.  The cdddr of the tuple for fn is the
+; corresponding updater, if any -- for an abstract stobj, having an updater is
+; equivalent to fn being a field accessor, as required for accessor calls in
+; stobj-let bindings.
+
+       (cdddr (assoc-eq fn (access absstobj-info abs-info :absstobj-tuples))))
+      (t (and
+
 ; At this point, fn could still be a constant.
 
-   (function-symbolp fn wrld)
+          (function-symbolp fn wrld)
 
 ; Now distinguish accessors from updaters.
 
-   (not (eq (car (stobjs-out fn wrld))
-            stobj))))
+          (not (eq (car (stobjs-out fn wrld))
+                   stobj))))))))
 
 (defun chk-stobj-let/bindings (stobj acc-stobj first-acc bound-vars actuals
                                      wrld)
@@ -11270,6 +11950,10 @@
 ; that this is congruent to stobj.  First-acc is the first accessor, which is
 ; just used in the error message when another accessor's stobj doesn't match.
 
+; We do an additional check in chk-stobj-let/accessors to ensure, in the
+; abstract stobj case, that two different accessors aren't aliases for the same
+; underlying concrete stobj accessor.  See chk-stobj-let/accessors
+
   (cond ((endp bound-vars) nil)
         (t (let* ((var (car bound-vars))
                   (actual (car actuals))
@@ -11279,7 +11963,7 @@
               (eq st stobj) ; guaranteed by parse-stobj-let
               (cond ((not (stobj-field-accessor-p accessor acc-stobj wrld))
                      (msg "The name ~x0 is not the name of a field accessor ~
-                           for the stobj ~x1.~@2"
+                           for the stobj ~x1.~@2~@3"
                           accessor acc-stobj
                           (if (eq acc-stobj stobj)
                               ""
@@ -11287,7 +11971,20 @@
                                   in this case ~x0, determines the stobj with ~
                                   which all other accessors must be ~
                                   associated, namely ~x1.)"
-                                 first-acc acc-stobj))))
+                                 first-acc acc-stobj))
+                          (let* ((abs-info (getpropc st 'absstobj-info nil
+                                                     wrld))
+                                 (tuples (and abs-info
+                                              (access absstobj-info abs-info
+                                                      :absstobj-tuples))))
+                            (cond
+                             ((assoc-eq accessor tuples)
+                              (msg "  Note that even though ~x0 is an ~
+                                      abstract stobj primitive (for ~x1), it ~
+                                      is not an accessor because it is not ~
+                                      associated with an :UPDATER."
+                                   accessor st))
+                             (t "")))))
                     ((not (stobjp var t wrld))
                      (msg "The stobj-let bound variable ~x0 is not the name ~
                            of a known single-threaded object in the current ~
@@ -11317,27 +12014,28 @@
 ; to become smarter.
 
                      (msg "The bindings of a stobj-let must contain no ~
-                           duplicated actuals, but in the following form, the ~
-                           actual ~x0 is bound more than once."
+                           duplicated expressions, but in the following form, ~
+                           more than one variable is bound to the expression, ~
+                           ~x0."
                           actual))
                     (t (chk-stobj-let/bindings stobj acc-stobj first-acc
                                                (cdr bound-vars)
                                                (cdr actuals)
                                                wrld))))))))
 
-(defun chk-stobj-let/updaters1 (updaters accessors lst)
+(defun chk-stobj-updaters1 (accessors updaters lst source)
 
 ; Lst is the cdddr of the 'stobj property of a stobj in an implicit world,
 ; accessors is a list of field accessors for that stobj, and updaters is a list
-; of the same length as accessors.  We check for each i < (length accessors),
-; the ith updater is indeed the stobj field updater corresponding to the ith
-; accessor.  Recall that the 'stobj property is a list of the form
+; of the same length as accessors.  We check that for each i < (length
+; accessors), the ith updater is indeed the stobj field updater corresponding
+; to the ith accessor.  Recall that the 'stobj property is a list of the form
 ; (*the-live-var* recognizer creator ...), and that each field updater
-; immediately follows the corresponding field accessor in that list.
+; immediately follows the corresponding field accessor in that list.  Source is
+; as in chk-stobj-updaters.
 
   (cond ((endp updaters) nil)
-        (t (let* ((updater-expr (car updaters))
-                  (updater (car updater-expr))
+        (t (let* ((updater (car updaters))
                   (accessor (car accessors))
                   (accessor-tail (member-eq (car accessors) lst))
                   (actual-updater (cadr accessor-tail)))
@@ -11349,21 +12047,166 @@
               accessor-tail
               (cond
                ((eq updater actual-updater)
-                (chk-stobj-let/updaters1 (cdr updaters) (cdr accessors) lst))
-               (t (msg "The stobj-let bindings have specified that the stobj ~
-                        field updater corresponding to accessor ~x0 is ~x1, ~
-                        but the actual corresponding updater is ~x2."
-                       accessor updater actual-updater))))))))
+                (chk-stobj-updaters1 (cdr accessors) (cdr updaters)
+                                     lst source))
+               (t (msg "The ~@0 have specified that the stobj ~
+                        field updater corresponding to accessor ~x1 is ~x2, ~
+                        but the actual corresponding updater is ~x3."
+                       source accessor updater actual-updater))))))))
 
-(defun chk-stobj-let/updaters (updaters corresp-accessor-fns stobj wrld)
-  (chk-stobj-let/updaters1
+(defun chk-stobj-updaters (accessors updaters stobj wrld source)
+
+; Source is a string or message such as "stobj-let bindings" or "defabsstobj
+; exports", indicating (as a plural noun phrase) what has specified that the
+; given updater functions are supposed to correspond to the given accessor
+; functions.
+
+  (chk-stobj-updaters1
+   accessors
    updaters
-   corresp-accessor-fns
-   (cdddr ; optimization: pop live-var, recognizer, and creator
-    (getpropc stobj 'stobj nil wrld))))
+   (cdddr ; pop live-var, recognizer, and creator
+    (getpropc stobj 'stobj nil wrld))
+   source))
 
-(defun chk-stobj-let (bound-vars actuals stobj updaters corresp-accessor-fns
-                                 known-stobjs wrld)
+(defun chk-stobj-let/updaters (updater-calls corresp-accessor-fns stobj wrld)
+  (chk-stobj-updaters corresp-accessor-fns
+                      (strip-cars updater-calls)
+                      stobj wrld "stobj-let bindings"))
+
+(defun alist-to-doublets (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (alist-to-doublets (cdr alist))))))
+
+(defun chk-stobj-let/accessors2 (alist producer-vars wrld)
+
+; Alist contains entries (fn$c (var1 . expr1) (var2 . expr2) ... (varn
+; . exprn)), where each expri is a call of a child stobj accessor that
+; ultimately invokes the concrete stobj field accessor, fn$c.  If n > 1 and
+; some vari is in producer-vars, then we return a message that reports aliasing
+; involving the field accessed by fn$c that is not completely read-only.
+; Otherwise we return nil.
+
+  (cond
+   ((endp alist) nil)
+   (t (let* ((msg1 (chk-stobj-let/accessors2 (cdr alist) producer-vars wrld))
+             (key (caar alist))
+             (indexp (consp key))
+             (fn$c (if indexp
+                       (car key)
+                     key))
+             (pairs (and (cdr (cdar alist)) ; not just one pair
+                         (reverse (cdar alist))))
+             (bad-vars (strip-cars (restrict-alist producer-vars pairs)))
+             (msg2 (and bad-vars
+                        (msg "The stobj-let bindings ~x0 ultimately access ~
+                              the same field ~x1 of concrete stobj ~x2~@3.  ~
+                              Since variable~#4~[ ~&4 is~/s ~&4 are~] to be ~
+                              updated (i.e., ~#4~[it is~/they are~] among the ~
+                              stobj-let form's producer variables), this ~
+                              aliasing is illegal."
+                             (alist-to-doublets pairs)
+                             fn$c
+                             (getpropc fn$c 'stobj-function nil wrld)
+                             (if indexp
+                                 " (with identical array indices)"
+                               "")
+                             bad-vars))))
+        (cond
+         ((null msg1) msg2)
+         ((null msg2) msg1)
+         (t (msg "~@0~|Also: ~@1" msg2 msg1)))))))
+
+(defun chk-stobj-let/accessors1 (bound-vars actuals producer-vars
+                                            tuples tuples-lst wrld alist)
+
+; Tuples is the :absstobj-tuples field of an absstobj-info record for an
+; abstract stobj st, actuals is the values in the bindings of a stobj-let form,
+; and tuples-lst is the list of :absstobj-tuples for the chain of foundational
+; stobjs starting with the foundational stobj for st.  We look for aliasing
+; caused by ultimately invoking the same concrete stobj export).  However we do
+; not handle aliasing caused by non-identiccal array indices; for that, see
+; no-duplicatesp-checks-for-stobj-let-actuals-1, which generates guard
+; obligations rather than causing an error like the present function (but more
+; precisely, the present function can return a msg, which is passed up the call
+; chain until causing an error in defabsstobj-fn1).
+
+; We assume that we are here because of a chk-stobj-let call that invoked
+; chk-stobj-let/accessors after a corresponding check already done with
+; chk-stobj-let/bindings (see comment on assert$ below).
+
+; Note that duplicated actuals are already checked in chk-stobj-let/bindings;
+; here we are checking that two (distinct) actuals do not represent the same
+; update for the same concrete stobj.  We could actually avoid that previous
+; check in the case of abstract stobjs because the check is done here, but we
+; need the other check anyhow for concrete stobjs.  The price seems small for
+; the duplicated effort here, so we aren't concerned about that.
+
+  (cond
+   ((endp bound-vars) ; equivalently, (endp actuals)
+    (chk-stobj-let/accessors2 alist producer-vars wrld))
+   (t (let* ((var (car bound-vars))
+             (actual (car actuals))
+             (fn (car actual))
+             (tuple (assoc-eq fn tuples))
+             (fn$c0 (caddr tuple))
+             (fn$c (concrete-accessor fn$c0 tuples-lst))
+             (index (and (= (length actual) 3)
+                         (cadr actual)))
+             (key (if index
+                      (cons fn$c index) ; array case
+                    fn$c))
+             (new (cons var actual))
+             (old (cdr (assoc-equal key alist))))
+        (chk-stobj-let/accessors1 (cdr bound-vars) (cdr actuals) producer-vars
+                                  tuples tuples-lst wrld
+                                  (put-assoc-equal key
+                                                   (cons new old)
+                                                   alist))))))
+
+(defun collect-some-triples-with-non-nil-cdddrs (keys alist)
+
+; Collect each triple from alist that has a non-nil cdddr and whose car belongs
+; to keys.
+
+  (cond ((endp alist) nil)
+        ((and (cdddr (car alist))
+              (member-eq (caar alist) keys))
+         (cons (car alist)
+               (collect-some-triples-with-non-nil-cdddrs keys (cdr alist))))
+        (t (collect-some-triples-with-non-nil-cdddrs keys (cdr alist)))))
+
+(defun chk-stobj-let/accessors (st bound-vars actuals producer-vars wrld)
+
+; This function adds checks on the given actuals of the bindings of a stobj-let
+; form for stobj st, beyond those in chk-stobj-let/bindings.  It returns a msgp
+; to print upon failure, else nil.  This function is only relevant for abstract
+; stobjs: it always returns nil if st is a concrete stobj.
+
+; We ensure, in the abstract stobj case, that two different accessors aren't
+; aliases for the same underlying concrete stobj accessor.  This notion of
+; "underlying" refers to following the chain of foundational stobjs until a
+; concrete stobj is reached.  (This is the notion of "ultimately underlies"
+; introduced in no-duplicatesp-checks-for-stobj-let-actuals-1.)
+
+; Note that this function checks (by way of chk-stobj-let/accessors1) for
+; aliasing in the form of explicit duplication of accessors (modulo the
+; corresponding underlying concrete stobj accessor) in the bindings of a
+; stobj-let form.  See no-duplicatesp-checks-for-stobj-let-actuals-1 for how we
+; deal with duplicate array indices by generating a runtime check that, in
+; turn, generates a suitable guard obligation.
+
+  (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+    (and abs-info ; st is an abstract stobj
+         (let* ((tuples (access absstobj-info abs-info :absstobj-tuples))
+                (st$c (access absstobj-info abs-info :st$c))
+                (tuples-lst (absstobj-tuples-lst st$c wrld)))
+           (chk-stobj-let/accessors1 bound-vars actuals producer-vars
+                                     tuples tuples-lst wrld nil)))))
+
+(defun chk-stobj-let (bound-vars actuals stobj producer-vars updaters
+                                 corresp-accessor-fns known-stobjs wrld)
 
 ; The inputs (other than wrld) have been returned by parse-stobj-let, so we
 ; know that some basic syntactic requirements have been met.  Others are to be
@@ -11375,10 +12218,6 @@
     (msg
      "The name ~x0 is being used as a single-threaded object.  But in the ~
       current context, ~x0 is not a declared stobj name."
-     stobj))
-   ((getpropc stobj 'absstobj-info nil wrld)
-    (msg
-     "The name ~x0 is the name of an abstract stobj."
      stobj))
    (t (let* ((first-actual (car actuals))
              (first-accessor (car first-actual))
@@ -11393,6 +12232,8 @@
            stobj acc-stobj first-accessor bound-vars actuals wrld))
          ((chk-stobj-let/updaters
            updaters corresp-accessor-fns acc-stobj wrld))
+         ((chk-stobj-let/accessors acc-stobj bound-vars actuals producer-vars
+                                   wrld))
          (t nil))))))
 
 (defun all-nils-or-x (x lst)
@@ -11404,19 +12245,61 @@
          (all-nils-or-x x (cdr lst)))
         (t nil)))
 
+(defun absstobj-field-fn-of-stobj-type-p (fn tuples)
+
+; Fn is an exported function for some abstract stobj st, and at the top level,,
+; exports is the list of exported functions for st (including fn) and tuples is
+; the cddr of the :absstobj-tuples field of the absstobj-info property of st.
+; Hence tuples is a list of elements (name logic exec . updater) corresponding
+; to the exported functions; see absstobj-info.  We return t when fn is a child
+; stobj accessor or updater, else nil.  We do this by cdring through tuples,
+; looking for the tuple corresponding to fn, which should be among the exports.
+; We return t if we find that fn is a stobj field accessor (as evidenced by
+; presence of a non-nil updater component of the corresponding tuple) or a
+; stobj field updater (as evidenced by finding fn as such an updater
+; component).
+
+  (cond
+   ((endp tuples)
+    (er hard 'absstobj-field-fn-of-stobj-type-p
+        "Implementation error: Failed to find ~x0 among the exports of an ~
+         (implicit) abstract stobj."
+        fn))
+   (t (let* ((tuple (car tuples))
+             (updater (cdddr tuple)))
+        (cond ((eq fn (car tuple))
+               (and updater t))
+              ((eq fn updater)
+               t)
+              (t (absstobj-field-fn-of-stobj-type-p fn (cdr tuples))))))))
+
 (defun stobj-field-fn-of-stobj-type-p (fn wrld)
 
-; Return true if for some concrete stobj st, fn is the accessor or updater for
-; a field fld of st of stobj type.  For fn the accessor or updater for fld,
-; this is equivalent to taking or returning that stobj type, respectively,
-; which is equivalent to taking or returning some stobj other than st.
-; Abstract stobjs are not a concern here; they don't have "fields".
+; Fn is a function symbol of wrld.  Return true if for some stobj st (concrete
+; or abstract), fn is the accessor or updater for a field fld of st of stobj
+; type.  For fn the accessor or updater for fld, this is equivalent to taking
+; or returning that stobj type, respectively, which is equivalent to taking or
+; returning some stobj other than st.  Note that all of this applies not only
+; to concrete stobjs, but also to abstract stobjs with child stobj fields
+; (whose accessors have the :UPDATER keyword in their function specs, and whose
+; updaters are the values of those :UPDATER keywords).
 
   (let ((st (getpropc fn 'stobj-function nil wrld)))
     (and st
-         (not (getpropc st 'absstobj-info nil wrld))
-         (or (not (all-nils-or-x st (stobjs-in fn wrld)))
-             (not (all-nils-or-x st (stobjs-out fn wrld)))))))
+         (let ((abs-info (getpropc st 'absstobj-info nil wrld)))
+           (cond
+            (abs-info ; st is an abstract stobj
+             (let ((stobj-prop (getpropc st 'stobj nil wrld)))
+               (and (not (eq fn (cadr stobj-prop)))  ; recognizer
+                    (not (eq fn (caddr stobj-prop))) ; creator
+                    (absstobj-field-fn-of-stobj-type-p
+                     fn
+; We take the cddr to remove the tuples for the recognizer and creator.
+                     (cddr (access absstobj-info abs-info
+                                   :absstobj-tuples))))))
+            (t ; st is a concrete stobj
+             (or (not (all-nils-or-x st (stobjs-in fn wrld)))
+                 (not (all-nils-or-x st (stobjs-out fn wrld))))))))))
 
 (defun stobj-recognizer-p (fn wrld)
 
@@ -11921,11 +12804,6 @@
          until$ until$+ when$ when$+
          loop$-as tails from-to-by))
 
-(defun assoc-equal-cadr (x alist)
-  (cond ((null alist) nil)
-        ((equal x (cadr (car alist))) (car alist))
-        (t (assoc-equal-cadr x (cdr alist)))))
-
 (defun loop$-operator-scionp (fn alist)
   (cond ((endp alist) nil)
         ((and (car (car alist)) ; operator?
@@ -12051,98 +12929,565 @@
     (car alist))
    (t (assoc-symbol-name-equal sym (cdr alist)))))
 
-(defun parse-loop$-accum (args ans)
+(defun parse-loop$-accum (stmt args ans)
 
+; We're parsing the loop$ statement stmt and have gotten down to args, a tail of
+; stmt that is supposed to be a loop$ operator, optional :guard, and body.
 ; We add two things to ans, the op and the (unfinished) carton for the op's
-; term.  BTW: All the intermediate parsing functions accumulate the components
-; in reverse onto ans and the top-level parse-loop$ will reverse them.
+; term.  We return two results, (mv msg ans'), where msg is nil if the parse
+; was successful and an error msg otherwise, and ans' is the accumulated
+; answer.  BTW: All the intermediate parsing functions accumulate the
+; components in reverse onto ans and the top-level parse-loop$ will reverse
+; them.
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; body, as in (loop$ for v in lst collect :guard).  See the warning in
+; remove-loop$-guards.
 
   (case-match args
     ((op ':GUARD gexpr expr)
-     (cond ((and (symbolp op)
-                 (not (null op))
-                 (assoc-symbol-name-equal op *loop$-keyword-info*))
-            (mv nil (cons
-                     (make-carton gexpr nil expr nil)
-                     (cons
-                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
-                      ans))))
-           (t (mv t args))))
+     (cond
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*))
+       (mv nil (cons
+                (make-carton gexpr nil expr nil)
+                (cons
+                 (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+                 ans))))
+      (t (mv (msg "Parsing stopped at position ~x0, where we read ~x1 but ~
+                   expected one of the loop$ operators ~*2."
+                  (- (length stmt) (length args))
+                  (nth 0 args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))
     ((op expr)
-     (cond ((and (symbolp op)
-                 (not (null op))
-                 (assoc-symbol-name-equal op *loop$-keyword-info*))
-            (mv nil (cons
-                     (make-carton T *T* expr nil)
-                     (cons
-                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
-                      ans))))
-           (t (mv t args))))
-    (& (mv t args))))
+     (cond
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*)
+            (not (eq expr :guard)))
+       (mv nil
+           (cons
+            (make-carton T *T* expr nil)
+            (cons
+             (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+             ans))))
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*)
+            (eq expr :guard))
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD but ~
+                 expected it to be followed by a guard test and loop$ body. ~
+                 If you really want :GUARD to be the loop$ body write ':GUARD ~
+                 instead."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+      (t (mv (msg "Parsing stopped at position ~x0, where we read ~x1 but ~
+                   expected to see one of the loop$ operators ~*2."
+                  (- (length stmt) (length args))
+                  (nth 0 args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))
+    (& (cond
+        ((and (symbolp (car args))
+              (not (null (car args)))
+              (assoc-symbol-name-equal (car args) *loop$-keyword-info*))
+         (cond
+          ((and (eq (cadr args) :guard)
+                (null (cddr args)))
+           (mv (msg "Parsing stopped at position ~x0, where we read :GUARD ~
+                     but expected a loop$ body expression.  If you want the ~
+                     body to be :GUARD, use ':GUARD instead. The bare keyword ~
+                     :GUARD here must be followed by a guard test and a loop$ ~
+                     body expression."
+                    (+ 1 (- (length stmt) (length args))))
+               args))
+          (t (mv (msg "Parsing stopped just after position ~x0, where we read ~
+                       ~x1 while expecting it to be followed by either a ~
+                       single loop$ body expression or the keyword :GUARD ~
+                       followed by a guard test and a loop$ body expression.  ~
+                       But your loop$ has ``... ~*2)''."
+                      (- (length stmt) (length args))
+                      (car args)
+                      (list "" "~x*" "~x* " "~x* " args))
+                 args))))
+        ((car ans)
+; This means we've seen a WHEN, so all that's left is a loop$ operator.
+         (mv (msg "Parsing stopped at position ~x0, where we ~#1~[ran off the ~
+                   end of the loop$ statement~/read ~x2 but expected one of ~
+                   the loop$ operators ~*3~]."
+                  (- (length stmt) (length args))
+                  (if (null args) 0 1)
+                  (car args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))
+        (t
+; This means we saw no WHEN, which may mean the culprit was meant to be part of
+; a when clause.
+         (mv (msg "Parsing stopped at position ~x0, where we ~#1~[ran off the ~
+                   end of the loop$ statement~/read ~x2 but expected WHEN or ~
+                   one of the loop$ operators ~*3~]."
+                  (- (length stmt) (length args))
+                  (if (null args) 0 1)
+                  (car args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))))
 
-(defun parse-loop$-when (args ans)
+(defun possible-typop (lst1 lst2)
+
+; Both arguments are lists of characters spelling out two symbol names.  We
+; think of the first symbol as something the user wrote and the second as what
+; he or she might have meant.  The question is whether the user made a simple
+; typo.  We check that the two lists contain the same chars in the same order
+; with just three exceptions: lst1 has exactly one extra char, lst1 is missing
+; exactly one char, or two adjacent chars have been swapped.
+
+  (cond
+   ((endp lst1)
+    (or (endp lst2)
+        (endp (cdr lst2))))
+   ((endp lst2)
+    (endp (cdr lst1)))
+   ((eql (car lst1) (car lst2))
+    (possible-typop (cdr lst1) (cdr lst2)))
+   (t (or (equal (cdr lst1) lst2)           ; this is an extra char in lst1
+          (equal lst1 (cdr lst2))           ; this is a missing char in lst1
+          (equal (cdr lst1) (cdr lst2))     ; lst1 used a different char here
+          (and (eql (car lst1) (cadr lst2)) ; swapped adjacent chars
+               (eql (cadr lst1) (car lst2))
+               (equal (cddr lst1) (cddr lst2)))))))
+
+(defun maybe-meant-but-didnt-write (written intended)
+
+; In a situation in which the second argument is a suitable input the user
+; wrote the first argument instead.  We determine whether this is likely just a
+; typo caused by different symbol packages or one trivial typing mistake:
+; adding or deleting a character or swapping two adjacent characters.
+
+  (and (symbolp written)
+       (symbolp intended)
+       (not (eq written intended))
+       (or (equal (symbol-name written)
+                  (symbol-name intended))
+           (possible-typop (coerce (symbol-name written) 'list)
+                           (coerce (symbol-name intended) 'list)))))
+
+(defun parse-loop$-when (stmt args ans)
 
 ; We add one entry to ans for the WHEN clause.  If there is a when clause, we
 ; add an unfinished carton.  If there's no WHEN clause we add nil.  One might
 ; think we could represent the absence of a WHEN clause with WHEN T but we need
 ; to know if a WHEN clause was present since it's illegal in CLTL to have a
 ; WHEN with an ALWAYS and we don't want to translate a loop$ that generates an
-; illegal CLTL loop in raw Lisp.
+; illegal CLTL loop in raw Lisp.  As explained in parse-loop$-accum, we return
+; (mv msg ans').
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
+; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
     (((quote~ WHEN) ':GUARD gtest test . rest)
-     (parse-loop$-accum rest (cons (make-carton gtest nil test nil) ans)))
+     (parse-loop$-accum stmt rest
+                        (cons (make-carton gtest nil test nil) ans)))
     (((quote~ WHEN) test . rest)
-     (parse-loop$-accum rest (cons (make-carton T *T* test nil) ans)))
-    (& (parse-loop$-accum args (cons nil ans)))))
+     (cond
+      ((eq test :guard)
 
-(defun parse-loop$-until (args ans)
+; This test is meant to catch the case where the user specifies an un-guarded
+; WHEN test of :guard.  To do so requires writing something like (loop$ for v
+; in lst when :guard collect v).  Except that doesn't work because that is
+; parsed with a guarded when with test v (guarded by collect).  The only time
+; this test can succeed is if the user wrote something like (loop$ for v in lst
+; when :guard) or (loop$ for v in lst when :guard body) because if he or she
+; writes two or more things after ``when :guard'' it is parsed by the first
+; case above.  Note that both inputs that make this test true are ill-formed
+; anyway.  But our points in having this test here are to (a) make clear we
+; don't allow naked ... when :guard ... and (b) give what we think is a better
+; error message than just running off the end of the accumulator clause.
+
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD as the ~
+                 WHEN test.  We prohibit this. If you really want to use ~
+                 :GUARD as the WHEN test then write ':GUARD instead, but we ~
+                 see no reason to use this idiom at all!  In addition, this ~
+                 loop$ statement ends without specifying an accumulator loop$ ~
+                 body."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+
+      (t (mv-let (msg ans1)
+           (parse-loop$-accum stmt rest (cons (make-carton T *T* test nil) ans))
+           (cond
+            (msg
+             (cond
+              ((eq (cadr args) :GUARD)
+               (mv (msg "Parsing stopped at position ~x0, where we read ~
+                         :GUARD but expected it to be followed by an ~
+                         expression but the statement ends prematurely.  No ~
+                         WHEN test, loop$ accumulator, or loop$ body is ~
+                         provided!"
+                        (+ 1 (- (length stmt) (length args))))
+                   ans1))
+              ((maybe-meant-but-didnt-write test :GUARD)
+               (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                         with the purported loop$ statement.  You wrote ``... ~
+                         WHEN ~x1 ...'' and perhaps you meant ``... WHEN ~
+                         :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                         being parsed as the (unguarded) WHEN term."
+                        msg
+                        (cadr args))
+                   ans1))
+              (t (mv msg ans1))))
+            (t (mv msg ans1)))))))
+    (& (mv-let (msg ans1)
+         (parse-loop$-accum stmt args (cons nil ans))
+         (cond
+          (msg
+           (cond
+            ((and (eq (car args) 'when)
+                  (maybe-meant-but-didnt-write (cadr args) :GUARD))
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       WHEN ~x1 ...'' and perhaps you meant ``... WHEN :GUARD ~
+                       ...''.  Given what you actually wrote, ~x1 is being ~
+                       parsed as the (unguarded) WHEN term."
+                      msg
+                      (cadr args))
+                 ans1))
+            ((maybe-meant-but-didnt-write (car args) 'when)
+             (mv (msg "~@0~%~%This error might be due to an earlier ~
+                          problem with the purported loop$ statement.  You ~
+                          wrote ``...  ~x1 ...'' and perhaps you meant ``... ~
+                          WHEN ...''."
+                      msg
+                      (car args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
+
+(defun parse-loop$-until (stmt args ans)
 
 ; We add one entry to ans for the UNTIL clause, an unfinished carton or nil.
+; As explained in parse-loop$-accum, we return (mv msg ans').
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
+; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
     (((quote~ UNTIL) ':GUARD gtest test . rest)
-     (parse-loop$-when rest (cons (make-carton gtest nil test nil) ans)))
+     (parse-loop$-when stmt rest (cons (make-carton gtest nil test nil) ans)))
     (((quote~ UNTIL) test . rest)
-     (parse-loop$-when rest (cons (make-carton T *T* test nil) ans)))
-    (& (parse-loop$-when args (cons nil ans)))))
+     (cond
+      ((eq test :guard)
 
-(defun parse-loop$-vsts (args vsts ans)
+; This test is meant to catch the case where the user specifies an un-guarded
+; UNTIL test of :guard.  To do so requires writing something like (loop$ for v
+; in lst until :guard collect v).  Except that doesn't work because that is
+; parsed with a guarded until with test v (guarded by collect).  The only time
+; this test can succeed is if the user wrote something like (loop$ for v in lst
+; until :guard) or (loop$ for v in lst until :guard body) because if he or she
+; writes two or more things after ``until :guard'' it is parsed by the first case
+; above.  Note that both inputs that make this test true are ill-formed anyway.
+; But our points in having this test here are to (a) make clear we don't allow
+; naked ... until :guard ... and (b) give what we think is a better error
+; message than just running off the end of the accumulator clause.
 
-; Vsts stands for ``vars, specs, and targets'' and here we're looking for
-; multiple occurrences of the variations on ``v OF-TYPE spec IN/ON/FROM ...''
-; separated by ``AS''.  Each occurrence generates a ``vst tuple,'' e.g., (v
-; spec (IN lst)) and we collect them all in reverse order into vsts.  When we
-; have processed them all, we add the reverse of vsts to ans and start parsing
-; for an UNTIL clause.  If we find no vsts, we indicate parse error.  The
-; following case-match could be compacted but we prefer the explicit exhibition
-; of the allowed patterns.
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD as the ~
+                 UNTIL test.  We prohibit this. If you really want to use ~
+                 :GUARD as the UNTIL test then write ':GUARD instead, but we ~
+                 see no reason to use this idiom at all!  In addition, this ~
+                 loop$ statement ends without specifying an accumulator loop$ ~
+                 body."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+      (t
+       (mv-let (msg ans1)
+         (parse-loop$-when stmt rest (cons (make-carton T *T* test nil) ans))
+         (cond
+          (msg
+           (cond
+            ((eq (cadr args) :GUARD)
+             (mv (msg "Parsing stopped at position ~x0, where we read :GUARD ~
+                       but expected it to be followed by an expression but ~
+                       the statement ends prematurely.  No UNTIL test, loop$ ~
+                       accumulator, or loop$ body is provided!"
+                      (+ 1 (- (length stmt) (length args))))
+                 ans1))
+            ((maybe-meant-but-didnt-write test :GUARD)
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       UNTIL ~x1 ...'' and perhaps you meant ``... UNTIL ~
+                       :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                       being parsed as the (unguarded) UNTIL term."
+                      msg
+                      (cadr args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
+    (& (mv-let (msg ans1)
+         (parse-loop$-when stmt args (cons nil ans))
+         (cond
+          (msg
+           (cond
+            ((and (eq (car args) 'until)
+                  (maybe-meant-but-didnt-write (cadr args) :GUARD))
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       UNTIL ~x1 ...'' and perhaps you meant ``... UNTIL ~
+                       :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                       being parsed as the (unguarded) UNTIL term."
+                      msg
+                      (cadr args))
+                 ans1))
+            ((maybe-meant-but-didnt-write (car args) 'until)
+             (mv (msg "~@0~%~%This error might be due to an earlier ~
+                          problem with the purported loop$ statement.  You ~
+                          wrote ``...  ~x1 ...'' and perhaps you meant ``... ~
+                          UNTIL ...''."
+                      msg
+                      (car args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
 
-  (mv-let (args vsts)
+(defun parse-loop$-vsts-diagnose-failure (flg1 args args1)
+
+; We know that args was supposed to be a ``properly terminated iteration
+; variable phrase'' but failed to be.  Flg1 is t if we successfully parsed args
+; as an iteration variable phrase.  Args1, which is relevant only if flg1 is t,
+; is the rest of the alleged loop$ statement after the parse and so contains as
+; its first element the token that terminated the parse.  Return (mv
+; failure-type tail expected-msg), where failure-type is
+
+; 0 -- args is too short to parse as a phrase
+; 1 -- args parsed but the loop$ statement ended before we got to the
+;      terminator token (AS, UNTIL, WHEN, or a loop$ operator)
+; 2 -- args parsed but is terminated by something other than AS, UNTIL,
+;      WHEN, or a loop$ operator,
+; 3 -- we encountered a mismatch during the parse, e.g., saw FORM instead
+;      of FROM (but not all reports are such misspellings).
+
+; Tail is nil (when we ran out tokens) or a non-empty tail of args (and thus, a
+; non-empty tail of the original loop$ statement we're trying to parse) where
+; the parse started going wrong.  Expected-message is a msg that describes what
+; we expected to see when we encountered culprit.
+
+  (cond
+   ((endp args1)
+
+; Our caller treats cases 0 and 1 identically: we ran out of tokens before
+; completing the parse.  We differentiate them here just to remind ourselves of
+; flg1.  Given that args1 is empty, flg1 = t means we parsed a complete
+; iteration variable phrase but ran out of tokens on the termination check; and
+; flg1 = nil means we ran out of tokens while parsing the phrase itself.
+
+    (mv (if flg1 1 0) nil nil))
+
+   (t
+    (let ((unusual-var-msg
+           (if (or (member-symbol-name (symbol-name (car args))
+                                       '(in on from to by as until when guard))
+                   (and (car args)
+                        (assoc-symbol-name-equal (car args) *loop$-keyword-info*)))
+               (msg ". The unusual variable name, ~x0, which is a reserved word ~
+                     in loop$ syntax, might indicate that you forgot to ~
+                     specify the iteration variable"
+                    (car args))
+               (msg ""))))
+      (cond
+       (flg1
+
+; We parsed a phrase but failed the termination check because we saw (car
+; args1) when we expected AS, UNTIL, WHEN, or a loop$ operator.
+
+; However, there is one special case: If the user typed (loop$ for i from 1 to
+; 10 bye 3 ...) flg1 is set and the iteration variable phrase was terminated by
+; BYE.  While the user might have meant something like (loop$ for i from 1 to
+; 10 collect 3) another possibility is that BYE should have been BY and the
+; iteration variable phrase wasn't actually terminated!  We check this here.
+; Note that if args is (& OF-TYPE & FROM ...) or (& FROM ...) then we're in this
+; case because flg1 is t so that part of the input parsed.
+
+        (mv 2
+            args1
+            (cond
+             ((case-match args
+                ((& (quote~ OF-TYPE) & (quote~ FROM) & (quote~ TO) & (quote~ BY)) t)
+                ((& (quote~ FROM) & (quote~ TO) & (quote~ BY)) t)
+                (& nil))
+              (msg "to read an expression after it, but the statement ends ~
+                    prematurely~@0"
+                   unusual-var-msg))
+             ((and (maybe-meant-but-didnt-write (car args1) 'BY)
+                   (case-match args
+                     ((& (quote~ OF-TYPE) & (quote~ FROM) . &) t)
+                     ((& (quote~ FROM) . &) t)
+                     (& nil)))
+              (msg "BY, AS, UNTIL, WHEN, or one of the loop$ operators ~*0~@1"
+                   (list "" "~x*" "~x* or " "~x*, "
+                         (collect-non-x nil (strip-cars *loop$-keyword-info*)))
+                   unusual-var-msg))
+             (t
+              (msg "AS, UNTIL, WHEN, or one of the loop$ operators ~*0~@1"
+                   (list "" "~x*" "~x* or " "~x*, "
+                         (collect-non-x nil (strip-cars *loop$-keyword-info*)))
+                   unusual-var-msg)))))
+       (t
+
+; We failed to parse the phrase.  Args1 is the same as args (and non-nil, so
+; there is at least an iteration variable) and we now have to discover where we
+; failed!  We start by looking at the token right after the variable, i.e., at
+; (nth 1 args), which should be an OF-TYPE, IN, OR, or FROM.  And then we just
+; keep working through the cases.  But at least we know there are enough tokens
+; to just look at each expected token with nth.
+
+        (cond
+         ((not
+           (or (symbol-name-equal (nth 1 args) "OF-TYPE")
+               (symbol-name-equal (nth 1 args) "IN")
+               (symbol-name-equal (nth 1 args) "ON")
+               (symbol-name-equal (nth 1 args) "FROM")))
+          (mv 3
+              (nthcdr 1 args)
+              (cond
+               ((maybe-meant-but-didnt-write (nth 1 args) 'OF-TYPE)
+                (msg "OF-TYPE, IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((and (maybe-meant-but-didnt-write (nth 1 args) 'IN)
+                     (maybe-meant-but-didnt-write (nth 1 args) 'ON))
+                (msg "IN, ON, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'IN)
+                (msg "IN, ON, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'ON)
+                (msg "ON, IN, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'FROM)
+                (msg "FROM, IN, ON, or OF-TYPE~@0"
+                     unusual-var-msg))
+               (t (msg "OF-TYPE, IN, ON, or FROM~@0"
+                       unusual-var-msg)))))
+; Note:  If we get so far as confirming the presence of IN or ON or BY then the
+; only way the parse could have failed is that we ran out of tokens, which we've
+; already handled.  So we don't need to think about those three cases.
+         ((symbol-name-equal (nth 1 args) "FROM")
+
+; We could check (nth 3 args) and possibly (nth 5 args), looking for TO and possibly
+; BY.  But we know that TO is missing!  Why?  If TO is present then we would have
+; succeeded in parsing FROM/TO (since we didn't run out of tokens).
+
+          (mv 3
+              (nthcdr 3 args)
+              (msg "TO~@0"
+                   unusual-var-msg)))
+         ((and (symbol-name-equal (nth 1 args) "OF-TYPE")
+               (not
+                (or (symbol-name-equal (nth 3 args) "IN")
+                    (symbol-name-equal (nth 3 args) "ON")
+                    (symbol-name-equal (nth 3 args) "FROM"))))
+          (mv 3
+              (nthcdr 3 args)
+              (cond
+               ((and (maybe-meant-but-didnt-write (nth 3 args) 'IN)
+                     (maybe-meant-but-didnt-write (nth 3 args) 'ON))
+                (msg "IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'IN)
+                (msg "IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'ON)
+                (msg "ON, IN, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'FROM)
+                (msg "FROM, IN, or ON~@0"
+                     unusual-var-msg))
+               (t (msg "IN, ON, or FROM~@0"
+                       unusual-var-msg)))))
+         ((symbol-name-equal (nth 1 args) "FROM")
+          (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
+         (t (mv 3
+                (nthcdr 1 args)
+                (msg "OF-TYPE, IN, OR, or FROM~0@"
+                     unusual-var-msg))))))))))
+
+(defun parse-loop$-vsts (stmt args vsts ans)
+
+; Stmt is a loop$ statement and args is some tail of it.  We try to parse a
+; sequence of vsts.  Vsts stands for ``vars, specs, and targets'' and here
+; we're looking for multiple occurrences of the variations on ``v OF-TYPE spec
+; IN/ON/FROM ...''  separated by ``AS''.  Each occurrence generates a ``vst
+; tuple,'' e.g., (v spec (IN lst)) and we collect them all in reverse order
+; into vsts.  When we have processed them all, we add the reverse of vsts to
+; ans and start parsing for an UNTIL clause.  If we find no vsts, we indicate
+; parse error.  The following case-match could be compacted but we prefer the
+; explicit exhibition of the allowed patterns.
+
+; Flg1 indicates whether we found a syntactically acceptable iteration var
+; clause.  But we can still fail here unless the next symbol is either AS,
+; UNTIL, WHEN, or a loop$ accumulator.  For example, if the user typed (loop$
+; for v from 1 to 10 bye 3 collect i) we succeed and treat the iteration var
+; clause as ``v from 1 to 10''.  But then the accumulator parse fails because
+; it sees BYE.  We want to blame that failure on the iteration var clause, not
+; any of the subsequent clauses.
+
+  (mv-let (flg1 args1 vsts1)
     (case-match args
       ((v (quote~ OF-TYPE) spec (quote~ IN) lst . rest)
-       (mv rest (cons `(,v ,spec (IN ,lst)) vsts)))
+       (mv t rest (cons `(,v ,spec (IN ,lst)) vsts)))
       ((v (quote~ OF-TYPE) spec (quote~ ON) lst . rest)
-       (mv rest (cons `(,v ,spec (ON ,lst)) vsts)))
-      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
-       (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j ,k)) vsts)))
+       (mv t rest (cons `(,v ,spec (ON ,lst)) vsts)))
+      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j (quote~ BY) k
+          . rest)
+       (mv t rest (cons `(,v ,spec (FROM-TO-BY ,i ,j ,k)) vsts)))
       ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j . rest)
-       (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j 1)) vsts)))
+       (mv t rest (cons `(,v ,spec (FROM-TO-BY ,i ,j 1)) vsts)))
       ((v (quote~ IN) lst . rest)
-       (mv rest (cons `(,v T (IN ,lst)) vsts)))
+       (mv t rest (cons `(,v T (IN ,lst)) vsts)))
       ((v (quote~ ON) lst . rest)
-       (mv rest (cons `(,v T (ON ,lst)) vsts)))
+       (mv t rest (cons `(,v T (ON ,lst)) vsts)))
       ((v (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
-       (mv rest (cons `(,v T (FROM-TO-BY ,i ,j ,k)) vsts)))
+       (mv t rest (cons `(,v T (FROM-TO-BY ,i ,j ,k)) vsts)))
       ((v (quote~ FROM) i (quote~ TO) j . rest)
-       (mv rest (cons `(,v T (FROM-TO-BY ,i ,j 1)) vsts)))
-      (& (mv args vsts)))
+       (mv t rest (cons `(,v T (FROM-TO-BY ,i ,j 1)) vsts)))
+      (& (mv nil args vsts)))
     (cond
-     ((null vsts) (mv t args))
-     ((and (consp args)
-           (symbol-name-equal (car args) "AS"))
-      (parse-loop$-vsts (cdr args) vsts ans))
-     (t (parse-loop$-until args (cons (revappend vsts nil) ans))))))
+     ((and flg1
+           (consp args1)
+           (car args1)
+           (symbolp (car args1))
+           (or (symbol-name-equal (car args1) "AS")
+               (symbol-name-equal (car args1) "UNTIL")
+               (symbol-name-equal (car args1) "WHEN")
+               (assoc-symbol-name-equal (car args1) *loop$-keyword-info*)))
+      (cond
+       ((and (consp args1)
+             (symbol-name-equal (car args1) "AS"))
+        (parse-loop$-vsts stmt (cdr args1) vsts1 ans))
+       (t (parse-loop$-until stmt args1 (cons (revappend vsts1 nil) ans)))))
+     (t (mv-let (failure-type tail expected-msg)
+          (parse-loop$-vsts-diagnose-failure flg1 args args1)
+          (cond ((or (eql failure-type 0)
+                     (eql failure-type 1))
+                 (mv (msg "Parsing stopped at position ~x0, where the loop$ ~
+                           statement ends prematurely.  No loop$ accumulator ~
+                           or body was provided."
+                          (length stmt))
+                     args))
+                (t (mv (msg "Parsing stopped at position ~x0, where we read ~
+                             ~x1 but expected ~@2."
+                            (- (length stmt) (length tail))
+                            (car tail)
+                            expected-msg)
+                       args))))))))
 
 (defun parse-loop$ (stmt)
 
@@ -12174,24 +13519,16 @@
               (eq (car stmt) 'LOOP$)
               (consp (cdr stmt))
               (symbol-name-equal (cadr stmt) "FOR"))
-         (mv-let (flg ans)
-           (parse-loop$-vsts (cddr stmt) nil nil)
-; When flg is T, ans is the unparsed part of the stmt.  Otherwise, ans is the reversed
-; parse and we reverse it before returning.
+         (mv-let (msg ans)
+           (parse-loop$-vsts stmt (cddr stmt) nil nil)
+; When msg is non-nil, it is an error message and ans is irrelevant.
+; Otherwise, ans is the reversed parse and we reverse it before returning.
            (cond
-            (flg (mv t
+            (msg (mv t
                      (msg
                       "Illegal LOOP$ Syntax.  The form ~X01 cannot be parsed ~
-                       as a LOOP$ statement.  The parsing failed when we ~
-                       reached ~#2~[the end of the~/the ~n3 element ~
-                       (zero-based), ~x4, ~] of the purported LOOP$ statement."
-                      stmt
-                      nil
-                      (if (null ans) 0 1)
-                      (if (null ans)
-                          0
-                          (list (- (length stmt) (length ans))))
-                      (if (null ans) 0 (car ans)))))
+                       as a LOOP$ statement.  ~@2"
+                      stmt nil msg)))
             (t (mv nil (revappend ans nil))))))
         (t (mv t
                (msg
@@ -12283,20 +13620,24 @@
       `(lambda$
         (loop$-ivar)
         (let ((,v loop$-ivar))
+          (declare (ignorable ,v))
           ,(excart :untranslated :body carton))))
      (t `(lambda$
           (loop$-ivar)
           (declare
            (xargs
             :guard (let ((,v loop$-ivar))
+                     (declare (ignorable ,v))
                      ,(excart :untranslated :guard carton))))
           (let ((,v loop$-ivar))
+            (declare (ignorable ,v))
             ,(excart :untranslated :body carton))))))
    ((equal (excart :translated :guard carton) *t*)
     `(lambda$
       (loop$-ivar)
       (declare (type ,spec loop$-ivar))
       (let ((,v loop$-ivar))
+        (declare (ignorable ,v))
         ,(excart :untranslated :body carton))))
    (t `(lambda$
         (loop$-ivar)
@@ -12305,6 +13646,7 @@
                   :guard (let ((,v loop$-ivar))
                            ,(excart :untranslated :guard carton))))
         (let ((,v loop$-ivar))
+          (declare (ignorable ,v))
           ,(excart :untranslated :body carton))))))
 
 ; Now we build up to making a fancy loop$ lambda object...
@@ -12616,6 +13958,57 @@
 ; loop$ ops in *loop$-keyword-info*.  This function removes the :guard xxx
 ; entries.
 
+; Warning: It is critical that translate prohibit such forms as
+
+; (loop$ for v in lst UNTIL :guard collect v)
+; (loop$ for v in lst WHEN :guard collect v)
+; (loop$ for v in lst COLLECT :guard)
+
+; even though the corresponding CLTL loop statements are legal.  The reason we
+; must prohibit these is so that this function can easily strip out ... :guard
+; expr ... without changing the semantics of the CLTL loop.  If (loop$ for v in
+; lst COLLECT :guard) were allowed, then the raw Lisp loop$ macro would
+; transform it to (loop$ for v in lst COLLECT nil), which is incorrect.  For
+; what it's worth, the user wishing to write these prohibited loop$ statements
+; could merely use ':guard instead of :guard.
+
+; Note: This function is deceptively subtle because it doesn't re-parse args
+; (which is the tail of a successfully parsed loop$ statement).  It just finds
+; the left-most UNTIL, WHEN, and op followed by :GUARD and delete the :GUARD
+; and the next element!  But of course the user is free to choose arbitrary
+; legal variable names and those arbitrary symbols can appear where expressions
+; are expected.  E.g., this is a legal loop$
+
+; (loop$ for until in until until until collect until).
+
+; So can the user maliciously create an ``... until :guard x ...'' in a
+; well-formed loop$ without that subsequence actually being a guarded until
+; clause?  If so, this function would remove :guard and x, probably rendering
+; the statement ill-formed.
+
+; We think the answer is no.  Every freely chosen variable or expression MUST
+; be followed by a loop$ reserved word, e.g., ``for v IN lst AS ...''.  So no
+; maliciously inserted expression, UNTIL, can be followed by :GUARD,
+; ... except...  in our optional provision for :guards where two freely chosen
+; expressions in a row may occur, e.g., ... until :guard <expr1> <expr2> ...,
+; as in
+
+; (loop$ for v in lst until :guard UNTIL :GUARD collect v)  [1]
+
+; Here the UNTIL is the guard and :GUARD is the until-test.  This strange but
+; legal form is transformed by this function into
+
+; (loop$ for v in lst until :guard collect v)               [2]
+
+; But [2] is properly transformed because we just deleted the guard and left
+; the test.  So it's crucial (but almost natural) that this function sweep from
+; left-to-right.  If it found the ``UNTIL :GUARD collect'' first and removed
+; the ``:GUARD collect'' we'd be screwed:
+
+; (loop$ for v in lst until :guard UNTIL v)                [3]
+
+; [3] is ill-formed CLTL.
+
   (cond ((endp args) nil)
         ((and (symbolp (car args))
               (or (symbol-name-equal (car args) "UNTIL")
@@ -12726,13 +14119,23 @@
                             nil))
                   bindings)))))
 
-(defun weak-apply$-badge-alistp (x)
+(defun weak-badge-userfn-structure-alistp (x)
+
+; This function checks that x is a true-list of elements (weakly) of the form
+; made by make-badge-userfn-structure-tuple and that the warrantp and badge
+; slots are occupied by a boolean and a (weakly formed) apply$-badge.  This
+; function must be in :logic mode and guard verified for use in
+; remove-guard-holders.  We do the verify-termination in
+; books/system/remove-guard-holders.lisp.
+
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
-        (t (and (consp (car x))
-;               (symbolp (caar x)) ; should be true, but not needed
-                (weak-apply$-badge-p (cdar x))
-                (weak-apply$-badge-alistp (cdr x))))))
+        (t (and (weak-badge-userfn-structure-tuplep (car x))
+                (symbolp (car (car x)))
+                (booleanp (access-badge-userfn-structure-tuple-warrantp (car x)))
+                (weak-apply$-badge-p
+                 (access-badge-userfn-structure-tuple-badge (car x)))
+                (weak-badge-userfn-structure-alistp (cdr x))))))
 
 (defun ilks-plist-worldp (wrld)
   (declare (xargs :guard t))
@@ -12740,7 +14143,7 @@
        (let ((tbl (fgetprop 'badge-table 'table-alist
                             nil wrld)))
          (and (alistp tbl)
-              (weak-apply$-badge-alistp
+              (weak-badge-userfn-structure-alistp
                (cdr (assoc-equal :badge-userfn-structure
                                  tbl)))))))
 
@@ -12753,11 +14156,16 @@
 ; for purposes of translation.  See the Explanation of a Messy Restriction on
 ; :FN Slots in translate11.
 
-; The get-badge function doesn't record badges for APPLY$ and EV$ because
-; they're built into BADGE.  So we have to supply them below.  All other
-; symbols with no badges are assigned nil as the list of ilks, which is treated
-; as a list of n nils, meaning for current purposes that translate allows
-; anything but lambda$.
+; FYI: Fn here can be any function symbol, e.g., an unbadged :program mode
+; function, because input to the ACL2 read-eval-print loop calls translate on
+; every expression typed.  Furthermore, get-badge returns nil on unbadged
+; functions of any mode as well as on apply$ primitives and even on apply$ boot
+; functions like apply$ which have non-trivial badges.  It just handles apply$
+; ``userfns.''  But ilks-per-argument-slot must handle all function symbols.
+
+; All symbols on which get-badge returns nil are here assigned nil as
+; the list of ilks, which is treated as a list of n nils, meaning for current
+; purposes that translate allows anything but lambda$.
 
 ; A consequence of this default is that translate cannot detect the difference
 ; between a lambda$, say, encountered in an ordinary slot versus one
@@ -14386,18 +15794,8 @@
                                             type-exprs
                                             guard-conjuncts)
                                          nil))
-                   (bad-fns (collect-programs (all-fnnames tguard) wrld))
                    (free-vars-guard (set-difference-eq (all-vars tguard) vars)))
               (cond
-               (bad-fns
-                (trans-er+? cform x
-                            ctx
-                            "The guard of a LAMBDA object or lambda$ term ~
-                             must be in :logic mode but ~x0 calls the ~
-                             :program mode function~#1~[~/s~] ~&1.  ~@2"
-                            (untranslate tguard t wrld)
-                            bad-fns
-                            *gratuitous-lambda-object-restriction-msg*))
                ((and free-vars-guard (not allow-free-varsp))
                 (trans-er+? cform x
                             ctx
@@ -14476,8 +15874,7 @@
 
                                     nil ; flet-alist
                                     cform ctx wrld state-vars))))
-                 (let* ((bad-fns (collect-programs (all-fnnames tbody) wrld))
-                        (body-vars (all-vars tbody))
+                 (let* ((body-vars (all-vars tbody))
                         (free-vars-body (set-difference-eq body-vars vars))
                         (used-ignores
                          (and lambda-casep
@@ -14490,16 +15887,6 @@
                                 ignores)
                                ignorables))))
                    (cond
-                    (bad-fns
-                     (trans-er+? cform x
-                                 ctx
-                                 "The body of a LAMBDA object, lambda$ term, ~
-                                  or loop$ statement must be in :logic mode ~
-                                  but ~x0 calls the :program mode ~
-                                  function~#1~[~/s~] ~&1.  ~@2"
-                                 (untranslate tbody t wrld)
-                                 bad-fns
-                                 *gratuitous-lambda-object-restriction-msg*))
                     ((and free-vars-body (not allow-free-varsp))
                      (trans-er+? cform x
                                  ctx
@@ -15068,14 +16455,14 @@
 ; Explanation of a Messy Restriction on :FN Slots
 
 ; If we are in a :FN slot and see a quoted object, then we insist the object be
-; a tame symbol or a LAMBDA.  If it's a LAMBDA we know it's well-formed by the
+; a badged symbol or a LAMBDA.  If it's a LAMBDA we know it's well-formed by the
 ; use of translate11-lambda-object in the binding of transx above.  So we focus
 ; here on all manner of quoted objects except conses starting with LAMBDA and
-; we cause an error unless it's a tame symbol.  However, there are three
+; we cause an error unless it's a badged symbol.  However, there are three
 ; exceptions.
 
-; (1) We allow a non-tame symbol into the :FN slot of APPLY$ because the
-; warrants for mapping functions call APPLY$ on quoted non-tame symbols, e.g.,
+; (1) We allow an unbadged symbol into the :FN slot of APPLY$ because the
+; warrants for mapping functions call APPLY$ on quoted non-badged symbols, e.g.,
 ; (APPLY$ 'COLLECT$ ...) = (COLLECT$ ...).  Recall that the ``ilk'' for the
 ; first arg of APPLY$ is :FN? as per ilks-per-argument-slot.
 
@@ -15086,11 +16473,12 @@
 ; (3) Anything goes during boot-strapping, for obvious reasons.
 
 ; The following test recognizes the error cases.  Read this as follows: we're
-; looking a fn slot containing a quoted object that didn't come from a defconst
-; and that is not during boot-strapping.  The quoted object is not a LAMBDA
-; (because we know any lambda here is well-formed).  So then consider the cases
-; on ilk.  If it's :FN we insist the quoted object is a tame symbol and if it's
-; :FN? (which means we're in an apply$) it must be a symbol.
+; looking at fn slot containing a quoted object that didn't come from a
+; defconst and that arose after boot-strapping.  The quoted object is not a
+; LAMBDA (because we know any lambda here is well-formed).  So then consider
+; the cases on ilk.  If it's :FN we insist the quoted object is a badged symbol
+; and if it's :FN?, which means we're in an APPLY$ call, it must at least be a
+; symbol.
 
              ((and (or (eq ilk :FN)
                        (eq ilk :FN?))
@@ -15102,20 +16490,23 @@
                    (cond
                     ((eq ilk :FN)
                      (not (and (symbolp (unquote transx))
-                               (executable-tamep-functionp (unquote transx)
-                                                           wrld))))
+                               (executable-badge (unquote transx) wrld))))
                     (t ; ilk is :FN? so we're in apply$
                      (not (symbolp (unquote transx))))))
               (trans-er+?
                cform x
                ctx
                "The quoted object ~x0 occurs in a :FN slot of a function call ~
-                but ~x0 is not a tame function symbol or lambda constant (or, ~
-                in the case of calls of APPLY$, even a symbol).  We see no ~
-                reason to allow this!  To insist on having such a call, ~
-                defconst some symbol and use that symbol constant here ~
-                instead."
-               (unquote transx)))
+                but ~x0 ~@1  We see no reason to allow this!  To insist on ~
+                having such a call, defconst some symbol and use that symbol ~
+                constant here instead but be advised that even this workaround ~
+                will not allow such a call in a DEFUN."
+               (unquote transx)
+               (if (symbolp (unquote transx))
+                   (if (function-symbolp (unquote transx) wrld)
+                       "does not have a badge."
+                       "is not a function symbol.")
+                   "is not a function symbol or lambda object")))
              (t
               (translate11-var-or-quote-exit x transx stobjs-out bindings
                                              known-stobjs flet-alist
@@ -15658,8 +17049,9 @@
                   directly, as in the top-level loop."
                  x))
       (t
-       (let ((msg (chk-stobj-let bound-vars actuals stobj updaters
-                                 corresp-accessor-fns known-stobjs wrld)))
+       (let ((msg (chk-stobj-let bound-vars actuals stobj producer-vars
+                                 updaters corresp-accessor-fns known-stobjs
+                                 wrld)))
          (cond
           (msg (trans-er ctx
                          "~@0"
@@ -15712,9 +17104,12 @@
                                                     state-vars)))))
               (let ((actual-stobjs-out
                      (translate-deref stobjs-out bindings))
-                    (no-dups-exprs
-                     (no-duplicatesp-checks-for-stobj-let-actuals actuals
-                                                                  nil))
+                    (dups-check
+                     (no-duplicatesp-checks-for-stobj-let-actuals bound-vars
+                                                                  actuals
+                                                                  producer-vars
+                                                                  stobj
+                                                                  wrld))
                     (producer-stobjs
                      (collect-non-x
                       nil
@@ -15781,9 +17176,9 @@
                                       tbody2 tactuals stobjs-out bindings
                                       known-stobjs flet-alist ctx wrld
                                       state-vars)))
-                   (cond (no-dups-exprs
+                   (cond (dups-check
                           (trans-er-let*
-                           ((chk (translate11 (cons 'and no-dups-exprs)
+                           ((chk (translate11 dups-check 
                                               nil ; ilk
                                               '(nil) bindings known-stobjs
                                               flet-alist cform ctx wrld
@@ -16106,9 +17501,7 @@
                 (trans-er-let*
                  ((targ2 (translate11 arg2
                                       nil ; ilk
-                                      (if (inside-defabsstobj wrld)
-                                          t
-                                        stobjs-out)
+                                      stobjs-out
                                       bindings known-stobjs
                                       flet-alist x ctx wrld state-vars))
                   (targ3 (translate11 arg3
@@ -16251,7 +17644,8 @@
                  (erp targ2 targ2-bindings)
                  (translate11 arg2
                               nil ; ilk
-                              '(nil) bindings known-stobjs flet-alist x
+                              '(nil)
+                              bindings known-stobjs flet-alist x
                               ctx wrld state-vars)
                  (declare (ignore targ2-bindings))
                  (cond
@@ -17421,6 +18815,10 @@
   (let ((alist (ancestral-lambda$s-by-caller1 caller *T* term wrld nil)))
     (collect-non-empty-pairs alist)))
 
+; The following block of code is currently obsolete but might have some useful
+; functionality so we preserve it.  The block ends at the Note after
+; tilde-*-lambda$-replacement-phrase5 below.
+
 (mutual-recursion
 
 (defun eliminate-lambda$ (term wrld)
@@ -17451,7 +18849,7 @@
             (t term))))
    ((flambdap (ffn-symb term))
     (fcons-term `(lambda ,(lambda-formals (ffn-symb term))
-                   (eliminate-lambda$ (lambda-body (ffn-symb term)) wrld))
+                   ,(eliminate-lambda$ (lambda-body (ffn-symb term)) wrld))
                 (eliminate-lambda$-lst (fargs term) wrld)))
    (t (fcons-term (ffn-symb term)
                   (eliminate-lambda$-lst (fargs term) wrld)))))
@@ -17471,7 +18869,7 @@
                  (tilde-@-lambda$-replacement-phrase1 (cdr lst) wrld)))))
 
 (defun tilde-*-lambda$-replacement-phrase2 (lst wrld)
-  (list "" "~@*.~%" "~@*~%~%and~%~%" "~@*~%"
+  (list "" "~@*~%" "~@*~%~%and~%~%" "~@*~%"
         (tilde-@-lambda$-replacement-phrase1 lst wrld)))
 
 (defun tilde-@-lambda$-replacement-phrase3 (caller lst wrld)
@@ -17489,6 +18887,88 @@
 (defun tilde-*-lambda$-replacement-phrase5 (alist wrld)
   (list "" "~@*~%~%" "~@*~%~%" "~@*~%~%"
         (tilde-@-lambda$-replacement-phrase4 alist wrld)))
+
+; Note: Once upon a time, (tilde-*-lambda$-replacement-phrase5 alist wrld), where
+; alist was the output of ancestral-lambda$s-by-caller, was used as the value of
+; #\0 in the following message:
+
+;   "We prohibit certain events, including DEFCONST, DEFPKG, and DEFMACRO, from ~
+;    being ancestrally dependent on lambda$ expressions.  Since loop$ ~
+;    expressions expand to loop$ scion calls containing lambda$ expressions, ~
+;    this prohibition means loop$ statements may not be used in these events ~
+;    either.  This prohibition has to do with the loading of compiled books ~
+;    before the events in the book are processed.  You must edit this event ~
+;    and/or its dependents to remove lambda$ (and any loop$) expressions.  It ~
+;    might be easiest to rewrite it just using old-fashioned ACL2 recursive ~
+;    definitions!  But you could search through the (translations of the) ~
+;    functions mentioned in this event and replace every lambda$ by the ~
+;    corresponding fully-translated quoted lambda object.  Loop$ statements ~
+;    should be replaced by the corresponding loop$ scion calls (e.g., collect$, ~
+;    sum$, etc.) using the quoted lambda objects instead of lambda$s.   The ~
+;    following table may help.~%~%~*0")
+
+; That message was printed by simple-translate-and-eval and by defmacro-fn
+; where those functions now use prohibition-of-loop$-and-lambda$-msg.  (In the
+; latter use, the alist was (union-equal ancestral-lambda$s-in-guard
+; ancestral-lambda$s-in-body).)  The error message was thought to be too
+; complicated!  So we changed it and now only print the names of the places
+; where offending loop$ and lambda$s occur.  So
+; tilde-*-lambda$-replacement-phrase5 et al are currently obsolete.  But we
+; preserve them and this hint of their use because they explain for each place
+; how each lambda$ should be replaced by a fully-translated quoted lambda
+; object.
+
+; One reason the message above was so unhelpful is that telling the user to
+; replace (LAMBDA$ (LOOP$-IVAR) (LET ((E LOOP$-IVAR)) (CONS 'HI E))) by (LAMBDA
+; (E) (CONS 'HI E)) is confusing when the lambda$ doesn't appear in what the
+; user actually wrote: (loop$ for e in x collect (cons 'hi e)).
+
+(defun strings-and-others (alist strings others)
+
+; Alist is an alist with strings and symbols as keys and we partition the keys
+; into the strings and everything else.  We just throw away the values in the
+; alist.
+
+  (cond
+   ((endp alist) (mv strings others))
+   ((stringp (car (car alist)))
+    (strings-and-others (cdr alist)
+                        (cons (car (car alist)) strings)
+                        others))
+   (t
+    (strings-and-others (cdr alist)
+                        strings
+                        (cons (car (car alist)) others)))))
+
+(defun prohibition-of-loop$-and-lambda$-msg (alist)
+
+; Alist was created by ancestral-lambda$s-by-caller.  Its keys are strings and
+; symbols indicating where lambda$s (and thus also loop$s) occur in some event.
+; The strings are things like "the guard of this event" and the others are
+; function names ancestral in the event.  The intent of our message is ``we
+; prohibit loop$ and lambda$ in certain events and here are the places you
+; should look...''  But the exact form of the phrase depends on how many
+; strings and others there are!  English grammar is tricky.  We know there is
+; at least one string or other because we wouldn't be causing an error if there
+; were none.
+
+  (mv-let (strings others)
+    (strings-and-others alist nil nil)
+    (let ((i (cond ((null strings)
+                    (if (null (cdr others)) 0 1))
+                   ((null others) 2)
+                   ((null (cdr others)) 3)
+                   (t 4))))
+      (msg "We prohibit certain events, including DEFCONST, DEFPKG, and ~
+            DEFMACRO, from being ancestrally dependent on loop$ and lambda$ ~
+            expressions.  But at least one of these prohibited expressions ~
+            occurs in ~#0~[~&2 which is ancestral here~/each of ~&2 which are ~
+            ancestral here~/~*1~/~*1 and in ~&2 which is ancestral here~/~*1 ~
+            and in each of ~&2 which are ancestral here~].  See :DOC ~
+            prohibition-of-loop$-and-lambda$."
+           i
+           (list "" "~s*" "~s* and " "~s*, " strings)
+           others))))
 
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)
@@ -17560,7 +19040,7 @@
                    (t (let ((ancestral-lambda$s
                              (and (f-get-global 'safe-mode state)
                                   (ancestral-lambda$s-by-caller
-                                   "the offending term"
+                                   "this event"
                                    term wrld))))
                         (cond
                          ((null ancestral-lambda$s)
@@ -17585,25 +19065,9 @@
                                        "~@0 could not be evaluated."
                                        msg)))
                              (t (value (cons term val))))))
-                         (t (er soft ctx
-                                "We do not allow lambda$ expressions to be ~
-                                 evaluated in certain events, including ~
-                                 DEFCONST, DEFPKG, and DEFMACRO events.  This ~
-                                 restriction has to do with the loading of ~
-                                 compiled books before the events in the book ~
-                                 are processed.  The term ~x0 occurs in one ~
-                                 of these sensitive contexts (possibly as a ~
-                                 guard).  You can remedy this by using ~
-                                 make-event.  E.g., to fix (DEFCONST ... (foo ~
-                                 ...)), replace it with (make-event ~
-                                 `(DEFCONST ... ',(foo ...))).  ~
-                                 Alternatively, you can replace the lambda$ ~
-                                 expressions reachable from this term by ~
-                                 their translations.~%~%~*1"
-                                x
-                                (tilde-*-lambda$-replacement-phrase5
-                                 ancestral-lambda$s
-                                 wrld))))))))))
+                         (t (er soft ctx "~@0"
+                                (prohibition-of-loop$-and-lambda$-msg
+                                 ancestral-lambda$s))))))))))
 
 (defun error-fms-cw (hardp ctx str alist)
 

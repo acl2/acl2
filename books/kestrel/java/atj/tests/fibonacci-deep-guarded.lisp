@@ -12,7 +12,7 @@
 
 (include-book "fibonacci")
 
-(include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

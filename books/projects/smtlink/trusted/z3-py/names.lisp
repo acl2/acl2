@@ -77,7 +77,7 @@
 
   ;; to-HEX
   (define to-HEX ((n natp))
-    :returns (hex hex-digit-listp)
+    :returns (hex hex-digit-char-listp)
     (natchars16 n))
 
   ;; construct-HEX

@@ -19,7 +19,10 @@
 (local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "integerp"))
+(local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable floor))
 
@@ -108,7 +111,15 @@
                 (rationalp j)
                 (not (equal 0 j)))
            (< (+ -1 (/ i j)) (floor i j)))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :in-theory (e/d (floor) (<-OF-*-OF-/-ARG1)))))
+
+(defthm my-floor-lower-bound-linear
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (< (+ -1 (/ i j)) (floor i j)))
+  :rule-classes ((:linear :trigger-terms ((floor i j))))
+  :hints (("Goal" :by my-floor-lower-bound)))
 
 ;; In this version, we have multiplied through by j.
 (defthm my-floor-lower-bound-alt
@@ -138,7 +149,7 @@
                 (rationalp j))
            ;; the phrasing of the * term matches our normal form
            (<= (floor i j) (* i (/ j))))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :in-theory (e/d (floor) (<-of-*-of-/-arg1)))))
 
 (defthm floor-upper-bound-linear
   (implies (and (rationalp i)
@@ -146,7 +157,7 @@
            ;; the phrasing of the * term matches our normal form
            (<= (floor i j) (* i (/ j))))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :by my-floor-upper-bound)))
 
 (defthm *-of-floor-upper-bound-linear
   (implies (and (rationalp i)
@@ -161,7 +172,8 @@
                 (rationalp i)
                 (rationalp j))
            (< (floor i j) (* (/ j) i)))
-  :rule-classes ((:linear :backchain-limit-lst (0 nil nil))))
+  :rule-classes ((:linear :backchain-limit-lst (0 nil nil)))
+  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG2))))
 
 ;; In this version, we have multiplied through by j.
 (defthmd my-floor-upper-bound-alt
@@ -313,6 +325,31 @@
                        (<= 0 i))))
   :hints (("Goal" :in-theory (enable floor))))
 
+;move
+(defthm <-of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (numerator x) (denominator x))
+                  (if (<= x 0)
+                      t
+                    (< x 1))))
+  :hints (("Goal" :use (:instance rational-implies2)
+           :in-theory (disable rational-implies2))))
+
+;drop the non-gen one?
+(defthm equal-of-0-and-floor-gen
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (equal 0 (floor i j))
+                  (if (< 0 j)
+                      (and (< i j)
+                           (<= 0 i))
+                    (if (equal 0 j)
+                        t
+                      ;; (< j 0):
+                      (and (< j i)
+                           (<= i 0))))))
+  :hints (("Goal" :in-theory (enable floor))))
+
 (defthm floor-of-1-arg1
   (implies (natp j) ;allow non nats somehow? ;allow negatives?
            (equal (floor 1 j)
@@ -326,10 +363,13 @@
 ;proved by ihs/quotient-remainder-lemmas
 (defthm floor-of-floor
   (implies (and (rationalp i)
-                (posp j1)
-                (posp j2))
+                (natp j1)
+                (natp j2))
            (equal (floor (floor i j1) j2)
-                  (floor i (* j1 j2)))))
+                  (floor i (* j1 j2))))
+  :hints (("Goal" :cases ((and (equal j1 0) (equal j2 0))
+                          (and (not (equal j1 0)) (equal j2 0))
+                          (and (not (equal j1 0)) (not (equal j2 0)))))))
 
 (local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
 
@@ -390,8 +430,9 @@
 ;floor-minus should be split into two lemmas
 
 ;FIXME all-vars-negated returns true for a constant (even 0).  quotep help fixes it for this rule
-;todo: i thnk i've seen this loop
-(defthm floor-minus-eric-better
+;todo: i think i've seen this loop
+;ifix this - it fired on 1 <-- old comment?
+(defthmd floor-minus-eric-better
   (implies (and (syntaxp (and (all-vars-negated i)
                               (not (quotep i))))
                 (rationalp i)
@@ -464,7 +505,7 @@
                            (i2 (+ y n))
                            (j y)))))
 
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;why? for FLOOR-BOUNDED-BY-/? and to prove FLOOR-PEEL-OFF-CONSTANT
+;(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;why? for FLOOR-BOUNDED-BY-/? and to prove FLOOR-PEEL-OFF-CONSTANT
 
 (defthm floor-peel-off-constant
   (implies (and (syntaxp (quotep k))
@@ -550,10 +591,10 @@
   (implies (and (< i j)
                 (>= i 0)
                 (> j 0)
-                (force (rationalp i))
                 (force (rationalp j)))
            (equal (floor i j)
-                  0)))
+                  0))
+  :hints (("Goal" :cases ((rationalp i)))))
 
 (defthm floor-upper-bound-alt-linear
   (implies (and (natp i)
@@ -853,6 +894,16 @@
   :hints (("Goal" :in-theory (enable floor)
            :cases ((rationalp j)))))
 
+(defthm floor-type-when-nonpositive-and-nonnegative
+  (implies (and (<= i 0)
+                (<= 0 j)
+                (or (rationalp i)
+                    (rationalp j)))
+           (<= (floor i j) 0))
+  :rule-classes (:type-prescription)
+  :hints (("Goal" :in-theory (enable floor)
+           :cases ((rationalp j)))))
+
 ;almost subsumed by <-of-floor-and-0
 (defthm <-of-floor-and-0-2
   (implies (and (<= 0 i)
@@ -884,7 +935,9 @@
                                                 <-*-/-left
                                                 <-y-*-y-x
                                                 <-*-/-right
-                                                floor-bound-hack-eric)))))
+                                                floor-bound-hack-eric
+                                                <-OF-*-OF-/-ARG1
+                                                <-OF-*-OF-/-ARG2)))))
 
 (defthm floor-bound-arg1-linear
   (implies (and (rationalp i)
@@ -894,18 +947,20 @@
            (<= (floor i j) i))
   :rule-classes ((:linear :trigger-terms ((floor i j)))))
 
-(defthm equal-of-floor-and-i
-  (implies (and (natp i)
-                (< 1 j)
-                (integerp j))
-           (equal (equal (floor i j) i)
-                  (equal i 0)))
-  :hints (("Goal"
-           :use (:instance floor-upper-bound-strict)
-           :in-theory (disable floor-upper-bound-strict
-                               <-of-times-of-floor-and-same
-                               floor-mod-elim))))
-
+;todo
+;; (defthm equal-of-floor-and-i
+;;   (implies (and (integerp i)
+;;                 (< 1 j)
+;;                 (integerp j))
+;;            (equal (equal (floor i j) i)
+;;                   (if (<= 0 i)
+;;                       (equal i 0)
+;;                     (equal i -1))))
+;;   :hints (("Goal"
+;;            :use (:instance floor-upper-bound-strict)
+;;            :in-theory (disable floor-upper-bound-strict
+;;                                <-of-times-of-floor-and-same
+;;                                floor-mod-elim))))
 
 ;; ;we now have a more general version
 ;; ;gen!
@@ -1076,3 +1131,80 @@
            (equal (floor x y)
                   0))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm split-low-bit
+  (implies (rationalp i)
+           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthmd floor-of-2-cases
+  (implies (integerp i)
+           (equal (floor i 2)
+                  (if (equal 0 (mod i 2))
+                      (/ i 2)
+                    (+ -1/2 (/ i 2)))))
+  :hints (("Goal" :use ((:instance floor-unique
+                                   (j 2)
+                                   (n (if (equal 0 (mod i 2))
+                                          (/ i 2)
+                                        (+ 1/2 (/ i 2)))))
+                        (:instance split-low-bit)))))
+
+(defthmd floor-when-evenp
+  (implies (and (evenp x)
+                (integerp x))
+           (equal (floor x 2)
+                  (/ x 2)))
+  :hints (("Goal" :in-theory (enable floor evenp))))
+
+;; this one uses evenp
+(defthmd floor-of-2-cases-2
+   (implies (integerp i)
+            (equal (floor i 2)
+                   (if (evenp i)
+                       (/ i 2)
+                     (+ -1/2 (/ i 2)))))
+   :hints (("Goal" :in-theory (enable floor-of-2-cases evenp))))
+
+(defthm unsigned-byte-p-of-floor-by-2-strong
+  (implies (integerp x)
+           (equal (unsigned-byte-p n (floor x 2))
+                  (and (natp n)
+                       (unsigned-byte-p (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p
+                                     expt-of-+
+                                     <-of-floor-arg1
+                                     ))))
+
+(defthm equal-of-floor-and-*-of-/
+  (equal (equal (floor i j) (* i (/ j)))
+         (integerp (* i (/ j)))))
+
+;; quite strong!
+;rephrase the rhs?
+(defthmd equal-of-floor
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (equal val (floor i j))
+                  (and (integerp val)
+                       (<= val (/ i j))
+                       (< (/ i j) (+ 1 val)))))
+  :hints (("Goal" :in-theory (disable <-OF-*-OF-/-ARG1
+                                      <-OF-*-OF-/-ARG1-alt))))
+
+;disable?
+(defthm equal-x-times-2-floor-x
+  (implies (rationalp x)
+           (equal (equal x (* 2 (floor x 2)))
+                  (evenp x)))
+  :hints (("Goal" :in-theory (enable evenp floor))))
+
+;; Not sure exactly where this should go
+(defthm unsigned-byte-p-of-floor
+  (implies (and (unsigned-byte-p size x)
+                (natp y))
+           (unsigned-byte-p size (floor x y)))
+  :hints (("Goal"
+           :cases ((equal 0 y))
+           :in-theory (enable unsigned-byte-p))))

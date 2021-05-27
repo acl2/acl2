@@ -1,0 +1,1427 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFSTOBJ SUB$C FLD0$C)
+
+Summary
+Form:  ( DEFSTOBJ SUB$C ...)
+Rules: NIL
+ SUB$C
+ACL2 !>>(DEFSTOBJ TOP$C (SUB0$C :TYPE SUB$C))
+
+Summary
+Form:  ( DEFSTOBJ TOP$C ...)
+Rules: NIL
+ TOP$C
+ACL2 !>>(DEFUN SUB$AP (X)
+               (DECLARE (XARGS :GUARD T))
+               (AND (CONSP X)
+                    (NULL (CDR X))
+                    (OR (NATP (CAR X)) (NULL (CAR X)))))
+
+Since SUB$AP is non-recursive, its admission is trivial.  We observe
+that the type of SUB$AP is described by the theorem 
+(OR (EQUAL (SUB$AP X) T) (EQUAL (SUB$AP X) NIL)).  We used the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Computing the guard conjecture for SUB$AP....
+
+The guard conjecture for SUB$AP is trivial to prove.  SUB$AP is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN SUB$AP ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SUB$AP
+ACL2 !>>(DEFUN TOP$AP (X)
+               (DECLARE (XARGS :GUARD T))
+               (AND (CONSP X)
+                    (NULL (CDR X))
+                    (SUB$AP (CAR X))))
+
+Since TOP$AP is non-recursive, its admission is trivial.  We observe
+that the type of TOP$AP is described by the theorem 
+(OR (EQUAL (TOP$AP X) T) (EQUAL (TOP$AP X) NIL)).  We used the :type-
+prescription rule SUB$AP.
+
+Computing the guard conjecture for TOP$AP....
+
+The guard conjecture for TOP$AP is trivial to prove.  TOP$AP is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN TOP$AP ...)
+Rules: ((:TYPE-PRESCRIPTION SUB$AP))
+ TOP$AP
+ACL2 !>>(DEFUN CREATE-TOP$A
+               NIL (DECLARE (XARGS :GUARD T))
+               (LIST (LIST NIL)))
+
+Since CREATE-TOP$A is non-recursive, its admission is trivial.  We
+observe that the type of CREATE-TOP$A is described by the theorem 
+(AND (CONSP (CREATE-TOP$A)) (TRUE-LISTP (CREATE-TOP$A))).  
+
+Computing the guard conjecture for CREATE-TOP$A....
+
+The guard conjecture for CREATE-TOP$A is trivial to prove.  CREATE-TOP$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CREATE-TOP$A ...)
+Rules: NIL
+ CREATE-TOP$A
+ACL2 !>>(DEFUN SUB0$A (X)
+               (DECLARE (XARGS :GUARD (TOP$AP X)))
+               (CAR X))
+
+Since SUB0$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of SUB0$A.
+
+Computing the guard conjecture for SUB0$A....
+
+The non-trivial part of the guard conjecture for SUB0$A is
+
+Goal
+(IMPLIES (AND (TOP$AP X) (NOT (CONSP X)))
+         (EQUAL X NIL)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for SUB0$A.  SUB0$A is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SUB0$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION TOP$AP))
+ SUB0$A
+ACL2 !>>(DEFUN-NX
+             UPDATE-SUB0$A (SUB$C X)
+             (DECLARE (XARGS :STOBJS SUB$C
+                             :GUARD (AND (TOP$AP X) (NATP (FLD0$C SUB$C)))))
+             (LIST SUB$C))
+
+Since UPDATE-SUB0$A is non-recursive, its admission is trivial.  We
+observe that the type of UPDATE-SUB0$A is described by the theorem
+(AND (CONSP (UPDATE-SUB0$A SUB$C X)) (TRUE-LISTP (UPDATE-SUB0$A SUB$C X))).
+We used primitive type reasoning.
+
+(UPDATE-SUB0$A SUB$C *) => *.
+
+Computing the guard conjecture for UPDATE-SUB0$A....
+
+The guard conjecture for UPDATE-SUB0$A is trivial to prove.  UPDATE-SUB0$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-SUB0$A ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX UPDATE-SUB0$A)
+ACL2 !>>(DEFUN-NX TOP-CORR (TOP$C X)
+                  (DECLARE (XARGS :STOBJS TOP$C))
+                  (EQUAL TOP$C X))
+
+Since TOP-CORR is non-recursive, its admission is trivial.  We observe
+that the type of TOP-CORR is described by the theorem 
+(OR (EQUAL (TOP-CORR TOP$C X) T) (EQUAL (TOP-CORR TOP$C X) NIL)). 
+We used primitive type reasoning.
+
+(TOP-CORR TOP$C *) => *.
+
+Computing the guard conjecture for TOP-CORR....
+
+The guard conjecture for TOP-CORR is trivial to prove.  TOP-CORR is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN TOP-CORR ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX TOP-CORR)
+ACL2 !>>(DEFTHM CREATE-TOP{CORRESPONDENCE}
+                (TOP-CORR (CREATE-TOP$C) (CREATE-TOP$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-TOP{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION CREATE-SUB$C)
+        (:DEFINITION CREATE-TOP$C)
+        (:DEFINITION TOP-CORR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CREATE-TOP$A)
+        (:EXECUTABLE-COUNTERPART EQUAL))
+ CREATE-TOP{CORRESPONDENCE}
+ACL2 !>>(DEFTHM CREATE-TOP{PRESERVED}
+                (TOP$AP (CREATE-TOP$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-TOP{PRESERVED} ...)
+Rules: ((:EXECUTABLE-COUNTERPART CREATE-TOP$A)
+        (:EXECUTABLE-COUNTERPART TOP$AP))
+ CREATE-TOP{PRESERVED}
+ACL2 !>>(DEFTHM SUB0{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                         (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM SUB0{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION SUB0$C)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SUB0{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-SUB0{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP$C TOP)
+                              (SUB$CP SUB$C)
+                              (TOP$AP TOP)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
+                                   (UPDATE-SUB0$A SUB$C TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB0{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:DEFINITION UPDATE-SUB0$C)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ UPDATE-SUB0{CORRESPONDENCE}
+ACL2 !>>(DEFTHM EQUAL-LEN-1
+                (EQUAL (EQUAL (LEN X) 1)
+                       (AND (CONSP X) (ATOM (CDR X)))))
+
+Splitter note (see :DOC splitter) for Goal (2 subgoals).
+  if-intro: ((:DEFINITION ATOM) (:DEFINITION LEN))
+
+Subgoal 2
+Subgoal 1
+Subgoal 1'
+Subgoal 1''
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (AND (CONSP X)
+              (EQUAL (+ 1 (LEN (CDR X))) 1))
+         (NOT (CONSP (CDR X))))
+
+Normally we would attempt to prove Subgoal 1'' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (LEN X).  This suggestion
+was produced using the :induction rule LEN.  If we let (:P X) denote
+*1 above then the induction scheme we'll use is
+(AND (IMPLIES (NOT (CONSP X)) (:P X))
+     (IMPLIES (AND (CONSP X) (:P (CDR X)))
+              (:P X))).
+This induction is justified by the same argument used to admit LEN.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+Splitter note (see :DOC splitter) for Subgoal *1/1 (3 subgoals).
+  if-intro: ((:DEFINITION ATOM))
+
+Subgoal *1/1.3
+Subgoal *1/1.2
+Subgoal *1/1.2'
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM EQUAL-LEN-1 ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LEN)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION LEN)
+        (:TYPE-PRESCRIPTION LEN))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ATOM))
+ EQUAL-LEN-1
+ACL2 !>>(DEFTHM UPDATE-SUB0{PRESERVED}
+                (IMPLIES (AND (SUB$CP SUB$C)
+                              (TOP$AP TOP)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB0{PRESERVED} ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ATOM)
+        (:DEFINITION FLD0$C)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+ UPDATE-SUB0{PRESERVED}
+ACL2 !>>(DEFTHM SUB0-AGAIN{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                         (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM SUB0-AGAIN{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION SUB0$C)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SUB0-AGAIN{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-SUB0-AGAIN{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP$C TOP)
+                              (SUB$CP SUB$C)
+                              (TOP$AP TOP)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
+                                   (UPDATE-SUB0$A SUB$C TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB0-AGAIN{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION FLD0$C)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:DEFINITION UPDATE-SUB0$C)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE EQUAL-LEN-1))
+ UPDATE-SUB0-AGAIN{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-SUB0-AGAIN{PRESERVED}
+                (IMPLIES (AND (SUB$CP SUB$C)
+                              (TOP$AP TOP)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB0-AGAIN{PRESERVED} ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ATOM)
+        (:DEFINITION FLD0$C)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+ UPDATE-SUB0-AGAIN{PRESERVED}
+ACL2 !>>(DEFABSSTOBJ TOP
+                     :RECOGNIZER (TOPP :LOGIC TOP$AP :EXEC TOP$CP)
+                     :CREATOR (CREATE-TOP :LOGIC CREATE-TOP$A
+                                          :EXEC CREATE-TOP$C)
+                     :CORR-FN TOP-CORR
+                     :EXPORTS ((SUB0 :LOGIC SUB0$A
+                                     :EXEC SUB0$C
+                                     :UPDATER UPDATE-SUB0)
+                               (SUB0-AGAIN :LOGIC SUB0$A
+                                           :EXEC SUB0$C
+                                           :UPDATER UPDATE-SUB0)
+                               (UPDATE-SUB0 :LOGIC UPDATE-SUB0$A
+                                            :EXEC UPDATE-SUB0$C)))
+
+Summary
+Form:  ( DEFABSSTOBJ TOP ...)
+Rules: NIL
+ TOP
+ACL2 !>>(DEFUN FOO (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP)))
+                          (SUB$C SUB$C-VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-VAL (FLD0$C SUB$C)))
+                                (MV SUB$C SUB$C-VAL))
+                          (MV TOP SUB$C-VAL)))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem 
+(AND (CONSP (FOO TOP)) (TRUE-LISTP (FOO TOP))).  We used primitive
+type reasoning.
+
+(FOO TOP) => (MV TOP *).
+
+Computing the guard conjecture for FOO....
+
+The non-trivial part of the guard conjecture for FOO is
+
+Goal
+(IMPLIES (TOPP TOP)
+         (LET ((SUB$C (SUB0 TOP)))
+              (MV-LET (SUB$C)
+                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                             (SUB$C-VAL (FLD0$C SUB$C)))
+                            (LIST SUB$C SUB$C-VAL))
+                      (NATP (FLD0$C SUB$C))))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FOO.  FOO is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB0)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOPP)
+        (:DEFINITION UPDATE-FLD0$C)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART MV-NTH)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO
+ACL2 !>>(DEFSTOBJ SUB$C-CONG FLD0$C-CONG
+                  :CONGRUENT-TO SUB$C)
+
+Summary
+Form:  ( DEFSTOBJ SUB$C-CONG ...)
+Rules: NIL
+ SUB$C-CONG
+ACL2 !>>(DEFUN FOO-BAD (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP))
+                           (SUB$C-CONG (SUB0-AGAIN TOP)
+                                       UPDATE-SUB0))
+                          (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                                 (SUB$C-VAL (FLD0$C SUB$C))
+                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                                (MV SUB$C
+                                    SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+                          (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
+
+
+ACL2 Error in ( DEFUN FOO-BAD ...):  The stobj-let bindings 
+((SUB$C (SUB0 TOP)) (SUB$C-CONG (SUB0-AGAIN TOP))) ultimately access
+the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
+and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
+form's producer variables), this aliasing is illegal.  The form 
+(STOBJ-LET ((SUB$C (SUB0 TOP))
+            (SUB$C-CONG (SUB0-AGAIN TOP)
+                        UPDATE-SUB0))
+           (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+           (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                  (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                  (SUB$C-VAL (FLD0$C SUB$C))
+                  (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                 (MV SUB$C
+                     SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+           (MV TOP SUB$C-VAL SUB$C-CONG-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN FOO-BAD ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN FOO-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO-READ-ONLY (TOP)
+               (DECLARE (XARGS :STOBJS TOP))
+               (STOBJ-LET ((SUB$C (SUB0 TOP))
+                           (SUB$C-CONG (SUB0-AGAIN TOP)
+                                       UPDATE-SUB0))
+                          (SUB$C-VAL SUB$C-CONG-VAL)
+                          (LET* ((SUB$C-VAL (FLD0$C SUB$C))
+                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                                (MV SUB$C-VAL SUB$C-CONG-VAL))
+                          (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
+
+Since FOO-READ-ONLY is non-recursive, its admission is trivial.  We
+observe that the type of FOO-READ-ONLY is described by the theorem
+(AND (CONSP (FOO-READ-ONLY TOP)) (TRUE-LISTP (FOO-READ-ONLY TOP))).
+We used primitive type reasoning.
+
+(FOO-READ-ONLY TOP) => (MV TOP * *).
+
+Computing the guard conjecture for FOO-READ-ONLY....
+
+The guard conjecture for FOO-READ-ONLY is trivial to prove.  FOO-READ-ONLY
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO-READ-ONLY ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO-READ-ONLY
+ACL2 !>>(DEFTHM CREATE-TOP2{CORRESPONDENCE}
+                (TOP-CORR (CREATE-TOP) (CREATE-TOP$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-TOP2{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION CREATE-TOP)
+        (:DEFINITION TOP-CORR)
+        (:EXECUTABLE-COUNTERPART CREATE-TOP$A)
+        (:EXECUTABLE-COUNTERPART EQUAL))
+ CREATE-TOP2{CORRESPONDENCE}
+ACL2 !>>(DEFTHM CREATE-TOP2{PRESERVED}
+                (TOP$AP (CREATE-TOP$A))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-TOP2{PRESERVED} ...)
+Rules: ((:EXECUTABLE-COUNTERPART CREATE-TOP$A)
+        (:EXECUTABLE-COUNTERPART TOP$AP))
+ CREATE-TOP2{PRESERVED}
+ACL2 !>>(DEFTHM SUB02{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
+                         (EQUAL (SUB0 TOP) (SUB0$A TOP2)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM SUB02{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION SUB$AP)
+        (:DEFINITION SUB0)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SUB02{CORRESPONDENCE}
+ACL2 !>>(DEFTHM SUB02-AGAIN{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
+                         (EQUAL (SUB0-AGAIN TOP) (SUB0$A TOP2)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM SUB02-AGAIN{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION SUB$AP)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION SUB0-AGAIN)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP-CORR)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SUB02-AGAIN{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-SUB02{CORRESPONDENCE}
+                (IMPLIES (AND (TOP-CORR TOP TOP2)
+                              (SUB$CP SUB$C)
+                              (TOP$AP TOP2)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP-CORR (UPDATE-SUB0 SUB$C TOP)
+                                   (UPDATE-SUB0$A SUB$C TOP2)))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB02{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION TOP-CORR)
+        (:DEFINITION UPDATE-SUB0)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:EXECUTABLE-COUNTERPART IF))
+ UPDATE-SUB02{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-SUB02{PRESERVED}
+                (IMPLIES (AND (SUB$CP SUB$C)
+                              (TOP$AP TOP2)
+                              (NATP (FLD0$C SUB$C)))
+                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP2)))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-SUB02{PRESERVED} ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ATOM)
+        (:DEFINITION FLD0$C)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION UPDATE-SUB0$A)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+ UPDATE-SUB02{PRESERVED}
+ACL2 !>>(DEFABSSTOBJ TOP2
+                     :CONCRETE TOP
+                     :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOPP)
+                     :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
+                                           :EXEC CREATE-TOP)
+                     :CORR-FN TOP-CORR
+                     :EXPORTS ((SUB02 :LOGIC SUB0$A
+                                      :EXEC SUB0
+                                      :UPDATER UPDATE-SUB02)
+                               (SUB02-AGAIN :LOGIC SUB0$A
+                                            :EXEC SUB0-AGAIN
+                                            :UPDATER UPDATE-SUB02)
+                               (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
+                                             :EXEC UPDATE-SUB0)))
+
+Summary
+Form:  ( DEFABSSTOBJ TOP2 ...)
+Rules: NIL
+ TOP2
+ACL2 !>>(DEFUN FOO2 (TOP2)
+               (DECLARE (XARGS :STOBJS TOP2))
+               (STOBJ-LET ((SUB$C (SUB02 TOP2)))
+                          (SUB$C SUB$C-VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-VAL (FLD0$C SUB$C)))
+                                (MV SUB$C SUB$C-VAL))
+                          (MV TOP2 SUB$C-VAL)))
+
+Since FOO2 is non-recursive, its admission is trivial.  We observe
+that the type of FOO2 is described by the theorem 
+(AND (CONSP (FOO2 TOP2)) (TRUE-LISTP (FOO2 TOP2))).  We used primitive
+type reasoning.
+
+(FOO2 TOP2) => (MV TOP2 *).
+
+Computing the guard conjecture for FOO2....
+
+The non-trivial part of the guard conjecture for FOO2 is
+
+Goal
+(IMPLIES (TOP2P TOP2)
+         (LET ((SUB$C (SUB02 TOP2)))
+              (MV-LET (SUB$C)
+                      (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                             (SUB$C-VAL (FLD0$C SUB$C)))
+                            (LIST SUB$C SUB$C-VAL))
+                      (NATP (FLD0$C SUB$C))))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FOO2.  FOO2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO2 ...)
+Rules: ((:DEFINITION FLD0$C)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION SUB$AP)
+        (:DEFINITION SUB0$A)
+        (:DEFINITION SUB02)
+        (:DEFINITION TOP$AP)
+        (:DEFINITION TOP2P)
+        (:DEFINITION UPDATE-FLD0$C)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART MV-NTH)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FOO2
+ACL2 !>>(DEFUN FOO2-BAD (TOP2)
+               (DECLARE (XARGS :STOBJS TOP2))
+               (STOBJ-LET ((SUB$C (SUB02 TOP2))
+                           (SUB$C-CONG (SUB02-AGAIN TOP2)
+                                       UPDATE-SUB02))
+                          (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                                 (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                                 (SUB$C-VAL (FLD0$C SUB$C))
+                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                                (MV SUB$C
+                                    SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+                          (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
+
+
+ACL2 Error in ( DEFUN FOO2-BAD ...):  The stobj-let bindings 
+((SUB$C (SUB02 TOP2)) (SUB$C-CONG (SUB02-AGAIN TOP2))) ultimately access
+the same field SUB0$C of concrete stobj TOP$C.  Since variables SUB$C
+and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
+form's producer variables), this aliasing is illegal.  The form 
+(STOBJ-LET ((SUB$C (SUB02 TOP2))
+            (SUB$C-CONG (SUB02-AGAIN TOP2)
+                        UPDATE-SUB02))
+           (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+           (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                  (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                  (SUB$C-VAL (FLD0$C SUB$C))
+                  (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                 (MV SUB$C
+                     SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN FOO2-BAD ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN FOO2-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO2-BAD2 (TOP2)
+               (DECLARE (XARGS :STOBJS TOP2))
+               (STOBJ-LET ((SUB$C (SUB02 TOP2))
+                           (SUB$C-CONG (SUB02-AGAIN TOP2)
+                                       UPDATE-SUB02))
+                          (SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+                          (LET* ((SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                                 (SUB$C-VAL (FLD0$C SUB$C))
+                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                                (MV SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+                          (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
+
+
+ACL2 Error in ( DEFUN FOO2-BAD2 ...):  The stobj-let bindings 
+((SUB$C (SUB02 TOP2)) (SUB$C-CONG (SUB02-AGAIN TOP2))) ultimately access
+the same field SUB0$C of concrete stobj TOP$C.  Since variable SUB$C-CONG
+is to be updated (i.e., it is among the stobj-let form's producer variables),
+this aliasing is illegal.  The form 
+(STOBJ-LET ((SUB$C (SUB02 TOP2))
+            (SUB$C-CONG (SUB02-AGAIN TOP2)
+                        UPDATE-SUB02))
+           (SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+           (LET* ((SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                  (SUB$C-VAL (FLD0$C SUB$C))
+                  (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                 (MV SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+           (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN FOO2-BAD2 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN FOO2-BAD2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTOBJ NTOP$C (NSUB1$C :TYPE SUB$C)
+                  (NSUB2$C :TYPE SUB$C))
+
+Summary
+Form:  ( DEFSTOBJ NTOP$C ...)
+Rules: NIL
+ NTOP$C
+ACL2 !>>(DEFUN NTOP$AP (X)
+               (DECLARE (XARGS :GUARD T))
+               (AND (CONSP X)
+                    (CONSP (CDR X))
+                    (NULL (CDDR X))
+                    (SUB$CP (CAR X))
+                    (SUB$CP (CADR X))))
+
+Since NTOP$AP is non-recursive, its admission is trivial.  We observe
+that the type of NTOP$AP is described by the theorem 
+(OR (EQUAL (NTOP$AP X) T) (EQUAL (NTOP$AP X) NIL)).  We used the :type-
+prescription rule SUB$CP.
+
+Computing the guard conjecture for NTOP$AP....
+
+The guard conjecture for NTOP$AP is trivial to prove.  NTOP$AP is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN NTOP$AP ...)
+Rules: ((:TYPE-PRESCRIPTION SUB$CP))
+ NTOP$AP
+ACL2 !>>(DEFUN CREATE-NTOP$A
+               NIL (DECLARE (XARGS :GUARD T))
+               (LIST (LIST NIL) (LIST NIL)))
+
+Since CREATE-NTOP$A is non-recursive, its admission is trivial.  We
+observe that the type of CREATE-NTOP$A is described by the theorem
+(AND (CONSP (CREATE-NTOP$A)) (TRUE-LISTP (CREATE-NTOP$A))).  
+
+Computing the guard conjecture for CREATE-NTOP$A....
+
+The guard conjecture for CREATE-NTOP$A is trivial to prove.  CREATE-NTOP$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN CREATE-NTOP$A ...)
+Rules: NIL
+ CREATE-NTOP$A
+ACL2 !>>(DEFUN NSUB1$A (X)
+               (DECLARE (XARGS :GUARD (NTOP$AP X)))
+               (CAR X))
+
+Since NSUB1$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of NSUB1$A.
+
+Computing the guard conjecture for NSUB1$A....
+
+The non-trivial part of the guard conjecture for NSUB1$A is
+
+Goal
+(IMPLIES (AND (NTOP$AP X) (NOT (CONSP X)))
+         (EQUAL X NIL)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for NSUB1$A.  NSUB1$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN NSUB1$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP))
+ NSUB1$A
+ACL2 !>>(DEFUN NSUB2$A (X)
+               (DECLARE (XARGS :GUARD (NTOP$AP X)))
+               (CADR X))
+
+Since NSUB2$A is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of NSUB2$A.
+
+Computing the guard conjecture for NSUB2$A....
+
+The non-trivial part of the guard conjecture for NSUB2$A is
+
+Goal
+(AND (IMPLIES (AND (NTOP$AP X) (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (NTOP$AP X) (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for NSUB2$A.  NSUB2$A
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN NSUB2$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP))
+ NSUB2$A
+ACL2 !>>(DEFUN-NX UPDATE-NSUB1$A (SUB$C X)
+                  (DECLARE (XARGS :STOBJS SUB$C
+                                  :GUARD (NTOP$AP X)))
+                  (LIST SUB$C (CADR X)))
+
+Since UPDATE-NSUB1$A is non-recursive, its admission is trivial.  We
+observe that the type of UPDATE-NSUB1$A is described by the theorem
+(AND (CONSP (UPDATE-NSUB1$A SUB$C X)) (TRUE-LISTP (UPDATE-NSUB1$A SUB$C X))).
+We used primitive type reasoning.
+
+(UPDATE-NSUB1$A SUB$C *) => *.
+
+Computing the guard conjecture for UPDATE-NSUB1$A....
+
+The non-trivial part of the guard conjecture for UPDATE-NSUB1$A is
+
+Goal
+(AND (IMPLIES (AND (NTOP$AP X)
+                   (SUB$CP SUB$C)
+                   (NOT (CONSP X)))
+              (EQUAL X NIL))
+     (IMPLIES (AND (NTOP$AP X)
+                   (SUB$CP SUB$C)
+                   (NOT (CONSP (CDR X))))
+              (EQUAL (CDR X) NIL))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for UPDATE-NSUB1$A. 
+UPDATE-NSUB1$A is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-NSUB1$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX UPDATE-NSUB1$A)
+ACL2 !>>(DEFUN-NX UPDATE-NSUB2$A (SUB$C X)
+                  (DECLARE (XARGS :STOBJS SUB$C
+                                  :GUARD (NTOP$AP X)))
+                  (LIST (CAR X) SUB$C))
+
+Since UPDATE-NSUB2$A is non-recursive, its admission is trivial.  We
+observe that the type of UPDATE-NSUB2$A is described by the theorem
+(AND (CONSP (UPDATE-NSUB2$A SUB$C X)) (TRUE-LISTP (UPDATE-NSUB2$A SUB$C X))).
+We used primitive type reasoning.
+
+(UPDATE-NSUB2$A SUB$C *) => *.
+
+Computing the guard conjecture for UPDATE-NSUB2$A....
+
+The non-trivial part of the guard conjecture for UPDATE-NSUB2$A is
+
+Goal
+(IMPLIES (AND (NTOP$AP X)
+              (SUB$CP SUB$C)
+              (NOT (CONSP X)))
+         (EQUAL X NIL)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for UPDATE-NSUB2$A. 
+UPDATE-NSUB2$A is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE-NSUB2$A ...)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX UPDATE-NSUB2$A)
+ACL2 !>>(DEFUN-NX NTOP-CORR (NTOP$C X)
+                  (DECLARE (XARGS :STOBJS NTOP$C))
+                  (EQUAL NTOP$C X))
+
+Since NTOP-CORR is non-recursive, its admission is trivial.  We observe
+that the type of NTOP-CORR is described by the theorem 
+(OR (EQUAL (NTOP-CORR NTOP$C X) T) (EQUAL (NTOP-CORR NTOP$C X) NIL)).
+We used primitive type reasoning.
+
+(NTOP-CORR NTOP$C *) => *.
+
+Computing the guard conjecture for NTOP-CORR....
+
+The guard conjecture for NTOP-CORR is trivial to prove.  NTOP-CORR
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN NTOP-CORR ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ (:DEFUN-NX NTOP-CORR)
+ACL2 !>>(PROGN (DEFTHM CREATE-NTOP{CORRESPONDENCE}
+                       (NTOP-CORR (CREATE-NTOP$C)
+                                  (CREATE-NTOP$A))
+                       :RULE-CLASSES NIL)
+               (DEFTHM CREATE-NTOP{PRESERVED}
+                       (NTOP$AP (CREATE-NTOP$A))
+                       :RULE-CLASSES NIL)
+               (DEFTHM NSUB1{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (NTOP$AP NTOP))
+                                (EQUAL (NSUB1$C NTOP$C) (NSUB1$A NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM NSUB1-AGAIN{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (NTOP$AP NTOP))
+                                (EQUAL (NSUB1$C NTOP$C) (NSUB1$A NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM UPDATE-NSUB1{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (SUB$CP SUB$C)
+                                     (NTOP$AP NTOP))
+                                (NTOP-CORR (UPDATE-NSUB1$C SUB$C NTOP$C)
+                                           (UPDATE-NSUB1$A SUB$C NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM UPDATE-NSUB1{PRESERVED}
+                       (IMPLIES (AND (SUB$CP SUB$C) (NTOP$AP NTOP))
+                                (NTOP$AP (UPDATE-NSUB1$A SUB$C NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM NSUB2{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (NTOP$AP NTOP))
+                                (EQUAL (NSUB2$C NTOP$C) (NSUB2$A NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM NSUB2-AGAIN{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (NTOP$AP NTOP))
+                                (EQUAL (NSUB2$C NTOP$C) (NSUB2$A NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM UPDATE-NSUB2{CORRESPONDENCE}
+                       (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                                     (SUB$CP SUB$C)
+                                     (NTOP$AP NTOP))
+                                (NTOP-CORR (UPDATE-NSUB2$C SUB$C NTOP$C)
+                                           (UPDATE-NSUB2$A SUB$C NTOP)))
+                       :RULE-CLASSES NIL)
+               (DEFTHM UPDATE-NSUB2{PRESERVED}
+                       (IMPLIES (AND (SUB$CP SUB$C) (NTOP$AP NTOP))
+                                (NTOP$AP (UPDATE-NSUB2$A SUB$C NTOP)))
+                       :RULE-CLASSES NIL))
+
+
+ACL2 !>>>(DEFTHM CREATE-NTOP{CORRESPONDENCE}
+                 (NTOP-CORR (CREATE-NTOP$C)
+                            (CREATE-NTOP$A))
+                 :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-NTOP{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION CREATE-NTOP$C)
+        (:DEFINITION CREATE-SUB$C)
+        (:DEFINITION NTOP-CORR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CREATE-NTOP$A)
+        (:EXECUTABLE-COUNTERPART EQUAL))
+CREATE-NTOP{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM CREATE-NTOP{PRESERVED}
+                 (NTOP$AP (CREATE-NTOP$A))
+                 :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM CREATE-NTOP{PRESERVED} ...)
+Rules: ((:EXECUTABLE-COUNTERPART CREATE-NTOP$A)
+        (:EXECUTABLE-COUNTERPART NTOP$AP))
+CREATE-NTOP{PRESERVED}
+
+
+ACL2 !>>>(DEFTHM NSUB1{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (NTOP$AP NTOP))
+                          (EQUAL (NSUB1$C NTOP$C) (NSUB1$A NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NSUB1{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NSUB1$A)
+        (:DEFINITION NSUB1$C)
+        (:DEFINITION NTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE EQUAL-LEN-1))
+NSUB1{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM NSUB1-AGAIN{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (NTOP$AP NTOP))
+                          (EQUAL (NSUB1$C NTOP$C) (NSUB1$A NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NSUB1-AGAIN{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NSUB1$A)
+        (:DEFINITION NSUB1$C)
+        (:DEFINITION NTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE EQUAL-LEN-1))
+NSUB1-AGAIN{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM UPDATE-NSUB1{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (SUB$CP SUB$C)
+                               (NTOP$AP NTOP))
+                          (NTOP-CORR (UPDATE-NSUB1$C SUB$C NTOP$C)
+                                     (UPDATE-NSUB1$A SUB$C NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-NSUB1{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION UPDATE-NSUB1$A)
+        (:DEFINITION UPDATE-NSUB1$C)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+UPDATE-NSUB1{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM UPDATE-NSUB1{PRESERVED}
+                 (IMPLIES (AND (SUB$CP SUB$C) (NTOP$AP NTOP))
+                          (NTOP$AP (UPDATE-NSUB1$A SUB$C NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-NSUB1{PRESERVED} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION UPDATE-NSUB1$A)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+UPDATE-NSUB1{PRESERVED}
+
+
+ACL2 !>>>(DEFTHM NSUB2{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (NTOP$AP NTOP))
+                          (EQUAL (NSUB2$C NTOP$C) (NSUB2$A NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+Goal''
+Goal'''
+Goal'4'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NSUB2{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NSUB2$A)
+        (:DEFINITION NSUB2$C)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE EQUAL-LEN-1)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1))
+NSUB2{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM NSUB2-AGAIN{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (NTOP$AP NTOP))
+                          (EQUAL (NSUB2$C NTOP$C) (NSUB2$A NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+Goal''
+Goal'''
+Goal'4'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM NSUB2-AGAIN{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NSUB2$A)
+        (:DEFINITION NSUB2$C)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE EQUAL-LEN-1)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1))
+NSUB2-AGAIN{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM UPDATE-NSUB2{CORRESPONDENCE}
+                 (IMPLIES (AND (NTOP-CORR NTOP$C NTOP)
+                               (SUB$CP SUB$C)
+                               (NTOP$AP NTOP))
+                          (NTOP-CORR (UPDATE-NSUB2$C SUB$C NTOP$C)
+                                     (UPDATE-NSUB2$A SUB$C NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+Goal''
+Goal'''
+Goal'4'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-NSUB2{CORRESPONDENCE} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION NTOP-CORR)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION TRUE-LISTP)
+        (:DEFINITION UPDATE-NSUB2$A)
+        (:DEFINITION UPDATE-NSUB2$C)
+        (:DEFINITION UPDATE-NTH)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+UPDATE-NSUB2{CORRESPONDENCE}
+
+
+ACL2 !>>>(DEFTHM UPDATE-NSUB2{PRESERVED}
+                 (IMPLIES (AND (SUB$CP SUB$C) (NTOP$AP NTOP))
+                          (NTOP$AP (UPDATE-NSUB2$A SUB$C NTOP)))
+                 :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM UPDATE-NSUB2{PRESERVED} ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NTOP$AP)
+        (:DEFINITION SUB$CP)
+        (:DEFINITION UPDATE-NSUB2$A)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EQUAL-LEN-1))
+UPDATE-NSUB2{PRESERVED}
+
+Summary
+Form:  ( PROGN (DEFTHM CREATE-NTOP{CORRESPONDENCE} ...) ...)
+Rules: NIL
+ UPDATE-NSUB2{PRESERVED}
+ACL2 !>>(DEFABSSTOBJ NTOP
+                     :RECOGNIZER (NTOPP :LOGIC NTOP$AP :EXEC NTOP$CP)
+                     :CREATOR (CREATE-NTOP :LOGIC CREATE-NTOP$A
+                                           :EXEC CREATE-NTOP$C)
+                     :CORR-FN NTOP-CORR
+                     :EXPORTS ((NSUB1 :LOGIC NSUB1$A
+                                      :EXEC NSUB1$C
+                                      :UPDATER UPDATE-NSUB1)
+                               (NSUB1-AGAIN :LOGIC NSUB1$A
+                                            :EXEC NSUB1$C
+                                            :UPDATER UPDATE-NSUB1)
+                               (UPDATE-NSUB1 :LOGIC UPDATE-NSUB1$A
+                                             :EXEC UPDATE-NSUB1$C)
+                               (NSUB2 :LOGIC NSUB2$A
+                                      :EXEC NSUB2$C
+                                      :UPDATER UPDATE-NSUB2)
+                               (NSUB2-AGAIN :LOGIC NSUB2$A
+                                            :EXEC NSUB2$C
+                                            :UPDATER UPDATE-NSUB2)
+                               (UPDATE-NSUB2 :LOGIC UPDATE-NSUB2$A
+                                             :EXEC UPDATE-NSUB2$C)))
+
+Summary
+Form:  ( DEFABSSTOBJ NTOP ...)
+Rules: NIL
+ NTOP
+ACL2 !>>(DEFSTOBJ SUB$C-CONG1 FLD0$C-CONG1
+                  :CONGRUENT-TO SUB$C)
+
+Summary
+Form:  ( DEFSTOBJ SUB$C-CONG1 ...)
+Rules: NIL
+ SUB$C-CONG1
+ACL2 !>>(DEFSTOBJ SUB$C-CONG2 FLD0$C-CONG2
+                  :CONGRUENT-TO SUB$C)
+
+Summary
+Form:  ( DEFSTOBJ SUB$C-CONG2 ...)
+Rules: NIL
+ SUB$C-CONG2
+ACL2 !>>(DEFUN FOO3-BAD (NTOP)
+               (DECLARE (XARGS :STOBJS NTOP))
+               (STOBJ-LET ((SUB$C (NSUB1 NTOP))
+                           (SUB$C-CONG (NSUB1-AGAIN NTOP)
+                                       UPDATE-NSUB1)
+                           (SUB$C-CONG1 (NSUB2 NTOP))
+                           (SUB$C-CONG2 (NSUB2-AGAIN NTOP)
+                                        UPDATE-NSUB2))
+                          (SUB$C SUB$C-CONG SUB$C-CONG1-VAL SUB$C-CONG2)
+                          (LET ((SUB$C-CONG1-VAL (FLD0$C SUB$C-CONG1)))
+                               (MV SUB$C
+                                   SUB$C-CONG SUB$C-CONG1-VAL SUB$C-CONG2))
+                          NTOP))
+
+
+ACL2 Error in ( DEFUN FOO3-BAD ...):  The stobj-let bindings 
+((SUB$C (NSUB1 NTOP)) (SUB$C-CONG (NSUB1-AGAIN NTOP))) ultimately access
+the same field NSUB1$C of concrete stobj NTOP$C.  Since variables SUB$C
+and SUB$C-CONG are to be updated (i.e., they are among the stobj-let
+form's producer variables), this aliasing is illegal.
+Also: The stobj-let bindings 
+((SUB$C-CONG1 (NSUB2 NTOP)) (SUB$C-CONG2 (NSUB2-AGAIN NTOP))) ultimately
+access the same field NSUB2$C of concrete stobj NTOP$C.  Since variable
+SUB$C-CONG2 is to be updated (i.e., it is among the stobj-let form's
+producer variables), this aliasing is illegal.  The form 
+(STOBJ-LET ((SUB$C (NSUB1 NTOP))
+            (SUB$C-CONG (NSUB1-AGAIN NTOP)
+                        UPDATE-NSUB1)
+            (SUB$C-CONG1 (NSUB2 NTOP))
+            (SUB$C-CONG2 (NSUB2-AGAIN NTOP)
+                         UPDATE-NSUB2))
+           (SUB$C SUB$C-CONG SUB$C-CONG1-VAL SUB$C-CONG2)
+           (LET ((SUB$C-CONG1-VAL (FLD0$C SUB$C-CONG1)))
+                (MV SUB$C
+                    SUB$C-CONG SUB$C-CONG1-VAL SUB$C-CONG2))
+           NTOP)
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN FOO3-BAD ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN FOO3-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN FOO3 (NTOP)
+               (DECLARE (XARGS :STOBJS NTOP))
+               (STOBJ-LET ((SUB$C (NSUB1 NTOP))
+                           (SUB$C-CONG1 (NSUB2 NTOP))
+                           (SUB$C-CONG2 (NSUB2-AGAIN NTOP)
+                                        UPDATE-NSUB2))
+                          (SUB$C SUB$C-CONG1-VAL SUB$C-CONG2-VAL)
+                          (LET ((SUB$C-CONG1-VAL (FLD0$C SUB$C-CONG1))
+                                (SUB$C-CONG2-VAL (FLD0$C SUB$C-CONG2)))
+                               (MV SUB$C SUB$C-CONG1-VAL SUB$C-CONG2-VAL))
+                          NTOP))
+
+Since FOO3 is non-recursive, its admission is trivial.  We observe
+that the type of FOO3 is described by the theorem 
+(AND (CONSP (FOO3 NTOP)) (TRUE-LISTP (FOO3 NTOP))).  We used the :type-
+prescription rule UPDATE-NSUB1.
+
+(FOO3 NTOP) => NTOP.
+
+Computing the guard conjecture for FOO3....
+
+The guard conjecture for FOO3 is trivial to prove.  FOO3 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO3 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE-NSUB1))
+ FOO3
+ACL2 !>>Bye.

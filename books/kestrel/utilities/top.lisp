@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "acceptable-rewrite-rule-p")
 (include-book "apply-fn-if-known")
 (include-book "auto-instance")
 (include-book "auto-termination")
@@ -19,7 +18,6 @@
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
-(include-book "define-sk")
 (include-book "defmacroq")
 (include-book "deftest")
 (include-book "defthmr")
@@ -31,6 +29,8 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-tuples-between")
+(include-book "functions-in-world")
+(include-book "gen-xdoc-for-file")
 (include-book "include-book-paths")
 (include-book "integer-arithmetic/top")
 (include-book "integer-range-fixing")
@@ -40,6 +40,7 @@
 (include-book "keyword-value-lists")
 (include-book "lists/top")
 (include-book "magic-macroexpand")
+(include-book "magic-macroexpand1-dollar")
 (include-book "make-executable")
 (include-book "make-termination-theorem")
 (include-book "maybe-unquote")
@@ -47,7 +48,6 @@
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
-(include-book "obags/with-fixing-theorems")
 (include-book "omaps/with-fixing-theorems")
 (include-book "orelse")
 (include-book "oset-theorems")

@@ -10,4 +10,4 @@
 
 (include-book "../portcullis")
 
-; cert-flags: ? t :ttags (:open-input-channel)
+; cert-flags: ? t :ttags (:open-output-channel!)

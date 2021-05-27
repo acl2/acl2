@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,6 +26,7 @@
                         @('(typed-tuplep pseudo-termp symbol-listp result)').")
                state)
   :mode :program
+  :parents (solve-implementation)
   :short "Call the ACL2 rewriter on the matrix of @('old')."
   (b* (((er (list* rewritten-term used-rules pairs))
         (rewrite$ matrix :ctx ctx :in-theory `(enable ,@method-rules)))

@@ -43,6 +43,7 @@ Makefile-tmp
 .acl2rc
 *.log
 TMP*.*
+*.tem
 temp-emacs-file*
 *~
 Makefile-certs

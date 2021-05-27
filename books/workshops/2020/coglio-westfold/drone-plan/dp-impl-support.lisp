@@ -18,7 +18,8 @@
 
 (include-book "kestrel/lists-light/member-equal" :dir :system)
 
-(local (include-book "kestrel/lists-light/top" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 (in-theory (disable true-listp))
 

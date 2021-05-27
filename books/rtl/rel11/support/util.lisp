@@ -155,3 +155,57 @@
             (defmacro ,name ,params
               (list ',realname ,@params '$path))
             (add-macro-alias ,name ,realname))))
+
+(defmacro defthm-nl (&rest thm)
+  (declare (xargs :guard (and (true-listp thm)
+                              (symbolp (car thm)))))
+  `(encapsulate
+     ()
+
+     (local (set-default-hints
+             '((nonlinearp-default-hint stable-under-simplificationp
+                                        hist pspv))))
+
+     (defthm ,@thm)))
+
+(defmacro defthmd-nl (&rest thm)
+  (declare (xargs :guard (and (true-listp thm)
+                              (symbolp (car thm)))))
+  `(encapsulate
+     ()
+
+     (local (set-default-hints
+             '((nonlinearp-default-hint stable-under-simplificationp
+                                        hist pspv))))
+
+     (defthmd ,@thm)))
+
+(defmacro defthm-nl++ (&rest thm)
+  (declare (xargs :guard (and (true-listp thm)
+                              (symbolp (car thm)))))
+  `(encapsulate
+     ()
+
+     (local
+      (set-default-hints
+       '((nonlinearp-default-hint++ id
+                                    stable-under-simplificationp
+                                    hist
+                                    nil))))
+
+     (defthm ,@thm)))
+
+(defmacro defthmd-nl++ (&rest thm)
+  (declare (xargs :guard (and (true-listp thm)
+                              (symbolp (car thm)))))
+  `(encapsulate
+     ()
+
+     (local
+      (set-default-hints
+       '((nonlinearp-default-hint++ id
+                                    stable-under-simplificationp
+                                    hist
+                                    nil))))
+
+     (defthmd ,@thm)))

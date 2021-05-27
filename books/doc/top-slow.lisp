@@ -184,6 +184,7 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
+(include-book "centaur/fgl/top" :dir :system)
 
 (ifdef "OS_HAS_GLUCOSE"
        (include-book "centaur/sv/tutorial/alu" :dir :system)
@@ -264,6 +265,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
 (include-book "tools/rewrite-dollar" :dir :system)
+(include-book "tools/open-trace-file-bang" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
@@ -344,10 +346,12 @@ book that depends on Glucose being installed.</p>")
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "acl2s/doc" :dir :system)
+(include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "projects/doc" :dir :system)
 
-(include-book "kestrel/top" :dir :system)
+;(include-book "kestrel/top" :dir :system)
+(include-book "kestrel/top-doc" :dir :system) ; for now
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 

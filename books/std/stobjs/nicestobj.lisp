@@ -381,7 +381,8 @@
                             (<field-fix> . ,x.field-fix)
                             (<field-equiv> . ,x.field-equiv)
                             (<stobjpred> . ,x.pred))
-                   :strs `(("<STOBJNAME>" . ,(symbol-name stobjname)))
+                   :strs `(("<STOBJNAME>" . ,(symbol-name stobjname))
+                           ("<STOBJPRED>" . ,(symbol-name x.pred)))
                    :features (if x.rename-pred '(:rename-pred) '(:no-rename-pred))
                    :pkg-sym stobjname))
        (field-templates (acl2::combine-each-tmplsubst-with-default field-templates template1))
@@ -425,10 +426,20 @@
           (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
           :inline t
           :split-types t
+          ;; :returns (new-<stobjname> <stobjpred> :hyp (<stobjpred> <stobjname>))
           (mbe :logic (<base-update> (:@ :arrayp i) (<fix> <field>) <stobjname>)
                :exec (<base-update> (:@ :arrayp i) <field> <stobjname>))
          ///
-         (acl2::add-to-ruleset! <stobjname>-defs <update>)))))
+         (acl2::add-to-ruleset! <stobjname>-defs <update>))))
+
+      ;; (:@ (or (not :fix) (not :not-stobjp))
+      ;;  (defthm <stobjpred>-of-<update>
+      ;;    (implies (and (<pred> <field>)
+      ;;                  (:@ :arrayp
+      ;;                   (< (nfix i) (<stobjname>-><field>-length <stobjname>)))
+      ;;                  (<stobjpred> <stobjname>))
+      ;;             (<stobjpred> (<update> (:@ :arrayp i) <field> <stobjname>)))))
+      )
 
      (std::defenum <fieldp> ((:@proj :fields :<field>)))
 

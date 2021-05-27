@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -69,8 +69,8 @@
 ;    congruence relation for APPLY$.  Defwarrant will prove the appropriate
 ;    congruence rules for each :FN formal of newly badged functions.
 
-; 8. DEFWARRANT
-;    Define DEFWARRANT.
+; 8. DEFWARRANT and DEFBADGE
+;    Define DEFWARRANT and DEFBADGE.
 
 ; 9. DEFUN$
 ;    Define DEFUN$.
@@ -516,11 +516,12 @@
 ; badges: the ~800 apply$ primitives, the 6 apply$ boot functions, and all the
 ; user-defined functions on which defwarrant succeeded.  The last category of
 ; badges are stored in the badge-table under the key :badge-userfn-structure.
-; Given a function fn, (executable-badge fn wrld), defined above in this file,
-; returns the badge, or nil.  We are here primarily interested in the
-; badge-table, which is maintained by defwarrant.  defwarrant infers badges
-; (and builds warrants with them) by recursively inspecting the body of defun'd
-; functions.  It uses executable-badge to acquire badges of subroutines.
+; Given a function fn, (executable-badge fn wrld) returns the badge, or nil.
+
+; We are here primarily interested in the badge-table, which is maintained by
+; defwarrant.  Defwarrant infers badges (and builds warrants with them) by
+; recursively inspecting the body of defun'd functions.  It uses
+; executable-badge to acquire badges of subroutines.
 
 ; Here are some terms we use below:
 
@@ -741,7 +742,8 @@
 ; this is really a computational induction argument that says if the recursive
 ; calls and all subroutines are tame then fn is tame.  Note that fn might be
 ; tame even if some subroutines aren't.  For example, the following fn is tame:
-; (defun fn (x y) (apply$ 'binary-+ (list x y))).
+; (defun fn (x y) (apply$ 'binary-+ (list x y))).  But this function won't
+; detect that.
 
   (declare (xargs :mode :program))
   (cond ((variablep term) t)
@@ -951,7 +953,7 @@
 ; could well type (collect$ 'fn lst) if she wanted to, since it is logically
 ; equivalent to the loop$ translation and more succinct!  So we allow it.
 
-          (mv (msg "~x0 cannot be warranted because a :FN slot in its body is ~
+          (mv (msg "~x0 cannot be badged because a :FN slot in its body is ~
                     occupied by a quoted reference to ~x0 itself; recursion ~
                     through APPLY$ is not permitted except when the function ~
                     was admitted with XARGS :LOOP$-RECURSION T, which only ~
@@ -960,7 +962,7 @@
               nil))
          ((executable-tamep-functionp (cadr term) wrld)
           (mv nil alist))
-         (t (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
+         (t (mv (msg "~x0 cannot be badged because a :FN slot in its ~
                       body is occupied by a quoted symbol, ~x1, that is not a ~
                       tame function."
                      fn
@@ -978,7 +980,7 @@
                (cond
                 ((and (ffnnamep fn (lambda-object-body (cadr term)))
                       (not (executable-badge fn wrld)))
-                 (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
+                 (mv (msg "~x0 cannot be badged because a :FN slot in its ~
                            body is occupied by a lambda object, ~x1, that ~
                            recursively calls ~x0; recursion through APPLY$ is ~
                            not permitted unless the function was admitted ~
@@ -992,13 +994,13 @@
 ; See item (3) of the above mentioned discussion.
 
                  (mv nil alist))
-                (t (mv (msg "~x0 cannot be warranted because a :FN slot in ~
+                (t (mv (msg "~x0 cannot be badged because a :FN slot in ~
                              its body is occupied by a lambda object, ~x1, ~
                              whose body is not tame."
                             fn
                             term)
                        nil))))
-              (t (mv (msg "~x0 will not be warranted because a :FN slot in ~
+              (t (mv (msg "~x0 will not be badged because a :FN slot in ~
                            its body is occupied by a quoted cons object, ~x1, ~
                            that is not a well-formed, fully-translated, ~
                            closed lambda object.  The default behavior of ~
@@ -1009,7 +1011,7 @@
                           fn
                           term)
                      nil))))
-       (t (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
+       (t (mv (msg "~x0 cannot be badged because a :FN slot in its ~
                     body is occupied by a quoted constant, ~x1, that does not ~
                     denote a tame function symbol or lambda object."
                    fn
@@ -1024,7 +1026,7 @@
 ; We don't even allow fns admitted with :LOOP$-RECURSION T because we don't
 ; think the user will ever explicitly type a call of EV$!
 
-               (mv (msg "~x0 cannot be warranted because an :EXPR slot ~
+               (mv (msg "~x0 cannot be badged because an :EXPR slot ~
                          in its body is occupied by a quoted term, ~x1, that ~
                          calls ~x0; recursion through EV$ is not permitted!"
                         fn
@@ -1032,13 +1034,13 @@
                    nil))
               ((executable-tamep (cadr term) wrld)
                (mv nil alist))
-              (t (mv (msg "~x0 cannot be warranted because an :EXPR ~
+              (t (mv (msg "~x0 cannot be badged because an :EXPR ~
                            slot in its body is occupied by a quoted term, ~
                            ~x1, that is not tame."
                           fn
                           term)
                      nil))))
-       (t (mv (msg "~x0 will not be warranted because an :EXPR slot in its ~
+       (t (mv (msg "~x0 will not be badged because an :EXPR slot in its ~
                     body is occupied by a quoted object, ~x1, that is not a ~
                     well-formed, fully-translated ACL2 term.  The default ~
                     behavior of EV$ on ill-formed input is nonsensical, e.g., ~
@@ -1058,7 +1060,7 @@
         nil))
    ((or (eq ilk :FN)
         (eq ilk :EXPR))
-    (mv (msg "~x0 cannot be warranted because ~#1~[a :FN~/an :EXPR~] slot in ~
+    (mv (msg "~x0 cannot be badged because ~#1~[a :FN~/an :EXPR~] slot in ~
               its body is occupied by a call of ~x2.  All :FN and :EXPR slots ~
               must be occupied by either variable symbols or quoted constants ~
               denoting tame functions."
@@ -1135,10 +1137,10 @@
           (mv (msg "~x0 calls the function ~x1 which does not have a badge.  ~
                     You may be able to remedy this by executing ~x2 but then ~
                     again it is possible you've done that already and ~x1 ~
-                    cannot be warranted, in which case neither can ~x0."
+                    cannot be badged, in which case neither can ~x0."
                    fn
                    (ffn-symb term)
-                   `(defwarrant ,(ffn-symb term)))
+                   `(defbadge ,(ffn-symb term)))
               nil))
          (t (guess-ilks-alist-list fn new-badge
                                    (fargs term)
@@ -1182,7 +1184,7 @@
 
 ; Let m, rel, and mp be the measure term, the well-founded relation, and the
 ; domain predicate used in the justification of fn.  We return the essentially
-; maningless term (rel m (mp X)).  This term has the property that if g is
+; meaningless term (rel m (mp X)).  This term has the property that if g is
 ; ancestral in it, then g is correspondingly ancestral in
 ; m, or in the definition of rel, or in the definition of mp.
 
@@ -1292,7 +1294,7 @@
 
 ; If fnp, then x is a function symbol; else it is a term.  We return nil if the
 ; function symbol x (or every function symbol in term x, as per fnp) can be
-; defined before apply$ (actually, before apply$-userfn).'  Otherwise we return
+; defined before apply$ (actually, before apply$-userfn).  Otherwise we return
 ; a symbol, g, naming a ``bad'' function that is ancestral (in the jflg=t
 ; sense) in fn.  G is always some element of *apply$-userfn-callers* and is
 ; just used in an error about why we can't issue a warrant.
@@ -1483,154 +1485,30 @@
 
 ; -----------------------------------------------------------------
 
-(defun badger (fn ens wrld)
+(defun badger (fn wrld)
 
-; Badger returns (mv msg badge) where either msg is nil and badge is a badge
-; for fn, or else msg is an error message and badge is nil.  When badger
-; returns a badge we know the badge satisfies check-ilks as described in Essay
-; on Check-Ilks below.
+; We infer the badge for fn, or else indicate an error.  We return
+; (mv msg badge).
 
   (declare (xargs :mode :program))
-  (cond
-   ((and (symbolp fn)
-         (arity fn wrld)
-         (not (eq (getpropc fn 'symbol-class nil wrld)
-                  :PROGRAM))
-         (body fn nil wrld))
-    (let ((body (expand-all-lambdas (body fn nil wrld)))
-          (formals (formals fn wrld)))
+  (let ((formals (formals fn wrld))
+        (body (expand-all-lambdas (body fn nil wrld))))
+    (mv-let (msg alist0)
+      (guess-ilks-alist fn nil body :unknown wrld nil) ; Pass 1
       (cond
-       ((member-eq fn *blacklisted-apply$-fns*)
-
-; We could relax this check to allow ttag functions to be warranted when there
-; is an active trust tag.  But as of this writing, that relaxation would only
-; apply to SYS-CALL, HONS-CLEAR!, and HONS-WASH!.  It doesn't seem worth the
-; bother to make such exceptions; after all, with a trust tag one can redefine
-; *blacklisted-apply$-fns*!
-
-        (mv (msg "~x0 cannot be warranted because apply$ is prohibited from ~
-                  calling it.  This is generally because its Common Lisp ~
-                  behavior is different from its logical behavior."
-                 fn)
-            nil))
-       ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
-            (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
-
-; You might think that checking that if no stobjs are coming in then no stobjs
-; are coming out, but you'd be wrong: stobj creators.
-
-        (mv (msg "~x0 cannot be warranted because its signature, ~%~y1 ~
-                  ==> ~y2, includes a single-threaded object!"
-                 fn
-                 (prettyify-stobj-flags
-                  (getpropc fn 'stobjs-in nil wrld))
-                 (prettyify-stobjs-out
-                  (getpropc fn 'stobjs-out nil wrld)))
-            nil))
-
-; Next, we need to find out if the justification of fn, if any, is dependent on
-; apply$-userfn.  If so, fn can't be warranted.
-
-       (t (let ((bad-fn
-                 (not-pre-apply$-definable
-                  nil
-                  (nonsensical-justification-term fn wrld)
-                  wrld)))
-            (cond
-             (bad-fn
-; A dependence on apply$-userfn was found in the justification of fn.
-
-              (mv (msg "~x0 cannot be warranted because some part of its ~
-                        justification (i.e., its measure, well-founded ~
-                        relation, or domain predicate) ancestrally calls or ~
-                        is justified in terms of ~x1."
-                       fn
-                       bad-fn)
-                  nil))
-
-; At this point we know fn is a candidate for either G1 or G2.  It can be G1 if
-; its body doesn't depend on apply$-userfn.  Otherwise, it has to be G2.  But
-; in both cases we'll have other constraints to check.
-
-             ((null (bad-ancestor
-                     nil ; j-flg (we no longer care about the justification)
-                     body
-                     *apply$-userfn-callers*
-                     wrld))
-
-; Fn will be in G1 if we warrant it.  G1 functions can't be dependent on any
-; blacklisted function like sys-call.
-
-              (let ((bad-fn
-                     (bad-ancestor nil body *blacklisted-apply$-fns* wrld)))
-                (cond
-                 (bad-fn
-                  (mv (msg "~x0 cannot be warranted because its body is ~
-                            ancestrally dependent on ~x1 which is among the ~
-                            functions apply$ is not allowed to call."
-                           fn
-                           bad-fn)
-                      nil))
-                 (t
-; Fn is an acceptable G1 function symbol.
-                  (mv nil
-                      (make apply$-badge
-                            :arity (arity fn wrld)
-                            :out-arity (length (getpropc fn 'stobjs-out nil wrld))
-                            :ilks t))))))
-
-; Fn will be in G2 if we warrant it.  By the way, we don't explicitly check
-; below that fn is independent of blacklisted functions because we check that
-; every function called is warranted.  If there's a blacklisted function int
-; the body it will be identified as unbadged.
-
-             (t
-              (cond
-               ((cdr (getpropc fn 'recursivep nil wrld))
-                (mv (msg "~x0 cannot be warranted because it is ancestrally ~
-                          dependent on apply$-userfn and in a mutually ~
-                          recursive clique with ~&1.  Unfortunately, ~
-                          defwarrant cannot analyze mutually recursive ~
-                          definitions yet."
-                         fn
-                         (remove1-eq fn (getpropc fn 'recursivep nil wrld)))
-                    nil))
-               (t (mv-let
-                    (msg val)
-                    (g2-justification fn ens wrld)
-                    (declare (ignore val))
-
-; We can ignore val, the list of lexicographic components in fn's measure,
-; because we just need to know whether the justification is acceptable or not.
-; The reason we even compute val is so that g2-justification can be used in the
-; model constructions of projects/apply-model-2/ex1 and ex2.
-
-                    (cond
-                     (msg
-                      (mv msg nil))
-                     ((quick-check-for-tamenessp fn body wrld)
-                      (mv nil
-                          (make apply$-badge
-                                :arity (arity fn wrld)
-                                :out-arity (length (getpropc fn 'stobjs-out nil wrld))
-                                :ilks t)))
-                     (t
-                      (mv-let (msg alist0)
-                        (guess-ilks-alist fn nil body :unknown wrld nil) ; Pass 1
-                        (cond
-                         (msg (mv msg nil))
-                         (t (let* ((new-ilks
-                                    (convert-ilk-alist-to-ilks formals alist0))
-                                   (alist1
-                                    (pairlis$ formals
-                                              (if (eq new-ilks t) nil new-ilks)))
-                                   (new-badge
-                                    (make apply$-badge
-                                          :arity (arity fn wrld)
-                                          :out-arity
-                                          (length (getpropc fn 'stobjs-out nil wrld))
-                                          :ilks new-ilks)))
-                              (mv-let (msg alist2)
+       (msg (mv msg nil))
+       (t (let* ((new-ilks
+                  (convert-ilk-alist-to-ilks formals alist0))
+                 (alist1
+                  (pairlis$ formals
+                            (if (eq new-ilks t) nil new-ilks)))
+                 (new-badge
+                  (make apply$-badge
+                        :arity (arity fn wrld)
+                        :out-arity
+                        (length (getpropc fn 'stobjs-out nil wrld))
+                        :ilks new-ilks)))
+            (mv-let (msg alist2)
 
 ; We suspect that if new-ilks (the :ilks of new-badge) is t then there is no
 ; need to do Pass 2: The only parts of the body that get different treatments
@@ -1640,89 +1518,375 @@
 ; run guess-ilks-alist again... and we've got the proof in the essay below to
 ; confirm that pass 2 is adequate, so we are not much motivated to change it.
 
-                                (guess-ilks-alist fn ; Pass 2
-                                                  new-badge
-                                                  body
-                                                  nil
-                                                  wrld
-                                                  alist1)
-                                (cond
-                                 (msg (mv msg nil))
-                                 ((equal alist1 alist2)
+              (guess-ilks-alist fn ; Pass 2
+                                new-badge
+                                body
+                                nil
+                                wrld
+                                alist1)
+              (cond
+               (msg (mv msg nil))
+               ((equal alist1 alist2)
 
 ; If we get here, we know that (check-ilks fn new-badge body nil (w state)).
 ; See the Essay on Check-Ilks below.
 
-                                  (mv nil new-badge))
-                                 (t
+                (mv nil new-badge))
+               (t
 
 ; We believe it is impossible to get here because of guess-ilks-alist-lemma
 ; shown in the Essay on Check-Ilks below.
 
-                                  (mv (msg "The second pass of the badger ~
-                                            produced a different alist than ~
-                                            the first!  The (completed) alist ~
-                                            produced by the first pass is ~x0 ~
-                                            but the alist produced by the ~
-                                            second pass is ~x1.  This must be ~
-                                            some kind of coding error in ~
-                                            ACL2.  Please report this to the ~
-                                            implementors."
-                                           alist1 alist2)
-                                      nil))))))))))))))))))))
-   (t (mv (msg "~x0 cannot be warranted because it is not a defined ~
-                :logic mode function symbol."
-               fn)
+                (mv
+                 (er hard 'badger
+                     "The second pass of the badger produced a different alist ~
+                     than the first!  The (completed) alist produced by the ~
+                     first pass is ~x0 but the alist produced by the second ~
+                     pass is ~x1.  This must be some kind of coding error in ~
+                     ACL2.  Please report this to the implementors."
+                     alist1 alist2)
+                 nil))))))))))
+
+; Essay on the Badge Table Guard
+
+; There are only two legal operations on the :badge-userfn-structure:
+; * :new     - add a new tuple to the front of the existing value
+; * :changed - change the warrantp field of the tuple of one fn from NIL to T
+
+; Unfortunately, the guard for the table can only see the proposed new value,
+; rather than which operation was used to create it.  So we must recognize the
+; operation from a comparison of the old and newly proposed values.  We do some
+; fast minimal checking during this recognition phase and return the op and
+; new/changed tuple.  If neither op explains the new value we cause a hard
+; error -- we can't cause soft errors because we can't have state because we're
+; in a table guard.
+
+; We recognize op :new when the cdr of the new value is equal to the old value.
+; We recognize op :changed by scanning down both looking for the first tuple
+; that is different.  However, even after finding that changed tuple we insist
+; that the fn fields are the same, the warrantp fields of the old (new) version
+; was NIL (T), that the badge fields are the same, and that the remaining
+; tuples in the two lists are equal.  This guarantees that the change was
+; merely flipping the warrantp flag of an existing function from nil to t.  The
+; recognition phase ends non-errorneously by returning the op token and the
+; tuple in question.
+
+; The more sophisticated checks are then done depending on the op.  If the op
+; is :new, we confirm that the fn of the changed tuple is a function symbol
+; that was not bound in the old alist, that the warrantp field is boolean and,
+; if warrantp=t, that there is a warrant function for fn, and that the badge is
+; correct.  If the op is :changed, we confirm that there is a warrant function
+; for fn.  The checks on the existence of a warrant function and correctness of
+; the badge are the sophisticated parts: we generate the defining event for the
+; warrant and see if it's in the world and we infer the correct badge from
+; scratch and compare it to the new one.
+
+; Note that if the check succeeds, we know, among many other things, that the
+; warrant for fn is named as created by (warrant-name fn).
+
+(defun recognize-badge-userfn-structure-op1 (new-lst old-lst)
+
+; We know the only legal op is going to be :changed.  We look for the changed
+; tuple and classify several error cases.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp new-lst)
+    (cond
+     ((endp old-lst)
+      (mv (er hard 'badge-table-guard
+              "~@0we found no changed tuple."
+              *badge-table-guard-msg*)
+          nil))
+     (t (mv (er hard 'badge-table-guard
+                "~@0the new value doesn't include all the function symbols in ~
+                 the old one.  The first omitted tuple from the old list is ~
+                 ~x1."
+                *badge-table-guard-msg*
+                (car old-lst))
+            nil))))
+   ((endp old-lst)
+    (mv (er hard 'badge-table-guard
+            "~@0the new value contains a new tuple, ~x1, that is not at the ~
+             front of the list."
+            *badge-table-guard-msg*
+            (car new-lst))
+        nil))
+   ((equal (car new-lst) (car old-lst))
+    (recognize-badge-userfn-structure-op1 (cdr new-lst) (cdr old-lst)))
+   ((weak-badge-userfn-structure-tuplep (car new-lst))
+    (let* ((new-tuple (car new-lst))
+           (old-tuple (car old-lst))
+           (new-fn (car new-tuple))
+           (new-warrantp
+            (access-badge-userfn-structure-tuple-warrantp new-tuple))
+           (new-badge
+            (access-badge-userfn-structure-tuple-badge new-tuple))
+           (old-fn (car old-tuple))
+           (old-warrantp
+            (access-badge-userfn-structure-tuple-warrantp old-tuple))
+           (old-badge
+            (access-badge-userfn-structure-tuple-badge old-tuple)))
+      (cond
+       ((and (eq old-fn new-fn)
+             (eq old-warrantp nil)
+             (eq new-warrantp t)
+             (equal old-badge new-badge)
+             (equal (cdr old-lst) (cdr new-lst)))
+        (mv :changed new-tuple))
+       (t (mv (er hard 'badge-table-guard
+                  "~@0the first changed tuple does not just flip the ~
+                   warrantp flag.  The proposed new tuple is ~x1 and the ~
+                   corresponding old tuple is ~x2."
+                  *badge-table-guard-msg*
+                  new-tuple
+                  old-tuple)
+              nil)))))
+   (t (mv (er hard 'badge-table-guard
+              "~@0the first changed element was ill-formed.  The proposed new ~
+               element is ~x1 and the corresponding old tuple is ~x2."
+              *badge-table-guard-msg*
+              (car new-lst)
+              (car old-lst))
           nil))))
 
-(defun badge-table-guard (key val wrld ens)
+(defun recognize-badge-userfn-structure-op (new-lst old-lst)
+
+; We return (mv op tuple) where op is :new, :changed, or one of several error
+; tokens.  In the non-erroneous cases, tuple is the tuple we must inspect more
+; closely.  In the erroneous cases, tuple is just something specific to the
+; error and is only used in reporting.
+
+  (declare (xargs :mode :program))
+  (cond ((and (consp new-lst)
+              (equal (cdr new-lst) old-lst))
+         (cond ((weak-badge-userfn-structure-tuplep (car new-lst))
+                (mv :new (car new-lst)))
+               (t (mv (er hard 'badge-table-guard
+                          "~@0the proposed new element, ~x1, is ill-formed."
+                          *badge-table-guard-msg*
+                          (car new-lst))
+                      nil))))
+        (t (recognize-badge-userfn-structure-op1 new-lst old-lst))))
+
+(defun ok-defbadge (fn wrld)
+
+; We determine whether it is ok to call defbadge on fn.  We return (mv msg flg
+; badge).  If msg is non-nil, it is an error message and the other results are
+; irrelevant.  If msg is nil, flg is t iff we found that fn already has a badge
+; stored in the system (either because it's built in or because, for example,
+; fn was warranted earlier).  In either case of flg, badge is the badge for fn
+; (which we either retrieved from the world or we inferred).  Note that a
+; non-erroneous return with flg = nil means some higher event should store
+; badge in the badge-table for fn.
+
+; Note: This function is to defbadge what chk-acceptable-defwarrant is to
+; defwarrant.  That is, it does all the checks necessary for a syntactically
+; successful defbadge.  But, why then didn't we call it
+; chk-acceptable-defbadge?  The reason is that the chk functions almost always
+; take STATE and cause errors or return useful things computed during the
+; checking.  But this function must be used in badge-table-guard, where state
+; is unavailable.  So it can't take state and can't cause errors, just prepare
+; the messages.
+
+  (declare (xargs :mode :program))
+  (let ((bdg (and (symbolp fn)
+                  (get-badge fn wrld)))
+        (body (and (symbolp fn)
+                   (body fn nil wrld))))
+    (cond
+     (bdg (mv nil t bdg))
+     ((not (and (symbolp fn)
+                (arity fn wrld)
+                body))
+
+; Note: Defbadge requires fn to be defined.  But fn might be in :program mode!
+
+      (mv (msg "Only defined function symbols can be badged and ~x0 is not one."
+               fn)
+          nil nil))
+     ((untouchable-fn-p fn wrld nil)
+
+; Note: The nil above is the value for temp-touchable-fns.  That is stored in
+; state and we don't have access to state here.  Furthermore, we can't because
+; this function is called from badge-table-guard1 (to check that badges added
+; to the badge-table are valid).  The bottom line: because of this nil,
+; defbadge won't allow a function to be badged if the function is on
+; untouchable-fns but has been put temporarily on temp-touchable-fns.
+
+      (mv (msg "~x0 has been declared untouchable and so cannot be badged."
+               fn)
+          nil nil))
+
+     ((member-eq fn *blacklisted-apply$-fns*)
+
+; No blacklisted function has a badge.  Functions like SYS-CALL, HONS-CLEAR!,
+; and HONS-WASH! require active trust tags to call and we'd rather not
+; complicate the whole apply$ story by relaxing this requirement.  It doesn't
+; seem worth the bother to make such exceptions; after all, with a trust tag
+; one can redefine *blacklisted-apply$-fns*!  One important consequence of this
+; decision: if no blacklisted function has a badge and if we've used badges to
+; determine the badge for a function, then no badged function calls a
+; blacklisted function because to badge a function we have to check that all
+; the functions called in its body are badged.  The subtlety in this argument
+; is that we might inadvertently give a function g a badge after noticing that
+; apply$ is not ancestral in g: it must therefore be ``tame'' -- but it might
+; call SYS-CALL!  So we have to be a little careful in defwarrant.
+
+          (mv (msg "~x0 cannot be badged because apply$ is prohibited from ~
+                    calling it.  This is generally because its Common Lisp ~
+                    behavior is different from its logical behavior."
+                   fn)
+              nil nil))
+     ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
+          (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
+
+; You might think that checking that if no stobjs are coming in then no stobjs
+; are coming out, but you'd be wrong: stobj creators.
+
+      (mv (msg "~x0 cannot be badged because its signature, ~%~y1 ==> ~y2, ~
+                includes a single-threaded object!"
+               fn
+               (prettyify-stobj-flags
+                (getpropc fn 'stobjs-in nil wrld))
+               (prettyify-stobjs-out
+                (getpropc fn 'stobjs-out nil wrld)))
+          nil nil))
+     ((null (bad-ancestor
+             nil ; j-flg (we do not care about the justification)
+             body
+             *apply$-userfn-callers*
+             wrld))
+
+; If fn is not ancestrally dependent on apply$ we can badge it, even if it's
+; part of a mutually recursive clique and/or some of its subfunctions are not
+; badged.
+
+      (mv nil nil
+          (make apply$-badge
+                :arity (arity fn wrld)
+                :out-arity (length (getpropc fn 'stobjs-out nil wrld))
+                :ilks t)))
+     ((cdr (getpropc fn 'recursivep nil wrld))
+      (mv (msg "~x0 cannot be badged because it is mutually recursive clique ~
+                with ~&1.  Unfortunately, we cannot yet analyze such cliques."
+               fn
+               (remove1-eq fn (getpropc fn 'recursivep nil wrld)))
+          nil nil))
+     ((quick-check-for-tamenessp fn body wrld)
+      (mv nil nil
+          (make apply$-badge
+                :arity (arity fn wrld)
+                :out-arity
+                (length (getpropc fn 'stobjs-out nil wrld))
+                :ilks t)))
+     (t (mv-let (msg badge)
+          (badger fn wrld)
+          (cond (msg (mv msg nil nil))
+                (t (mv nil nil badge))))))))
+
+(defun badge-table-guard1 (new-lst old-lst wrld)
+  (declare (xargs :mode :program))
+  (cond
+   ((null new-lst)
+
+; It is legal to simply abandon all userfn badges and warrants!  But generally
+; this is only done during bootstrapping to initialize the table.
+    t)
+   (t (mv-let (op tuple)
+        (recognize-badge-userfn-structure-op new-lst old-lst)
+        (let ((fn (car tuple))
+              (warrantp
+               (access-badge-userfn-structure-tuple-warrantp tuple))
+              (badge
+               (access-badge-userfn-structure-tuple-badge tuple)))
+
+; We now do the sophisticated checks on the tuple.  BTW: If the recognizer
+; didn't cause a hard error, op is either :new or :changed.  But we check that
+; just to be sure!  If op = :new, we confirm that the fn of the changed tuple
+; is a function symbol that was not bound in the old alist, that the warrantp
+; field is boolean, if warrantp=t there there is a warrant function for fn, and
+; that the badge is correct.  If the op is :changed, we confirm that there is a
+; warrant function for fn.  To avoid code duplication, we check for the warrant
+; function in code shared for the two ops.
+
+          (and
+           (or (eq op :new)
+               (eq op :changed)
+               (er hard 'badge-table-guard
+                   "Recognize-badge-userfn-structure-op returned op = ~x0 when ~
+                  it is supposed be either :NEW or :CHANGED."
+                   op))
+           (if (eq op :new)
+               (and (symbolp fn)
+                    (arity fn wrld)
+                    (not (assoc-eq fn old-lst))
+                    (booleanp warrantp)
+                    (mv-let
+                      (msg flg correct-badge)
+                      (ok-defbadge fn wrld)
+                      (declare (ignore flg))
+                      (cond
+                       (msg (er hard 'badge-table-guard
+                                "~@0the badge proposed for ~x1 was ~x2, but ~
+                                 badger reports: ~@3."
+                                *badge-table-guard-msg*
+                                fn badge msg))
+                       ((not (equal badge correct-badge))
+                        (er hard 'badge-table-guard
+                            "~@0the badge proposed for ~x1 was ~x2 but the ~
+                             actual badge computed by the badger is ~x3"
+                            *badge-table-guard-msg*
+                            fn badge correct-badge))
+                       (t t))))
+               t)
+; At this point we know badge = correct-badge.  Now we check the warrant if
+; warrantp = t, whether op is :new or :changed.  Note that if the check
+; succeeds, we know, among many other things, that the warrant for fn is really
+; named by (warrant-name fn).
+
+           (if (eq warrantp t)
+               (or (equal (get-event (warrant-name fn) wrld)
+                          (make-apply$-warrant-defun-sk fn
+                                                        (formals fn wrld)
+                                                        badge
+                                                        t))
+                   (er hard 'badge-table-guard
+                       "~@0it is claimed that ~x1 has a warrant but ~
+                        ~#2~[there is no event introducing a function named ~
+                        ~x3~/the event introducing the name ~x3 is ~x4 and ~
+                        should be ~x5~]."
+                       *badge-table-guard-msg*
+                       fn
+                       (if (get-event (warrant-name fn) wrld)
+                           1 0)
+                       (warrant-name fn)
+                       (get-event (warrant-name fn) wrld)
+                       (make-apply$-warrant-defun-sk fn
+                                                     (formals fn wrld)
+                                                     badge
+                                                     t)))
+               t)))))))
+
+(defun badge-table-guard (key val wrld)
+
+; See the Essay on the Badge Table Guard.
 
 ; See the comment in defwarrant about speeding up this function by using a
 ; checker version of badger.  (That checker would need to be written.)
 
   (declare (xargs :mode :program))
-  (let* ((new-entry (and (consp val) (car val)))
-         (fn (and (consp new-entry) (car new-entry)))
-         (specified-badge (and (consp new-entry) (cdr new-entry))))
-    (cond
-     ((not (eq key :badge-userfn-structure)) ; no need to protect for other keys
-      t)
-     ((null val) ; initial value
-      t)
-     ((not (consp val))
-      (er hard 'badge-table
-          "The value to be saved in badge-table, ~x0, is (surprisingly) not a ~
-           cons."
-          val))
-     ((not (equal (cdr (assoc-eq :badge-userfn-structure
-                                 (table-alist 'badge-table wrld)))
-                  (cdr val)))
-      (er hard 'badge-table
-          "The badge-table was to be updated by a record based on the name ~
-           ~x0 and badge ~x1, but surprisingly, the table event specified an ~
-           extension by that record of~|~%  ~x2~|~%instead of specifying an ~
-           extension of the existing list of stored badge structures,~|~%~  ~
-           ~x3."
-          fn
-          specified-badge
-          (cdr val)
-          (cdr (assoc-eq :badge-userfn-structure
-                         (table-alist 'badge-table wrld)))))
-     (t (mv-let
-          (msg actual-badge)
-          (badger fn ens wrld) ; see comment above about possible checker
-          (cond
-           (msg (er hard 'badge-table "~@0" msg))
-           ((not (equal specified-badge actual-badge))
-            (er hard 'badge-table
-                "The badge-table update for the name ~x0 specifies a badge of ~
-                 ~x1, but the correct badge is ~x2."
-                fn specified-badge actual-badge))
-           (t t)))))))
+  (cond
+   ((not (eq key :badge-userfn-structure)) ; no need to protect for other keys
+    t)
+   (t (badge-table-guard1 val
+                          (cdr (assoc-eq :badge-userfn-structure
+                                         (table-alist 'badge-table wrld)))
+                          wrld))))
 
 (table badge-table nil nil
        :guard
-       (badge-table-guard key val world ens))
+       (badge-table-guard key val world))
 
 (table badge-table
        :badge-userfn-structure
@@ -1922,7 +2086,7 @@
    (t (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn)))))
 
 ; -----------------------------------------------------------------
-; 8. DEFWARRANT
+; 8. DEFWARRANT and DEFBADGE
 
 ; Suppose AP is defined (with defun$) to be a tame function of two arguments
 ; returning one result.  Then defun$ will also do something equivalent to the
@@ -1992,27 +2156,147 @@
 
 ; We originally introduced defwarrant-event here, preceded by supporting
 ; functions tameness-conditions, successive-cadrs, and necc-name-ARGS-instance.
-; However, we call defwarrant-event in the definition of warrantp, which in
-; turn is called in the implementation of defattach in file other-events.lisp.
-; So those definitions now appear in that file.
+; However, we moved it to other-events because at one time it was needed there
+; in the implementation of defattach.  It does not appear to be needed there
+; anymore and perhaps could be moved back here.
 
-(defun defwarrant-fn1 (fn state)
+(defun chk-acceptable-defwarrant (fn ctx ens wrld state)
+
+; We cause an error if (defwarrant fn) is unacceptable; otherwise, we return
+; (via an error-triple) either T, meaning fn is already warranted or needs no
+; warrant, or else a badge-pair, (flg . badge), composed of the last two
+; results returned by ok-defbadge, where flg indicates whether a badge for fn
+; is already stored and badge is the badge (either found or inferred) which
+; needs to be stored if flg=nil.
+
+; Among other things we guarantee that fn is a defined :logic mode function,
+; that it is not blacklisted, does not traffic in stobjs, that its
+; justification is independent of apply$, that either (a) the body is
+; independent of apply$, or (b) the body is not independent of apply$ but is
+; singly-recursive (well, at least, not mutually recursive) and that the
+; justification is suitably lexicographic (in the sense that we can insert it
+; into the model's measure of the apply$ clique).
+
   (declare (xargs :mode :program))
-  (let ((ens (ens state))
-        (wrld (w state))
+  (mv-let (msg flg badge)
+    (ok-defbadge fn wrld)
+    (cond
+     (msg (er soft ctx "~@0" msg))
+     (t (let ((badge-pair (cons flg badge)))
+
+; Note that the flag component of badge-pair tells us whether fn already had a
+; badge, which can answer some of our questions below.  In any case, if
+; ok-defbadge didn't indicate an error we know fn is a defined function symbol
+; with the other properties necessary for defbadge to succeed.
+
+    (cond
+     ((or (apply$-primp fn)
+          (assoc-eq fn *apply$-boot-fns-badge-alist*)
+          (get-warrantp fn wrld)
+          )
+
+; Fn doesn't need a warrant or else is already warranted, so we return T,
+; meaning no action is needed.  It is hard to see how the get-warrantp above
+; could succeed, since the (defwarrant fn) event that got us here would have
+; been recognized as redundant, but we check just to make sure.
+
+      (value t))
+     ((eq (getpropc fn 'symbol-class nil wrld)
+          :PROGRAM)
+      (er soft ctx
+          "Defwarrant expects a defined, :logic mode function symbol as its ~
+           argument and ~x0 is not one."
+          fn))
+
+; Next, we need to find out if the justification of fn, if any, is dependent on
+; apply$-userfn.  If so, fn can't be warranted.
+
+     (t (let ((bad-fn
+               (not-pre-apply$-definable
+                nil
+                (nonsensical-justification-term fn wrld)
+                wrld)))
+          (cond
+           (bad-fn
+
+; A dependence on apply$-userfn was found in the justification of fn.
+
+            (er soft ctx
+                "~x0 cannot be warranted because some part of its ~
+                 justification (i.e., its measure, well-founded relation, or ~
+                 domain predicate) ancestrally calls or is justified in terms ~
+                 of ~x1."
+                fn
+                bad-fn))
+           (t
+            (let ((body (body fn nil wrld)))
+
+; At this point we know fn is a candidate for either G1 or G2.  It can be G1 if
+; its body doesn't depend on apply$-userfn.  Otherwise, it has to be G2.  But
+; in both cases we'll have other constraints to check.
+
+              (cond
+               ((null (bad-ancestor
+                       nil ; j-flg (we no longer care about the justification)
+                       body
+                       *apply$-userfn-callers*
+                       wrld))
+
+; Fn will be in G1 if we warrant it.  It will necessarily be ``tame'' because
+; it's independent of apply$.  But it might call a blacklisted function because
+; we haven't actually checked that every subfunction it calls is badged.
+
+                (cond
+                 ((car badge-pair)
+
+; Fn already had a badge in the system.  So we know it doesn't have a blacklisted
+; ancestor.
+                  (value badge-pair))
+                 (t
+                  (let ((bad-fn
+                         (bad-ancestor nil body *blacklisted-apply$-fns* wrld)))
+                    (cond
+                     (bad-fn
+                      (er soft ctx
+                          "~x0 cannot be warranted because its body is ~
+                           ancestrally dependent on ~x1 and we enforce the ~
+                           restriction that no blacklisted function is called ~
+                           by any badged function."
+                          fn
+                          bad-fn))
+                     (t (value badge-pair)))))))
+
+; Fn will be in G2 if we warrant it.  But it's justification must fit within
+; the model's justification of the apply clique.
+
+               (t
+                (mv-let
+                  (msg val)
+                  (g2-justification fn ens wrld)
+                  (declare (ignore val))
+
+; We can ignore val, the list of lexicographic components in fn's measure,
+; because we just need to know whether the justification is acceptable or not.
+; The reason we even compute val in g2-justification is so that we can use that
+; same utility in the model constructions of projects/apply-model-2/ex1 and
+; ex2.
+
+                  (cond
+                   (msg (er soft ctx "~@0" msg))
+                   (t (value badge-pair)))))))))))))))))
+
+(defun confirm-apply-books (state)
+  (declare (xargs :mode :program))
+  (let ((wrld (w state))
         (apply-lemmas-book
          (extend-pathname :system "projects/apply/base.lisp" state)))
-    (mv-let (msg bdg)
-      (badger fn ens wrld)
-      (cond
-       (msg
-        (er soft 'defwarrant "~@0" msg))
-       ((and (not (assoc-equal
-                   apply-lemmas-book
-                   (global-val 'include-book-alist (w state))))
-             (not (equal apply-lemmas-book
-                         (active-book-name (w state) state)))
-             (not (global-val 'boot-strap-flg (w state))))
+    (cond
+     ((and (not (assoc-equal
+                 apply-lemmas-book
+                 (global-val 'include-book-alist wrld)))
+           (not (equal apply-lemmas-book
+                       (active-book-name wrld state)))
+           (not (global-val 'boot-strap-flg wrld)))
 
 ; In order to succeed, defwarrant needs base.lisp to have been included.  That
 ; is because defwarrant tries to prove congruence rules and at the very least
@@ -2025,50 +2309,106 @@
 ; We make an exception for the boot-strap, where we take responsibility for the
 ; necessary verification.
 
-        (er soft 'defwarrant
-            "Please execute~%~x0~|before the first defun$ or defwarrant.  ~
-             See :DOC defwarrant."
-            '(include-book
-              "projects/apply/top" :dir :system)))
-       (t
-        (value
+      (er soft 'confirm-apply-books
+          "Please execute~%~x0~|before the first defun$, defbadge, or ~
+           defwarrant.  See :DOC defwarrant."
+          '(include-book "projects/apply/top" :dir :system)))
+     (t (value nil)))))
+
+(defun defwarrant-fn1 (fn state)
+  (declare (xargs :mode :program))
+  (let ((wrld (w state)))
+    (er-progn
+     (confirm-apply-books state)
+     (er-let* ((badge-pair-or-t
+                (chk-acceptable-defwarrant fn
+                                           (cons 'defwarrant fn)
+                                           (ens state)
+                                           wrld
+                                           state)))
+       (cond
+        ((eq badge-pair-or-t t)
+         (pprogn
+
+; Some functions are warranted in boot-strap-pass-2-b.lisp and without this
+; check of the boot-strap-flg the build prints a bunch of misleading messages
+; about how, for example, mempos is already warranted (but it wasn't until
+; (defwarrant mempos) was executed in boot-strap-pass-2b.
+
+          (if (global-val 'boot-strap-flg wrld)
+              state
+              (observation
+               (cons 'defwarrant fn)
+               "The function ~x0 is either built-in and doesn't need a ~
+                warrant or it already has a warrant.  This event thus has no ~
+                effect.~|~%"
+               fn))
+          (value `(with-output
+                    :stack :pop
+                    (value-triple nil)))))
+        (t
+         (value
 
 ; WARNING: Be sure no event under this (encapsulate () ...) is local!  At one
 ; time we used (progn ...) instead.  However, we found that defwarrant events
 ; were never redundant because of the defattach below.
 
-         `(encapsulate ; Read the warning above before changing to progn.
-            ()
-            ,@(defwarrant-event fn (formals fn wrld)
-                bdg)
-            (table badge-table
-                   :badge-userfn-structure
-                   (cons ',(cons fn bdg)
-                         (cdr (assoc :badge-userfn-structure
-                                     (table-alist 'badge-table world))))
-                   :put)
-            ,(if (getpropc fn 'predefined nil wrld)
-                 `(defattach (,(warrant-name fn)
-                              true-apply$-warrant)
-                    :system-ok t)
-               `(defattach ,(warrant-name fn) true-apply$-warrant))
-            ,@(if (eq (access apply$-badge bdg :ilks) t)
-                  nil
-                (defcong-fn-equal-equal-events
-                  (cons fn (formals fn wrld))
-                  1
-                  (access apply$-badge bdg :ilks)))
-            (with-output
-              :stack :pop
-              (value-triple
-               (prog2$
-                (cw "~%~x0 is now warranted, with badge ~x1.~%~%"
-                    ',fn ',bdg)
-                :warranted))))))))))
+          `(encapsulate ; Read the warning above before changing to progn.
+             ()
+             ,@(defwarrant-events fn (formals fn wrld) (cdr badge-pair-or-t))
+             (table badge-table
+                    :badge-userfn-structure
+                    (put-badge-userfn-structure-tuple-in-alist
+                     (make-badge-userfn-structure-tuple
+                      ',fn T ',(cdr badge-pair-or-t))
+                     (cdr (assoc :badge-userfn-structure
+                                 (table-alist 'badge-table world))))
+                    :put)
+             ,(if (getpropc fn 'predefined nil wrld)
+                  `(defattach (,(warrant-name fn)
+                               true-apply$-warrant)
+                     :system-ok t)
+                  `(defattach ,(warrant-name fn) true-apply$-warrant))
+             ,@(if (eq (access apply$-badge (cdr badge-pair-or-t) :ilks) t)
+                   nil
+                   (defcong-fn-equal-equal-events
+                     (cons fn (formals fn wrld))
+                     1
+                     (access apply$-badge (cdr badge-pair-or-t) :ilks)))
+             (progn ,(if (global-val 'boot-strap-flg wrld)
+                         `(with-output
+                            :stack :pop
+                            (value-triple
+                             (prog2$
+                              (cw "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
+                                  ',fn
+                                  ',(warrant-name fn)
+                                  ',(cdr badge-pair-or-t))
+                              :warranted)))
+                         `(side-effect-event
+                           (if (or (eq (ld-skip-proofsp state) 'include-book)
+                                   (eq (ld-skip-proofsp state) 'include-book-with-locals)
+                                   (eq (ld-skip-proofsp state) 'initialize-acl2))
+                               state
+                               (fms "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
+                                    (list (cons #\0 ',fn)
+                                          (cons #\1 ',(warrant-name fn))
+                                          (cons #\2 ',(cdr badge-pair-or-t)))
+                                    (standard-co state) state nil))))
+                    (with-output
+                      :stack :pop
+                      (value-triple :warranted)))))))))))
 
 (defun defwarrant-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
   `(defwarrant-fn1 ',fn state))
+
+(defmacro side-effect-event (form)
+
+; Form should return state.
+
+  `(with-output :off summary
+     (make-event (pprogn ,form (value '(value-triple :invisible))))))
 
 (defmacro defwarrant (fn)
 
@@ -2173,7 +2513,10 @@
 ; normally stores the badge.  I.e., instead of laying down the quoted badge in:
 
 ; (TABLE BADGE-TABLE :BADGE-USERFN-STRUCTURE
-;        (CONS '(MAPSTUB APPLY$-BADGE T 2 NIL :FN)
+;        (CONS (MAKE-BADGE-USERFN-STRUCTURE-TUPLE
+;                 'MAPSTUB
+;                 T
+;                 '(APPLY$-BADGE T 2 NIL :FN))
 ;              (CDR (ASSOC :BADGE-USERFN-STRUCTURE #)))
 ;        :PUT)
 
@@ -2186,6 +2529,87 @@
 ; hard error...  All this is speculative because efficiency is not a big
 ; concern right now!  We will wait until users start using APPLY$ and complain
 ; about performance!
+
+(defun defbadge-fn1 (fn state)
+  (declare (xargs :mode :program))
+  (let ((wrld (w state))
+        (ctx `(defbadge . ,fn)))
+    (er-progn
+     (confirm-apply-books state)
+     (mv-let
+       (msg flg badge)
+       (ok-defbadge fn wrld)
+       (cond
+        (msg
+         (er soft ctx "~@0" msg))
+        (flg
+         (pprogn (observation (cons 'defbadge fn)
+                              "The function ~x0 already has a badge because ~
+                               it is built-in, or because defbadge or ~
+                               defwarrant has been previously invoked on it, ~
+                               or because :loop$-recursion t was declared).  ~
+                               This event thus has no effect.~|~%"
+                              fn)
+                 (value `(with-output
+                           :stack :pop
+                           (value-triple nil)))))
+        (t
+         (value
+
+; Otherwise, we store the badge for fn in the badge table.  Note that we set
+; the warrantp flag of fn to NIL.  We know we're not overriding a previous
+; setting of T because if fn had been previously warranted it would have had a
+; badge already.
+
+; WARNING: Be sure no event under this (encapsulate () ...) is local!  At one
+; time we used (progn ...) instead.  However, we found that defwarrant events
+; were never redundant because of the defattach below.
+
+          `(encapsulate ; Read the warning above before changing to progn.
+             ()
+             (table badge-table
+                    :badge-userfn-structure
+                    (put-badge-userfn-structure-tuple-in-alist
+                     (make-badge-userfn-structure-tuple
+                      ',fn NIL ',badge)
+                     (cdr (assoc :badge-userfn-structure
+                                 (table-alist 'badge-table world))))
+                    :put)
+             (with-output
+               :stack :pop
+               (value-triple
+                (prog2$
+                 (cw "~%~x0 now has the badge ~x1 but has no warrant.~%~%"
+                     ',fn ',badge)
+                 :warranted)))))))))))
+
+(defun defbadge-fn (fn)
+  (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
+  `(defbadge-fn1 ',fn state))
+
+(defmacro defbadge (fn)
+
+; See the comments in defwarrant about speeding up the badger.
+
+; WARNING: Do not extend the functionality of defbadge by badging constrained
+; functions!  That opens a can of worms, namely tracking attachments to guard
+; against the calling of lambda$ expressions unbound by lambda$-alist during
+; pre-loading of compiled files.  There are probably a dozen other reasons not
+; to think about badged attachable functions!
+
+  `(with-output
+     :off ; *valid-output-names* except for error
+     (warning warning! observation prove proof-builder event history summary
+              proof-tree)
+     :stack :push
+     :gag-mode nil
+     (make-event
+      (with-output
+        :stack :pop
+        ,(defbadge-fn fn))
+      :on-behalf-of :quiet!
+; See note below.
+      :check-expansion t)))
 
 ; -----------------------------------------------------------------
 ; 9. DEFUN$

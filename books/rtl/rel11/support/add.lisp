@@ -1,6 +1,10 @@
 (in-package "RTL")
 (include-book "verify-guards")
-(local (include-book "lza"))
+
+(include-book "basic")
+(include-book "bits")
+(include-book "log")
+(include-book "float")
 
 (include-book "tools/with-arith5-help" :dir :system)
 (local (acl2::allow-arith5-help))
@@ -233,14 +237,6 @@
                  (:instance logxor-x-m1 (x (logxor x y)))
                  (:instance add-3 (z -1))))))
 
-(defruled lutz-lemma
-  (implies (and (integerp x) (integerp y) (natp n))
-           (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                     (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
-                (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                     (= (+ (bits x (1- n) 0) (bits y (1- n) 0))
-                        (1- (expt 2 n)))))))
-
 (defun rc-carry (x y k)
   (declare (xargs :guard (and (integerp x)
                               (integerp y)
@@ -467,6 +463,127 @@
        ("subgoal 2.1" :use (:instance lemma0 (x y)))
        ("subgoal 1" :cases ((not (>= x (expt 2 (1- n))))
                             (not (>= y (expt 2 (1- n)))))))))))
+
+;;----------------------------------------------------------------------------------------
+
+(local-defund equivs (x y n)
+  (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+            (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
+       (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+            (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-1
+   (implies (and (integerp z) (natp n))
+            (iff (= (bits z n 0) (1- (expt 2 (1+ n))))
+	         (and (= (bitn z n) 1)
+		      (= (bits z (1- n) 0) (1- (expt 2 n))))))
+  :hints (("Goal" :use ((:instance bitn-plus-bits (x z) (m 0))
+                        (:instance bits-bounds (x z) (i (1- n)) (j 0))
+			(:instance bitn-0-1 (x z)))
+		  :nonlinearp t)))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-2
+   (implies (and (integerp x) (integerp y) (natp n))
+            (iff (= (+ (bits x n 0) (bits y n 0)) (1- (expt 2 (1+ n))))
+	         (and (not (= (bitn x n) (bitn y n)))
+		      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
+  :hints (("Goal" :use (bitn-0-1
+                        (:instance bitn-0-1 (x y))
+			(:instance bitn-plus-bits (m 0))
+                        (:instance bitn-plus-bits (x y) (m 0))
+                        (:instance bits-bounds (i (1- n)) (j 0))
+                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))
+		  :nonlinearp t)))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-3
+   (implies (and (integerp x) (integerp y) (natp n)
+                 (equivs x y n)
+		 (not (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
+	    (equivs x y (1+ n)))
+  :hints (("Goal" :in-theory (enable equivs logxor)
+                  :use (lutz-2
+                        (:instance lutz-1 (z (+ x y)))
+			(:instance lutz-1 (z (logxor x y))))
+		  :nonlinearp t)))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-4
+  (implies (and (integerp x) (integerp y) (natp n))
+           (equal (bits (+ x y) n 0)
+                  (mod (+ (bits x n 0) (bits y n 0))
+                       (expt 2 (1+ n)))))
+  :hints (("Goal" :in-theory (enable bits-mod))))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-5
+  (implies (and (integerp x) (integerp y) (natp n)
+                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
+           (equal (bits (+ x y) n 0)
+                  (mod (+ (* (expt 2 n) (+ (bitn x n) (bitn y n)))
+		          (1- (expt 2 n)))
+                       (expt 2 (1+ n)))))
+  :hints (("Goal" :in-theory (enable lutz-4)
+                  :nonlinearp t
+                  :use (bitn-0-1
+		        (:instance bitn-0-1 (x y))
+			(:instance bitn-plus-bits (m 0))
+		        (:instance bitn-plus-bits (x y) (m 0))))))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-6
+  (implies (and (integerp x) (integerp y) (natp n)
+                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
+           (iff (= (bits (+ x y) n 0) (1- (expt 2 (1+ n))))
+                (not (= (bitn x n) (bitn y n)))))
+  :hints (("Goal" :in-theory (enable lutz-5)
+                  :nonlinearp t
+                  :use (bitn-0-1
+		        (:instance bitn-0-1 (x y))))))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-7
+   (implies (and (integerp x) (integerp y) (natp n)
+                 (equivs x y n)
+		 (= (bits (+ x y) (1- n) 0) (1- (expt 2 n))))
+	    (equivs x y (1+ n)))
+  :hints (("Goal" :in-theory (enable equivs logxor)
+                  :use (lutz-2 lutz-6 bitn-logxor bitn-0-1
+		        (:instance bitn-0-1 (x y))
+                        (:instance lutz-1 (z (+ x y)))
+			(:instance lutz-1 (z (logxor x y))))
+		  :nonlinearp t)))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-8
+   (implies (and (integerp x) (integerp y) (not (zp n))
+                 (equivs x y (1- n)))
+	    (equivs x y n))
+  :hints (("Goal" :use ((:instance lutz-3 (n (1- n)))
+                        (:instance lutz-7 (n (1- n)))))))))
+
+(local (acl2::with-arith5-help
+(defthmd lutz-9
+   (implies (and (integerp x) (integerp y))
+	    (equivs x y 0))
+  :hints (("Goal" :in-theory (enable equivs))))))
+
+(local-defthmd lutz-10
+   (implies (and (integerp x) (integerp y) (natp n))
+	    (equivs x y n))
+  :hints (("Goal" :induct (nats n))
+          ("Subgoal *1/2" :use (lutz-8))
+	  ("Subgoal *1/1" :use (lutz-9))))
+
+(defthmd lutz-lemma
+   (implies (and (integerp x) (integerp y) (natp n))
+            (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+                      (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
+                 (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+                      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
+  :hints (("Goal" :in-theory '(equivs) :use (lutz-10))))
 
 (defruled prop-as-logxor
    (implies (and (natp i)
@@ -881,74 +998,6 @@
                (equal (= (+ x y) (1- (expt 2 n)))
                       (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
       :enable (bvecp bits-mod)))))
-
-;;;**********************************************************************
-;;;                  Leading One Prediction
-;;;**********************************************************************
-
-(defund p0 (a b)
-  (declare (xargs :guard (and (integerp a)
-                              (integerp b))))
-  (logxor a b))
-
-(defund k0 (a b n)
-  (declare (xargs :guard (and (integerp a)
-                              (integerp b)
-                              (integerp n))))
-  (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
-
-(defund w0 (a b n)
-  (declare (xargs :guard (and (integerp a)
-                              (integerp b)
-                              (integerp n))))
-  (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
-
-(defthmd p0-rewrite
-  (implies (and (integerp a)
-                (integerp b)
-		(integerp j))
-	   (equal (bitn (p0 a b) j)
-	          (if (= (bitn a j) (bitn b j))
-		      0 1))))
-
-(defthmd k0-rewrite
-  (implies (and (integerp a)
-                (integerp b)
-		(natp j)
-                (natp n)
-                (< j n))
-	   (equal (bitn (k0 a b n) j)
-	          (if (and (= (bitn a j) 0) (= (bitn b j) 0))
-		      1 0))))
-
-(defthmd w0-rewrite
-  (implies (and (integerp a)
-                (integerp b)
-		(not (zp n))
-                (not (zp j))
-		(< j n))
-	   (equal (bitn (w0 a b n) j)
-	          (if (= (bitn (p0 a b) j) (bitn (k0 a b n) (1- j)))
-		      1 0))))
-
-(defthm lza-thm
-  (implies (and (not (zp n))
-                (bvecp a n)
-                (bvecp b n)
-                (> (+ a b) (expt 2 n)))
-           (and (>= (w0 a b n) 2)
-                (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
-                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))))
-  :rule-classes ())
-
-(defthm lza-cor
-  (implies (and (not (zp n))
-                (bvecp a n)
-                (bvecp b n)
-                (> (+ a b) (expt 2 n)))
-           (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
-               (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
-  :rule-classes ())
 
 ;;;**********************************************************************
 ;;;                    Trailing One Prediction

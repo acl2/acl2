@@ -1,0 +1,3 @@
+(include-book "models/jvm/m1/m1" :dir :system)
+(include-book "misc/defpun" :dir :system)
+(certify-book "/u/moore/text/acl2-intro/plenary-j1/m1-fact-on-neg-runs-forever" 2)

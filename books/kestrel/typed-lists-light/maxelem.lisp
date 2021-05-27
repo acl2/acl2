@@ -31,13 +31,13 @@
 
 (defstub negative-infinity () t)
 
+;; Returns the largest element of a non-empty list.
 (defund maxelem (lst)
-  (declare (xargs :guard (and ;(true-listp lst) ;drop?
-                              (rational-listp lst))))
+  (declare (xargs :guard (rational-listp lst)))
   (if (endp lst)
       ;; It's not clear what the maximum element of an empty list should be, so
       ;; we return a special value:
-      (negative-infinity)
+      (negative-infinity) ;should not happen
     (if (endp (cdr lst))
         (car lst)
       (max (car lst) (maxelem (cdr lst))))))
@@ -63,13 +63,12 @@
                   (negative-infinity)))
   :hints (("Goal" :in-theory (enable maxelem))))
 
-;bozo yuck
-(defthm maxelem-when-non-consp-hidden
-  (implies (not (consp x))
-           (equal (hide (maxelem x))
-                  (negative-infinity)))
-  :hints (("Goal" :expand (hide (maxelem x))
-           :in-theory (enable maxelem (hide)))))
+;; (defthm maxelem-when-non-consp-hidden
+;;   (implies (not (consp x))
+;;            (equal (hide (maxelem x))
+;;                   (negative-infinity)))
+;;   :hints (("Goal" :expand (hide (maxelem x))
+;;            :in-theory (enable maxelem (hide)))))
 
 (defthm maxelem-of-append
   (implies (true-listp y) ;drop?
@@ -147,7 +146,6 @@
                         (if (< val (maxelem (take (nfix n) lst)))
                             (maxelem (take (nfix n) lst))
                           val))))))
-  :otf-flg t
   :hints (("Goal" :do-not-induct t
            :expand (MAXELEM (CDR LST))
            :in-theory (e/d (update-nth-rw;update-nth-rewrite nth-when-n-is-zp

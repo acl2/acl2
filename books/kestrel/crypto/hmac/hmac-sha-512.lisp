@@ -20,7 +20,7 @@
 (include-book "../sha-2/sha-512")
 (include-book "../../bv-lists/bvxor-list")
 (local (include-book "../../lists-light/append"))
-(local (include-book "../../bv-lists/all-integerp-of-repeat"))
+(local (include-book "../../typed-lists-light/all-integerp-of-repeat"))
 
 (defconst *sha-512-block-size* 128) ;; 1024 bits = 128 bytes
 

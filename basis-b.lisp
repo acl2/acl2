@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -357,6 +357,34 @@
                (t nil)))
         (t (cons (car outputs) (defstub-body-old-aux (cdr outputs) stobjs)))))
 
+(defun defstub-fn1 (signatures name formals ign-dcl stobjs body outputs)
+  `(with-output
+     :off (:other-than error summary)
+     :ctx '(defstub . ,name)
+     :summary-off value
+     (encapsulate
+       ,signatures
+       (with-output :off summary
+         (logic))
+       (with-output
+         :summary-off (:other-than redundant)
+         (local
+          (defun ,name ,formals
+            (declare ,ign-dcl
+                     ,@(and stobjs `((xargs :stobjs ,stobjs))))
+            ,body)))
+       ,@(and (consp outputs)
+
+; Note that if (car outputs) is not MV, then the signature will be illegal in
+; the generated encapsulate below, so the user will see an error message that
+; should be adequate.
+
+              `((with-output :off summary
+                  (defthm ,(packn-pos (list "TRUE-LISTP-" name)
+                                      name)
+                    (true-listp (,name ,@formals))
+                    :rule-classes :type-prescription)))))))
+
 (defun defstub-fn (name args)
 
 ; We cannot just "forward" the arguments of defstub to encapsulate and have
@@ -369,8 +397,8 @@
 ; Second, the witness to pass to the encapsulate is constructed differently
 ; depending on whether the style is new or old.
 
-; Here we aim at performing only the "minimal" validation checks that let us
-; pass the right data to encapsulate, delegating to encapsulate all the
+; Here we are content to perform only a few validation checks, which at least
+; suffice to let us pass the right data to encapsulate, which performs all
 ; remaining validation checks.
 
 ; In both styles, there must be at least two arguments following the name.  If
@@ -378,8 +406,13 @@
 
   (let ((len-args (length args)))
     (cond
+     ((not (and name (symbolp name)))
+      `(er soft '(defstub . ,name)
+           "The first argument of defstub must be a non-nil symbol.  The form ~
+            ~x0 is thus illegal."
+           '(defstub ,name ,@args)))
      ((< len-args 2)
-      `(er soft 'defstub
+      `(er soft '(defstub . ,name)
            "Defstub must be of the form (defstub name inputs => outputs ...) ~
             or (defstub name inputs outputs ...).  See :DOC defstub."))
 
@@ -429,24 +462,11 @@
 ; irrelevant.
 
              (body (defstub-body-old outputs stobjs)))
-        `(encapsulate
-           ((,name ,@args)) ; args includes inputs, outputs, and options
-           (logic)
-           (local
-            (defun ,name ,inputs
-              (declare (ignorable ,@inputs)
-                       ,@(and stobjs `((xargs :stobjs ,stobjs))))
-              ,body))
-           ,@(and (consp outputs)
-
-; Note that if (car outputs) is not MV, then the signature will be illegal in
-; the generated encapsulate below, so the user will see an error message that
-; should be adequate.
-
-                  `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                        name)
-                      (true-listp (,name ,@inputs))
-                      :rule-classes :type-prescription))))))
+        (defstub-fn1
+          `((,name ,@args)) ; args includes inputs, outputs, and options
+          name inputs
+          `(ignorable ,@inputs)
+          stobjs body outputs)))
 
 ; In the new style, we adapt the syntax of the signature, keeping all the
 ; options.  We derive the formals of the witness function by replacing the *s
@@ -461,7 +481,7 @@
      (t (let* ((inputs (car args))
                (arrow
 
-; We do not check here that arrow is a symbol with name "=>", since that check
+; We do not check here that arrow is a symbol with name "=>", as that check
 ; will be made when the signature is checked in the generated encapsulate.
 
                 (cadr args))
@@ -478,24 +498,9 @@
                (ignores (defstub-ignores formals body))
                (stobjs (and (true-listp inputs) ; collect-non-x guard
                             (collect-non-* inputs))))
-          `(encapsulate
-             (((,name ,@inputs) ,arrow ,outputs ,@options))
-             (logic)
-             (local
-              (defun ,name ,formals
-                (declare (ignore ,@ignores)
-                         ,@(and stobjs `((xargs :stobjs ,stobjs))))
-                ,body))
-             ,@(and (consp outputs)
-
-; Note that if (car outputs) is not MV, then the signature will be illegal in
-; the generated encapsulate below, so the user will see an error message that
-; should be adequate.
-
-                    `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
-                                          name)
-                        (true-listp (,name ,@formals))
-                        :rule-classes :type-prescription)))))))))
+          (defstub-fn1
+            `(((,name ,@inputs) ,arrow ,outputs ,@options))
+            name formals `(ignore ,@ignores) stobjs body outputs))))))
 
 (defmacro defstub (name &rest args)
   (defstub-fn name args))
@@ -734,15 +739,6 @@
 ; ; End experimental code mod.
 
   (list 'cons fn args))
-
-(defun fargn1 (x n)
-  (declare (xargs :guard (and (integerp n)
-                              (> n 0))))
-  (cond ((eql n 1) (list 'cdr x))
-        (t (list 'cdr (fargn1 x (- n 1))))))
-
-(defmacro fargn (x n)
-  (list 'car (fargn1 x n)))
 
 (defun cdr-nest (n v)
   (cond ((equal n 0) v)
@@ -3441,8 +3437,30 @@
     (f-put-global 'proofs-co val state)
     (value val))))
 
+(defun illegal-state-ld-prompt (channel state)
+
+; See the Essay on Illegal-states.
+
+; Since ACL2 doesn't allow lower-case characters in package names, the
+; following is distinguishable from the prompts in legal states.  We indicate
+; the ld-level just as is done by default-print-prompt.
+
+  (fmt1 "[Illegal-State] ~*0"
+        (list (cons #\0 (list "" ">" ">" ">"
+                              (make-list-ac (f-get-global 'ld-level state)
+                                            nil nil))))
+        0 channel state nil))
+
+(defun ld-pre-eval-filter (state)
+  (f-get-global 'ld-pre-eval-filter state))
+
+(defun illegal-state-p (state)
+  (eq (ld-pre-eval-filter state)
+      :illegal-state))
+
 (defun ld-prompt (state)
-  (f-get-global 'ld-prompt state))
+  (cond ((illegal-state-p state) 'illegal-state-ld-prompt)
+        (t (f-get-global 'ld-prompt state))))
 
 (defun chk-ld-prompt (val ctx state)
   (cond ((or (null val)
@@ -3550,9 +3568,6 @@
     (f-put-global 'ld-missing-input-ok val state)
     (value val))))
 
-(defun ld-pre-eval-filter (state)
-  (f-get-global 'ld-pre-eval-filter state))
-
 (defun new-namep (name wrld)
 
 ; We determine if name has properties on world wrld.  Once upon a time
@@ -3648,7 +3663,7 @@
                          nil))))))
 
 (defun chk-ld-pre-eval-filter (val ctx state)
-  (cond ((or (member-eq val '(:all :query))
+  (cond ((or (member-eq val '(:all :query :illegal-state))
              (and (symbolp val)
                   (not (keywordp val))
                   (not (equal (symbol-package-name val)

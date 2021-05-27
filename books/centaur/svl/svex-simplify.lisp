@@ -317,6 +317,8 @@
               (cond ((and (atom ud)
                           (svexl-node-p ud))
                      (mv nil ud))
+                    ((4vec-p ud)
+                     (mv nil (sv::svex-quote ud)))
                     ((svex-p term)
                      (mv nil term))
                     (t
@@ -434,7 +436,7 @@
                     (mv err (cons (car lst) rest)))
                    ((4vec-p (car lst))
                     (mv err
-                        (cons (list 'quote (car lst))
+                        (cons (car lst)
                               rest)))
                    (t
                     (mv t nil))))))

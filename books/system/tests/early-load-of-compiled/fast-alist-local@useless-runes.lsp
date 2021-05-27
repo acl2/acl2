@@ -1,0 +1,3 @@
+(FAL-FN
+ (1 1 (:TYPE-PRESCRIPTION FAL-FN))
+ )

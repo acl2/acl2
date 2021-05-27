@@ -10,10 +10,14 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -393,8 +397,8 @@
        ((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
@@ -450,7 +454,7 @@
         (tailrec-decompose-recursive-branch
          old$ combine-nonrec-reccall ctx state))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -759,16 +763,15 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* ((wrld (w state))
-       ((er &) (evmac-process-input-print print ctx state))
+  (b* (((er &) (evmac-process-input-print print ctx state))
        (verbose (and (member-eq print '(:info :all)) t))
        ((er (list old$ test base nonrec updates combine q r))
         (tailrec-process-old old variant verify-guards verbose ctx state))
        ((er &) (tailrec-process-variant$ variant "The :VARIANT input" t nil))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er domain$) (tailrec-process-domain domain
                                              old$
                                              combine
@@ -789,10 +792,7 @@
                                          nil
                                          ctx
                                          state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
        ((er wrapper-enable$)
         (process-input-wrapper-enable wrapper-enable
@@ -1568,14 +1568,11 @@
                              (:induction ,new-name$))
                 :induct (,new-name$ ,@new-formals))
                '(:use (,combine-associativity-uncond-instance)))))
-          (t (impossible))))
-       (local-event `(local (defthmd ,new-to-old-name$
-                              ,formula
-                              :hints ,hints)))
-       (macro (theorem-intro-macro new-to-old-enable$))
-       (exported-event `(,macro ,new-to-old-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defthm new-to-old-name$
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2062,14 +2059,11 @@
                 :in-theory nil
                 :expand ((,old$ ,@formals))
                 :use (,new-to-old-instance)))))
-          (t (impossible))))
-       (local-event `(local (defthm ,old-to-new-name$
-                              ,formula
-                              :hints ,hints)))
-       (macro (theorem-intro-macro old-to-new-enable$))
-       (exported-event `(,macro ,old-to-new-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defthm old-to-new-name$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2119,8 +2113,7 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (function-intro-macro wrapper-enable$ nil))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (body (tailrec-gen-old-as-new-term
               old$ test base nonrec updates a variant$
               new-name$ new-formals wrld))
@@ -2148,21 +2141,15 @@
                 :in-theory nil
                 :use ((:guard-theorem ,old$)
                       ,domain-of-nonrec-when-guard-thm)))))
-          (t (impossible))))
-       (local-event
-        `(local
-          (,macro ,wrapper-name$ (,@formals)
-                  (declare (xargs :guard ,guard
-                                  :verify-guards ,verify-guards$
-                                  ,@(and verify-guards$
-                                         (list :guard-hints guard-hints))))
-                  ,body)))
-       (exported-event
-        `(,macro ,wrapper-name$ (,@formals)
-                 (declare (xargs :guard ,guard
-                                 :verify-guards ,verify-guards$))
-                 ,body)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defun
+     wrapper-name$
+     :formals formals
+     :guard guard
+     :body body
+     :verify-guards verify-guards$
+     :guard-hints guard-hints
+     :enable wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2196,20 +2183,17 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (theorem-intro-macro old-to-wrapper-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (untranslate `(equal ,(apply-term old$ formals)
                                      ,(apply-term wrapper-name$ formals))
                              t wrld))
        (hints `(("Goal"
                  :in-theory '(,wrapper-unnorm-name)
-                 :use ,old-to-new-name$)))
-       (local-event `(local (,macro ,old-to-wrapper-name$
-                                    ,formula
-                                    :hints ,hints)))
-       (exported-event `(,macro ,old-to-wrapper-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                 :use ,old-to-new-name$))))
+    (evmac-generate-defthm old-to-wrapper-name$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2243,20 +2227,17 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (theorem-intro-macro wrapper-to-old-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (untranslate `(equal ,(apply-term old$ formals)
                                      ,(apply-term wrapper-name$ formals))
                              t wrld))
        (hints `(("Goal"
                  :in-theory '(,wrapper-unnorm-name)
-                 :use ,old-to-new-name$)))
-       (local-event `(local (,macro ,wrapper-to-old-name$
-                                    ,formula
-                                    :hints ,hints)))
-       (exported-event `(,macro ,wrapper-to-old-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                 :use ,old-to-new-name$))))
+    (evmac-generate-defthm wrapper-to-old-name$
+                           :formula formula
+                           :hints hints
+                           :enable wrapper-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

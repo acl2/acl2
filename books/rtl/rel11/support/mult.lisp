@@ -1,12 +1,15 @@
 (in-package "RTL")
 
 (include-book "definitions")
+(include-book "rac")
+(local (include-book "basic"))
 (local (include-book "bits"))
 (local (include-book "log"))
 
 (include-book "tools/with-arith5-help" :dir :system)
 (local (acl2::allow-arith5-help))
 (local (in-theory (acl2::enable-arith5)))
+(local (in-theory (enable bits-upper-bound)))
 
 ; binary-cat lemmas
 (local-defthm bvecp-0 (bvecp 0 k)
@@ -31,7 +34,7 @@
               :hints (("Goal" :in-theory (enable binary-cat))))
 
 
-(local-defthmd bcevp-sum-2
+(local-defthmd bvecp-sum-2
               (implies (and (bvecp x1 a1)
                             (bvecp x0 a0)
                             (natp a1)
@@ -60,7 +63,7 @@
                                                (x0 (cat x1 a1 x0 a0))
                                                (a0 (+ a0 a1)))
                                     (:instance binary-cat-2)
-                                    (:instance bcevp-sum-2
+                                    (:instance bvecp-sum-2
                                                (a (+ a0 a1)))))))
 
 
@@ -72,7 +75,7 @@
     :hints (("Goal" :in-theory (enable cat-bvecp-2))))
 
 
-(local-defthmd bcevp-sum-3
+(local-defthmd bvecp-sum-3
               (implies (and (bvecp x2 a2)
                             (bvecp x1 a1)
                             (bvecp x0 a0)
@@ -109,7 +112,7 @@
                                         (x0 (cat x2 a2 x1 a1 x0 a0))
                                         (a0 (+ a0 a1 a2)))
                                     (:instance binary-cat-3)
-                                    (:instance bcevp-sum-3
+                                    (:instance bvecp-sum-3
                                                (a (+ a0 a1 a2)))))))
 
 
@@ -121,7 +124,7 @@
     :hints (("Goal" :in-theory (enable cat-bvecp-2))))
 
 
-(local-defthmd bcevp-sum-4
+(local-defthmd bvecp-sum-4
               (implies (and (bvecp x3 a3)
                             (bvecp x2 a2)
                             (bvecp x1 a1)
@@ -166,7 +169,7 @@
                                         (x0 (cat x3 a3 x2 a2 x1 a1 x0 a0))
                                         (a0 (+ a0 a1 a2 a3)))
                                     (:instance binary-cat-4)
-                                    (:instance bcevp-sum-4
+                                    (:instance bvecp-sum-4
                                                (a (+ a0 a1 a2 a3)))))))
 
 
@@ -178,7 +181,7 @@
     :hints (("Goal" :in-theory (enable cat-bvecp-2))))
 
 
-(local-defthmd bcevp-sum-5
+(local-defthmd bvecp-sum-5
               (implies (and (bvecp x4 a4)
                             (bvecp x3 a3)
                             (bvecp x2 a2)
@@ -229,7 +232,7 @@
                                         (x0 (cat x4 a4 x3 a3 x2 a2 x1 a1 x0 a0))
                                         (a0 (+ a0 a1 a2 a3 a4)))
                                     (:instance binary-cat-5)
-                                    (:instance bcevp-sum-5
+                                    (:instance bvecp-sum-5
                                                (a (+ a0 a1 a2 a3 a4)))))))
 
 
@@ -240,7 +243,7 @@
     :hints (("Goal" :in-theory (enable cat-bvecp-2))))
 
 
-(local-defthmd bcevp-sum-6
+(local-defthmd bvecp-sum-6
               (implies (and (bvecp x5 a5)
                             (bvecp x4 a4)
                             (bvecp x3 a3)
@@ -273,11 +276,226 @@
      (bitn y (* 2 i))
      (* -2 (bitn y (1+ (* 2 i))))))
 
+(defthm theta-bounds
+  (and (<= -2 (theta i y))
+       (<= (theta i y) 2))
+  :rule-classes :linear)
+
 (defun sum-theta (m y)
    (if (zp m)
        0
      (+ (* (expt 2 (* 2 (1- m))) (theta (1- m) y))
 	(sum-theta (1- m) y))))
+
+;; Signed version
+
+(local
+ (defthmd sum-theta-lemma-k
+   (implies (and (integerp k)
+                 (natp y))
+            (equal (sumbits y (* 2 k))
+                   (+ (sum-theta k y)
+                      (* (expt 2 (* 2 k))
+                         (bitn y (1- (* 2 k)))))))))
+
+(defthmd sum-theta-lemma-signed
+  (implies (and (posp m)
+                (bvecp y (* 2 m)))
+           (equal (sum-theta m y)
+                  (si y (* 2 m))))
+  :hints (("Goal"
+           :use (:instance sum-theta-lemma-k (k m))
+           :in-theory (enable si sumbits-thm))))
+
+(defund bmux4signed (zeta x n)
+  (case zeta
+    (1  x)
+    (-1 (bits (lognot x) (1- n) 0))
+    (2  (bits (* 2 x) (1- n) 0))
+    (-2 (bits (lognot (* 2 x)) (1- n) 0))
+    (0  0)))
+
+(defthm bvecp-bmux4signed
+  (implies (and (integerp zeta)
+                (<= -2 zeta)
+                (<= zeta 2)
+                (integerp n)
+                (bvecp x n))
+           (bvecp (bmux4signed zeta x n)
+                  n))
+  :hints (("Goal" :in-theory (enable bmux4signed bvecp)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (bvecp (bmux4signed zeta x n)
+                    n)))
+   (:type-prescription
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (natp (bmux4signed zeta x n))))
+   (:linear
+    :corollary
+    (implies (and (integerp zeta)
+                  (<= -2 zeta)
+                  (<= zeta 2)
+                  (bvecp x n)
+                  (integerp n))
+             (< (bmux4signed zeta x n)
+                (expt 2 n))))))
+
+(defund tau (zeta sign)
+  (if (equal zeta 0)
+      0
+    (if (< 0 zeta)
+        sign
+      (lognot1 sign))))
+
+(defun neg (x) (if (< x 0) 1 0))
+
+(local (defrule bvecp-neg
+  (bvecp (neg x) 1)
+  :rule-classes (
+    :rewrite
+    (:linear :corollary (<= (neg x) 1)))))
+
+(local
+ (defthmd-nl bmux4signed-rewrite
+   (implies (and (integerp zeta)
+                 (<= -2 zeta)
+                 (<= zeta 2)
+                 (posp n)
+                 (bvecp x n))
+            (equal (bmux4signed zeta x n)
+                   (+ (- (neg zeta))
+                      (* zeta (si x n))
+                      (* (expt 2 n)
+                         (tau zeta (bitn x (1- n)))))))
+   :hints (("Goal"
+            :use ((:instance bitn-plus-bits
+                             (m 0)
+                             (n (1- n)))
+                  (:instance bits-shift-up-2
+                             (i (- n 2))
+                             (k 1))
+                  (:instance bits-fl-diff-alt
+                             (x (+ -1 (* -2 x)))
+                             (i (1- n))
+                             (j 0))
+                  (:instance fl-unique
+                             (x (+ (- (expt 2 (- n)))
+                                   (- (* x (expt 2 (+ 1 (- n)))))))
+                             (n -2)))
+            :in-theory (enable bmux4signed tau si lognot)))))
+
+(local (in-theory (disable theta)))
+
+(defund pp4signed-theta (i x y n)
+   (if (zerop i)
+       (cat 1 1
+	    (lognot1 (tau (theta i y)
+                          (bitn x (1- n))))
+            1
+	    (bmux4signed (theta i y) x n)
+            n)
+     (cat 1 1
+	  (lognot1 (tau (theta i y)
+                        (bitn x (1- n))))
+          1
+	  (bmux4signed (theta i y) x n)
+          n
+	  0 1
+	  (neg (theta (1- i) y))
+          1
+	  0 (* 2 (1- i)))))
+
+(local
+ (defthmd-nl pp4signed-theta-rewrite-0
+   (implies (and (natp n)
+                 (bvecp x n))
+            (equal (pp4signed-theta 0 x y n)
+                   (+ (* (+ 2 (lognot1 (tau (theta 0 y)
+                                            (bitn x (1- n)))))
+                         (expt 2 n))
+                      (bmux4signed (theta 0 y) x n))))
+   :hints (("Goal" :in-theory (enable pp4signed-theta cat bvecp)))))
+
+(local
+ (defthmd pp4signed-theta-rewrite-i
+   (implies (and (posp i)
+                 (natp n)
+                 (bvecp x n))
+            (equal (pp4signed-theta i x y n)
+                   (+ (* (+ 2 (lognot1 (tau (theta i y)
+                                            (bitn x (1- n)))))
+                         (expt 2 (+ n (* 2 i))))
+                      (* (bmux4signed (theta i y) x n)
+                         (expt 2 (* 2 i)))
+                      (* (neg (theta (1- i) y))
+                         (expt 2 (+ -2 (* 2 i)))))))
+   :hints (("Goal" :in-theory (enable pp4signed-theta cat bvecp)))))
+
+(defun sum-pp4signed-theta (x y m n)
+  (if (zp m)
+      0
+    (+ (pp4signed-theta (1- m) x y n)
+       (sum-pp4signed-theta x y (1- m) n))))
+
+(local
+ (defthmd-nl booth4signed-corollary-aux
+   (implies (and (posp m)
+                 (posp n)
+                 (bvecp x n))
+            (equal (sum-pp4signed-theta x y m n)
+                   (+ (- (expt 2 n))
+                      (- (* (expt 2 (* 2 (1- m)))
+                            (neg (theta (1- m) y))))
+                      (expt 2 (+ n (* 2 m)))
+                      (* (si x n) (sum-theta m y)))))
+   :hints (("Goal"
+            :in-theory (enable pp4signed-theta-rewrite-0
+                               pp4signed-theta-rewrite-i
+                               bmux4signed-rewrite
+                               tau)))))
+
+(defthmd booth4signed-corollary
+  (implies (and (posp m)
+                (posp n)
+                (bvecp x n)
+                (bvecp y (* 2 m)))
+           (equal (sum-pp4signed-theta x y m n)
+                  (+ (- (expt 2 n))
+                     (- (* (expt 2 (* 2 (1- m)))
+                           (neg (theta (1- m) y))))
+                     (expt 2 (+ n (* 2 m)))
+                     (* (si x n) (si y (* 2 m))))))
+  :hints (("Goal" :in-theory (enable booth4signed-corollary-aux
+                                     sum-theta-lemma-signed))))
+
+(defthmd booth4signed-corollary-alt
+  (implies (and (posp m)
+                (posp n)
+                (bvecp x n)
+                (bvecp y (* 2 m)))
+           (equal (+ (expt 2 n)
+                     (* (expt 2 (* 2 (1- m)))
+                        (neg (theta (1- m) y)))
+                     (sum-pp4signed-theta x y m n))
+                  (+ (expt 2 (+ n (* 2 m)))
+                     (* (si x n) (si y (* 2 m))))))
+  :hints (("Goal" :in-theory (enable booth4signed-corollary))))
+
+(local (in-theory (enable theta)))
+
+;; Unsigned versions
 
 (defrule sum-theta-lemma
     (implies (and (not (zp m))
@@ -329,14 +547,6 @@
     ("subgoal 1" :cases ((not (>= n 1))
                          (not (bvecp (* 2 x) n))))
     ("subgoal 1.1" :in-theory (enable bvecp)))))
-
-(defun neg (x) (if (< x 0) 1 0))
-
-(local (defrule bvecp-neg
-  (bvecp (neg x) 1)
-  :rule-classes (
-    :rewrite
-    (:linear :corollary (<= (neg x) 1)))))
 
 (encapsulate ((zeta (i) t))
  (local (defun zeta (i) (declare (ignore i)) 0))

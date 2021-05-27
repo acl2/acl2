@@ -60,13 +60,19 @@ This comment motivates the macro install-not-normalized, defined below.
                                             "$NOT-NORMALIZED")
                                name))
 
-(defun install-not-normalized-fn-1 (name wrld clique defthm-name)
-  (declare (xargs :guard (and (symbolp name)
+(defun install-not-normalized-fn-1 (name wrld ens clique defthm-name enable)
+  (declare (xargs :mode :program ; because of logical-defun call
+                  :guard (and (symbolp name)
                               (symbolp defthm-name)
                               (plist-worldp wrld)
+                              (enabled-structure-p ens)
                               (symbol-listp clique))))
   (let* ((formals (formals name wrld))
-         (body (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
+         (name-def (or (logical-defun name wrld)
+                       (er hard? 'install-not-normalized-fn-1
+                           "There is no defun associated with the name, ~x0."
+                           name)))
+         (body (car (last name-def)))
          (defthm-name (or defthm-name
                           (install-not-normalized-name name)))
          (controller-alist (let* ((def-bodies
@@ -75,13 +81,22 @@ This comment motivates the macro install-not-normalized, defined below.
                                   (def-body ; (def-body name wrld)
                                     (and (true-listp def-bodies)
                                          (car def-bodies))))
-                             (and (weak-def-body-p def-body) ; for guard proof
-                                  (access def-body def-body
-                                          :controller-alist))))
+                             (and ;; (weak-def-body-p def-body) ; for guard proof
+                              (access def-body def-body
+                                      :controller-alist))))
+         (unnormalized-body
+          (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
          (cliquep (and clique
-                       (pseudo-termp body) ; for guard proof
-                       (intersectp-eq clique (all-fnnames body)))))
-    `((defthm ,defthm-name
+                       ;; (pseudo-termp unnormalized-body) ; for guard proof
+                       (intersectp-eq clique (all-fnnames unnormalized-body))))
+         (defthmd? (case enable
+                     (:auto (if (disabledp-fn `(:definition ,name) ens wrld)
+                                'defthmd
+                              'defthm))
+                     ((t) 'defthm)
+                     (otherwise ; nil
+                      'defthmd))))
+    `((,defthmd? ,defthm-name
         (equal (,name ,@formals)
                ,body)
         :hints (("Goal" :by ,name))
@@ -95,61 +110,81 @@ This comment motivates the macro install-not-normalized, defined below.
                                                  controller-alist)))))
       (in-theory (disable ,name)))))
 
-(defun install-not-normalized-fn-lst (fns wrld all-fns defthm-name-doublets)
-  (declare (xargs :guard (and (symbol-listp fns)
+(defun install-not-normalized-fn-lst (fns wrld ens all-fns defthm-name-doublets
+                                          enable)
+  (declare (xargs :mode :program
+                  :guard (and (symbol-listp fns)
                               (symbol-listp all-fns)
                               (symbol-alistp defthm-name-doublets)
                               (doublet-listp defthm-name-doublets)
                               (symbol-listp (strip-cadrs defthm-name-doublets))
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (enabled-structure-p ens))))
   (cond ((endp fns)
          nil)
         (t (append (install-not-normalized-fn-1
-                    (car fns) wrld all-fns
-                    (cadr (assoc-eq (car fns) defthm-name-doublets)))
+                    (car fns) wrld ens all-fns
+                    (cadr (assoc-eq (car fns) defthm-name-doublets))
+                    enable)
                    (install-not-normalized-fn-lst
-                    (cdr fns) wrld all-fns
-                    defthm-name-doublets)))))
+                    (cdr fns) wrld ens all-fns
+                    defthm-name-doublets
+                    enable)))))
 
-(defun install-not-normalized-fn (name wrld allp defthm-name)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
-  (let* ((ctx 'install-not-normalized)
-         (fns (getprop name 'recursivep nil 'current-acl2-world wrld))
-         (defthm-name-doublets
-           (and defthm-name
-                (cond ((symbolp defthm-name)
-                       (list (list name defthm-name)))
-                      ((not (and (symbol-alistp defthm-name)
-                                 (doublet-listp defthm-name)
-                                 (symbol-listp
-                                  (strip-cadrs defthm-name))))
-                       (er hard? ctx
-                           "Illegal :defthm-name argument: ~x0"
-                           defthm-name))
-                      ((and (true-listp fns) ; for guard; always true
-                            (not (subsetp-eq (strip-cars defthm-name)
-                                             fns)))
-                       (let ((bad (set-difference-eq (strip-cars defthm-name)
-                                                     fns)))
-                         (er hard? ctx
-                             "Illegal :defthm-name argument: ~x0.  The ~
-                              name~#1~[~x1 is~/s ~&1 are~] bound in your ~
-                              :defthm-name argument but not among the list of ~
-                              candidate names, ~x2, for being given an ~
-                              unnormalized definition."
-                             defthm-name bad fns)))
-                      (t defthm-name)))))
+(defun install-not-normalized-fn (name wrld ens allp defthm-name enable)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp name)
+                              (plist-worldp wrld)
+                              (enabled-structure-p ens))))
+  (let* ((ctx 'install-not-normalized))
     (cond
-     ((symbol-listp fns) ; for guard verification
-      (install-not-normalized-fn-lst (or (and allp fns)
-                                         (list name))
-                                     wrld fns defthm-name-doublets))
+     ((member-eq enable '(t nil :auto))
+      (let* ((fns (getprop name 'recursivep nil 'current-acl2-world wrld))
+             (defthm-name-doublets
+               (and defthm-name
+                    (cond ((symbolp defthm-name)
+                           (list (list name defthm-name)))
+                          ((not (and (symbol-alistp defthm-name)
+                                     (doublet-listp defthm-name)
+                                     (symbol-listp
+                                      (strip-cadrs defthm-name))))
+                           (er hard? ctx
+                               "Illegal :defthm-name argument: ~x0"
+                               defthm-name))
+                          ((and (true-listp fns) ; for guard; always true
+                                (not (subsetp-eq (strip-cars defthm-name)
+                                                 fns)))
+                           (let ((bad
+                                  (set-difference-eq (strip-cars defthm-name)
+                                                     fns)))
+                             (er hard? ctx
+                                 "Illegal :defthm-name argument: ~x0.  The ~
+                                  name~#1~[~x1 is~/s ~&1 are~] bound in your ~
+                                  :defthm-name argument but not among the ~
+                                  list of candidate names, ~x2, for being ~
+                                  given an unnormalized definition."
+                                 defthm-name bad fns)))
+                          (t defthm-name)))))
+        (cond
+         ((symbol-listp fns) ; for guard verification
+          (install-not-normalized-fn-lst (or (and allp fns)
+                                             (list name))
+                                         wrld ens fns defthm-name-doublets
+                                         enable))
+         (t (er hard? ctx
+                "Implementation error!  Not a non-empty symbol-listp: ~x0"
+                fns)))))
      (t (er hard? ctx
-            "Implementation error!  Not a non-empty symbol-listp: ~x0"
-            fns)))))
+            "The :enable argument of ~x0 must be ~v1.  The argument ~x2 is ~
+             thus illegal."
+            'install-not-normalized
+            '(t nil :auto)
+            enable)))))
 
-(defmacro install-not-normalized (name &key (allp 't) defthm-name)
+(defmacro install-not-normalized (name &key
+                                       (allp 't)
+                                       defthm-name
+                                       (enable ':auto))
 
 ; Alessandro Coglio sent the following example, which failed until taking his
 ; suggestion to use encapsulate (originally we used progn) and call
@@ -163,13 +198,15 @@ This comment motivates the macro install-not-normalized, defined below.
 ; The problem was that the DEFINE generated the term ((LAMBDA (__FUNCTION__ X)
 ; X) 'F X).
 
-  (declare (xargs :guard (and name (symbolp name))))
+  (declare (xargs :guard (and name
+                              (symbolp name))))
   `(make-event
     (list* 'encapsulate
            ()
            '(set-ignore-ok t) ; see comment above
            '(set-irrelevant-formals-ok t) ; perhaps not necessary, but harmless
-           (install-not-normalized-fn ',name (w state) ,allp ,defthm-name))))
+           (install-not-normalized-fn ',name (w state) (ens state) ,allp
+                                      ,defthm-name ,enable))))
 
 (defun fn-is-body-name (name)
   (declare (xargs :guard (symbolp name)))
@@ -233,8 +270,10 @@ This comment motivates the macro install-not-normalized, defined below.
  ``type reasoning'' to deduce that @('return-nil') always returns the value,
  @('nil').  So if @('foo') is the only enabled rule, then we are left trying to
  prove that @('nil') equals @('(return-nil x)').  Of course, this example is
- trivial to fix by enabling @('foo'); but we want to support development of
- tools that leave @('foo') disabled for some reason.</p>
+ trivial to fix by enabling @('return-nil'), or even just its @(':')@(tsee
+ type-prescription) rule, but we want to support development of robust tools
+ that manipulate functions without needing to know anything about their callees.
+ </p>
 
  <p>To solve this problem, we can invoke @('(install-not-normalized foo)'),
  which generates the following @(':')@(tsee definition) rule.</p>
@@ -281,7 +320,7 @@ This comment motivates the macro install-not-normalized, defined below.
 
  General Form:
 
- (install-not-normalized NAME :allp FLG :defthm-name DNAME-SPEC)
+ (install-not-normalized NAME :allp FLG :defthm-name DNAME-SPEC :enable E)
  })
 
  <p>where the keyword arguments are evaluated, but not @('NAME'), and:</p>
@@ -308,6 +347,13 @@ This comment motivates the macro install-not-normalized, defined below.
  above, and the symbol @('G') is the name of the @('defthm') event generated
  for the symbol @('F').</li>
 
+ <li>@('E') is either @(':auto') (the default), @('t'), or @('nil').  If @('E')
+ is @('t') or @('nil') then the generated event is a call of @('defthm') or
+ @(tsee defthmd), respectively.  If @('E') is omitted or is @(':auto'), then
+ the generated event is a call of @('defthm') if the original @(see definition)
+ of @('NAME') is @(see enable)d at the time the @('install-not-normalized')
+ event is submitted, and otherwise is a call of @('defthmd').</li>
+
  </ul>
 
  <p>Any such @('defthm') event has @(':')@(tsee rule-classes)
@@ -321,10 +367,14 @@ This comment motivates the macro install-not-normalized, defined below.
  ACL2 !>
  })
 
+ <p>Remark.  Each definition installed by @('install-not-normalized') contains
+ the original body, not a translated version.  (See @(see term) for a
+ discussion of the the notion of ``translated term''.)</p>
+
  <p>For a somewhat related utility, see @(see fn-is-body).</p>
 
  <p>For examples, see the Community Book
- @('misc/install-not-normalized.lisp').</p>")
+ @('misc/install-not-normalized-tests.lisp').</p>")
 
 (defxdoc fn-is-body
   :parents (proof-automation)
@@ -347,10 +397,16 @@ This comment motivates the macro install-not-normalized, defined below.
  ACL2 !>
  })
 
- <p>That event is of the form @('(equal (fn x1 ... xn) <body>)'), where @('(x1
- ... xn)') is the list of formal parameters of @('fn') and @('<body>') is the
- body of @('fn').  If @(':hints') or @(':rule-classes') are supplied, they will
- be attached to the generated @('defthm') form.</p>
+ <p>The formula of that @('defthm') event is of the form @('(equal (fn x1
+ ... xn) <body>)'), where @('(x1 ... xn)') is the list of formal parameters of
+ @('fn') and @('<body>') is the un@(see normalize)d body of @('fn').  If
+ @(':hints') or @(':rule-classes') are supplied, they will be attached to the
+ generated @('defthm') form.</p>
+
+ <p>Note that the proof of the generated @('defthm') may not follow trivially
+ from the function's @(':')@('definition') rule: by default, that rule is
+ derived from the function's @(see normalize)d body, which may differ from its
+ unnormalized body.</p>
 
  <p>For a somewhat related utility, see @(see install-not-normalized).</p>
 

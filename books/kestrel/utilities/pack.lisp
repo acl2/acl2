@@ -13,6 +13,9 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; See also the built-in functions add-suffix and add-suffix-to-fn, which are
+;; less general than pack$ but may suffice for many uses.
+
 ;; Also in books/std/io/base.lisp, but that brings in too much stuff.
 (defthm character-listp-of-explode-nonnegative-integer
   (equal (character-listp (explode-nonnegative-integer n base acc))

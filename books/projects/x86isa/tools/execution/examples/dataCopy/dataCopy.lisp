@@ -169,15 +169,18 @@
 
 ;; ----------------------------------------------------------------------
 
-#||
 ;; To create a log file:
 
+#||
+
 ;; Read and load binary into the x86 model's memory:
-(binary-file-load "dataCopy.o")
+(binary-file-load "dataCopy.o" :elf t)
 
 ;; Fill these in by inspecting the object file:
-(defconst *start-address* #ux1_0000_0DC0) ;; address of the first instruction of copyData routine
-(defconst *halt-address*  #ux1_0000_0DE0) ;; address of the ret instruction of copyData routine
+(make-event
+ `(defconst *start-address* ;; address of the first instruction of copyData routine 
+    ,(exld::get-label-address "copyData" exld::elf)))
+(defconst *halt-address*  #ux400805) ;; address of the ret instruction of copyData routine
 
 (b* ((start-address *start-address*)
 
@@ -251,5 +254,6 @@
 
 ;; Source Array:
 (rb 20 #x7FFF5FBFF450 :r x86)
+
 ||#
 ;; ----------------------------------------------------------------------

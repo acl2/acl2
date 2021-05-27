@@ -366,7 +366,9 @@
                                    (cons #\F (print-component base r15))
                                    (cons #\G (print-component base flg))
                                    (cons #\H (print-component base rip))
-                                   (cons #\I '8)))))
+                                   (cons #\I '8))
+                             :fmt-control-alist
+                             '((current-package . "X86ISA")))))
       str))
  
    (defun printing-x86-components (base x86 state)
@@ -801,7 +803,7 @@
                :cond (and (equal ACL2::traced-fn (quote ,fn))
                           (not (equal (nth 1 ACL2::arglist) :x)))
                :entry (:fmt! (msg "~%"))
-               :exit (:fmt! (msg "~x0: R ~x1 ~x2 ~x3"
+               :exit (:fmt! (msg "[PC: ~x0]: R@~x1: NumBytes: ~x2 Value: ~x3"
                                  (rip x86)
                                  (nth 0 ACL2::arglist) ;; Linear address
                                  ,numbytes             ;; Size
@@ -841,7 +843,7 @@
      `(trace! (,fn
                :cond (equal ACL2::traced-fn (quote ,fn))
                :entry (:fmt! (msg "~%"))
-               :exit (:fmt! (msg "~x0: W ~x1 ~x2 ~x3"
+               :exit (:fmt! (msg "[PC: ~x0]: W@~x1 NumBytes: ~x2 Value: ~x3"
                                  (rip x86)
                                  (nth 0 ACL2::arglist) ;; Linear address
                                  ,numbytes

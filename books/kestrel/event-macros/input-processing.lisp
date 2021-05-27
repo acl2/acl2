@@ -11,17 +11,74 @@
 (in-package "ACL2")
 
 (include-book "evmac-input-hints-p")
-(include-book "evmac-input-print-p")
+(include-book "screen-printing")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
+(include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ event-macro-input-processors
+(defxdoc event-macro-input-processing
   :parents (event-macros)
-  :short "Utilities to process inputs
-          that are common to multiple event macros."
+  :short "Input processing in event macros."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Event macros normally take inputs from the user.
+     Thus, it is generally necessary to validate these inputs,
+     and often transform them slightly
+     (e.g. supply a default value, or translate a term),
+     derive additional information from them
+     (e.g. retrieve the formals and guard of a function symbol),
+     etc.
+     We call all of this `input processing'.")
+   (xdoc::p
+    "Input processing is normally the first thing
+     that an event macro implementation does,
+     before using the result of input processing
+     to generate event, possibly files, etc.")
+   (xdoc::p
+    "Event macro "
+    (xdoc::seetopic "event-macro-applicability-conditions"
+                    "applicability conditions")
+    " are a form of input validation,
+     but we do not consider them part of input processing,
+     for the purpose of this event macro library.
+     Applicability conditions are ``deep'', undecidable checks,
+     while the input validation that is part of input processing
+     is normally decidable, and often relatively simple.
+     There are also cases in which the inputs cannot completely validated
+     until they are subjected to the more core processing
+     performed by the event macro,
+     e.g. if the event macro is a code generator for ACL2,
+     it may be more natural to perform certain validation checks on ACL2 terms
+     while they are being translated to constructs of the target language.
+     These examples show that input processing does not necessarily perform
+     a complete validation of the inputs of the event macro;
+     it only makes those that can be conveniently done
+     as a first phase in the macro,
+     before the phase(s) to generate events, files, etc.")
+   (xdoc::p
+    "An event macros should throw "
+    (xdoc::seetopic "er" "soft errors")
+    " when some input validation fails.
+     This allows the soft errors to be potentially caught programmatically,
+     when an event macro is used that way.
+     Hard errors should be used only for internal implementation errors,
+     e.g. some expected condition that fails to hold.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ event-macro-input-processors
+  :parents (event-macro-input-processing)
+  :short (xdoc::topstring
+          "Utilities for"
+          (xdoc::seetopic "event-macro-input-processing"
+                          "input processing")
+          ".")
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,10 +88,6 @@
   :short "Process the @(':hints') input of an event macro."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This is a replacement for @(tsee evmac-process-input-hints).
-     When that utility is no longer used, it will be removed,
-     and this new utility will be renamed to @('evmac-process-input-hints').")
    (xdoc::p
     "This is for event macros that have a @(':hints') input
      for user-supplied hints to prove applicability conditions.")
@@ -64,12 +117,12 @@
       (b* ((hints$ (keyword-value-list-to-alist hints))
            (kwds (strip-cars hints$))
            ((er &)
-            (ensure-list-no-duplicates$ kwds
-                                        (msg "The list of keywords ~x0 ~
-                                              in the keyword-value list ~
-                                              that forms the :HINTS input"
-                                             kwds)
-                                        t nil)))
+            (ensure-list-has-no-duplicates$ kwds
+                                            (msg "The list of keywords ~x0 ~
+                                                  in the keyword-value list ~
+                                                  that forms the :HINTS input"
+                                                 kwds)
+                                            t nil)))
         (value hints$))
     (if (true-listp hints)
         (value hints)
@@ -128,3 +181,87 @@
               "The :SHOW-ONLY input must be T or NIL; ~
                but it is ~x0 instead."
               show-only)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-process-input-fresh-function-name (input
+                                                  &key
+                                                  macro
+                                                  other-args
+                                                  auto-code
+                                                  prepwork)
+  (declare (xargs :guard (and (symbolp input)
+                              (symbolp macro)
+                              (true-listp other-args))))
+  :short "Generate an input processor for
+          an input that specifies a fresh function name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some event macros have inputs
+     to specify names of generated functions.
+     An input of this kind must be
+     either a symbol to use as the function name,
+     or the keyword @(':auto') (which cannot be a function name).
+     In the latter case, the function name to use
+     is generated according to some method
+     described in the user documentation of the event macro.
+     In either case, the name must be valid for a function
+     and must be fresh, i.e.
+     (1) not already in the ACL2 world and
+     (2) distinct from the names of other event
+     being generated by the event macro.")
+   (xdoc::p
+    "This macro generates an input processor for this kind of inputs.
+     See the implementation for details,
+     which uses a readable backquote notation.
+     The @('input') argument of this macro is
+     the name of the input being processed.
+     The @(':macro') argument is the name of the event macro.
+     The @(':other-args') argument is a list of
+     zero or more additional @(tsee define)-style parameters
+     for the input processor,
+     needed to construct the function name when the input is @(':auto').
+     The @(':auto-code') argument is the code to use
+     to construct the function name when the input is @(':auto');
+     this must refer to the additional parameters just described.
+     The @(':prepwork') argument consists of zero or more preparatory events,
+     as in @(tsee define)."))
+  (b* ((input-processor-name (packn-pos (list macro '-process- input) macro))
+       (keyword (intern (symbol-name input) "KEYWORD"))
+       (short (concatenate 'string
+                           "Process the @(':"
+                           (acl2::string-downcase (symbol-name input))
+                           "') input.")))
+    `(define ,input-processor-name (,input
+                                    ,@other-args
+                                    (names-to-avoid symbol-listp)
+                                    ctx
+                                    state)
+       :returns (mv erp
+                    (result
+                     "A @('(tuple (fn symbolp)
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)').")
+                    state)
+       :mode :program
+       :short ,short
+       (b* (((er &) (ensure-value-is-symbol$ ,input
+                                             (msg "The ~x0 input" ,keyword)
+                                             t
+                                             nil))
+            (fn (if (eq ,input :auto)
+                    ,auto-code
+                  ,input))
+            ((er names-to-avoid)
+             (ensure-symbol-is-fresh-event-name$
+              fn
+              (msg
+               "The name ~x0 specified (perhaps by default) by the ~x1 input"
+               fn ,keyword)
+              'function
+              names-to-avoid
+              t
+              nil)))
+         (value (list fn names-to-avoid)))
+       ,@(and prepwork (list :prepwork prepwork)))))

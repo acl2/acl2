@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -17,7 +17,7 @@
 ;; ======================================================================
 
 ;;; Table of Contents:
-;;; 
+;;;
 ;;; 1. INITIALIZATION
 ;;; 2. APPROXIMATION NOTIONS
 ;;; 3. notion of MONOTONICITY-PROPERTY for a module
@@ -478,7 +478,7 @@
 ;;;        TTL-BIDIRECT TTL-CLK-INPUT TTL-INPUT TTL-OUTPUT
 ;;;        TTL-OUTPUT-PARAMETRIC TTL-OUTPUT-FAST TTL-TRI-OUTPUT
 ;;;        TTL-TRI-OUTPUT-FAST VDD VDD-PARAMETRIC VSS)
-;;;   
+;;;
 ;;;   >
 
 (local
@@ -491,7 +491,7 @@
 ;; B1I was deleted from the following because it is no longer in the
 ;; primp-database. (aes)
 (prove-primitive-monotonicity
- (AO2 AO6 B-AND B-AND3 B-AND4 B-BUF B-EQUV B-EQUV3 B-IF B-NAND 
+ (AO2 AO6 B-AND B-AND3 B-AND4 B-BUF B-EQUV B-EQUV3 B-IF B-NAND
       B-NAND3 B-NAND4 B-NAND5 B-NAND6 B-NAND8 B-NBUF B-NOR B-NOR3 B-NOR4
       B-NOR5 B-NOR6 B-NOR8 B-NOT B-NOT-B4IP B-OR B-OR3 B-OR4
       B-XOR DEL4 PROCMON
@@ -547,12 +547,6 @@
 ;; This part of the proof seemed to take close to a couple of weeks!
 ;; All the rest put together was only about 3 days.  The goal is
 ;; to prove the equivalent of (prove-primitive-monotonicity (DP-RAM-16X32)).
-
-(defthm bvp-rev
-  (implies (bvp x)
-           (bvp (rev x)))
-  :hints (("Goal" :in-theory (enable bvp rev)))
-  :rule-classes (:rewrite :type-prescription))
 
 (defthm v-approx-bvp
   (implies (bvp x)
@@ -827,7 +821,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthmd write-mem1-list-4v-listp
      (implies (4v-listp v)
@@ -1164,7 +1158,7 @@
   ;; used for dual-eval.
   (case flag
         (0 (if (primp fn)
-               (not (member fn exceptions)) 
+               (not (member fn exceptions))
              (let ((module (assoc fn netlist)))
                (if (consp module)
                    (ok-netlistp 1
@@ -1180,7 +1174,7 @@
                           (ok-netlistp 1 (cdr body) netlist exceptions))))
                t)))
         (2 (if (primp fn)
-               (not (member fn exceptions)) 
+               (not (member fn exceptions))
              (let ((module (assoc fn netlist)))
                (if (consp module)
                    (ok-netlistp 3
@@ -1234,7 +1228,7 @@
              t))))
     (1 (let ((body fn)
              (occurrence (car fn)))
-         (if (consp body) 
+         (if (consp body)
              (let ((occ-name (occ-name occurrence))
                    (outputs (occ-outs occurrence))
                    (fn (occ-fn occurrence))
@@ -1246,7 +1240,7 @@
                                        (assoc-eq-values inputs a1)
                                        (assoc-eq-values inputs a2)
                                        (assoc-eq-value occ-name s1)
-                                       (assoc-eq-value occ-name s2)) 
+                                       (assoc-eq-value occ-name s2))
                 (de-monotone-induction
                  1
                  (cdr body)
@@ -1412,7 +1406,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthm s-approx-alist-implies-s-approx-assoc-eq-values-aux
      (implies (and (true-list-listp (assoc-eq-values a x))
@@ -1484,7 +1478,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthm sts-occs-okp=>true-list-listp-assoc-eq-values-aux-1
      (implies (sts-occs-okp occs sts-alist netlist)
@@ -1746,7 +1740,7 @@
                         well-formed-sts
                         well-formed-sts-occs
                         monotonicity-property)
-                    (well-formed-sts-occs-de-occ)))                    
+                    (well-formed-sts-occs-de-occ)))
    ("Subgoal *1/2"
     :use (net-syntax-okp->module-syntax-okp
           (:instance

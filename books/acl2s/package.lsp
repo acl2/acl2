@@ -23,7 +23,9 @@
      rquote-listp
      unrquote-lst
      def-const
-     => ;sig
+     cw?
+     ecw
+     ecw?
      _ ;range
      )
    (union-eq *acl2-exports*
@@ -43,6 +45,9 @@
      rquote-listp
      unrquote-lst
      def-const
+     cw?
+     ecw
+     ecw?
      => ;sig
      _ ;range
      )
@@ -229,7 +234,6 @@
       impliez
       v
 
-      => ;sig
       _  ;range
 
       d<
@@ -257,6 +261,16 @@
 
       def-pattern-match-constructor
       pattern-match
+      patbind-match
+      patbind-when
+      patbind-assocs
+      patbind-the
+      patbind-nths
+      patbind-nths*
+      patbind-fun
+      patbind-ret
+      patbind-wmv
+      patbind-run-when
       
       clear-memo-table
 

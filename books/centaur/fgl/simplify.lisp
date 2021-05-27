@@ -200,7 +200,7 @@
            :in-theory (enable (:i <fn>))))
   :fn aignet-copy-dfs-rec)
 
-#!aignet    
+#!aignet
 (define aignet-dfs-copy-back-marked-nodes ((n natp)
                                            (bitarr "Marks nodes in aignet2 that
                                                     were copied to aignet and need
@@ -345,7 +345,7 @@
              :expand (<call>))
             (and stable-under-simplificationp
                  '(:cases ((< (nfix k) (nfix n)))))))
-  
+
   (local
    (defthm <=-fanin-count-when-aignet-litp
      (implies (aignet-litp lit aignet)
@@ -364,8 +364,8 @@
                                       fgl::bfr-map)
                                    (<fn> aignet-idp)))))
 
-  
-                  
+
+
 
   (defret aignet-extension-p-of-<fn>
     (aignet-extension-p new-aignet2 aignet2)
@@ -411,7 +411,7 @@
     :hints (("goal" :induct <call>
              :expand (<call>))))
 
-  
+
 
   (defret input-copy-values-of-<fn>
     (implies (aignet-input-copies-in-bounds copy aignet aignet2)
@@ -600,10 +600,10 @@
              (aignet-non-lit-copies-in-bounds lit litarr aignet))
     :hints(("Goal" :in-theory (enable aignet-non-lit-copies-in-bounds)))))
 
-  
 
 
-#!aignet    
+
+#!aignet
 (define aignet-dfs-copy-back-lits ((lits lit-listp
                                          "Literals in aignet2 that were copied to aignet and need copying back")
                                    (litarr "Maps nodes in aignet2 that
@@ -620,7 +620,7 @@
   :guard (and (aignet-lit-listp lits aignet2)
               (no-duplicatesp-equal (lit-list-vars lits))
               (< (lits-max-id-val lits) (lits-length litarr))
-              
+
               (aignet-lit-copies-in-bounds lits litarr aignet)
               (<= (num-fanins aignet) (bits-length mark))
               (<= (num-fanins aignet) (lits-length copy))
@@ -680,7 +680,7 @@
              ;; :in-theory (enable aignet-copies-below-n-in-bounds)
              :expand <call>)))
 
-  
+
   (defret litarr-non-vars-preserved-of-<fn>
     (implies (not (member-equal (nfix k) (lit-list-vars lits)))
              (equal (nth-lit k new-litarr) (nth-lit k litarr)))
@@ -727,7 +727,7 @@
             '(:use ((:instance litarr-aignet-copies-in-bounds-of-<fn>))
               :in-theory (e/d (lit-list-vars)
                               (litarr-aignet-copies-in-bounds-of-<fn>)))))
-  
+
   (local
    (defthm <=-fanin-count-when-aignet-litp
      (implies (aignet-litp lit aignet)
@@ -749,8 +749,8 @@
                                       fgl::bfr-map)
                                    (<fn> aignet-idp)))))
 
-  
-                  
+
+
 
 
   (local (include-book "std/lists/nth" :dir :system))
@@ -865,7 +865,7 @@
                                     aignet::aignet-lit-copies-in-bounds
                                     aignet::aignet-idp))))
 
-  
+
 (local
  #!aignet
  (defthm aignet-lit-listp-by-lits-max-id-val
@@ -1155,7 +1155,7 @@
            (implies (and (natp x) (natp y))
                     (equal (< x (+ 1 y))
                            (<= x y)))))
-           
+
 
   (defret aignet-lit-listp-of-<fn>
     (implies (and (bounded-pathcond-p (nthcdr n (nbalist-fix aignet-pathcond)) (num-fanins aignet))
@@ -1187,7 +1187,7 @@
             :expand ((:with nbalist-boundp-redef
                       (:free (var) (nbalist-boundp var (nthcdr n (nbalist-fix aignet-pathcond)))))))))
 
-  
+
   (defthm hons-assoc-equal-car-nth-of-nthcdr
     (implies (and (nbalistp x)
                   (< (nfix n) (len x)))
@@ -1233,7 +1233,7 @@
                          (equal (nbalist-lookup var (nthcdr n (nbalist-fix aignet-pathcond))) (b-not neg))
                          (not contra))
                     (member-equal (satlink::make-lit var neg) cube))
-    :hints(("Goal" 
+    :hints(("Goal"
             :in-theory (e/d (satlink::equal-of-make-lit)
                             (nth (:d <fn>) nthcdr
                                  nbalist-lookup-when-not-equal-1
@@ -1275,7 +1275,7 @@
             :induct <call>
             :expand (<call>
                      (aignet::nbalist-to-cube (nthcdr n (nbalist-fix aignet-pathcond))))))))
-       
+
 
 
 (defstobj-clone litarr2 litarr :suffix "2")
@@ -1451,7 +1451,7 @@
                           (:instance bfrstate-fix-redef
                            (x bfrstate)))
              :in-theory (disable lits-max-id-val-of-<fn> <fn>)))))
-  
+
 
 
 
@@ -1598,7 +1598,7 @@
                    :induct t)
                   (and stable-under-simplificationp
                        '(:in-theory (enable bfr-map bfr-p aignet::lit-copy))))))
-                         
+
 
 
   (defret bfr-litarr-p-litarr2-of-<fn>
@@ -1682,7 +1682,7 @@
      (defthm lit-eval-of-repeat-nil
        (equal (lit-eval lit invals (acl2::repeat k nil) aignet)
               (lit-eval lit invals nil aignet))
-       :hints (("goal" 
+       :hints (("goal"
                 :expand ((:free (invals regvals)
                           (lit-eval lit invals regvals aignet))))))))
   ;; (local
@@ -1779,9 +1779,7 @@
 
   (local (in-theory (disable acl2::repeat-when-zp nth
                              default-+-2 default-+-1
-                             aignet::fanin-count-of-atom
-                             aignet::fanin-count-of-aignet-norm-x-normalize-const
-                             aignet::fanin-count-of-node-list-fix-x-normalize-const)))
+                             aignet::fanin-count-of-atom)))
 
   (defret bfr-litarr-correct-p-litarr2-of-<fn>
     (implies (and (lbfr-mode-is :aignet)
@@ -1799,7 +1797,8 @@
                                     ;; bfr-eval bfr-map bfr->aignet-lit bfr-fix aignet-lit->bfr
                                     logicman->bfrstate
                                     ;; bfr-eval
-                                    bfr-nvars)))
+                                    bfr-nvars)
+                                   (aignet::bit-list-fix-of-repeat)))
            (and stable-under-simplificationp
                 (let ((witness (acl2::find-call-lst 'BFR-LITARR-correct-p-witness clause)))
                   (and witness
@@ -1812,7 +1811,7 @@
                                   (bfr->aignet-lit bfr (logicman->bfrstate)))
                                  0))))))
 
-  
+
 
 
   (local
@@ -1850,7 +1849,8 @@
                                     ;; bfr-eval bfr-map bfr->aignet-lit bfr-fix aignet-lit->bfr
                                     logicman->bfrstate
                                     bfr-nvars
-                                    aignet-lit-listp-when-bfr-listp)))
+                                    aignet-lit-listp-when-bfr-listp)
+                                   (aignet::bit-list-fix-of-repeat)))
            (and stable-under-simplificationp
                 (let ((witness (acl2::find-call-lst 'BFR-LITARR-correct-p-witness clause)))
                   (and witness
@@ -1900,7 +1900,7 @@
                     (+ 1 (bfrstate->bound (logicman->bfrstate logicman)))))
     :hints(("Goal" :in-theory (enable logicman->bfrstate))))
 
-  
+
   (defret stype-count-of-<fn>
     (b* ((new-aignet (logicman->aignet new-logicman))
          (aignet (logicman->aignet logicman)))
@@ -2056,7 +2056,7 @@
                 (pathcond-rewind-ok (bfrmode :aignet) constraint-pathcond)))
     :hints(("Goal" :in-theory (e/d (pathcond-rewind-ok)
                                    (<fn>)))))
-  
+
   (defret logicman-pathcond-p-of-<fn>
     (b* (((mv ?contra1 assum-lits)
           (combine-pathcond-lits
@@ -2377,4 +2377,3 @@
                  (mv t new-x interp-st state))))
   :returns (mv successp ans interp-st state)
   :formula-check fgl-simplify-formula-checks)
-

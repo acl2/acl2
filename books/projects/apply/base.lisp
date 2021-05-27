@@ -23,6 +23,8 @@
 ; books/system/apply/loop.lisp, which is certified during devel builds in order
 ; to put loop$ scions in guard-verified logic mode.
 
+; (depends-on "build/first-order-like-terms-and-out-arities.certdep" :dir :system)
+
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 #-acl2-devel

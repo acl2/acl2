@@ -36,6 +36,8 @@
 (include-book "fty-alist")
 (include-book "fty-list")
 (include-book "fty-transsum")
+(include-book "kestrel/fty/fty-set" :dir :system)
+(include-book "kestrel/fty/fty-omap" :dir :system)
 (include-book "fty-sugar")
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
@@ -153,6 +155,8 @@
             (defmap      (let ((al (parse-flexalist (cdar x) xvar
                                                     our-fixtypes fixtypes state)))
                            (change-flexalist al :strategy :drop-keys)))
+            (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
+            (defomap     (parse-flexomap (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -296,6 +300,7 @@
                    `(defines ,(intern-in-package-of-symbol (cat (symbol-name x.name) "-FIX")
                                                            x.name)
                       :flag ,flag-name
+                      :bogus-ok t       ; Allows non-recursive fix function (e.g. for defset)
                       :progn t
                       ,@(and sum-kind-calls
                              `(:hints ((and stable-under-simplificationp
@@ -798,11 +803,11 @@
     `(with-output
        ,@(and (not verbosep)
               `(:off (prove event observation)
-                :summary (acl2::form acl2::time)))
+                :summary-off (:other-than acl2::form acl2::time)))
        (encapsulate nil       ;; was: defsection ,x.name
          (with-output
            ,@(and (not verbosep)
-                  `(:summary (acl2::form acl2::time)))
+                  `(:summary-off (:other-than acl2::form acl2::time)))
            (progn
              (local (table xdoc::xdoc 'xdoc::post-defxdoc-event nil))
              (local (std::set-returnspec-mrec-default-hints nil))
@@ -903,7 +908,8 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
        (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al state))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexlist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexlist x :count nil)))
        ((flexlist x) x)
@@ -923,7 +929,8 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
        (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexalist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexalist x :count nil)))
        ((flexalist x) x)
@@ -944,7 +951,8 @@
                            (get-fixtypes-alist (w state))))
        (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al state))
        (x (change-flexalist x :strategy :drop-keys))
-       (x (if (member :count (cdr whole))
+       (x (if (or (flexalist->recp x)
+                  (member :count (cdr whole)))
               x
             (change-flexalist x :count nil)))
        ((flexalist x) x)
@@ -1050,3 +1058,46 @@
 (defmacro defprod (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defprod-fn ',form state)))
+
+
+(defun defset-fn (whole state)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexset (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexset x :count nil)))
+       ((flexset x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist (flextypes-kwd-alist-from-specialized-kwd-alist x.kwd-alist)
+                                  :recp x.recp)))
+    (deftypes-events flextypes state)))
+
+(defmacro defset (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (defset-fn ',form state)))
+
+
+(defun defomap-fn (whole state)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flexomap (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexomap x :count nil)))
+       ((flexomap x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist (flextypes-kwd-alist-from-specialized-kwd-alist x.kwd-alist)
+                                  :recp x.recp)))
+    (deftypes-events flextypes state)))
+
+(defmacro defomap (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (defomap-fn ',form state)))
+

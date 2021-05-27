@@ -586,9 +586,9 @@
 
 ;; Counting leading zeroes (Lemma 5.1):
 
-(defthmd clz-expo
+(defthmd clz128-expo
   (implies (bvecp x 128)
-           (equal (clz x) (- 127 (expo x)))))
+           (equal (clz128 x) (- 127 (expo x)))))
 
 ;; The inputs to lza128:
 

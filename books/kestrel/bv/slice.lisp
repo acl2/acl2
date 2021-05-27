@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "bvchop")
 (include-book "logtail")
 (include-book "slice-def")
+(include-book "kestrel/arithmetic-light/lg" :dir :system)
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/floor-mod-expt"))
@@ -241,7 +242,7 @@
 
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
-(defthm bvchop-of-logtail-becomes-slice
+(defthmd bvchop-of-logtail-becomes-slice
   (implies (and (natp size1)
                 (natp size2))
            (equal (bvchop size1 (logtail size2 x))
@@ -452,3 +453,71 @@
            (equal (equal (logtail low x) (slice high low x))
                   t))
   :hints (("Goal" :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm slice-of-+-of--1-and-expt-same
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low (+ -1 (expt 2 low)))
+                  0))
+  :hints (("Goal" :in-theory (e/d (slice) (acl2::bvchop-of-logtail-becomes-slice)))))
+
+;some way to automate this kind of reasoning?
+(defthmd slice-leibniz
+  (implies (and (equal high1 high2)
+                (equal low1 low2)
+                (equal x1 x2))
+           (equal (equal (slice high1 low1 x1) (slice high2 low2 x2))
+                  t)))
+
+(defthmd bvchop-of-floor-of-expt-of-2
+  (implies (and (integerp x) ;would like to drop this..
+                (integerp n)
+                (natp m))
+           (equal (bvchop n (floor x (expt 2 m)))
+                  (slice (+ m -1 n) m x)))
+  :hints (("Goal" :in-theory (e/d (slice logtail) (;anti-slice
+                                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                                   )))))
+
+(defthmd bvchop-of-floor-of-expt-of-2-constant-version
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep n)))
+                (integerp x)
+                (integerp n)
+                (power-of-2p k))
+           (equal (bvchop n (floor x k))
+                  (slice (+ (lg k) -1 n) (lg k) x)))
+  :hints (("Goal" :use (:instance bvchop-of-floor-of-expt-of-2 (m (lg k)))
+           :in-theory (e/d (power-of-2p) (bvchop-of-floor-of-expt-of-2)))))
+
+(defthm bitp-of-slice-same-type
+  (bitp (slice n n x))
+  :rule-classes :type-prescription)
+
+(defthmd slice-same-when-not-0
+  (implies (not (equal 0 (slice n n x)))
+           (equal (slice n n x) 1))
+  :hints (("Goal" :use (:instance usb1-cases (x (slice n n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthmd slice-bound-3
+  (implies (and (<= (+ -1 (expt 2 (+ 1 high (- low)))) k)
+            ;    (<= low high)
+                (integerp k)
+                (natp high)
+                (natp low))
+           (not (< k (slice high low x))))
+  :hints (("Goal" :cases ((<= low high))
+           :use (:instance bound-when-usb (x (slice high low x))
+                                  (n (+ 1 high (- low))))
+           :in-theory (disable bound-when-usb))))
+
+(defthmd slice-bound-3-constant-version
+  (implies (and (syntaxp (quotep k))
+                (<= (+ -1 (expt 2 (+ 1 high (- low)))) k)
+;    (<= low high)
+                (integerp k)
+                (natp high)
+                (natp low))
+           (not (< k (slice high low x))))
+  :hints (("Goal" :by slice-bound-3)))

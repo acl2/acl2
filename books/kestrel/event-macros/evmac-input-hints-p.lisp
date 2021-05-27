@@ -17,7 +17,7 @@
 
 (define evmac-input-hints-p (x)
   :returns (yes/no booleanp)
-  :parents (event-macro-applicability-conditions)
+  :parents (event-macros event-macro-applicability-conditions)
   :short "Recognize processed hints inputs of event macros."
   :long
   (xdoc::topstring

@@ -38,11 +38,9 @@
 
 (in-package "X86ISA")
 
-(include-book "init-page-tables" :ttags :all)
 (include-book "../../proofs/utilities/row-wow-thms" :ttags :all)
-(include-book "exec-loaders/elf/elf-reader" :ttags :all) ; no-port
-(include-book "exec-loaders/mach-o/mach-o-reader" :ttags :all) ; no-port
 (include-book "instrument/top" :ttags :all)
+(include-book "execloaders" :ttags :all)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -162,7 +160,7 @@ Setting-up-Page-Tables).
 <li><p>Read and load @('popcount.o') into the x86 model's memory using the
 macro @('binary-file-load').</p>
 
-<code> (binary-file-load \"popcount.o\") </code>
+<code> (binary-file-load \"popcount.o\" :elf t) ;; or :mach-o t</code>
 
 <p>@('binary-file-load') will fail if @('popcount.o') is not a supported
 ELF or Mach-O file.</p>
@@ -390,91 +388,6 @@ remember to initialize the x86 state appropriately.</p>
 (local (xdoc::set-default-parents program-execution))
 
 ;; ======================================================================
-
-(define binary-file-load-fn (filename elf mach-o x86 state)
-  :parents (program-execution)
-  :short "Function to read in an ELF or Mach-O binary and load it into
-  the x86 ISA model's memory"
-  :long "<p>The following macro makes it convenient to call this
-  function to load a program:</p>
-<code> (binary-file-load \"fib.o\") </code>"
-
-  :guard (stringp filename)
-  :verify-guards nil
-
-  (b* (((mv file-byte-list state)
-        (ACL2::read-file-bytes filename state))
-
-       ((when (or (not (byte-listp file-byte-list))
-                  (equal file-byte-list nil)))
-        (mv nil (cw "Error in reading file ~p0.~%" filename)
-            elf mach-o x86 state))
-
-       (file-header (take 64 file-byte-list))
-       ((when (not (byte-listp file-header)))
-        (mv
-         nil
-         (cw "File ~p0: Header could not be read.~%" filename)
-         elf mach-o x86 state))
-
-       (- (cw "~%Reading the header of the file to determine its type...~%"))
-       ((mv flg type)
-        (b* ((elf-header (read-elf-header file-header))
-             (magic (combine-bytes (cdr (assoc 'magic elf-header))))
-             (class (cdr (assoc 'class elf-header)))
-             ((when (and (equal magic *ELFMAG*)
-                         (equal class 2)))
-              (mv nil 'ELF))
-             (mach-o-header (read-mach_header (take 32 file-header)))
-             (magic (nfix (cdr (assoc 'MAGIC mach-o-header))))
-             ((when (or (equal magic *MH_MAGIC*)
-                        (equal magic *MH_CIGAM*)
-                        (equal magic *MH_MAGIC_64*)
-                        (equal magic *MH_CIGAM_64*)))
-              (mv nil 'MACH-O)))
-            (mv t nil)))
-       ((when flg)
-        (mv nil
-            (cw "Error: Not an ELF or Mach-O object file (as suggested by the magic number).~%")
-            elf mach-o x86 state))
-       (- (cw "~%File type is detected to be: ~p0.~%" type))
-
-       (- (cw "~%Reading and parsing ~p0...~%" filename))
-       ((mv alst elf mach-o state)
-        (if (equal type 'ELF)
-            (b* (((mv alst elf state)
-                  (elf-file-read file-byte-list elf state)))
-                (mv alst elf mach-o state))
-          (b* (((mv alst mach-o state)
-                (mach-o-file-read file-byte-list mach-o state)))
-              (mv alst elf mach-o state))))
-       (- (cw "~%File ~p0 read complete.~%" filename))
-
-       (- (cw "~%Loading sections of ~p0 in the memory of the x86 model...~%" filename))
-       ((mv flg x86)
-        (if (equal type 'ELF)
-            (b* (((mv flg0 x86)
-                  (elf-load-text-section elf x86))
-                 ((mv flg1 x86)
-                  (elf-load-data-section elf x86)))
-                (mv (and flg0 flg1) x86))
-          (b* (((mv flg0 x86)
-                (mach-o-load-text-section mach-o x86))
-               ((mv flg1 x86)
-                (mach-o-load-data-section mach-o x86)))
-              (mv (and flg0 flg1) x86))))
-
-       ((when flg)
-        (mv nil
-            (cw "Error encountered while loading sections in the memory of the x86 model...~%")
-            elf mach-o x86 state))
-       (- (cw "~%x86 model's memory initialized appropriately.~%"))
-       (- (cw "~%Now printing the headers of the binary file...~%~%")))
-
-      (mv type alst elf mach-o x86 state)))
-
-(defmacro binary-file-load (filename)
-  `(binary-file-load-fn ,filename elf mach-o x86 state))
 
 (define init-sys-view
   ((paging-base-addr :type (unsigned-byte 52))

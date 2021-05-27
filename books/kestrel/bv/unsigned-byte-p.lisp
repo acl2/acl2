@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -263,3 +263,37 @@
                                   (x (+ k x)))
            :in-theory (enable ;unsigned-byte-p-from-bounds
                               ))))
+
+;rename
+(defthm unsigned-byte-p-false-when-not-longer
+  (implies (and (not (unsigned-byte-p free x))
+                (<= size free)
+                (natp free))
+           (not (unsigned-byte-p size x))))
+
+;restrict to when size is not a quoted constant?
+(defthm integerp-from-unsigned-byte-p-size-param-fw
+  (implies (unsigned-byte-p size free)
+           (integerp size))
+  :rule-classes (:forward-chaining))
+
+;restrict to when size is not a quoted constant?
+(defthm non-negative-from-unsigned-byte-p-size-param-fw
+  (implies (unsigned-byte-p size free)
+           (not (< size 0)))
+  :rule-classes (:forward-chaining))
+
+(defthm unsigned-byte-p-of-if
+  (equal (unsigned-byte-p size (if test x y))
+         (if test
+             (unsigned-byte-p size x)
+           (unsigned-byte-p size y))))
+
+;rename
+(defthm bound-when-usb
+  (implies (and (unsigned-byte-p n x)
+                (<= (+ -1 (expt 2 n)) k)
+                (integerp k)
+                (natp n)
+                )
+           (not (< k x))))

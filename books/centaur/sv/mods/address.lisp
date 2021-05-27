@@ -242,7 +242,10 @@ address with empty index and scope qualifier 0.</p>"
 
 (define svar-addr-p ((x svar-p))
   :short "An svar containing an address."
-  (address-p (svar->name x))
+  (b* (((svar x)))
+    (and (address-p x.name)
+         (not x.override-test)
+         (not x.override-val)))
   ///
   (defthm svar-addr-p-of-address->svar
     (svar-addr-p (address->svar x))
@@ -270,7 +273,9 @@ address with empty index and scope qualifier 0.</p>"
               :hints(("Goal" :in-theory (enable svar-addr-p))))
   (mbe :logic (if (svar-addr-p x)
                   (svar-fix x)
-                (change-svar x :name (svar->address x)))
+                (change-svar x :name (svar->address x)
+                             :override-test nil
+                             :override-val nil))
        :exec x)
   ///
   (defthm svar-addr-fix-when-svar-addr-p

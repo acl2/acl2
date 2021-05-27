@@ -129,7 +129,7 @@
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\n #\u #\l #\l) chars)
       (mv nil :null (nthcdr 4 chars))
-    (mv :bad-null-literal nil chars)))
+    (mv (cons :bad-null-literal chars) nil chars)))
 
 (defthm len-of-mv-nth-2-of-parse-json-null-literal
   (implies (not (mv-nth 0 (parse-json-null-literal chars)))

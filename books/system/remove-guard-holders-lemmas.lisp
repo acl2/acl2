@@ -13,27 +13,43 @@
 (include-book "subcor-var")
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "pseudo-termp-lemmas"))
-(local (include-book "subcor-var"))
+; Why again?
+; (local (include-book "subcor-var"))
 
-(verify-termination weak-apply$-badge-alistp) ; and guards
+(verify-termination weak-badge-userfn-structure-alistp) ; and guards
 
 (verify-termination ilks-plist-worldp) ; and guards
 
-(local (defthm weak-apply$-badge-alistp-forward-to-alistp
-         (implies (weak-apply$-badge-alistp x)
+(local (defthm weak-badge-userfn-structure-alistp-forward-to-alistp
+         (implies (weak-badge-userfn-structure-alistp x)
                   (alistp x))
          :rule-classes :forward-chaining))
 
-(local (defthm weak-apply$-badge-alistp-gives-access
-         (implies (and (weak-apply$-badge-alistp x)
+; The following lemma is not really useful as a rewrite rule because both
+; conjuncts in the conclusion ought to be expanded into their individual
+; conjuncts.  So we store it with :rule-classes nil and just :use it when
+; needed.
+
+(local (defthm weak-badge-userfn-structure-alistp-gives-access
+         (implies (and (weak-badge-userfn-structure-alistp x)
                        (assoc-equal fn x))
-                  (and (consp (cdr (assoc-equal fn x)))
-                       (consp (cddr (assoc-equal fn x)))
-                       (consp (cdddr (assoc-equal fn x)))))))
+                  (and (weak-badge-userfn-structure-tuplep (assoc-equal fn x))
+                       (weak-apply$-badge-p
+                        (access-badge-userfn-structure-tuple-badge
+                         (assoc-equal fn x)))))
+         :rule-classes nil))
 
-(verify-termination ilks-per-argument-slot) ; and guards
-
-(local (in-theory (disable weak-apply$-badge-alistp-gives-access)))
+(verify-termination ilks-per-argument-slot
+  (declare (xargs :guard-hints
+                  (("Goal"
+                    :use
+                    (:instance
+                     weak-badge-userfn-structure-alistp-gives-access
+                     (x (CDR
+                         (ASSOC-EQUAL :BADGE-USERFN-STRUCTURE
+                                      (FGETPROP 'BADGE-TABLE
+                                                'TABLE-ALIST
+                                                NIL WRLD))))))))))
 
 (verify-termination (remove-guard-holders1
                      (declare (xargs :verify-guards nil))))

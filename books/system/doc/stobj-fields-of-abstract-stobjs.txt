@@ -1,0 +1,292 @@
+Matt Kaufmann plans to deal with pending issues of documentation,
+comments, and testing for stobj fields of abstract stobjs, by the end
+of July 2021.  Note that this is just a record of what Matt plans to
+do; it's not for anyone else to deal with.
+
+------------------------------
+
+When the list below has been dealt with (except perhaps for the
+section, "Possible Future Work"):
+
+- Fix comments about
+  books/system/doc/stobj-fields-of-abstract-stobjs.txt in
+  books/system/doc/acl2-doc.lisp.
+
+- Perhaps delete :DOC stobj-fields-of-abstract-stobjs.
+
+------------------------------
+
+The sections below are as follows, with individual items in no
+particular order.  The first two lay out what is referenced in the
+:doc topic above, and are what Matt intends to complete by the end of
+July 2021.  The Possible Future Work may come later.
+
+=== :DOC and Comment Issues
+=== Add Appropriate Tests
+=== Possible Future Work
+
+============================================================
+=== :DOC and Comment Issues
+============================================================
+
+- In :doc defabbstobj, suggest that one use :doc args rather than :pe
+  to see the stobjs involved.  [That's because we use
+  put-absstobjs-in-and-outs to set the stobjs-in and stobjs-out after
+  the definitions are admitted, thus overriding this potentially bogus
+  :stobjs declaration.]
+
+- Introduce "foundational stobj for" everywhere, incuding :doc, probably
+  allowing "foundation for", for short.  (Or "foundation of"?  Be consistent.
+  Be sure the Essay on the Correctness of Abstract Stobjs has this change
+  too.
+
+- If :updater is nil it's as though :updater is omitted.  [Future work could
+  be to make sure this works OK, but I gave a quick check and I'm pretty sure
+  that it does.)
+
+- For abstract stobjs, the only fields to bind are child stobj fields, i.e.,
+  those with an :updater; there is no notion of non-stobj field for an
+  abstract stobj.
+
+- In :doc, explain (but better than this) that for stobj-let on an abstract
+  stobj, an aliasing error occurs if and only if there are at least two bound
+  variables that access the same ultimate concrete stobj field and at least
+  one of those is updated.
+
+- Make sure that :doc nested-stobjs documents that not only are producers to
+  be duplicate-free, but also there can't be duplicates among the actuals of
+  the bindings, including duplicate array accesses (checked at guard
+  verification and runtime), and all of that involving the accesses of the
+  ultimate foundational stobj (a notion I should define in the :doc,
+  probably).  Except that's relaxed when there are no producers involved.
+
+- In (defxdoc nested-stobjs ...), in displays under the "Precise
+  documentation" section, (let BINDINGS ...) needs clarification: in that
+  setting, any updaters have been removed from BINDINGS.
+
+- Update :doc illegal-state and :doc set-absstobj-debug to reflect
+  tweak to message printed by chk-absstobj-invariants.  Perhaps
+  document what stobj-let-fn-raw now does to protect stobj-let for
+  incomplete abstract stobj child updates.
+
+- Fix the following in :doc defstobj:
+
+      To see an s-expression containing the definitions that constitute the
+      raw Lisp implementation of the event, evaluate the form
+
+	(nth 4 (global-val 'cltl-command (w state)))
+
+    ....
+
+      One way to see all the raw Lisp functions defined by a given defstobj
+      is to evaluate the defstobj event and then evaluate, in the ACL2
+      loop, the expression (nth 4 (global-val 'cltl-command (w state))).
+      Those functions that contain (DECLARE (STOBJ-INLINE-FN T)) will
+      generate [defabbrev] forms because the :inline keyword of
+      [defstobj] was supplied the value t.  The rest will generate
+      [defun]s.
+
+    ....
+
+      If you want to see the raw Lisp supporting a defstobj, execute the
+      defstobj and then evaluate the ACL2 form (nth 4 (global-val
+      'cltl-command (w state))).
+
+============================================================
+=== Add Appropriate Tests
+============================================================
+
+- Perhaps make books/system/tests/nested-stobj-two-updates.lisp into a
+  script test (with a -input.lsp file etc.), in order to check error
+  messages with the forms currently commented at the end.
+
+- Test that non-memoizability of the foundational stobj protects against the
+  sort of stobj-let soundness bug described in stobj-let-fn-raw.  (Probably
+  it does, given how stobj-let-fn-raw avoids that bug.)  Perhaps look at
+  chk-stobj-field-descriptor to help ensure I'm dealing properly with
+  memoization and stobj-let, even for abstract stobjs.
+
+- Do we need to modify put-defabsstobj-invariant-risk to take into account a
+  child stobj being updated?  I don't think so, because the child stobj
+  operators already deal with invariant risk, which should be enough; and
+  probably the caller of such a stobj-let inherits invariant-risk from the
+  childe updater anyhow.  But at a minimum, I should add a test in
+  books/system/tests/abstract-stobj-nesting/absstobj-with-stobj-array.lisp,
+  perhaps including a check whether the stobj-let caller's 'invariant-risk
+  property is the same as such a child stobj's functions.
+
+- Test that the accessor and updater are just those of the parent's
+  concrete stobj, and check error message.
+
+- Add checks for :updater: its function spec's exec is a stobj field
+  accessor of the concrete stobj, and that :updater is the name of a
+  function spec whose :exec field is the corresponding stobj field updater.
+  Probably the check should be that each :updater corresponds uniquely to
+  two relevant exports -- the export containing the :updater keyword
+  and the export headed by that updater -- and those pairs, and only those
+  pairs, reference a child stobj of the concrete stobjs as expected in the
+  stobjs-in and stobjs-out.
+  I think the check should be under chk-acceptable-defabsstobj1, possibly
+  in its subfunction chk-defabsstobj-method but more likely in a separate,
+  new function.
+
+- Add a test that stobj-let fails when attempting to bind other that a
+  child stobj field, especially in the case of an abstract stobj.
+  [Probably obsolete comment:
+
+   Make sure that stobj-let for an abstract stobj only binds child stobj
+   fields.  I'm guessing that some-absstobj-child-updater is kind of
+   ill-conceived, though maybe it's OK -- I should just be sure to treat
+   updaters properly for stobj-let on abstract stobjs -- namely, some (most)
+   accessors don't have updaters, so in those cases the updater is nil --
+   maybe that's the default if I can swing it.
+  ]
+
+  - Add a check that a child stobj of the concrete stobj can only be used
+    once as a child of the abstract stobj.  Maybe update the Essay
+    correspondingly.  See sol-example.lisp, including the email thread at the
+    end.
+
+  - Test with-local-stobj with child stobj fields of abstract stobjs.
+    Quite possibly though, that's already done.
+
+  - Test that things go right when swap-stobjs is called on child stobjs
+    under a stobj-let.  Think first about the concrete case, then think about
+    the new case.
+    -- Maybe just add to the swap-stobjs section of:
+       ~/Dropbox/fh/acl2/patches/nested-absstobjs/books/new/system/testing/abstract-stobj-nesting/nested-abstract-stobjs-input.lsp
+
+  - (Already done?) Create a demos test for abssstobj invariant violation.
+    This can be done by changing update-two-usuallyequal-nums (in
+    two-usuallyequal-nums-stobj.lisp), by replacing the second (i.e., last)
+    binding of n$2 by (n$2 (prog2$ (break$) (update-n$val n n$2))), and then
+    executing, say, (update-two-usuallyequal-nums 17 two-usuallyequal-nums).
+
+============================================================
+=== Possible Future Work
+============================================================
+
+- Although we have relaxed the stobj-let aliasing restrictions as in
+  the release note just below, it is still illegal for the stobj-let
+  bindings to include two identical expressions, as in the following.
+
+  (defstobj sub1 fld1)
+  (defstobj sub2 fld2 :congruent-to sub1)
+  (defstobj top (sub :type sub1))
+  (defun foo (top)
+    (declare (xargs :stobjs top))
+    (stobj-let ((sub1 (sub top))
+                (sub2 (sub top)))
+               (val1 val2)
+               (mv (fld1 sub1)
+                   (fld2 sub2))
+               (mv val1 val2 top)))
+
+  Consider relaxing that too (again, if updates won't cause problems).
+  Here's that release note.  .....  [Stobj-let] now allows aliases in
+  the bindings in some cases where this is safe because updating is
+  not involved.  Thanks to Sol Swords for suggesting such a change.
+
+- Consider rethinking the elimination of the guard check (done around
+  May 21, 2021) in put-defabsstobj-invariant-risk.  If the guard is
+  optimized with the stobj-optp argument of guard set to t, then a
+  guard of *t* might be fine because the abstract stobj suffices for
+  avoiding invariant-risk.  Note that in translate-absstobj-field,
+  guard-pre is bound to (guard logic nil wrld), and that ultimately
+  determines the :guard-post, which is thus unlikely to be *t*.  But
+  that could change if we call (guard logic t wrld) instead -- but I
+  haven't come close to thinking this through.
+
+- In oneify-cltl-code, we might loosen the (all-nils stobjs-out) call to
+  include the case that the stobjs-out consists of a child stobj.  Probably
+  it's not worth the trouble to do that, but it might be worthwhile to make a
+  comment about this.
+
+- If corresponding stobj fields are congruent and other things match (e.g.,
+  guards), is that sufficient for the congruence of the parent?  Or should we
+  continue to insist that fields correspond exactly?  PROBABLE ANSWER: No
+  change in the check, which is done in defabsstobj-fn1; search there for
+  "perfectly".
+
+- Consider allowing stobj-let binding (var (fn ... st ...)) for abstract
+  stobj st even without :updater, provided the variable var is not among the
+  producer-variables.  Careful though: the shape of the call (fn ... st ...)
+  is then quite arbitrary, so it might be difficult to find st.  Maybe we
+  should require at least one binding with a true accessor call (i.e., with
+  corresopnding updater).
+
+- Consider merging code somehow for stobj-field-accessor-p and
+  stobj-field-fn-of-stobj-type-p, or perhaps adding comments about keeping
+  them in sync.
+
+- Replace 'absstobj-info property by 'absstobj-info-lst property.  I've
+  done a tags-search and I think that should be easy: one is nil iff the
+  other is nil, and the former would be just the car of the latter.
+  Advantage: We wouldn't need the function absstobj-tuples-lst, which is
+  called twice (once for explicit duplicate accessors and once for duplicate
+  indices).  OR.... Maybe I don't need the entire list; maybe just add what I
+  need, to avoid walking through the entire chain -- though that might be too
+  much trouble.
+
+- Ouch -- macroexpand1 is used in :trans1, hence would not show the
+  no-duplicatesp additions to stobj-let.  Maybe change :trans1 (i.e.,
+  trans1-fn) or macroexpand1.  See macroexpand1*-cmp, which takes the
+  necessary precautions; maybe use those in :trans1 or macroexpand1.
+  Consider using that same list (as in macroexpand1*-cmp) where we use
+  (mv mv-let translate-and-test with-local-stobj) in
+  chk-embedded-event-form.  Similarly look at make-include-books-absolute-1.
+  And probably put some turd in stobj-let-fn that causes an error if that
+  macro expansion is ever used in #+acl2-loop-only code.
+  Careful: We probably still want :trans1 to work on stobj-let forms, as this
+  is mentioned in :doc nested-stobjs.  That :doc probably should say
+  something about missing duplicate checks -- maybe add a section on
+  aliasing.  Perhaps we should have a defconst of macros that get special
+  treatment like stobj-let, and these should be disallowed normally but
+  allowed, with a warning, by trans1.
+
+- Note that when a stobj-let does only a single update, there might not be a
+  need to enter an :illegal-state when the computation is interrupted.  See
+  interrupt-1 in:
+  books/system/tests/abstract-stobj-nesting/nested-abstract-stobjs-input.lsp
+
+- Should we maybe get an error for this (variant of form from
+  books/system/tests/abstract-stobj-nesting/aliasing-tests-input.lsp
+  due to sub$c-cong1 being unused
+
+     (defun foo3-bad (ntop)
+       (declare (xargs :stobjs ntop))
+       (stobj-let ((sub$c (nsub1 ntop))
+		   (sub$c-cong (nsub1-again ntop)
+			       update-nsub1)
+		   (sub$c-cong1 (nsub2 ntop))
+		   (sub$c-cong2 (nsub2-again ntop)
+				update-nsub2))
+		  (sub$c sub$c-cong sub$c-cong1-val sub$c-cong2)
+		  (let ((sub$c-cong1-val (fld0$c sub$c-cong)))
+     ; These child stobj returns are "updates" since the child stobjs are returned.
+		    (mv sub$c sub$c-cong sub$c-cong1-val sub$c-cong2))
+		  ntop))
+
+- Unrelated to nested absstobjs: should have stronger check on bindings,
+  as noted below.  AHA -- see parse-stobj-let1, where we ignore producer fns
+  that don't correspond to members of the producer variables.  Probably
+  that's OK semantically, but it's weird for the user to get away with this.
+
+     (defstobj child fld)
+     (defstobj parent
+       (fld2 :type child)
+       fld3)
+     (defstobj child* fld* :congruent-to child)
+     ;;; There is no xyz fn -- we should check bindings even when they're
+     ;;; not used!
+     (defun foo (parent)
+       (declare (xargs :stobjs parent))
+       (stobj-let
+	((child (fld2 parent) xyz)) ; bindings
+	(val)                       ; producer variable(s)
+	17                          ; producer
+	(let ((parent (update-fld3 'a parent)))
+	  parent)) ; consumer
+       )
+
+============================================================

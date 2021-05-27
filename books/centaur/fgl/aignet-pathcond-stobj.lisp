@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
- 
+
 (in-package "AIGNET")
 
 (include-book "centaur/aignet/mark-impls" :dir :system)
@@ -168,7 +168,7 @@
       :induct (len x)
       :expand ((nbalist-fix x))
       :in-theory (e/d ((:i len)) ((:d nbalist-fix)))))))
-  
+
 
 (fty::deflist pos-list :elt-type natp :true-listp t)
 
@@ -291,18 +291,13 @@
   (defret nbalistp-of-nbalist-stobj-nbalist$c-logic
     (implies (no-duplicatesp-equal (acl2::nat-list-fix stack))
              (nbalistp nbalist)))
-  
+
   (defret len-of-<fn>
     (implies (nbalist-stobj-zero-unbound-aux stack bits)
              (equal (len nbalist)
                     (len stack)))
     :hints(("Goal" :induct (len stack)
             :expand ((nbalist-stobj-zero-unbound-aux stack bits)))))
-
-  (local (defthm nth-of-bit-list-fix
-           (bit-equiv (nth n (bit-list-fix x))
-                      (nth n x))
-           :hints(("Goal" :in-theory (enable nth)))))
 
   (defthm nbalist-stobj-nbalist$c-logic-of-update-non-member
     (implies (not (member-equal (nfix n) (acl2::nat-list-fix stack)))
@@ -402,7 +397,7 @@
   (defret nbalistp-of-nbalist-stobj-nbalist$c
     (implies (and (nbalist-stobj$cp nbalist-stobj$c))
              (nbalistp nbalist)))
-  
+
   (defret len-of-<fn>
     (implies (and (nbalist-stobj$cp nbalist-stobj$c)
                   (nbalist-stobj-zero-unbound nbalist-stobj$c))
@@ -630,7 +625,7 @@
   (cdr (nbalist-fix nbalist)))
 
 
-  
+
 (define nbalist-stobj-nbalist$a ((nbalist nbalist-stobj$ap))
   :enabled t
   (nbalist-fix nbalist))
@@ -711,7 +706,7 @@
 
               (nbalist-stobj-nthkey :logic nbalist-stobj-nthkey$a
                                      :exec nbalist-stobj-nthkey$c))))
-  
+
 
 (define nbalist-stobj-lookup ((id natp)
                               nbalist-stobj)
@@ -731,4 +726,3 @@
        :exec (if (<= id #xfffffff)
                  (nbalist-stobj-push^ id val nbalist-stobj)
                (ec-call (nbalist-stobj-push^ id val nbalist-stobj)))))
-

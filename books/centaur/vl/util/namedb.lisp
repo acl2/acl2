@@ -124,7 +124,7 @@ vl-pgenstr->val).</p>"
     (and (< (+ 1 plen) slen)
          (str::strprefixp prefix str)
          (eql (char str plen) #\_)
-         (str::digit-string-p-aux str (+ 1 plen) slen)))
+         (str::dec-digit-string-p-aux str (+ 1 plen) slen)))
 
   ///
 
@@ -135,8 +135,8 @@ vl-pgenstr->val).</p>"
                   (force (natp n)))
              (vl-pgenstr-p prefix (vl-pgenstr prefix n))))
 
-  (local (defthm nth-underscore-when-digit-listp
-           (implies (str::digit-listp chars)
+  (local (defthm nth-underscore-when-dec-digit-char-listp
+           (implies (str::dec-digit-char-listp chars)
                     (not (equal (nth n chars) #\_)))))
 
   (local (in-theory (disable nthcdr-of-increment)))
@@ -812,7 +812,11 @@ matches a current prefix.</p>"
         (equal (vl-namedb-allnames new-db)
                (cons fresh-name
                      (vl-namedb-allnames db))))
-      :hints(("Goal" :in-theory (disable CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
+      :hints(("Goal" :in-theory (disable
+                                 CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV
+; Matt K. mod, 11/28/2020: Accommodate fix for storing patterned congruences.
+                                 (:congruence cons-streqv-congruence-on-k-under-vl-namedb-nameset-equiv)
+      ))))
 
     (defthm vl-namedb->names-of-vl-namedb-plain-name
       (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))))
@@ -925,5 +929,3 @@ printed.</p>"
                       (vl-namedb-allnames db))))
 
   (deffixequiv vl-namedb-plain-names))
-
-

@@ -1,0 +1,12 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "nested-abstract-stobjs")
+
+; cert-flags: ? t :ttags (:bogus-cert)
+
+; Help dependency scanner.
+#||
+(depends-on "nested-abstract-stobjs-input.lsp")
+(depends-on "nested-abstract-stobjs-log.txt")
+(include-book "two-usuallyequal-nums-stobj")
+(include-book "two-ordered-nums-stobj")
+||#

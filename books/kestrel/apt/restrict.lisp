@@ -10,10 +10,14 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -25,9 +29,9 @@
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
-(include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(include-book "utilities/defaults-table")
 (include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
 
@@ -45,56 +49,53 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old'),
-   @('restriction'),
-   @('undefined'),
-   @('new-name'),
-   @('new-enable'),
-   @('thm-name'),
-   @('thm-enable'),
-   @('verify-guards'),
-   @('hints'),
-   @('print'), and
-   @('show-only')
-   are the homonymous inputs to @(tsee restrict),
-   before being processed.
-   These formal parameters have no types because they may be any values."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  "@('call') is the call to @(tsee restrict) supplied by the user."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "restriction")
 
-  "@('old$'),
-   @('restriction$'),
-   @('undefined$'),
-   @('new-name$'),
-   @('new-enable$'),
-   @('thm-name$'),
-   @('thm-enable$'),
-   @('verify-guards$'),
-   @('hints$'),
-   @('print$'), and
-   @('show-only$')
-   are the results of processing
-   the homonymous inputs (without the @('$')) to @(tsee restrict).
-   Some are identical to the corresponding inputs,
-   but they have types implied by their successful validation,
-   performed when they are processed."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "undefined")
+
+  (xdoc::evmac-topic-implementation-item-input "new-name")
+
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
+
+  (xdoc::evmac-topic-implementation-item-input "old-to-new-name")
+
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-to-new-enable")
+
+  (xdoc::evmac-topic-implementation-item-input "new-to-old-name")
+
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-to-old-enable")
+
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
+
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "hints")
+
+  (xdoc::evmac-topic-implementation-item-input "print")
+
+  (xdoc::evmac-topic-implementation-item-input "show-only")
+
+  xdoc::*evmac-topic-implementation-item-call*
+
+  (xdoc::evmac-topic-implementation-item-fn-doc "new")
+
+  (xdoc::evmac-topic-implementation-item-thm-doc "old-to-new")
+
+  (xdoc::evmac-topic-implementation-item-thm-doc "new-to-old")
 
   "@('stub?') is the stub called @('?f') in the documentation
    if @('old') is a reflexive function,
    or @('nil') otherwise."
 
-  "@('appcond-thm-names') is an alist
-   from the keywords that identify the applicability conditions
-   to the corresponding generated theorem names."
+  xdoc::*evmac-topic-implementation-item-appcond-thm-names*
 
-  "@('old-unnorm-name') is the name of the generated theorem
+  "@('old-unnorm') is the name of the generated theorem
    that installs the non-normalized definition of the target function."
 
-  "@('new-unnorm-name') is the name of the generated theorem
+  "@('new-unnorm') is the name of the generated theorem
    that installs the non-normalized definition of the new function."
 
-  "@('names-to-avoid') is a cumulative list of names of generated events,
-   used to ensure the absence of name clashes in the generated events."))
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,51 +105,51 @@
 
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp
-               (old$ "A @(tsee symbolp) that is
-                      the name of the target function
-                      of the transformation,
-                      denoted by the @('old') input.")
+               (old "A @(tsee symbolp) that is
+                     the name of the target function
+                     of the transformation,
+                     denoted by the @('old') input.")
                state)
   :mode :program
   :short "Process the @('old') input."
   (b* ((wrld (w state))
-       ((er old$) (ensure-function-name-or-numbered-wildcard$
-                   old "The first input" t nil))
-       (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
-       ((er &) (ensure-function-has-args$ old$ description t nil))
-       ((er &) (ensure-function-number-of-results$ old$ 1
+       ((er old) (ensure-function-name-or-numbered-wildcard$
+                  old "The first input" t nil))
+       (description (msg "The target function ~x0" old))
+       ((er &) (ensure-function-is-logic-mode$ old description t nil))
+       ((er &) (ensure-function-is-defined$ old description t nil))
+       ((er &) (ensure-function-has-args$ old description t nil))
+       ((er &) (ensure-function-number-of-results$ old 1
                                                    description t nil))
-       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
-       (recursive (recursivep old$ nil wrld))
+       ((er &) (ensure-function-no-stobjs$ old description t nil))
+       (recursive (recursivep old nil wrld))
        ((er &) (if recursive
-                   (ensure-function-singly-recursive$ old$
+                   (ensure-function-singly-recursive$ old
                                                       description t nil)
                  (value nil)))
        ((er &) (if recursive
-                   (ensure-function-known-measure$ old$
+                   (ensure-function-known-measure$ old
                                                    description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
-                    old$
+                   (ensure-function-is-guard-verified$
+                    old
                     (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old$)
+                          the target function ~x0" old)
                     t nil)
                  (value nil))))
-    (value old$)))
+    (value old)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-restriction (restriction
-                                      (old$ symbolp)
-                                      (verify-guards$ booleanp)
+                                      (old symbolp)
+                                      (verify-guards booleanp)
                                       ctx
                                       state)
   :returns (mv erp
-               (restriction$ "A @(tsee pseudo-termp) that is
-                              the translation of @('restriction').")
+               (restriction "A @(tsee pseudo-termp) that is
+                             the translation of @('restriction').")
                state)
   :mode :program
   :short "Process the @('restriction') input."
@@ -159,35 +160,35 @@
        (description (msg "The term ~x0 that denotes the restricting predicate"
                          restriction))
        ((er &) (ensure-term-free-vars-subset$ term
-                                              (formals old$ wrld)
+                                              (formals old wrld)
                                               description t nil))
        ((er &) (ensure-term-logic-mode$ term description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
                                                                description
                                                                t nil))
        ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
-       ((er &) (if verify-guards$
+       ((er &) (if (eq verify-guards t)
                    (ensure-term-guard-verified-exec-fns$
                     term
                     (msg "Since either the :VERIFY-GUARDS input is T, ~
                           or it is (perhaps by default) :AUTO ~
                           and the target function ~x0 is guard-verified, ~@1"
-                         old$ (msg-downcase-first description))
+                         old (msg-downcase-first description))
                     t nil)
                  (value nil)))
-       ((er &) (ensure-term-does-not-call$ term old$
+       ((er &) (ensure-term-does-not-call$ term old
                                            description t nil)))
     (value term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-undefined (undefined
-                                    (old$ symbolp)
+                                    (old symbolp)
                                     ctx
                                     state)
   :returns (mv erp
-               (undefined$ "A @(tsee pseudo-termp) that is
-                            the translation of @('undefined').")
+               (undefined "A @(tsee pseudo-termp) that is
+                           the translation of @('undefined').")
                state)
   :mode :program
   :short "Process the @(':undefined') input."
@@ -198,53 +199,16 @@
        (description (msg "The term ~x0 that denotes the undefined value"
                          undefined))
        ((er &) (ensure-term-free-vars-subset$ term
-                                              (formals old$ wrld)
+                                              (formals old wrld)
                                               description t nil))
        ((er &) (ensure-term-logic-mode$ term description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
                                                                description
                                                                t nil))
        ((er &) (ensure-term-no-stobjs$ stobjs-out description t nil))
-       ((er &) (ensure-term-does-not-call$ term old$
+       ((er &) (ensure-term-does-not-call$ term old
                                            description t nil)))
     (value term)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-process-thm-name (thm-name
-                                   (old$ symbolp)
-                                   (new-name$ symbolp)
-                                   ctx
-                                   state)
-  :returns (mv erp
-               (thm-name$ "A @(tsee symbolp)
-                           to use for the theorem
-                           that relates the old and new functions.")
-               state)
-  :mode :program
-  :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (if (eq thm-name :auto)
-                 (make-paired-name old$ new-name$ 2 (w state))
-               thm-name))
-       (description (msg "The name ~x0 of the theorem ~
-                          that relates the target function ~x1 ~
-                          to the new function ~x2, ~
-                          ~@3,"
-                         name old$ new-name$
-                         (if (eq thm-name :auto)
-                             "automatically generated ~
-                              since the :THM-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((er &) (ensure-symbol-different$
-                name new-name$
-                (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)." new-name$)
-                description
-                t nil)))
-    (value name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,8 +217,10 @@
                                  undefined
                                  new-name
                                  new-enable
-                                 thm-name
-                                 thm-enable
+                                 old-to-new-name (old-to-new-name? booleanp)
+                                 old-to-new-enable (old-to-new-enable? booleanp)
+                                 new-to-old-name (new-to-old-name? booleanp)
+                                 new-to-old-enable (new-to-old-enable? booleanp)
                                  verify-guards
                                  hints
                                  print
@@ -262,75 +228,76 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A tuple @('(old$
-                                    restriction$
-                                    undefined$
-                                    new-name$
-                                    new-enable$
-                                    thm-name$
-                                    verify-guards$
-                                    hints$
-                                    names-to-avoid)')
-                        satisfying
-                        @('(typed-tuplep symbolp
-                                         pseudo-termp
-                                         pseudo-termp
-                                         symbolp
-                                         booleanp
-                                         symbolp
-                                         booleanp
-                                         evmac-input-hints-p
-                                         symbol-listp
-                                         result)').")
+               (result "A @('(tuple (old symbolp)
+                                    (restriction pseudo-termp)
+                                    (undefined pseudo-termp)
+                                    (new symbolp)
+                                    (new-enable booleanp)
+                                    (old-to-new symbolp)
+                                    (old-to-new-enable symbolp)
+                                    (new-to-old symbolp)
+                                    (new-to-old-enable symbolp)
+                                    (verify-guards booleanp)
+                                    (hints evmac-input-hints-p)
+                                    (names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process all the inputs."
-  :long
-  "<p>
-   The inputs are processed
-   in the order in which they appear in the documentation,
-   except that @(':verify-guards') is processed just before @('restriction')
-   because the result of processing @(':verify-guards')
-   is used to process @('restriction').
-   @('old') is processed before @(':verify-guards')
-   because the result of processing @('old')
-   is used to process @(':verify-guards').
-   @(':verify-guards') is also used to process @('old'),
-   but it is only tested for equality with @('t')
-   (see @(tsee restrict-process-old)).
-   </p>"
-  (b* ((wrld (w state))
-       ((er old$) (restrict-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
-       ((er restriction$) (restrict-process-restriction
-                           restriction old$ verify-guards$ ctx state))
-       ((er undefined$) (restrict-process-undefined
-                         undefined old$ ctx state))
-       ((er (list new-name$ names-to-avoid))
-        (process-input-new-name new-name old$ nil ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
-       ((er thm-name$) (restrict-process-thm-name
-                        thm-name old$ new-name$ ctx state))
-       (names-to-avoid (cons thm-name$ names-to-avoid))
-       ((er &) (ensure-value-is-boolean$ thm-enable
-                                         "The :THM-ENABLE input" t nil))
-       ((er hints$) (evmac-process-input-hints hints ctx state))
+  (b* (((er old) (restrict-process-old old verify-guards ctx state))
+       ((er verify-guards) (process-input-verify-guards verify-guards
+                                                        old
+                                                        ctx
+                                                        state))
+       ((er restriction) (restrict-process-restriction restriction
+                                                       old
+                                                       verify-guards
+                                                       ctx
+                                                       state))
+       ((er undefined) (restrict-process-undefined undefined old ctx state))
+       ((er (list new names-to-avoid))
+        (process-input-new-name new-name old nil ctx state))
+       ((er new-enable) (process-input-new-enable new-enable old ctx state))
+       ((er (list old-to-new names-to-avoid))
+        (process-input-old-to-new-name old-to-new-name
+                                       old-to-new-name?
+                                       old
+                                       new
+                                       names-to-avoid
+                                       ctx
+                                       state))
+       ((er old-to-new-enable) (process-input-old-to-new-enable
+                                old-to-new-enable
+                                old-to-new-enable?
+                                ctx
+                                state))
+       ((er (list new-to-old names-to-avoid))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name?
+                                       old
+                                       new
+                                       names-to-avoid
+                                       ctx
+                                       state))
+       ((er new-to-old-enable) (process-input-new-to-old-enable
+                                new-to-old-enable
+                                new-to-old-enable?
+                                ctx
+                                state))
+       ((er hints) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
-    (value (list old$
-                 restriction$
-                 undefined$
-                 new-name$
-                 new-enable$
-                 thm-name$
-                 verify-guards$
-                 hints$
+    (value (list old
+                 restriction
+                 undefined
+                 new
+                 new-enable
+                 old-to-new
+                 old-to-new-enable
+                 new-to-old
+                 new-to-old-enable
+                 verify-guards
+                 hints
                  names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -342,11 +309,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-restriction-of-rec-calls-consequent-term
-  ((old$ symbolp)
+  ((old symbolp)
    (rec-calls-with-tests pseudo-tests-and-call-listp
                          "Recursive calls, with controlling tests,
                           of the old function.")
-   (restriction$ pseudo-termp)
+   (restriction pseudo-termp)
    (stub? symbolp)
    (wrld plist-worldp))
   :returns (consequent "A @(tsee pseudo-termp).")
@@ -374,13 +341,13 @@
    </p>"
   (conjoin
    (restrict-gen-restriction-of-rec-calls-consequent-term-aux
-    old$ rec-calls-with-tests restriction$ stub? nil wrld))
+    old rec-calls-with-tests restriction stub? nil wrld))
 
   :prepwork
   ((define restrict-gen-restriction-of-rec-calls-consequent-term-aux
-     ((old$ symbolp)
+     ((old symbolp)
       (rec-calls-with-tests pseudo-tests-and-call-listp)
-      (restriction$ pseudo-termp)
+      (restriction pseudo-termp)
       (stub? symbolp)
       (rev-conjuncts pseudo-term-listp)
       (wrld plist-worldp))
@@ -393,19 +360,19 @@
             (call (access tests-and-call tests-and-call :call))
             (context (conjoin tests))
             (context (if stub?
-                         (sublis-fn-simple (acons old$ stub? nil) context)
+                         (sublis-fn-simple (acons old stub? nil) context)
                        context))
-            (restriction-of-update (subcor-var (formals old$ wrld)
+            (restriction-of-update (subcor-var (formals old wrld)
                                                (fargs call)
-                                               restriction$))
+                                               restriction))
             (restriction-of-update (if stub?
-                                       (sublis-fn-simple (acons old$ stub? nil)
+                                       (sublis-fn-simple (acons old stub? nil)
                                                          restriction-of-update)
                                      restriction-of-update)))
          (restrict-gen-restriction-of-rec-calls-consequent-term-aux
-          old$
+          old
           (cdr rec-calls-with-tests)
-          restriction$
+          restriction
           stub?
           (cons (implicate context restriction-of-update)
                 rev-conjuncts)
@@ -413,9 +380,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-appconds ((old$ symbolp)
-                               (restriction$ pseudo-termp)
-                               (verify-guards$ booleanp)
+(define restrict-gen-appconds ((old symbolp)
+                               (restriction pseudo-termp)
+                               (verify-guards booleanp)
                                (stub? symbolp)
                                state)
   :returns (appconds "A @(tsee evmac-appcond-listp).")
@@ -425,31 +392,31 @@
     (append
      (make-evmac-appcond?
       :restriction-of-rec-calls
-      (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
+      (b* ((rec-calls-with-tests (recursive-calls old wrld))
            (consequent
             (restrict-gen-restriction-of-rec-calls-consequent-term
-             old$ rec-calls-with-tests restriction$ stub? wrld)))
-        (implicate restriction$
+             old rec-calls-with-tests restriction stub? wrld)))
+        (implicate restriction
                    consequent))
-      :when (recursivep old$ nil wrld))
+      :when (recursivep old nil wrld))
      (make-evmac-appcond?
       :restriction-guard
-      (b* ((old-guard (guard old$ nil wrld))
+      (b* ((old-guard (guard old nil wrld))
            (restriction-guard
-            (term-guard-obligation restriction$ state)))
+            (term-guard-obligation restriction state)))
         (implicate old-guard
                    restriction-guard))
-      :when verify-guards$))))
+      :when verify-guards))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-new-fn ((old$ symbolp)
-                             (restriction$ pseudo-termp)
-                             (undefined$ pseudo-termp)
-                             (new-name$ symbolp)
-                             (new-enable$ booleanp)
-                             (verify-guards$ booleanp)
-                             (wrld plist-worldp))
+(define restrict-gen-new ((old symbolp)
+                          (restriction pseudo-termp)
+                          (undefined pseudo-termp)
+                          (new symbolp)
+                          (new-enable booleanp)
+                          (verify-guards booleanp)
+                          (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
@@ -499,32 +466,32 @@
    </p>
    <p>
    Guard verification is deferred;
-   see @(tsee restrict-gen-new-fn-verify-guards).
+   see @(tsee restrict-gen-verify-guards).
    </p>"
-  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
-       (formals (formals old$ wrld))
-       (old-body (if (non-executablep old$ wrld)
-                     (unwrapped-nonexec-body old$ wrld)
-                   (ubody old$ wrld)))
-       (new-body-core (sublis-fn-simple (acons old$ new-name$ nil)
+  (b* ((macro (function-intro-macro new-enable (non-executablep old wrld)))
+       (formals (formals old wrld))
+       (old-body (if (non-executablep old wrld)
+                     (unwrapped-nonexec-body old wrld)
+                   (ubody old wrld)))
+       (new-body-core (sublis-fn-simple (acons old new nil)
                                         old-body))
-       (new-body `(if (mbt$ ,restriction$) ,new-body-core ,undefined$))
+       (new-body `(if (mbt$ ,restriction) ,new-body-core ,undefined))
        (new-body (untranslate new-body nil wrld))
-       (recursive (recursivep old$ nil wrld))
+       (recursive (recursivep old nil wrld))
        (wfrel? (and recursive
-                    (well-founded-relation old$ wrld)))
+                    (well-founded-relation old wrld)))
        (measure? (and recursive
-                      (untranslate (measure old$ wrld) nil wrld)))
+                      (untranslate (measure old wrld) nil wrld)))
        (termination-hints? (and recursive
                                 `(("Goal"
                                    :in-theory nil
-                                   :use (:termination-theorem ,old$)))))
-       (old-guard (guard old$ nil wrld))
-       (new-guard (conjoin2 old-guard restriction$))
+                                   :use (:termination-theorem ,old)))))
+       (old-guard (guard old nil wrld))
+       (new-guard (conjoin2 old-guard restriction))
        (new-guard (untranslate new-guard t wrld))
        (local-event
         `(local
-          (,macro ,new-name$ (,@formals)
+          (,macro ,new (,@formals)
                   (declare (xargs ,@(and recursive
                                          (list :well-founded-relation wfrel?
                                                :measure measure?
@@ -534,28 +501,28 @@
                                   :verify-guards nil))
                   ,new-body)))
        (exported-event
-        `(,macro ,new-name$ (,@formals)
+        `(,macro ,new (,@formals)
                  (declare (xargs ,@(and recursive
                                         (list :well-founded-relation wfrel?
                                               :measure measure?
                                               :ruler-extenders :all))
                                  :guard ,new-guard
-                                 :verify-guards ,verify-guards$))
+                                 :verify-guards ,verify-guards))
                  ,new-body)))
     (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-old-to-new-thm ((old$ symbolp)
-                                     (restriction$ pseudo-termp)
-                                     (new-name$ symbolp)
-                                     (thm-name$ symbolp)
-                                     (thm-enable$ booleanp)
-                                     (appcond-thm-names symbol-symbol-alistp)
-                                     (stub? symbolp)
-                                     (old-unnorm-name symbolp)
-                                     (new-unnorm-name symbolp)
-                                     (wrld plist-worldp))
+(define restrict-gen-old-to-new ((old symbolp)
+                                 (restriction pseudo-termp)
+                                 (new symbolp)
+                                 (old-to-new symbolp)
+                                 (old-to-new-enable booleanp)
+                                 (appcond-thm-names symbol-symbol-alistp)
+                                 (stub? symbolp)
+                                 (old-unnorm symbolp)
+                                 (new-unnorm symbolp)
+                                 (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
@@ -586,52 +553,84 @@
    If the old and new functions are reflexive,
    we functionally instantiate the stub in that applicability condition.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
-       (formula (implicate restriction$
-                           `(equal (,old$ ,@formals)
-                                   (,new-name$ ,@formals))))
+  (b* ((formals (formals old wrld))
+       (formula (implicate restriction
+                           `(equal (,old ,@formals)
+                                   (,new ,@formals))))
        (formula (untranslate formula t wrld))
-       (recursive (recursivep old$ nil wrld))
+       (recursive (recursivep old nil wrld))
        (hints (if recursive
                   (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
                                           appcond-thm-names)))
                        (lemma-instance (if stub?
                                            `(:functional-instance ,lemma-name
-                                             (,stub? ,new-name$))
+                                             (,stub? ,new))
                                          lemma-name)))
                     `(("Goal"
-                       :in-theory '(,old-unnorm-name
-                                    ,new-unnorm-name
-                                    (:induction ,old$))
-                       :induct (,old$ ,@formals))
+                       :in-theory '(,old-unnorm
+                                    ,new-unnorm
+                                    (:induction ,old))
+                       :induct (,old ,@formals))
                       '(:use ,lemma-instance)))
                 `(("Goal"
-                   :in-theory '(,old-unnorm-name
-                                ,new-unnorm-name)))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                   :in-theory '(,old-unnorm
+                                ,new-unnorm))))))
+    (evmac-generate-defthm old-to-new
+                           :formula formula
+                           :hints hints
+                           :enable old-to-new-enable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-new-fn-verify-guards
-  ((old$ symbolp)
-   (new-name$ symbolp)
-   (thm-name$ symbolp)
-   (appcond-thm-names symbol-symbol-alistp)
-   (stub? symbolp)
-   (wrld plist-worldp))
+(define restrict-gen-new-to-old ((old symbolp)
+                                 (restriction pseudo-termp)
+                                 (new symbolp)
+                                 (new-to-old symbolp)
+                                 (new-to-old-enable booleanp)
+                                 (old-to-new symbolp)
+                                 (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
+  :short "Generate the theorem that relates the new and old functions."
+  :long
+  "<p>
+   The macro used to introduce the theorem is determined by
+   whether the theorem must be enabled or not.
+   </p>
+   <p>
+   The formula of the theorem equates new and old functions
+   under the restricting predicate,
+   as described in the documentation.
+   </p>
+   <p>
+   The theorem is easily proved from the @('old-to-new') one.
+   </p>"
+  (b* ((formals (formals old wrld))
+       (formula (implicate restriction
+                           `(equal (,new ,@formals)
+                                   (,old ,@formals))))
+       (formula (untranslate formula t wrld))
+       (hints `(("Goal" :in-theory '(,old-to-new)))))
+    (evmac-generate-defthm new-to-old
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict-gen-verify-guards ((old symbolp)
+                                    (new symbolp)
+                                    (old-to-new symbolp)
+                                    (appcond-thm-names symbol-symbol-alistp)
+                                    (stub? symbolp)
+                                    (wrld plist-worldp))
   :returns (local-event pseudo-event-formp)
   :verify-guards nil
   :short "Generate the event to verify the guards of the new function."
   :long
   "<p>
-   As mentioned in @(tsee restrict-gen-new-fn),
+   As mentioned in @(tsee restrict-gen-new),
    the verification of the guards of the new function,
    when it has to take place,
    is deferred when the function is introduced.
@@ -666,46 +665,47 @@
    the exported function definition has @(':verify-guards') set to @('t')
    (when it must be guard-verified).
    </p>"
-  (b* ((recursive (recursivep old$ nil wrld))
+  (b* ((recursive (recursivep old nil wrld))
        (hints (if recursive
                   `(("Goal"
-                     :in-theory '(,thm-name$)
-                     :use ((:guard-theorem ,old$)
+                     :in-theory '(,old-to-new)
+                     :use ((:guard-theorem ,old)
                            ,(cdr (assoc-eq :restriction-guard
                                    appcond-thm-names))
                            ,(if stub?
                                 `(:functional-instance
                                   ,(cdr (assoc-eq :restriction-of-rec-calls
-                                         appcond-thm-names))
-                                  (,stub? ,new-name$))
+                                          appcond-thm-names))
+                                  (,stub? ,new))
                               (cdr (assoc-eq :restriction-of-rec-calls
                                      appcond-thm-names))))))
                 `(("Goal"
                    :in-theory nil
-                   :use ((:guard-theorem ,old$)
+                   :use ((:guard-theorem ,old)
                          ,(cdr (assoc-eq :restriction-guard
                                  appcond-thm-names)))))))
-       (event `(local (verify-guards ,new-name$ :hints ,hints))))
+       (event `(local (verify-guards ,new :hints ,hints))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-everything
-  ((old$ symbolp)
-   (restriction$ pseudo-termp)
-   (undefined$ pseudo-termp)
-   (new-name$ symbolp)
-   (new-enable$ booleanp)
-   (thm-name$ symbolp)
-   (thm-enable$ booleanp)
-   (verify-guards$ booleanp)
-   (hints$ symbol-alistp)
-   (print$ evmac-input-print-p)
-   (show-only$ booleanp)
-   (call pseudo-event-formp)
-   (names-to-avoid symbol-listp)
-   ctx
-   state)
+(define restrict-gen-everything ((old symbolp)
+                                 (restriction pseudo-termp)
+                                 (undefined pseudo-termp)
+                                 (new symbolp)
+                                 (new-enable booleanp)
+                                 (old-to-new symbolp)
+                                 (old-to-new-enable booleanp)
+                                 (new-to-old symbolp)
+                                 (new-to-old-enable booleanp)
+                                 (verify-guards booleanp)
+                                 (hints symbol-alistp)
+                                 (print evmac-input-print-p)
+                                 (show-only booleanp)
+                                 (call pseudo-event-formp)
+                                 (names-to-avoid symbol-listp)
+                                 ctx
+                                 state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the top-level event."
@@ -773,77 +773,89 @@
    for visual separation.
    </p>"
   (b* ((wrld (w state))
-       (recursivep (recursivep old$ nil wrld))
+       (recursivep (recursivep old nil wrld))
        (reflexivep
         (and recursivep
-             (member-eq old$
-                        (all-ffn-symbs (termination-theorem old$ (w state))
+             (member-eq old
+                        (all-ffn-symbs (termination-theorem old (w state))
                                        nil))))
        ((mv stub? names-to-avoid)
         (if reflexivep
             (fresh-logical-name-with-$s-suffix
              (intern-in-package-of-symbol
-              "?F" (pkg-witness (symbol-package-name old$)))
+              "?F" (pkg-witness (symbol-package-name old)))
              'constrained-function
              names-to-avoid
              wrld)
           (mv nil names-to-avoid)))
        (stub-event? (and stub?
                          (list `(defstub ,stub?
-                                  ,(repeat (arity old$ wrld) '*) => *))))
-       (appconds (restrict-gen-appconds old$
-                                        restriction$
-                                        verify-guards$
+                                  ,(repeat (arity old wrld) '*) => *))))
+       (appconds (restrict-gen-appconds old
+                                        restriction
+                                        verify-guards
                                         stub?
                                         state))
        ((er (list appcond-thm-events
                   appcond-thm-names
                   names-to-avoid))
         (evmac-appcond-theorems-no-extra-hints appconds
-                                               hints$
+                                               hints
                                                names-to-avoid
-                                               print$
+                                               print
                                                ctx
                                                state))
        ((mv old-unnorm-event
-            old-unnorm-name
+            old-unnorm
             names-to-avoid)
-        (install-not-normalized-event old$ t names-to-avoid wrld))
-       ((mv new-fn-local-event
-            new-fn-exported-event)
-        (restrict-gen-new-fn old$
-                             restriction$
-                             undefined$
-                             new-name$
-                             new-enable$
-                             verify-guards$
-                             wrld))
+        (install-not-normalized-event old t names-to-avoid wrld))
+       ((mv new-local-event
+            new-exported-event)
+        (restrict-gen-new old
+                          restriction
+                          undefined
+                          new
+                          new-enable
+                          verify-guards
+                          wrld))
        ((mv new-unnorm-event
-            new-unnorm-name
+            new-unnorm
             &)
-        (install-not-normalized-event new-name$ t names-to-avoid wrld))
-       ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event)
-        (restrict-gen-old-to-new-thm old$
-                                     restriction$
-                                     new-name$
-                                     thm-name$
-                                     thm-enable$
-                                     appcond-thm-names
-                                     stub?
-                                     old-unnorm-name
-                                     new-unnorm-name
-                                     wrld))
-       (new-fn-verify-guards-event? (and verify-guards$
-                                         (list
-                                          (restrict-gen-new-fn-verify-guards
-                                           old$
-                                           new-name$
-                                           thm-name$
-                                           appcond-thm-names
-                                           stub?
-                                           wrld))))
-       (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
+        (install-not-normalized-event new t names-to-avoid wrld))
+       ((mv old-to-new-local-event
+            old-to-new-exported-event)
+        (restrict-gen-old-to-new old
+                                 restriction
+                                 new
+                                 old-to-new
+                                 old-to-new-enable
+                                 appcond-thm-names
+                                 stub?
+                                 old-unnorm
+                                 new-unnorm
+                                 wrld))
+       ((mv new-to-old-local-event
+            new-to-old-exported-event)
+        (restrict-gen-new-to-old old
+                                 restriction
+                                 new
+                                 new-to-old
+                                 new-to-old-enable
+                                 old-to-new
+                                 wrld))
+       (verify-guards-event? (and verify-guards
+                                  (list
+                                   (restrict-gen-verify-guards
+                                    old
+                                    new
+                                    old-to-new
+                                    appcond-thm-names
+                                    stub?
+                                    wrld))))
+       (theory-inv-event `(theory-invariant (incompatible
+                                             (:rewrite ,old-to-new)
+                                             (:rewrite ,new-to-old))))
+       (numbered-name-event `(add-numbered-name-in-use ,new))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
@@ -851,28 +863,32 @@
                              ,@appcond-thm-events
                              (evmac-prepare-proofs)
                              ,old-unnorm-event
-                             ,new-fn-local-event
+                             ,new-local-event
                              ,new-unnorm-event
-                             ,old-to-new-thm-local-event
-                             ,@new-fn-verify-guards-event?
-                             ,new-fn-exported-event
-                             ,old-to-new-thm-exported-event
-                             ,new-fn-numbered-name-event))
+                             ,old-to-new-local-event
+                             ,new-to-old-local-event
+                             ,@verify-guards-event?
+                             ,new-exported-event
+                             ,old-to-new-exported-event
+                             ,new-to-old-exported-event
+                             ,theory-inv-event
+                             ,numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
-       ((when show-only$)
-        (if (member-eq print$ '(:info :all))
+       ((when show-only)
+        (if (member-eq print '(:info :all))
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
         (value '(value-triple :invisible)))
-       (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
+       (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
        (print-result (and
-                      (member-eq print$ '(:result :info :all))
-                      `(,@(and (member-eq print$ '(:info :all))
+                      (member-eq print '(:result :info :all))
+                      `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
-                        (cw-event "~x0~|" ',new-fn-exported-event)
-                        (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
+                        (cw-event "~x0~|" ',new-exported-event)
+                        (cw-event "~x0~|" ',old-to-new-exported-event)
+                        (cw-event "~x0~|" ',new-to-old-exported-event)))))
     (value
      `(progn
         ,encapsulate+
@@ -887,8 +903,10 @@
                      undefined
                      new-name
                      new-enable
-                     thm-name
-                     thm-enable
+                     old-to-new-name (old-to-new-name? booleanp)
+                     old-to-new-enable (old-to-new-enable? booleanp)
+                     new-to-old-name (new-to-old-name? booleanp)
+                     new-to-old-enable (new-to-old-enable? booleanp)
                      verify-guards
                      hints
                      print
@@ -916,37 +934,44 @@
         (b* (((run-when show-only) (cw "~x0~|" encapsulate?)))
           (cw "~%The transformation ~x0 is redundant.~%" call)
           (value '(value-triple :invisible))))
-       ((er (list old$
-                  restriction$
-                  undefined$
-                  new-name$
-                  new-enable$
-                  thm-name$
-                  verify-guards$
-                  hints$
+       ((er (list old
+                  restriction
+                  undefined
+                  new
+                  new-enable
+                  old-to-new
+                  old-to-new-enable
+                  new-to-old
+                  new-to-old-enable
+                  verify-guards
+                  hints
                   names-to-avoid))
         (restrict-process-inputs old
                                  restriction
                                  undefined
                                  new-name
                                  new-enable
-                                 thm-name
-                                 thm-enable
+                                 old-to-new-name old-to-new-name?
+                                 old-to-new-enable old-to-new-enable?
+                                 new-to-old-name new-to-old-name?
+                                 new-to-old-enable new-to-old-enable?
                                  verify-guards
                                  hints
                                  print
                                  show-only
                                  ctx
                                  state))
-       ((er event) (restrict-gen-everything old$
-                                            restriction$
-                                            undefined$
-                                            new-name$
-                                            new-enable$
-                                            thm-name$
-                                            thm-enable
-                                            verify-guards$
-                                            hints$
+       ((er event) (restrict-gen-everything old
+                                            restriction
+                                            undefined
+                                            new
+                                            new-enable
+                                            old-to-new
+                                            old-to-new-enable
+                                            new-to-old
+                                            new-to-old-enable
+                                            verify-guards
+                                            hints
                                             print
                                             show-only
                                             call
@@ -975,8 +1000,10 @@
                       (undefined ':undefined)
                       (new-name ':auto)
                       (new-enable ':auto)
-                      (thm-name ':auto)
-                      (thm-enable 't)
+                      (old-to-new-name 'nil old-to-new-name?)
+                      (old-to-new-enable 'nil old-to-new-enable?)
+                      (new-to-old-name 'nil new-to-old-name?)
+                      (new-to-old-enable 'nil new-to-old-enable?)
                       (verify-guards ':auto)
                       (hints 'nil)
                       (print ':result)
@@ -986,8 +1013,14 @@
                                     ',undefined
                                     ',new-name
                                     ',new-enable
-                                    ',thm-name
-                                    ',thm-enable
+                                    ',old-to-new-name
+                                    ',old-to-new-name?
+                                    ',old-to-new-enable
+                                    ',old-to-new-enable?
+                                    ',new-to-old-name
+                                    ',new-to-old-name?
+                                    ',new-to-old-enable
+                                    ',new-to-old-enable?
                                     ',verify-guards
                                     ',hints
                                     ',print
@@ -995,4 +1028,4 @@
                                     ',call
                                     (cons 'restrict ',old)
                                     state)
-                      :suppress-errors ,(not print))))
+                       :suppress-errors ,(not print))))

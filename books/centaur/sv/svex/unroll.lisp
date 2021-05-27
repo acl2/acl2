@@ -222,11 +222,6 @@
                (list n0 envs)
              (lookup-ind (1- n0) (1- n1) (cdr envs)))))
 
-  (local (defthm nth-of-svex-envlist-fix
-           (equal (nth n (svex-envlist-fix x))
-                  (svex-env-fix (nth n x)))
-           :hints(("Goal" :in-theory (enable svex-envlist-fix nth)))))
-
   (defret lookup-in-svex-envs-update-nth
     (equal (svex-env-lookup v0 (nth n0 (svex-envs-update-nth v1 val n1 envs)))
            (if (and (svar-equiv v0 v1)
@@ -565,18 +560,21 @@
                 (hons-assoc-equal v x))
            :hints(("Goal" :in-theory (enable alist-keys)))))
 
-  (local (defthm svex-env-lookup-of-append
-           (equal (svex-env-lookup v (append a b))
-                  (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
-                      (svex-env-lookup v a)
-                    (svex-env-lookup v b)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup member-alist-keys)))))
+  ;; (local (defthm svex-env-lookup-of-append
+  ;;          (equal (svex-env-lookup v (append a b))
+  ;;                 (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
+  ;;                     (svex-env-lookup v a)
+  ;;                   (svex-env-lookup v b)))
+  ;;          :hints(("Goal" :in-theory (enable svex-env-lookup member-alist-keys)))))
 
   (local (defthm noncycle-var-member-svex-add-cycle-num
            (implies (not (svex-cycle-var-p v))
-                    (not (member (svar-fix v) (alist-keys (svar-alist-add-cycle-num env cycle)))))
+                    (not (svex-env-boundp v (svar-alist-add-cycle-num env cycle)))
+                    ;; (not (member (svar-fix v) (alist-keys (svar-alist-add-cycle-num env cycle))))
+                    )
            :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num
-                                             alist-keys
+                                             ;; alist-keys
+                                             svex-env-boundp
                                              svex-cycle-var-p)))))
 
   (defret lookup-in-svex-envs-to-single-env-when-not-cycle
@@ -585,34 +583,47 @@
                     (svex-env-lookup v rest))))
 
   (defthm member-cycle-var-of-env-add-cycle-num
-    (iff (member (svex-cycle-var name ncycle)
-                 (alist-keys (svar-alist-add-cycle-num x cycle)))
+    (iff (svex-env-boundp (svex-cycle-var name ncycle)
+                          (svar-alist-add-cycle-num x cycle))
          (and (equal (nfix cycle) (nfix ncycle))
-              (member (svar-fix name) (alist-keys (svex-env-fix x)))))
+              (svex-env-boundp name x)))
     :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num svex-env-fix alist-keys
-                                      equal-of-svex-cycle-var))))
+                                      equal-of-svex-cycle-var
+                                      svex-env-boundp))))
 
   (defthm env-lookup-of-cycle-var-in-env-add-cycle-num
     (implies (and (equal (nfix cycle) (nfix ncycle))
-                  (member (svar-fix name) (alist-keys (svex-env-fix x))))
+                  (svex-env-boundp name x))
              (equal (svex-env-lookup (svex-cycle-var name ncycle)
                                      (svar-alist-add-cycle-num x cycle))
                     (svex-env-lookup name x)))
     :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num svex-env-fix alist-keys
                                       equal-of-svex-cycle-var
-                                      svex-env-lookup))))
+                                      svex-env-lookup
+                                      svex-env-boundp))))
+
+  ;; Move!
+  (defthm svex-env-boundp-of-nil
+    (not (svex-env-boundp k nil))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+
+  (local (defthm svex-env-boundp-when-not-member
+           (implies (not (member (svar-fix v) (alist-keys (svex-env-fix x))))
+                    (not (svex-env-boundp v x)))
+           :hints(("Goal" :in-theory (enable svex-env-boundp member-alist-keys)))))
 
   (defret member-cycle-var-of-svex-cycle-envs-to-single-env
     (implies (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix rest))))
-             (iff (member (svex-cycle-var name cycle) (alist-keys env))
+             (iff (svex-env-boundp (svex-cycle-var name cycle) env)
                   (and (<= (nfix curr-cycle) (nfix cycle))
                        (<= (- (nfix cycle) (nfix curr-cycle)) (len x))
-                       (member (svar-fix name) (alist-keys (svex-env-fix (nth (- (nfix cycle) (nfix curr-cycle)) x))))))))
+                       (svex-env-boundp name (nth (- (nfix cycle) (nfix curr-cycle)) x))))))
 
   (local (defthm svex-env-lookup-when-not-member-keys
-           (implies (not (member (svar-fix v) (alist-keys (svex-env-fix x))))
+           (implies (not (svex-env-boundp v x))
                     (equal (svex-env-lookup v x) (4vec-x)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys svex-env-fix)))))
+           :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-lookup)))))
 
   (defret lookup-in-svex-cycle-envs-to-single-env
     (implies (and (<= (nfix curr-cycle) (nfix cycle))
@@ -663,12 +674,12 @@
             (svexlist-eval-unroll-multienv (cdr x) cycle nextstates in-envs orig-state))))
   ///
   (verify-guards svex-eval-unroll-multienv)
-  (local (defthm svex-env-lookup-of-append
-           (equal (svex-env-lookup var (append a b))
-                  (if (member (svar-fix var) (alist-keys (svex-env-fix a)))
-                      (svex-env-lookup var a)
-                    (svex-env-lookup var b)))
-           :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys hons-assoc-equal svex-env-fix)))))
+  ;; (local (defthm svex-env-lookup-of-append
+  ;;          (equal (svex-env-lookup var (append a b))
+  ;;                 (if (member (svar-fix var) (alist-keys (svex-env-fix a)))
+  ;;                     (svex-env-lookup var a)
+  ;;                   (svex-env-lookup var b)))
+  ;;          :hints(("Goal" :in-theory (enable svex-env-lookup alist-keys hons-assoc-equal svex-env-fix)))))
 
   (defthm nth-of-svex-envlist-fix-under-svex-env-equiv
     (svex-env-equiv (nth n (svex-envlist-fix x))
@@ -751,65 +762,15 @@
          (svex-alist-keys x))
   :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval alist-keys))))
 
-(defthm svex-env-lookup-of-append
-  (equal (svex-env-lookup v (append a b))
-         (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
-             (svex-env-lookup v a)
-           (svex-env-lookup v b)))
-  :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix alist-keys))))
+;; (defthm svex-env-lookup-of-append
+;;   (equal (svex-env-lookup v (append a b))
+;;          (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
+;;              (svex-env-lookup v a)
+;;            (svex-env-lookup v b)))
+;;   :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-fix alist-keys))))
 
 
 
-
-(define svex-alist-extract-aux ((keys svarlist-p)
-                                (alist svex-alist-p))
-  :returns (sub-alist svex-alist-p)
-  (if (atom keys)
-      nil
-    (cons (cons (svar-fix (car keys))
-                (or (svex-fastlookup (car keys) alist) (svex-x)))
-          (svex-alist-extract-aux (cdr keys) alist))))
-
-(define svex-alist-extract ((keys svarlist-p)
-                            (alist svex-alist-p))
-  :returns (sub-alist svex-alist-p)
-  :verify-guards nil
-  (mbe :logic
-       (if (atom keys)
-           nil
-         (cons (cons (svar-fix (car keys))
-                     (or (svex-fastlookup (car keys) alist) (svex-x)))
-               (svex-alist-extract (cdr keys) alist)))
-       :exec (with-fast-alist alist (svex-alist-extract-aux keys alist)))
-  ///
-  (local (defthm svex-alist-extract-aux-elim
-           (equal (svex-alist-extract-aux x alist)
-                  (svex-alist-extract x alist))
-           :hints(("Goal" :in-theory (enable svex-alist-extract-aux)))))
-
-  (verify-guards svex-alist-extract)
-
-  (defret svex-alist-eval-of-svex-alist-extract
-    (equal (svex-alist-eval sub-alist env)
-           (svex-env-extract keys (svex-alist-eval alist env)))
-    :hints(("Goal" :in-theory (enable svex-env-extract)
-            :induct t
-            :expand ((svex-alist-eval nil env)
-                     (:free (a b) (svex-alist-eval (cons a b) env))))))
-
-  (defret lookup-in-svex-alist-extract
-    (equal (svex-lookup v sub-alist)
-           (and (member (svar-fix v) (svarlist-fix keys))
-                (or (svex-lookup v alist) (svex-x))))
-    :hints(("Goal"
-            :in-theory
-            (e/d (svex-lookup hons-assoc-equal svarlist-fix)
-
-; Matt K.:  The following rewrite rule made the proof fail after introducing
-; the change, after v8-0, to keep LET expressions on right-hand-sides of
-; rewrite rules, like this one.
-
-                 (hons-assoc-equal-of-svex-alist-fix))))))
 
 
 
@@ -832,6 +793,10 @@
   (local (defthm alist-keys-of-svex-unroll-state
            (equal (alist-keys (svex-unroll-state nextstates in-envs orig-state))
                   (svex-alist-keys nextstates))))
+
+  (defthm svex-env-boundp-of-svex-unroll-state
+    (iff (svex-env-boundp key (svex-unroll-state nextstates in-envs orig-state))
+         (svex-lookup key nextstates)))
 
   (local (in-theory (enable ;; svex-eval-unroll-multienv-expand-cycle
                      ;; svexlist-eval-unroll-multienv-expand-cycle

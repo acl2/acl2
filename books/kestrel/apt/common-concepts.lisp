@@ -12,6 +12,9 @@
 
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+; (depends-on "design-notes/specs-refs.pdf")
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ common-concepts
@@ -37,61 +40,6 @@
     "A call of an APT transformation whose @(':show-only') input is @('t')
      does not generate any event.
      No successive call may be redundant with such a call.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc definedness
-  :short "Notion of definedness of functions for some APT transformations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As far as certain APT transformations are concerned,
-     an ACL2 named function is defined if and only if
-     it has a non-@('nil') unnormalized body.
-     This notion of definedness applies to the APT transformations
-     whose user documentation links to this XDOC topic
-     from the place where the definedness requirement is stated.")
-   (xdoc::p
-    "The unnormalized body of a named function is
-     the @('acl2::unnormalized-body') property of the function symbol.
-     The value of this property is
-     the " (xdoc::seetopic "acl2::term" "translated term") " obtained
-     from the function body that appears (in untranslated form)
-     in the @(tsee defun) event that introduces the function.
-     This is the case not only for user-defined functions,
-     but also for built-in defined ACL2 functions,
-     whose introducing @(tsee defun) events can be seen
-     via " (xdoc::seetopic "acl2::pe" "@(':pe')") ".")
-   (xdoc::p
-    "A valid untranslated term never translates to @('nil').
-     The untranslated term @('nil') translates to @('\'nil'), a quoted constant.
-     Valid variable symbols do not include @('nil'),
-     so @('nil') is not a valid translated variable term;
-     it satisfies @(tsee pseudo-termp)
-     (which captures a superset of the valid translated terms),
-     but it does not satisfy @(tsee termp).
-     Therefore, the unnormalized body of a defined function cannot be @('nil'):
-     testing the @('acl2::unnormalized-body') property against @('nil')
-     is therefore a good way to check
-     whether a function is defined in the APT transformations
-     that use this notion of definedness.")
-   (xdoc::p
-    "However, the built-in program-mode functions are defined
-     but do not have an unnormalized body.
-     Thus, the APT transformations that use this notion of definedness
-     would not regard these functions as being defined.
-     Nonetheless,
-     all such transformations require the functions to be logic-mode,
-     thus excluding (built-in or non-built-in) program-mode functions.")
-   (xdoc::p
-    "The system utility @(tsee acl2::ubody) (or @(tsee acl2::ubody+))
-     retrieves the unnormalized body of a function.
-     It is a specialization of the built-in @(tsee body) system utility,
-     which retrieves the unnormalized or normalized body of a function.
-     based on the flag passed as argument.
-     The normalized body of a function may differ from the unnormalized one
-     because the former may be obtained from the latter
-     via some simplifications.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,3 +153,171 @@
     "The @('-aux') in the new function name in the last case above
      means `auxiliary', which is a common naming convention
      for the ``loop'' of a function (in this case, the wrapper function).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *specs-refs-design-notes*
+  (xdoc::&& "`Specifications and Refinements' "
+            (xdoc::ahref "res/kestrel-apt-design-notes/specs-refs.pdf"
+                         "design notes")))
+
+(defxdoc specification-forms
+
+  :short "Forms of specifications handled by certain APT transformations."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "Certain APT transformations operate on specifications
+     that are shallow pop-refinement predicates
+     as described in the "
+    *specs-refs-design-notes*
+    ", which use "
+    (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+    ". Currently these second-order predicates
+     must be expressed using " (xdoc::seetopic "soft::soft" "SOFT") ".
+     In the future, the transformations may be extended
+     to operate on second-order predicates
+     expressed using the built-in @(tsee apply$).")
+
+   (xdoc::p
+    "In this manual page,
+     we define and name certain specific forms of such SOFT specifications.
+     In the " *specs-refs-design-notes* ", these forms are shown
+     in Section `Some Shallow Pop-Refinement Specification Forms'.
+     APT transformations that operate on these forms
+     reference this manual page from their user documentation pages,
+     along with a designation of the form.")
+
+   (xdoc::h3 "Pre/Post-Condition")
+
+   (xdoc::p
+    "This form is denoted by @($PP$) in the " *specs-refs-design-notes* ".")
+
+   (xdoc::p
+    "A specification of this form is a SOFT quantifier function
+     (see `Classification' section in @(tsee soft::defsoft))
+     that has no parameters,
+     that depends on one function variable (call it @('?f')),
+     and whose body has the form")
+   (xdoc::codeblock
+    "(forall (x1 ... xn)"
+    "        (implies (pre x1 ... xn)"
+    "                 (post x1 ... xn (?f x1 ... xn))))")
+   (xdoc::p
+    "where @('n') is 1 or more,
+     @(tsee implies) may be @('impliez') instead,
+     @('pre') is a precondition predicate, and
+     @('post') is a postcondition predicate.
+     Note that @('?f') returns a single result (not @(tsee mv)),
+     because SOFT function variables currently always do.")
+
+   (xdoc::p
+    "This is a typical specification consisting of
+     a precondition on the inputs and
+     a postcondition on the output (and inputs).")
+
+   (xdoc::p
+    "In the " *specs-refs-design-notes* ",
+     the specification is denoted by @($S$),
+     @('?f') is denoted by @($f$),
+     @('x1'), ..., @('xn') are denoted by a single @($x$)
+     (the generalization to multiple variable is obvious),
+     @('pre') is denoted by @($\\Phi$), and
+     @('post') is denoted by @($\\Psi$).")
+
+   (xdoc::h3 "Input/Output Relation")
+
+   (xdoc::p
+    "This form is denoted by @($Rf$) in the " *specs-refs-design-notes* ".")
+
+   (xdoc::p
+    "A specification of this form is a SOFT quantifier function
+     (see `Classification' section in @(tsee soft::defsoft))
+     that has no parameters,
+     that depends on one function variable (call it @('?f')),
+     and whose body has the form")
+   (xdoc::codeblock
+    "(forall (x1 ... xn)"
+    "        iorel<x1,...,xn,(?f x1 ... xn)>)")
+   (xdoc::p
+    "where @('n') is 1 or more,
+     @('iorel<...>') is a term that depends on the quantified variables
+     and that contains a single occurrence of
+     a call of @('?f') on the quantified variables.")
+
+   (xdoc::p
+    "The predicate @('(lambda (x1 ... xn y) iorel<x1,...,xn,y>)')
+     is a relation between the inputs @('x1'), ..., @('xn')
+     and the output @('y').
+     This is a more general form than the pre/post-condition form @($PP$),
+     which it subsumes.")
+
+   (xdoc::p
+    "In the " *specs-refs-design-notes* ",
+     the specification is denoted by @($S$),
+     @('?f') is denoted by @($f$),
+     @('x1'), ..., @('xn') are denoted by a single @($x$)
+     (the generalization to multiple variable is obvious), and
+     @('(lambda (x1 ... xn y) iorel<x1,...,xn>)') is denoted by @($R$).")
+
+   (xdoc::h3 "Input/Output Relation with Selected Input and Modified Inputs")
+
+   (xdoc::p
+    "This form is denoted by @($Rf\\alpha$) in the "
+    *specs-refs-design-notes* ".")
+
+   (xdoc::p
+    "A specification of this form is a SOFT quantifier function
+     (see `Classification' section in @(tsee soft::defsoft))
+     that has no parameters,
+     that depends on one function variable (call it @('?f')),
+     and whose body has the form")
+   (xdoc::codeblock
+    "(forall (x x1 ... xn)"
+    "        iorel<x,x1,...,xn,(?f x a1<x1,...,xn> ... am<x1,...,xn>)>)")
+   (xdoc::p
+    "where @('n') may be 0 and
+     @('iorel<...>') is a term that depends on the quantified variables
+     and that contains a single occurrence of
+     a call of @('?f') of the form shown above,
+     where @('m') may be 0 and
+     each @('aj<x1,...,xn>') is a term that depends on @('x1'), ..., @('xn')
+     (and must not depend on @('x')).
+     The variable @('x') does not actually have to be
+     the first quantified variable in the list after @('forall')
+     and the first argument of the call of @('?f'):
+     it may be anywhere in the list and in any argument position,
+     as it is identified in same way by the APT transformations;
+     to ease exposition, in the documentation pages of the APT transformations,
+     we assume that it is the first one, as shown above.")
+
+   (xdoc::p
+    "This form generalizes the plain input/output relation form @($Rf$),
+     because some of the inputs (namely @('x1'), ..., @('xn'))
+     are modified to become the terms @('aj<x1,...,xn>')
+     before @('?f') is applied to them;
+     in addition, one input (namely @('x')) is selected
+     and not subjected to that modification.
+     Thus, the input/output relation
+     @('(lambda (x x1 ... xn y) iorel<x,x1,...,xn,y>)')
+     is applied, as the output,
+     not to a call of @('?f') directly on
+     the inputs @('x'), @('x1'), ..., @('xn'),
+     but to a call of @('?f') on
+     the inputs @('x'), @('a1<x1,...,xn>'), ..., @('am<x,x1,...,xn>').
+     When @('m') is @('n') and each @('aj<x1,...,xn>') is @('xj'),
+     this form is the same as the plain input/output form @($Rf$).")
+
+   (xdoc::p
+    "In the " *specs-refs-design-notes* ",
+     the specification is denoted by @($S$),
+     @('?f') is denoted by @($f$),
+     @('x') is denoted by @($x$),
+     @('x1'), ..., @('xn') are denoted by @($\\overline{x}$),
+     @('a1<x1,...,xn>'), ..., @('am<x1,...,xn>') are denoted by
+     @($\\overline{\\alpha}(\\overline{x})$), and
+     @('(lambda (x x1 ... xn y) iorel<x,x1,...,xn,y>)')
+     is denoted by @($R$).")))

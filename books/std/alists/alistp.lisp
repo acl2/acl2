@@ -59,6 +59,10 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
              (true-listp x))
     :rule-classes :compound-recognizer)
 
+  (defthmd true-listp-when-alistp-rewrite
+    (implies (alistp x)
+             (true-listp x)))
+
   (defthm alistp-of-append
     (equal (alistp (append x y))
            (and (alistp (list-fix x))

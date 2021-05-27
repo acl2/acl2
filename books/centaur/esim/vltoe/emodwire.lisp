@@ -140,12 +140,12 @@ on the expression-slicing code.</p>")
      :hints(("Goal" :in-theory (enable natstr))))))
 
 
-(local (defthm digit-listp-encoding-help
-         (implies (str::digit-listp x)
+(local (defthm dec-digit-char-listp-encoding-help
+         (implies (str::dec-digit-char-listp x)
                   (and (not (member-equal #\] x))
                        (not (member-equal #\[ x))
                        (not (member-equal #\{ x))))
-         :hints(("Goal" :in-theory (enable str::digit-listp)))))
+         :hints(("Goal" :in-theory (enable str::dec-digit-char-listp)))))
 
 
 
@@ -710,20 +710,20 @@ details.</p>"
 
   ;; (in-theory (disable nthcdr-of-increment))
 
-  ;; (defthm str::take-leading-digits-of-replicate
-  ;;   (equal (str::take-leading-digits (replicate n char))
+  ;; (defthm str::take-leading-dec-digit-chars-of-replicate
+  ;;   (equal (str::take-leading-dec-digit-chars (replicate n char))
   ;;          (if (str::digitp char)
   ;;              (replicate n char)
   ;;            nil))
-  ;;   :hints(("Goal" :in-theory (enable str::take-leading-digits
+  ;;   :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars
   ;;                                     replicate))))
 
 
   ;; (defthm c1
   ;;   (implies (not (str::digitp (nth n x)))
-  ;;            (equal (str::take-leading-digits (take n x))
-  ;;                   (str::take-leading-digits x)))
-  ;;   :hints(("Goal" :in-theory (enable str::take-leading-digits
+  ;;            (equal (str::take-leading-dec-digit-chars (take n x))
+  ;;                   (str::take-leading-dec-digit-chars x)))
+  ;;   :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars
   ;;                                     nth))))
 
   ;; (defthm c2
@@ -734,10 +734,10 @@ details.</p>"
   ;;         (<= 2 (+ (- OPEN) (LEN X))))
   ;;    (EQUAL
   ;;     (STR::DIGIT-LIST-VALUE
-  ;;      (STR::TAKE-LEADING-DIGITS (TAKE (+ -2 (- OPEN) (LEN X))
-  ;;                                              (NTHCDR (+ 1 OPEN) X))))
+  ;;      (STR::TAKE-LEADING-DEC-DIGIT-CHARS (TAKE (+ -2 (- OPEN) (LEN X))
+  ;;                                               (NTHCDR (+ 1 OPEN) X))))
   ;;     (STR::DIGIT-LIST-VALUE
-  ;;      (STR::TAKE-LEADING-DIGITS (NTHCDR (+ 1 OPEN) X))))))
+  ;;      (STR::TAKE-LEADING-DEC-DIGIT-CHARS (NTHCDR (+ 1 OPEN) X))))))
 
   ;; (defthm c3
   ;;   (implies (and (stringp name)

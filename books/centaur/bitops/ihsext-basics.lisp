@@ -3745,7 +3745,7 @@ off looking at the source code.</p>")
     :hints (("goal" :in-theory (enable logmask expt-2-is-ash))))
 
   (defthm unsigned-byte-p-of-logmask
-    (implies (posp width)
+    (implies (natp width)
              (unsigned-byte-p width (logmask width)))
     :hints(("Goal" :in-theory (e/d (unsigned-byte-p**)
                                    (unsigned-byte-p))

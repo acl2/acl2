@@ -75,9 +75,7 @@
   (def-rp-rule svex-eval-wog-of-quoted
     (implies (svex-kind-wog-is-quote x)
              (equal (svex-eval-wog x env)
-                    (cond ((atom x) x)
-                          ((atom (cdr x)) (sv::4vec-x))
-                          (t (cadr x)))))
+                    x))
     :hints (("goal"
              :expand ((svex-eval-wog x env)
                       (svex-eval-wog nil env))

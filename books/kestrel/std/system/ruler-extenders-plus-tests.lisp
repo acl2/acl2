@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ruler-extenders+ 'len (w state)) '(mv-list return-last))
+(assert-equal (ruler-extenders+ 'len (w state)) *basic-ruler-extenders*)
 
 (must-succeed*
  (defun f (x)

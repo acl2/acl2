@@ -158,12 +158,14 @@
 (defthm mod-of-len-of-sha-512-pad-message-and-1024
   (equal (mod (len (sha-512-pad-message msg)) 1024)
          0)
-  :hints (("Goal" :in-theory (enable sha-512-pad-message))))
+  :hints (("Goal" :in-theory (enable sha-512-pad-message
+                                     acl2::mod-sum-cases))))
 
 (defthm mod-of-len-of-sha-512-pad-message-and-64
   (equal (mod (len (sha-512-pad-message msg)) 64)
          0)
-  :hints (("Goal" :in-theory (enable sha-512-pad-message))))
+  :hints (("Goal" :in-theory (enable sha-512-pad-message
+                                     acl2::mod-sum-cases))))
 
 ;; Divide MSG (a sequence of bits) into a sequence of 64-bit words.  See
 ;; Section 5.2.2.

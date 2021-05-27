@@ -6,7 +6,7 @@
 #      ACL2=<Path of the ACL2 image>
 
 # To remove certificate files, etc., execute the following:
-# 
+#
 # make clean ACL2=<Path of the ACL2 image>
 
 #======================================================================

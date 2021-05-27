@@ -11,9 +11,11 @@
 (in-package "ACL2")
 
 (local (include-book "plus"))
+(local (include-book "minus"))
 (local (include-book "less-than"))
 (local (include-book "realpart"))
 (local (include-book "imagpart"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
 ; are built in to ACL2.
@@ -105,6 +107,18 @@
   :hints (("Goal" :cases ((< x1 x2))
            :use ((:instance positive (x (- x2 x1)))
                  (:instance positive (x (- x1 x2)))))))
+
+
+
+(defthm <-of-*-and-*-cancel-arg1-and-arg1
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* y x1) (* y x2))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
 
 (local
  ;; note: no rationalp hyps on x1,x2
@@ -313,6 +327,17 @@
            :in-theory (disable <=-of-*-and-*-same-linear)))
   :rule-classes :linear)
 
+(defthm <-of-*-cancel-1
+  (implies (and (< 0 y)
+                (rationalp y)
+                (rationalp x))
+           (equal (< y (* x y))
+                  (< 1 x)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                                  (x1 1)
+                                  (x2 x))
+           :in-theory (disable <-of-*-and-*-cancel))))
+
 (defthm <-of-*-cancel-2
   (implies (and (< 0 y)
                 (rationalp y)
@@ -364,3 +389,50 @@
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+(defthmd *-both-sides
+  (implies (equal x y)
+           (equal (* z x) (* z y))))
+
+;; not exported here because it mentions /
+(local
+ (defthm *-of-/-same-arg2
+   (equal (* x (/ x) y)
+          (if (equal 0 (fix x))
+              0
+            (fix y)))
+   :hints (("Goal" :in-theory (disable associativity-of-*
+                                       commutativity-2-of-*)
+            :use (:instance associativity-of-* (y (/ x)) (z y))))))
+
+(defthm equal-of-*-and-*-cancel
+  (equal (equal (* x y) (* x z))
+         (or (equal (fix x) 0)
+             (equal (fix y) (fix z))))
+  :hints (("Goal" :use (:instance *-both-sides
+                                  (x (* x y))
+                                  (y (* x z))
+                                  (z (/ x))))))
+
+(defthm equal-of-*-and-*-cancel-arg2-arg2
+  (equal (equal (* y x) (* z x))
+         (or (equal (fix x) 0)
+             (equal (fix y) (fix z))))
+  :hints (("Goal" :use (:instance *-both-sides
+                                  (x (* x y))
+                                  (y (* x z))
+                                  (z (/ x))))))
+
+(defthm <-of-*-and-*-cancel-gen
+  (implies (and (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* x1 y) (* x2 y))
+                  (if (< 0 y)
+                      (< x1 x2)
+                    (if (equal 0 y)
+                        nil
+                      (< x2 x1)))))
+  :hints (("Goal" :use ((:instance <-of-*-and-*-cancel)
+                        (:instance <-of-*-and-*-cancel (y (- y))))
+           :in-theory (disable <-of-*-and-*-cancel))))

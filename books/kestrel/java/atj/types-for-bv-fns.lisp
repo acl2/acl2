@@ -12,10 +12,15 @@
 
 (include-book "type-macros")
 
+(include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvshl" :dir :system)
+(include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,6 +31,11 @@
 
 ; primary types:
 
+(atj-main-function-type acl2::bvand (:ainteger :ainteger :ainteger) :ainteger)
+
+(atj-main-function-type
+ acl2::bv-array-write (:ainteger :ainteger :ainteger :avalue :avalue) :avalue)
+
 (atj-main-function-type
  acl2::bvcat (:ainteger :ainteger :ainteger :ainteger) :ainteger)
 
@@ -34,5 +44,13 @@
 (atj-main-function-type acl2::bvchop-list (:ainteger :avalue) :avalue)
 
 (atj-main-function-type acl2::bvchop-list-exec (:ainteger :avalue) :avalue)
+
+(atj-main-function-type acl2::bvor (:ainteger :ainteger :ainteger) :ainteger)
+
+(atj-main-function-type acl2::bvshl (:ainteger :ainteger :ainteger) :ainteger)
+
+(atj-main-function-type acl2::bvshr (:ainteger :ainteger :ainteger) :ainteger)
+
+(atj-main-function-type acl2::ceiling-of-lg (:ainteger) :ainteger)
 
 (atj-main-function-type acl2::slice (:ainteger :ainteger :ainteger) :ainteger)

@@ -541,6 +541,13 @@
                       (fl (mod x m))))
       :enable fl))))
 
+(defthmd mod-neg
+  (implies (and (posp n) (integerp m))
+	   (equal (mod (- m) n)
+	          (- (1- n) (mod (1- m) n))))
+  :hints (("Goal" :use ((:instance mod-diff (a (1- n)) (b (1- m)))
+			(:instance mod-mult (m (- m)) (a 1))))))
+
 (in-theory (disable mod))
 
 
@@ -601,11 +608,28 @@
            (and (equal (chop-r (chop-r x m r) k r)
                        (chop-r x k r))
                 (equal (chop-r (chop-r x k r) m r)
-                       (chop-r x k r))))
+                       (chop-r x k r))
+		(<= (chop-r x k r) (chop-r x m r))))
   :enable chop-r
-  :use (:instance fl/int-rewrite
-         (x (* (expt r m) x))
-         (n (expt r (- m k)))))
+  :use ((:instance fl/int-rewrite
+          (x (* (expt r m) x))
+          (n (expt r (- m k))))
+        (:instance chop-r-down (x (chop-r x m r)) (n k))))
+
+(defruled chop-r-plus
+  (implies (and (real/rationalp x)
+	        (real/rationalp y)
+	        (integerp k)
+		(radixp r))
+           (and (equal (chop-r (+ x (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (+ (chop-r x k r) (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- x (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- (chop-r x k r) (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))))
+  :enable chop-r)
 
 (defruled chop-r-shift
   (implies (and (real/rationalp x)
@@ -752,16 +776,31 @@
   :use (:instance chop-r-monotone (r 2))
   :rule-classes ())
 
-(defruled chop-chop
-  (implies (and (real/rationalp x)
+(defrule chop-chop
+  (implies (and (rationalp x)
                 (integerp k)
                 (integerp m)
                 (<= k m))
            (and (equal (chop (chop x m) k)
                        (chop x k))
                 (equal (chop (chop x k) m)
-                       (chop x k))))
+                       (chop x k))
+		(<= (chop x k) (chop x m))))
   :enable chop-r-chop-r)
+
+(defrule chop-plus
+  (implies (and (rationalp x)
+	        (rationalp y)
+	        (integerp k))
+           (and (equal (chop (+ x (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (+ (chop x k) (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (- x (chop y k)) k)
+		       (- (chop x k) (chop y k)))
+		(equal (chop (- (chop x k) (chop y k)) k)
+		       (- (chop x k) (chop y k)))))
+  :enable chop-r-plus)
 
 (defruled chop-shift
   (implies (and (real/rationalp x)

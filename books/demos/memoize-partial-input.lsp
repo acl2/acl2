@@ -566,8 +566,7 @@
  (assert-event
   (equal (xx-worse-than* '(mem (car (del a x)) x)
                          '(mem (car (del a x)) y))
-         nil))
- :expected :hard)
+         nil)))
 
 (u)
 

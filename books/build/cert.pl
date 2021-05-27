@@ -131,7 +131,8 @@ my %certlib_opts = ( "debugging" => 0,
                      "print_deps" => 0,
                      "all_deps" => 1,
                      "believe_cache" => 0,
-                     "pcert_all" => 0 );
+                     "pcert_all" => 0,
+                     "debug_up_to_date" => 0);
 my $target_ext = "cert";
 my $cache_file = 0;
 my $cache_read_only = 0;
@@ -139,6 +140,9 @@ my $cache_write_only = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
 my $params_file = 0;
 my $print_relocs = 0;
+
+my $write_timestamps = 0;
+my $read_timestamps = 0;
 
 # Remove trailing slash from and canonicalize bin_dir
 if ($bin_dir) {
@@ -685,6 +689,9 @@ GetOptions ("help|h"               => sub {
             "include-excludes"     =>\$certlib_opts{"include_excludes"},
             "target-ext|e=s"       => \$target_ext,
             "print-relocs"         => \$print_relocs,
+	    "write-timestamps=s"   => \$write_timestamps,
+	    "read-timestamps=s"    => \$read_timestamps,
+            "debug-up-to-date"     => \$certlib_opts{"debug_up_to_date"},
             "<>"                   => sub { push(@user_targets, shift); },
             );
 
@@ -697,6 +704,10 @@ sub remove_trailing_slash {
 certlib_set_opts(\%certlib_opts);
 
 my $cache = $cache_write_only ? {} : retrieve_cache($cache_file);
+
+if ($read_timestamps) {
+    read_timestamps($read_timestamps);
+}
 
 # If $acl2 is still not set, then set it based on the location of acl2
 # in the path, if available
@@ -938,6 +949,12 @@ if (%stubs && (! $quiet || $print_relocs)) {
 }
 
 
+# Write the timestamp file if requested. When exactly this happens is
+# somewhat arbitrary but it needs to be after the regular scan and
+# also after the up_to_date/out_of_date commands are run.
+if ($write_timestamps) {
+    write_timestamps($write_timestamps);
+}
 
 my $mf_intro_string = '
 # Cert.pl is a build system for ACL2 books.  The cert.pl executable is
@@ -1000,7 +1017,7 @@ unless ($no_makefile) {
 
     print $mf "\n\n";
 
-    print $mf "# Note: This variable lists the certificates for all books to be built \n";
+    print $mf "# Note: This variable lists the certificates for all books to be built\n";
     print $mf "# along with any pcert or acl2x files to be built along the way.\n";
     print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
 
@@ -1062,7 +1079,7 @@ unless ($no_makefile) {
         print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
         foreach my $cert (@certs) {
             if ($depdb->cert_get_param($cert, $reqparam)) {
-                print $mf " \\\n     " . make_encode($cert) . " ";
+                print $mf "  \\\n     " . make_encode($cert);
             }
         }
         print $mf "\n\n";

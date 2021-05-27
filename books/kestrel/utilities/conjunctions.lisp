@@ -45,17 +45,19 @@
           `(and ,@(fargs item) ,conjunct)
         `(and ,item ,conjunct)))))
 
-;returns a list, the conjunction of whose elements is equivalent (equal or iff?) to hyp
-;todo: rename to something like get-conjuncts?
-(defun get-conjuncts (hyp)
-  (declare (xargs :guard (pseudo-termp hyp)))
-  (if (atom hyp)
-      (list hyp)
-    (if (and (eq 'if (car hyp)) ;(if x y nil) => (and x y)
-             (equal *nil* (fourth hyp)))
-        (append (get-conjuncts (second hyp))
-                (get-conjuncts (third hyp)))
-      (list hyp))))
+;; Returns a list, the conjunction of whose elements is equivalent to TERM.
+;; Preserves the order of the conjuncts, which can matter because an AND is
+;; typically equal to its last value, if all values are non-nil.  Does not
+;; remove duplicates.  Does not handle negations specially.
+;; TODO: Consider having this return the empty list if term is *T*.
+(defun get-conjuncts (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (and (consp term)
+           (eq 'if (car term)) ; (if x y 'nil) is (and x y)
+           (equal *nil* (fourth term)))
+      (append (get-conjuncts (second term))
+              (get-conjuncts (third term)))
+    (list term)))
 
 ;ex: (get-conjuncts '(IF (IF X (IF Y Z 'NIL) 'NIL) W 'NIL))
 

@@ -105,3 +105,8 @@
                (null (assoc-equal x alist))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable alistp assoc-equal))))
+
+(defthm <-of-0-and-len-of-assoc-equal-iff
+  (implies (alistp alist)
+           (iff (< 0 (len (assoc-equal key alist)))
+                (assoc-equal key alist))))

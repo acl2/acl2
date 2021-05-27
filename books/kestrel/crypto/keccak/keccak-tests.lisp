@@ -56,8 +56,8 @@
 (defun hexstring-to-num (hexstring)
   (if (not (= (length hexstring) 2))
       nil
-    (let ((nibble0 (str::hex-digit-val (char hexstring 0)))
-          (nibble1 (str::hex-digit-val (char hexstring 1))))
+    (let ((nibble0 (str::hex-digit-char-value (char hexstring 0)))
+          (nibble1 (str::hex-digit-char-value (char hexstring 1))))
       (if (or (null nibble0) (null nibble1))
           nil
         (+ (* nibble0 16)

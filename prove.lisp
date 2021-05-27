@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -5404,9 +5404,32 @@
         (cond
          ((consp (access history-entry ; (SPECIOUS . processor)
                          (car new-hist) :processor))
-          (mv@par 'MISS nil ttree new-hist
-                  (accumulate-rw-cache-into-pspv processor ttree pspv)
-                  state))
+          (pprogn@par
+           (cond ((gag-mode)
+                  (mv-let (str cl-id-phrase assumption-1-0 case-split-lim)
+                    (mv "~@0The goal, ~@1, ~#2~[~/forcibly ~]simplifies to a ~
+                         set of conjectures including itself!  Therefore, we ~
+                         ignore this specious simp~-li~-fi~-ca~-tion.  See ~
+                         :DOC specious-simplification.~@3~|"
+                        (tilde-@-clause-id-phrase cl-id)
+                        (if (tagged-objectsp 'assumption ttree) 1 0)
+                        (tilde-@-case-split-limitations-phrase
+                         (tagged-objects 'sr-limit ttree)
+                         (tagged-objects 'case-limit ttree)
+                         "  "))
+                    (serial-first-form-parallel-second-form@par
+                     (fms str
+                          (list (cons #\0 "")
+                                (cons #\1 cl-id-phrase)
+                                (cons #\2 assumption-1-0)
+                                (cons #\3 case-split-lim))
+                          (proofs-co state) state nil)
+                     (cw str
+                         "~%" cl-id-phrase assumption-1-0 case-split-lim))))
+                 (t (state-mac@par)))
+           (mv@par 'MISS nil ttree new-hist
+                   (accumulate-rw-cache-into-pspv processor ttree pspv)
+                   state)))
          (t (mv@par signal clauses ttree new-hist
                     (cond
                      ((or (member-eq processor *simplify-clause-ledge-complement*)

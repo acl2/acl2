@@ -1153,8 +1153,8 @@ construct fast alists binding identifiers to things, etc.</p>"
     (implies (equal (len y) (len (vl-keyvallist->subexprs x)))
              (equal (vl-keyvallist->subexprs (vl-keyvallist-update-subexprs x y))
                     (vl-exprlist-fix y)))
-    :hints(("Goal" :in-theory (enable vl-keyvallist->subexprs)))))
-
+    :hints(("Goal" :in-theory (e/d (vl-keyvallist->subexprs)
+                                   ((:rewrite nth-of-vl-exprlist-fix)))))))
 
 (define vl-assignpat->subexprs ((x vl-assignpat-p))
   :returns (subexprs vl-exprlist-p)

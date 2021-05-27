@@ -304,12 +304,12 @@
        (name-chars-without-end-marker
         (take len-of-name-without-end-marker name-chars))
        (digits-of-index
-        (reverse (str::take-leading-digits (reverse
-                                            name-chars-without-end-marker)))))
+        (reverse (str::take-leading-dec-digit-chars
+                  (reverse name-chars-without-end-marker)))))
     (if digits-of-index
         (b* (((when (eql (car digits-of-index) #\0))
               (mv nil nil nil))
-             (index (str::digit-list-value digits-of-index))
+             (index (str::dec-digit-chars-value digits-of-index))
              (name-chars-without-index-and-end-marker
               (take (- (len name-chars-without-end-marker)
                        (len digits-of-index))
@@ -576,6 +576,7 @@
   :returns (mv (names "A @(tsee symbol-listp).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
+  :parents (numbered-names)
   :short "Add to each of the given bases the lowest index,
           starting with the given index,
           such that the resulting names are not already in use."
@@ -592,6 +593,7 @@
   :returns (mv (name "A @(tsee symbolp).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
+  :parents (numbered-names)
   :short "Specialize @(tsee next-fresh-numbered-names) to a single name."
   (b* (((mv names names-to-avoid) (next-fresh-numbered-names (list base)
                                                              index

@@ -14,6 +14,7 @@ data last modified: [2017-06-22 Thu]
 (in-package "DEFDATA")
 
 (include-book "std/util/bstar" :dir :system)
+(include-book "defdata-util")
 
 (table defdata-defaults-table nil
        '((:debug       .  nil)
@@ -59,9 +60,9 @@ data last modified: [2017-06-22 Thu]
 
 (defun get-tau-int (domain rexp)
   (declare (xargs :verify-guards t))
-  (let ((dom (if (eq domain 'acl2s::integer)
-                 'acl2::integerp
-               'acl2::rationalp)))
+  (let ((dom (if (eq domain 'integer)
+                 'integerp
+               'rationalp)))
   (case-match rexp
     ((lo lo-rel-sym '_ hi-rel-sym hi)
      (b* ((lo-rel (eq lo-rel-sym '<))
@@ -71,44 +72,45 @@ data last modified: [2017-06-22 Thu]
        (acl2::make-tau-interval dom lo-rel lo hi-rel hi))))))
 
 (defun make-acl2-range-constraints (x domain rexp)
-  (let ((dom (if (eq domain 'acl2s::integer)
-                 'acl2::integerp
-               'acl2::rationalp)))
-  (case-match rexp
-    ((lo lo-rel-sym '_ hi-rel-sym hi)
-     `((,dom ,x)
-       ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
-       ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
+  (let ((dom (if (eq domain 'integer)
+                 'integerp
+               'rationalp)))
+    (case-match rexp
+      ((lo lo-rel-sym '_ hi-rel-sym hi)
+       `((,dom ,x)
+         ,@(and (rationalp lo) `((,lo-rel-sym ,lo ,x)))
+         ,@(and (rationalp hi) `((,hi-rel-sym ,x  ,hi))))))))
 
 
 ;(defun range-pred-I (x s) `(acl2::in-tau-intervalp ,x ',(get-tau-int (cadr s) (third s))))
-(defun range-pred-I (x s) `(AND . ,(make-acl2-range-constraints x (cadr s) (third s))))
+(defun range-pred-I (x s)
+  `(AND . ,(make-acl2-range-constraints x (cadr s) (third s))))
 
 
 (defun make-enum-body-for-range (r domain lo hi lo-rel hi-rel)
-    (case domain
-      (acl2s::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
-                           (hi (and hi (if hi-rel (1- hi) hi))))
-                        (cond ((and lo hi)
-                               `(acl2s::nth-integer-between ,r ,lo ,hi))
+  (case domain
+    (integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
+                   (hi (and hi (if hi-rel (1- hi) hi))))
+               (cond ((and lo hi)
+                      `(acl2s::nth-integer-between ,r ,lo ,hi))
 
-                             (lo ;hi is positive infinity
-                              `(+ ,lo (acl2s::nth-nat-testing ,r)))
+                     (lo ;hi is positive infinity
+                      `(+ ,lo (acl2s::nth-nat-testing ,r)))
 
-                             ((posp hi) ;lo is neg infinity and hi is >=1
-                              `(let ((i-ans (acl2s::nth-integer ,r)))
-                                 (if (> i-ans ,hi)
-                                     (mod i-ans (1+ ,hi))
-                                   i-ans))) ;ans shud be less than or equal to hi
+                     ((posp hi) ;lo is neg infinity and hi is >=1
+                      `(let ((i-ans (acl2s::nth-integer ,r)))
+                         (if (> i-ans ,hi)
+                             (mod i-ans (1+ ,hi))
+                           i-ans))) ;ans shud be less than or equal to hi
                              
                              
-                             (t ;lo is neg inf, and hi is <= 0
-                              `(- ,hi (acl2s::nth-nat-testing ,r)))))) ;ans shud be less than or equal to hi
+                     (t ;lo is neg inf, and hi is <= 0
+                      `(- ,hi (acl2s::nth-nat-testing ,r)))))) ;ans shud be less than or equal to hi
       
-      (otherwise  (let* ((gap (/ (- (rfix hi) (rfix lo)) 1000))
-                        (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
-                        (hi (and hi (if hi-rel (- hi gap) hi))))
-                    (cond ((and lo hi)
+    (otherwise  (let* ((gap (/ (- (rfix hi) (rfix lo)) 1000))
+                       (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
+                       (hi (and hi (if hi-rel (- hi gap) hi))))
+                  (cond ((and lo hi)
                          `(acl2s::nth-rational-between ,r ,lo ,hi))
 
                         (lo ;hi is positive infinity
@@ -134,10 +136,12 @@ data last modified: [2017-06-22 Thu]
 
 (defun minimum-range-lo-builtin ()
   (declare (xargs :guard t))
-  -1000); (- 0 (expt 2 32)))
+  -1000); (- (expt 2 32)))
+
 (defun maximum-range-hi-builtin ()
   (declare (xargs :guard t))
   1000); (+ 0 (expt 2 32)))
+
 (defstub minimum-range-lo () => *)
 (defstub maximum-range-hi () => *)
 (defattach minimum-range-lo minimum-range-lo-builtin)
@@ -154,22 +158,75 @@ data last modified: [2017-06-22 Thu]
 .01 geometric [min-1 ...])
 |#
 
+(defun force-between (x lo hi)
+  (declare (xargs :guard (and (rationalp x) (rationalp lo)
+                              (rationalp hi) (<= lo hi))))
+  (b* ((x (max x lo))
+       (x (min x hi)))
+    x))
+
+(defconst *dist-base* 4)
+(defconst *dist-expt* 3)
+(defconst *dist-hi1* (expt *dist-base* *dist-expt*))
+(defconst *dist-hi2* (* *dist-hi1* *dist-base*))
+(defconst *dist-hi3* (* *dist-hi2* *dist-base*))
+(defconst *dist-hi4* (* *dist-hi3* *dist-base*))
+(defconst *dist-hi5* (* *dist-hi4* *dist-base*))
+
+(defconst *dist-lo1* (- *dist-hi1*))
+(defconst *dist-lo2* (- *dist-hi2*))
+(defconst *dist-lo3* (- *dist-hi3*))
+(defconst *dist-lo4* (- *dist-hi4*))
+(defconst *dist-lo5* (- *dist-hi5*))
+
 ;; The keys should add up to 100
 (defun sampling-dist-default (min max mid1 mid2)
-  (b* ((small-low (if (< min -100) -100 min))
-       (small-hi (if (> max 100) 100 max)))
+  (declare (xargs :guard (and (rationalp min) (rationalp max)
+                              (rationalp mid1) (rationalp mid2)
+                              (<= min mid1) (<= mid1 mid2)
+                              (<= mid2 max))))
+  (b* ((lo-1 (force-between *dist-lo1* min max))
+       (hi-1 (force-between *dist-hi1* min max))
+       (lo-2 (force-between *dist-lo2* min max))
+       (hi-2 (force-between *dist-hi2* min max))
+       (lo-3 (force-between *dist-lo3* min max))
+       (hi-3 (force-between *dist-hi3* min max))
+       (lo-4 (force-between *dist-lo4* min max))
+       (hi-4 (force-between *dist-hi4* min max))
+       (lo-5 (force-between *dist-lo5* min max))
+       (hi-5 (force-between *dist-hi5* min max))
+       (mid-lo-1 (force-between (- mid1 hi-1) min max))
+       (mid-hi-1 (force-between (+ mid1 hi-1) min max))
+       (mid-lo-2 (force-between (- mid1 hi-2) min max))
+       (mid-hi-2 (force-between (+ mid1 hi-2) min max))
+       (mid-lo-3 (force-between (- mid1 hi-3) min max))
+       (mid-hi-3 (force-between (+ mid1 hi-3) min max))
+       (mid-lo-4 (force-between (- mid1 hi-4) min max))
+       (mid-hi-4 (force-between (+ mid1 hi-4) min max))
+       (mid-lo-5 (force-between (- mid1 hi-5) min max))
+       (mid-hi-5 (force-between (+ mid1 hi-5) min max)))
     `((1 :eq ,min)
       (1 :eq ,max)
       (1 :eq ,mid1)
       (1 :eq ,mid2)
-      (10 :uniform ,small-low ,small-hi)
-      (19 :geometric :around ,mid1)
-      (47 :uniform ,min ,max)
-      (10 :geometric :leq ,max)
-      (10 :geometric :geq ,min)
-;     (1 :geometric :geq ,(1+ max))
-;     (1 :geometric :leq ,(1- min))
-      )))
+
+      (4 :uniform ,lo-1 ,hi-1)
+      (4 :uniform ,lo-2 ,hi-2)
+      (4 :uniform ,lo-3 ,hi-3)
+      (4 :uniform ,lo-4 ,hi-4)
+      (4 :uniform ,lo-5 ,hi-5)
+
+      (4 :uniform ,mid-lo-1 ,mid-hi-1)
+      (4 :uniform ,mid-lo-2 ,mid-hi-2)
+      (4 :uniform ,mid-lo-3 ,mid-hi-3)
+      (4 :uniform ,mid-lo-4 ,mid-hi-4)
+      (4 :uniform ,mid-lo-5 ,mid-hi-5)
+      
+      (5 :geometric :leq-bnd ,max ,min)
+      (23 :geometric :geq-bnd ,min ,max)
+      (14 :geometric :between ,min ,max)
+
+      (14 :uniform ,min ,max))))
 
 #|
 
@@ -207,90 +264,99 @@ data last modified: [2017-06-22 Thu]
 
 
 |#
+
 (defun sampling-dist-lo (min max mid1 mid2)
-  (b* ((small-low (if (< min -100) -100 min))
-       (small-hi (if (> max 100) 100 max)))
-    `((1 :eq ,min)
-      (1 :eq ,max)
-      (1 :eq ,mid1)
-      (1 :eq ,mid2)
-      (1 :geometric :around ,mid1)
-      (22 :uniform ,min ,max)
-      (1 :geometric :leq ,max)
-      (32 :uniform ,small-low ,small-hi)
-      (40 :geometric :geq ,min)
-;      (1 :geometric :geq ,(1+ max))
-;      (1 :geometric :leq ,(1- min))
-      )))
+  (declare (xargs :guard (and (rationalp min) (rationalp max)
+                              (rationalp mid1) (rationalp mid2)
+                              (<= min mid1) (<= mid1 mid2)
+                              (<= mid2 max))))
+  (sampling-dist-default min max mid1 mid2))
 
 (defun sampling-dist-hi (min max mid1 mid2)
-  (b* ((small-low (if (< min -100) -100 min))
-       (small-hi (if (> max 100) 100 max)))
-    `((1 :eq ,min)
-      (1 :eq ,max)
-      (1 :eq ,mid1)
-      (1 :eq ,mid2)
-      (1 :geometric :around ,mid1)
-      (22 :uniform ,min ,max)
-      (32 :uniform ,small-low ,small-hi)
-      (40 :geometric :leq ,max)
-      (1 :geometric :geq ,min)
-;      (1 :geometric :geq ,(1+ max))
-;      (1 :geometric :leq ,(1- min))
-      )))
+  (declare (xargs :guard (and (rationalp min) (rationalp max)
+                              (rationalp mid1) (rationalp mid2)
+                              (<= min mid1) (<= mid1 mid2)
+                              (<= mid2 max))))
+  (sampling-dist-default min max mid1 mid2))
 
-(defun midpoints (lo hi)
-  (if (and (integerp lo) (integerp hi)
-           (oddp (- hi lo)))
-      (let ((half2 (/ (1+ (- hi lo)) 2)))
-        (mv (1- (+ lo half2)) (+ lo half2)))
-    (let ((half1 (/ (- hi lo) 2)))
-      (mv (+ lo half1) (+ lo half1)))))
+(defun int-midpoints (lo hi)
+  (declare (xargs :guard (and (integerp lo) (integerp hi)
+                              (<= lo hi))))
+  (b* ((odd? (oddp (- hi lo)))
+       (mid (/ (+ hi lo) 2)))
+    (if odd? (mv (- mid 1/2) (+ mid 1/2))
+      (mv mid mid))))
+
+(defun rat-midpoints (lo hi)
+  (declare (xargs :guard (and (rationalp lo) (rationalp hi)
+                              (<= lo hi))))
+  (b* ((mid (/ (+ hi lo) 2)))
+    (mv mid mid)))
 
 (defun make-enum-exp-for-bounded-range (ivar seedvar dom sampling-dist)
   (b* ((weights (strip-cars sampling-dist))
        (ctx 'make-enum-exp-for-bounded-range)
-       (nth-fn (if (eq dom 'acl2s::integer)
-                   'acl2s::nth-integer
-                 'acl2s::nth-rational))
-       (nth-pos-fn (if (eq dom 'acl2s::integer)
-                       'acl2s::nth-nat
-                     'acl2s::nth-pos-rational))
-       (between-fn (if (eq dom 'acl2s::integer)
-                       'defdata::random-integer-between-seed
-                     'defdata::random-rational-between-seed)))
-
-
+       ((list g-rnd-fn     g-leq-fn     g-geq-fn
+              g-rnd-bnd-fn g-leq-bnd-fn g-geq-bnd-fn
+              g-btw-fn
+              between-fn)
+        (if (eq dom 'integer)
+            '#!ACL2S(geometric-int-around
+                     geometric-int-leq
+                     geometric-int-geq
+                     geometric-int-around-bnd
+                     geometric-int-leq-bnd
+                     geometric-int-geq-bnd
+                     geometric-int-between
+                     defdata::random-integer-between-seed)
+          '#!ACL2S(geometric-rat-around
+                   geometric-rat-leq
+                   geometric-rat-geq
+                   geometric-rat-around-bnd
+                   geometric-rat-leq-bnd
+                   geometric-rat-geq-bnd
+                   geometric-rat-between
+                   defdata::random-rational-between-seed))))
     `(b* (((mv idx (the (unsigned-byte 31) ,seedvar))
            (defdata::random-index-seed 100 ,seedvar))
           ((mv choice &) (defdata::weighted-switch-nat ',weights idx))
           (chosen (nth choice ',sampling-dist))
           (sp (cdr chosen)))
        (case-match sp ;sampling type dispatch
-         ((':eq x) (mv x ,seedvar))
-         ((':geometric ':around x)  (mv (+ x (,nth-fn ,ivar)) ,seedvar))
-         ((':geometric ':leq x)     (mv (- x (,nth-pos-fn ,ivar)) ,seedvar))
-         ((':geometric ':geq x)     (mv (+ x (,nth-pos-fn ,ivar)) ,seedvar))
-         ((':uniform x1 x2)         (,between-fn x1 x2 ,seedvar))
+         ((':eq x)                            (mv x ,seedvar))
+         ((':geometric ':around x)            (mv (,g-rnd-fn x ,ivar) ,seedvar))
+         ((':geometric ':leq x)               (mv (,g-leq-fn x ,ivar) ,seedvar))
+         ((':geometric ':geq x)               (mv (,g-geq-fn x ,ivar) ,seedvar))
+         ((':geometric ':around-bnd x lo hi)  (mv (,g-rnd-bnd-fn x lo hi ,ivar) ,seedvar))
+         ((':geometric ':leq-bnd x lo)        (mv (,g-leq-bnd-fn x lo ,ivar) ,seedvar))
+         ((':geometric ':geq-bnd x hi)        (mv (,g-geq-bnd-fn x hi ,ivar) ,seedvar))
+         ((':geometric ':between lo hi)       (mv (,g-btw-fn lo hi ,ivar) ,seedvar))
+         ((':uniform lo hi)                   (,between-fn lo hi ,seedvar))
          (& (mv (er hard ',ctx "~| Impossible case ~x0.~%" sp) ,seedvar))))))
 
-
 (defun make-enum/acc-body-for-range (ivar seedvar domain lo hi lo-rel hi-rel)
-  (b* ((gap (if (eq domain 'acl2s::integer)
-                1
-              (/ (- (rfix hi) (rfix lo)) 1000)))
+  (b* ((gap (cond ((eq domain 'integer)
+                   (cond ((or (not lo) (not hi)) 1)
+                         ((< lo hi) 1)
+                         (t 0)))
+                  ((or (not lo) (not hi)) 1/1000)
+                  ((< lo hi)
+                   (min 1/1000 (/ (- (rfix hi) (rfix lo)) 1000)))
+                  (t 0)))
        (lo (and lo (if lo-rel (+ gap lo) lo))) ;make both inclusive bounds
        (hi (and hi (if hi-rel (- hi gap) hi)))
-       (lo1 (or lo (minimum-range-lo)))
-       (hi1 (or hi (maximum-range-hi)))
-       ((mv mid1 mid2) (midpoints lo1 hi1))
+       (lo1 (or lo (min (minimum-range-lo) (rfix hi))))
+       (hi1 (or hi (max (maximum-range-hi) (rfix lo))))
+       ((mv mid1 mid2) (if (eq domain 'integer)
+                           (int-midpoints lo1 hi1)
+                         (rat-midpoints lo1 hi1)))
        (exp (cond ((and lo hi)
                    (make-enum-exp-for-bounded-range
                     ivar seedvar domain (sampling-dist-default lo hi mid1 mid2)))
                   (lo (make-enum-exp-for-bounded-range
                        ivar seedvar domain (sampling-dist-lo lo hi1 mid1 mid2)))
                   (t (make-enum-exp-for-bounded-range
-                       ivar seedvar domain (sampling-dist-hi lo1 hi1 mid1 mid2))))))
+                      ivar seedvar domain (sampling-dist-hi lo1 hi1 mid1 mid2))))))
 
     `(mv-let (,ivar ,seedvar)
              (random-natural-seed ,seedvar) ;;overwrite original value of ivar
@@ -306,7 +372,6 @@ data last modified: [2017-06-22 Thu]
        (hi-rel (tau-interval-hi-rel tau-interval)))
     (make-enum/acc-body-for-range ivar '_SEED (cadr s) lo hi lo-rel hi-rel)))
 
-(include-book "defdata-util")
 
 (defun make-defconst-event1 (p top-kwd-alist wrld)
   (declare (ignorable top-kwd-alist wrld))
@@ -316,7 +381,7 @@ data last modified: [2017-06-22 Thu]
        (curr-pkg (get1 :current-package top-kwd-alist))
        (name (s+ "*" tname "-VALUES*" :pkg curr-pkg)))
     (if (and (consp nbody)
-             (eq 'acl2s::or (car nbody))
+             (eq 'or (car nbody))
              (rquote-listp (cdr nbody)))
         `((def-const ,name ',(unrquote-lst (cdr nbody))))
       '())))
@@ -533,23 +598,23 @@ Mainly to be used for evaluating enum lists "
            (trans-my-ev-w lo-sym ctx wrld nil))
           ((when erp)
            (er hard ctx "Evaluating rational expression ~x0 failed!~%" lo-sym))
-          ((unless (and (or (null lo) (if (eq domain 'acl2s::integer) (integerp lo) (rationalp lo)))
-                        (or (null hi) (if (eq domain 'acl2s::integer) (integerp hi) (rationalp hi)))
+          ((unless (and (or (null lo) (if (eq domain 'integer) (integerp lo) (rationalp lo)))
+                        (or (null hi) (if (eq domain 'integer) (integerp hi) (rationalp hi)))
                         (not (and (null lo) (null hi)))))
            (er hard ctx "~| lo and hi in range expressions should evaluate to rationals, but instead got lo = ~x0 and hi = ~x1~%" lo hi))
 
-          ((mv lo lo-rel) (if (eq domain 'acl2s::integer)
+          ((mv lo lo-rel) (if (eq domain 'integer)
                               (if (and lo lo-rel)
                                   (mv (+ lo 1) nil)
                                 (mv lo nil))
                             (mv lo lo-rel)))
-          ((mv hi hi-rel) (if (eq domain 'acl2s::integer)
+          ((mv hi hi-rel) (if (eq domain 'integer)
                               (if (and hi hi-rel)
                                   (mv (- hi 1) nil)
                                 (mv hi nil))
                             (mv hi hi-rel)))
 
-          ((when (and lo hi (eq domain 'acl2s::integer) (> lo hi)))
+          ((when (and lo hi (eq domain 'integer) (> lo hi)))
            (er hard ctx "~| lo <= hi should hold. But it does not: lo = ~x0 and hi = ~x1" lo hi))
 
           ((when (and lo hi (not lo-rel) (not hi-rel) (= lo hi))) lo)
@@ -560,7 +625,7 @@ Mainly to be used for evaluating enum lists "
           (lo-rel-sym (if lo-rel '< '<=))
           (hi-rel-sym (if hi-rel '< '<=)))
 
-       (list 'acl2s::range domain (list lo lo-rel-sym '_ hi-rel-sym hi))))
+       (list 'range domain (list lo lo-rel-sym '_ hi-rel-sym hi))))
     (& (bad-range-syntax rexp1)))))
 
 #|
@@ -572,7 +637,7 @@ Mainly to be used for evaluating enum lists "
         (er hard ctx "Evaluating list expression ~x0 failed!~%" eexp))
        ((unless (and (true-listp list-val) (consp list-val)))
         (er hard ctx "Enum argument ~x0 expected to be a non-empty list expression.~%" eexp)))
-    (list 'acl2s::member (kwote list-val))))
+    (list 'member (kwote list-val))))
 |#
 
 ;; This removes duplicate elements and uses 'or, which works better

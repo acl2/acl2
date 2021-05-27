@@ -1,7 +1,7 @@
 ; A recognizer for lists of unsigned bytes.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 ;; may allow for better congruence rules.  It also may be more efficient, since
 ;; it only calls expt once.
 
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (local (include-book "../bv/unsigned-byte-p"))
 
 (in-theory (disable unsigned-byte-p)) ;todo
@@ -76,6 +76,11 @@
                 (consp (double-rewrite lst)))
            (unsigned-byte-p size (car lst)))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm unsigned-byte-p-of-car-when-all-unsigned-byte-p
+  (implies (all-unsigned-byte-p size lst)
+           (equal (unsigned-byte-p size (car lst))
+                  (consp lst))))
 
 (defthm all-unsigned-byte-p-of-append
   (equal (all-unsigned-byte-p size (append lst lst0))

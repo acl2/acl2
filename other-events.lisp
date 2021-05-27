@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -827,12 +827,14 @@
                               (collect-non-apply$-primps tbody wrld1)))
                         (ancestral-lambda$s-in-guard
                          (and (not ctx1)
-                              (ancestral-lambda$s-by-caller "the guard"
-                                                            tguard wrld1)))
+                              (ancestral-lambda$s-by-caller
+                               "the guard of this event"
+                               tguard wrld1)))
                         (ancestral-lambda$s-in-body
                          (and (not ctx1)
-                              (ancestral-lambda$s-by-caller "the body"
-                                                            tbody wrld1))))
+                              (ancestral-lambda$s-by-caller
+                               "the body of this event"
+                               tbody wrld1))))
 
 ; We collect any unsafe apply$ function objects literally in the guard or body
 ; and any ancestral lambda$s in the guard or body, provided we successfully
@@ -894,27 +896,10 @@
                    ((or ancestral-lambda$s-in-guard
                         ancestral-lambda$s-in-body)
                     (er soft ctx
-                        "We do not allow lambda$ expressions to be evaluated ~
-                         in certain events, including DEFCONST, DEFPKG, and ~
-                         DEFMACRO events.  This restriction has to do with ~
-                         the loading of compiled books before the events in ~
-                         the book are processed.  ~#0~[The :guard, ~x1, of ~
-                         this defmacro~/The body, ~x2, of this defmacro~/Both ~
-                         the guard, ~x1, and the body, ~x2~] ancestrally ~
-                         mention lambda$ expressions.  You should be able to ~
-                         remedy this by replacing the lambda$ expressions by ~
-                         their translations, as described below.~%~%~*3"
-                        (cond ((and ancestral-lambda$s-in-guard
-                                    ancestral-lambda$s-in-body)
-                               2)
-                              (ancestral-lambda$s-in-body 1)
-                              (t 0))
-                        guard
-                        body
-                        (tilde-*-lambda$-replacement-phrase5
+                        "~@0"
+                        (prohibition-of-loop$-and-lambda$-msg
                          (union-equal ancestral-lambda$s-in-guard
-                                      ancestral-lambda$s-in-body)
-                         wrld1)))
+                                      ancestral-lambda$s-in-body))))
                    ((redundant-defmacrop name args tguard tbody wrld1)
                     (cond ((and (not (f-get-global 'in-local-flg state))
                                 (not (f-get-global 'boot-strap-flg state))
@@ -2369,7 +2354,7 @@
 ; of symbols that name a macro or a theorem, respectively.
 
   (cond ((endp lst)
-         (mv bad macros theorems))
+         (mv (reverse bad) (reverse macros) (reverse theorems)))
         (t
          (let ((sym (rule-name-designatorp (car lst) macro-aliases wrld)))
            (cond
@@ -4541,10 +4526,13 @@
                        (not (ld-redefinition-action state)))
                   (er soft ctx
                       "Either the :check-expansion or :expansion? argument of ~
-                       make-event should be a consp in the present context.  ~
-                       Unless you called record-expansion explicitly, this is ~
-                       an ACL2 bug; please contact the ACL2 implementors.  ~
-                       Current form:~|~%~X01"
+                       make-event is normally a consp in the present context. ~
+                       ~ This is not surprising in some cases, for example, ~
+                       when including an uncertified book or calling ~x0 ~
+                       explicitly.  But other cases could be evidence of an ~
+                       ACL2 bug; consider contacting the ACL2 implementors.  ~
+                       Current form:~|~%~X12"
+                      'record-expansion
                       form
                       nil))
                  (t (value form))))
@@ -4577,9 +4565,7 @@
                  (chk-embedded-event-form-orig-form-msg orig-form state)
                  (msg "~|Calls of the macro ~x0 do not generate an event, ~
                        because this macro has special meaning that is not ~
-                       handled by ACL2's event-generation mechanism.  Please ~
-                       contact the implementors if this seems to be a ~
-                       hardship."
+                       handled by ACL2's event-generation mechanism."
                       (car form))))
             (t
              (er-let*
@@ -5971,9 +5957,10 @@
 ; world extended by the signatures (and the incremented depth).  That world,
 ; called proto-wrld3 in the encapsulate essay and below, is useful only for
 ; computing (via difference) the names introduced by the embedded events.  We
-; still need the expansion-alist described in the preceding paragraph, so the
-; value returned for 'encapsulate-pass-2 is the cons of that expansion-alist
-; with this proto-wrld3.
+; still need the expansion-alist described in the preceding paragraph, and we
+; also need the value returned by the last event.  So the value returned for
+; 'encapsulate-pass-2 is a triple consisting of that value, the
+; expansion-alist, and this proto-wrld3.
 
 ; If an error is caused by the attempt to embed the events, we print a warning
 ; message explaining and pass the error up.
@@ -6017,7 +6004,7 @@
 ; current-package to pkg (with "unwind protection") and so we have to make the
 ; check ourselves.
 
-       (mv-let (erp expansion-alist-and-final-kpa state)
+       (mv-let (erp val/expansion-alist/final-kpa state)
                (state-global-let*
                 ((current-package pkg)
                  (cert-data cert-data)
@@ -6129,7 +6116,7 @@
                                 (value nil)
                               (maybe-install-acl2-defaults-table
                                acl2-defaults-table state))
-                            (value (cons expansion-alist final-kpa))))))))
+                            (value (list* val expansion-alist final-kpa))))))))
                (cond
                 (erp
 
@@ -6190,12 +6177,13 @@
                                            (w state))
                                state)))
                    (cond ((eq caller 'encapsulate-pass-2)
-                          (value (cons (car expansion-alist-and-final-kpa)
-                                       proto-wrld3)))
+                          (value (list* (car val/expansion-alist/final-kpa)
+                                        (cadr val/expansion-alist/final-kpa)
+                                        proto-wrld3)))
                          ((eq caller 'certify-book)
-                          (value expansion-alist-and-final-kpa))
+                          (value (cdr val/expansion-alist/final-kpa)))
                          (t (value
-                             (car expansion-alist-and-final-kpa))))))))))))
+                             (cadr val/expansion-alist/final-kpa))))))))))))
 
 (defun constrained-functions (exported-fns sig-fns new-trips)
 
@@ -6429,6 +6417,11 @@
 (defun remove-type-prescription-cert-data (cert-data)
   (remove1-assoc-eq :type-prescription cert-data))
 
+(defun encapsulate-return-value-p (val)
+  (case-match val
+    ((:return-value &) t)
+    (& nil)))
+
 (defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
@@ -6448,6 +6441,8 @@
 ; * constrained-fns - the functions for which a new constraint-lst will
 ;   be stored
 
+; * retval - the value returned
+
 ; * constraints - the corresponding list of constraints
 
 ; * exported-names - the exported names
@@ -6457,19 +6452,19 @@
 ; * infectious-fns - list of (non-subversive) fns whose defun equations were
 ;   moved into the constraint
 
-; However, if only-pass-p = t, then the value returned is an expansion-alist
-; mapping, in reverse increasing order, indices of events in ev-lst to the
-; result of expanding away make-event calls.
+; However, if only-pass-p = t, then we return (cons expansion-alist retval)
+; where expansion-alist maps, in reverse increasing order, indices of events in
+; ev-lst to the result of expanding away make-event calls.
 
 ; This information is used by the output routines.
 
-; Note:  The function could be declared to return five values, but we would
+; Note:  The function could be declared to return six values, but we would
 ; rather use the standard state and error primitives and so it returns three.
 
   (let* ((wrld1 (w state))
          (saved-unknown-constraints-table
           (table-alist 'unknown-constraints-table wrld1)))
-    (er-let* ((expansion-alist-and-proto-wrld3
+    (er-let* ((val/expansion-alist/proto-wrld3
 
 ; The following process-embedded-events, which requires world reversion on
 ; errors, is protected by virtue of being in encapsulate-pass-2, which also
@@ -6529,8 +6524,9 @@
                    (remove-type-prescription-cert-data
                     (f-get-global 'cert-data state)))
                  ctx state))))
-      (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
-             (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
+      (let* ((retval (car val/expansion-alist/proto-wrld3))
+             (expansion-alist (cadr val/expansion-alist/proto-wrld3))
+             (proto-wrld3 (cddr val/expansion-alist/proto-wrld3))
              (wrld (w state))
              (new-trips (new-trips wrld proto-wrld3)))
         (cond
@@ -6634,8 +6630,8 @@
 
                ((null insigs)
                 (value (if only-pass-p
-                           expansion-alist
-                         (list nil nil exported-names))))
+                           (cons expansion-alist retval)
+                         (list nil retval nil exported-names))))
                (t
 
 ; We are about to collect the constraint generated by this encapsulate on the
@@ -6705,8 +6701,9 @@
                             :verify-guards nil."
                             bogus-exported-compliants))
                        (t (value (if only-pass-p
-                                     expansion-alist
+                                     (cons expansion-alist retval)
                                    (list constrained-fns
+                                         retval
                                          (if unknown-constraints-p
                                              *unknown-constraints*
                                            constraints)
@@ -8567,9 +8564,10 @@
             (er-let*
                 ((trip (chk-acceptable-encapsulate1 signatures ev-lst
                                                     ctx wrld1 state)))
-              (let ((insigs (car trip))
-                    (kwd-value-list-lst (cadr trip))
-                    (wrld1 (cddr trip)))
+              (let* ((insigs (car trip))
+                     (names (strip-cars insigs))
+                     (kwd-value-list-lst (cadr trip))
+                     (wrld1 (cddr trip)))
                 (pprogn
                  (set-w 'extension
                         (global-set 'proof-supporters-alist nil
@@ -8684,10 +8682,11 @@
                                 (t
                                  (let* ((wrld3 (w state))
                                         (constrained-fns (nth 0 temp))
-                                        (constraints-introduced (nth 1 temp))
-                                        (exports (nth 2 temp))
-                                        (subversive-fns (nth 3 temp))
-                                        (infectious-fns (nth 4 temp))
+                                        (retval (nth 1 temp))
+                                        (constraints-introduced (nth 2 temp))
+                                        (exports (nth 3 temp))
+                                        (subversive-fns (nth 4 temp))
+                                        (infectious-fns (nth 5 temp))
                                         (final-proved-fnl-inst-alist
                                          (and
 
@@ -8718,10 +8717,15 @@
                                                    insigs kwd-value-list-lst
                                                    wrld3a))))
                                       (install-event
-                                       t
+                                       (cond
+                                        ((encapsulate-return-value-p retval)
+                                         (cadr retval))
+                                        ((null names) t)
+                                        ((null (cdr names)) (car names))
+                                        (t names))
                                        (or new-event-form event-form)
                                        'encapsulate
-                                       (or (strip-cars insigs) 0)
+                                       (or names 0)
                                        nil nil
                                        t
                                        ctx
@@ -8816,9 +8820,10 @@
 
             (er-let*
                 ((trip (chk-signatures signatures ctx wrld1 state)))
-              (let ((insigs (car trip))
-                    (kwd-value-list-lst (cadr trip))
-                    (wrld1 (cddr trip)))
+              (let* ((insigs (car trip))
+                     (names (strip-cars insigs))
+                     (kwd-value-list-lst (cadr trip))
+                     (wrld1 (cddr trip)))
                 (pprogn
                  (set-w 'extension wrld1 state)
                  (er-let*
@@ -8826,16 +8831,18 @@
 ; The following encapsulate-pass-2 is protected by the revert-world-on
 ; error above.
 
-                     ((expansion-alist0
+                     ((expansion-alist0/retval
                        (encapsulate-pass-2
                         insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
                         t ctx state)))
                    (let* ((empty-encapsulate-p
-                           (eq (car expansion-alist0) :empty-encapsulate))
+                           (eq (car expansion-alist0/retval) :empty-encapsulate))
                           (expansion-alist
                            (if empty-encapsulate-p
-                               (cdr expansion-alist0)
-                             expansion-alist0))
+                               (cdr expansion-alist0/retval)
+                             (car expansion-alist0/retval)))
+                          (retval (and (not empty-encapsulate-p) ; else unused
+                                       (cdr expansion-alist0/retval)))
                           (wrld3 (w state))
                           (new-event-form
                            (and expansion-alist
@@ -8857,12 +8864,17 @@
                              #+:non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
-                          (install-event t
+                          (install-event (cond
+                                          ((encapsulate-return-value-p retval)
+                                           (cadr retval))
+                                          ((null names) t)
+                                          ((null (cdr names)) (car names))
+                                          (t names))
                                          (if expansion-alist
                                              new-event-form
                                            event-form)
                                          'encapsulate
-                                         (or (strip-cars insigs) 0)
+                                         (or names 0)
                                          nil nil
                                          nil ; irrelevant, since we are skipping proofs
                                          ctx
@@ -10274,14 +10286,20 @@
               (t (er soft ctx
                      "The argument to IN-PACKAGE must be a known ~
                       package name, but ~x0, used in the first form ~
-                      in ~x1, is not.  The known packages are ~*2"
+                      in ~x1, is not.  The known packages are ~*2~@3"
                      (cadr val)
                      file
                      (tilde-*-&v-strings
                       '&
                       (strip-non-hidden-package-names
                        (known-package-alist state))
-                      #\.)))))
+                      #\.)
+                     (if (global-val 'include-book-path (w state))
+                         (msg "~%NOTE: This error might be eliminated by ~
+                               certifying the book mentioned above.  See :DOC ~
+                               certify-book."
+                              (car (global-val 'include-book-path (w state))))
+                       "")))))
             (t (er soft ctx
                    "The first form in ~x0 was expected to be ~
                     (IN-PACKAGE \"pkg\") where \"pkg\" is a known ~
@@ -12055,6 +12073,22 @@
                  certify-book again."
                 full-book-name)))))
 
+(defun illegal-to-certify-check (before-p ctx state)
+
+; See the Essay on Illegal-states.
+
+  (cond ((f-get-global 'illegal-to-certify-message state)
+         (er soft ctx
+             "It is illegal to certify a book in this session, as explained ~
+              by the message on a possible invariance violation, printed ~
+              earlier ~@0.  To see the message again, evaluate ~
+              the following form:~|~x1"
+             (if before-p
+                 "in this session"
+               "during the certification attempt")
+             '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
+        (t (value nil))))
+
 (defun chk-acceptable-certify-book (book-name full-book-name dir
                                               suspect-book-action-alist
                                               cert-op k ctx state)
@@ -12154,14 +12188,8 @@
                  :DOC defttag."
                 (ttag wrld)
                 '(defttag nil)))
-           ((f-get-global 'illegal-to-certify-message state)
-            (er soft ctx
-                "It is illegal to certify a book in this session, as ~
-                 explained by the message on a possible invariance violation, ~
-                 printed earlier in this session.  To see the message again, ~
-                 evaluate the following form:~|~x0"
-                '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
            (t (value nil)))
+     (illegal-to-certify-check t ctx state)
      (chk-book-name book-name full-book-name ctx state)
      (cond ((or (eq cert-op :convert-pcert)
                 (symbol-name-equal k "T"))
@@ -13202,6 +13230,9 @@
           (if *inside-include-book-fn*
               *fchecksum-symbol-memo*
             (make-hash-table :test 'eq)))
+         #-acl2-loop-only
+         (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
+                                         'stolen))
          #-acl2-loop-only
          (*inside-include-book-fn* (if behalf-of-certify-flg
                                        'hcomp-build
@@ -15483,62 +15514,6 @@
          (expansion-alist-conflict (cdr acl2x-expansion-alist)
                                    elided-expansion-alist))))
 
-(defun chk-absstobj-invariants (extra-msg state)
-  (declare (xargs :stobjs state
-
-; If this were in :logic mode:
-;                 :guard-hints (("Goal" :in-theory (enable read-acl2-oracle)))
-
-                  ))
-  (er-let* ((msg
-             #+acl2-loop-only
-             (read-acl2-oracle state)
-             #-acl2-loop-only
-             (let ((temp (svref *inside-absstobj-update* 0)))
-               (cond
-                ((or (null temp)
-                     (eql temp 0)
-                     (eq temp :ignore))
-                 (value nil))
-                (t
-                 (let ((msg
-                        (msg "Possible invariance violation for an abstract ~
-                              stobj!  See :DOC set-absstobj-debug, and ~
-                              PROCEED AT YOUR OWN RISK.~@0"
-                             (cond
-                              ((natp temp) "")
-                              (t
-                               (msg "  Evaluation was aborted under a call of ~
-                                     abstract stobj export ~x0.~@1"
-                                    (cond ((symbolp temp) temp)
-                                          (t (cdr (last temp))))
-                                    (cond
-                                     ((symbolp temp) "")
-                                     (t
-                                      (msg "  Moreover, it appears that ~
-                                            evaluation was aborted within the ~
-                                            following stack of stobj updater ~
-                                            calls (innermost call appearing ~
-                                            first): ~x0."
-                                           (let ((y nil))
-                                             (loop
-                                              (if (atom temp)
-                                                  (return (nreverse
-                                                           (cons temp y)))
-                                                (push (pop temp) y)))))))))))))
-                   (pprogn
-                    (f-put-global 'illegal-to-certify-message msg state)
-                    (progn (setf (svref *inside-absstobj-update* 0)
-                                 (if (natp temp) 0 nil))
-                           (value msg)))))))))
-    (cond (msg (er soft 'chk-absstobj-invariants
-                   "~@0~@1"
-                   msg
-                   (if extra-msg
-                       (msg "  ~@0" extra-msg)
-                     "")))
-          (t (value nil)))))
-
 (defun symbol-package-name-set (syms acc)
   (declare (xargs :guard (and (symbol-listp syms)
                               (true-listp acc))))
@@ -16023,9 +15998,8 @@
   (mv-let (eof obj state)
     (read-file-iterate channel acc state)
     (mv eof (remove-eq nil obj) state))
-  #+cltl2
+  #+(and cltl2 acl2-loop-only)
   (mv-let (eof obj state)
-    #+acl2-loop-only
     (mv-let (erp val state)
       (read-acl2-oracle state)
       (declare (ignore erp))
@@ -16034,31 +16008,41 @@
                    (mv eof nil state)))
             (t
              (read-object channel state))))
-    #-acl2-loop-only
-    (let ((pos (file-position (get-input-stream-from-channel channel))))
-      (handler-case (read-object channel state)
-        (error (condition)
-               (declare (ignore condition))
-               (progn (setq error-start-pos pos)
-                      (mv nil nil state)))))
     (cond (eof (mv (reverse acc) state))
           (t
-           #-acl2-loop-only
-           (when error-start-pos
+           (read-file-iterate-safe channel
+                                   (if (eq obj nil)
+                                       acc
+                                     (cons obj acc))
+                                   state))))
+  #+(and cltl2 (not acl2-loop-only))
+  (mv
+   (loop
+    (let ((pos (file-position (get-input-stream-from-channel channel))))
+      (mv-let (eof obj state)
+        (handler-case (read-object channel state)
+          (error (condition)
+                 (declare (ignore condition))
+                 (progn (setq error-start-pos pos)
+                        (mv nil nil state))))
+        (cond
+         (eof (return (reverse acc)))
+         (t
+          (when error-start-pos
 
 ; When read breaks in the middle of an expression it seems to leave the
 ; file-pointer there rather than to proceed to the end of the original
 ; expression.  So we go back to where we were, and then read the entire object,
 ; throwing it away.
 
-             (file-position (get-input-stream-from-channel channel)
-                            error-start-pos)
-             (read-object-suppress channel state))
-           (read-file-iterate-safe channel
-                                   (if (eq obj nil)
-                                       acc
-                                     (cons obj acc))
-                                   state)))))
+            (file-position (get-input-stream-from-channel channel)
+                           error-start-pos)
+            (setq error-start-pos nil)
+            (read-object-suppress channel state))
+          (setq acc (if (eq obj nil)
+                        acc
+                      (cons obj acc))))))))
+   state))
 
 (defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
 
@@ -16136,6 +16120,9 @@
 
 (defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p ctx state)
 
+; Useless-runes-r/w is the value given to certify-book option :useless-runes,
+; if any; useless-runes-r/w-p is true when that option is supplied, else nil.
+
 ; We return an error triple whose value is a pair (envp . val), where: envp is
 ; the value of environment variable ACL2_USELESS_RUNES if that is responsible
 ; for the value, val, else nil; and val is WRITE, nil, or a non-zero rational
@@ -16148,7 +16135,15 @@
 ; (We could allow 0 but that would mean the same as nil, which could perhaps
 ; lead to confusion somehow.)
 
-  (er-let* ((str (getenv! "ACL2_USELESS_RUNES" state)))
+  (er-let* ((str
+
+; If :useless-runes nil was supplied explicitly to certify-book, then ignore
+; the value of the indicated environment variable.  Otherwise the environment
+; variable takes priority over the value of :useless-runes.
+
+             (if (and useless-runes-r/w-p (null useless-runes-r/w))
+                 (value nil)
+               (getenv! "ACL2_USELESS_RUNES" state))))
     (cond
      ((and str
            (string-equal str "WRITE"))
@@ -16650,10 +16645,11 @@
                                                   1 nil nil 'certify-book
                                                   state))
                                                 (ignore
-                                                 (chk-absstobj-invariants
-                                                  "Your certify-book command ~
-                                                   is therefore aborted."
-                                                  state))
+                                                 (pprogn
+                                                  (chk-absstobj-invariants
+                                                   state)
+                                                  (illegal-to-certify-check
+                                                   nil ctx state)))
                                                 (expansion-alist
                                                  (value
                                                   (cond
@@ -17664,7 +17660,7 @@
 
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen :witness-dcls
-              :constrain
+              :constrain :verbose
               #+:non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
@@ -17865,7 +17861,18 @@
                nil nil nil nil nil))
           (t (mv nil guard-p verify-guards-p non-exec-p guard-hints dcls)))))
 
+(defun map-with-output (kwd arg forms)
+  (declare (xargs :guard (true-listp forms)))
+  (pairlis-x1 'with-output
+              (pairlis-x1 kwd
+                          (pairlis-x1 arg
+                                      (pairlis$ forms nil)))))
+
 (defun defun-sk-fn (form name args rest)
+
+; Warning: Keep this function in sync with make-apply$-warrant-defun-sk.  For
+; an explanation, see the comment below about the 5th element.
+
   (declare (xargs :mode :program))
   (let ((ctx `(defun-sk . ,name)))
     (mv-let
@@ -17888,6 +17895,7 @@
                (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
                (constrained-pair (assoc-eq :constrain keyword-alist))
                (constrained (cdr constrained-pair))
+               (verbose (cdr (assoc-eq :verbose keyword-alist)))
                (def-name (cond ((eq constrained t)
                                 (definition-rule-name name))
                                ((symbolp constrained)
@@ -17957,102 +17965,232 @@
                               `(defthm ,def-name
                                  (equal (,name ,@args)
                                         ,defun-body)
-                                 :rule-classes :definition))))
-                  `(encapsulate
-                     ()
-                     (logic)
-                     (set-match-free-default :all)
-                     (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
-                                           "Infected")
-                     (encapsulate
-                       (((,skolem-name ,@(make-list (length args)
-                                                    :initial-element '*))
-                         =>
-                         ,(if (= (length bound-vars) 1)
-                              '*
-                            (cons 'mv
-                                  (make-list (length bound-vars)
-                                             :initial-element '*)))
-                         #+:non-standard-analysis
-                         ,@(and classicalp-p
-                                `(:classicalp ,classicalp)))
-                        ,@(and constrained
-                               `((,name
-                                  ,args
-                                  t
-                                  ,@(and stobjs
-                                         `(:stobjs ,@stobjs))
-                                  ,@(and guard-p
-                                         (mv-let (ign guard)
-                                           (dcls-guard-raw-from-def
-                                            (cdr defun-form)
+                                 :rule-classes :definition)))
+                       (encap-forms
+                        `((logic)
+                          (set-match-free-default :all)
+                          (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
+                                                "Infected")
+
+; The following encapsulate, which is the 5th element of the returned
+; encapsulate, introduces the witness function and then any constrained
+; function using that witness.  When defun-sk is used to define an apply$
+; warrant function for fn, this encapsulate is the event that introduces
+; APPLY$-WARRANT-fn.  The function make-apply$-warrant-defun-sk assumes that it
+; can grab this event with NTH 5.  It then checks that the grabbed event is an
+; encapsulate that introduces the witness, just as a sanity check.  If the
+; sanity check fails, it's because defun-sk-fn and make-apply$-warrant-defun-sk
+; got out of sync!  Just make sure that the latter function always knows how to
+; find the event creating the apply$ warrant function.
+
+                          (encapsulate
+                            (((,skolem-name ,@(make-list (length args)
+                                                         :initial-element '*))
+                              =>
+                              ,(if (= (length bound-vars) 1)
+                                   '*
+                                 (cons 'mv
+                                       (make-list (length bound-vars)
+                                                  :initial-element '*)))
+                              #+:non-standard-analysis
+                              ,@(and classicalp-p
+                                     `(:classicalp ,classicalp)))
+                             ,@(and constrained
+                                    `((,name
+                                       ,args
+                                       t
+                                       ,@(and stobjs
+                                              `(:stobjs ,@stobjs))
+                                       ,@(and guard-p
+                                              (mv-let (ign guard)
+                                                (dcls-guard-raw-from-def
+                                                 (cdr defun-form)
 
 ; It is safe to pass nil in for the world because we are meeting the conditions
 ; of dcls-guard-raw-from-def: an explicit :STOBJS keyword is added above if
 ; there are stobjs, and SATISFIES declarations are checked in the local
 ; defun-form.
 
-                                            nil)
-                                           (declare (ignore ign))
-                                           `(:guard ,guard)))
-                                  #+:non-standard-analysis
-                                  ,@(and classicalp-p
-                                         `(:classicalp ,classicalp))))))
-                       (local (in-theory '(implies)))
-                       (local
-                        (encapsulate ; unable to declare ignorable in defchoose
-                          ()
-                          (set-ignore-ok t) ; local to encapsulate
-                          (defchoose ,skolem-name ,bound-vars ,args
-                            ,defchoose-body
+                                                 nil)
+                                                (declare (ignore ign))
+                                                `(:guard ,guard)))
+                                       #+:non-standard-analysis
+                                       ,@(and classicalp-p
+                                              `(:classicalp ,classicalp))))))
+                            (local (in-theory '(implies)))
+                            (local
+                             (encapsulate ; ignorable unsupported for defchoose
+                               ()
+                               (set-ignore-ok t) ; local to encapsulate
+                               (defchoose ,skolem-name ,bound-vars ,args
+                                 ,defchoose-body
+                                 ,@(and strengthen
+                                        '(:strengthen t)))))
                             ,@(and strengthen
-                                   '(:strengthen t)))))
-                       ,@(and strengthen
-                              `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
-                                  ,(defchoose-constraint-extra
-                                     skolem-name bound-vars args
-                                     defchoose-body)
-                                  :hints (("Goal"
-                                           :use ,skolem-name
-                                           :in-theory (theory 'minimal-theory)))
-                                  :rule-classes nil)))
-                       ,@(cond (constrained
-                                `((local ,defun-form)
-                                  ,defun-constraint
-                                  (local (in-theory (disable (,name))))))
-                               (t
-                                `(,defun-form
-                                   (in-theory (disable (,name))))))
-                       (defthm ,thm-name
-                         ,(cond (exists-p
-                                 `(implies ,body-guts
-                                           (,name ,@args)))
-                                ((eq rewrite :direct)
-                                 `(implies (,name ,@args)
-                                           ,body-guts))
-                                ((member-eq rewrite '(nil :default))
-                                 `(implies (not ,body-guts)
-                                           (not (,name ,@args))))
-                                (t rewrite))
-                         :hints (("Goal"
-                                  :use (,skolem-name ,name)
-                                  :in-theory (theory 'minimal-theory)))))
-                     (extend-pe-table ,name ,form)
-                     ,@(and (not constrained)
-                            (case verify-guards-p
-                              ((t)
-                               `((verify-guards ,name
-                                   ,@(and guard-hints
-                                          (list :hints guard-hints)))))
-                              ((nil)
-                               nil)
-                              (otherwise ; '?
-                               `((verify-guards?
-                                  ,guard-p
-                                  ,name
-                                  ,@(and guard-hints
-                                         (list :hints
-                                               guard-hints))))))))))))))))))
+                                   `((defthm ,(add-suffix skolem-name
+                                                          "-STRENGTHEN")
+                                       ,(defchoose-constraint-extra
+                                          skolem-name bound-vars args
+                                          defchoose-body)
+                                       :hints (("Goal"
+                                                :use ,skolem-name
+                                                :in-theory
+                                                (theory 'minimal-theory)))
+                                       :rule-classes nil)))
+                            ,@(cond (constrained
+                                     `((local ,defun-form)
+                                       ,defun-constraint
+                                       (local (in-theory (disable (,name))))))
+                                    (t
+                                     `(,defun-form
+                                        (in-theory (disable (,name))))))
+                            (defthm ,thm-name
+                              ,(cond (exists-p
+                                      `(implies ,body-guts
+                                                (,name ,@args)))
+                                     ((eq rewrite :direct)
+                                      `(implies (,name ,@args)
+                                                ,body-guts))
+                                     ((member-eq rewrite '(nil :default))
+                                      `(implies (not ,body-guts)
+                                                (not (,name ,@args))))
+                                     (t rewrite))
+                              :hints (("Goal"
+                                       :use (,skolem-name ,name)
+                                       :in-theory (theory 'minimal-theory)))))
+                          (extend-pe-table ,name ,form)
+                          ,@(and (not constrained)
+                                 (case verify-guards-p
+                                   ((t)
+                                    `((verify-guards ,name
+                                        ,@(and guard-hints
+                                               (list :hints guard-hints)))))
+                                   ((nil)
+                                    nil)
+                                   (otherwise ; '?
+                                    `((verify-guards?
+                                       ,guard-p
+                                       ,name
+                                       ,@(and guard-hints
+                                              (list :hints guard-hints)))))))
+                          (value-triple '(:return-value ,name)
+                                        :on-skip-proofs t))))
+                  (cond
+                   (verbose `(encapsulate () ,@encap-forms))
+                   (t `(with-output
+                         :off (:other-than error summary)
+                         :ctx ',ctx
+                         :summary-off value
+                         :gag-mode nil
+                         (encapsulate
+                           ()
+                           ,@(map-with-output :off 'summary
+                                              encap-forms)))))))))))))))
+
+; Because make-apply$-warrant-defun-sk is so dependent on defun-sk-fn, we
+; define that function now, after introducing a couple of helper functions.
+; But make-apply$-warrant-defun-sk isn't needed until we define defwarrant.
+
+(defun tameness-conditions (ilks var)
+  (declare (xargs :mode :program))
+  (cond ((endp ilks) nil)
+        ((eq (car ilks) :FN)
+         (cons `(TAMEP-FUNCTIONP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        ((eq (car ilks) :EXPR)
+         (cons `(TAMEP (CAR ,var))
+               (tameness-conditions (cdr ilks) (list 'CDR var))))
+        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
+
+(defun successive-cadrs (formals var)
+  (declare (xargs :mode :program))
+  (cond ((endp formals) nil)
+        (t
+         (cons `(CAR ,var)
+               (successive-cadrs (cdr formals) (list 'CDR var))))))
+
+(defun make-apply$-warrant-defun-sk (fn formals bdg trans1-flg)
+
+; This function creates the defun-sk event that introduces APPLY$-WARRANT-fn
+; after (fn . formals) has been confirmed to have badge bdg.  If trans1-flg is
+; nil, it returns an explicit defun-sk form; if trans1-flg is t it returns the
+; encapsulate into which defun-sk expands.  (Note that the resulting encapsulate
+; is not fully translated, just expanded as per the defun-sk macro.)
+
+; This function works by creating the untranslated defun-sk and then, if
+; necessary, calling defun-sk-fn -- the macro expander for defun-sk -- to get
+; the result.  However, defun-sk-fn actually returns an encapsulate that does
+; several things, among which is an inner encapsulate that creates
+; APPLY$-WARRANT-fn.  We need to recover that inner encapsulate from the result
+; of defun-sk-fn.  That inner encapsulate is known to be the 5th element of the
+; result!  However, we do a sanity check, just in case.  The sanity check
+; confirms that the thing we recover is an ENCAPSULATE that introduces
+; APPLY$-WARRANT-fn.  A hard error is signalled if it is not.
+
+; Warning: Keep this function in sync with defun-sk-fn.
+
+  (let* ((name (warrant-name fn))
+         (form
+          (cond ((eq (access apply$-badge bdg :ilks) t)
+                 `(defun-sk ,name ()
+                    (forall (args)
+                      (and
+                       (equal (badge-userfn ',fn) ',bdg)
+                       (equal (apply$-userfn ',fn args)
+                              ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                                   `(,fn ,@(successive-cadrs formals 'args))
+                                   `(mv-list
+                                     ',(access apply$-badge bdg :out-arity)
+                                     (,fn ,@(successive-cadrs formals 'args)))))))
+                    :constrain t))
+                (t (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
+                                                         'ARGS))
+                          (hyp (if (null (cdr hyp-list))
+                                   (car hyp-list)
+                                   `(AND ,@hyp-list))))
+                     `(defun-sk ,name ()
+                        (forall (args)
+                          (implies
+                           ,hyp
+                           (and
+                            (equal (badge-userfn ',fn) ',bdg)
+                            (equal (apply$-userfn ',fn args)
+                                   ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                                        `(,fn ,@(successive-cadrs formals 'args))
+                                        `(mv-list
+                                          ',(access apply$-badge bdg :out-arity)
+                                          (,fn ,@(successive-cadrs formals 'args))))))))
+                        :constrain t))))))
+    (cond
+     ((null trans1-flg) form)
+     (t (let* ((defun-sk-event (defun-sk-fn form name nil (cdddr form)))
+               (with-output-p (eq (car defun-sk-event) 'with-output))
+               (defun-sk-event (if with-output-p
+                                   (car (last defun-sk-event))
+                                 defun-sk-event))
+               (crux (nth 5 defun-sk-event))
+               (crux (if with-output-p (car (last crux)) crux))
+               (constrained-fn (and (consp crux)
+                                    (eq (car crux) 'ENCAPSULATE)
+                                    (consp (nth 1 crux))
+                                    (consp (car (nth 1 crux)))
+                                    (consp (car (car (nth 1 crux))))
+; Return the name of the first constrained fn introduced by this ENCAPSULATE:
+                                    (car (car (car (nth 1 crux)))))))
+          (cond
+           ((eq constrained-fn
+                (add-suffix name "-WITNESS"))
+            crux)
+           (t (er hard 'make-apply$-warrant-defun-sk
+                  "Make-apply$-warrant-defun-sk, when called on the function ~
+                   symbol ~x0, expected to find an ENCAPSULATE constraining ~
+                   ~x1 as the 5th element of the form created by ~
+                   DEFUN-SK-EVENT.  But that sanity check failed.  This ~
+                   indicates that make-apply$-warrant-defun-sk and ~
+                   defun-sk-event are no longer in sync.  Please advise the ~
+                   ACL2 implementors!"
+                  name
+                  (add-suffix name "-WITNESS")))))))))
 
 (defmacro defun-sk (&whole form name args &rest rest)
   (defun-sk-fn form name args rest))
@@ -18899,9 +19037,9 @@
 ; Warning: Each updater definition should immediately follow the corresponding
 ; accessor definition, so that this is the case for the list of definitions
 ; returned by defstobj-axiomatic-defs.  That list of definitions becomes the
-; 'stobj property laid down by defstobj-fn, and function
-; chk-stobj-let/updaters1 assumes that it will find each updater definition in
-; that property immediately after the corresponding accessor definition.
+; 'stobj property laid down by defstobj-fn, and function chk-stobj-updaters1
+; assumes that it will find each updater definition in that property
+; immediately after the corresponding accessor definition.
 
   (cond
    ((endp field-templates)
@@ -19188,9 +19326,9 @@
 ; follow the corresponding accessor definition, as guaranteed by the call of
 ; defstobj-field-fns-axiomatic-defs, below.  This is important because
 ; defstobj-axiomatic-defs provides the 'stobj property laid down by
-; defstobj-fn, and the function chk-stobj-let/updaters1 assumes that it will
-; find each updater definition in that property immediately after the
-; corresponding accessor definition.
+; defstobj-fn, and the function chk-stobj-updaters1 assumes that it will find
+; each updater definition in that property immediately after the corresponding
+; accessor definition.
 
 ; See the Essay on Defstobj Definitions.
 
@@ -19465,7 +19603,7 @@
 ; Warning: Each updater should immediately follow the corresponding accessor --
 ; and, this is guaranteed by the call of defstobj-axiomatic-defs, above) -- so
 ; that the 'stobj property laid down below puts each updater immediately after
-; the corresponding accessor, as assumed by function chk-stobj-let/updaters1.
+; the corresponding accessor, as assumed by function chk-stobj-let/updaters.
 
                   (strip-cars ax-def-lst))
                  (the-live-var (the-live-var name))
@@ -19607,7 +19745,17 @@
                                     name
                                     'accessor-names
                                     (accessor-array name field-names)
-                                    wrld2))))))))))))))
+                                    wrld2)))))))))))))
+                       (discriminator
+                        (cons 'defstobj
+                              (make
+                               defstobj-redundant-raw-lisp-discriminator-value
+                               :event event-form
+                               :creator creator-name
+                               :congruent-stobj-rep
+                               (or congruent-stobj-rep name)
+                               :non-memoizable non-memoizable
+                               :non-executable non-executable))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
 ; non-nil list containing all the names associated with this object.  The car
@@ -19673,7 +19821,7 @@
                                     ,the-live-var
                                     ,(defstobj-raw-init template)
                                     ,raw-def-lst
-                                    ,template
+                                    ,discriminator
                                     ,ax-def-lst
                                     ,event-form)
                                  t
@@ -19685,212 +19833,812 @@
 
 ; In this Essay we provide a semantic foundation for abstract stobjs that shows
 ; the critical role of :CORRESPONDENCE, :PRESERVED, and :GUARD-THM lemmas.  Our
-; motivation is to understand why the standard logical definition of evaluation
-; is correctly implemented by how evaluation really works in Lisp, using live
-; stobjs.  It will probably be helpful to read the :doc topic for defabsstobj
-; before reading this Essay.
+; goal is to explain why the logical definitions of abstract stobj primitives
+; are reflected correctly by Lisp evaluation.  It may be helpful to read the
+; :doc topic for defabsstobj before reading this Essay.  It may also be helpful
+; to look at examples involving defabsstobj; community book
+; books/demos/defabsstobj-example-1.lisp is particularly simple and may be
+; sufficient.
 
-; Below, we use the term ``stobj primitive (for s)'' to indicate a function
-; introduced by a defstobj or (more often) defabsstobj event (for stobj s).  In
-; the case of defabsstobj, an ``:EXEC function'' or ``:LOGIC function'' is a
-; stobj primitive associated with an :EXEC or :LOGIC keyword (perhaps by
-; default), respectively.
+; This Essay argues that we have a sound foundation for abstract stobjs, based
+; on a model of computation.  It does not consider local stobjs, which we
+; believe would not present any surprises.  An interesting future project could
+; be to formalize this argument in ACL2 (or any proof assistant), even
+; extending to local stobjs.
 
-; Informally, we wish to relate two kinds of evaluation, one using :LOGIC
-; primitives and one using corresponding :EXEC primitives, in corresponding
-; environments where each abstract stobj is bound to an object satisfying its
-; :LOGIC recognizer in the first environment and its :EXEC recognizer in the
-; second.  Such evaluation will enforce guards before making calls of stobj
-; primitives at the :LOGIC level and (as we will see, by the :GUARD-THM
-; theorems) guarantee that guards thus hold for calls of stobj primitives at
-; the :EXEC level.  Because of the latter, we can even imagine passing live
-; stobjs around for the :EXEC evaluation.  But the replacement of ACL2 objects
-; by live stobjs is not what's new for abstract stobjs, so we do not address it
-; here.  Thus in the remainder of this Essay, we deal only with ACL2 objects,
-; without any consideration of raw Lisp evaluation using live stobjs.  We
-; imagine two sorts of logical evaluation using either :LOGIC or :EXEC
-; primitives, with the goal of showing that they keep the corresponding states
-; (latches) in sync.
+; Our motivation is to understand why non-erroneous evaluation in the ACL2 loop
+; produces results that "correspond" to what is expected logically.  To that
+; end, we introduce below a general notion of E*-correspondence that reduces to
+; equality for ordinary objects but is suitable for stobjs as well.  In
+; particular, we expect that when an input term evaluates to an abstract stobj,
+; s, then the evaluation result "corresponds" (in the E*-correspondence
+; relation) to the value provably equal to the input term with respect to the
+; curernt logical state.  In summary: evaluation uses foundational stobjs and
+; :EXEC primitives for abstract stobjs, and this Essay formalizes this notion
+; of evaluation and shows how it corresponds to purely logical computation
+; using :LOGIC functions for each abstract stobj.
 
-; Fix an ACL2 world, and let A be a set of abstract stobj names.  We introduce
-; a variant of EV, A-evaluation, which models evaluation using :EXEC functions
-; for abstract stobjs in A.  (But note that throughout, we ignore the EV
-; arguments of state, hard-error-returns-nilp, and aok, which aren't of
-; interest for our exposition.  See also the Essay on EV for some relevant
-; background.)  As is the case for EV, A-evaluation maps a term, alist, and
-; latches to a (possibly multiple) value and new latches, but for A-evaluation
-; there is a new wrinkle: for each function symbol f introduced for an abstract
-; stobj in A that is bound in latches, the :EXEC definition of f is used
-; (instead of the logical definition, which invokes the :LOGIC function).  If A
-; is the empty set, then A-evaluation reduces to EV, and we call it
-; pure-evaluation.  As with EV, A-evaluation comprehends guards and can return
-; an error indication when there is a guard violation; and in that case, as
-; with actual ACL2 evaluation, it must return such an error when latched stobjs
-; are involved (even with guard-checking nil or :NONE).
+; Below, we may designate a function symbol f as a "stobj primitive (for s)"
+; (or, "s-primitive") when f is introduced by a defstobj or (more often)
+; defabsstobj event (for stobj s).  In the case of defabsstobj, we may write
+; f_E and f_L for the function symbols associated with f (perhaps by default)
+; by the :EXEC and :LOGIC keywords, respectively; these may be called the :EXEC
+; (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive other than the
+; recognizer or creator may be called a "stobj export".
 
-; It is tempting to show a direct correspondence between pure-evaluation and
-; A-evaluation, where A is the set of abstract stobj names.  But we will
-; instead define a sort of "dual-rail" evaluator that does both of these
-; together, because we need those two evaluations to stop at the same time in
-; order to compare their returned latches.  Now, it is possible to show that
-; A-evaluation continues for at _least_ as long as pure-evaluation, by applying
-; the :GUARD-THM theorems when comparing a :LOGIC function call during
-; pure-evaluation with a corresponding :EXEC function call during A-evaluation.
-; But A-evaluation could run longer, so we need a way to stop it at the point
-; that pure-evaluation stops, in order to compare the returned latches for
-; each.  Before we define our dual-rail evaluator, we need a few definitions.
+; This Essay models evaluation using live stobjs, as performed in the top-level
+; loop.  (We do not consider here evaluation without live stobjs, as is carried
+; out on ground terms during proofs, as :LOGIC primitives are used there for
+; evaluation.)  But the replacement of ACL2 objects by live stobjs in raw Lisp
+; is not what's new for abstract stobjs, so we avoid that implementation level.
+; Rather, we deal in this Essay only with ACL2 objects.  That is: our modeling
+; of evaluation uses ACL2 objects, even when modeling evaluation that takes
+; place in raw Lisp using live stobjs.
 
-; For a set A of abstract stobj names, an alist S is A-valid if for every stobj
-; name s0 in the domain of S: if s0 is in A then S(s0) satisfies the :EXEC
-; recognizer for s0, and otherwise S(s0) satisfies the recognizer for s0
-; (hence, the :LOGIC recognizer for s0 if s0 is an abstract stobj).  We may say
-; ``valid'' in place of ``A-valid'' if A is clear from context or
-; ``pure-valid'' if A is the empty set.
+; We introduce two kinds of evaluation: the :EXEC evaluator models how ACL2
+; actually does evaluation (again, avoiding consideration of live stobjs),
+; while the :LOGIC evaluator models evaluation in the logic.  The only
+; difference between the :EXEC and :LOGIC evaluators is how they define each
+; abstract stobj primitive: to call its :EXEC or :LOGIC primitive,
+; respectively.  We take it as self-evident that :LOGIC evaluation soundly
+; represents logical definitions and :EXEC evaluation represents actual ACL2
+; evaluation in its read-eval-print loop.  We will show below how these two
+; evaluators run in lock-step with respect to corresponding alists with a
+; common domain.  Each alist binds variables to values, where for each abstract
+; stobj name in the common domain: its values in the :EXEC and :LOGIC evaluator
+; alists satisfy the correspondence predicate for that abstract stobj.  All
+; evaluations enforce guards on stobj primitives.  (The ACL2 implementation
+; does so as well, even when guard-checking is nil or :none.)
 
-; For a given abstract stobj s0, two ACL2 objects x$c and x$a are said to
-; s0-correspond (or, just "correspond" if s0 is clear from context) if
-; corr(x$c,x$a) holds, where corr is the (ordinary logical interpretation of
-; the) :CORR-FN for s0.  Let A be a set of abstract stobj names and let S$c and
-; S$a be alists.  We say that S$c and S$a A-correspond if they have the same
-; domain and for every x in their domain: if x is in A then S$c(x) and S$a(x)
-; correspond, and otherwise S$c(x) = S$a(x).  In the context of an expected
-; stobjs-out, two results A-correspond if they have the same number of values
-; and for each position n, if the nth element of the stobjs-out is some s0 in A
-; then the respective nth values s0-correspond, and otherwise the respective
-; nth values are equal.
+; This Essay lays out how and why these two evaluations correspond.  We
+; implicitly rely below on the single-threadedness checks done by ACL2.  We
+; ignore stobj hash-table and array primitives (such as array resizing) that we
+; see as not causing complications.  We also ignore errors other than guard
+; violations; see the Essay on Illegal-states, in *inside-absstobj-update* for
+; how incomplete abstract stobj updates are handled by the implementation.
 
-; We are ready to model dual-rail evaluation with a function ev5.
+; Remark.  The careful reader might have noticed that a variable v is bound to
+; a stobj if v is the name of a stobj, even in a context where v was not
+; declared to be a stobj.  (Think: (defstobj st fld), (defun foo (st) st).)  We
+; gloss over this sort of unimportant detail here, as this issue can be
+; resolved by suitable renaming.
 
-;   (ev5 term alist$c alist$a latches$c latches$a A)
+; We do not use the ACL2 function EV directly in this essay, but our notions of
+; evaluation are related to it.  (See the Essay on EV for background on EV.)
+; :LOGIC evaluation closely follows EV.  In particular, EV traffics in
+; so-called "latches", which are alists that represent stobj values.  For our
+; abstract modeling of evaluation, we ignore EV's latches and state, while for
+; convenience, we treat every stobj name as representing a stobj (as though
+; there were latches that include every stobj name that is free in the given
+; term).  Imagine that at the end of each top-level evaluation, each stobj
+; returned is latched into the (implicit) global state, much as trans-eval
+; updates the user-stobj-alist of the state.  Thus, when we show that the
+; results of :EXEC and :LOGIC evaluation correspond, we are implicitly showing
+; that the updated :EXEC and :LOGIC states also correspond -- a crucial
+; invariant, since the implicit state supplies stobj values for the next
+; top-level evaluation.
+
+; Definitions.  Let al be an alist mapping variables to values.  We say that a1
+; is A-proper if for every pair <s,x> in al such that s is a stobj name, x
+; satisfies the the :EXEC recognizer for s if s is in A, else x satisfies the
+; recognizer for s (equivalently, x satisfies the :LOGIC recognizer for s).
+; Note that when we discuss notions like "satisfies" we are of course
+; referencing logic, not evaluation).  When A is the empty set, {}, we may call
+; an A-proper alist "L-proper" ("L" for "logic").  When A is the set of all
+; abstract stobj names in the (implicit) current ACL2 world, we may call an
+; A-proper alist "E-proper" ("E" for "exec").
+
+; We view the :LOGIC and :EXEC evaluators as special cases of a class of
+; evaluators that we now introduce.  Fix an ACL2 world and let A be a set of
+; abstract stobj names; :EXEC evaluation is the case that A is the set of all
+; abstract stobj names, while :LOGIC evaluation is the case where A is the
+; empty set.  A-evaluation is modeled by a function we call ev+ with the
+; following signature, where "+" suggests the extra argument A, below.
+
+;   (ev+ term alist A)
 ;   =
-;   (mv erp result$c result$a latches$c' latches$a')
+;   (mv erp r)
 
-; The definition of EV5 (details omitted here) is, with two exceptions
-; discussed below, a straightforward modification of EV for a dual-rail
-; semantics, i.e., returning the results of A-evaluation (result$c and
-; latches$c') and pure-evaluation (result$a and latches$a').  The first
-; exception is that guards are checked only for pure-evaluation.  The second
-; exception pertains to any call of a primitive for an abstract stobj in A that
-; is bound in latches$c (or equivalently, in latches$a).  In that case,
-; A-evaluation and pure-evaluation are used independently on the :EXEC and
-; :LOGIC functions for the primitive, respectively, to compute the result pairs
-; <result$c,latches$c'> and <result$a,latches$a'>, respectively).  We argue
-; below that both of these evaluations occur without guard violations.
+; Here is a brief informal description of ev+.  The inputs are term, a term; A,
+; a set of abstract stobj names; and alist, an A-proper alist mapping variables
+; to values whose domain includes the free variables of term.  (This last part
+; isn't necessary; we could treat missing free variables as being mapped to
+; nil.  We'll feel free to be a bit careless about this domain requirement.)
+; The outputs erp and r represent what we call an "error indicator" and a
+; "return value", respectively, as follows.  Erp is nil when no guard violation
+; has been encountered, in which case r is the return value, which is a list in
+; the multiple-value case.  (Indeed, ev+ treats mv the same as list; more
+; precisely, ev+ operates on terms for which macros, including mv and list,
+; have been expanded away.)  Otherwise erp is t and r is an alist associating
+; the names of stobjs bound in al with their post-evaluation values, that is,
+; from the input alist at the time of the guard violation.  In particular, if
+; no stobj is changed and erp is t, then r is the restriction of the input
+; alist to the set of stobj names.
 
-; The following correctness claim justifies the use of concrete stobjs to
-; simulate evaluation with abstract stobjs.
+; Note that we are not obligated to consider aborts, since we consider all bets
+; to be off in that case.  Of course, as a practical matter we prefer that
+; aborts avoid the creation of bad states.  We believe that we could extend our
+; argument by modeling aborts through adding an oracle argument to ev+, where
+; erp is t when an abort is indicated by the oracle.  However, we don't take
+; that step in this Essay.
 
-;   Claim.  Let A be a set of abstract stobj names, and let u be a term.  Also
-;   let S$c and S$a be A-corresponding alists that are A-valid and pure-valid,
-;   respectively, with a common domain that includes all free variables of u.
-;   Let L$c and L$a be the respective restrictions of S$c and S$a to a common
-;   set of stobj names, and assume that A is a subset of the common domain of
-;   L$c and L$a.  Assume either of the following, where EV_A is the variant of
-;   EV that evaluates using :EXEC functions in the case of stobj primitives for
-;   members of A.
+; We omit a detailed definition of ev+, which would contain no big surprises;
+; but we discuss key cases.
 
-;   (a) (ev_A u S$c L$c) = (mv erp r$c L$c')
-;       AND
-;       (ev   u S$a L$a) = (mv nil r$a L$a')
-;   OR
-;   (b) (ev5 u S$c S$a L$c L$a A) = (mv erp r$c r$a L$c' L$a').
+; - CASE (ev+ v a0 A), where v is a variable
 
-;   Then the following properties hold.
+;   Return (mv nil val), where val is the value of v in a0.
 
-;   (1) In case (b) with erp nil, and in case (a) (for any erp):
-;       (i)  r$c A-corresponds to r$a if r is in A, else r$c = r$a; and
-;       (ii) L$c' and L$a' are the respective updates of L$c and L$a
-;            according to r$c, r$a, and the stobjs-out of u, in the obvious
-;            sense.
-;   (2) L$c', L$a', L$c, and (thus) L$a all have the same domain.
-;   (3) L$c' A-corresponds to L$a'.
-;   (4) L$c' is A-valid and L$a' is pure-valid.
-;   (5) In case (a), erp is nil.
+; - CASE (ev+ (quote x) a0 A)
 
-; Remark.  The subset restriction does not impair the relevance of this Claim.
-; In an actual evaluation in the top-level loop, consider the latches as
-; including a binding for every known stobj name that occurs in the term to be
-; evaluated.  Local stobjs and stobj-let-bound stobjs don't present a problem,
-; since each will add a binding to the latches; but we ignore these for the
-; proof.
+;   Return (mv nil x).
 
-; Proof.  This is a reasonably obvious theorem, since the proof obligations for
-; a defabsstobj event provide the necessary preservation of stobj recognizers
-; and concrete/abstract correspondences.  Below we give only an outline of a
-; proof, first dealing with (a) by itself, then using (a) in the proof sketch
-; for (b).
+; - CASE (ev+ (f t1 ... tk) a0 A), where f is a function symbol or lambda, but
+;   f is not a stobj primitive for a stobj in A
 
-; The proof of (a) is by induction on A.  First consider the base case, where A
-; is empty.  Clearly (1)(i), (3), and (5) hold vacuously.  Parts (1)(ii) and
-; (2) are just facts about EV.  Finally, (4) reduces to showing that L$a' is
-; pure-valid.  This follows from the :PRESERVED theorems, each of which has a
-; stobj primitive guard as a hypothesis, and the fact that EV returns an error
-; (mv non-nil ...) when the guard doesn't hold for a call of a stobj primitive.
-; We omit details.
+;   First compute each (ev+ ti a0 A) = (mv ei xi) from 1 to k, returning (mv ei
+;   xi) if and when we encounter ei = t.  If each ei is nil then for formals
+;   (v1 ... vk), guard g, and body b of f, bind each vi to xi to create alist
+;   a1; then compute (ev+ g a1 A) = (mv eg xg) for i from 1 to k.  If some eg
+;   is t or xg is nil then return (mv t a0') where a0' is the restriction of a0
+;   to stobjs.  Otherwise (i.e., each eg = nil and each xg is non-nil), compute
+;   (ev+ b a1 A) = (mv e x).  If e is nil then return (mv nil x).  Otherwise,
+;   -- with the following exceptions for errors (i.e., guard errors) -- return
+;   (mv t a0'), where a0' is produced by updating the stobj entries of a0 with
+;   corresponding stobj results from the alist, x.  In the following
+;   exceptional cases a0' is just the restriction of a0 to stobj names.
 
-; So assume that A is non-empty.  Let s0 be the abstract stobj in A that was
-; last introduced in the world.  Hence we may write A = A' U {s0} where by the
-; inductive hypothesis, the claim holds for A'.
+;   - EXCEPTION 1: stobj-let update of a child stobj
 
-; We now proceed by computational induction.  We consider only the interesting
-; case, leaving the rest to the reader: u is (f ... s0 ...), where f is a stobj
-; primitive for s0 (whose arguments may include members of A'), and where the
-; arguments evaluate without error.  Let f$a and f$c be the :LOGIC and :EXEC
-; functions for f (respectively).  For notational simplicity we consider only
-; the case that f returns a single value; the general case is really the same,
-; except for focusing on a particular position's result.  Let r' be the result
-; of pure-evaluation of (f$c ... s0 ...), i.e., of (ev u$c S$a L$a) where u$c
-; is this call of f$c.  We make the following two observations, each followed
-; by a justification.
+;     The term (f t1 ... tk) is the translation of a stobj-let form when at
+;     least one ti is a stobj accessor for a field of stobj type, and therefore
+;     f is a lambda.  Then if there is an error during evaluation of the
+;     lambda, we throw away the child stobj binding rather than updating it in
+;     the alist, a0.  In the actual implementation we would actually expect to
+;     get an error in this case.  See the use of with-inside-absstobj-update in
+;     stobj-let-fn-raw (which takes advantage of special variable
+;     *inside-absstobj-update* much as we use it for non-atomic exports of
+;     abstract stobjs).
 
-; (*)   r' {s0}-corresponds to r$a.
+;   - EXCEPTION 2: with-local-stobj
 
-; To see this, first note that since we are assuming that the evaluation (ev u
-; S$a L$a) does not result in an error, i.e., returns (mv nil ...), we know
-; that the guard of f is met for this application of f.  We may therefore apply
-; the :CORRESPONDENCE theorem for f, to conclude that (f$c ... s0 ...) and (f$a
-; ... s0 ...) {s0}-correspond.  But these are respectively equal to r' and r$a,
-; by definition of r' and r$a.
+;     Translation of a with-local-stobj form creates a lambda application with
+;     a stobj creator as an argument.  If an error occurs during evaluation of
+;     the body of a lambda with a stobj creator argument, we define a0' to
+;     avoid updating the binding (if any) for that stobj.
 
-; (**)  r$c A'-corresponds to r'.
+;   - EXCEPTION 3: f is a stobj primitive for a stobj not in A
 
-; This holds by the inductive hypothesis on A', since A'-evaluation of the body
-; of f$c produces the same result as A-evaluation of the body of f$c (namely,
-; r$c), as no primitive function for s0 is ancestral in f$c (because f$c was
-; defined before the introduction of abstract stobj s0).
+;     In this case, after successfully checking the guard for f, we avoid guard
+;     checking while evaluating the corresponding call of the :LOGIC primitive
+;     f_L for f, as though (with-guard-checking :none ...) were wrapped around
+;     that call.  We should model this separately, say, with a variant of ev+
+;     that treats all guards as t, uses logical axioms for evaluation (e.g.,
+;     (car 3) is nil), and isn't concerned about whether the input alist is
+;     A-proper.  But for simplicity we'll keep that implicit; all properties of
+;     ev+ carry over of course since we are not changing the structure of its
+;     definition (only changing the guards, ignoring stobjs, and "completing"
+;     the axioms).  Note that since we never get a guard violation during such
+;     evalution, the stobjs-out are irrelevant if A is empty.
 
-; From (*) and (**), a case analysis on which stobj, if any, is returned by f,
-; yields that r$c A-corresponds to r$a.  Conclusion (1)(i) follows, and
-; (1)(ii), (2), and (3) then follow by usual arguments for EV.  For (5), we
-; observe that since the guard holds for the call of f (as argued for (*)
-; above)), then by the :GUARD-THM theorems, the guard holds for the
-; corresponding call of f$c; hence since f$c is guard-verified, its call's
-; A-evaluation concludes without error.  For (4), we simply note that the
-; :LOGIC recognizers are preserved by the :PRESERVED theorems, and then the
-; :EXEC recognizers are preserved by the :CORRESPONDENCE theorems because the
-; call of f$c is well-guarded, as argued for (5) above.
+; - CASE (ev+ (f t1 ... tk) a0 A), where f is a stobj primitive for a stobj s0
+;   in A (hence s0 is an abstract stobj)
 
-; That concludes the proof of case (a), so we now consider case (b).  The proof
-; is by computational induction.  The interesting case is the same one we dealt
-; with in the proof of case (a).  In case (b), EV5 first checks the guard for
-; pure evaluation before passing control to EV_A and EV, passing up (mv erp
-; ...) with erp non-nil if the check fails; and in that case we simply appeal
-; to the inductive hypothesis.  But if the guard-check succeeds, then since f
-; is guard-verified, we know that there will be no guard violation, and
-; pure-evaluation (EV) will return with erp = nil.  So we can apply case (a),
-; completing the proof.
+;   The only difference from the case above is that the body, b, of f is
+;   considered to be (f_E v1 ... vk).
 
-; Note: the argument above probably works if we support specification of an
-; arbitrary guard for a function exported by defabsstobj instead of using the
-; guard of its :logic function.  If the need for such flexibility arises
-; (presumably in the form of a new :guard keyword for defabsstobj :exports), we
-; should revisit this Essay in order to be sure that the argument holds
-; together.  But careful: allowing an arbitrary guard might not be feasible!  A
-; comment in update-guard-post explains that substituting exported functions
-; for their :logic versions has the property that guard proof obligations are
-; essentially preserved.  But the use of user-supplied guards destroys that
-; argument, and as a result, we no longer can trust evaluation of the guard in
-; raw Lisp.
+; As suggested above, we may refer to (ev+ ... {}) as :LOGIC evaluation, and we
+; may refer to (ev+ ... A) as :EXEC evaluation when A is the set of all
+; abstract stobj names (in the current world).  The use of :LOGIC and :EXEC
+; primitives in respective logical and raw Lisp definitions of the abstract
+; stobj primitives (see defabsstobj-raw-def and defabsstobj-axiomatic-defs,
+; resp.) is key to the observation that :LOGIC evaluation represents evaluation
+; in the logic and :EXEC evaluation represents evaluation actually carried out
+; by ACL2.  For convenience we introduce abbreviations ev_E and ev_L as
+; follows, for an implicit ACL2 world, w.
+
+;   :EXEC evaluation:
+;   (ev_E term alist) = (ev+ term alist A)
+;      where A is the set of all abstract stobj names in w
+
+;   :LOGIC evaluation:
+;   (ev_L term alist) = (ev+ term alist {})
+
+; Remark.  Ev+ is defined without allowing the use of attachments.  However, we
+; consider the use of attachments in a world w to be nothing more than
+; evaluation in a world whose theory is the evaluation theory of w.  (See the
+; Evaluation History Theorem in the Essay on Defattach.)  Thus, we could define
+; ev+ to allow attachments simply by considering ev+ to take place in that
+; world, w.  Thus attachments do not present any additional issues, and we
+; ignore them for the rest of this Essay.  -|
+
+; We next put forward definitions and lemmas that support the statement and
+; proof of the theorem below.  We omit the lemmas' proofs by computational
+; induction, which we believe are straightforward.  Note that we have long
+; relied heavily on some of these lemmas; ACL2 could be badly broken if they
+; failed to hold.
+
+; Definition.  For an alist a, let Q(a), the "quotation of" a, be the result of
+; replacing each pair <var,val> in a by <var,(quote val)>.  -|
+
+; Our first lemma connects :LOGIC evaluation to what is logically valid.
+; Although it only applies to logic-mode terms, our main theorem does not have
+; that restriction; this works out because Lemma 1 is applied to abstract stobj
+; primitives and their guards, which are always guard-verified logic-mode
+; functions.
+
+; Lemma 1.  Let term be a logic-mode term and let al be an L-proper alist, and
+; assume that (ev_L term al) = (mv nil r).  Then it is a theorem (of the
+; current world) that term/Q(al) = (quote r).  -|
+
+; We note a sort of converse that follows trivially: if (ev_L term a) = (mv nil
+; r) and it is a theorem that term/Q(a) = (quote r'), then r = r'.
+
+; The next two lemmas give sufficient conditions for the error indicator to be
+; nil when dealing with guard-verified functions.
+
+; Lemma 2.  Let al be an L-proper alist.  If f is a guard-verified function
+; with guard g, then (ev_L g al) = (mv nil r) for some r.  -|
+
+; Lemma 3.  Let al be an L-proper alist.  Let f be a guard-verified function
+; with formals (v1 ... vk) and suppose that al binds each vi.  Let g be the
+; guard of f, and assume that (ev_L g al) = (mv nil r_g) where r_g is non-nil.
+; Then (ev_L (f v1 ... vk) al) = (mv nil r) for some r.  -|
+
+; Note that by Lemma 1, the value r computed in Lemma 3 for a call of f is such
+; that the equality (f v1 ... vk)/Q(al) = (quote r) is a theorem of the current
+; world.
+
+; Lemma 4.  Assume that world w2 is a initial segment of world w1, u is a term
+; of w2, and al is an alist whose domain includes the set of variables of u,
+; which is assumed E-proper or L-proper with respect to w1 for (a) or (b)
+; below, respectively.  Then:
+;
+; (a) The value of (ev_E u al) is the same when computed with respect to w2 as
+;     when computed with respect to w1, assuming that all abstract stobj
+;     variables of u are in w2.
+
+; (b) The value of (ev_L u al) is the same when computed with respect to w2 as
+;     when computed with respect to w1.  -|
+
+; Lemma 5.  If a1 and a2 agree on all the free variables of the term u, then
+; (ev+ u a1 A) = (ev+ u a2 A) for every A.  In particular, (ev_L u a1) = (ev_L
+; u a2) and (ev_E u a1) = (ev_E u a2).  -|
+
+; We may use Lemma 5 implicitly, for example by being able to assume
+; implicitly, when considering (ev+ u al A), that the domain of al is the set
+; of free variables of u.
+
+; Our final lemma is trivial by definition of ev+ (the final equation holds
+; because both sides equal (ev+ bf a2 A) where bf is the body of f).
+
+; Lemma 6.  Let al be an alist, let f be a function symbol or lambda with
+; formals (v1 ... vk), let (t1 ... tk) be a list of terms, and let g be the
+; guard for f (considered as t for a lambda).  Assume that (ev+ ti al A) = (mv
+; nil xi) for each i, and let a2 be the alist ((v1 . x1) ... (vk . xk)).
+; Assume that (ev+ g a2 A) = (mv nil val_g) where val_g is non-nil.  Then (ev+
+; (f t1 ... tk) al A) = (ev+ (f v1 ... vk) a2 A).  -|
+
+; Remark.  A reason we need the invariant that stobjs satisfy their :LOGIC
+; recognizers is to satisfy the hypotheses of the CORRESPONDENCE, PRESERVED,
+; and GUARD-THM theorems.  But why do we care that :EXEC recognizers hold?  We
+; care because we want evaluation in raw Lisp to complete without guard
+; violations.  As noted at the outset of this Essay, we are not trying to prove
+; correctness of raw Lisp evaluation; still, guaranteeing that guards are met
+; is something minimal that we are happy to do.  -|
+
+; There are complications when an abstract stobj's foundation can itself be an
+; abstract stobj. There are also complications when a stobj can have a child
+; stobj that is an abstract stobj (or is an array or hash table that contains
+; abstract stobjs).  We ignore these complications for now, in particular for
+; the "narrow version" of the main theorem, which depends on a correspondingly
+; narrower version of E*-correspondence, namely, E-correspondence.  After
+; proving the theorem we will return to the general version.
+
+; The following definition formalizes a notion of correspondence between two
+; objects or two alists, x and y.  It is motivated by evaluations (ev_E u a_E)
+; = (mv nil x) and (ev_L u a_L) = (mv nil y) for corresponding alists a_E and
+; a_L.  When abstract stobjs are not involved, this notion of correspondence
+; reduces to x = y.  But if u returns an abstract stobj, s, then we require the
+; correspondence predicate for s to hold for the pair <x,y>.  The
+; multiple-values case is similar: in particular, if u has stobjs-out (s1
+; ... sk) where k > 1, x = (x1 ... xk), and y = (y1 ... yk), and si is an
+; abstract stobj name, then <xi,yi> should satisfy the correspondence predicate
+; for si.
+
+; Definition (E-correspondence).  Let s be a stobj name (abstract or concrete)
+; or nil, and let x and y be arbitrary objects.  (Note: Often s is implicit
+; from the context.)  Then x E-corresponds to y with respect to s when the
+; following conditions are all met.
+
+; - If s is nil or a concrete stobj name, then x = y.
+
+; - If s is an abstract stobj name, the pair <x,y> satisfies the correspondence
+;   predicate for s.
+
+; - If s is an abstract stobj name, then x satisfies the :EXEC recognizer for
+;   s, that is, the recognizer for the foundational stobj for s.
+
+; - If s is a stobj name, then y satisfies the :LOGIC recognizer for s
+;   (equivalently, the recognizer for s).
+
+; The notion of E-correspondence naturally extends to two alists a1 and a2 by
+; requiring that they have the same domain and for all <s,x> and <s,y> in a1
+; and a2 respectively, x E-corresponds to y with respect to s.  A clearly
+; equivalent condition is that a1 is E-proper, a2 is L-proper, and for all
+; <s,x> and <s,y> in a1 and a2 respectively: if s is not an abstract stobj name
+; then x = y, and otherwise the correspondence predicate for s holds for the
+; pair <x,y>.  -|
+
+; We are ready for our main theorem about evaluation.
+
+; Theorem: Evaluation Preserves Correspondence (narrow version).  Fix an ACL2
+; world w.  Assume that the alist a_E E-corresponds to the alist a_L, let u be
+; a term of w, and let error indicators and return values be defined as
+; follows.
+
+;   (mv erp_E r_E) = (ev_E u a_E)
+;   (mv erp_L r_L) = (ev_L u a_L).
+
+; Then erp_E = erp_L and r_E E-corresponds to r_L.
+
+; Proof.  We induct on the number of abstract stobjs in w.  The base case,
+; where there are no abstract stobjs, is essentially trivial by computational
+; induction, since if there are no abstract stobjs then E-correspondence of a_E
+; and a_L implies their equality, and the evaluators ev_L and ev_E are the
+; same.  The only thing to check, for E-correspondence of the identical
+; results, is that stobj recognizers all hold on stobjs in the result.  We take
+; this as obvious due to the single-threadedness restrictions imposed by ACL2.
+
+; So assume that w defines at least one abstract stobj, and let s0 be the
+; abstract stobj introduced last in w.  Let w2 be the initial segment of w
+; consisting of all events preceding the introduction of s0; so by the
+; inductive hypothesis, the theorem holds for w2.
+
+; We now proceed by computational (sub-)induction on (ev_L u a_L).  The result
+; is obvious if u is a variable or a quoted constant.  Suppose then that u is
+; (f t1 ... tk). Let (v1 ... vk) be the formals of f.  By definition of ev+,
+; both (ev_E u a_E) and (ev_L u a_L) first evaluate each ti, which by the
+; computational inductive hypothesis yield respectively the pairs (mv ei xi)
+; and (mv ei yi) for the same ei and E-corresponding xi and yi.  If any ei is
+; t, then (ev_E u a_E) = (mv t xi) and (ev_L u a_L) = (mv t yi) and we are done
+; by the (computational) inductive hypothesis; so assume that each ei is nil.
+; Now form alists b_E and b_L that bind each formal vi of f to xi and yi,
+; respectively; these alists are E-corresponding since (as noted above) xi and
+; yi are E-corresponding.  Let g be the guard of f.  By the computational
+; inductive hypothesis, (ev_E g b_E) = (ev_L g b_L).  If this common value has
+; a non-nil error indicator, or if it is (mv nil nil), then (ev_E u a_E) = (mv
+; t a_E') and (ev_L u a_L) = (mv t a_L'), where a_E' and a_L' are the
+; respective restrictions of a_E and a_L to stobj names.  Now a_E' and a_L'
+; E-correspond because a_E and a_L E-correspond (by hypothesis), which
+; concludes the proof in the case of a guard violation.  So we may assume the
+; following for some value, val_g.
+
+; (1)     (ev_L g b_L) = (ev_E g b_E) = (mv nil val_g) and val_g is non-nil
+
+; If f is not a stobj primitive, then the desired conclusion is immediate from
+; the computational inductive hypothesis applied to corresponding evaluations
+; of the body of f.  If f is a concrete stobj primitive then we treat it
+; specially (see Exception 3 above) since using the body would violate guards
+; (in particular when recurring with nth on the cdr of the stobj to access a
+; field).  But we are assuming here that child fields are never abstract
+; stobjs; thus E-correspondence reduces to equality, and the conclusion is
+; immediate.
+
+; So assume that f is an s-primitive where s is an abstract stobj.  First
+; suppose that s is not s0.  The following equations hold by (1), Lemma 6, and
+; the definition of ev+.
+
+;         (ev_E u a_E) = (ev_E (f v1 ... vk) b_E)
+;         (ev_L u a_L) = (ev_L (f v1 ... vk) b_L)
+
+; Since we are in the case that s is not s0, therefore s0 is not among the
+; formals of f since f is defined in w2, before s0 is introduced.  The
+; conclusion follows immediately from Lemma 4 and the (top-level) inductive
+; hypothesis applied to w2.
+
+; We are left with the case that s is s0.  Assume that some formal vi of f is
+; s0; otherwise the argument is similar but a bit simpler.  So we represent the
+; formals of f as (v1 ... s0 ... vk).  For notational simplicity we consider
+; only the case that f returns a single value; the general case differs only by
+; considering each specific position's result.
+
+; Let f_E be the :EXEC version of f and let s0$c be the foundational stobj for
+; s0.  Also let Corr0 be the correspondence predicate for s0, let s0_E =
+; b_E(s0), and let s0_L = b_L(s0).  Thus Corr0 holds of <s0_E,s0_L> since, as
+; noted above, b_E and b_L are E-corresponding (and thus s0_E E-corresponds to
+; s0_L with respect to s0).
+
+; By (1) and Lemma 1, the following is a theorem.
+
+; (1')     g/Q(b_L) = (quote val_g).
+
+; Let g_E be the guard of f_E.  Let b_L' be the result of adding the pair
+; <s0$c,s0_E> to b_L; thus it is a theorem that g/Q(b_L') = (quote val_g) by
+; Lemma 5, since s$c does not occur free in g, because s$c is not a formal of
+; f.  (This observation is justified by the following excerpt taken from :doc
+; defabsstobj, which uses the name "f$c" where we use "f_E" in this Essay: "The
+; formals of f are obtained by taking the formals of f$c and replacing st$c by
+; st.")  By the GUARD-THM for s0, it is a theorem that (implies g g_E); by
+; instantiating this formula with Q(b_L'), then since Corr0 holds of
+; <b_L'(s0$c),b_L'(s0)> (because this is <s0_E,s0_L>), it is a theorem that
+; g_E/Q(b_L') != nil.  So by Lemma 1 (actually the converse noted after it) and
+; Lemma 2 (since f_E is guard-verified),
+
+;         (ev_L g_E b_L') = (mv nil val_g_E) for some non-nil val_g_E.
+
+; By this equation, (1), and Lemma 3, we have the following, for some val_f_E
+; and val_f.
+
+; (2_E)   (ev_L (f_E v1 ... s0$c ... vk) b_L')  = (mv nil val_f_E)
+; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+
+; These equations and Lemma 1 together imply that the following are theorems,
+; where for (3_L) we first replace b_L by b_L' in (2_L), which is justified by
+; Lemma 5 since as observed above, s0$c is not a formal of f.
+
+; (3_E)   (f_E v1 ... s0$c ... vk)/Q(b_L') = val_f_E
+; (3_L)   (f   v1 ... s0   ... vk)/Q(b_L') = val_f
+
+; The following key fact then follows by instantiating the CORRESPONDENCE
+; theorem with Q(b_L'), where the hypotheses of that implication hold by the
+; fact that Corr0 holds of <b_L'(s0$c),b_L'(s0)> (as noted above) together with
+; (1'), and because b_L'(s0) satisfies the recognizer for s0 (since the
+; theorem's E-correspondence hypothesis implies that b_L is L-proper).
+
+; (4)     The pair <val_f_E,val_f> satisfies Corr0 if f returns s0 (as per the
+;         stobjs-out of f), else val_f_E = val_f.
+
+; Let b_L'' be the result of removing the pair <s0,s0_L> from b_L' (but keeping
+; the pair <s0$c,s0_E>).  Thus we may modify equation (2_E) by substituting
+; b_L'' for b_L', justified by Lemma 5 since s0 is not a formal of f_E.
+
+; (2_E')  (ev_L (f_E v1 ... s0$c ... vk) b_L'') = (mv nil val_f_E)
+
+; Note that this equation holds not only for the given world, w, but also for
+; w2, by Lemma 4.  Let b_E$c be the result of replacing <s0,s0_E> in b_E with
+; <s0$c,s0_E>.  Then since b_E E-corresponds to b_L, and since b_E$c and b_L''
+; modify these respectively by eliminating s0 from the domain and adding the
+; pair <s0$c,s0_E>, therefore b_E$c E-corresponds to b_L''.  (Note that the
+; common value of s0_E for s0$c in the two alists is appropriate for
+; E-corresopndence because s0$c is a concrete stobj, as we are not yet handling
+; the general case where the foundational stobj may be an abstract stobj.
+; E-correspondence also requires that s0_E satisfy the recognizer for s0$c; but
+; that follows since as already noted, b_E E-corresponds to b_L, which by
+; definition of E-correspondence that implies that b_E is E-proper, which
+; implies that b_E(s0) satisfies the :EXEC recognizer for s0, i.e., that s0$c
+; satisfies the recognizer for s0$c.)
+
+; We next use the above deduction that b_E$c and b_L'' E-correspond, by
+; applying the top-level inductive hypothesis to w2.  That and equation (2_E')
+; together yield the following, for some val_f_E$c and val_f_E.
+
+; (5)     (ev_E (f_E v1 ... s0$c ... vk) b_E$c) = (mv nil val_f_E$c)
+;         and
+;         val_f_E$c E-corresponds to val_f_E with respect to the stobj returned
+;         by f_E (or nil if f_E does not return a stobj).
+
+; This equation is equivalent to the following, since the two left-hand sides
+; both reduce to the call of ev_E on the body of f_E in an alist binding each
+; formal to its value in b_E -- in particular, binding the formal s0$c to s_E
+; in both cases (as s0 is in the s0$c position in (6)).
+
+; (6)     (ev_E (f_E v1 ... s0   ... vk) b_E)   = (mv nil val_f_E$c)
+
+; Recall the following equation.
+
+; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+
+; The proof concludes by (2_L) and (6) if we show that val_f_E$c E-corresponds
+; to val_f with respect to the stobjs-out returned by f.  More precisely, let s
+; be the car of the stobjs-out of f (which for simplicity we have assumed to be
+; a one-element list); think of s as the "type" of f.  We show that val_f_E$c
+; E-corresponds to val_f with respect to s.  To see this we will split into
+; three cases.  But first we present two Claims.
+
+; Claim 1: Assume that s is a stobj name; then val_f satisfies the :LOGIC
+; recognizer for s.  To prove this we consider two cases.  For the case that s
+; is s0 this follows from (2_L) and the PRESERVATION theorem (with the use of
+; Lemma 1 to trade theoremhood with evaluation, as usual).  So suppose that s
+; is not s0.  By (4), val_f_E = val_f.  So by (5), val_f_E$c E-corresponds to
+; val_f with respect to s.  By definition of E-corresponds, val_f satisfies the
+; :LOGIC recognizer for s.
+
+; Claim 2. Assume that s is an abstract stobj name; then val_f_E$c satisfies
+; the :EXEC recognizer for s.  This is clear from (5).
+
+; We return to showing that val_f_E$c E-corresponds to val_f with respect to s.
+; First suppose that s is s0, i.e., f returns s0.  Then f_E returns s0$c, which
+; is not an abstract stobj, and thus val_f_E$c = val_f_E by (5): val_f_E$c was
+; chosen to E-correspond to val_f_E with respect to the stobj returned by f_E,
+; which is the concrete stobj, s0$c.  Now <val_f_E,val_f> satisfies Corr0 by
+; (4), so substituting equals for equals we see that <val_f_E$c,val_f>
+; satisfies Corr0.  This implies that val_f_E$c E-corresponds to val_f by
+; Claims 1 and 2.
+
+; Next suppose that s is an abstract stobj other than s0.  Then val_f_E = val_f
+; by (4), and val_f_E$c E-corresponds to val_f_E by (5).  Therefore val_f_E$c
+; E-corresponds to val_f.
+
+; The final case is that s is not an abstract stobj.  Then val_f_E = val_f by
+; (4) and val_f_E$c = val_f_E by (5), so val_f_E$c E-corresponds to val_f with
+; respect to s by Claims 1 and 2.  -|
+
+; We now address the general case, in which the foundational stobj may itself
+; be an abstract stobj, and both abstract and concrete stobjs may have stobj
+; fields (scalar or not), which may themselves be abstract or concrete.  The
+; key is to update the notion of E-correspondence to a notion of
+; E*-correspondence, so that every logical object is in inverse
+; E*-correspondence with the stobj object that is actually used by ACL2
+; evaluation.  Informally: The stobj object used by evaluation is obtained from
+; the logical object by following a chain of foundations down to a concrete
+; stobj (or any stobj not in A), and then similarly replacing child stobjs.
+
+; The following informal example illustrates the idea above.  We start with
+; an outline of it.
+
+; Tower of stobjs made successively "more concrete":
+
+; s0 / c0 {s0 has child c0 and foundation s1}
+; s1 / c1 {s1 has child c1 and foundation s2}
+; s2 / c2 {s2 is a concrete stobj with child c2; c2 has foundation c3}
+;      c3 {c3 is a concrete stobj}
+
+; Objects instantiating the stobjs above, preserving correspondence at each
+; step:
+
+; x0 / y0 {x0 instantiates s0; has child y0 that instantiates c0}
+; x1 / y1 {x1 instantiates s1; has child y1 that instantiates c1}
+; x2 / y2 {x2 instantiates s2; has child y2 that instantiates c2}
+; x3 / y3 {x3 results from substituting instance y3 of c3 for y2, in x2}
+
+; Here is a more formal description of the example outlined above.
+
+; - Let s0 be an abstract stobj whose foundation is the abstract stobj s1.
+; - Let s2 be the foundation for s1, and suppose that s2 is concrete.
+; - Suppose that s0 has a child stobj c0 whose :EXEC recognizer is the
+;   recognizer for child stobj c1 of s1, whose :EXEC recognizer is for child
+;   stobj c2 of s2, where c0, c1, and c2 are all abstract stobjs.
+; - Let c3 be the foundation for c2, and assume that c3 a concrete stobj.
+;
+; - Let x0 be a value satisfying the recognizer for s0.
+; - Let x1 be a value satisfying the recognizer for s1 such that the pair
+;   <x1,x0> satisfies the correspondence predicate for s0.
+; - Let x2 be a value satisfying the recognizer for s2 such that the pair
+;   <x2,x1> satisfies the correspondence predicate for s1.
+; - Let y2 be the value of the c2 field of x2.
+; - Let y3 be a value satisfying the recognizer for c3 such that the pair
+;   <y3,y2> satisfies the correspondence predicate for s2.
+; - Let x3 be the result of replacing the c2 field of x2 by y3.
+;
+; - Then x3 E*-corresponds to x0.
+
+; It is evident that ACL2 evaluation respects the following invariant based on
+; E*-correspondence: the values of stobjs in the actual ACL2 state
+; E*-correspond to the values in a logical version of the ACL2 state.  Our
+; task, then, is to modify the argument above to accommodate E*-correspondence.
+; We define E*-correspondence below, recursivelly: E*-corresponds is a relation
+; defined with a predicate that mentions E*-corresponds.  That predicate is
+; monotone in E*-corresponds: when E*-corresponds is enlarged, the relation
+; defined by one "step" of the predicate is too.  As usual, such a recursion
+; defines a least fixed point, which can be obtained by starting with the empty
+; relation (for E*-corresponds) and iterating through the natural numbers.
+
+; The definition of E*-correspondence (below) applies to array and hash-table
+; fields with elements of stobj type.  We arrange this in the following ways.
+; (1) We speak of a "child" of a stobj for a given field, which is the field
+; value itself in the scalar case but otherwise is a value in that field's
+; array or hash-table.  (2) We speak of two "isomorphic" field values in the
+; non-scalar case, to mean that they have the same array length in the array
+; case, and they have the same keys in the hash-table case.  (3) We speak of
+; "comparable" child values for two values of a given field, which are the two
+; values themselves in the scalar case, values at the same index in the array
+; case, and values of the same key in the hash-table case.
+
+; Before defining E*-correspondence, we extend the notion of :EXEC recognizer
+; through foundational and child stobjs.
+
+; Definition (:EXEC* recognizer).  The :EXEC* recognizer for a stobj, s, is
+; defined recursively as follows.
+
+; - If s is an abstract stobj, then its :EXEC* recognizer is the :EXEC*
+;   recognizer for its foundational stobj.
+
+; - If s is a concrete stobj, then its :EXEC* recognizer is obtained by
+;   modifying the definition of its :EXEC recognizer to use the :EXEC*
+;   recognizer for each child stobj field (scalar, array, or hash-table).
+
+; -|
+
+; Notice that if s is a concrete stobj that has no abstract stobj child, no
+; abstract stobj child of a stobj child, etc. -- that is, if no chain of
+; children of s leads to an abstract stobj -- then the :EXEC* recognizer for s
+; is just the recognizer for s.
+
+; Definition.  The notion of E*-proper alist is defined just as E-proper alist
+; is defined, except: replace the requirement that values satisfy :EXEC
+; recognizers by the requirement that they satisfy :EXEC* recognizers.  -|
+
+; Definition (E*-correspondence).  Let s be a stobj name (abstract or concrete)
+; or nil, and let x and y be arbitrary objects.  (Note: often s is implicit
+; from the context.)  Then x E*-corresponds to y with respect to s when the
+; following conditions are all met.  This definition is recursive; we are
+; defining the least fixed point of this relation [see discussion above].
+
+; - X satisfies the :EXEC* recognizer for s.
+
+; - Y satisfies the recognizer for s.
+
+; - If s is nil then x = y.
+
+; - If s is a concrete stobj name then for each field f of s, let sf be nil
+;   unless the type of f involves a stobj, in which case sf is the stobj name
+;   for that field.  Then the field values xf and yf of f in x and y
+;   (respectively) are equal if sf is nil, and otherwise: xf and yf are
+;   isomorphic if the field is not a scalar; and for comparable child values xc
+;   and yc of xf and yf, xc E*-corresponds to yc with respect to sf.
+
+; - If s is an abstract stobj name, there exists z such that the pair <z,y>
+;   satisfies the correspondence predicate for s and x E*-corresponds to z with
+;   respect to s$c, where s$c is the foundation for s.
+
+; The notion of E*-correspondence naturally extends to two alists a1 and a2
+; with the same domain, by requiring that for all <s,x> and <s,y> in a1 and a2
+; respectively where s is a stobj name, x E*-corresponds to y.  Note that this
+; implies that a1 is E*-proper and a2 is L-proper.  -|
+
+; Note that if s is the name of a concrete stobj with no stobj fields, then x
+; E*-corresponds to y with respect to s if and only if x = y and x satisfies
+; the recognizer for s.  Indeed, this equivalence holds even if the concrete
+; stobj has stobj fields, provided those fields are all concrete that
+; recursively have that property as well (i.e., child stobjs are all concrete,
+; their child stobjs are all concrete, etc.).
+
+; Finally, we adapt the narrow version of the Evaluation Preserves
+; Correspondence theorem and its proof, this time removing the restrictions
+; that abstract stobjs have concrete foundational stobjs and child stobjs are
+; concrete stobjs.  Thus, we will replace the notion of E-correspondence by the
+; notion of E*-correspondence.  Uses of "as before" below are references to the
+; proof of the narrow version.
+
+; Theorem: Evaluation Preserves Correspondence (general version).  Fix an ACL2
+; world w.  Assume that the alist a_E E*-corresponds to the alist a_L, let u be
+; a term of w, and let error indicators and return values be defined as
+; follows.
+
+;   (mv erp_E r_E) = (ev_E u a_E)
+;   (mv erp_L r_L) = (ev_L u a_L).
+
+; Then erp_E = erp_L and r_E E*-corresponds to r_L.
+
+; Proof.  As before, we induct on the number of abstract stobjs in w.  The
+; proof for the base case (no abstract stobjs) carries over directly from
+; before.
+
+; Also as before: Let s0 be the abstract stobj introduced last in w, let w2 be
+; the initial segment of w consisting of all events preceding the introduction
+; of s0, assume the inductive hypothesis so that the theorem holds for w2.
+
+; We continue as before by computational (sub-)induction, reducing to the
+; following case: u is (f t1 ... tk); for each i, (ev_E ti a_E) = (mv nil xi)
+; and (ev_L ti a_L) = (mv nil yi) for E*-corresponding xi and yi; b_E and b_L
+; are the E*-corresponding alists that bind each formal vi of f to xi or yi,
+; respectively, and for some val_g the following holds where g is the guard of
+; f.
+
+; (1)     (ev_L g b_L) = (ev_E g b_E) = (mv nil val_g) and val_g is non-nil
+
+; We conclude as before if f is not a stobj primitive, applying the
+; computational inductive hypothesis to the body.
+
+; If f is a concrete stobj primitive then the conclusion follows from the
+; definition of E*-correspondence.  For example, suppose f is an updater for
+; concrete stobj st; say, the input term is (update-fld t1 st), where (ev_E t1
+; a_E) = (mv nil x1) and (ev_L t1 a_L) = (mv nil y1) for E*-corresponding x1
+; and y1.  Let s_E and s_L be the values of s in a_E and a_L, respectively.
+; Let s_E' and s_L' be the results of respectively updating the given field
+; (fld) of s_E and s_L with x1 and y1.  Then (ev_E u a_E) = (mv nil s_E') and
+; (ev_L u a_L) = (mv nil s_L').  Since x1 and y1 E*-correspond, then by
+; definitions of E*-correspondence and :EXEC* recognizer and the
+; E*-correspondence of s_E and s_L (by E*-correspondence of a_E and a_L), s_E'
+; E*-corresponds to S_L'.
+
+; The case that f is an abstract stobj primitive for a stobj s other than s0 is
+; handled just as before.  So as before we consider the case that f is an
+; s0-primitive returning a single value, with formals (v1 ... s0 ... vk), with
+; :EXEC version f_E and where s0$c is the foundational stobj for s0.
+
+; As before, let s0_E = b_E(s0) and let s0_L = b_L(s0).  Since b_E
+; E*-corresponds to b_L, then s0_E E*-corresponds to s0_L.  So by definition of
+; E*-correspondence, there exists z such that the pair <z,s0_L> satisfies the
+; correspondence predicate Corr0 for s0 and s0_E E*-corresponds to z with
+; respect to s0$c.
+
+; The following is a theorem, by (1) and Lemma 1 as before.
+
+; (1')     g/Q(b_L) = (quote val_g).
+
+; Let g_E be the guard of f_E.  Let b_L' be the result of adding the pair
+; <s0$c,z> to b_L; thus (as before) it is a theorem that g/Q(b_L') = (quote
+; val_g) by Lemma 5, since s$c does not occur free in g.  By the GUARD-THM for
+; s0, it is a theorem that (implies g g_E); by instantiating this formula with
+; Q(b_L'), then since Corr0 holds of <b_L'(s0$c),b_L'(s0)> (because this is
+; <z,s0_L>), it is a theorem that g_E/Q(b_L') != nil.  Then as before, the
+; following hold for some val_f_E.
+
+; (2_E)   (ev_L (f_E v1 ... s0$c ... vk) b_L')  = (mv nil val_f_E)
+; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+
+; So as before, the following are theorems.
+
+; (3_E)   (f_E v1 ... s0$c ... vk)/Q(b_L') = val_f_E
+; (3_L)   (f   v1 ... s0   ... vk)/Q(b_L') = val_f
+
+; The following key fact then follows by instantiating the CORRESPONDENCE
+; theorem with Q(b_L') as before.
+
+; (4)     The pair <val_f_E,val_f> satisfies Corr0 if f returns s0 (as per the
+;         stobjs-out of f), else val_f_E = val_f.
+
+; Let b_L'' be the result of removing the pair <s0,s0_L> from b_L' (but keeping
+; the pair <s0$c,z>).  As before, we have the following.
+
+; (2_E')  (ev_L (f_E v1 ... s0$c ... vk) b_L'') = (mv nil val_f_E)
+
+; As before, Lemma 4 tells us that this equation holds for w2.  Let b_E$c be
+; (as before) the result of replacing <s0,s0_E> in b_E with <s0$c,s0_E>.  We
+; claim that b_E$c E*-corresponds to b_L''.  Since we have already assumed that
+; b_E E*-corresponds to b_L, and since the alists b_E$c and b_L'' are derived
+; respectively from b_E and b_L by mapping s0$c, in place of s0, to s0_E and z
+; respectively, then this claim follows from our choice of z, that s0_E
+; E*-corresponds to z with respect to s0$c.
+
+; By the claim just above that b_E$c and b_L'' E*-correspond, together with
+; the top-level inductive hypothesis applied to w2 and the choice of val_f_E in
+; (2_E'), we obtain the following for some val_f_E$c.
+
+; (5)     (ev_E (f_E v1 ... s0$c ... vk) b_E$c) = (mv nil val_f_E$c)
+;         and
+;         val_f_E$c E*-corresponds to val_f_E with respect to the stobj
+;         returned by f_E (or nil if f_E does not return a stobj).
+
+; As before, (5) implies the following (essentially because we are doing a
+; simple renaming here).
+
+; (6)     (ev_E (f_E v1 ... s0   ... vk) b_E)   = (mv nil val_f_E$c)
+
+; Recall the following equation.
+
+; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+
+; As before, the proof concludes by (2_L) and (6) if we show that val_f_E$c
+; E*-corresponds to val_f with respect to s, where: s is the stobj returned by
+; f if any, else nil.  We first state and prove two Claims, as before.
+
+; Claim 1: For s a stobj name, val_f satisfies the :LOGIC recognizer for s.
+; This claim holds just as before, by applying (2_L).
+
+; Claim 2. For s a stobj name, val_f_E$c satisfies the :EXEC* recognizer for s.
+; This is clear from (5).
+
+; To complete the proof that val_f_E$c E*-corresponds to val_f with respect to
+; s, first suppose that s is s0, i.e., f returns s0.  Then f_E returns s0$c, so
+; val_f_E$c E*-corresponds to val_f_E with respect to s0$c by (5).  Also,
+; <val_f_E,val_f> satisfies Corr0 by (4).  Thus val_f_E$c E*-corresponds to
+; val_f, by Claims 1 and 2 and the definition of E*-corresponds (val_f_E serves
+; as the required value, z).
+
+; Next suppose that s is an abstract stobj other than s0.  Then val_f_E = val_f
+; by (4), and since f_E returns s, val_f_E$c E*-corresponds to val_f_E with
+; respect to s by (5).  Therefore val_f_E$c E*-corresponds to val_f with
+; respect to s.
+
+; The final case is that s is not an abstract stobj.  Then val_f_E = val_f by
+; (4) and since f_E returns s (i.e., not a stobj if s is nil), then val_f_E$c
+; E*-corresponds to val_f_E with respect to s by (5).  So val_f_E$c
+; E*-corresponds to val_f.  -|
+
+; End of Essay on the Correctness of Abstract Stobjs
 
 #-acl2-loop-only
 (defmacro defabsstobj (&whole event-form
@@ -19898,6 +20646,7 @@
                               &key
                               concrete recognizer creator exports
                               protect-default
+                              congruent-to
                               &allow-other-keys)
 
 ; Warning: If you change this definition, consider the possibility of making
@@ -19914,6 +20663,9 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
+         (congruent-stobj-rep (if congruent-to
+                                  (congruent-stobj-rep-raw congruent-to)
+                                name))
          (fields (list* recognizer
 
 ; Recognizer must be first and creator second: the call below of
@@ -19967,8 +20719,13 @@
                     (d (and old-pair
                             (get ',the-live-name
                                  'redundant-raw-lisp-discriminator)))
-                    (ok-p (and old-pair
-                               (equal d ',event-form))))
+                    (ok-p (and (consp d)
+                               (eq (car d) 'defabsstobj)
+                               (equal (access
+                                       defstobj-redundant-raw-lisp-discriminator-value
+                                       (cdr d)
+                                       :event)
+                                      ',event-form))))
                (cond
                 (ok-p ',name)
                 ((and old-pair (not (raw-mode-p *the-live-state*)))
@@ -19978,7 +20735,14 @@
                   ',name))
                 (t
                  (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
-                       ',event-form)
+                       (cons 'defabsstobj
+                             (make defstobj-redundant-raw-lisp-discriminator-value
+                                   :event ',event-form
+                                   :creator ',creator
+                                   :congruent-stobj-rep ',congruent-stobj-rep
+                                   :non-memoizable
+                                   ',(non-memoizable-stobj-raw st$c)
+                                   :non-executable nil)))
                  (cond (old-pair ; hence raw-mode
                         (fms "Note:  Redefining and reinitializing (abstract) ~
                               stobj ~x0 in raw mode.~%"
@@ -20218,9 +20982,10 @@
    guard-pre ; result of restating the guard on f$a in terms of formals
    guard-post ; restating guard-pre using stp instead of st$ap
    guard-thm guard-thm-p
-   stobjs-in-posn stobjs-in-exec stobjs-out logic exec
+   stobjs-in-posn stobjs-in-exec stobjs-in-logic stobjs-out logic exec
    correspondence preserved
-   protect)
+   protect
+   updater)
   t ; see warning above before changing to nil
   )
 
@@ -20376,178 +21141,197 @@
               field0 see-doc))
      (t
       (mv-let
-       (exec exec-p)
-       (let ((exec (cadr (assoc-keyword :EXEC keyword-lst))))
-         (cond (exec (mv exec t))
-               ((eq type :recognizer)
-                (mv (absstobj-name st :RECOGNIZER-EXEC) nil))
-               (t (mv (absstobj-name name :C) nil))))
-       (let* ((protect-tail (assoc-keyword :PROTECT keyword-lst))
-              (protect (if protect-tail
-                           (cadr protect-tail)
-                         protect-default)))
-         (cond
-          ((and protect-tail ; optimization
-                (not (member-eq protect '(t nil))))
-           (er-cmp ctx
-                   "Illegal value of :PROTECT, ~x0, in the field for ~x1.  ~@2"
-                   protect name see-doc))
-          (t
-           (mv-let
-            (logic logic-p)
-            (let ((logic (cadr (assoc-keyword :LOGIC keyword-lst))))
-              (cond (logic (mv logic t))
-                    ((eq type :recognizer)
-                     (mv (absstobj-name st :RECOGNIZER-LOGIC) nil))
-                    (t (mv (absstobj-name name :A) nil))))
-            (cond
-             ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
-              (value-cmp (make absstobj-method
-                               :NAME name
-                               :LOGIC logic
-                               :EXEC exec
-                               :PROTECT protect)))
-             ((strip-keyword-list
-               '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM :PROTECT)
-               keyword-lst)
-              (er-cmp ctx
-                      "Unexpected keyword~#0~[~/s~], ~&0, in field ~x1.  ~@2"
-                      (evens (strip-keyword-list
-                              '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM)
-                              keyword-lst))
-                      field0 see-doc))
-             ((duplicate-key-in-keyword-value-listp keyword-lst)
-              (er-cmp ctx
-                      "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
-                      (duplicates (evens keyword-lst)) field0 see-doc))
-             ((not (and (symbolp exec)
-                        (function-symbolp exec wrld)))
-              (er-cmp ctx
-                      "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
-                       for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
-                       :CREATOR~/exported~] symbol ~x3, is not a function ~
-                       symbol in the current ACL2 logical world.  ~@4"
-                      exec
-                      (if exec-p 0 1)
-                      (case type
-                        (:RECOGNIZER 0)
-                        (:CREATOR 1)
-                        (otherwise 2))
-                      name see-doc))
-             ((and (null protect)
-                   (not (member-eq type '(:RECOGNIZER :CREATOR)))
-                   (not (member-eq ld-skip-proofsp ; optimization
-                                   '(include-book include-book-with-locals)))
-                   (unprotected-export-p st$c exec wrld))
-              (er-cmp ctx
-                      "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
-                       for defabsstobj field ~x2, appears capable of ~
-                       modifying the concrete stobj, ~x3, non-atomically; yet ~
-                       :PROTECT T was not specified for this field.  ~@4"
-                      exec
-                      (if exec-p 0 1)
-                      name st$c see-doc))
-             (t
-              (mv-let
-               (guard-thm guard-thm-p)
-               (let ((guard-thm (cadr (assoc-keyword :GUARD-THM keyword-lst))))
-                 (cond (guard-thm (mv guard-thm t))
-                       (t (mv (absstobj-name name :GUARD-THM) nil))))
-               (let* ((exec-formals (formals exec wrld))
-                      (posn-exec (position-eq st$c exec-formals))
-                      (stobjs-in-logic (stobjs-in logic wrld))
-                      (stobjs-in-exec (stobjs-in exec wrld))
-                      (stobjs-out-logic (stobjs-out logic wrld))
-                      (stobjs-out-exec (stobjs-out exec wrld))
-                      (posn-exec-out (position-eq st$c stobjs-out-exec))
-                      (correspondence-required (not (eq type :RECOGNIZER)))
-                      (preserved-required (and (not (eq type :RECOGNIZER))
-                                               (member-eq st$c stobjs-out-exec))))
-                 (mv-let
-                  (correspondence correspondence-p)
-                  (let ((corr (cadr (assoc-keyword :CORRESPONDENCE keyword-lst))))
-                    (cond (corr (mv corr t))
-                          (t (mv (and correspondence-required
-                                      (absstobj-name name :CORRESPONDENCE))
-                                 nil))))
-                  (mv-let
-                   (preserved preserved-p)
-                   (let ((pres (cadr (assoc-keyword :PRESERVED keyword-lst))))
-                     (cond (pres (mv pres t))
-                           (t (mv (and preserved-required
-                                       (absstobj-name name :PRESERVED))
-                                  nil))))
-                   (cond
-                    ((or (and (eq type :RECOGNIZER)
-                              (or correspondence-p preserved-p guard-thm-p
-                                  (not logic-p) (not exec-p)))
-                         (and (eq type :CREATOR)
-                              guard-thm-p))
-                     (er-cmp ctx
-                             "The keyword ~x0 for the ~@1.  ~@2"
-                             type
-                             (cond (guard-thm-p
-                                    ":GUARD-THM field is not allowed")
-                                   (correspondence-p
-                                    ":CORRESPONDENCE field is not allowed")
-                                   (preserved-p
-                                    ":PRESERVED field is not allowed")
-                                   ((not logic-p)
-                                    ":LOGIC field is required")
-                                   (t ; (not exec-p)
-                                    ":EXEC field is required"))
-                             see-doc))
-                    ((not (and (symbolp logic)
-                               (function-symbolp logic wrld)))
-                     (er-cmp ctx
-                             "The :LOGIC field ~x0, specified~#1~[~/ ~
-                              (implicitly)~] for ~#2~[defabsstobj ~
-                              :RECOGNIZER~/defabsstobj :CREATOR~/exported~] ~
-                              symbol ~x3, is not a function symbol in the ~
-                              current ACL2 logical world.  ~@4"
-                             logic
-                             (if logic-p 0 1)
-                             (case type
-                               (:RECOGNIZER 0)
-                               (:CREATOR 1)
-                               (otherwise 2))
-                             name see-doc))
-                    ((or (not (eq (symbol-class exec wrld)
-                                  :COMMON-LISP-COMPLIANT))
-                         (not (eq (symbol-class logic wrld)
-                                  :COMMON-LISP-COMPLIANT)))
-                     (let* ((lp (not (eq (symbol-class logic wrld)
-                                         :COMMON-LISP-COMPLIANT)))
-                            (implicit-p (if lp logic-p exec-p))
-                            (fn (if lp logic exec)))
-                       (er-cmp ctx
-                               "The~#0~[~/ (implicit)~] ~x1 component of ~
-                                field ~x2, ~x3, is a function symbol but its ~
-                                guards have not yet been verified.  ~@4"
-                               (if implicit-p 0 1)
-                               (if lp :LOGIC :EXEC)
-                               field0 fn see-doc)))
-                    ((and (eq type :RECOGNIZER)
-                          (not (eq exec (get-stobj-recognizer st$c wrld))))
+        (exec exec-p)
+        (let ((exec (cadr (assoc-keyword :EXEC keyword-lst))))
+          (cond (exec (mv exec t))
+                ((eq type :recognizer)
+                 (mv (absstobj-name st :RECOGNIZER-EXEC) nil))
+                (t (mv (absstobj-name name :C) nil))))
+        (let* ((protect-tail (assoc-keyword :PROTECT keyword-lst))
+               (protect (if protect-tail
+                            (cadr protect-tail)
+                          protect-default)))
+          (cond
+           ((and protect-tail ; optimization
+                 (not (member-eq protect '(t nil))))
+            (er-cmp ctx
+                    "Illegal value of :PROTECT, ~x0, in the field for ~x1.  ~@2"
+                    protect name see-doc))
+           (t
+            (mv-let
+              (logic logic-p)
+              (let ((logic (cadr (assoc-keyword :LOGIC keyword-lst))))
+                (cond (logic (mv logic t))
+                      ((eq type :recognizer)
+                       (mv (absstobj-name st :RECOGNIZER-LOGIC) nil))
+                      (t (mv (absstobj-name name :A) nil))))
+              (cond
+               ((null wrld) ; shortcut for raw Lisp definition of defabsstobj
+                (value-cmp (make absstobj-method
+                                 :NAME name
+                                 :LOGIC logic
+                                 :EXEC exec
+                                 :PROTECT protect)))
+               ((strip-keyword-list
+                 '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED :GUARD-THM :PROTECT
+                          :UPDATER)
+                 keyword-lst)
+                (er-cmp ctx
+                        "Unexpected keyword~#0~[~/s~], ~&0, in field ~x1.  ~@2"
+                        (evens (strip-keyword-list
+                                '(:LOGIC :EXEC :CORRESPONDENCE :PRESERVED
+                                         :GUARD-THM :UPDATER)
+                                keyword-lst))
+                        field0 see-doc))
+               ((duplicate-key-in-keyword-value-listp keyword-lst)
+                (er-cmp ctx
+                        "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
+                        (duplicates (evens keyword-lst)) field0 see-doc))
+               ((not (and (symbolp exec)
+                          (function-symbolp exec wrld)))
+                (er-cmp ctx
+                        "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
+                         for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
+                         :CREATOR~/exported~] symbol ~x3, is not a function ~
+                         symbol in the current ACL2 logical world.  ~@4"
+                        exec
+                        (if exec-p 0 1)
+                        (case type
+                          (:RECOGNIZER 0)
+                          (:CREATOR 1)
+                          (otherwise 2))
+                        name see-doc))
+               ((and (null protect)
+                     (not (member-eq type '(:RECOGNIZER :CREATOR)))
+                     (not (member-eq ld-skip-proofsp ; optimization
+                                     '(include-book include-book-with-locals)))
+
+; We believe that in the case of a child stobj updater, the following call of
+; unprotected-export-p will always return nil -- that is, the update is
+; demonstrably atomic.  That's because the :exec update is atomic: this is
+; immediate if the foundational stobj is concrete, and otherwise it's because
+; (inductively) the child stobj updater is atomic.  We should revisit our
+; understanding if we find otherwise, because we may not need to be concerned
+; with non-atomic child stobj updates anyhow; that's because we deal with
+; non-atomicity of incomplete child updates in stobj-let-fn-raw by using
+; with-inside-absstobj-update.
+
+                     (unprotected-export-p st$c exec wrld))
+                (er-cmp ctx
+                        "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
+                         for defabsstobj field ~x2, appears capable of ~
+                         modifying the concrete stobj, ~x3, non-atomically; ~
+                         yet :PROTECT T was not specified for this field.  ~@4"
+                        exec
+                        (if exec-p 0 1)
+                        name st$c see-doc))
+               (t
+                (mv-let
+                  (guard-thm guard-thm-p)
+                  (let ((guard-thm (cadr (assoc-keyword :GUARD-THM keyword-lst))))
+                    (cond (guard-thm (mv guard-thm t))
+                          (t (mv (absstobj-name name :GUARD-THM) nil))))
+                  (let* ((exec-formals (formals exec wrld))
+                         (posn-exec (position-eq st$c exec-formals))
+                         (stobjs-in-logic (stobjs-in logic wrld))
+                         (stobjs-in-exec (stobjs-in exec wrld))
+                         (stobjs-out-logic (stobjs-out logic wrld))
+                         (stobjs-out-exec (stobjs-out exec wrld))
+                         (correspondence-required (not (eq type :RECOGNIZER)))
+                         (preserved-required (and (not (eq type :RECOGNIZER))
+                                                  (member-eq st$c
+                                                             stobjs-out-exec)))
+                         (updater-tail (assoc-keyword :UPDATER keyword-lst)))
+                    (mv-let
+                      (correspondence correspondence-p)
+                      (let ((corr (cadr (assoc-keyword :CORRESPONDENCE keyword-lst))))
+                        (cond (corr (mv corr t))
+                              (t (mv (and correspondence-required
+                                          (absstobj-name name :CORRESPONDENCE))
+                                     nil))))
+                      (mv-let
+                        (preserved preserved-p)
+                        (let ((pres (cadr (assoc-keyword :PRESERVED keyword-lst))))
+                          (cond (pres (mv pres t))
+                                (t (mv (and preserved-required
+                                            (absstobj-name name :PRESERVED))
+                                       nil))))
+                        (cond
+                         ((or (and (eq type :RECOGNIZER)
+                                   (or correspondence-p preserved-p guard-thm-p
+                                       updater-tail (not logic-p) (not exec-p)))
+                              (and (eq type :CREATOR)
+                                   (or updater-tail guard-thm-p)))
+                          (er-cmp ctx
+                                  "The ~@0 for keyword ~x1.  ~@2"
+                                  (cond (updater-tail
+                                         ":UPDATER field is not allowed")
+                                        (guard-thm-p
+                                         ":GUARD-THM field is not allowed")
+                                        (correspondence-p
+                                         ":CORRESPONDENCE field is not allowed")
+                                        (preserved-p
+                                         ":PRESERVED field is not allowed")
+                                        ((not logic-p)
+                                         ":LOGIC field is required")
+                                        (t ; (not exec-p)
+                                         ":EXEC field is required"))
+                                  type
+                                  see-doc))
+                         ((not (and (symbolp logic)
+                                    (function-symbolp logic wrld)))
+                          (er-cmp ctx
+                                  "The :LOGIC field ~x0, specified~#1~[~/ ~
+                                   (implicitly)~] for ~#2~[defabsstobj ~
+                                   :RECOGNIZER~/defabsstobj ~
+                                   :CREATOR~/exported~] symbol ~x3, is not a ~
+                                   function symbol in the current ACL2 ~
+                                   logical world.  ~@4"
+                                  logic
+                                  (if logic-p 0 1)
+                                  (case type
+                                    (:RECOGNIZER 0)
+                                    (:CREATOR 1)
+                                    (otherwise 2))
+                                  name see-doc))
+                         ((or (not (eq (symbol-class exec wrld)
+                                       :COMMON-LISP-COMPLIANT))
+                              (not (eq (symbol-class logic wrld)
+                                       :COMMON-LISP-COMPLIANT)))
+                          (let* ((lp (not (eq (symbol-class logic wrld)
+                                              :COMMON-LISP-COMPLIANT)))
+                                 (implicit-p (if lp logic-p exec-p))
+                                 (fn (if lp logic exec)))
+                            (er-cmp ctx
+                                    "The~#0~[~/ (implicit)~] ~x1 component of ~
+                                     field ~x2, ~x3, is a function symbol but ~
+                                     its guards have not yet been verified.  ~
+                                     ~@4"
+                                    (if implicit-p 0 1)
+                                    (if lp :LOGIC :EXEC)
+                                    field0 fn see-doc)))
+                         ((and (eq type :RECOGNIZER)
+                               (not (eq exec (get-stobj-recognizer st$c wrld))))
 
 ; We use the concrete recognizer in the definition of the recognizer returned
 ; by defabsstobj-raw-defs.
 
-                     (er-cmp ctx
-                             "The~#0~[~/ (implicit)~] :EXEC component, ~x1, ~
-                              of the specified :RECOGNIZER, ~x2, is not the ~
-                              recognizer of the :CONCRETE stobj ~x3.  ~@4"
-                             (if exec-p 0 1) exec name st$c see-doc))
-                    ((and preserved-p
-                          (not preserved-required))
-                     (er-cmp ctx
-                             "It is illegal to specify :PRESERVED for a field ~
-                              whose :EXEC does not return the concrete stobj. ~
-                               In this case, :PRESERVED ~x0 has been ~
-                              specified for an :EXEC of ~x1, which does not ~
-                              return ~x2.  ~@3"
-                             preserved exec st$c see-doc))
-                    ((member-eq st exec-formals)
+                          (er-cmp ctx
+                                  "The~#0~[~/ (implicit)~] :EXEC component, ~
+                                   ~x1, of the specified :RECOGNIZER, ~x2, is ~
+                                   not the recognizer of the :CONCRETE stobj ~
+                                   ~x3.  ~@4"
+                                  (if exec-p 0 1) exec name st$c see-doc))
+                         ((and preserved-p
+                               (not preserved-required))
+                          (er-cmp ctx
+                                  "It is illegal to specify :PRESERVED for a ~
+                                   field whose :EXEC does not return the ~
+                                   concrete stobj.  In this case, :PRESERVED ~
+                                   ~x0 has been specified for an :EXEC of ~
+                                   ~x1, which does not return ~x2.  ~@3"
+                                  preserved exec st$c see-doc))
+                         ((member-eq st exec-formals)
 
 ; We form the formals of name by replacing st$c by st in exec-formals.  If st
 ; is already a formal parameter of exec-formals then this would create a
@@ -20560,138 +21344,137 @@
 ; course define a wrapper for the :EXEC function that avoids the new stobj name,
 ; st.
 
-                     (er-cmp ctx
-                             "We do not allow the use of the defabsstobj ~
-                              name, ~x0, in the formals of the :EXEC function ~
-                              of a field, in particular, the :EXEC function ~
-                              ~x1 for field ~x2.  ~@3"
-                             st exec field0 see-doc))
-                    ((and (eq type :CREATOR)
-                          (not (and (null stobjs-in-logic)
-                                    (null stobjs-in-exec)
-                                    (null (cdr stobjs-out-exec))
-                                    (eq (car stobjs-out-exec) st$c)
-                                    (null (cdr stobjs-in-exec))
-                                    (eql (length stobjs-out-logic) 1))))
-                     (cond ((or stobjs-in-logic
-                                stobjs-in-exec)
-                            (er-cmp ctx
-                                    "The :LOGIC and :EXEC versions of the ~
-                                     :CREATOR function must both be functions ~
-                                     of no arguments but ~&0 ~#0~[is not such ~
-                                     a function~/xare not such functions~].  ~
-                                     ~@1"
-                                    (append (and stobjs-in-logic
-                                                 (list logic))
-                                            (and stobjs-in-exec
-                                                 (list exec)))
-                                    see-doc))
-                           ((or (not (eql (length stobjs-out-logic) 1))
-                                (not (eql (length stobjs-out-exec) 1)))
-                            (er-cmp ctx
-                                    "The :LOGIC and :EXEC versions of the ~
-                                     :CREATOR function must both be functions ~
-                                     that return a single value, but ~&0 ~
-                                     ~#0~[is not such a function~/are not ~
-                                     such functions~].  ~@1"
-                                    (append
-                                     (and (not (eql (length stobjs-out-logic) 1))
-                                          (list logic))
-                                     (and (not (eql (length stobjs-out-exec) 1))
-                                          (list exec)))
-                                    see-doc))
-                           (t ; (not (eq (car stobjs-out-exec) st$c))
-                            (er-cmp ctx
-                                    "The :EXEC version of the :CREATOR ~
-                                     function must return a single value that ~
-                                     is the stobj ~x0, but ~x1 does not have ~
-                                     that property.  ~@2"
-                                    st$c exec see-doc))))
-                    ((and (not (eq type :CREATOR))
-                          (not posn-exec))
+                          (er-cmp ctx
+                                  "We do not allow the use of the defabsstobj ~
+                                   name, ~x0, in the formals of the :EXEC ~
+                                   function of a field, in particular, the ~
+                                   :EXEC function ~x1 for field ~x2.  ~@3"
+                                  st exec field0 see-doc))
+                         ((and (eq type :CREATOR)
+                               (not (and (null stobjs-in-logic)
+                                         (null stobjs-in-exec)
+                                         (null (cdr stobjs-out-exec))
+                                         (eq (car stobjs-out-exec) st$c)
+                                         (null (cdr stobjs-in-exec))
+                                         (eql (length stobjs-out-logic) 1))))
+                          (cond ((or stobjs-in-logic
+                                     stobjs-in-exec)
+                                 (er-cmp ctx
+                                         "The :LOGIC and :EXEC versions of ~
+                                          the :CREATOR function must both be ~
+                                          functions of no arguments but ~&0 ~
+                                          ~#0~[is not such a function~/xare ~
+                                          not such functions~].  ~@1"
+                                         (append (and stobjs-in-logic
+                                                      (list logic))
+                                                 (and stobjs-in-exec
+                                                      (list exec)))
+                                         see-doc))
+                                ((or (not (eql (length stobjs-out-logic) 1))
+                                     (not (eql (length stobjs-out-exec) 1)))
+                                 (er-cmp ctx
+                                         "The :LOGIC and :EXEC versions of ~
+                                          the :CREATOR function must both be ~
+                                          functions that return a single ~
+                                          value, but ~&0 ~#0~[is not such a ~
+                                          function~/are not such functions~]. ~
+                                          ~ ~@1"
+                                         (append
+                                          (and (not (eql (length stobjs-out-logic) 1))
+                                               (list logic))
+                                          (and (not (eql (length stobjs-out-exec) 1))
+                                               (list exec)))
+                                         see-doc))
+                                (t ; (not (eq (car stobjs-out-exec) st$c))
+                                 (er-cmp ctx
+                                         "The :EXEC version of the :CREATOR ~
+                                          function must return a single value ~
+                                          that is the stobj ~x0, but ~x1 does ~
+                                          not have that property.  ~@2"
+                                         st$c exec see-doc))))
+                         ((and (not (eq type :CREATOR))
+                               (not posn-exec))
 
 ; Warning: before weakening this test, consider how it is relied upon in
 ; absstobj-correspondence-formula.  Also, note that stobj-creatorp relies on
 ; empty formals, so this check guarantees that stobj-creatorp returns nil for
 ; functions other than the creator.
 
-                     (er-cmp ctx
-                             "The :CONCRETE stobj name, ~x0, is not a known ~
-                              stobj parameter of :EXEC function ~x1 for field ~
-                              ~x2.~|~@3"
-                             st$c exec field0 see-doc))
-                    ((and (not (eq type :CREATOR))
-                          (not
-                           (and (equal (length stobjs-in-logic)
-                                       (length stobjs-in-exec))
-                                (equal (update-nth posn-exec nil stobjs-in-logic)
-                                       (update-nth posn-exec nil stobjs-in-exec)))))
-                     (er-cmp ctx
-                             "The input signatures of the :LOGIC and :EXEC ~
-                              functions for a field must agree except perhaps ~
-                              at the position of the concrete stobj (~x0) in ~
-                              the :EXEC function (which is zero-based ~
-                              position ~x1).  However, this agreement fails ~
-                              for field ~x2, as the input signatures are as ~
-                              follows.~|~%~x3 (:LOGIC):~|~X47~|~%~x5 ~
-                              (:EXEC):~|~X67~|~%~@8"
-                             st$c posn-exec field0
-                             logic (prettyify-stobj-flags stobjs-in-logic)
-                             exec (prettyify-stobj-flags stobjs-in-exec)
-                             nil see-doc))
-                    ((and (not (eq type :CREATOR)) ; handled elsewhere
-                          (not (and (equal (length stobjs-out-logic)
-                                           (length stobjs-out-exec))
-                                    (equal stobjs-out-exec
-                                           (if posn-exec-out
-                                               (update-nth posn-exec-out
-                                                           (assert$
-                                                            posn-exec
-                                                            (nth posn-exec
-                                                                 stobjs-in-exec))
-                                                           stobjs-out-logic)
-                                             stobjs-out-logic)))))
-                     (er-cmp ctx
-                             "The output signatures of the :LOGIC and :EXEC ~
-                              functions for a field must have the same length ~
-                              and must agree at each position, except for the ~
-                              position of concrete stobj (~x0) in the outputs ~
-                              of the :EXEC function.  For that position, the ~
-                              :LOGIC function should return the type of the ~
-                              object (stobj or not) that is at the position ~
-                              of ~x0 in the inputs of the :EXEC function.  ~
-                              However, the criteria above are not all met for ~
-                              field ~x1, as the output signatures are as ~
-                              follows.~|~%~x2 (:LOGIC):~|~X36~|~%~x4 ~
-                              (:EXEC):~|~X56~|~%~@7"
-                             st$c field0
-                             logic (prettyify-stobj-flags stobjs-out-logic)
-                             exec (prettyify-stobj-flags stobjs-out-exec)
-                             nil see-doc))
-                    (t
-                     (let* ((formals (if (eq type :CREATOR)
-                                         nil
-                                       (update-nth posn-exec st exec-formals)))
-                            (guard-pre (subcor-var (formals logic wrld)
-                                                   formals
-                                                   (guard logic nil wrld))))
-                       (value-cmp
-                        (make absstobj-method
-                              :NAME name
-                              :FORMALS formals
-                              :GUARD-PRE guard-pre
-                              :GUARD-POST nil ; to be filled in later
-                              :GUARD-THM guard-thm
-                              :GUARD-THM-P (if type :SKIP guard-thm-p)
-                              :STOBJS-IN-POSN posn-exec
-                              :STOBJS-IN-EXEC (stobjs-in exec wrld)
-                              :STOBJS-OUT
-                              (substitute st st$c stobjs-out-exec)
-                              :LOGIC logic
-                              :EXEC exec
-                              :CORRESPONDENCE correspondence
-                              :PRESERVED preserved
-                              :PROTECT protect))))))))))))))))))))
+                          (er-cmp ctx
+                                  "The :CONCRETE stobj name, ~x0, is not a ~
+                                   known stobj parameter of :EXEC function ~
+                                   ~x1 for field ~x2.~|~@3"
+                                  st$c exec field0 see-doc))
+                         ((and (not (eq type :CREATOR))
+                               (not (equal (length stobjs-in-logic)
+                                           (length stobjs-in-exec))))
+                          (er-cmp ctx
+                                  "The :LOGIC and :EXEC functions for a field ~
+                                   must have input signatures of the same ~
+                                   length.  However, this fails for field ~
+                                   descriptor ~x0, as the input signatures ~
+                                   are as follows.~|~%~x1 ~
+                                   (:LOGIC):~|~X25~|~%~x3 ~
+                                   (:EXEC):~|~X45~|~%~@6"
+                                  field0 logic
+                                  (prettyify-stobj-flags stobjs-in-logic)
+                                  exec
+                                  (prettyify-stobj-flags stobjs-in-exec)
+                                  nil see-doc))
+                         ((and (not (eq type :CREATOR)) ; handled elsewhere
+                               (not (equal (length stobjs-out-logic)
+                                           (length stobjs-out-exec))))
+                          (er-cmp ctx
+                                  "The output signatures of the :LOGIC and ~
+                                   :EXEC functions for an abstract stobj ~
+                                   export must have the same length.  ~
+                                   However, the output signatures are as ~
+                                   follows for field descriptor ~x0 of ~
+                                   abstract stobj ~x1.~|~%~x2 ~
+                                   (:LOGIC):~|~X36~|~%~x4 ~
+                                   (:EXEC):~|~X56~|~%~@7"
+                                  field0 st
+                                  logic (prettyify-stobj-flags stobjs-out-logic)
+                                  exec (prettyify-stobj-flags stobjs-out-exec)
+                                  nil see-doc))
+                         (t
+                          (let* ((formals (if (eq type :CREATOR)
+                                              nil
+                                            (update-nth posn-exec st exec-formals)))
+                                 (guard-pre (subcor-var (formals logic wrld)
+                                                        formals
+                                                        (guard logic nil wrld))))
+                            (cond
+                             ((member-eq st$c stobjs-in-logic)
+                              (er-cmp ctx
+                                      "the :LOGIC function ~x0 for export ~x1 ~
+                                       declares as a stobj the formal ~
+                                       parameter, ~x2.  This is illegal ~
+                                       because ~x2 is the corresponding ~
+                                       concrete stobj for the proposed ~
+                                       abstract stobj, ~x3."
+                                      logic name st$c st))
+                             (t
+                              (value-cmp
+                               (make absstobj-method
+                                     :NAME name
+                                     :FORMALS formals
+                                     :GUARD-PRE guard-pre
+                                     :GUARD-POST nil ; to be filled in later
+                                     :GUARD-THM guard-thm
+                                     :GUARD-THM-P (if type :SKIP guard-thm-p)
+                                     :STOBJS-IN-POSN posn-exec
+                                     :STOBJS-IN-EXEC stobjs-in-exec
+                                     :STOBJS-IN-LOGIC stobjs-in-logic
+                                     :STOBJS-OUT
+                                     (substitute st st$c stobjs-out-exec)
+                                     :LOGIC logic
+                                     :EXEC exec
+                                     :CORRESPONDENCE correspondence
+                                     :PRESERVED preserved
+                                     :PROTECT protect
+                                     :UPDATER
+                                     (cadr updater-tail)))))))))))))))))))))))
 
 (defun simple-translate-absstobj-fields (st st$c fields types protect-default
                                             ld-skip-proofsp)
@@ -21018,14 +21801,36 @@
        (t (chk-defabsstobj-method-lemmas method st st$c st$ap corr-fn
                                          missing wrld state))))))
 
+(defun intersperse (lst1 lst2)
+  (declare (xargs :guard (and (true-listp lst1)
+                              (true-listp lst2)
+                              (= (length lst1) (length lst2)))))
+  (cond ((endp lst1) nil)
+        (t (list* (car lst1) (car lst2) (intersperse (cdr lst1) (cdr lst2))))))
+
+(defun sort-absstobj-names (names accessors updaters)
+
+; Names is a list of export names for an abstract stobj that includes the
+; indicated child stobj accessors and corresponding updaters.  We return a
+; permutation of names in which each member of accessors is immediately
+; followed by the corresponding member of updaters.
+
+  (let ((lst (intersperse accessors updaters)))
+    (append lst
+            (set-difference-eq names lst))))
+
 (defun chk-acceptable-defabsstobj1 (st st$c st$ap corr-fn fields
                                        types protect-default congruent-to
                                        see-doc ctx wrld state methods missing)
 
 ; See chk-acceptable-defabsstobj (whose return value is computed by the present
-; function) for the form of the result.  Note that fields begins with the
-; recognizer and then the creator; see the comments about
-; chk-acceptable-defabsstobj1 in defabsstobj-fn1 and
+; function) for the form of the result.  We rely on the assumption that fields
+; begins with the recognizer and then the creator.  For one thing, this
+; function supplies the methods for the call of make-absstobj-tuples in
+; defabsstobj-fn1, which puts the 'absstobj-info property, which is assumed in
+; stobj-field-fn-of-stobj-type-p to start with the creator and recognizer
+; tuples (see comments in stobj-field-fn-of-stobj-type-p).  Also see the
+; comments about chk-acceptable-defabsstobj1 in defabsstobj-fn1 and
 ; chk-acceptable-defabsstobj.
 
   (cond
@@ -21071,6 +21876,88 @@
         ((keywordp (car lst))
          (car lst))
         (t (first-keyword (cdr lst)))))
+
+(defun collect-defabsstobj-updaters (methods st$c all-methods wrld
+                                             accessors updaters
+                                             accessors-exec updaters-exec)
+
+; We collect from methods all child stobj accessors and corresponding updaters,
+; as well as their :exec counterparts.  These are collected into the four given
+; accumulators, which are all nil at the top level.  The multiple-value return
+; also includes nil as the first value unless an error is discovered, in which
+; case the first value returned is a suitable message and the other values are
+; irrelevant.
+
+  (cond
+   ((endp methods) (mv nil
+                       (reverse accessors) (reverse updaters)
+                       (reverse accessors-exec) (reverse updaters-exec)))
+   (t (let* ((method (car methods))
+             (updater (access absstobj-method method :updater)))
+        (cond
+         ((null updater)
+          (collect-defabsstobj-updaters (cdr methods) st$c all-methods wrld
+                                        accessors updaters
+                                        accessors-exec updaters-exec))
+         (t (let* ((exec (access absstobj-method method :exec))
+                   (stobjs-out (assert$ exec (stobjs-out exec wrld)))
+                   (child (and (consp stobjs-out)
+                               (null (cdr stobjs-out))
+                               (car stobjs-out)))
+                   (name (access absstobj-method method :name))) 
+              (cond
+               ((or (not (stobj-field-accessor-p exec st$c wrld))
+                    (null child))
+                (mv (msg "The function spec for ~x0 specifies an :UPDATER ~
+                          function, which is only allowed when the specified ~
+                          :EXEC function is a stobj field accessor for the ~
+                          given concrete stobj.  However, the :EXEC function ~
+                          is ~x1, which ~@2."
+                         name
+                         exec
+                         (cond
+                          ((stobj-field-accessor-p exec st$c wrld)
+                           (msg "is an accessor of ~x0 for a non-stobj field"
+                                st$c))
+                          (t (msg "is not a field accessor of ~x0"
+                                  st$c))))
+                    nil nil nil nil))
+               (t (let* ((updater-method (assoc-eq updater all-methods)))
+                    (cond
+                     ((null updater-method)
+                      (mv (msg "In the function spec for ~x0, the :UPDATER ~
+                                keyword has value ~x1.  However, there is no ~
+                                function spec for ~x1."
+                               name updater)
+                          nil nil nil nil))
+                     (t (collect-defabsstobj-updaters
+                         (cdr methods) st$c all-methods wrld
+                         (cons name accessors)
+                         (cons updater updaters)
+                         (cons exec accessors-exec)
+                         (cons (access absstobj-method updater-method :exec)
+                               updaters-exec))))))))))))))
+
+(defun chk-defabsstobj-updaters (st$c methods wrld)
+
+; Implicit is an abstract stobj definition with the given methods (perhaps
+; partially fleshed out) and with the given concrete stobj, st$c.  We either
+; return (msg nil nil), where msg explains why methods illegally specifies
+; child stobj accessors and updaters, or else (in the absence of such
+; illegality) we return (mv nil accessors updaters), where accessors and
+; updaters have the same length L and for all i < L, the ith elements of
+; accessors and updaters are a corresponding accessor/updater pair for a child
+; stobj (of the implicit abstract stobj).
+
+  (mv-let
+    (msg accessors updaters accessors-exec updaters-exec)
+    (collect-defabsstobj-updaters methods st$c methods wrld nil nil nil nil)
+    (cond (msg (mv msg nil nil))
+          (t (let ((msg (chk-stobj-updaters accessors-exec updaters-exec
+                                            st$c wrld
+                                            "defabsstobj exports")))
+               (cond (msg (mv msg nil nil))
+                     (t (mv nil accessors updaters))))))))
 
 (defun chk-acceptable-defabsstobj (name st$c recognizer st$ap creator corr-fn
                                         exports protect-default congruent-to
@@ -21146,32 +22033,99 @@
                                     protect-default congruent-to see-doc ctx
                                     wrld2 state nil nil))))))
 
-(defun defabsstobj-axiomatic-defs (st$c methods)
+(defun defabsstobj-axiomatic-defs (methods)
   (cond
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
-              (mv-let (name formals guard-post logic exec stobjs)
-                      (mv (access absstobj-method method :NAME)
-                          (access absstobj-method method :FORMALS)
-                          (access absstobj-method method :GUARD-POST)
-                          (access absstobj-method method :LOGIC)
-                          (access absstobj-method method :EXEC)
-                          (remove1 st$c (collect-non-x
-                                         nil
-                                         (access absstobj-method method
-                                                 :STOBJS-IN-EXEC))))
-                      `(,name ,formals
-                              (declare (xargs ,@(and stobjs
-                                                     `(:STOBJS ,stobjs))
-                                              :GUARD ,guard-post))
+              (mv-let (name formals guard-post logic stobjs-in-logic)
+                (mv (access absstobj-method method :NAME)
+                    (access absstobj-method method :FORMALS)
+                    (access absstobj-method method :GUARD-POST)
+                    (access absstobj-method method :LOGIC)
+                    (access absstobj-method method :STOBJS-IN-LOGIC))
+                `(,name
+                  ,formals
+                  (declare
+                   (xargs :GUARD ,guard-post
+                          ,@(let ((stobjs (remove-eq nil stobjs-in-logic)))
 
-; We use mbe, rather than just its :logic component, because we want to track
-; functions that might be called in raw Lisp, in particular for avoiding the
-; violation of important invariants; see put-invariant-risk.
+; This stobj declaration is potentially bogus, since there is no requirement
+; about which stobjs are declared for the :logic function (for the abstract
+; stobj primitive that is being defined here).  However, we avoid a potential
+; error when translating the body by having the stobjs-in for the primitive
+; match the stobjs-in for its body (below, i.e., the corresponding call of the
+; :logic function for that primitive).
 
-                              (mbe :logic (,logic ,@formals)
-                                   :exec (,exec ,@formals)))))
-            (defabsstobj-axiomatic-defs st$c (cdr methods))))))
+; Note that we use put-absstobjs-in-and-outs to set the stobjs-in and
+; stobjs-out after the definitions are admitted, thus overriding this
+; potentially bogus :stobjs declaration.
+
+; Given the signature mismatch between the primitive and its :logic function,
+; there could be concern about inappropriate calls of the :logic function on
+; live stobjs.  This would involve calling the *1* function for the primitive,
+; which could happen in particular when there is invariant-risk.  However, *1*
+; calls don't happen where there are live stobj inputs: as noted in
+; ev-fncall-creator-er-msg, "ACL2 does not support non-compliant live stobj
+; manipulation."
+
+                              (and stobjs `(:stobjs ,stobjs)))))
+
+; In Version_8.3 we had (mbe :logic (,logic ,@formals) :exec (,exec ,@formals))
+; below, but that caused a soundness bug; see :DOC note-8-4.  We tried changing
+; that to (prog2$ (,exec ,@formals) (,logic ,@formals)), in some github
+; versions after that.  But then we realized that the call of exec, which was
+; intended to help track invariant-risk, was unnecessary because invariant-risk
+; for abstract stobjs is already handled by put-defabsstobj-invariant-risk.  By
+; avoiding such a prog$ call, we avoided having to deal with the possibility
+; that exec doesn't return a single non-stobj value, as required by prog2$.
+; (We considered making an exception in translate11, which might work; but its
+; seems best to avoid such a complication.  We also tried using a non-exec
+; wrapper, but that interfered with some proofs when executing abstract stobj
+; primitives in the logic.)
+
+                        (,logic ,@formals))))
+            (defabsstobj-axiomatic-defs (cdr methods))))))
+
+(defun with-inside-absstobj-update (temp saved name form)
+
+; Temp and saved should be variables not occurring in form.
+
+  (declare (xargs :guard (and (symbolp name) (symbolp temp))))
+  `(let* ((,temp *inside-absstobj-update*)
+          (,saved (svref ,temp 0)))
+     (declare (type simple-array ,temp))
+     (cond
+      ((eq ,saved :ignore)
+       ,form)
+      ((eql ,saved 0) ; optimization of next case
+       (setf (svref ,temp 0) 1)
+       (our-multiple-value-prog1
+        ,form
+        (setf (svref ,temp 0) 0)))
+      ((typep ,saved 'fixnum)
+       (incf (the fixnum (svref ,temp 0)))
+       (our-multiple-value-prog1
+        ,form
+        (decf (the fixnum (svref ,temp 0)))))
+      (t
+
+; If the value of ,saved is a number, then it is bounded by the number of calls
+; of abstract stobj exports on the stack.  But surely the length of the stack
+; is a fixnum!  So if the value of ,saved is not a fixnum, then it is not a
+; number, and hence it must be a symbol or a list of symbols with a non-nil
+; final cdr.
+
+       (cond
+        ((eq nil ,saved)
+         (setf (svref ,temp 0) ',name)
+         (our-multiple-value-prog1
+          ,form
+          (setf (svref ,temp 0) nil)))
+        (t
+         (push ',name (svref ,temp 0))
+         (our-multiple-value-prog1
+          ,form
+          (pop (svref ,temp 0)))))))))
 
 (defun defabsstobj-raw-def (method)
 
@@ -21182,48 +22136,13 @@
   (let* ((name (access absstobj-method method :NAME))
          (exec (access absstobj-method method :EXEC))
          (protect (access absstobj-method method :PROTECT))
-         (body
-          (cond
-           ((null protect)
-            `(cons ',exec args))
-           (t ``(let* ((temp *inside-absstobj-update*)
-                       (saved (svref temp 0)))
-                  (declare (type simple-array temp))
-                  (cond
-                   ((eq saved :ignore)
-                    ,(cons ',exec args))
-                   ((eql saved 0) ; optimization of next case
-                    (setf (svref temp 0) 1)
-                    (our-multiple-value-prog1
-                     ,(cons ',exec args)
-                     (setf (svref temp 0) 0)))
-                   ((typep saved 'fixnum)
-                    (setf (svref temp 0)
-                          (1+ (the fixnum saved)))
-                    (our-multiple-value-prog1
-                     ,(cons ',exec args)
-                     (decf (the fixnum (svref temp 0)))))
-                   (t
-
-; If saved is a number, then it is bounded by the number of calls of abstract
-; stobj exports on the stack.  But surely the length of the stack is a fixnum!
-; So if saved is not a fixnum, then it is not a number, and hence it must be a
-; symbol or a list of symbols with a non-nil final cdr.
-
-                    (let ((sym ',',name))
-                      (declare (type symbol sym))
-                      (cond
-                       ((eq nil saved)
-                        (setf (svref temp 0) (the symbol sym))
-                        (our-multiple-value-prog1
-                         ,(cons ',exec args)
-                         (setf (svref temp 0) nil)))
-                       (t
-                        (push (the symbol sym) saved)
-                        (our-multiple-value-prog1
-                         ,(cons ',exec args)
-                         (pop (svref temp 0)))))))))))))
-    `(,name (&rest args) ,body)))
+         (form0 `(cons ',exec args))
+         (body (cond ((null protect)
+                      form0)
+                     (t `(with-inside-absstobj-update
+                          'temp 'saved ; variables not occurring in form0
+                          ',name ,form0)))))
+    (list name '(&rest args) body)))
 
 (defun defabsstobj-raw-defs-rec (methods)
 
@@ -21417,31 +22336,39 @@
                        msg))
               (t (value nil)))))))
 
-(defun make-absstobj-logic-exec-pairs (methods)
+(defun make-absstobj-tuples (methods)
   (cond ((endp methods) nil)
-        (t (cons (cons (access absstobj-method (car methods) :logic)
-                       (access absstobj-method (car methods) :exec))
-                 (make-absstobj-logic-exec-pairs (cdr methods))))))
+        (t (cons (list* (access absstobj-method (car methods) :name)
+                        (access absstobj-method (car methods) :logic)
+                        (access absstobj-method (car methods) :exec)
+                        (access absstobj-method (car methods) :updater))
+                 (make-absstobj-tuples (cdr methods))))))
 
-(defun put-defabsstobj-invariant-risk (st-name methods wrld)
+(defun put-defabsstobj-invariant-risk (methods wrld)
 
-; See put-invariant-risk.
+; See also put-invariant-risk.  Invariant-risk from a stobj export, fn,
+; trivially derives from the invariant-risk of its :exec function, fn_E, since
+; a call of fn in raw Lisp is just the corresponding call of fn_E.
 
   (cond ((endp methods) wrld)
-        (t (let* ((method (car methods))
-                  (guard (access absstobj-method method :GUARD-POST)))
+        (t (let ((method (car methods)))
              (put-defabsstobj-invariant-risk
-              st-name
               (cdr methods)
-              (cond ((or (equal guard *t*)
-                         (not (member-eq st-name
-                                         (access absstobj-method method
-                                                 :STOBJS-OUT))))
-                     wrld)
-                    (t (putprop (access absstobj-method method :NAME)
-                                'invariant-risk
-                                (access absstobj-method method :NAME)
-                                wrld))))))))
+              (let ((invariant-risk
+                     (getpropc (access absstobj-method method :EXEC)
+                               'invariant-risk nil wrld)))
+                (cond (invariant-risk
+                       (putprop (access absstobj-method method :NAME)
+                                'invariant-risk invariant-risk wrld))
+                      (t wrld))))))))
+
+(defun equal-cdrs (x y)
+  (declare (xargs :guard (and (true-list-listp x)
+                              (true-list-listp y)
+                              (equal (length x) (length y)))))
+  (cond ((endp x) t)
+        (t (and (equal (cdar x) (cdar y))
+                (equal-cdrs (cdr x) (cdr y))))))
 
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only
@@ -21464,7 +22391,7 @@
                (chk-acceptable-defabsstobj
                 st-name st$c recognizer st$ap creator corr-fn exports
                 protect-default congruent-to see-doc ctx wrld0 state
-                                event-form)))
+                event-form)))
       (cond
        ((eq missing/methods/wrld1 'redundant)
         (stop-redundant-event ctx state))
@@ -21483,7 +22410,7 @@
 
                 (and congruent-to
                      (getpropc congruent-to 'absstobj-info nil wrld0)))
-               (logic-exec-pairs (make-absstobj-logic-exec-pairs methods0)))
+               (absstobj-tuples (make-absstobj-tuples methods0)))
           (cond
            ((and congruent-to
                  (not (equal st$c
@@ -21499,171 +22426,201 @@
                 st$c
                 see-doc))
            ((and congruent-to
-                 (not (equal logic-exec-pairs
-                             (access absstobj-info old-absstobj-info
-                                     :logic-exec-pairs))))
+                 (not (equal-cdrs absstobj-tuples
+                                  (access absstobj-info old-absstobj-info
+                                          :absstobj-tuples))))
             (er soft ctx
                 "The value provided for :congruent-to, ~x0, is illegal.  ACL2 ~
-                 requires that the :LOGIC and :EXEC functions match up ~
-                 perfectly (in the same order), for stobj primitives ~
+                 requires that the :LOGIC, :EXEC, and :UPDATER functions ~
+                 match up perfectly (in the same order), for stobj primitives ~
                  introduced by the proposed new abstract stobj, ~x1 and the ~
                  existing stobj to which it is supposed to be congruent, ~x0. ~
-                 Here are the lists of pairs (:LOGIC . :EXEC) for ~
+                 Here are the lists of tuples (:LOGIC :EXEC . :UPDATER) for ~
                  each.~|~%For ~x1 (proposed):~|~Y24~%For ~x0:~|~Y34~%~|~@5"
                 congruent-to
                 st-name
-                logic-exec-pairs
-                (access absstobj-info old-absstobj-info
-                        :logic-exec-pairs)
+                (strip-cdrs absstobj-tuples)
+                (strip-cdrs (access absstobj-info old-absstobj-info
+                                    :absstobj-tuples))
                 nil
                 see-doc))
-           (missing-only
-            (value missing))
            (t
-            (er-progn
-             (cond
-              ((or (null missing)
-                   (member-eq (ld-skip-proofsp state)
-                              '(include-book include-book-with-locals)))
-               (value nil))
-              ((ld-skip-proofsp state)
-               (pprogn (warning$ ctx "defabsstobj"
-                                 "The following events would have to be ~
-                                  admitted, if not for proofs currently being ~
-                                  skipped (see :DOC ld-skip-proofsp), before ~
-                                  the given defabsstobj event.  ~@0~|~@1"
-                                 see-doc
-                                 (defabsstobj-missing-msg missing wrld0))
-                       (value nil)))
-              (t (er soft ctx
-                     "The following events must be admitted before the given ~
-                      defabsstobj event.  ~@0~|~@1"
-                     see-doc
-                     (defabsstobj-missing-msg missing wrld0))))
-             (enforce-redundancy
-              event-form ctx wrld0
-              (let* ((methods (update-guard-post
-                               (defabsstobj-logic-subst methods0)
-                               methods0))
-                     (wrld1 (cddr missing/methods/wrld1))
-                     (ax-def-lst (defabsstobj-axiomatic-defs st$c methods))
-                     (raw-def-lst
+            (mv-let (msg accessors updaters)
+              (chk-defabsstobj-updaters st$c methods0 wrld0)
+              (cond
+               (msg (er soft ctx "~@0  ~@1" msg see-doc))
+               (missing-only (value missing))
+               (t
+                (er-progn
+                 (cond
+                  ((or (null missing)
+                       (member-eq (ld-skip-proofsp state)
+                                  '(include-book include-book-with-locals)))
+                   (value nil))
+                  ((ld-skip-proofsp state)
+                   (pprogn (warning$ ctx "defabsstobj"
+                                     "The following events would have to be ~
+                                      admitted, if not for proofs currently ~
+                                      being skipped (see :DOC ~
+                                      ld-skip-proofsp), before the given ~
+                                      defabsstobj event.  ~@0~|~@1"
+                                     see-doc
+                                     (defabsstobj-missing-msg missing wrld0))
+                           (value nil)))
+                  (t (er soft ctx
+                         "The following events must be admitted before the ~
+                          given defabsstobj event is admitted.  ~@0~|~@1"
+                         see-doc
+                         (defabsstobj-missing-msg missing wrld0))))
+                 (enforce-redundancy
+                  event-form ctx wrld0
+                  (let* ((methods (update-guard-post
+                                   (defabsstobj-logic-subst methods0)
+                                   methods0))
+                         (wrld1 (cddr missing/methods/wrld1))
+                         (ax-def-lst (defabsstobj-axiomatic-defs methods))
+                         (raw-def-lst
 
 ; The first method in methods is for the recognizer, as is guaranteed by
 ; chk-acceptable-defabsstobj (as explained in a comment there that refers to
 ; the present function, defabsstobj-fn1).
 
-                      (defabsstobj-raw-defs st-name methods))
-                     (names (strip-cars ax-def-lst))
-                     (the-live-var (the-live-var st-name)))
-                (er-progn
-                 (cond ((equal names (strip-cars raw-def-lst))
-                        (value nil))
-                       (t (value
-                           (er hard ctx
-                               "Defabsstobj-axiomatic-defs and ~
-                                defabsstobj-raw-defs are out of sync!  We ~
-                                expect them to define the same list of names. ~
-                                ~ Here are the strip-cars of the axiomatic ~
-                                defs:  ~x0.  And here are the strip-cars of ~
-                                the raw defs:  ~x1."
-                               names
-                               (strip-cars raw-def-lst)))))
-                 (revert-world-on-error
-                  (pprogn
-                   (set-w 'extension wrld1 state)
-                   (er-progn
-                    (process-embedded-events
-                     'defabsstobj
-                     (table-alist 'acl2-defaults-table wrld1)
-                     (or (ld-skip-proofsp state) t)
-                     (current-package state)
-                     (list 'defstobj st-name names) ; ee-entry
-                     (append
-                      (pairlis-x1 'defun ax-def-lst)
-                      `((encapsulate
-                         ()
-                         (set-inhibit-warnings "theory")
-                         (in-theory
-                          (disable
-                           (:executable-counterpart
-                            ,creator-name))))))
-                     0
-                     t ; might as well do make-event check
-                     (f-get-global 'cert-data state)
-                     ctx state)
+                          (defabsstobj-raw-defs st-name methods))
+                         (names (strip-cars ax-def-lst))
+                         (the-live-var (the-live-var st-name)))
+                    (er-progn
+                     (cond ((equal names (strip-cars raw-def-lst))
+                            (value nil))
+                           (t (value
+                               (er hard ctx
+                                   "Defabsstobj-axiomatic-defs and ~
+                                    defabsstobj-raw-defs are out of sync!  We ~
+                                    expect them to define the same list of ~
+                                    names.  Here are the strip-cars of the ~
+                                    axiomatic defs:  ~x0.  And here are the ~
+                                    strip-cars of the raw defs:  ~x1."
+                                   names
+                                   (strip-cars raw-def-lst)))))
+                     (revert-world-on-error
+                      (pprogn
+                       (set-w 'extension wrld1 state)
+                       (er-progn
+                        (process-embedded-events
+                         'defabsstobj
+                         (table-alist 'acl2-defaults-table wrld1)
+                         (or (ld-skip-proofsp state) t)
+                         (current-package state)
+                         (list 'defstobj st-name names) ; ee-entry
+
+; Warning: Don't change the following list of events without first considering
+; whether that invalidates the translation of definitions for logic rather than
+; execution (by use of inside-defabsstobj in translate-bodies1).
+
+                         (append
+                          (pairlis-x1 'defun ax-def-lst)
+                          `((encapsulate
+                              ()
+                              (set-inhibit-warnings "theory")
+                              (in-theory
+                               (disable
+                                (:executable-counterpart
+                                 ,creator-name))))))
+                         0
+                         t ; might as well do make-event check
+                         (f-get-global 'cert-data state)
+                         ctx state)
 
 ; The processing above will install defun events but defers installation of raw
 ; Lisp definitions, just as for defstobj.
 
-                    (let* ((wrld2 (w state))
-                           (wrld3
-                            (put-defabsstobj-invariant-risk
-                             st-name
-                             methods
-                             (putprop
-                              st-name 'congruent-stobj-rep
-                              (and congruent-to
-                                   (congruent-stobj-rep congruent-to wrld2))
-                              (putprop-unless
-                               st-name
-                               'non-memoizable
-                               (getpropc st$c 'non-memoizable nil wrld2)
-                               nil
-                               (putprop
-                                st-name 'absstobj-info
-                                (make absstobj-info
-                                      :st$c st$c
-                                      :logic-exec-pairs logic-exec-pairs)
-                                (putprop
-                                 st-name 'symbol-class
-                                 :common-lisp-compliant
-                                 (put-absstobjs-in-and-outs
-                                  st-name methods
-                                  (putprop
-                                   st-name 'stobj
-                                   (cons the-live-var
-
-; Names is in the right order; it does not need adjustment as is the case for
-; corresponding code in defstobj-fn.  See the comment about
-; chk-acceptable-defabsstobj1 in chk-acceptable-defabsstobj.
-
-                                         names)
-                                   (putprop-x-lst1
-                                    names 'stobj-function st-name
+                        (let* ((wrld2 (w state))
+                               (congruent-stobj-rep
+                                (and congruent-to
+                                     (congruent-stobj-rep congruent-to wrld2)))
+                               (non-memoizable
+                                (getpropc st$c 'non-memoizable nil wrld2))
+                               (wrld3
+                                (put-defabsstobj-invariant-risk
+                                 methods
+                                 (putprop
+                                  st-name 'congruent-stobj-rep
+                                  congruent-stobj-rep
+                                  (putprop-unless
+                                   st-name 'non-memoizable
+                                   non-memoizable nil
+                                   (putprop
+                                    st-name 'absstobj-info
+                                    (make absstobj-info
+                                          :st$c st$c
+                                          :absstobj-tuples
+                                          absstobj-tuples)
                                     (putprop
-                                     the-live-var 'stobj-live-var st-name
-                                     (putprop
-                                      the-live-var 'symbol-class
-                                      :common-lisp-compliant
-                                      wrld2))))))))))))
-                      (pprogn
-                       (set-w 'extension wrld3 state)
-                       (er-progn
-                        (chk-defabsstobj-guards methods congruent-to ctx
-                                                wrld3 state)
+                                     st-name 'symbol-class
+                                     :common-lisp-compliant
+                                     (put-absstobjs-in-and-outs
+                                      st-name methods
+                                      (putprop
+                                       st-name 'stobj
+                                       (list* the-live-var
+
+; We know that the first two members of names are the recognizer and creator,
+; respectively.  The remaining names need to be put into proper order for the
+; use of the 'stobj property in functions chk-stobj-updaters (in support of
+; stobj-let) and stobj-field-fn-of-stobj-type-p (for the call there of
+; absstobj-field-fn-of-stobj-type-p): each updater must immediately follow the
+; corresponding accessor.
+
+                                              (car names) ; recognizer
+                                              (cadr names) ; creator
+                                              (sort-absstobj-names
+                                               (cddr names)
+                                               accessors
+                                               updaters))
+                                       (putprop-x-lst1
+                                        names 'stobj-function st-name
+                                        (putprop
+                                         the-live-var 'stobj-live-var st-name
+                                         (putprop
+                                          the-live-var 'symbol-class
+                                          :common-lisp-compliant
+                                          wrld2)))))))))))
+                               (discriminator
+                                (cons 'defabsstobj
+                                      (make
+                                       defstobj-redundant-raw-lisp-discriminator-value
+                                       :event event-form
+                                       :creator creator-name
+                                       :congruent-stobj-rep
+                                       (or congruent-stobj-rep st-name)
+                                       :non-memoizable non-memoizable
+                                       :non-executable nil))))
+                          (pprogn
+                           (set-w 'extension wrld3 state)
+                           (er-progn
+                            (chk-defabsstobj-guards methods congruent-to ctx
+                                                    wrld3 state)
 
 ; The call of install-event below follows closely the corresponding call in
 ; defstobj-fn.  In particular, see the comment in defstobj-fn about a "cheat".
 
-                        (install-event st-name
-                                       event-form
-                                       'defstobj
-                                       (list* st-name
-                                              the-live-var
-                                              names) ; namex
-                                       nil
-                                       `(defabsstobj ,st-name
-                                          ,the-live-var
-                                          ,(defabsstobj-raw-init creator-name
-                                             methods)
-                                          ,raw-def-lst
-                                          ,event-form
-                                          ,ax-def-lst)
-                                       t
-                                       ctx
-                                       wrld3
-                                       state)))))))))))))))))))
+                            (install-event st-name
+                                           event-form
+                                           'defstobj
+                                           (list* st-name
+                                                  the-live-var
+                                                  names) ; namex
+                                           nil
+                                           `(defabsstobj ,st-name
+                                              ,the-live-var
+                                              ,(defabsstobj-raw-init creator-name
+                                                 methods)
+                                              ,raw-def-lst
+                                              ,discriminator
+                                              ,ax-def-lst)
+                                           t
+                                           ctx
+                                           wrld3
+                                           state))))))))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
                                protect-default congruent-to missing-only
@@ -21890,9 +22847,18 @@
 ; End of Essay on Nested Stobjs
 
 (defmacro stobj-let (&whole x &rest args)
+
+; It is usually a mistake to invoke the stobj-let macro during logical
+; evaluation, because some checks are generated by translate, using its access
+; to the world, rather than by this macro; see for example
+; chk-stobj-let/accessors.
+
   (declare (ignore args))
   #+acl2-loop-only
-  (stobj-let-fn x)
+  (mv-let (form bound-vars actuals producer-vars stobj)
+    (stobj-let-fn x)
+    (declare (ignore bound-vars actuals producer-vars stobj))
+    form)
   #-acl2-loop-only
   (stobj-let-fn-raw x))
 
@@ -22233,7 +23199,9 @@
   (let ((*inside-trace$* t))
     (when (eq direction :in)
       (incf *trace-level*))
-    (let ((trace-level *trace-level*))
+    (let ((trace-level *trace-level*)
+          (*trace-output* (get-output-stream-from-channel
+                           (f-get-global 'trace-co *the-live-state*))))
       (when (not (eq msgp :fmt!))
         (cond
          ((eq direction :in)
@@ -25057,54 +26025,49 @@
 ; because some functions we call are defined relatively late (at least that was
 ; the case when cltl-def-from-name was defined here).
 
-(defun memoize-table-chk-commutative (str fn val ctx wrld)
+(defun memoize-table-chk-commutative-msg (str fn val wrld)
 
 ; Function memoize-table-chk does a full check that the given fn/val pair is a
 ; legal entry for memoize-table in the given world.  Here we check in
 ; particular that if the :commutativity value is supplied in val, then it names
 ; a lemma in wrld stating the commutativity of fn.  This function always
-; returns t or causes a hard error using the same string (str) as is used by
-; memoize-table-chk.
+; returns nil or else a message that reports an error using the same string
+; (str) as is used by memoize-table-chk.
 
   (declare (xargs :guard (and (symbolp fn)
                               (not (eq (getpropc fn 'formals t wrld)
                                        t))
                               (symbol-alistp val))))
   (let ((commutative (cdr (assoc-eq :commutative val))))
-    (cond ((null commutative) t)
+    (cond ((null commutative) nil)
           ((not (eql (len (getpropc fn 'formals t wrld))
                      2))
-           (er hard ctx
-               "~@0~x1 is not a binary function symbol, so it is illegal to ~
-                specify a non-nil value of :commutative (here, ~x2) for ~
-                memoization of this function."
-               str fn commutative))
+           (msg "~@0~x1 is not a binary function symbol, so it is illegal to ~
+                 specify a non-nil value of :commutative (here, ~x2) for ~
+                 memoization of this function."
+                str fn commutative))
           ((not (symbolp commutative))
-           (er hard ctx
-               "~@0Attempted to memoize ~x1 with a non-symbolp value of ~
-                :commutative, ~x2."
-               str fn commutative))
+           (msg "~@0Attempted to memoize ~x1 with a non-symbolp value of ~
+                 :commutative, ~x2."
+                str fn commutative))
           (t (let ((thm (getpropc commutative 'theorem nil wrld)))
                (cond ((null thm)
-                      (er hard ctx
-                          "~@0The theorem ~x1 specified for :commutative ~
-                           memoization of ~x2 does not exist."
-                          str commutative fn))
-                     (t
-                      (or
-                       (case-match thm
-                         (('equal (!fn x y) (!fn y x))
-                          (cond
-                           ((and (variablep x)
-                                 (variablep y)
-                                 (not (eq x y)))
-                            t)))
-                         (& nil))
-                       (er hard ctx
-                           "~@0The theorem ~x1 specified for :commutative ~
-                            memoization of ~x2 does not have the expected ~
-                            form.  See :DOC memoize."
-                           str commutative fn)))))))))
+                      (msg "~@0The theorem ~x1 specified for :commutative ~
+                            memoization of ~x2 does not exist."
+                           str commutative fn))
+                     ((case-match thm
+                        (('equal (!fn x y) (!fn y x))
+                         (cond ((and (variablep x)
+                                     (variablep y)
+                                     (not (eq x y)))
+                                t)
+                               (t nil)))
+                        (& nil))
+                      nil)
+                     (t (msg "~@0The theorem ~x1 specified for :commutative ~
+                              memoization of ~x2 does not have the expected ~
+                              form.  See :DOC memoize."
+                             str commutative fn))))))))
 
 (defun non-memoizable-stobjs (stobjs-in wrld)
   (cond ((endp stobjs-in) nil)
@@ -25882,24 +26845,6 @@
 ; We introduce defwarrant here (along with some related and supporting
 ; utilities) in support of defattach.
 
-(defun tameness-conditions (ilks var)
-  (declare (xargs :mode :program))
-  (cond ((endp ilks) nil)
-        ((eq (car ilks) :FN)
-         (cons `(TAMEP-FUNCTIONP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        ((eq (car ilks) :EXPR)
-         (cons `(TAMEP (CAR ,var))
-               (tameness-conditions (cdr ilks) (list 'CDR var))))
-        (t (tameness-conditions (cdr ilks) (list 'CDR var)))))
-
-(defun successive-cadrs (formals var)
-  (declare (xargs :mode :program))
-  (cond ((endp formals) nil)
-        (t
-         (cons `(CAR ,var)
-               (successive-cadrs (cdr formals) (list 'CDR var))))))
-
 ; As described in the ``BTW'' notes in the DEFWARRANT section of apply.lisp,
 ; we need to convert the lemma provided by defun-sk into an effective rewrite
 ; rule.  To do that we need a hint and this function creates that hint.
@@ -25922,7 +26867,7 @@
          (cons T (necc-name-ARGS-instance (cdr ilks))))
         (t (cons NIL (necc-name-ARGS-instance (cdr ilks))))))
 
-(defun defwarrant-event (fn formals bdg)
+(defun defwarrant-events (fn formals bdg)
 
 ; Bdg must be a legal badge for (fn . formals).
 
@@ -25940,17 +26885,8 @@
                      fn)))
     (cond
      ((eq (access apply$-badge bdg :ilks) t)
-      `((defun-sk ,name ()
-          (forall (args)
-            (and
-             (equal (badge-userfn ',fn) ',bdg)
-             (equal (apply$-userfn ',fn args)
-                    ,(if (eql (access apply$-badge bdg :out-arity) 1)
-                         `(,fn ,@(successive-cadrs formals 'args))
-                         `(mv-list
-                           ',(access apply$-badge bdg :out-arity)
-                           (,fn ,@(successive-cadrs formals 'args)))))))
-          :constrain t)
+      `(,(make-apply$-warrant-defun-sk fn formals bdg nil) ; trans1-flg = nil
+; Make the appropriate defun-sk form.  It will be translated when admitted.
         (in-theory (disable ,(definition-rule-name name)))
         (defthm ,rule-name
           (implies
@@ -25972,19 +26908,8 @@
              (hyp (if (null (cdr hyp-list))
                       (car hyp-list)
                       `(AND ,@hyp-list))))
-        `((defun-sk ,name ()
-            (forall (args)
-              (implies
-               ,hyp
-               (and
-                (equal (badge-userfn ',fn) ',bdg)
-                (equal (apply$-userfn ',fn args)
-                       ,(if (eql (access apply$-badge bdg :out-arity) 1)
-                            `(,fn ,@(successive-cadrs formals 'args))
-                            `(mv-list
-                              ',(access apply$-badge bdg :out-arity)
-                              (,fn ,@(successive-cadrs formals 'args))))))))
-            :constrain t)
+        `(,(make-apply$-warrant-defun-sk fn formals bdg nil) ; trans1-flg = nil
+; Make the appropriate defun-sk form.  It will be translated when admitted.
           (in-theory (disable ,(definition-rule-name name)))
           (defthm ,rule-name
             (and (implies (force (,(warrant-name fn)))
@@ -26842,15 +27767,15 @@
                       required to specify :SYSTEM-OK T in your defattach ~
                       event."
                      f))
-                ((and (warrantp f wrld)
+                ((and (warrant-function-namep f wrld)
                       (not (eq g 'true-apply$-warrant)))
 
 ; We check in attachment-records that the attachment to a warrant is always
 ; true-apply$-warrant.  See the Essay on Memoization with Attachments.
 
                  (er soft ctx
-                     "The only attachment legal for the warrant ~x0 is ~x1.  ~
-                      The attachment of ~x2 to ~x0 is thus illegal."
+                     "The only attachment legal for the warrant function ~x0 ~
+                      is ~x1.  The attachment of ~x2 to ~x0 is thus illegal."
                      f 'true-apply$-warrant g))
                 (t
                  (let ((at-alist (attachment-alist f wrld)))
@@ -27383,7 +28308,7 @@
 ; also supports the attachment of each warrant to true-apply$-warrant, because
 ; in the doppelganger model, every warrant is true.
 
-              (warrantp (caar alist) wrld))
+              (warrant-function-namep (caar alist) wrld))
          (defattach-constraint-rec
            (cdr alist) full-alist proved-fnl-insts-alist constraint
            event-names new-entries seen wrld))
@@ -28288,7 +29213,7 @@
     (value records))
    (t (let ((pair (car attachments)))
         (cond
-         ((warrantp (car pair) wrld)
+         ((warrant-function-namep (car pair) wrld)
 
 ; For the purpose of finding loops, we can ignore attachments to warrants.  The
 ; reason is that we can view attachments as being done in two stages: first,
@@ -28302,7 +29227,7 @@
 ; theory.
 
 ; We can also ignore attachments to warrants when computing extended ancestors
-; for handling functions memoized with :aokp t, because the are all attached to
+; for handling functions memoized with :aokp t, because they are all attached to
 ; true-apply$-warrant, which is a defined function and hence cannot have its
 ; behavior changed with an attachment, and which has no ancestors.  See the
 ; Essay on Memoization with Attachments.
@@ -28740,6 +29665,7 @@
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin
              ,(cdr (assoc-eq 'ppr-flat-right-margin *initial-global-table*)))
+            (current-package "ACL2")
 
 ; Values not to be modified; keep in sync with *fixed-fmt-controls*.
 
@@ -28791,6 +29717,26 @@
 
   (f-put-global 'iprint-ar (compress1 'iprint-ar iprint-ar) state))
 
+(defun override-global-evisc-table (evisc-tuple state)
+
+; This function expands evisc-tuple as necessary so that entries in the global
+; evisc-table will be ignored when printing with evisceration.
+
+  (let ((evisc-table (table-alist 'evisc-table (w state))))
+    (cond ((null evisc-table) ; optimization
+           evisc-tuple)
+          ((consp evisc-tuple)
+           (cons (append (car evisc-tuple)
+                         (pairlis$ (strip-cars evisc-table)
+                                   nil))
+                 (cdr evisc-tuple)))
+          (t ; presumably evisc-tuple is nil
+           (evisc-tuple nil
+                        nil
+                        (pairlis$ (strip-cars evisc-table)
+                                  nil)
+                        nil)))))
+
 (defmacro channel-to-string (form channel-var
                                   &optional
                                   extra-var fmt-controls
@@ -28824,9 +29770,10 @@
 ; evaluated.
 
 ; This macro is not recommended for users, as it has been designed specifically
-; for the fmt family of functions.  If one wishes to use this or a similar
-; macro outside the boot-strap then one will need to avoid issues with
-; untouchables; here is an example.
+; for the fmt family of functions.  In fact, the code below provides
+; idiosyncratic special handling for evisc-tuple.  If one wishes to use this or
+; a similar macro outside the boot-strap then one will need to avoid issues
+; with untouchables; here is an example.
 
 ;   (defttag t)
 ;   (remove-untouchable temp-touchable-fns nil)
@@ -28854,10 +29801,16 @@
                               (symbolp fmt-controls)
                               (not (eq 'result extra-var))
                               (not (eq 'state extra-var)))))
-  (let* ((body0 ; error triple (mv nil val state), where val may cons extra-var
+  (let* ((form0
+          (if (member-eq 'evisc-tuple form)
+              `(let ((evisc-tuple
+                      (override-global-evisc-table evisc-tuple state)))
+                 ,form)
+            form))
+         (body0 ; error triple (mv nil val state), where val may cons extra-var
           `(mv?-let
             (,@(and extra-var (list extra-var)) state)
-            ,form
+            ,form0
             (mv-let (erp result state)
                     (get-output-stream-string$ ,channel-var state)
                     (mv nil
@@ -28926,12 +29879,17 @@
        ,(cond (extra-var `(mv (car result) (cdr result)))
               (t 'result))))))
 
+(defconst *fmt-control-defaults-keys*
+  (strip-cars *fmt-control-defaults*))
+
 (defun fms-to-string-fn (str alist evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -28944,7 +29902,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fms! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere nil fmt-control-alist))
@@ -28957,7 +29917,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -28970,7 +29932,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist))))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*))))
   (channel-to-string
    (fmt! str alist chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -28980,10 +29944,12 @@
 
 (defun fmt1-to-string-fn (str alist col evisc-tuple fmt-control-alist)
   (declare (xargs :guard ; incomplete guard
-                  (and (stringp str)
-                       (character-alistp alist)
+                  (and (character-alistp alist)
+                       (stringp str)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
@@ -28997,7 +29963,9 @@
                   (and (stringp str)
                        (character-alistp alist)
                        (standard-evisc-tuplep evisc-tuple)
-                       (alistp fmt-control-alist)))
+                       (alistp fmt-control-alist)
+                       (alist-keys-subsetp fmt-control-alist
+                                           *fmt-control-defaults-keys*)))
            (type (signed-byte 30) col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
@@ -29987,6 +30955,10 @@
 
 (defun protected-eval (form on-behalf-of ctx state aok)
 
+; Warning: If you change this definition, consider whether the code in
+; value-triple-fn1 should also be changed around the call there of
+; protect-system-state-globals.
+
 ; This evaluator is intended to be used for make-event expansion.
 
 ; We assume that this is executed under a revert-world-on-error, so that we do
@@ -30028,6 +31000,12 @@
 ; If we bind safe-mode to t here, visit occurrences of comments "; Note that
 ; safe-mode for make-event will require addition".  Those comments are
 ; associated with membership tests that, for now, we avoid for efficiency.
+; Also note that we have similarly decided that value-triple does not use
+; safe-mode (at least by default); it did at one time, but we decided that
+; since make-event doesn't use safe-mode, it is a bit pointless to require
+; value-triple to use safe-mode.  So if we decide that make-event expansion
+; should use safe-mode, then we should strongly consider making the same
+; decision for value-triple.
 
                  (trans-eval-default-warning form ctx state aok)))
         (prog2$
@@ -30318,20 +31296,22 @@
         (state-global-let*
          ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
                                                     state))))
-         (let ((wrld (w state))
-               (skip-check-expansion
-                (and (consp check-expansion)
-                     (let ((info (f-get-global 'certify-book-info state)))
-                       (and info
-                            (access certify-book-info info
-                                    :include-book-phase))))))
+         (let* ((wrld (w state))
+                (include-book-phase-p
+                 (let ((info (f-get-global 'certify-book-info state)))
+                   (and info
+                        (access certify-book-info info :include-book-phase))))
+                (skip-check-expansion
+                 (and (consp check-expansion)
+                      include-book-phase-p)))
            (er-let*
                ((debug-depth (make-event-debug-pre form on-behalf-of state))
                 (expansion0/new-kpa/new-ttags-seen
                  (cond
                   ((and expansion?
                         (eq (ld-skip-proofsp state) 'include-book)
-                        (not (f-get-global 'including-uncertified-p state))
+                        (or (not (f-get-global 'including-uncertified-p state))
+                            include-book-phase-p)
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
@@ -30867,6 +31847,168 @@
         (ec-call
          (pairlis$ (lambda-object-formals ,fn)
                    ,args))))
+
+(defmacro our-quote-macro (x)
+
+; This odd little macro is just an alist for quote, which add-trip uses to
+; communicate information to install-for-add-trip (as described in comments in
+; those functions).
+
+  (list 'quote x))
+
+(defun value-triple-fn1 (form check stobjs-out0 ctx state)
+  (declare (xargs :guard t))
+  (er-let* ((stobjs-out0 (value (or stobjs-out0 '(nil))))
+            (stobjs-out/replaced-val
+             (cond ((equal stobjs-out0 '(nil)) ; take efficiency short-cut
+                    (cond ((or (eq form t)
+                               (eq form nil)
+                               (keywordp form))
+                           (mv nil `((nil) . ,form) state))
+                          ((and (consp form)
+                                (eq (car form) 'QUOTE)
+                                (consp (cdr form))
+                                (null (cddr form)))
+
+; We avoid quotep just above since we do not want to include the case that form
+; is ill-formed, as in (QUOTE x . y) where y is not nil.
+
+                           (mv nil `((nil) . ,(cadr form)) state))
+                          (t (trans-eval `(value ,form) ctx state t))))
+                   (t ; no warning when stobjs-out is explicit
+
+; We ensure that the state is protected from inappropriate changes, much as
+; we do in protected-eval.  If you change this protection below, consider
+; whether corresponding chcanges should be made to protected-eval.
+
+                    (revert-world
+                     (state-global-let*
+                      ((ttags-allowed nil))
+                      (protect-system-state-globals
+                       (if (eq stobjs-out0 :auto)
+
+; We could use trans-eval-default-warning here, as we do during make-event
+; expansion (as explained in protected-eval).  But by default, that is
+; trans-eval-no-warning.  We view the use of :auto as a way to ask for the
+; warning when user stobjs are modified.
+
+                           (trans-eval form ctx state t)
+                         (trans-eval-no-warning form ctx state t)))))))))
+    (let* ((stobjs-out (car stobjs-out/replaced-val))
+           (replaced-val (cdr stobjs-out/replaced-val))
+           (error-triple-p (equal stobjs-out *error-triple-sig*))
+           (val0 (cond (error-triple-p
+                        (cadr replaced-val))
+                       ((cdr stobjs-out)
+                        (car replaced-val))
+                       (t
+                        replaced-val))))
+      (cond
+       ((not (or (eq stobjs-out0 :auto)
+                 (equal stobjs-out stobjs-out0)
+                 (and (equal stobjs-out0 '(nil))
+                      (equal stobjs-out *error-triple-sig*))))
+        (flet ((output-msg (stobjs-out)
+                           (cond
+                            ((equal stobjs-out '(nil))
+                             "a single (non-stobj) value")
+                            ((null (cdr stobjs-out))
+                             (msg "a single stobj value, ~x0"
+                                  (car stobjs-out)))
+                            (t
+                             (msg "multiple values of shape ~x0"
+                                  (cons 'mv stobjs-out))))))
+          (er soft ctx
+              "Expected ~@0, but got ~@1.~@2"
+              (output-msg stobjs-out0)
+              (output-msg stobjs-out)
+
+; Report modified stobjs even if stobjs-out is not :auto, since warnings may
+; have been turned off and also to emphasize that the changes occurred in spite
+; of there being an error.
+
+              (let ((stobjs (remove nil stobjs-out)))
+                (cond ((null stobjs) "")
+                      (t (msg "  Note that in spite of the error, evaluation ~
+                               may have modified the stobj~#0~[~/s~] ~&0."
+                              stobjs)))))))
+       ((and error-triple-p (car replaced-val))
+        (er soft ctx
+            "Evaluation failed: Result was an error triple with non-nil error ~
+             component, ~x0.  See :DOC error-triple."
+            (car replaced-val)))
+       (check (cond ((car stobjs-out)
+                     (er soft ctx
+                         "Ill-formed assertion: The~@0 value returned is ~@1."
+                         (if (cdr stobjs-out) " first" "")
+                         (if (eq (car stobjs-out) 'state)
+                             "the ACL2 state"
+                           (msg "the stobj, ~x0"
+                                (car stobjs-out)))))
+                    (val0 (value :passed))
+                    ((tilde-@p check)
+                     (er soft ctx
+                         "Assertion failed:~%~@0~|"
+                         check))
+                    (t
+                     (er soft ctx
+                         "Assertion failed on form:~%~x0~|"
+                         form))))
+       ((car stobjs-out)
+        (value (car stobjs-out)))
+       (t (value val0))))))
+
+(defun chk-value-triple (on-skip-proofs check safe-mode stobjs-out ctx state)
+
+; Warning: The checks in chk-value-triple should be at least as strong as the
+; ones made here.
+
+  (cond
+   ((not (or (booleanp on-skip-proofs)
+             (eq on-skip-proofs :interactive)))
+    (er soft ctx
+        "The value of keyword argument :ON-SKIP-PROOFS must be Boolean or ~
+         :INTERACTIVE, but ~x0 is not."
+        on-skip-proofs))
+   ((not (or (booleanp check)
+             (msgp check)))
+    (er soft ctx
+        "The value of keyword argument :CHECK must be Boolean or satisfy the ~
+         predicate msgp.  The value ~x0 is thus illegal."
+        check))
+   ((not (or (booleanp safe-mode)
+             (eq safe-mode :same)))
+    (er soft ctx
+        "The value of keyword argument :SAFE-MODE must be Boolean, but ~x0 is ~
+         not."
+        safe-mode))
+   ((not (or (eq stobjs-out :auto)
+             (symbol-listp stobjs-out)))
+    (er soft ctx
+        "The value of keyword argument :STOBJS-OUT must either be :AUTO or ~
+         satisfy symbol-listp.  The value ~x0 is thus illegal."
+        stobjs-out))
+   (t (value nil))))
+
+(defun value-triple-fn (form on-skip-proofs check safe-mode stobjs-out ctx
+                             state)
+  (declare (xargs :guard t))
+  (er-progn
+   (chk-value-triple on-skip-proofs check safe-mode stobjs-out ctx state)
+   (cond
+    ((and (not on-skip-proofs)
+          (f-get-global 'ld-skip-proofsp state))
+     (value :skipped))
+    ((and (eq on-skip-proofs :interactive)
+          (eq (f-get-global 'ld-skip-proofsp state) 'include-book))
+     (value :skipped))
+    ((or (eq safe-mode :same)
+         (eq safe-mode (f-get-global 'safe-mode state)))
+     (value-triple-fn1 form check stobjs-out ctx state))
+    (t
+     (state-global-let*
+      ((safe-mode (if safe-mode t nil)))
+      (value-triple-fn1 form check stobjs-out ctx state))))))
 
 ; Essay on Memoization with Partial Functions (Memoize-partial)
 
@@ -31658,18 +32800,319 @@
                                                       wrld))))))))))))
 
 (defun partial-functions-table-guard (fn val wrld)
-  (let ((msg (partial-functions-table-guard-msg fn val wrld)))
-    (cond (msg (er hard 'partial-functions-table-guard
-                   "Illegal partial-functions-table key and value (see :DOC ~
-                    memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
-                   fn val msg))
-          (t t))))
+  (let ((msg0 ; nil if fn/val is OK as a key/value pair, else a msg
+         (partial-functions-table-guard-msg fn val wrld)))
+    (cond
+     (msg0 (mv nil
+               (msg
+                "Illegal partial-functions-table key and value (see :DOC ~
+                 memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
+                fn val msg0)))
+     (t (mv t nil)))))
 
 (table partial-functions-table nil nil
        :guard
        (partial-functions-table-guard key val world))
 
-(defun memoize-table-chk (key val wrld)
+; Essay on the :INVOKE option of Memoize
+
+; See the code and :DOC memoize for details about this option.  Here we discuss
+; miscellaneous issues relevant to its design.
+
+; The wide use of MBE has established the value of computing a call of a
+; function symbol, f, by using a definition of f that differs from the logical
+; definition of f.  The :INVOKE option of memoize provides such a capability
+; that avoids the inconvenience of setting up the alternate definition at defun
+; time.
+
+; A typical invocation of memoize using :invoke is as follows.
+
+; (memoize 'old-fn :invoke 'new-fn)
+
+; The implementation searches the world for the proof obligations that justify
+; this operation: equality of old-fn and new-fn, and (when not sufficiently
+; trivial) implication of their guards.  We considered supporting a way for the
+; user to specify the names of those theorems in the memoize command.  On a
+; 2019-vintage MacBook Pro it took only 0.28 seconds to search the entire world
+; (fruitlessly) for the former after including system book doc/top-slow, which
+; produced a world of length 5,633,256.  Moreover, we skip the checks during
+; include-book and the second pass of encapsulate (see the call of
+; skip-proofs-due-to-system in memoize-table-chk-invoke-msg), which is
+; justified by the usual conservativity argument.  So we kept the interface
+; simple, sparing users from specifying those theorems.  Note that memoize is
+; not doing the proofs itself; if the table event were to invoke the prover, we
+; would probably need to remove TABLE from the list of event types excluded
+; under the comment, "Comment on irrelevance of skip-proofs", in install-event.
+; That comment also serves to justify our decision to check for the necessary
+; theorems in the world even when skipping proofs (unless the system is doing
+; the skipping, in particular during include-book or the second pass of
+; encapsulate).
+
+; We considered allowing a new body in place of the new-fn:
+
+; (memoize 'old-fn :invoke 'term).
+;
+; However, that would require complicating the implementation by computing the
+; guard proof obligation for the term (which depends on state via the global
+; enabled structure, by the way, because simplification of ground terms is
+; baked into computing a guard), as well as ensuring that term is
+; guard-verified; a new function would probably be defined whose body is term
+; (but would we carry over declarations from the old function?).  Moreover,
+; such a version is less general since it doesn't support recursion that could
+; take place in the definition of new-fn.  Note that there needn't be any
+; execution overhead for the new-fn approach if new-fn is defined with
+; defun-inline.  User macros can take care of defining a variant that takes a
+; term if need be; see use-io-pairs for an example of generating a function
+; symbol that is very likely to be new.  So in summary, we only allow a
+; function symbol for the value of :invoke.
+
+; Here is the basic idea of how we redefine f in raw lisp in response to
+; (memoize 'f :invoke 'g); see cltl-def-memoize-invoke for details.
+
+; (defun f (x) <dcls> <f-body>)
+; (defun g (x) (... (f ...) ...))
+; ; Then redefine as follows.
+; (defvar *g* nil) ; a gensym actually
+; (defun f (x)
+;   <dcls>
+;   (if *g*
+;       (funcall <old_symbol-function_of_f> x)
+;     (let ((*g* t))
+;       (g x))))
+
+; It's tempting just to define (f x) to be (g x) if g doesn't call f.  But even
+; then, we can't preclude returning to a call of f from g, perhaps due to
+; attachments or other memoization with :invoke.  It seems safest for the
+; redefinition of f to ensure that we don't re-enter g from f within a
+; computation where g already passed control to f.
+
+; We considered the following potential optimization, but as explained below,
+; we rejected it.  The idea is to avoid testing *g* on every recursive call of
+; f after we enter f via g; below, just one such test puts us into the labels
+; form.  Of course, this alleged optimization has no purpose unless f calls
+; itself, and we could check that directly using ffnnamep (or maybe, if we want
+; to get fancy, a variant of ffnnamep-mod-mbe that uses :exec rather than
+; :logic).
+
+; (defun f (x)
+;   (if *g*
+;       (labels ((f (x)
+;                   (if (consp x)
+;                       (cons (list (car x)) (f (cdr x)))
+;                     x)))
+;               (f x))
+;     (let ((*g* t))
+;       (g x))))
+
+; But actually, this change would probably provide no efficiency gain in CCL or
+; SBCL, at least, since experiments show that recursive calls of f are actually
+; calls of the old symbol-function for f, which would never lead to further
+; testing of *g*.  (LispWorks, on the other hand, does seem to test *g*
+; repeatedly.  We are hopeful that this doesn't present much slowdown.)  At any
+; rate: as hinted at above, the use of labels wouldn't prevent calls of the
+; global f from being made by way of other functions that might, in turn, be
+; reached from f by way of attachments or other uses of :invoke.  To summarize:
+; We have abandoned the labels idea above because it's unnecessary for (at
+; least) CCL and SBCL and it's incomplete as a solution.
+
+; We considered possible hypotheses for the equality of the old and invoked
+; functions.  We briefly considered allowing the :condition argument as a
+; hypothesis, but that makes no sense when :condition is nil, which is the
+; default when :invoke is non-nil (and is probably the common case).  More
+; tempting is to allow the guard of the old function as a hypothesis, since we
+; expect that this guard will always hold during evaluation.  The problem is
+; that the guard might not hold when the old function is called under a
+; program-mode function call.  So for now, at least, we require an
+; unconditional equality to be proved.  We might be tempted to consider
+; allowing the guard hypothesis if that turns out to be important, but in that
+; case we need some mechanism, perhaps based on invariant-risk or **1*-as-raw*
+; (though we haven't thought this through), to keep function calls as *1*
+; calls.  But then memoization wouldn't take effect, which would defeat the
+; point of all this!  So we require the unconditional equality to hold.
+
+; Note that :recursive has default nil in the (sole) case that :invoke is
+; non-nil.  It is an error to specify :recursive t in that case, because
+; that doesn't make sense.  Or does it?  Recall:
+
+; (defun f (x)
+;   <dcls>
+;   (if *g*
+;       (funcall <old_symbol-function_of_f> x)
+;     (let ((*g* t))
+;       (g x))))
+
+; What if we want recursive calls of f to go through g?  (We don't, for the
+; application to the use-io-pairs tool; but maybe there's a reason for someone
+; to want this.)  There is serious danger of looping unless we are careful.  We
+; choose to postpone further consideration of such a :recursive t argument
+; unless and until there is a demonstrated need.
+
+; For (memoize 'f :invoke 'g), must f and/or g be in logic mode and even
+; guard-verified?  Well, they must in be logic mode, because otherwise the
+; necessary equality theorem won't exist.  We further require g to be
+; guard-verified; otherwise we can't trust that the guard of f is sufficient to
+; ensure a well-guarded call of g.  Should we also require f to be
+; guard-verified?  That doesn't seem necessary, since *1*f won't call f unless
+; f is guard-verified, and *1*f doesn't call g.  Of course, there could be a
+; program-mode wrapper for f.  But at that point we are subverting the guard
+; check on f anyhow, so it's not really worse to subvert the guard check on g.
+
+(defun memoize-invoke-equality-p (fn invoke term)
+  (and (ffn-symb-p term 'equal)
+       (let ((lhs (fargn term 1))
+             (rhs (fargn term 2)))
+         (and (if (ffn-symb-p lhs fn)
+                  (ffn-symb-p rhs invoke)
+                (if (ffn-symb-p lhs invoke)
+                    (ffn-symb-p rhs fn)
+                  nil))
+              (all-variablep (fargs lhs))
+              (equal (fargs lhs) (fargs rhs))
+              (no-duplicatesp-eq (fargs lhs))))))
+
+(defun memoize-invoke-equality-exists (fn invoke wrld-tail wrld)
+  (cond ((null wrld-tail) nil)
+        ((and (eq (cadr (car wrld-tail)) 'theorem)
+              (memoize-invoke-equality-p fn invoke
+                                         (cddr (car wrld-tail)))
+; We do a final check in case redefinition has obliterated the theorem.
+              (equal (getpropc (car (car wrld-tail)) 'theorem nil wrld)
+                     (cddr (car wrld-tail))))
+         t)
+        (t (memoize-invoke-equality-exists fn invoke (cdr wrld-tail) wrld))))
+
+(defun memoize-invoke-guard-implication-default-name (f g)
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                (symbol-name f) "-guard-implies-"
+                (symbol-name g) "-guard")
+   g))
+
+(defun memoize-invoke-guard-implication-term (f g wrld)
+
+; This function normally returns an implication: the guard of f implies the
+; guard of g (stated in terms of the formals of f).  However, if that
+; implication is trivial then this function may return nil.
+
+  (let ((guard-g (guard g nil wrld)))
+    (cond ((equal guard-g *t*) nil)
+          (t (let ((guard-f (guard f nil wrld))
+                   (guard-g (sublis-var (pairlis$ (formals g wrld)
+                                                  (formals f wrld))
+                                        guard-g)))
+               (cond ((equal guard-f guard-g) nil)
+                     ((if-tautologyp (fcons-term* 'if guard-f guard-g *t*))
+                      nil)
+                     (t (fcons-term* 'implies guard-f guard-g))))))))
+
+(defmacro verify-guard-implication (f g &key hints otf-flg)
+  `(make-event
+    (let ((term (or (memoize-invoke-guard-implication-term ',f ',g (w state))
+                    t))
+          (name (memoize-invoke-guard-implication-default-name ',f ',g)))
+      (list 'defthm name
+            term
+            ,@(and hints (list :hints (list 'quote hints)))
+            ,@(and otf-flg (list :otf-flg (list 'quote otf-flg)))
+            :rule-classes nil))))
+
+(defun memoize-invoke-guard-thm-exists-1 (term wrld-tail wrld)
+  (cond ((null wrld-tail) nil)
+        ((and (eq (cadr (car wrld-tail)) 'theorem)
+              (equal term (cddr (car wrld-tail)))
+; We do a final check in case redefinition has obliterated the theorem.
+              (equal (getpropc (car (car wrld-tail)) 'theorem nil wrld)
+                     term))
+         t)
+        (t (memoize-invoke-guard-thm-exists-1 term (cdr wrld-tail) wrld))))
+
+(defun memoize-invoke-guard-thm-exists (fn invoke wrld)
+  (let ((term (memoize-invoke-guard-implication-term fn invoke wrld)))
+    (if term
+        (memoize-invoke-guard-thm-exists-1 term wrld wrld)
+      t)))
+
+(defun memoize-table-chk-invoke-msg (key invoke str wrld state)
+
+; Invoke is the non-nil value of the :invoke keyword for a call of memoize on
+; the given function symbol, key.  We return nil if these values are
+; acceptable, and otherwise return a message to print.
+
+  (cond
+   ((not (and (symbolp invoke)
+              (function-symbolp invoke wrld)
+              (eq (symbol-class invoke wrld)
+                  :common-lisp-compliant)))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is not a guard-verified ~
+          function symbol."
+         str invoke))
+   ((untouchable-fn-p invoke wrld (f-get-global 'temp-touchable-fns state))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is an untouchable function ~
+          symbol."
+         str invoke))
+   ((and (assoc-eq invoke *ttag-fns*)
+         (not (ttag wrld)))
+    (msg "~@0The value of keyword :INVOKE, ~x1, is a function symbol that ~
+          cannot be called unless a trust tag is in effect.  See :DOC ~
+          defttag.~@2"
+         str
+         invoke
+         (or (cdr (assoc-eq invoke *ttag-fns*))
+             "")))
+   ((not (logicp key wrld))
+    (msg "~@0When memoizing with memoize keyword :INVOKE, the memoized ~
+          function must be in :logic mode, which ~x1 is not."
+         str key))
+   ((not (and (equal (stobjs-in key wrld) (stobjs-in invoke wrld))
+              (not (member-eq key *stobjs-out-invalid*))
+              (not (member-eq invoke *stobjs-out-invalid*))
+              (equal (stobjs-out key wrld) (stobjs-out invoke wrld))))
+    (msg "~@0The function to be memoized, ~x1, has a different signature from ~
+          the function to be :INVOKEd, ~x2."
+         str key invoke))
+   ((skip-proofs-due-to-system state)
+
+; By conservativity it is sound to skip the theorem checks (for equality and
+; guard implication) when we are including a book or in the second pass of
+; encapsulate.
+
+    nil)
+   (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
+            (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
+        (cond
+         ((and eq-thm-p gd-thm-p) nil)
+         (t (let* ((thm-formula
+                    (and (not eq-thm-p)
+                         `(defthm ,(intern-in-package-of-symbol
+                                    (concatenate 'string
+                                                 (symbol-name key)
+                                                 "-is-"
+                                                 (symbol-name invoke))
+                                    invoke)
+                            ,(let ((formals (formals key wrld)))
+                               `(equal (,key ,@formals)
+                                       (,invoke ,@formals)))
+                            :rule-classes nil)))
+                   (guard-thm-formula
+                    (and (not gd-thm-p)
+                         `(verify-guard-implication ,key ,invoke)))
+                   (msg (cond (gd-thm-p
+                               (msg "~x0" thm-formula))
+                              (eq-thm-p
+                               (msg "~x0" guard-thm-formula))
+                              (t
+                               (msg "~x0~|~%~x1"
+                                    thm-formula
+                                    guard-thm-formula)))))
+              (msg "~@0The following event~#1~[~/s~] must be admitted ~
+                    (possibly with differing name or macro) before memoizing ~
+                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
+                    memoize.~|~%~@4"
+                   str
+                   (if (or eq-thm-p gd-thm-p) 0 1)
+                   key invoke msg))))))))
+
+(defun memoize-table-chk (key val wrld state)
 
 ; Although this function is generally only called with #+hons, nevertheless we
 ; define it independently of #+hons so that it has the same definition in the
@@ -31708,14 +33151,14 @@
          (condition (and val (cdr (assoc-eq :condition-fn val))))
          (inline (and val (cdr (assoc-eq :inline val))))
          (aokp (and val (cdr (assoc-eq :aokp val))))
-         (total (and val (cdr (assoc-eq :total val)))))
-    (let ((result
-           (cond
-            ((eq key-formals t)
-             (er hard ctx
-                 "~@0~x1 is not a function symbol."
+         (invoke (and val (cdr (assoc-eq :invoke val))))
+         (total (and val (cdr (assoc-eq :total val))))
+         (msg
+          (cond
+           ((eq key-formals t)
+            (msg "~@0~x1 is not a function symbol."
                  str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply
 ; with condition, allowing :inline t?  Perhaps we could, but that would require
@@ -31724,72 +33167,72 @@
 ; syntactic restrictions.  We can think about this if someone has reason to
 ; memoize with :condition nil but not :inline nil.
 
-                  (member-eq 'state (stobjs-in key wrld)))
-             (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                 (member-eq 'state (stobjs-in key wrld)))
+            (msg "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
                   for profiling)."
                  str key))
-            ((not (booleanp aokp))
-             (er hard ctx
-                 "~@0:aokp has a non-Boolean value, ~x1."
+           ((not (booleanp aokp))
+            (msg "~@0:aokp has a non-Boolean value, ~x1."
                  str aokp))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.
 
-                  (non-memoizable-stobjs (stobjs-in key wrld) wrld))
-             (mv-let
+                 (non-memoizable-stobjs (stobjs-in key wrld) wrld))
+            (mv-let
               (abs conc)
               (filter-absstobjs (non-memoizable-stobjs (stobjs-in key wrld)
                                                        wrld)
                                 wrld nil nil)
               (cond
                ((null abs)
-                (er hard ctx
-                    "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
-                    str key conc))
+                (msg "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
+                      introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
+                     str key conc))
                ((null conc)
-                (er hard ctx
-                    "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
-                     of~] whose corresponding concrete stobj is ~
-                     non-memoizable.  See :DOC defabsstobj."
-                    str key abs))
+                (msg "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
+                      of~] whose corresponding concrete stobj is ~
+                      non-memoizable.  See :DOC defabsstobj."
+                     str key abs))
                (t
-                (er hard ctx
-                    "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
-                     abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
-                     corresponding concrete stobj is non-memoizable.  See ~
-                     :DOC defstobj."
-                    str key conc abs)))))
-            ((member-eq key *stobjs-out-invalid*)
-             (er hard ctx
-                 "~@0~x1 is a primitive without a fixed output signature."
+                (msg "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
+                      introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
+                      abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
+                      corresponding concrete stobj is non-memoizable.  See ~
+                      :DOC defstobj."
+                     str key conc abs)))))
+           ((member-eq key *stobjs-out-invalid*)
+            (msg "~@0~x1 is a primitive without a fixed output signature."
                  str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
+           ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; See comment above for the case of 'state.
 
-                  (not (all-nils (stobjs-out key wrld))))
-             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
-               (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
+                 (not (all-nils (stobjs-out key wrld))))
+            (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
+              (msg "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
                    str key stobj)))
-            ((member-eq key *hons-primitive-fns*)
-             (er hard ctx
-                 "~@0~x1 is a HONS primitive."
+           ((member-eq key *hons-primitive-fns*)
+            (msg "~@0~x1 is a HONS primitive."
                  str key))
-            ((not (cltl-def-from-name key wrld))
-             (er hard ctx
-                 "~@0~x1 is not a defined ACL2 function."
+           ((not (cltl-def-from-name key wrld))
+            (msg "~@0~x1 is not a defined ACL2 function."
                  str key))
-            ((getpropc key 'constrainedp nil wrld)
-             (er hard ctx
-                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
+           ((getpropc key 'constrainedp nil wrld)
+
+; Should we consider removing this restriction if :INVOKE has a non-nil value?
+; A potential use would be to prove some io-pairs for a given constrained
+; function and then provide for execution of that constrained function; see
+; community book books/kestrel/utilities/use-io-pairs.lisp.  A fundamental
+; issue however is that constrained functions do not have
+; executable-counterpart runes, so they presumably wouldn't be executed
+; directly during proofs.  They could be executed under a call of a defined
+; function, however.
+
+            (msg "~@0~x1 is constrained.  You may instead wish to memoize a ~
                   caller or to memoize its attachment (see :DOC defattach)."
                  str key))
-            ((and inline
+           ((and inline
 
 ; The test below isn't right if a built-in function with raw Lisp code has been
 ; promoted to logic mode after assigning state global
@@ -31800,32 +33243,38 @@
 ; Note that here we are disallowing inline memoization of apply$-lambdas.
 ; That's fine; we essentially do our own memoization via the cl-cache.
 
-                  (if (eq key-class :program)
-                      (member-eq key *initial-program-fns-with-raw-code*)
-                    (member-eq key *initial-logic-fns-with-raw-code*)))
-             (er hard ctx
-                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
+                 (if (eq key-class :program)
+                     (member-eq key *initial-program-fns-with-raw-code*)
+                   (member-eq key *initial-logic-fns-with-raw-code*)))
+            (msg "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
                   code, hence is illegal to memoize unless :RECURSIVE is nil."
                  str key))
-            ((let ((pair (assoc-eq :memo-table-init-size val)))
-               (and pair (not (posp (cdr pair)))))
-             (er hard ctx
-                 "~@0The :memo-table-init-size must be a positive integer, ~
+           ((let ((pair (assoc-eq :memo-table-init-size val)))
+              (and pair (not (posp (cdr pair)))))
+            (msg "~@0The :memo-table-init-size must be a positive integer, ~
                   unlike ~x1."
                  str (cdr (assoc-eq :memo-table-init-size val))))
-            ((not (memoize-table-chk-commutative str key val ctx wrld))
-             nil) ; an error was presumably already caused
-            ((not (symbolp total))
-             (er hard ctx
-                 "~@0The value of the :total keyword for memoize must be a ~
+           ((memoize-table-chk-commutative-msg str key val wrld))
+           ((and invoke total)
+            (msg "~@0It is illegal to specify non-nil values for both the ~
+                  :INVOKE and :TOTAL memoize keywords."
+                 str))
+           ((and invoke inline)
+            (msg "~@0It is illegal to specify a non-NIL value for the :INVOKE ~
+                  keyword of memoize when the :RECURSIVE keyword (i.e., the ~
+                  :INLINE keyword for the memoize table) is T."
+                 str))
+           ((and invoke
+                 (memoize-table-chk-invoke-msg key invoke str wrld state)))
+           ((not (symbolp total))
+            (msg "~@0The value of the :total keyword for memoize must be a ~
                   symbol, but ~x1 is not.  Presumably you are trying to use ~
                   the :total option of memoize directly, which is not ~
                   recommended.  See :DOC memoize-partial."
                  str total))
-            ((and total
-                  (not (cltl-def-memoize-partial key total wrld)))
-             (er hard ctx
-                 "~@0Unable to find executable Common Lisp definition for ~x1 ~
+           ((and total
+                 (not (cltl-def-memoize-partial key total wrld)))
+            (msg "~@0Unable to find executable Common Lisp definition for ~x1 ~
                   in the table, ~x2.  Presumably you are trying to use the ~
                   :total option of memoize directly, which is not ~
                   recommended.  See :DOC memoize-partial."
@@ -31835,120 +33284,117 @@
 ; that is already memoized or unmemoized, respectively.  The function
 ; maybe-push-undo-stack relies on this check.
 
-            ((and val (cdr (assoc-eq key memoize-table)))
-             (er hard ctx
-                 "~@0Function ~x1 is already memoized."
+           ((and val (cdr (assoc-eq key memoize-table)))
+            (msg "~@0Function ~x1 is already memoized."
                  str key))
-            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
-             (er hard ctx
-                 "~@0Cannot unmemoize function ~x1 because it is not ~
+           ((and (null val) (null (cdr (assoc-eq key memoize-table))))
+            (msg "~@0Cannot unmemoize function ~x1 because it is not ~
                   currently memoized."
                  str key))
-            ((and (eq key-class :ideal)
-                  val ; memoize, not unmemoize
-                  (let* ((pair (assoc-eq :ideal-okp val))
-                         (okp (if pair
-                                  (cdr pair)
-                                (cdr (assoc-eq :memoize-ideal-okp
-                                               (table-alist 'acl2-defaults-table
-                                                            wrld))))))
-                    (cond ((eq okp t)
-                           nil)
-                          ((not okp)
-                           (er hard ctx
-                               "~@0The function symbol ~x1 is in :logic mode ~
+           ((and (eq key-class :ideal)
+                 val ; memoize, not unmemoize
+                 (let* ((pair (assoc-eq :ideal-okp val))
+                        (okp (if pair
+                                 (cdr pair)
+                               (cdr (assoc-eq :memoize-ideal-okp
+                                              (table-alist 'acl2-defaults-table
+                                                           wrld))))))
+                   (cond ((eq okp t)
+                          nil)
+                         ((not okp)
+                          (msg "~@0The function symbol ~x1 is in :logic mode ~
                                 but has not had its guards verified.  Either ~
                                 run ~x2, or specify :IDEAL-OKP ~x3 in your ~
                                 ~x4 call, or else evaluate ~x5 or ~x6."
                                str key 'verify-guards t 'memoize
-                               '(table acl2-defaults-table :memoize-ideal-okp t)
-                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
-                          (t ; okp is :warn
-                           (prog2$ (warning$-cw
-                                    'memoize-table-chk
-                                    "The function ~x0 to be memoized is in ~
-                                     :logic mode but has not had its guards ~
-                                     verified.  Memoization might therefore ~
-                                     not take place; see :DOC memoize."
-                                    key)
-                                   nil))))))
+                               '(table acl2-defaults-table :memoize-ideal-okp
+                                       t)
+                               '(table acl2-defaults-table :memoize-ideal-okp
+                                       :warn)))
+                         (t ; okp is :warn
+                          (prog2$ (warning$-cw
+                                   'memoize-table-chk
+                                   "The function ~x0 to be memoized is in ~
+                                    :logic mode but has not had its guards ~
+                                    verified.  Memoization might therefore ~
+                                    not take place; see :DOC memoize."
+                                   key)
+                                  nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 
-            (t
-             (let ((val-formals (and condition
-                                     (if (symbolp condition)
-                                         (getpropc condition 'formals t wrld)
-                                       t)))
-                   (val-guard (and condition
-                                   (if (symbolp condition)
-                                       (getpropc condition 'guard *t* wrld)
-                                     t))))
+           (t
+            (let ((val-formals (and condition
+                                    (if (symbolp condition)
+                                        (getpropc condition 'formals t wrld)
+                                      t)))
+                  (val-guard (and condition
+                                  (if (symbolp condition)
+                                      (getpropc condition 'guard *t* wrld)
+                                    t))))
 
-               (cond
-                ((or (eq val nil)
-                     (member-eq condition '(t nil)))
-                 t)
-                ((eq val-formals t)
-                 (er hard ctx
-                     "~@0The proposed memoization condition function, ~x1, is ~
+              (cond
+               ((or (eq val nil)
+                    (member-eq condition '(t nil)))
+                nil)
+               ((eq val-formals t)
+                (msg "~@0The proposed memoization condition function, ~x1, is ~
                       neither T, NIL, nor a function symbol known to ACL2."
                      str condition))
-                ((not (and (symbolp condition)
-                           (or (eq key-class :program)
-                               (eq (symbol-class condition wrld)
-                                   :common-lisp-compliant))))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (and (symbolp condition)
+                          (or (eq key-class :program)
+                              (eq (symbol-class condition wrld)
+                                  :common-lisp-compliant))))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for function ~x2, because unlike ~x2, ~x1 is ~
                       not common-lisp-compliant (a logic-mode function that ~
                       has had its guards verified)."
                      str condition key))
-                ((not (equal key-formals val-formals))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (equal key-formals val-formals))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for ~x2, because the two functions have ~
                       different formal parameter lists."
                      str condition key))
-                ((not (equal (getpropc key 'guard *t* wrld)
-                             val-guard))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
+               ((not (equal (getpropc key 'guard *t* wrld)
+                            val-guard))
+                (msg "~@0Function ~x1 cannot serve as a memoization condition ~
                       function for ~x2, because the two functions have ~
                       different guards."
                      str condition key))
-                (t t)))))))
-      (progn$
-       (or (global-val 'hons-enabled wrld)
-           (warning$-cw (if val 'memoize 'unmemoize)
-                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
-                         ignored because this ACL2 executable is not ~
-                         hons-enabled."
-                        (if val 1 0)
-                        key))
-       (and val
-            (let ((stobjs-in (stobjs-in key wrld)))
-              (cond
-               ((and condition
-                     (find-first-non-nil stobjs-in))
-                (let ((input-stobjs (collect-non-x nil stobjs-in)))
-                  (observation-cw
-                   ctx
-                   "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
-                    memoization table for ~x0 will be cleared whenever ~
-                    ~#2~[this stobj is~/either of these stobjs is~/any of ~
-                    these stobjs is~] updated.  Any update of a stobj may ~
-                    therefore be significantly slower, perhaps by a factor of ~
-                    5 or 10, when it is an input of a memoized function."
-                   key
-                   input-stobjs
-                   (zero-one-or-more (cdr input-stobjs)))))
-               (t nil))))
-       result))))
+               (t nil)))))))
+    (progn$
+     (or (global-val 'hons-enabled wrld)
+         (warning$-cw (if val 'memoize 'unmemoize)
+                      "The ~#0~[un~/~]memoization request for ~x1 is being ~
+                       ignored because this ACL2 executable is not ~
+                       hons-enabled."
+                      (if val 1 0)
+                      key))
+     (and val
+          (let ((stobjs-in (stobjs-in key wrld)))
+            (cond
+             ((and condition
+                   (find-first-non-nil stobjs-in))
+              (let ((input-stobjs (collect-non-x nil stobjs-in)))
+                (observation-cw
+                 ctx
+                 "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                  memoization table for ~x0 will be cleared whenever ~
+                  ~#2~[this stobj is~/either of these stobjs is~/any of these ~
+                  stobjs is~] updated.  Any update of a stobj may therefore ~
+                  be significantly slower, perhaps by a factor of 5 or 10, ~
+                  when it is an input of a memoized function."
+                 key
+                 input-stobjs
+                 (zero-one-or-more (cdr input-stobjs)))))
+             (t nil))))
+     (if msg
+         (er hard ctx "~@0" msg)
+       t))))
 
 (table memoize-table nil nil
        :guard
-       (memoize-table-chk key val world))
+       (memoize-table-chk key val world state))
 
 (defun memoize-partial-calls (tuples)
   (declare (xargs :guard (and (symbol-alistp tuples)

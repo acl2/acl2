@@ -12,11 +12,17 @@
 
 (include-book "applicability-conditions")
 (include-book "cw-event")
+(include-book "definedness")
+(include-book "event-generation")
+(include-book "event-generation-soft")
 (include-book "input-processing")
 (include-book "intro-macros")
 (include-book "make-event-terse")
 (include-book "proof-preparation")
 (include-book "restore-output")
+(include-book "results")
+(include-book "screen-printing")
+(include-book "template-generators")
 (include-book "try-event")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,7 +37,9 @@
      ACL2 provides several such macros
      (e.g. @(tsee defun), @(tsee defthm), @(tsee defun-sk)),
      and many more such macros are provided by the community books
-     (e.g. @(tsee std::deflist), @(tsee fty::defprod), @(tsee apt::tailrec)).")
+     (e.g. @(tsee std::deflist), @(tsee fty::defprod), @(tsee apt::tailrec)).
+     Event macros often generate events (via other event macros),
+     and sometimes generate files (e.g. @(tsee java::atj), @(tsee c::atc)).")
    (xdoc::p
     "Amid the wide variety of these event macros,
      there are certain commonalities.

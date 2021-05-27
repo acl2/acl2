@@ -576,7 +576,7 @@ means that test applies to subsequent phases and value is toggled.</p>")
   :mode :program
   (b* ((transferred-keys
         '(:design :mod :parents :short :long :state-machine :simplify :pre-simplify
-                                 :define-macros))
+                                 :define-macros :initial-state-vars :keep-final-state :keep-all-states))
        (all-keys (cons :phases transferred-keys))
        ((mv kwd-alist rest) 
         (std::extract-keywords `(defsvtv-phasewise ,name) all-keys args nil))

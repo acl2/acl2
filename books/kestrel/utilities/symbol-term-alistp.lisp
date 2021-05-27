@@ -13,7 +13,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; Recognize and alist from symbols to pseudo-terms
+;; See also symbol-pseudoterm-alistp in [books]/std/typed-alists/symbol-pseudoterm-alistp.lisp.
+
+;; Recognize an alist from symbols to pseudo-terms
 (defund symbol-term-alistp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
@@ -22,25 +24,41 @@
                 (pseudo-termp (cdr (car x)))
                 (symbol-term-alistp (cdr x))))))
 
+(defthm symbol-term-alistp-of-cons
+  (equal (symbol-term-alistp (cons pair alist))
+         (and (consp pair)
+              (symbolp (car pair))
+              (pseudo-termp (cdr pair))
+              (symbol-term-alistp alist)))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+
 (defthm symbol-term-alistp-of-acons
   (equal (symbol-term-alistp (acons key val alist))
          (and (symbolp key)
               (pseudo-termp val)
               (symbol-term-alistp alist)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+  :hints (("Goal" :in-theory (enable acons))))
 
 (defthm symbol-term-alistp-of-cdr
   (implies (symbol-term-alistp alist)
            (symbol-term-alistp (cdr alist)))
   :hints (("Goal" :in-theory (enable symbol-term-alistp))))
 
-(defthm symbolp-of-car-of-car-when-symbol-term-alistp
+;; Disabled by default since this could be expensive, but see
+;; symbolp-of-car-of-car-when-symbol-term-alistp-type below.
+(defthmd symbolp-of-car-of-car-when-symbol-term-alistp
+  (implies (symbol-term-alistp x)
+           (symbolp (car (car x))))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+
+(defthm symbolp-of-car-of-car-when-symbol-term-alistp-type
   (implies (symbol-term-alistp x)
            (symbolp (car (car x))))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+  :hints (("Goal" :by symbolp-of-car-of-car-when-symbol-term-alistp)))
 
-(defthm pseudo-termp-of-cdr-of-car-when-symbol-term-alistp-cheap
+;; TODO: Add a -cheap version and disable this one?
+(defthm pseudo-termp-of-cdr-of-car-when-symbol-term-alistp
   (implies (symbol-term-alistp x)
            (pseudo-termp (cdr (car x))))
   :hints (("Goal" :in-theory (enable symbol-term-alistp))))
@@ -70,10 +88,10 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable symbol-term-alistp))))
 
-(defthm pseudo-termp-of-cdr-of-assoc-equal
-  (implies (and ;(assoc-equal form alist)
-                ;(symbolp form)
-                (symbol-term-alistp alist))
+;; If there is no binding for form in alist, assco-equal give nil, which
+;; happens to have a cdr (also nil) that is a pseudo-term.
+(defthm pseudo-termp-of-cdr-of-assoc-equal-when-symbol-term-alistp
+  (implies (symbol-term-alistp alist)
            (pseudo-termp (cdr (assoc-equal form alist))))
   :hints (("Goal" :in-theory (enable assoc-equal symbol-term-alistp))))
 

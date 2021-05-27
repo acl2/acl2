@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1047,6 +1047,11 @@
 ; The value of this variable is an alist that pairs user-defined
 ; single-threaded object names with their live ones.  It does NOT contain an
 ; entry for STATE, which is not user-defined.
+
+; Historical Note: Through Version_8.2, for a stobj named st, (the-live-var st)
+; was a special variable whose value was the live object.  E.g., if you
+; did (defstobj st ...) then in raw Lisp *the-live-st* held the actual
+; vector or hash-table.  Now it's (cdr (assoc 'st *user-stobj-alist*)).
 
   nil)
 
@@ -3493,6 +3498,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (car alist))
         (t (assoc-eq-equal x y (cdr alist)))))
 
+(defun assoc-eq-cadr (x alist)
+  (declare (xargs :guard (and (symbolp x)
+                              (alistp alist)
+                              (alistp (strip-cdrs alist)))))
+  (cond ((endp alist) nil)
+        ((eq x (cadr (car alist))) (car alist))
+        (t (assoc-eq-cadr x (cdr alist)))))
+
+(defun assoc-equal-cadr (x alist)
+  (declare (xargs :guard (and (alistp alist)
+                              (alistp (strip-cdrs alist)))))
+  (cond ((endp alist) nil)
+        ((equal x (cadr (car alist))) (car alist))
+        (t (assoc-equal-cadr x (cdr alist)))))
+
 
 ;                             DATA TYPES
 
@@ -4193,9 +4213,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(19 . POSP))
 (defconst *tau-minusp-pair*
   #+non-standard-analysis
-  '(30 . MINUSP)
+  '(28 . MINUSP)
   #-non-standard-analysis
-  '(27 . MINUSP))
+  '(25 . MINUSP))
 (defconst *tau-booleanp-pair*
   #-non-standard-analysis
   '(32 . BOOLEANP)
@@ -4398,17 +4418,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               :exec  (no-duplicatesp-eql-exec x)))
    (t ; (equal test 'equal)
     `(no-duplicatesp-equal ,x))))
-
-(defun chk-no-duplicatesp (lst)
-
-; This function is used in the implementation of stobj-let.  Do not modify it
-; without seeing where it is used and understand the implications of the
-; change.
-
-  (declare (xargs :guard (and (eqlable-listp lst)
-                              (no-duplicatesp lst)))
-           (ignore lst))
-  nil)
 
 ; Rassoc
 
@@ -6153,6 +6162,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; If you change this list, also consider changing the value of INHIBIT in
 ; distributed books files Makefile-generic and build/make_cert.
 
+; Warning: With-output depends on :other-than not being a member of this list.
+
   (set-difference-eq (strip-cars *window-descriptions*)
                      '(TEMPORARY QUERY)))
 
@@ -6166,7 +6177,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Warning: Keep this list in sync with :doc summary.
 
-  '(errors form header hint-events rules splitter-rules
+; Warning: With-output depends on :other-than not being a member of this list.
+
+  '(errors form header hint-events redundant rules splitter-rules
            steps ; shown as "Prover steps counted"
            system-attachments time value warnings))
 
@@ -6193,177 +6206,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      ,@(and abbrevp `((set-abbrev-evisc-tuple ,abbrev state)))
      ,@(and gag-modep `((set-gag-mode-evisc-tuple ,gag-mode state)))
      ,form)))
-
-(defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
-                           summary summary-p evisc evisc-p)
-  (declare (xargs :mode :program
-                  :guard (true-listp args)))
-  (cond
-   ((endp args) nil)
-   ((keywordp (car args))
-    (let ((illegal-value-string
-           "~x0 is not a legal value for a call of with-output, but has been ~
-            supplied for keyword ~x1.  See :DOC with-output."))
-      (cond
-       ((consp (cdr args))
-        (cond
-         ((eq (car args) :gag-mode)
-          (cond
-           ((member-eq
-             (cadr args)
-             '(t :goals nil)) ; keep this list in sync with set-gag-mode
-            (with-output-fn ctx (cddr args) off on (cadr args) off-on-p t
-                            stack summary summary-p evisc evisc-p))
-           (t (illegal ctx
-                       illegal-value-string
-                       (list (cons #\0 (cadr args))
-                             (cons #\1 :gag-mode))))))
-         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
-          (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                          stack summary summary-p (cadr args) t))
-         ((eq (car args) :stack)
-          (cond
-           (stack
-            (illegal ctx
-                     "The keyword :STACK may only be supplied once in a call ~
-                      of ~x0."
-                     (list (cons #\0 'with-output))))
-           ((member-eq (cadr args) '(:push :pop))
-            (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                            (cadr args) summary summary-p evisc evisc-p))
-           (t (illegal ctx
-                       illegal-value-string
-                       (list (cons #\0 (cadr args))
-                             (cons #\1 :stack))))))
-         ((eq (car args) :summary)
-          (cond (summary-p
-                 (illegal ctx
-                          "The keyword :SUMMARY may only be supplied once in ~
-                           a call of ~x0."
-                          (list (cons #\0 'with-output))))
-                ((not (or (eq (cadr args) :all)
-                          (and (symbol-listp (cadr args))
-                               (subsetp-eq (cadr args) *summary-types*))))
-                 (illegal ctx
-                          "In a call of ~x0, the value of keyword :SUMMARY ~
-                           must either be :ALL or a true-list contained in ~
-                           the list ~x1."
-                          (list (cons #\0 'with-output)
-                                (cons #\1 *summary-types*))))
-                (t
-                 (with-output-fn ctx (cddr args) off on gag-mode off-on-p gag-p
-                                 stack
-                                 (cadr args) t
-                                 evisc evisc-p))))
-         ((not (member-eq (car args) '(:on :off)))
-          (illegal ctx
-                   "~x0 is not a legal keyword for a call of with-output.  ~
-                    See :DOC with-output."
-                   (list (cons #\0 (car args)))))
-         (t (let ((syms (cond ((eq (cadr args) :all)
-                               :all)
-                              ((symbol-listp (cadr args))
-                               (cadr args))
-                              ((symbolp (cadr args))
-                               (list (cadr args))))))
-              (cond (syms
-                     (cond ((eq (car args) :on)
-                            (and (null on)
-                                 (with-output-fn ctx (cddr args) off
-                                                 (if (eq syms :all)
-                                                     :all
-                                                   syms)
-                                                 gag-mode t gag-p stack summary
-                                                 summary-p evisc evisc-p)))
-                           (t ; (eq (car args) :off)
-                            (and (null off)
-                                 (with-output-fn ctx (cddr args)
-                                                 (if (eq syms :all)
-                                                     :all
-                                                   syms)
-                                                 on gag-mode t gag-p stack
-                                                 summary summary-p
-                                                 evisc evisc-p)))))
-                    (t (illegal ctx
-                                illegal-value-string
-                                (list (cons #\0 (cadr args))
-                                      (cons #\1 (car args))))))))))
-       (t (illegal ctx
-                   "A with-output form has terminated with a keyword, ~x0.  ~
-                    This is illegal.  See :DOC with-output."
-                   (list (cons #\0 (car args))))))))
-   ((cdr args)
-    (illegal ctx
-             "Illegal with-output form.  See :DOC with-output."
-             nil))
-   ((not (or (eq off :all)
-             (subsetp-eq off *valid-output-names*)))
-    (illegal ctx
-             "The :off argument to with-output-fn must either be :all or a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             (list (cons #\0 *valid-output-names*)
-                   (cons #\1 nil)
-                   (cons #\2 off)
-                   (cons #\3 (set-difference-eq off *valid-output-names*)))))
-   ((not (or (eq on :all)
-             (subsetp-eq on *valid-output-names*)))
-    (illegal ctx
-             "The :on argument to with-output-fn must either be :all or a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             (list (cons #\0 *valid-output-names*)
-                   (cons #\1 nil)
-                   (cons #\2 on)
-                   (cons #\3 (set-difference-eq on *valid-output-names*)))))
-   (t
-    (let ((form
-           `(state-global-let*
-             (,@
-              (and (or gag-p
-                       (eq stack :pop))
-                   `((gag-mode (f-get-global 'gag-mode state)
-                               set-gag-mode-fn)))
-              ,@
-              (and (or off-on-p
-                       (eq stack :pop))
-                   '((inhibit-output-lst (f-get-global 'inhibit-output-lst
-                                                       state))))
-              ,@
-              (and stack
-                   '((inhibit-output-lst-stack
-                      (f-get-global 'inhibit-output-lst-stack state))))
-              ,@
-              (and summary-p
-                   `((inhibited-summary-types
-                      ,(if (eq summary :all)
-                           nil
-                         (list 'quote
-                               (set-difference-eq *summary-types* summary)))))))
-             (er-progn
-              ,@(and stack
-                     `((pprogn ,(if (eq stack :pop)
-                                    '(pop-inhibit-output-lst-stack state)
-                                  '(push-inhibit-output-lst-stack state))
-                               (value nil))))
-              ,@(and gag-p
-                     `((pprogn (set-gag-mode ,gag-mode)
-                               (value nil))))
-              ,@(and off-on-p
-                     `((set-inhibit-output-lst
-                        ,(cond ((eq on :all)
-                                (if (eq off :all)
-                                    '*valid-output-names*
-                                  `(quote ,off)))
-                               ((eq off :all)
-                                `(set-difference-eq *valid-output-names* ',on))
-                               (t
-                                `(union-eq ',off
-                                           (set-difference-eq
-                                            (f-get-global 'inhibit-output-lst
-                                                          state)
-                                            ',on)))))))
-              ,(car args)))))
-      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
-            (t form))))))
 
 #+acl2-loop-only
 (defun last (l)
@@ -6439,24 +6281,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         nil
       (take (- lng n) lst))))
 
-(defmacro with-output! (&rest args)
-  `(if (eq (ld-skip-proofsp state) 'include-book)
-       ,(car (last args))
-     ,(let ((val (with-output-fn 'with-output
-                                 args nil nil nil nil nil nil nil nil nil nil)))
-        (or val
-            (illegal 'with-output
-                     "Macroexpansion of ~q0 failed."
-                     (list (cons #\0 (cons 'with-output args))))))))
-
-#-acl2-loop-only
-(defmacro with-output (&rest args)
-  (car (last args)))
-
-#+acl2-loop-only
-(defmacro with-output (&rest args)
-  `(with-output! ,@args))
-
 ; Mutual Recursion
 
 ; We are about to need mutual recursion for the first time in axioms.lisp.
@@ -6486,47 +6310,87 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   `(mv nil ,x state))
 
-(defun value-triple-fn (form on-skip-proofs check ctx)
-  (declare (xargs :guard t))
-  `(cond ((and ,(not on-skip-proofs)
-               (f-get-global 'ld-skip-proofsp state))
-          (value :skipped))
-         ((and (eq ,on-skip-proofs :interactive)
-               (eq (f-get-global 'ld-skip-proofsp state)
-                   'include-book))
-          (value :skipped))
-         (t ,(let ((form
-                    `(let ((check ,check)
-                           (ctx ,ctx))
-                       (cond (check
-                              (cond
-                               ((check-vars-not-free
-                                 (check)
-                                 ,form)
-                                :passed)
-                               ((tilde-@p check)
-                                (er hard ctx
-                                    "Assertion failed:~%~@0~|"
-                                    check))
-                               (t
-                                (er hard ctx
-                                    "Assertion failed on form:~%~x0~|"
-                                    ',form))))
-                             (t ,form)))))
-               `(state-global-let*
-                 ((safe-mode (not (f-get-global 'boot-strap-flg state))))
-                 (value ,form))))))
+(defun legal-constantp1 (name)
+
+; This function should correctly distinguish between variables and
+; constants for symbols that are known to satisfy
+; legal-variable-or-constant-namep.  Thus, if name satisfies this
+; predicate then it cannot be a variable.
+
+  (declare (xargs :guard (symbolp name)))
+  (or (eq name t)
+      (eq name nil)
+      (let ((s (symbol-name name)))
+        (and (not (= (length s) 0))
+             (eql (char s 0) #\*)
+             (eql (char s (1- (length s))) #\*)))))
 
 #+acl2-loop-only
-(defmacro value-triple (form &key on-skip-proofs check (ctx ''value-triple))
-  (value-triple-fn form on-skip-proofs check ctx))
+(defmacro value-triple (form &key
+                             on-skip-proofs
+                             check
+                             (safe-mode ':same)
+                             (stobjs-out 'nil)
+                             (ctx ''value-triple))
 
-(defmacro assert-event (form &key on-skip-proofs msg)
-  (declare (xargs :guard (booleanp on-skip-proofs)))
-  `(value-triple ,form
-                 :on-skip-proofs ,on-skip-proofs
-                 :check ,(or msg t)
-                 :ctx 'assert-event))
+; Value-triple is used in mutual-recursion, which is called in axioms.lisp
+; before the definition of state-global-let*, which is used in value-triple-fn.
+; So we avoid calling value-triple-fn in some of the most common cases, which
+; also aids efficiency in those cases.
+
+; Warning: The checks below should be at least as strong as those in
+; chk-value-triple.
+
+  `(let ((form ',form)
+         (on-skip-proofs ,on-skip-proofs)
+         (check ,check)
+         (safe-mode ,safe-mode)
+         (stobjs-out ,stobjs-out))
+     (cond ((and (not on-skip-proofs)
+                 (f-get-global 'ld-skip-proofsp state))
+            (value :skipped))
+           ((and (eq on-skip-proofs :interactive)
+                 (eq (f-get-global 'ld-skip-proofsp state) 'include-book))
+            (value :skipped))
+           ((and (null check)
+                 (eq safe-mode :same)
+                 (or (null stobjs-out)
+                     (equal stobjs-out '(nil)))
+                 (or (booleanp on-skip-proofs)
+                     (eq on-skip-proofs :interactive))
+                 (cond ((consp form)
+                        (and (eq (car form) 'QUOTE)
+                             (consp (cdr form))
+                             (null (cddr form))))
+                       ((symbolp form)
+                        (or (legal-constantp1 form) ; includes t, nil, and constants *c*
+                            (keywordp form)))
+                       (t (or (acl2-numberp form)
+                              (stringp form)))))
+            (value (if (consp form) (cadr form) form)))
+           (t (value-triple-fn form
+                               on-skip-proofs check safe-mode
+                               stobjs-out ,ctx state)))))
+
+(defmacro assert-event (assertion &key
+                                  event
+                                  on-skip-proofs
+                                  msg
+                                  (safe-mode ':same)
+                                  (stobjs-out 'nil)
+                                  (ctx ''assert-event))
+  (let ((ev `(value-triple ,assertion
+                           :on-skip-proofs ,on-skip-proofs
+                           :check ,(or msg t)
+                           :safe-mode ,safe-mode
+                           :stobjs-out ,stobjs-out
+                           :ctx ,ctx)))
+    (cond (event `(with-output
+                    :stack :push
+                    :off (summary event)
+                    (progn ,ev
+                           (with-output :stack :pop ,event))))
+          (t ev))))
 
 (defun event-keyword-name (event-type name)
   (declare (xargs :guard (member-eq event-type
@@ -6546,322 +6410,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    acc)))))
 
 ; Begin support for defun-nx.
-
-(defun throw-nonexec-error (fn actuals)
-  (declare (xargs :guard
-
-; An appropriate guard would seem to be the following.
-
-;                 (if (keywordp fn)
-;                     (eq fn :non-exec)
-;                   (and (symbolp fn)
-;                        (true-listp actuals)))
-
-; However, we want to be sure that the raw Lisp code is evaluated even if
-; guard-checking has been set to :none.  A simple fix is to replace the actuals
-; if they are ill-formed, and that is what we do.
-
-                  t
-                  :verify-guards nil)
-           #+acl2-loop-only
-           (ignore fn actuals))
-  #-acl2-loop-only
-  (progn
-    (throw-raw-ev-fncall
-     (list* 'ev-fncall-null-body-er
-
-; The following nil means that we never blame non-executability on aokp.  Note
-; that defproxy is not relevant here, since that macro generates a call of
-; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er
-; to lay down a call of throw-or-attach.  So in the defproxy case,
-; throw-nonexec-error doesn't get called!
-
-            nil
-            fn
-            (if (eq fn :non-exec)
-                actuals
-              (print-list-without-stobj-arrays
-               (if (true-listp actuals)
-                   actuals
-                 (error "Unexpected case: Ill-formed actuals for ~
-                         throw-nonexec-error!"))))))
-
-; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
-
-    (error "This error is caused by what should be dead code!"))
-  nil)
-
-(defun defun-nx-form (form)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
-                              (member-eq (car form) '(defun-nx defund-nx)))
-                  :verify-guards nil))
-  (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
-        (name (cadr form))
-        (formals (caddr form))
-        (rest (cdddr form)))
-    `(,defunx ,name ,formals
-       (declare (xargs :non-executable t :mode :logic))
-       ,@(butlast rest 1)
-       (prog2$ (throw-nonexec-error ',name (list ,@formals))
-               ,@(last rest)))))
-
-(defun defun-nx-fn (form)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
-                              (member-eq (car form) '(defun-nx defund-nx)))
-                  :verify-guards nil))
-  `(with-output :stack :push :off :all
-       (progn (with-output :stack :pop
-                ,(defun-nx-form form))
-              (encapsulate
-                ()
-                (logic)
-                (with-output :stack :pop :off summary
-                  (in-theory (disable (:e ,(cadr form))))))
-              (with-output :stack :pop :off summary
-                (value-triple
-                 ',(event-keyword-name (car form) (cadr form)))))))
-
-(defmacro defun-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
-           (ignore rest))
-  (defun-nx-fn form))
-
-(defmacro defund-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
-           (ignore rest))
-  (defun-nx-fn form))
-
-(defun update-mutual-recursion-for-defun-nx-1 (defs)
-  (declare (xargs :guard (mutual-recursion-guardp defs)
-                  :verify-guards nil))
-  (cond ((endp defs)
-         nil)
-        ((eq (caar defs) 'defun-nx)
-         (cons (defun-nx-form (car defs))
-               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
-        ((eq (caar defs) 'defund-nx)
-         (cons (defun-nx-form (car defs))
-               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
-        (t
-         (cons (car defs)
-               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))))
-
-(defun update-mutual-recursion-for-defun-nx (defs)
-  (declare (xargs :guard (mutual-recursion-guardp defs)
-                  :verify-guards nil))
-  (cond ((or (assoc-eq 'defun-nx defs)
-             (assoc-eq 'defund-nx defs))
-         (update-mutual-recursion-for-defun-nx-1 defs))
-        (t defs)))
-
-(defun keyword-value-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l) (null l))
-        (t (and (keywordp (car l))
-                (consp (cdr l))
-                (keyword-value-listp (cddr l))))))
-
-(defthm keyword-value-listp-forward-to-true-listp
-  (implies (keyword-value-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-keyword (key l)
-  (declare (xargs :guard (keyword-value-listp l)))
-  (cond ((endp l) nil)
-        ((eq key (car l)) l)
-        (t (assoc-keyword key (cddr l)))))
-
-(defun program-declared-p2 (dcls)
-  (declare (xargs :guard t))
-  (cond ((atom dcls) nil)
-        ((and (consp (car dcls))
-              (eq (caar dcls) 'xargs)
-              (keyword-value-listp (cdr (car dcls)))
-              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
-                  :program))
-         t)
-        (t (program-declared-p2 (cdr dcls)))))
-
-(defun program-declared-p1 (lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) nil)
-        ((and (consp (car lst))
-              (eq (caar lst) 'declare))
-         (or (program-declared-p2 (cdar lst))
-             (program-declared-p1 (cdr lst))))
-        (t (program-declared-p1 (cdr lst)))))
-
-(defun program-declared-p (def)
-
-; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
-; t if the declarations in def are minimally well-formed and there is an xargs
-; declaration of :mode :program.
-
-  (declare (xargs :guard (true-listp def)))
-  (program-declared-p1 (butlast (cddr def) 1)))
-
-(defun true-list-listp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (true-listp (car x))
-                (true-list-listp (cdr x))))))
-
-(defthm true-list-listp-forward-to-true-listp
-  (implies (true-list-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-(defun some-program-declared-p (defs)
-  (declare (xargs :guard (true-list-listp defs)))
-  (cond ((endp defs) nil)
-        (t (or (program-declared-p (car defs))
-               (some-program-declared-p (cdr defs))))))
-
-(defun pairlis-x1 (x1 lst)
-
-; Cons x1 onto the front of each element of lst.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        (t (cons (cons x1 (car lst))
-                 (pairlis-x1 x1 (cdr lst))))))
-
-(defun pairlis-x2 (lst x2)
-
-; Make an alist pairing each element of lst with x2.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        (t (cons (cons (car lst) x2)
-                 (pairlis-x2 (cdr lst) x2)))))
-
-(defmacro append? (x y)
-
-; We use defmacro because defabbrev has not yet been defined at this point in
-; the boot-strap.
-
-  `(let ((x ,x) (y ,y))
-     (cond ((null y) x)
-           (t (append x y)))))
-
-#+acl2-loop-only
-(defmacro mutual-recursion (&whole event-form &rest rst0)
-  (declare (xargs :guard (mutual-recursion-guardp rst0)))
-  (let ((rst (update-mutual-recursion-for-defun-nx rst0)))
-
-; It would be nice to use let* instead of nested let expressions here, but let*
-; has not been defined at this point in the file.
-
-    (let ((form (list 'defuns-fn
-                      (list 'quote (strip-cdrs rst))
-                      'state
-                      (list 'quote event-form)
-                      #+:non-standard-analysis ; std-p
-                      nil)))
-      (cond
-       ((or (and (assoc-eq 'defund rst0)
-
-; It is of course possible that the default defun-mode is :program and thus no
-; definition expicitly declares :program mode.  In that case, we might generate
-; in-theory events but they would be skipped because the default defun-mode is
-; :program.  Note by the way that all functions introduced by mutual-recursion
-; have the same defun-mode, which allows us to avoid thinking about mixed
-; defun-mode cases.
-
-                 (not (some-program-declared-p (strip-cdrs rst0))))
-            (assoc-eq 'defun-nx rst0)
-            (assoc-eq 'defund-nx rst0))
-        (let ((in-theory-form
-               (list 'in-theory
-                     (cons 'disable
-                           (append?
-                            (collect-cadrs-when-car-member-eq
-                             '(defund)
-                             rst)
-                            (pairlis-x1
-                             ':executable-counterpart
-                             (pairlis$ (collect-cadrs-when-car-member-eq
-                                        '(defun-nx defund-nx)
-                                        rst0)
-                                       nil)))))))
-          (list 'er-progn
-                form
-                (list
-                 'with-output
-                 :off :all
-                 (if (or (assoc-eq 'defun-nx rst0)
-                         (assoc-eq 'defund-nx rst0))
-                     `(encapsulate
-                        nil
-                        (logic)
-                        ,in-theory-form)
-                   in-theory-form))
-                (list 'value-triple
-                      (list 'quote (event-keyword-name-lst rst0 nil))))))
-       (t
-        form)))))
-
-; Now we define the weak notion of term that guards metafunctions.
-
-(mutual-recursion
-
-(defun pseudo-termp (x)
-  (declare (xargs :guard t :mode :logic))
-  (cond ((atom x) (symbolp x))
-        ((eq (car x) 'quote)
-         (and (consp (cdr x))
-              (null (cdr (cdr x)))))
-        ((not (true-listp x)) nil)
-        ((not (pseudo-term-listp (cdr x))) nil)
-        (t (or (symbolp (car x))
-
-; For most function applications we do not check that the number of
-; arguments matches the number of formals.  However, for lambda
-; applications we do make that check.  The reason is that the
-; constraint on an evaluator dealing with lambda applications must use
-; pairlis$ to pair the formals with the actuals and pairlis$ insists on
-; the checks below.
-
-               (and (true-listp (car x))
-                    (equal (length (car x)) 3)
-                    (eq (car (car x)) 'lambda)
-                    (symbol-listp (cadr (car x)))
-                    (pseudo-termp (caddr (car x)))
-                    (equal (length (cadr (car x)))
-                           (length (cdr x))))))))
-
-(defun pseudo-term-listp (lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) (equal lst nil))
-        (t (and (pseudo-termp (car lst))
-                (pseudo-term-listp (cdr lst))))))
-
-)
-
-(defthm pseudo-term-listp-forward-to-true-listp
-  (implies (pseudo-term-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-; For the encapsulate of too-many-ifs-post-rewrite
-(encapsulate
- ()
- (table acl2-defaults-table :defun-mode :logic)
- (verify-guards pseudo-termp))
-
-(defun pseudo-term-list-listp (l)
-  (declare (xargs :guard t))
-  (if (atom l)
-      (equal l nil)
-    (and (pseudo-term-listp (car l))
-         (pseudo-term-list-listp (cdr l)))))
-
-(verify-guards pseudo-term-list-listp)
 
 ; Add-to-set
 
@@ -6928,558 +6476,323 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(add-to-set-equal ,x ,lst))))
 
-(defmacro variablep (x) (list 'atom x))
-
-(defmacro nvariablep (x) (list 'consp x))
-
-(defmacro fquotep (x) (list 'eq ''quote (list 'car x)))
-
-(defun quotep (x)
+(defun keyword-value-listp (l)
   (declare (xargs :guard t))
-  (and (consp x)
-       (eq (car x) 'quote)))
-
-(defconst *t* (quote (quote t)))
-(defconst *nil* (quote (quote nil)))
-(defconst *0* (quote (quote 0)))
-(defconst *1* (quote (quote 1)))
-(defconst *-1* (quote (quote -1)))
-(defconst *2* (quote (quote 2)))
-
-(defun kwote (x)
-  (declare (xargs :guard t))
-  (mbe :logic
-
-; Theorem ev-lambda-clause-correct in community book
-; books/centaur/misc/evaluator-metatheorems.lisp goes out to lunch if we use
-; the :exec term below as the definition.  So we keep the :logic definition
-; simple.
-
-       (list 'quote x)
-       :exec ; save conses
-       (cond ((eq x nil) *nil*)
-             ((eq x t) *t*)
-             ((eql x 0) *0*)
-             ((eql x 1) *1*)
-             ((eql x -1) *-1*)
-             (t (list 'quote x)))))
-
-(defun maybe-kwote (x)
-
-; Return an untranslated term that represents (quote x).
-
-  (declare (xargs :guard t))
-  (cond ((or (acl2-numberp x)
-             (stringp x)
-             (characterp x)
-             (eq x nil)
-             (eq x t)
-             (keywordp x))
-         x)
-        (t (kwote x))))
-
-(defun kwote-lst (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        (t (cons (kwote (car lst)) (kwote-lst (cdr lst))))))
-
-(defmacro unquote (x) (list 'cadr x))
-
-; Lambda Object Accessor Functions
-
-; The following functions access the formals, declare statement (if any), and
-; body of a well-formed lambda object.  However, they do not assume that their
-; arguments are well-formed.  They may return ill-formed results on ill-formed
-; ``lambdas''.  See the Essay on Lambda Objects and Lambda$ for some context
-; and conventions.  The formals are the *1* cadr of the ``lambda object,'' and
-; the dcl and body are either nil and the *1* caddr or the *1* caddr and the
-; *1* cadddr, depending on whether the object is a true-list of len 3 or 4.
-; The dcl and body are both nil for objects that are not true-lists of len 3 or
-; 4.
-
-; More verbosely, there are two forms of well-formed lambda objects (called
-; simple and declared), and three ``accessor'' functions:
-
-;                         simple                       declared
-;                   (LAMBDA vars body)         (LAMBDA vars dcl body)
-
-; lambda-object-formals     vars                       vars
-; lambda-object-dcl         nil                        dcl
-; lambda-object-body        body                       body
-
-; Put another way,
-
-; lambda-object-formals     cadr                       cadr
-; lambda-object-dcl         nil                        caddr
-; lambda-object-body        caddr                      cadddr
-
-; except we always mean the *1*-counterparts of those car/cdr nests so that
-; these accessors are guard verified with guards of T.  Insufficient
-; cons-structure can make lambda-object-dcl and lambda-object-body return nil.
-; A nil dcl is interpreted as though we'd seen a simple lambda with no dcl.
-; But a nil body is an ill-formed answer because nil is not a term.
-
-; Lambda-object-formals is always *1* cadr.  But lambda-object-dcl and
-; lambda-object-body have to decide whether an ill-formed lambda object, x, is
-; supposed to be treated like a simple lambda or a declared one.  The answer is
-; if it's a true-list of len 3, it's simple, if it's a true-list of len 4, it's
-; declared, and otherwise we return nil.
-
-(defun lambda-object-formals (x)
-
-; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
-; dcl body) or (LAMBDA vars body), we return vars.  But x is not necessarily
-; well-formed and there is no guarantee that the answer is well-formed.  See
-; the discussion above.
-
-; This function has a guard of T so that it can be used without an ec-call in
-; apply$-lambda-logical and elsewhere.
-
-  (declare (xargs :guard t))
-
-; We could have defined this as indicated by the thm below, but we wanted to be
-; more efficient and guard-verified.
-
-; (thm (equal (lambda-object-formals x)
-;             (cadr x)))
-
-  (if (and (consp x)
-           (consp (cdr x)))
-      (cadr x)
-      nil))
-
-(defun lambda-object-dcl (x)
-
-; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
-; dcl body) or (LAMBDA vars body), we return the dcl or nil if there's no dcl.
-; But x is not necessarily well-formed and there is no guarantee that the
-; answer is well-formed.  See the discussion above.
-
-; This function has a guard of T so that it can be used without an ec-call in
-; apply$-lambda-logical and elsewhere.
-
-; On Performance: One wonders whether this function would be faster if we
-; avoided repeated cdrs by let-binding.  We tried variations of this function
-; in which we bound temp successively to the cdr of temp in the obvious way so
-; as to avoid duplicated computations of cdr expressions.  We then compared
-; them on a billion well-formed lambdas of both lengths 3 and 4.  This was the
-; fastest.  The lesson: cdr is faster than let-binding/variable lookup.
-
-  (declare (xargs :guard t))
-
-; We could have used this definition:
-; (thm (equal (lambda-object-dcl x)
-;             (cond ((and (true-listp x) (= (len x) 3)) nil)
-;                   ((and (true-listp x) (= (len x) 4)) (caddr x))
-;                   (t nil))))
-; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
-; needed to prove the thm above.
-
-  (cond ((and (consp x)               ; (= (len x) 4)
-              (consp (cdr x))
-              (consp (cddr x))
-              (consp (cdddr x))
-              (null (cddddr x)))
-         (caddr x))
-        (t nil)))
-
-(defun lambda-object-body (x)
-
-; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
-; dcl body) or (LAMBDA vars body), we return the body.  But x is not
-; necessarily well-formed and there is no guarantee that the answer is
-; well-formed.  See the discussion above.
-
-; This function has a guard of T so that it can be used without an ec-call in
-; apply$-lambda-logical and elsewhere.
-
-  (declare (xargs :guard t))
-
-; We could have used this definition:
-; (thm (equal (lambda-object-body x)
-;             (cond
-;              ((and (true-listp x) (= (len x) 3)) (caddr x))
-;              ((and (true-listp x) (= (len x) 4)) (cadddr x))
-;              (t nil))))
-; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
-; needed to prove the thm above.
-
-  (cond ((and (consp x)               ; (>= (len x) 3)
-              (consp (cdr x))
-              (consp (cddr x)))
-         (cond ((atom (cdddr x))      ; (= (len x) 3)
-                (if (null (cdddr x)) (caddr x) nil))
-               ((null (cddddr x))     ; (= (len x) 4)
-                (cadddr x))
-               (t nil)))
-        (t nil)))
-
-(defun lambda-object-shapep (fn)
-  (declare (xargs :guard t))
-  (and (consp fn)
-       (eq (car fn) 'lambda)
-       (consp (cdr fn))
-       (consp (cddr fn))
-       (or (null (cdddr fn))
-           (and (consp (cdddr fn))
-                (null (cddddr fn))))))
-
-(defun make-lambda-object (formals dcl body)
-  (declare (xargs :guard t))
-  `(lambda ,formals
-     ,@(if dcl (list dcl) nil)
-     ,body))
-
-(defmacro ffn-symb (x) (list 'car x))
-
-(defun fn-symb (x)
-  (declare (xargs :guard t))
-  (if (and (nvariablep x)
-           (not (fquotep x)))
-      (car x)
-    nil))
-
-(defmacro fargs (x) (list 'cdr x))
-
-(mutual-recursion
-
-(defun all-vars1 (term ans)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp ans))
-                  :mode :program))
-  (cond ((variablep term)
-         (add-to-set-eq term ans))
-        ((fquotep term) ans)
-        (t (all-vars1-lst (fargs term) ans))))
-
-(defun all-vars1-lst (lst ans)
-  (declare (xargs :guard (and (pseudo-term-listp lst)
-                              (symbol-listp ans))
-                  :mode :program))
-  (cond ((endp lst) ans)
-        (t (all-vars1-lst (cdr lst)
-                          (all-vars1 (car lst) ans)))))
-
-)
-
-(verify-termination-boot-strap
- (all-vars1 (declare (xargs :mode :logic :verify-guards nil)))
- (all-vars1-lst (declare (xargs :mode :logic))))
-
-(defun all-vars (term)
-
-; This function collects the variables in term in reverse print order of
-; first occurrence.  E.g., all-vars of '(f (g a b) c) is '(c b a).
-; This ordering is exploited by, at least, loop-stopper and bad-synp-hyp.
-
-  (declare (xargs :guard (pseudo-termp term)
-                  :verify-guards nil))
-  (all-vars1 term nil))
-
-; Progn.
-
-; The definition of er-progn-fn below exposes a deficiency in ACL2 not
-; present in full Common Lisp, namely ACL2's inability to generate a
-; really ``new'' variable the way one can in a Common Lisp macro via
-; gensym.  One would like to be sure that in binding the two variables
-; er-progn-not-to-be-used-elsewhere-erp
-; er-progn-not-to-be-used-elsewhere-val that they were not used
-; anywhere in the subsequent macro expansion of lst.  If one had the
-; macro expansion of lst at hand, one could manufacture a variable
-; that was not free in the expansion with genvars, and that would do.
-
-; As a less than elegant remedy to the situation, we introduce below
-; the macro check-vars-not-free, which takes two arguments, the first
-; a not-to-be-evaluated list of variable names and the second an
-; expression.  We arrange to return the translation of the expression
-; provided none of the variables occur freely in it.  Otherwise, an error
-; is caused.  The situation is subtle because we cannot even obtain
-; the free vars in an expression until it has been translated.  For
-; example, (value x) has the free var STATE in it, thanks to the macro
-; expansion of value.  But a macro can't call translate because macros
-; can't get their hands on state.
-
-; In an earlier version of this we built check-vars-not-free into
-; translate itself.  We defined it with a defmacro that expanded to
-; its second arg, but translate did not actually look at the macro
-; (raw lisp did) and instead implemented the semantics described
-; above.  Of course, if no error was caused the semantics agreed with
-; the treatment and if an error was caused, all bets are off anyway.
-; The trouble with that approach was that it worked fine as long as
-; check-vars-not-free was the only such example we had of needing to
-; look at the translated form of something in a macro.  Unfortunately,
-; others came along.  So we invented the more general
-; translate-and-test and now use it to define check-vars-not-free.
-
-(defmacro translate-and-test (test-fn form)
-
-; Test-fn should be a LAMBDA expression (or function or macro symbol)
-; of one non-STATE argument, and form is an arbitrary form.  Logically
-; we ignore test-fn and return form.  However, an error is caused by
-; TRANSLATE if the translation of form is not "approved" by test-fn.
-; By "approved" we mean that when (test-fn 'term) is evaluated, where
-; term is the translation of form, (a) the evaluation completes
-; without an error and (b) the result is T.  Otherwise, the result is
-; treated as an error msg and displayed.  (Actually, test-fn's answer
-; is treated as an error msg if it is a stringp or a consp.  Any other
-; result, e.g., T or NIL (!), is treated as "approved.")  If test-fn
-; approves then the result of translation is the translation of form.
-
-; For example,
-; (translate-and-test
-;  (lambda (term)
-;   (or (subsetp (all-vars term) '(x y z))
-;       (msg "~x0 uses variables other than x, y, and z."
-;            term)))
-;  <form>)
-; is just the translation of <form> provided that translation
-; only involves the free vars x, y, and z; otherwise an error is
-; caused.  By generating calls of this macro other macros can
-; ensure that the <form>s they generate satisfy certain tests
-; after those <forms>s are translated.
-
-; This macro is actually implemented in translate.  It can't be
-; implemented here because translate isn't defined yet.  However the
-; semantics is consistent with the definition below, namely, it just
-; expands to its second argument (which is, of course, translated).
-; It is just that sometimes errors are caused.
-
-; There are two tempting generalizations of this function.  The first
-; is that test-fn should be passed STATE so that it can make more
-; "semantic" checks on the translation of form and perhaps so that it
-; can signal the error itself.  There is, as far as I know,
-; nothing wrong with this generalization except that it is hard to
-; implement.  In order for TRANSLATE to determine whether test-fn
-; approves of the term it must ev an expression.  If that expression
-; involved STATE then translated must pass in its STATE in that
-; position.  This requires coercing the state to an object, an act
-; which is done with some trepidation in trans-eval and which could,
-; presumably, be allowed earlier in translate.
-
-; The second tempting generalization is that test-fn should have the
-; power to massage the translation and return a new form which should,
-; in turn, be translated.  For example, then one could imagine, say, a
-; macro that would permit a form to be turned into the quoted constant
-; listing the variables that occur freely in the translated form.  If
-; the first generalization above has been carried out, then this would
-; permit the translation of a form to be state dependent, which is
-; illegal.  But this second generalization is problematic anyway.  In
-; particular, what is the raw lisp counterpart of the generalized
-; macro?  Note that in its current incarnation, the raw lisp
-; counterpart of translate-and-test is the same as its logical
-; meaning: it just expands to its second arg.  But if the desired
-; expansion is computed from the translation of its second arg, then
-; raw lisp would have to translate that argument.  But we can't do
-; that for a variety of reasons: (a) CLTL macros shouldn't be state
-; dependent, (b) we can't call translate during compilation because in
-; general the ACL2 world isn't present, etc.
-
-  (declare (ignore test-fn))
-  form)
-
-; Intersectp
-
-(defun-with-guard-check intersectp-eq-exec (x y)
-  (and (true-listp x)
-       (true-listp y)
-       (or (symbol-listp x)
-           (symbol-listp y)))
-  (cond ((endp x) nil)
-        ((member-eq (car x) y) t)
-        (t (intersectp-eq-exec (cdr x) y))))
-
-(defun-with-guard-check intersectp-eql-exec (x y)
-  (and (true-listp x)
-       (true-listp y)
-       (or (eqlable-listp x)
-           (eqlable-listp y)))
-  (cond ((endp x) nil)
-        ((member (car x) y) t)
-        (t (intersectp-eql-exec (cdr x) y))))
-
-(defun intersectp-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x) nil)
-        ((member-equal (car x) y) t)
-        (t (intersectp-equal (cdr x) y))))
-
-(defmacro intersectp-eq (x y)
-  `(intersectp ,x ,y :test 'eq))
-
-(defthm intersectp-eq-exec-is-intersectp-equal
-  (equal (intersectp-eq-exec x y)
-         (intersectp-equal x y)))
-
-(defthm intersectp-eql-exec-is-intersectp-equal
-  (equal (intersectp-eql-exec x y)
-         (intersectp-equal x y)))
-
-(defmacro intersectp (x y &key (test ''eql))
-  (declare (xargs :guard (or (equal test ''eq)
-                             (equal test ''eql)
-                             (equal test ''equal))))
-  (cond
-   ((equal test ''eq)
-    `(let-mbe ((x ,x) (y ,y))
-              :logic (intersectp-equal x y)
-              :exec  (intersectp-eq-exec x y)))
-   ((equal test ''eql)
-    `(let-mbe ((x ,x) (y ,y))
-              :logic (intersectp-equal x y)
-              :exec  (intersectp-eql-exec x y)))
-   (t ; (equal test 'equal)
-    `(intersectp-equal ,x ,y))))
-
-(defun make-fmt-bindings (chars forms)
-  (declare (xargs :guard (and (true-listp chars)
-                              (true-listp forms)
-                              (<= (length forms) (length chars)))))
-  (cond ((endp forms) nil)
-        (t (list 'cons
-                 (list 'cons (car chars) (car forms))
-                 (make-fmt-bindings (cdr chars) (cdr forms))))))
-
-(defconst *base-10-chars*
-
-; This constant is inlined in the definition of
-; *base-10-array*.
-
-  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-
-(defmacro warning$ (ctx summary str+ &rest fmt-args)
-
-; Warning: Keep this in sync with warning$-cw1.
-
-; Note: This macro was originally defined in basis-a.lisp, but was moved
-; forward after *acl2-files* was changed so that "hons-raw" occurs before
-; "basis-a".
-
-; A typical use of this macro might be:
-; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
-; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
-; If the second argument is wrapped in a one-element list, as in
-; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
-; then that argument is quoted, and no check will be made for whether the
-; warning is disabled, presumably because we are in a context where we know the
-; warning is enabled.
-
-  (list 'warning1
-        ctx
-
-; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
-; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
-; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
-; of warning$ be that conses are quoted in the second argument position.
-
-        (if (consp summary)
-            (kwote summary)
-          summary)
-        str+
-        (make-fmt-bindings *base-10-chars* fmt-args)
-        'state))
-
-(defmacro msg (str &rest args)
-
-; Fmt is defined much later.  But we need msg now because several of our macros
-; generate calls of msg and thus msg must be a function when terms using those
-; macros are translated.
-
-  (declare (xargs :guard (<= (length args) 10)))
-
-  `(cons ,str ,(make-fmt-bindings *base-10-chars* args)))
-
-(defun check-vars-not-free-test (vars term)
-  (declare (xargs :guard (and (symbol-listp vars)
-                              (pseudo-termp term))
-                  :verify-guards nil))
-  (or (not (intersectp-eq vars (all-vars term)))
-      (msg "It is forbidden to use ~v0 in ~x1."
-           vars term)))
-
-(defmacro check-vars-not-free (vars form)
-
-; Warning: We actually handle this macro directly in translate11, in case that
-; is an efficiency win.  Keep this macro and that part of translate11 in sync.
-
-; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
-; which just expands to the translation of ... provided my-erp and my-val do
-; not occur freely in it.
-
-; We wrap the body of the lambda into a simple function call, because
-; translate11 calls ev-w on it and we want to avoid having lots of ev-rec
-; calls, especially since intersectp-eq expands to an mbe call.
-
-  (declare (xargs :guard (symbol-listp vars)))
-  (cond ((null vars) form) ; optimization, perhaps needless
-        (t `(translate-and-test
-             (lambda (term)
-               (check-vars-not-free-test ',vars term))
-             ,form))))
-
-(defun er-progn-fn (lst)
-
-; Keep in sync with er-progn-fn@par.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        ((endp (cdr lst)) (car lst))
-        (t (list 'mv-let
-                 '(er-progn-not-to-be-used-elsewhere-erp
-                   er-progn-not-to-be-used-elsewhere-val
-                   state)
-                 (car lst)
-; Avoid possible warning after optimized compilation:
-                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-val))
-                 (list 'if
-                       'er-progn-not-to-be-used-elsewhere-erp
-                       '(mv er-progn-not-to-be-used-elsewhere-erp
-                            er-progn-not-to-be-used-elsewhere-val
-                            state)
-                       (list 'check-vars-not-free
-                             '(er-progn-not-to-be-used-elsewhere-erp
-                               er-progn-not-to-be-used-elsewhere-val)
-                             (er-progn-fn (cdr lst))))))))
-
-(defmacro er-progn (&rest lst)
-
-; Keep in sync with er-progn@par.
-
-  (declare (xargs :guard (and (true-listp lst)
-                              lst)))
-  (er-progn-fn lst))
-
-#+acl2-par
-(defun er-progn-fn@par (lst)
-
-; Keep in sync with er-progn-fn.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        ((endp (cdr lst)) (car lst))
-        (t (list 'mv-let
-                 '(er-progn-not-to-be-used-elsewhere-erp
-                   er-progn-not-to-be-used-elsewhere-val)
-                 (car lst)
-; Avoid possible warning after optimized compilation:
-                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-val))
-                 (list 'if
-                       'er-progn-not-to-be-used-elsewhere-erp
-                       '(mv er-progn-not-to-be-used-elsewhere-erp
-                            er-progn-not-to-be-used-elsewhere-val)
-                       (list 'check-vars-not-free
-                             '(er-progn-not-to-be-used-elsewhere-erp
-                               er-progn-not-to-be-used-elsewhere-val)
-                             (er-progn-fn@par (cdr lst))))))))
-
-#+acl2-par
-(defmacro er-progn@par (&rest lst)
-
-; Keep in sync with er-progn.
-
-  (declare (xargs :guard (and (true-listp lst)
-                              lst)))
-  (er-progn-fn@par lst))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (consp (cdr l))
+                (keyword-value-listp (cddr l))))))
+
+(defthm keyword-value-listp-forward-to-true-listp
+  (implies (keyword-value-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(defun throw-nonexec-error (fn actuals)
+  (declare (xargs :guard
+
+; An appropriate guard would seem to be the following.
+
+;                 (if (keywordp fn)
+;                     (eq fn :non-exec)
+;                   (and (symbolp fn)
+;                        (true-listp actuals)))
+
+; However, we want to be sure that the raw Lisp code is evaluated even if
+; guard-checking has been set to :none.  A simple fix is to replace the actuals
+; if they are ill-formed, and that is what we do.
+
+                  t
+                  :verify-guards nil)
+           #+acl2-loop-only
+           (ignore fn actuals))
+  #-acl2-loop-only
+  (progn
+    (throw-raw-ev-fncall
+     (list* 'ev-fncall-null-body-er
+
+; The following nil means that we never blame non-executability on aokp.  Note
+; that defproxy is not relevant here, since that macro generates a call of
+; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er
+; to lay down a call of throw-or-attach.  So in the defproxy case,
+; throw-nonexec-error doesn't get called!
+
+            nil
+            fn
+            (if (eq fn :non-exec)
+                actuals
+              (print-list-without-stobj-arrays
+               (if (true-listp actuals)
+                   actuals
+                 (error "Unexpected case: Ill-formed actuals for ~
+                         throw-nonexec-error!"))))))
+
+; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
+
+    (error "This error is caused by what should be dead code!"))
+  nil)
+
+(defun evens (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) nil)
+        (t (cons (car l)
+                 (evens (cddr l))))))
+
+(defun odds (l)
+  (declare (xargs :guard (true-listp l)))
+  (evens (cdr l)))
+
+; mv and mv-let
+
+(defun mv-nth (n l)
+  (declare (xargs :guard (and (integerp n)
+                              (>= n 0))))
+  (if (atom l)
+      nil
+    (if (zp n)
+        (car l)
+      (mv-nth (- n 1) (cdr l)))))
+
+(defun make-mv-nths (args call i)
+  (declare (xargs :guard (and (true-listp args)
+                              (integerp i))))
+  (cond ((endp args) nil)
+        (t (cons (list (car args) (list 'mv-nth i call))
+                 (make-mv-nths (cdr args) call (+ i 1))))))
+
+#-(or acl2-loop-only acl2-mv-as-values)
+(defun mv-bindings (lst)
+
+; Gensym a var for every element of lst except the last and pair
+; that var with its element in a doublet.  Return the list of doublets.
+
+  (cond ((null (cdr lst)) nil)
+        (t (cons (list (gensym) (car lst))
+                 (mv-bindings (cdr lst))))))
+
+#-(or acl2-loop-only acl2-mv-as-values)
+(defun mv-set-mvs (bindings i)
+  (cond ((null bindings) nil)
+        (t (cons `(set-mv ,i ,(caar bindings))
+                 (mv-set-mvs (cdr bindings) (1+ i))))))
+
+(defmacro mv (&rest l)
+  (declare (xargs :guard (>= (length l) 2)))
+  #+acl2-loop-only
+  (cons 'list l)
+  #+(and (not acl2-loop-only) acl2-mv-as-values)
+  (return-from mv (cons 'values l))
+  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
+
+; In an earlier version of the mv macro, we had a terrible bug.
+; (mv a b ... z) expanded to
+
+; (LET ((#:G1 a))
+;   (SET-MV 1 b)
+;   ...
+;   (SET-MV k z)
+;   (SETQ *MOST-RECENT-MULTIPLICITY* 3)
+;   #:G1)
+
+; Note that if the evaluation of z uses a multiple value then it overwrites the
+; earlier SET-MV.  Now this expansion is safe if there are only two values
+; because the only SET-MV is done after the second value is computed.  If there
+; are three or more value forms, then this expansion is also safe if all but
+; the first two are atomic.  For example, (mv & & (killer)) is unsafe because
+; (killer) may overwrite the SET-MV, but (mv & & STATE) is safe because the
+; evaluation of an atomic form is guaranteed not to overwrite SET-MV settings.
+; In general, all forms after the second must be atomic for the above expansion
+; to be used.
+
+; Suppose we are using GCL.  In some cases we can avoid boxing fixnums that are
+; the first value returned, by making the following two optimizations.  First,
+; we insert a declaration when we see (mv (the type expr) ...) where type is
+; contained in the set of fixnums.  Our second optimization is for the case
+; of (mv v ...) where v is an atom, when we avoid let-binding v.  To see why
+; this second optimization is helpful, consider the following definition.
+
+; (defun foo (x y)
+;   (declare (type (signed-byte 30) x))
+;   (the-mv 2
+;           (signed-byte 30)
+;           (mv x (cons y y))))
+
+; If we submit this definition to ACL2, the proclaim-form mechanism arranges
+; for the following declaim form to be evaluated.
+
+; (DECLAIM (FTYPE (FUNCTION ((SIGNED-BYTE 30) T)
+;                           (VALUES (SIGNED-BYTE 30)))
+;                 FOO))
+
+; Now let us exit the ACL2 loop and then, in raw Lisp, call disassemble on the
+; above defun.  Without our second optimization there is boxing: a call of
+; CMPmake_fixnum in the output of disassemble.  That happens because (mv x
+; (cons y y)) macroexpands to something like this:
+
+; (LET ((#:G5579 X)) (SET-MV 1 (CONS Y Y)) #:G5579)
+
+; With the second optimization, however, we get this macroexpansion instead:
+
+; (LET () (SET-MV 1 (CONS Y Y)) X)
+
+; GCL can see that the fixnum declaration for x applies at the occurrence
+; above, but fails (as of this writing, using GCL 2.6.8) to recognize that the
+; above gensym is a fixnum.
+
+  (cond ((atom-listp (cddr l))
+
+; We use the old expansion because it is safe and more efficient.
+
+         (let* ((v (if (atom (car l))
+                       (car l)
+                     (gensym)))
+                (bindings (if (atom (car l))
+                              nil
+                            `((,v ,(car l))))))
+           `(let ,bindings
+
+; See comment above regarding boxing fixnums.
+
+              ,@(and (consp (car l))
+                     (let ((output (macroexpand-till (car l) 'the)))
+                       (cond ((and (consp output)
+                                   (eq 'the (car output)))
+                              `((declare (type ,(cadr output) ,v))))
+                             (t nil))))
+              ,@(let (ans)
+                  (do ((tl (cdr l) (cdr tl))
+                       (i 1 (1+ i)))
+                      ((null tl))
+                      (push `(set-mv ,i ,(car tl))
+                            ans))
+                  (nreverse ans))
+              ,v)))
+        (t
+
+; We expand (mv a b ... y z) to
+; (LET ((#:G1 a)
+;       (#:G2 b)
+;       ...
+;       (#:Gk y))
+;  (SET-MV k z)
+;  (SET-MV 1 #:G2)
+;  ...
+;  (SET-MV k-1 #:Gk)
+;  #:G1)
+
+         (let* ((cdr-bindings (mv-bindings (cdr l)))
+                (v (if (atom (car l))
+                       (car l)
+                     (gensym)))
+                (bindings (if (atom (car l))
+                              cdr-bindings
+                            (cons (list v (car l))
+                                  cdr-bindings))))
+           `(let ,bindings
+
+; See comment above regarding boxing fixnums.
+
+              ,@(and (consp (car l))
+                     (let ((output (macroexpand-till (car l) 'the)))
+                       (cond ((and (consp output)
+                                   (eq 'the (car output)))
+                              `((declare (type ,(cadr output) ,v))))
+                             (t nil))))
+              (set-mv ,(1- (length l)) ,(car (last l)))
+              ,@(mv-set-mvs cdr-bindings 1)
+              ,v)))))
+
+(defmacro mv? (&rest l)
+
+; Why not simply extend mv and mv-let to handle single values?  The reason is
+; that there seem to be problems with defining (mv x) to be (list x) and other
+; problems with defining (mv x) to be x.
+
+; To see potential problems with defining (mv x) = (list x), consider this
+; form:
+
+; (mv-let (x)
+;         (f y)
+;         (g x y))
+
+; We presumably want it to expand as follows.
+
+; (let ((x (f y)))
+;   (g x y))
+
+; But suppose (f y) is defined to be (mv (h y)).  Then the above mv-let would
+; instead have to expand to something like this:
+
+; (let ((x (mv-nth 0 (f y)))) ; or, car instead of (mv-nth 0 ...)
+;   (g x y))
+
+; So in order to extend mv and mv-let to handle single values, we'd need to
+; look carefully at the rather subtle mv and mv-nth code.  It seems quite
+; possible that some show-stopping reason would emerge why this approach can't
+; work out, or if it does then it might be easy to make mistakes in the
+; implementation.  Note that we'd need to consider both the cases of
+; #+acl2-mv-as-values and #acl2-mv-as-values.
+
+; In a way it seems more natural anyhow that (mv x) is just x, since we don't
+; wrap single-valued returns into a list.  But that would ruin our simple story
+; that mv is logically just list, instead giving us:
+
+; (mv x) = x
+; (mv x1 x2 ...) = (list x1 x2 ...)
+
+; Thus it seems safest, and potentially less confusing to users, to introduce
+; mv? and mv?-let to be used in cases that single-valued returns are to be
+; allowed (presumably in generated code).
+
+  (declare (xargs :guard l))
+  (cond ((null (cdr l))
+         (car l))
+        (t `(mv ,@l))))
+
+(defmacro mv-let (&rest rst)
+
+; Warning: If the final logical form of a translated mv-let is
+; changed, be sure to reconsider translated-acl2-unwind-protectp.
+
+  (declare (xargs :guard (and (>= (length rst) 3)
+                              (true-listp (car rst))
+                              (>= (length (car rst)) 2))))
+  #+acl2-loop-only
+  (list* 'let
+         (make-mv-nths (car rst)
+                       (list 'mv-list (length (car rst)) (cadr rst))
+                       0)
+         (cddr rst))
+  #+(and (not acl2-loop-only) acl2-mv-as-values)
+  (return-from mv-let (cons 'multiple-value-bind rst))
+  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
+  (cond ((> (length (car rst)) (+ 1 *number-of-return-values*))
+         (interface-er
+          "Need more *return-values*.  Increase ~
+           *number-of-return-values* and recompile ACL2."))
+        (t
+         `(let ((,(car (car rst)) ,(cadr rst))
+                (,(cadr (car rst)) (mv-ref 1))
+                ,@(let (ans)
+                    (do ((tl (cddr (car rst)) (cdr tl))
+                         (i 2 (1+ i)))
+                        ((null tl))
+                        (push (list (car tl) `(mv-ref ,i))
+                              ans))
+                    (nreverse ans)))
+            ,@ (cddr rst)))))
+
+(defmacro mv?-let (vars form &rest rst)
+
+; See the comment in mv? for reasons why we do not simply extend mv-let to
+; handle single values.
+
+  (declare (xargs :guard (and (true-listp vars)
+                              vars)))
+  (cond ((null (cdr vars))
+         `(let ((,(car vars) ,form))
+            ,@rst))
+        (t `(mv-let ,vars ,form ,@rst))))
 
 (defun legal-case-clausesp (tl)
   (declare (xargs :guard t))
@@ -7539,156 +6852,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t `(let ((case-do-not-use-elsewhere ,(car l)))
               (cond ,@(case-list-check (cdr l)))))))
 
-; Position-ac
-
-(defun-with-guard-check position-ac-eq-exec (item lst acc)
-  (and (true-listp lst)
-       (or (symbolp item)
-           (symbol-listp lst))
-       (acl2-numberp acc))
-  (cond
-   ((endp lst) nil)
-   ((eq item (car lst))
-    (mbe :logic (fix acc) :exec acc))
-   (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
-
-(defthm natp-position-ac-eq-exec
-  (implies (natp acc)
-           (or (natp (position-ac-eq-exec item lst acc))
-               (equal (position-ac-eq-exec item lst acc) nil)))
-  :rule-classes :type-prescription)
-
-(defun-with-guard-check position-ac-eql-exec (item lst acc)
-  (and (true-listp lst)
-       (or (eqlablep item)
-           (eqlable-listp lst))
-       (acl2-numberp acc))
-  (cond
-   ((endp lst) nil)
-   ((eql item (car lst))
-    (mbe :logic (fix acc) :exec acc))
-   (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
-
-(defthm natp-position-ac-eql-exec
-  (implies (natp acc)
-           (or (natp (position-ac-eql-exec item lst acc))
-               (equal (position-ac-eql-exec item lst acc) nil)))
-  :rule-classes :type-prescription)
-
-(defun position-equal-ac (item lst acc)
-
-; This function should perhaps be called position-ac-equal, but we name it
-; position-equal-ac since that has been its name historically before the new
-; handling of member etc. after Version_4.2.
-
-  (declare (xargs :guard (and (true-listp lst)
-                              (acl2-numberp acc))))
-  (cond
-   ((endp lst) nil)
-   ((equal item (car lst))
-    (mbe :exec acc :logic (fix acc)))
-   (t (position-equal-ac item (cdr lst) (1+ acc)))))
-
-(defthm natp-position-equal-ac
-  (implies (natp acc)
-           (or (natp (position-equal-ac item lst acc))
-               (equal (position-equal-ac item lst acc) nil)))
-  :rule-classes :type-prescription)
-
-(defmacro position-ac-equal (item lst acc)
-; See comment about naming in position-equal-ac.
-  `(position-equal-ac ,item ,lst ,acc))
-
-(defmacro position-eq-ac (item lst acc)
-
-; This macro may be oddly named; see the comment about naming in
-; position-equal-ac.  We also define position-ac-eq, which may be a more
-; appropriate name.
-
-  `(position-ac ,item ,lst ,acc :test 'eq))
-
-(defmacro position-ac-eq (item lst acc)
-  `(position-ac ,item ,lst ,acc :test 'eq))
-
-(defthm position-ac-eq-exec-is-position-equal-ac
-  (equal (position-ac-eq-exec item lst acc)
-         (position-equal-ac item lst acc)))
-
-(defthm position-ac-eql-exec-is-position-equal-ac
-  (equal (position-ac-eql-exec item lst acc)
-         (position-equal-ac item lst acc)))
-
-(defmacro position-ac (item lst acc &key (test ''eql))
-  (declare (xargs :guard (or (equal test ''eq)
-                             (equal test ''eql)
-                             (equal test ''equal))))
-  (cond
-   ((equal test ''eq)
-    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
-              :logic (position-equal-ac item lst)
-              :exec  (position-ac-eq-exec item lst)))
-   ((equal test ''eql)
-    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
-              :logic (position-equal-ac item lst acc)
-              :exec  (position-ac-eql-exec item lst acc)))
-   (t ; (equal test 'equal)
-    `(position-equal-ac ,item ,lst))))
-
-; Position
-
-(defun-with-guard-check position-eq-exec (item lst)
-  (and (true-listp lst)
-       (or (symbolp item)
-           (symbol-listp lst)))
-  (position-ac-eq-exec item lst 0))
-
-(defun-with-guard-check position-eql-exec (item lst)
-  (or (stringp lst)
-      (and (true-listp lst)
-           (or (eqlablep item)
-               (eqlable-listp lst))))
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-ac item lst 0)))
-
-(defun position-equal (item lst)
-  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (position item lst :test #'equal)
-  #+acl2-loop-only
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-equal-ac item lst 0)))
-
-(defmacro position-eq (item lst)
-  `(position ,item ,lst :test 'eq))
-
-(defthm position-eq-exec-is-position-equal
-  (implies (not (stringp lst))
-           (equal (position-eq-exec item lst)
-                  (position-equal item lst))))
-
-(defthm position-eql-exec-is-position-equal
-  (equal (position-eql-exec item lst)
-         (position-equal item lst)))
-
-#+acl2-loop-only
-(defmacro position (x seq &key (test ''eql))
-  (declare (xargs :guard (or (equal test ''eq)
-                             (equal test ''eql)
-                             (equal test ''equal))))
-  (cond
-   ((equal test ''eq)
-    `(let-mbe ((x ,x) (seq ,seq))
-              :logic (position-equal x seq)
-              :exec  (position-eq-exec x seq)))
-   ((equal test ''eql)
-    `(let-mbe ((x ,x) (seq ,seq))
-              :logic (position-equal x seq)
-              :exec  (position-eql-exec x seq)))
-   (t ; (equal test 'equal)
-    `(position-equal ,x ,seq))))
-
 (defun nonnegative-integer-quotient (i j)
   (declare (xargs :guard (and (integerp i)
                               (not (< i 0))
@@ -7712,6 +6875,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
       0
     (+ 1 (nonnegative-integer-quotient (- i j) j))))
+
+(defun true-list-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (true-listp (car x))
+                (true-list-listp (cdr x))))))
+
+(defthm true-list-listp-forward-to-true-listp
+  (implies (true-list-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
 
 ; Next we develop let* in the logic.
 
@@ -8148,6 +7322,1680 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 )
 
+(defun digit-to-char (n)
+  (declare (xargs :guard (and (integerp n)
+                              (<= 0 n)
+                              (<= n 15))))
+  (case n
+        (1 #\1)
+        (2 #\2)
+        (3 #\3)
+        (4 #\4)
+        (5 #\5)
+        (6 #\6)
+        (7 #\7)
+        (8 #\8)
+        (9 #\9)
+        (10 #\A)
+        (11 #\B)
+        (12 #\C)
+        (13 #\D)
+        (14 #\E)
+        (15 #\F)
+        (otherwise #\0)))
+
+(defun print-base-p (print-base)
+
+; Warning: Keep this in sync with check-print-base.
+
+  (declare (xargs :guard t))
+  (and (member print-base '(2 8 10 16))
+       t))
+
+(defun explode-nonnegative-integer (n print-base ans)
+  (declare (xargs :guard (and (integerp n)
+                              (>= n 0)
+                              (print-base-p print-base))
+                  :mode :program))
+  (cond ((or (zp n)
+             (not (print-base-p print-base)))
+         (cond ((null ans)
+
+; We could use endp instead of null above, but what's the point?  Ans could be
+; other than a true-listp for reasons other than that it's a non-nil atom, so
+; why treat this case specially?
+
+                '(#\0))
+               (t ans)))
+        (t (explode-nonnegative-integer
+            (floor n print-base)
+            print-base
+            (cons (digit-to-char (mod n print-base))
+                  ans)))))
+
+; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
+; follows.  Although he has proved this lemma as part of a larger proof effort,
+; we are not yet in a hurry to isolate its proof just now.
+
+(local
+ (skip-proofs
+  (defthm justify-integer-floor-recursion
+
+; To use this, be sure to disable acl2-count and floor.  If you leave
+; acl2-count enabled, then prove a version of this appropriate to that setting.
+
+    (implies
+     (and (integerp i)
+          (integerp j)
+          (not (equal i 0))
+          (not (equal i -1))
+          (> j 1))
+     (< (acl2-count (floor i j)) (acl2-count i)))
+    :rule-classes :linear)))
+
+(verify-termination-boot-strap
+ explode-nonnegative-integer
+ (declare (xargs :mode :logic
+                 :verify-guards nil
+                 :hints (("Goal" :in-theory (disable acl2-count floor))))))
+
+(defthm true-listp-explode-nonnegative-integer
+
+; This was made non-local in order to support the verify-termination-boot-strap
+; for chars-for-tilde-@-clause-id-phrase/periods in file
+; boot-strap-pass-2-a.lisp.
+
+  (implies (true-listp ans)
+           (true-listp (explode-nonnegative-integer n print-base ans)))
+  :rule-classes :type-prescription)
+
+(local
+ (skip-proofs
+  (defthm mod-n-linear
+    (implies (and (not (< n 0))
+                  (integerp n)
+                  (print-base-p print-base))
+             (and (not (< (mod n print-base) 0))
+                  (not (< (1- print-base) (mod n print-base)))))
+    :rule-classes :linear)))
+
+(local
+ (defthm integerp-mod
+   (implies (and (integerp n) (< 0 n) (print-base-p print-base))
+            (integerp (mod n print-base)))
+   :rule-classes :type-prescription))
+
+(verify-guards explode-nonnegative-integer
+               :hints (("Goal" :in-theory (disable mod))))
+
+(defun make-var-lst1 (root sym n acc)
+  (declare (xargs :guard (and (symbolp sym)
+                              (character-listp root)
+                              (integerp n)
+                              (<= 0 n))
+                  :mode :program))
+  (cond
+   ((zp n) acc)
+   (t (make-var-lst1 root sym (1- n)
+                     (cons (intern-in-package-of-symbol
+                            (coerce (append root
+                                            (explode-nonnegative-integer
+                                             (1- n) 10 nil))
+                                    'string)
+                            sym)
+                           acc)))))
+
+(encapsulate
+ ()
+
+ (local
+  (defthm character-listp-explode-nonnegative-integer
+    (implies (character-listp ans)
+             (character-listp (explode-nonnegative-integer n 10 ans)))))
+
+ (verify-termination-boot-strap make-var-lst1))
+
+(defun make-var-lst (sym n)
+  (declare (xargs :guard (and (symbolp sym)
+                              (integerp n)
+                              (<= 0 n))))
+  (make-var-lst1 (coerce (symbol-name sym) 'list) sym n nil))
+
+#+acl2-loop-only
+(defun nthcdr (n l)
+  (declare (xargs :guard (and (integerp n)
+                              (<= 0 n)
+                              (true-listp l))))
+  (if (zp n)
+      l
+    (nthcdr (+ n -1) (cdr l))))
+
+(defthm true-listp-nthcdr-type-prescription
+  (implies (true-listp x)
+           (true-listp (nthcdr n x)))
+  :rule-classes :type-prescription)
+
+; Union$
+
+(defun-with-guard-check union-eq-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (symbol-listp l1)
+           (symbol-listp l2)))
+  (cond ((endp l1) l2)
+        ((member-eq (car l1) l2)
+         (union-eq-exec (cdr l1) l2))
+        (t (cons (car l1) (union-eq-exec (cdr l1) l2)))))
+
+(defun-with-guard-check union-eql-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (eqlable-listp l1)
+           (eqlable-listp l2)))
+  (cond ((endp l1) l2)
+        ((member (car l1) l2)
+         (union-eql-exec (cdr l1) l2))
+        (t (cons (car l1) (union-eql-exec (cdr l1) l2)))))
+
+(defun union-equal (l1 l2)
+  (declare (xargs :guard (and (true-listp l1) (true-listp l2))))
+  (cond ((endp l1) l2)
+        ((member-equal (car l1) l2) (union-equal (cdr l1) l2))
+        (t (cons (car l1) (union-equal (cdr l1) l2)))))
+
+(defmacro union-eq (&rest lst)
+  `(union$ ,@lst :test 'eq))
+
+(defthm union-eq-exec-is-union-equal
+  (equal (union-eq-exec l1 l2)
+         (union-equal l1 l2)))
+
+(defthm union-eql-exec-is-union-equal
+  (equal (union-eql-exec l1 l2)
+         (union-equal l1 l2)))
+
+(defun parse-args-and-test (x tests default ctx form name)
+
+; We use this function in union$ and intersection$ to remove optional keyword
+; argument :TEST test from the given argument list, x.  The result is (mv args
+; test), where either x ends in :TEST test and args is the list of values
+; preceding :TEST, or else args is x and test is default.
+
+; Tests is the list of legal tests, typically '('eq 'eql 'equal).  Default is
+; the test to use by default, typically ''eql.  Ctx, form, and name are used
+; for error reporting.
+
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp tests)
+                              (symbolp name))))
+  (let* ((len (length x))
+         (len-2 (- len 2))
+         (kwd/val
+          (cond ((<= 2 len)
+                 (let ((kwd (nth len-2 x)))
+                   (cond ((keywordp kwd)
+                          (cond ((eq kwd :TEST)
+                                 (nthcdr len-2 x))
+                                (t (hard-error
+                                    ctx
+                                    "If a keyword is supplied in the ~
+                                     next-to-last argument of ~x0, that ~
+                                     keyword must be :TEST.  The keyword ~x1 ~
+                                     is thus illegal in the call ~x2."
+                                    (list (cons #\0 name)
+                                          (cons #\1 kwd)
+                                          (cons #\2 form))))))
+                         (t nil))))
+                (t nil))))
+    (mv (cond (kwd/val
+               (let ((test (car (last x))))
+                 (cond ((not (member-equal test tests))
+                        (hard-error
+                         ctx
+                         "The :TEST argument for ~x0 must be one of ~&1.  The ~
+                          form ~x2 is thus illegal.  See :DOC ~s3."
+                         (list (cons #\0 name)
+                               (cons #\1 tests)
+                               (cons #\2 form)
+                               (cons #\3 (symbol-name name)))))
+                       (t test))))
+              (t default))
+        (cond (kwd/val (butlast x 2))
+              (t x)))))
+
+(defmacro union-equal-with-union-eq-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'union-eq-exec) l1 l2)
+             (union-equal l1 l2))))
+
+(defmacro union-equal-with-union-eql-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'union-eql-exec) l1 l2)
+             (union-equal l1 l2))))
+
+(defmacro union$ (&whole form &rest x)
+  (mv-let
+   (test args)
+   (parse-args-and-test x '('eq 'eql 'equal) ''eql 'union$ form 'union$)
+   (cond
+    ((null args) nil)
+    ((null (cdr args))
+     (car args))
+    (t (let* ((vars (make-var-lst 'x (length args)))
+              (bindings (pairlis$ vars (pairlis$ args nil))))
+         (cond ((equal test ''eq)
+                `(let-mbe ,bindings
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin 'union-equal-with-union-eq-exec-guard
+                                    vars)
+                          :exec
+                          ,(xxxjoin 'union-eq-exec vars)))
+               ((equal test ''eql)
+                `(let-mbe ,bindings
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin 'union-equal-with-union-eql-exec-guard
+                                    vars)
+                          :exec
+                          ,(xxxjoin 'union-eql-exec vars)))
+               (t ; (equal test 'equal)
+                (xxxjoin 'union-equal args))))))))
+
+(defconst *xargs-keywords*
+
+; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
+; modifying memoize-partial-declare accordingly.
+
+  '(:guard :guard-hints :guard-debug :guard-simplify
+           :hints :measure :measure-debug
+           :ruler-extenders :mode :non-executable :normalize
+           :otf-flg #+:non-standard-analysis :std-hints
+           :stobjs :verify-guards :well-founded-relation
+           :split-types :loop$-recursion :type-prescription))
+
+(defun plausible-dclsp1 (lst)
+
+; We determine whether lst is a plausible cdr for a DECLARE form.  Ignoring the
+; order of presentation and the number of occurrences of each element
+; (including 0), we ensure that lst is of the form (... (TYPE ...) ... (IGNORE
+; ...) ... (IGNORABLE ...) ... (IRRELEVANT ...) ... (XARGS ... :key val ...)
+; ...)  where the :keys are our xarg keys (members of *xargs-keywords*).
+
+  (declare (xargs :guard t))
+  (cond ((atom lst) (null lst))
+        ((and (consp (car lst))
+              (true-listp (car lst))
+              (or (member-eq (caar lst) '(type ignore ignorable irrelevant))
+                  (and (eq (caar lst) 'xargs)
+                       (keyword-value-listp (cdar lst))
+                       (subsetp-eq (evens (cdar lst)) *xargs-keywords*))))
+         (plausible-dclsp1 (cdr lst)))
+        (t nil)))
+
+(defun plausible-dclsp (lst)
+
+; We determine whether lst is a plausible thing to include between the formals
+; and the body in a defun, e.g., a list of doc strings and DECLARE forms.  We
+; do not insist that the DECLARE forms are "perfectly legal" -- for example, we
+; would approve (DECLARE (XARGS :measure m1 :measure m2)) -- but they are
+; well-enough formed to permit us to walk through them with the fetch-from-dcls
+; functions below.
+
+; Note: This predicate is not actually used by defuns but is used by
+; verify-termination in order to guard its exploration of the proposed dcls to
+; merge them with the existing ones.  After we define the predicate we define
+; the exploration functions, which assume this fn as their guard.  The
+; exploration functions below are used in defuns, in particular, in the
+; determination of whether a proposed defun is redundant.
+
+  (declare (xargs :guard t))
+  (cond ((atom lst) (null lst))
+        ((stringp (car lst)) (plausible-dclsp (cdr lst)))
+        ((and (consp (car lst))
+              (eq (caar lst) 'declare)
+              (plausible-dclsp1 (cdar lst)))
+         (plausible-dclsp (cdr lst)))
+        (t nil)))
+
+; The above function, plausible-dclsp, is the guard and the role model for the
+; following functions which explore plausible-dcls and either collect all the
+; "fields" used or delete certain fields.
+
+(defun strip-keyword-list (fields lst)
+
+; Lst is a keyword-value-listp, i.e., (:key1 val1 ...).  We remove any key/val
+; pair whose key is in fields.
+
+  (declare (xargs :guard (and (symbol-listp fields)
+                              (keyword-value-listp lst))))
+  (cond ((endp lst) nil)
+        ((member-eq (car lst) fields)
+         (strip-keyword-list fields (cddr lst)))
+        (t (cons (car lst)
+                 (cons (cadr lst)
+                       (strip-keyword-list fields (cddr lst)))))))
+
+(defun strip-dcls1 (fields lst)
+  (declare (xargs :guard (and (symbol-listp fields)
+                              (plausible-dclsp1 lst))))
+  (cond ((endp lst) nil)
+        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
+         (cond ((member-eq (caar lst) fields) (strip-dcls1 fields (cdr lst)))
+               (t (cons (car lst) (strip-dcls1 fields (cdr lst))))))
+        (t
+         (let ((temp (strip-keyword-list fields (cdar lst))))
+           (cond ((null temp) (strip-dcls1 fields (cdr lst)))
+                 (t (cons (cons 'xargs temp)
+                          (strip-dcls1 fields (cdr lst)))))))))
+
+(defun strip-dcls (fields lst)
+
+; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
+; i.e., a subset of the union of the values of '(comment type ignore ignorable
+; irrelevant) and *xargs-keywords*.  We copy lst deleting any part of it that
+; specifies a value for one of the fields named, where 'comment denotes a
+; string.  The result satisfies plausible-dclsp.
+
+  (declare (xargs :guard (and (symbol-listp fields)
+                              (plausible-dclsp lst))))
+  (cond ((endp lst) nil)
+        ((stringp (car lst))
+         (cond ((member-eq 'comment fields) (strip-dcls fields (cdr lst)))
+               (t (cons (car lst) (strip-dcls fields (cdr lst))))))
+        (t (let ((temp (strip-dcls1 fields (cdar lst))))
+             (cond ((null temp) (strip-dcls fields (cdr lst)))
+                   (t (cons (cons 'declare temp)
+                            (strip-dcls fields (cdr lst)))))))))
+
+(defun fetch-dcl-fields2 (field-names kwd-list acc)
+  (declare (xargs :guard (and (symbol-listp field-names)
+                              (keyword-value-listp kwd-list))))
+  (cond ((endp kwd-list)
+         acc)
+        (t (let ((acc (fetch-dcl-fields2 field-names (cddr kwd-list) acc)))
+             (if (member-eq (car kwd-list) field-names)
+                 (cons (cadr kwd-list) acc)
+               acc)))))
+
+(defun fetch-dcl-fields1 (field-names lst)
+  (declare (xargs :guard (and (symbol-listp field-names)
+                              (plausible-dclsp1 lst))))
+  (cond ((endp lst) nil)
+        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
+         (if (member-eq (caar lst) field-names)
+             (cons (cdar lst) (fetch-dcl-fields1 field-names (cdr lst)))
+           (fetch-dcl-fields1 field-names (cdr lst))))
+        (t (fetch-dcl-fields2 field-names (cdar lst)
+                             (fetch-dcl-fields1 field-names (cdr lst))))))
+
+(defun fetch-dcl-fields (field-names lst)
+  (declare (xargs :guard (and (symbol-listp field-names)
+                              (plausible-dclsp lst))))
+  (cond ((endp lst) nil)
+        ((stringp (car lst))
+         (if (member-eq 'comment field-names)
+             (cons (car lst) (fetch-dcl-fields field-names (cdr lst)))
+           (fetch-dcl-fields field-names (cdr lst))))
+        (t (append (fetch-dcl-fields1 field-names (cdar lst))
+                   (fetch-dcl-fields field-names (cdr lst))))))
+
+(defun fetch-dcl-field (field-name lst)
+
+; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
+; between the formals and the body of a DEFUN.  Field-name is either in the
+; list (comment type ignore ignorable irrelevant) or is one of the symbols in
+; the list *xargs-keywords*.  We return the list of the contents of all fields
+; with that name.  We assume we will find at most one specification per XARGS
+; entry for a given keyword.
+
+; For example, if field-name is :GUARD and there are two XARGS among the
+; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
+; (g1 g2).  Similarly, if field-name is TYPE and lst contains (DECLARE (TYPE
+; INTEGER X Y)) then our output will be (... (INTEGER X Y) ...) where the ...
+; are the other TYPE entries.
+
+  (declare (xargs :guard (and (symbolp field-name)
+                              (plausible-dclsp lst))))
+  (fetch-dcl-fields (list field-name) lst))
+
+(defun with-output-on-off-binding-val (on off summary-p)
+
+; On and off are each either :all or a list of symbols contained in
+; *summary-types* if summary-p is true, else contained in *valid-output-names*.
+; We return an expression that represents the corresponding value indicated for
+; state global inhibited-summary-types or inhibit-output-lst according to
+; whether summary-p is true or nil, respectively.
+
+  (declare (xargs :guard (and (or (eq on :all)
+                                  (symbol-listp on))
+                              (or (eq off :all)
+                                  (symbol-listp off)))))
+  (let* ((qconst (if summary-p '*summary-types* '*valid-output-names*))
+         (global (if summary-p 'inhibited-summary-types 'inhibit-output-lst)))
+    (cond
+     ((eq on :all)
+      (cond
+       ((eq off :all) qconst)
+       (t `(quote ,off))))
+     ((eq off :all)
+      `(set-difference-eq ,qconst ',on))
+     (t
+      `(union-eq ',off
+                 (set-difference-eq (f-get-global ',global state)
+                                    ',on))))))
+
+(defun with-output-on-off-arg (arg universe)
+
+; Arg is an argument of with-output keyword :on, :off, :summary-on, or
+; :summary-off.  We return :all if arg is :all, and otherwise the sublist of
+; universe indicated by arg (hence, arg itself unless the car of arg is
+; :other-than, in which case the complement of the indicated list in universe).
+; Except, we return :fail if arg is illegal.
+
+  (declare (xargs :guard (symbol-listp universe)))
+  (cond ((true-listp arg)
+         (let* ((flg (eq (car arg) :other-than))
+                (lst (if flg (cdr arg) arg)))
+           (if (subsetp-eq lst universe)
+               (if flg
+                   (set-difference-eq universe lst)
+                 lst)
+             :fail)))
+        ((eq arg :all) :all)
+        ((member-eq arg universe)
+         (list arg))
+        (t :fail)))
+
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (consp x)
+           (stringp (car x))
+           (character-alistp (cdr x)))))
+
+(defun ctxp (x)
+  (declare (xargs :guard t))
+  (or (symbolp x)
+      (and (consp x)
+           (symbolp (car x)))
+      (msgp x)))
+
+(defun with-output-fn (ctx0 args off on gag-mode stack summary-on summary-off
+                            evisc ctx kwds)
+  (declare (xargs :mode :program
+                  :guard (and (true-listp args)
+                              (or (symbol-listp off)
+                                  (eq off :all))
+                              (or (symbol-listp on)
+                                  (eq on :all))
+                              (or (symbol-listp summary-off)
+                                  (eq summary-off :all))
+                              (or (symbol-listp summary-on)
+                                  (eq summary-on :all))
+                              (true-listp kwds))))
+  (cond
+   ((endp args) nil)
+   ((keywordp (car args))
+    (let ((illegal-value-string
+           "~x0 is an illegal value for the keyword ~x1 of WITH-OUTPUT.  See ~
+            :DOC with-output."))
+      (cond
+       ((consp (cdr args))
+        (cond
+         ((member-eq (car args) kwds)
+          (hard-error ctx0
+                      "Each keyword for ~x0 may be used at most once, but ~
+                       keyword ~x1 is used more than once."
+                      (list (cons #\0 'with-output) ; ctx, presumably
+                            (cons #\1 (car args)))))
+         ((eq (car args) :ctx)
+          (cond ((ctxp (cadr args))
+                 (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                 summary-on summary-off evisc (cadr args)
+                                 (cons (car args) kwds)))
+                (t (hard-error ctx0
+                               illegal-value-string
+                               (list (cons #\0 (cadr args))
+                                     (cons #\1 :ctx))))))
+         ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
+          (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                          summary-on summary-off (cadr args) ctx
+                          (cons (car args) kwds)))
+         ((eq (car args) :gag-mode)
+          (cond
+           ((member-eq (cadr args)
+                       '(t :goals nil)) ; keep in sync with set-gag-mode
+            (with-output-fn ctx0 (cddr args) off on (cadr args) stack
+                            summary-on summary-off evisc ctx
+                            (cons (car args) kwds)))
+           (t (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 :gag-mode))))))
+         ((member-eq (car args) '(:on :off))
+          (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
+            (cond
+             ((eq val :fail)
+              (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 (car args)))))
+             ((eq (car args) :on)
+              (with-output-fn ctx0 (cddr args) off val
+                              gag-mode stack summary-on summary-off evisc ctx
+                              (cons (car args) kwds)))
+             (t ; (eq (car args) :off)
+              (with-output-fn ctx0 (cddr args) val on
+                              gag-mode stack summary-on summary-off evisc ctx
+                              (cons (car args) kwds))))))
+         ((eq (car args) :stack)
+          (cond
+           ((member-eq (cadr args) '(:push :pop))
+            (with-output-fn ctx0 (cddr args) off on gag-mode (cadr args)
+                            summary-on summary-off evisc ctx
+                            (cons (car args) kwds)))
+           (t (hard-error ctx0
+                          illegal-value-string
+                          (list (cons #\0 (cadr args))
+                                (cons #\1 :stack))))))
+         ((member-eq (car args) '(:summary-on :summary-off))
+          (let ((val (with-output-on-off-arg (cadr args) *summary-types*)))
+            (cond ((eq val :fail)
+                   (hard-error ctx0
+                               illegal-value-string
+                               (list (cons #\0 (cadr args))
+                                     (cons #\1 (car args)))))
+                  ((eq (car args) :summary-on)
+                   (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                   val summary-off evisc ctx
+                                   (cons (car args) kwds)))
+                  (t ; (eq (car args) :summary-off)
+                   (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                                   summary-on val evisc ctx
+                                   (cons (car args) kwds))))))
+         (t
+          (hard-error ctx0
+                      "~x0 is not a legal keyword for a call of with-output.  ~
+                       See :DOC with-output."
+                      (list (cons #\0 (car args)))))))
+       (t (hard-error ctx0
+                      "A with-output form has terminated with a keyword, ~x0. ~
+                       ~ This is illegal.  See :DOC with-output."
+                      (list (cons #\0 (car args))))))))
+   ((cdr args)
+    (illegal ctx0
+             "Illegal with-output form.  See :DOC with-output."
+             nil))
+   (t
+    (let* ((ctx-p (member-eq :ctx kwds))
+           (evisc-p (member-eq :evisc kwds))
+           (gag-p (member-eq :gag-mode kwds))
+           (on-p (member-eq :on kwds))
+           (off-p (member-eq :off kwds))
+           (on-off-p (or on-p off-p))
+           (summary-on-p (member-eq :summary-on kwds))
+           (summary-off-p (member-eq :summary-off kwds))
+           (summary-on-off-p (or summary-on-p summary-off-p))
+           (form
+            `(state-global-let*
+              (,@
+               (and ctx-p
+                    `((global-ctx ,ctx)))
+               ,@
+               (and (or gag-p
+                        (eq stack :pop))
+                    `((gag-mode (f-get-global 'gag-mode state)
+                                set-gag-mode-fn)))
+               ,@
+               (and (or on-off-p
+                        (eq stack :pop))
+                    '((inhibit-output-lst (f-get-global 'inhibit-output-lst
+                                                        state))))
+               ,@
+               (and stack
+                    '((inhibit-output-lst-stack
+                       (f-get-global 'inhibit-output-lst-stack state))))
+               ,@
+               (and summary-on-off-p
+                    `((inhibited-summary-types ,(with-output-on-off-binding-val
+                                                 summary-on
+                                                 summary-off
+                                                 t)))))
+              (er-progn
+               ,@(and stack
+                      `((pprogn ,(if (eq stack :pop)
+                                     '(pop-inhibit-output-lst-stack state)
+                                   '(push-inhibit-output-lst-stack state))
+                                (value nil))))
+               ,@(and gag-p
+                      `((pprogn (set-gag-mode ,gag-mode)
+                                (value nil))))
+               ,@(and on-off-p
+                      `((set-inhibit-output-lst
+                         ,(with-output-on-off-binding-val on off nil))))
+               ,(car args)))))
+      (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
+            (t form))))))
+
+(defmacro with-output! (&rest args)
+  `(if (eq (ld-skip-proofsp state) 'include-book)
+       ,(car (last args))
+     ,(let ((val (with-output-fn 'with-output args
+                                 nil nil nil nil nil nil nil nil nil)))
+        (or val
+
+; If val is nil, then we have presumably already aborted with an error.  But
+; just to be robust here we explicitly cause an error (in case we are wrong
+; about being able to reach this point).
+
+            (illegal 'with-output
+                     "Macroexpansion of ~q0 failed."
+                     (list (cons #\0 (cons 'with-output args))))))))
+
+#-acl2-loop-only
+(defmacro with-output (&rest args)
+  (car (last args)))
+
+#+acl2-loop-only
+(defmacro with-output (&rest args)
+  `(with-output! ,@args))
+
+(defun defun-nx-dcls (form dcls)
+  (declare (xargs :guard (consp form)))
+  (if (plausible-dclsp dcls)
+      (let ((ruler-extenders (fetch-dcl-field :ruler-extenders dcls)))
+        (cond ((and (consp ruler-extenders)
+                    (null (cdr ruler-extenders))
+                    (true-listp (car ruler-extenders))
+                    (not (member-eq 'return-last (car ruler-extenders))))
+               (cons `(declare (xargs :ruler-extenders
+                                      (return-last ,@(car ruler-extenders))))
+                     (strip-dcls '(:ruler-extenders) dcls)))
+              (t dcls)))
+    (hard-error (car form)
+                "The declarations are ill-formed for the form,~%~x0."
+                (list (cons #\0 form)))))
+
+(defun defun-nx-form (form)
+  (declare (xargs :guard (and (true-listp form)
+                              (true-listp (caddr form))
+                              (member-eq (car form) '(defun-nx defund-nx)))
+                  :verify-guards nil))
+  (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
+        (name (cadr form))
+        (formals (caddr form))
+        (rest (cdddr form)))
+    `(,defunx ,name ,formals
+       (declare (xargs :non-executable t :mode :logic))
+       ,@(defun-nx-dcls form (butlast rest 1))
+       (prog2$ (throw-nonexec-error ',name (list ,@formals))
+               ,@(last rest)))))
+
+(defun defun-nx-fn (form)
+  (declare (xargs :guard (and (true-listp form)
+                              (true-listp (caddr form))
+                              (member-eq (car form) '(defun-nx defund-nx)))
+                  :verify-guards nil))
+  `(with-output :stack :push :off :all
+       (progn (encapsulate
+                ()
+                (logic)
+                (set-state-ok t)
+                (with-output :stack :pop
+                  ,(defun-nx-form form))
+                (with-output :stack :pop :off summary
+                  (in-theory (disable (:e ,(cadr form))))))
+              (with-output :stack :pop :off summary
+                (value-triple
+                 ',(event-keyword-name (car form) (cadr form)))))))
+
+(defmacro defun-nx (&whole form &rest rest)
+  (declare (xargs :guard (and (true-listp form)
+                              (true-listp (caddr form))))
+           (ignore rest))
+  (defun-nx-fn form))
+
+(defmacro defund-nx (&whole form &rest rest)
+  (declare (xargs :guard (and (true-listp form)
+                              (true-listp (caddr form))))
+           (ignore rest))
+  (defun-nx-fn form))
+
+(defun update-mutual-recursion-for-defun-nx-1 (defs)
+  (declare (xargs :guard (mutual-recursion-guardp defs)
+                  :verify-guards nil))
+  (cond ((endp defs)
+         nil)
+        ((eq (caar defs) 'defun-nx)
+         (cons (defun-nx-form (car defs))
+               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
+        ((eq (caar defs) 'defund-nx)
+         (cons (defun-nx-form (car defs))
+               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
+        (t
+         (cons (car defs)
+               (update-mutual-recursion-for-defun-nx-1 (cdr defs))))))
+
+(defun update-mutual-recursion-for-defun-nx (defs)
+  (declare (xargs :guard (mutual-recursion-guardp defs)
+                  :verify-guards nil))
+  (cond ((or (assoc-eq 'defun-nx defs)
+             (assoc-eq 'defund-nx defs))
+         (update-mutual-recursion-for-defun-nx-1 defs))
+        (t defs)))
+
+(defun assoc-keyword (key l)
+  (declare (xargs :guard (keyword-value-listp l)))
+  (cond ((endp l) nil)
+        ((eq key (car l)) l)
+        (t (assoc-keyword key (cddr l)))))
+
+(defun program-declared-p2 (dcls)
+  (declare (xargs :guard t))
+  (cond ((atom dcls) nil)
+        ((and (consp (car dcls))
+              (eq (caar dcls) 'xargs)
+              (keyword-value-listp (cdr (car dcls)))
+              (eq (cadr (assoc-keyword :mode (cdr (car dcls))))
+                  :program))
+         t)
+        (t (program-declared-p2 (cdr dcls)))))
+
+(defun program-declared-p1 (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) nil)
+        ((and (consp (car lst))
+              (eq (caar lst) 'declare))
+         (or (program-declared-p2 (cdar lst))
+             (program-declared-p1 (cdr lst))))
+        (t (program-declared-p1 (cdr lst)))))
+
+(defun program-declared-p (def)
+
+; Def is a definition with the initial DEFUN or DEFUND stripped off.  We return
+; t if the declarations in def are minimally well-formed and there is an xargs
+; declaration of :mode :program.
+
+  (declare (xargs :guard (true-listp def)))
+  (program-declared-p1 (butlast (cddr def) 1)))
+
+(defun some-program-declared-p (defs)
+  (declare (xargs :guard (true-list-listp defs)))
+  (cond ((endp defs) nil)
+        (t (or (program-declared-p (car defs))
+               (some-program-declared-p (cdr defs))))))
+
+(defun pairlis-x1 (x1 lst)
+
+; Cons x1 onto the front of each element of lst.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (cons x1 (car lst))
+                 (pairlis-x1 x1 (cdr lst))))))
+
+(defun pairlis-x2 (lst x2)
+
+; Make an alist pairing each element of lst with x2.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (cons (car lst) x2)
+                 (pairlis-x2 (cdr lst) x2)))))
+
+(defmacro append? (x y)
+
+; We use defmacro because defabbrev has not yet been defined at this point in
+; the boot-strap.
+
+  `(let ((x ,x) (y ,y))
+     (cond ((null y) x)
+           (t (append x y)))))
+
+#+acl2-loop-only
+(defmacro mutual-recursion (&whole event-form &rest rst0)
+  (declare (xargs :guard (mutual-recursion-guardp rst0)))
+  (let ((rst (update-mutual-recursion-for-defun-nx rst0)))
+
+; It would be nice to use let* instead of nested let expressions here, but let*
+; has not been defined at this point in the file.
+
+    (let ((form (list 'defuns-fn
+                      (list 'quote (strip-cdrs rst))
+                      'state
+                      (list 'quote event-form)
+                      #+:non-standard-analysis ; std-p
+                      nil)))
+      (cond
+       ((or (and (assoc-eq 'defund rst0)
+
+; It is of course possible that the default defun-mode is :program and thus no
+; definition expicitly declares :program mode.  In that case, we might generate
+; in-theory events but they would be skipped because the default defun-mode is
+; :program.  Note by the way that all functions introduced by mutual-recursion
+; have the same defun-mode, which allows us to avoid thinking about mixed
+; defun-mode cases.
+
+                 (not (some-program-declared-p (strip-cdrs rst0))))
+            (assoc-eq 'defun-nx rst0)
+            (assoc-eq 'defund-nx rst0))
+        (let ((in-theory-form
+               (list 'in-theory
+                     (cons 'disable
+                           (append?
+                            (collect-cadrs-when-car-member-eq
+                             '(defund)
+                             rst)
+                            (pairlis-x1
+                             ':executable-counterpart
+                             (pairlis$ (collect-cadrs-when-car-member-eq
+                                        '(defun-nx defund-nx)
+                                        rst0)
+                                       nil)))))))
+          (list 'er-progn
+                form
+                (list
+                 'with-output
+                 :off :all
+                 (if (or (assoc-eq 'defun-nx rst0)
+                         (assoc-eq 'defund-nx rst0))
+                     `(encapsulate
+                        nil
+                        (logic)
+                        ,in-theory-form)
+                   in-theory-form))
+                (list 'value-triple
+                      (list 'quote (event-keyword-name-lst rst0 nil))))))
+       (t
+        form)))))
+
+; Now we define the weak notion of term that guards metafunctions.
+
+(mutual-recursion
+
+(defun pseudo-termp (x)
+  (declare (xargs :guard t :mode :logic))
+  (cond ((atom x) (symbolp x))
+        ((eq (car x) 'quote)
+         (and (consp (cdr x))
+              (null (cdr (cdr x)))))
+        ((not (true-listp x)) nil)
+        ((not (pseudo-term-listp (cdr x))) nil)
+        (t (or (symbolp (car x))
+
+; For most function applications we do not check that the number of
+; arguments matches the number of formals.  However, for lambda
+; applications we do make that check.  The reason is that the
+; constraint on an evaluator dealing with lambda applications must use
+; pairlis$ to pair the formals with the actuals and pairlis$ insists on
+; the checks below.
+
+               (and (true-listp (car x))
+                    (equal (length (car x)) 3)
+                    (eq (car (car x)) 'lambda)
+                    (symbol-listp (cadr (car x)))
+                    (pseudo-termp (caddr (car x)))
+                    (equal (length (cadr (car x)))
+                           (length (cdr x))))))))
+
+(defun pseudo-term-listp (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) (equal lst nil))
+        (t (and (pseudo-termp (car lst))
+                (pseudo-term-listp (cdr lst))))))
+
+)
+
+(defthm pseudo-term-listp-forward-to-true-listp
+  (implies (pseudo-term-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+; For the encapsulate of too-many-ifs-post-rewrite
+(encapsulate
+ ()
+ (table acl2-defaults-table :defun-mode :logic)
+ (verify-guards pseudo-termp))
+
+(defun pseudo-term-list-listp (l)
+  (declare (xargs :guard t))
+  (if (atom l)
+      (equal l nil)
+    (and (pseudo-term-listp (car l))
+         (pseudo-term-list-listp (cdr l)))))
+
+(verify-guards pseudo-term-list-listp)
+
+(defmacro variablep (x) (list 'atom x))
+
+(defmacro nvariablep (x) (list 'consp x))
+
+(defmacro fquotep (x) (list 'eq ''quote (list 'car x)))
+
+(defun quotep (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (eq (car x) 'quote)))
+
+(defconst *t* (quote (quote t)))
+(defconst *nil* (quote (quote nil)))
+(defconst *0* (quote (quote 0)))
+(defconst *1* (quote (quote 1)))
+(defconst *-1* (quote (quote -1)))
+(defconst *2* (quote (quote 2)))
+
+(defun kwote (x)
+  (declare (xargs :guard t))
+  (mbe :logic
+
+; Theorem ev-lambda-clause-correct in community book
+; books/centaur/misc/evaluator-metatheorems.lisp goes out to lunch if we use
+; the :exec term below as the definition.  So we keep the :logic definition
+; simple.
+
+       (list 'quote x)
+       :exec ; save conses
+       (cond ((eq x nil) *nil*)
+             ((eq x t) *t*)
+             ((eql x 0) *0*)
+             ((eql x 1) *1*)
+             ((eql x -1) *-1*)
+             (t (list 'quote x)))))
+
+(defun maybe-kwote (x)
+
+; Return an untranslated term that represents (quote x).
+
+  (declare (xargs :guard t))
+  (cond ((or (acl2-numberp x)
+             (stringp x)
+             (characterp x)
+             (eq x nil)
+             (eq x t)
+             (keywordp x))
+         x)
+        (t (kwote x))))
+
+(defun kwote-lst (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (kwote (car lst)) (kwote-lst (cdr lst))))))
+
+(defmacro unquote (x) (list 'cadr x))
+
+; Lambda Object Accessor Functions
+
+; The following functions access the formals, declare statement (if any), and
+; body of a well-formed lambda object.  However, they do not assume that their
+; arguments are well-formed.  They may return ill-formed results on ill-formed
+; ``lambdas''.  See the Essay on Lambda Objects and Lambda$ for some context
+; and conventions.  The formals are the *1* cadr of the ``lambda object,'' and
+; the dcl and body are either nil and the *1* caddr or the *1* caddr and the
+; *1* cadddr, depending on whether the object is a true-list of len 3 or 4.
+; The dcl and body are both nil for objects that are not true-lists of len 3 or
+; 4.
+
+; More verbosely, there are two forms of well-formed lambda objects (called
+; simple and declared), and three ``accessor'' functions:
+
+;                         simple                       declared
+;                   (LAMBDA vars body)         (LAMBDA vars dcl body)
+
+; lambda-object-formals     vars                       vars
+; lambda-object-dcl         nil                        dcl
+; lambda-object-body        body                       body
+
+; Put another way,
+
+; lambda-object-formals     cadr                       cadr
+; lambda-object-dcl         nil                        caddr
+; lambda-object-body        caddr                      cadddr
+
+; except we always mean the *1*-counterparts of those car/cdr nests so that
+; these accessors are guard verified with guards of T.  Insufficient
+; cons-structure can make lambda-object-dcl and lambda-object-body return nil.
+; A nil dcl is interpreted as though we'd seen a simple lambda with no dcl.
+; But a nil body is an ill-formed answer because nil is not a term.
+
+; Lambda-object-formals is always *1* cadr.  But lambda-object-dcl and
+; lambda-object-body have to decide whether an ill-formed lambda object, x, is
+; supposed to be treated like a simple lambda or a declared one.  The answer is
+; if it's a true-list of len 3, it's simple, if it's a true-list of len 4, it's
+; declared, and otherwise we return nil.
+
+(defun lambda-object-formals (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return vars.  But x is not necessarily
+; well-formed and there is no guarantee that the answer is well-formed.  See
+; the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+  (declare (xargs :guard t))
+
+; We could have defined this as indicated by the thm below, but we wanted to be
+; more efficient and guard-verified.
+
+; (thm (equal (lambda-object-formals x)
+;             (cadr x)))
+
+  (if (and (consp x)
+           (consp (cdr x)))
+      (cadr x)
+      nil))
+
+(defun lambda-object-dcl (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return the dcl or nil if there's no dcl.
+; But x is not necessarily well-formed and there is no guarantee that the
+; answer is well-formed.  See the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+; On Performance: One wonders whether this function would be faster if we
+; avoided repeated cdrs by let-binding.  We tried variations of this function
+; in which we bound temp successively to the cdr of temp in the obvious way so
+; as to avoid duplicated computations of cdr expressions.  We then compared
+; them on a billion well-formed lambdas of both lengths 3 and 4.  This was the
+; fastest.  The lesson: cdr is faster than let-binding/variable lookup.
+
+  (declare (xargs :guard t))
+
+; We could have used this definition:
+; (thm (equal (lambda-object-dcl x)
+;             (cond ((and (true-listp x) (= (len x) 3)) nil)
+;                   ((and (true-listp x) (= (len x) 4)) (caddr x))
+;                   (t nil))))
+; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
+; needed to prove the thm above.
+
+  (cond ((and (consp x)               ; (= (len x) 4)
+              (consp (cdr x))
+              (consp (cddr x))
+              (consp (cdddr x))
+              (null (cddddr x)))
+         (caddr x))
+        (t nil)))
+
+(defun lambda-object-body (x)
+
+; If x is a well-formed lambda object, e.g., something of the form (LAMBDA vars
+; dcl body) or (LAMBDA vars body), we return the body.  But x is not
+; necessarily well-formed and there is no guarantee that the answer is
+; well-formed.  See the discussion above.
+
+; This function has a guard of T so that it can be used without an ec-call in
+; apply$-lambda-logical and elsewhere.
+
+  (declare (xargs :guard t))
+
+; We could have used this definition:
+; (thm (equal (lambda-object-body x)
+;             (cond
+;              ((and (true-listp x) (= (len x) 3)) (caddr x))
+;              ((and (true-listp x) (= (len x) 4)) (cadddr x))
+;              (t nil))))
+; By the way, arithmetic-5/top and (equal (equal (len x) 0) (atom x)) are
+; needed to prove the thm above.
+
+  (cond ((and (consp x)               ; (>= (len x) 3)
+              (consp (cdr x))
+              (consp (cddr x)))
+         (cond ((atom (cdddr x))      ; (= (len x) 3)
+                (if (null (cdddr x)) (caddr x) nil))
+               ((null (cddddr x))     ; (= (len x) 4)
+                (cadddr x))
+               (t nil)))
+        (t nil)))
+
+(defun lambda-object-shapep (fn)
+  (declare (xargs :guard t))
+  (and (consp fn)
+       (eq (car fn) 'lambda)
+       (consp (cdr fn))
+       (consp (cddr fn))
+       (or (null (cdddr fn))
+           (and (consp (cdddr fn))
+                (null (cddddr fn))))))
+
+(defun make-lambda-object (formals dcl body)
+  (declare (xargs :guard t))
+  `(lambda ,formals
+     ,@(if dcl (list dcl) nil)
+     ,body))
+
+(defmacro ffn-symb (x) (list 'car x))
+
+(defun fn-symb (x)
+  (declare (xargs :guard t))
+  (if (and (nvariablep x)
+           (not (fquotep x)))
+      (car x)
+    nil))
+
+(defmacro fargs (x) (list 'cdr x))
+
+(defun fargn1 (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (cond ((mbe :logic (or (zp n) (eql n 1))
+              :exec (eql n 1))
+         (list 'cdr x))
+        (t (list 'cdr (fargn1 x (- n 1))))))
+
+(defmacro fargn (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (list 'car (fargn1 x n)))
+
+(mutual-recursion
+
+(defun all-vars1 (term ans)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((variablep term)
+         (add-to-set-eq term ans))
+        ((fquotep term) ans)
+        (t (all-vars1-lst (fargs term) ans))))
+
+(defun all-vars1-lst (lst ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((endp lst) ans)
+        (t (all-vars1-lst (cdr lst)
+                          (all-vars1 (car lst) ans)))))
+
+)
+
+(verify-termination-boot-strap
+ (all-vars1 (declare (xargs :mode :logic :verify-guards nil)))
+ (all-vars1-lst (declare (xargs :mode :logic))))
+
+(defun all-vars (term)
+
+; This function collects the variables in term in reverse print order of
+; first occurrence.  E.g., all-vars of '(f (g a b) c) is '(c b a).
+; This ordering is exploited by, at least, loop-stopper and bad-synp-hyp.
+
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (all-vars1 term nil))
+
+; Progn.
+
+; The definition of er-progn-fn below exposes a deficiency in ACL2 not
+; present in full Common Lisp, namely ACL2's inability to generate a
+; really ``new'' variable the way one can in a Common Lisp macro via
+; gensym.  One would like to be sure that in binding the two variables
+; er-progn-not-to-be-used-elsewhere-erp
+; er-progn-not-to-be-used-elsewhere-val that they were not used
+; anywhere in the subsequent macro expansion of lst.  If one had the
+; macro expansion of lst at hand, one could manufacture a variable
+; that was not free in the expansion with genvars, and that would do.
+
+; As a less than elegant remedy to the situation, we introduce below
+; the macro check-vars-not-free, which takes two arguments, the first
+; a not-to-be-evaluated list of variable names and the second an
+; expression.  We arrange to return the translation of the expression
+; provided none of the variables occur freely in it.  Otherwise, an error
+; is caused.  The situation is subtle because we cannot even obtain
+; the free vars in an expression until it has been translated.  For
+; example, (value x) has the free var STATE in it, thanks to the macro
+; expansion of value.  But a macro can't call translate because macros
+; can't get their hands on state.
+
+; In an earlier version of this we built check-vars-not-free into
+; translate itself.  We defined it with a defmacro that expanded to
+; its second arg, but translate did not actually look at the macro
+; (raw lisp did) and instead implemented the semantics described
+; above.  Of course, if no error was caused the semantics agreed with
+; the treatment and if an error was caused, all bets are off anyway.
+; The trouble with that approach was that it worked fine as long as
+; check-vars-not-free was the only such example we had of needing to
+; look at the translated form of something in a macro.  Unfortunately,
+; others came along.  So we invented the more general
+; translate-and-test and now use it to define check-vars-not-free.
+
+(defmacro translate-and-test (test-fn form)
+
+; Test-fn should be a LAMBDA expression (or function or macro symbol)
+; of one non-STATE argument, and form is an arbitrary form.  Logically
+; we ignore test-fn and return form.  However, an error is caused by
+; TRANSLATE if the translation of form is not "approved" by test-fn.
+; By "approved" we mean that when (test-fn 'term) is evaluated, where
+; term is the translation of form, (a) the evaluation completes
+; without an error and (b) the result is T.  Otherwise, the result is
+; treated as an error msg and displayed.  (Actually, test-fn's answer
+; is treated as an error msg if it is a stringp or a consp.  Any other
+; result, e.g., T or NIL (!), is treated as "approved.")  If test-fn
+; approves then the result of translation is the translation of form.
+
+; For example,
+; (translate-and-test
+;  (lambda (term)
+;   (or (subsetp (all-vars term) '(x y z))
+;       (msg "~x0 uses variables other than x, y, and z."
+;            term)))
+;  <form>)
+; is just the translation of <form> provided that translation
+; only involves the free vars x, y, and z; otherwise an error is
+; caused.  By generating calls of this macro other macros can
+; ensure that the <form>s they generate satisfy certain tests
+; after those <forms>s are translated.
+
+; This macro is actually implemented in translate.  It can't be
+; implemented here because translate isn't defined yet.  However the
+; semantics is consistent with the definition below, namely, it just
+; expands to its second argument (which is, of course, translated).
+; It is just that sometimes errors are caused.
+
+; There are two tempting generalizations of this function.  The first
+; is that test-fn should be passed STATE so that it can make more
+; "semantic" checks on the translation of form and perhaps so that it
+; can signal the error itself.  There is, as far as I know,
+; nothing wrong with this generalization except that it is hard to
+; implement.  In order for TRANSLATE to determine whether test-fn
+; approves of the term it must ev an expression.  If that expression
+; involved STATE then translated must pass in its STATE in that
+; position.  This requires coercing the state to an object, an act
+; which is done with some trepidation in trans-eval and which could,
+; presumably, be allowed earlier in translate.
+
+; The second tempting generalization is that test-fn should have the
+; power to massage the translation and return a new form which should,
+; in turn, be translated.  For example, then one could imagine, say, a
+; macro that would permit a form to be turned into the quoted constant
+; listing the variables that occur freely in the translated form.  If
+; the first generalization above has been carried out, then this would
+; permit the translation of a form to be state dependent, which is
+; illegal.  But this second generalization is problematic anyway.  In
+; particular, what is the raw lisp counterpart of the generalized
+; macro?  Note that in its current incarnation, the raw lisp
+; counterpart of translate-and-test is the same as its logical
+; meaning: it just expands to its second arg.  But if the desired
+; expansion is computed from the translation of its second arg, then
+; raw lisp would have to translate that argument.  But we can't do
+; that for a variety of reasons: (a) CLTL macros shouldn't be state
+; dependent, (b) we can't call translate during compilation because in
+; general the ACL2 world isn't present, etc.
+
+  (declare (ignore test-fn))
+  form)
+
+; Intersectp
+
+(defun-with-guard-check intersectp-eq-exec (x y)
+  (and (true-listp x)
+       (true-listp y)
+       (or (symbol-listp x)
+           (symbol-listp y)))
+  (cond ((endp x) nil)
+        ((member-eq (car x) y) t)
+        (t (intersectp-eq-exec (cdr x) y))))
+
+(defun-with-guard-check intersectp-eql-exec (x y)
+  (and (true-listp x)
+       (true-listp y)
+       (or (eqlable-listp x)
+           (eqlable-listp y)))
+  (cond ((endp x) nil)
+        ((member (car x) y) t)
+        (t (intersectp-eql-exec (cdr x) y))))
+
+(defun intersectp-equal (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (cond ((endp x) nil)
+        ((member-equal (car x) y) t)
+        (t (intersectp-equal (cdr x) y))))
+
+(defmacro intersectp-eq (x y)
+  `(intersectp ,x ,y :test 'eq))
+
+(defthm intersectp-eq-exec-is-intersectp-equal
+  (equal (intersectp-eq-exec x y)
+         (intersectp-equal x y)))
+
+(defthm intersectp-eql-exec-is-intersectp-equal
+  (equal (intersectp-eql-exec x y)
+         (intersectp-equal x y)))
+
+(defmacro intersectp (x y &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (intersectp-equal x y)
+              :exec  (intersectp-eq-exec x y)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (y ,y))
+              :logic (intersectp-equal x y)
+              :exec  (intersectp-eql-exec x y)))
+   (t ; (equal test 'equal)
+    `(intersectp-equal ,x ,y))))
+
+(defun chk-no-stobj-array-index-aliasing (producers others)
+
+; This function is used in the implementation of stobj-let.  Do not modify it
+; without seeing where it is used and understand the implications of the
+; change.
+
+  (declare (xargs :guard (and (eqlable-listp producers)
+                              (no-duplicatesp producers)
+                              (eqlable-listp others)
+                              (not (intersectp producers others))))
+           (ignore producers others))
+  nil)
+
+(defun make-fmt-bindings (chars forms)
+  (declare (xargs :guard (and (true-listp chars)
+                              (true-listp forms)
+                              (<= (length forms) (length chars)))))
+  (cond ((endp forms) nil)
+        (t (list 'cons
+                 (list 'cons (car chars) (car forms))
+                 (make-fmt-bindings (cdr chars) (cdr forms))))))
+
+(defconst *base-10-chars*
+
+; This constant is inlined in the definition of
+; *base-10-array*.
+
+  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+
+(defmacro warning$ (ctx summary str+ &rest fmt-args)
+
+; Warning: Keep this in sync with warning$-cw1.
+
+; Note: This macro was originally defined in basis-a.lisp, but was moved
+; forward after *acl2-files* was changed so that "hons-raw" occurs before
+; "basis-a".
+
+; A typical use of this macro might be:
+; (warning$ ctx "Loops" "The :REWRITE rule ~x0 loops forever." name) or
+; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
+; If the second argument is wrapped in a one-element list, as in
+; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
+; then that argument is quoted, and no check will be made for whether the
+; warning is disabled, presumably because we are in a context where we know the
+; warning is enabled.
+
+  (list 'warning1
+        ctx
+
+; We seem to have seen a GCL 2.6.7 compiler bug, laying down bogus calls of
+; load-time-value, when replacing (consp (cadr args)) with (and (consp (cadr
+; args)) (stringp (car (cadr args)))).  But it seems fine to have the semantics
+; of warning$ be that conses are quoted in the second argument position.
+
+        (if (consp summary)
+            (kwote summary)
+          summary)
+        str+
+        (make-fmt-bindings *base-10-chars* fmt-args)
+        'state))
+
+(defmacro msg (str &rest args)
+
+; Fmt is defined much later.  But we need msg now because several of our macros
+; generate calls of msg and thus msg must be a function when terms using those
+; macros are translated.
+
+  (declare (xargs :guard (<= (length args) 10)))
+
+  `(cons ,str ,(make-fmt-bindings *base-10-chars* args)))
+
+(defun check-vars-not-free-test (vars term)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (or (not (intersectp-eq vars (all-vars term)))
+      (msg "It is forbidden to use ~v0 in ~x1."
+           vars term)))
+
+(defmacro check-vars-not-free (vars form)
+
+; Warning: We actually handle this macro directly in translate11, in case that
+; is an efficiency win.  Keep this macro and that part of translate11 in sync.
+
+; A typical use of this macro is (check-vars-not-free (my-erp my-val) ...)
+; which just expands to the translation of ... provided my-erp and my-val do
+; not occur freely in it.
+
+; We wrap the body of the lambda into a simple function call, because
+; translate11 calls ev-w on it and we want to avoid having lots of ev-rec
+; calls, especially since intersectp-eq expands to an mbe call.
+
+  (declare (xargs :guard (symbol-listp vars)))
+  (cond ((null vars) form) ; optimization, perhaps needless
+        (t `(translate-and-test
+             (lambda (term)
+               (check-vars-not-free-test ',vars term))
+             ,form))))
+
+(defun er-progn-fn (lst)
+
+; Keep in sync with er-progn-fn@par.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (car lst))
+        (t (list 'mv-let
+                 '(er-progn-not-to-be-used-elsewhere-erp
+                   er-progn-not-to-be-used-elsewhere-val
+                   state)
+                 (car lst)
+; Avoid possible warning after optimized compilation:
+                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-val))
+                 (list 'if
+                       'er-progn-not-to-be-used-elsewhere-erp
+                       '(mv er-progn-not-to-be-used-elsewhere-erp
+                            er-progn-not-to-be-used-elsewhere-val
+                            state)
+                       (list 'check-vars-not-free
+                             '(er-progn-not-to-be-used-elsewhere-erp
+                               er-progn-not-to-be-used-elsewhere-val)
+                             (er-progn-fn (cdr lst))))))))
+
+(defmacro er-progn (&rest lst)
+
+; Keep in sync with er-progn@par.
+
+  (declare (xargs :guard (and (true-listp lst)
+                              lst)))
+  (er-progn-fn lst))
+
+#+acl2-par
+(defun er-progn-fn@par (lst)
+
+; Keep in sync with er-progn-fn.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((endp (cdr lst)) (car lst))
+        (t (list 'mv-let
+                 '(er-progn-not-to-be-used-elsewhere-erp
+                   er-progn-not-to-be-used-elsewhere-val)
+                 (car lst)
+; Avoid possible warning after optimized compilation:
+                 '(declare (ignorable er-progn-not-to-be-used-elsewhere-val))
+                 (list 'if
+                       'er-progn-not-to-be-used-elsewhere-erp
+                       '(mv er-progn-not-to-be-used-elsewhere-erp
+                            er-progn-not-to-be-used-elsewhere-val)
+                       (list 'check-vars-not-free
+                             '(er-progn-not-to-be-used-elsewhere-erp
+                               er-progn-not-to-be-used-elsewhere-val)
+                             (er-progn-fn@par (cdr lst))))))))
+
+#+acl2-par
+(defmacro er-progn@par (&rest lst)
+
+; Keep in sync with er-progn.
+
+  (declare (xargs :guard (and (true-listp lst)
+                              lst)))
+  (er-progn-fn@par lst))
+
+; Position-ac
+
+(defun-with-guard-check position-ac-eq-exec (item lst acc)
+  (and (true-listp lst)
+       (or (symbolp item)
+           (symbol-listp lst))
+       (acl2-numberp acc))
+  (cond
+   ((endp lst) nil)
+   ((eq item (car lst))
+    (mbe :logic (fix acc) :exec acc))
+   (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-ac-eq-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eq-exec item lst acc))
+               (equal (position-ac-eq-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
+
+(defun-with-guard-check position-ac-eql-exec (item lst acc)
+  (and (true-listp lst)
+       (or (eqlablep item)
+           (eqlable-listp lst))
+       (acl2-numberp acc))
+  (cond
+   ((endp lst) nil)
+   ((eql item (car lst))
+    (mbe :logic (fix acc) :exec acc))
+   (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-ac-eql-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eql-exec item lst acc))
+               (equal (position-ac-eql-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
+
+(defun position-equal-ac (item lst acc)
+
+; This function should perhaps be called position-ac-equal, but we name it
+; position-equal-ac since that has been its name historically before the new
+; handling of member etc. after Version_4.2.
+
+  (declare (xargs :guard (and (true-listp lst)
+                              (acl2-numberp acc))))
+  (cond
+   ((endp lst) nil)
+   ((equal item (car lst))
+    (mbe :exec acc :logic (fix acc)))
+   (t (position-equal-ac item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-equal-ac
+  (implies (natp acc)
+           (or (natp (position-equal-ac item lst acc))
+               (equal (position-equal-ac item lst acc) nil)))
+  :rule-classes :type-prescription)
+
+(defmacro position-ac-equal (item lst acc)
+; See comment about naming in position-equal-ac.
+  `(position-equal-ac ,item ,lst ,acc))
+
+(defmacro position-eq-ac (item lst acc)
+
+; This macro may be oddly named; see the comment about naming in
+; position-equal-ac.  We also define position-ac-eq, which may be a more
+; appropriate name.
+
+  `(position-ac ,item ,lst ,acc :test 'eq))
+
+(defmacro position-ac-eq (item lst acc)
+  `(position-ac ,item ,lst ,acc :test 'eq))
+
+(defthm position-ac-eq-exec-is-position-equal-ac
+  (equal (position-ac-eq-exec item lst acc)
+         (position-equal-ac item lst acc)))
+
+(defthm position-ac-eql-exec-is-position-equal-ac
+  (equal (position-ac-eql-exec item lst acc)
+         (position-equal-ac item lst acc)))
+
+(defmacro position-ac (item lst acc &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
+              :logic (position-equal-ac item lst)
+              :exec  (position-ac-eq-exec item lst)))
+   ((equal test ''eql)
+    `(let-mbe ((item ,item) (lst ,lst) (acc ,acc))
+              :logic (position-equal-ac item lst acc)
+              :exec  (position-ac-eql-exec item lst acc)))
+   (t ; (equal test 'equal)
+    `(position-equal-ac ,item ,lst))))
+
+; Position
+
+(defun-with-guard-check position-eq-exec (item lst)
+  (and (true-listp lst)
+       (or (symbolp item)
+           (symbol-listp lst)))
+  (position-ac-eq-exec item lst 0))
+
+(defun-with-guard-check position-eql-exec (item lst)
+  (or (stringp lst)
+      (and (true-listp lst)
+           (or (eqlablep item)
+               (eqlable-listp lst))))
+  (if (stringp lst)
+      (position-ac item (coerce lst 'list) 0)
+    (position-ac item lst 0)))
+
+(defun position-equal (item lst)
+  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
+  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  (position item lst :test #'equal)
+  #+acl2-loop-only
+  (if (stringp lst)
+      (position-ac item (coerce lst 'list) 0)
+    (position-equal-ac item lst 0)))
+
+(defmacro position-eq (item lst)
+  `(position ,item ,lst :test 'eq))
+
+(defthm position-eq-exec-is-position-equal
+  (implies (not (stringp lst))
+           (equal (position-eq-exec item lst)
+                  (position-equal item lst))))
+
+(defthm position-eql-exec-is-position-equal
+  (equal (position-eql-exec item lst)
+         (position-equal item lst)))
+
+#+acl2-loop-only
+(defmacro position (x seq &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (seq ,seq))
+              :logic (position-equal x seq)
+              :exec  (position-eq-exec x seq)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (seq ,seq))
+              :logic (position-equal x seq)
+              :exec  (position-eql-exec x seq)))
+   (t ; (equal test 'equal)
+    `(position-equal ,x ,seq))))
+
 (encapsulate
   ()
   (local (defthm hack
@@ -8207,19 +9055,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (logcount (nonnegative-integer-quotient x 2)))
    (t
     (1+ (logcount (nonnegative-integer-quotient x 2))))))
-
-(defun nthcdr (n l)
-  (declare (xargs :guard (and (integerp n)
-                              (<= 0 n)
-                              (true-listp l))))
-  (if (zp n)
-      l
-    (nthcdr (+ n -1) (cdr l))))
-
-(defthm true-listp-nthcdr-type-prescription
-  (implies (true-listp x)
-           (true-listp (nthcdr n x)))
-  :rule-classes :type-prescription)
 
 (defun logbitp (i j)
   (declare (xargs :guard (and (integerp j)
@@ -9862,6 +10697,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (*1*-symbol x))
 
 (defun set-attachment-symbol-form (fn val)
+
+; Warning: It may be important in add-trip that set-attachment-symbol-form
+; generates a defparameter whose form is quoted.  See the comment about this in
+; the attachment case in add-trip.
+
   `(defparameter ,(attachment-symbol fn) ',val))
 
 (defmacro defattach (&rest args)
@@ -12204,7 +13044,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (order (array-order header))
          old-car
          ar
-         in-order)
+         (in-order t)
+         (num 1))
+    (declare (type (unsigned-byte 31) num))
 
     (when (and (null order)
                (> (length l) maximum-length))
@@ -12217,62 +13059,101 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                         (cons #\2 (length l))
                         (cons #\3 (maximum-length name l)))))
 
-; Get an array that is all filled with the special mark *invisible-array-mark*.
+; Determine whether l is already is in normal form (header first, strictly
+; ordered keys, no default values, no extra header.)
 
-    (cond ((and old
-                (= 1 (array-rank (cadr old)))
-                (= (length (cadr old)) length))
-           (setq old-car (car old))
-           (setf (car old) *invisible-array-mark*)
-           (setq ar (cadr old))
-           (do ((i (1- length) (1- i))) ((< i 0))
-               (declare (type (signed-byte 32) i))
-               (setf (svref ar i) *invisible-array-mark*)))
-          (t (setq ar (make-array$ length :initial-element
-                                   *invisible-array-mark*))))
-
-; Store the value of each pair under its key (unless it is covered by
-; an earlier pair with the same key).
-
-    (do ((tl l (cdr tl)))
-        ((null tl))
-        (let ((index (caar tl)))
-          (cond ((eq index :header) nil)
-                ((eq *invisible-array-mark* (svref ar index))
-                 (setf (svref ar index)
-                       (cdar tl))))))
-
-; Determine whether l is already is in normal form (header first,
-; strictly ascending keys, no default values, no extra header.)
-
-    (setq in-order t)
     (when order
       (cond ((eq (caar l) :header)
-             (do ((tl (cdr l) (cdr tl)))
-                 (nil)
-                 (cond ((or (eq (caar tl) :header)
-                            (eq (car (cadr tl)) :header))
-                        (setq in-order nil)
-                        (return nil))
-                       ((equal (cdr (car tl)) default)
-                        (setq in-order nil)
-                        (return nil))
-                       ((null (cdr tl)) (return nil))
-                       ((if (eq order '>)
-                            (<= (the (unsigned-byte 31) (caar tl))
-                                (the (unsigned-byte 31) (car (cadr tl))))
-                          (>= (the (unsigned-byte 31) (caar tl))
-                              (the (unsigned-byte 31) (car (cadr tl)))))
-                        (setq in-order nil)
-                        (return nil)))))
+
+; When l consists only of the header, it is in order so we can skip the checks
+; below.  And as the code below is written, we need to skip the checks, because
+; (equal (cdr (car tl)) default) can be true when tl = (cdr l) = default = nil.
+
+             (when (consp (cdr l))
+               (do ((tl (cdr l) (cdr tl)))
+                   (nil)
+                   (cond ((or (eq (caar tl) :header)
+                              (eq (car (cadr tl)) :header))
+                          (setq in-order nil)
+                          (return nil))
+                         ((equal (cdr (car tl)) default) ; see comment above
+                          (setq in-order nil)
+                          (return nil))
+                         ((null (cdr tl)) (return nil))
+                         ((if (eq order '>)
+                              (<= (the (unsigned-byte 31) (caar tl))
+                                  (the (unsigned-byte 31) (car (cadr tl))))
+                            (>= (the (unsigned-byte 31) (caar tl))
+                                (the (unsigned-byte 31) (car (cadr tl)))))
+                          (setq in-order nil)
+                          (return nil))))))
             (t (setq in-order nil))))
-    (let ((num 1) x max-ar)
-      (declare (type (unsigned-byte 31) num))
+
+; Get an array that is completely filled with default or the special mark
+; *invisible-array-mark*, depending on whether or not the alist is ordered,
+; i.e., in order after the initial header (we actually also require that the
+; header does not appear in the cdr) and where order is < or > (i.e., not nil).
+; In that ordered case we write the default value, skipping the extra pass for
+; writing *invisible-array-mark*, which is justified since there are no
+; duplicate indices in the alist.
+
+    (let ((init (if (and in-order order) default *invisible-array-mark*)))
+      (cond ((and old
+                  (= 1 (array-rank (cadr old)))
+
+; Through Version_8.3 we required equality in the following comparison.  But
+; Eric Smith suggested that we might re-use an array whose length exceeds what
+; is needed, simply ignoring the extra elements.  That's what we do now, in the
+; hope that it speeds up applications like his Axe prover in which the same
+; array is to be reused many times; now, we avoid paying the price of
+; initializing at indices beyond the intended length.
+
+                  (>= (length (cadr old)) length))
+             (setq old-car (car old))
+             (setf (car old) *invisible-array-mark*)
+             (setq ar (cadr old))
+             (do ((i (1- length) (1- i))) ((< i 0))
+                 (declare (type (signed-byte 32) i))
+                 (setf (svref ar i) init)))
+            (t (setq ar (make-array$ length :initial-element init)))))
+
+; Store the value of each pair under its key.  However, if there may be
+; duplicate keys in the cdr of the alist, then we must avoid storing the value
+; when it is covered by an earlier pair with the same key.  We can avoid that
+; considerabion if the alist is ordered as discussed above, since in that case
+; there are no duplicate keys (and in that case, we have populated the array
+; using default rather than *initial-known-package-alist*).
+
+    (cond
+     ((and in-order order) ; just do the writes, as indicated above
+      (do ((tl (cdr l) (cdr tl))) ; note: by in-order, no header is in (cdr l)
+; The following termination test is true immediately if l consists only of the
+; header.
+          ((null tl))
+          (setf (svref ar (caar tl))
+                (cdar tl)))
+      (setq num (length (cdr l))))
+     (t
+      (do ((tl l (cdr tl)))
+; The following termination test is true immediately if l consists only of the
+; header (but we can only be in that case here if order is nil).
+          ((null tl))
+          (let ((index (caar tl)))
+            (cond ((eq index :header) nil)
+                  ((eq *invisible-array-mark* (svref ar index))
+                   (setf (svref ar index)
+                         (cdar tl))))))))
+
+    (let (x max-ar)
 
 ;  In one pass, set x to the value to be returned, put defaults into the array
-;  where the invisible mark still sits, and calculate the length of x.
+;  where the invisible mark still sits, and calculate the length of x.  Except:
+;  in the ordered case we skip the latter two steps, since defaults are already
+;  in the array and num is already set .
 
-      (cond (in-order
+      (cond ((and in-order order) ; array and num have already been updated
+             (setq x l))
+            (in-order ; hence order is nil
              (do ((i (1- length) (1- i))) ((< i 0))
                  (declare (type (signed-byte 32) i))
                  (let ((val (svref ar i)))
@@ -12290,14 +13171,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (t (push (cons i val) x)
                             (setq num (the (unsigned-byte 31) (1+ num)))))))
              (setq x (cons header x)))
-            (t (do ((i (1- length) (1- i))) ((< i 0))
-                   (declare (type (signed-byte 32) i))
-                   (let ((val (svref ar i)))
-                     (cond ((eq *invisible-array-mark* val)
-                            (setf (svref ar i) default))
-                           ((equal val default) nil)
-                           (t (push (cons i val) x)
-                              (setq num (the (unsigned-byte 31) (1+ num)))))))
+            (t ; (eq order '<)
+             (do ((i (1- length) (1- i))) ((< i 0))
+                 (declare (type (signed-byte 32) i))
+                 (let ((val (svref ar i)))
+                   (cond ((eq *invisible-array-mark* val)
+                          (setf (svref ar i) default))
+                         ((equal val default) nil)
+                         (t (push (cons i val) x)
+                            (setq num (the (unsigned-byte 31) (1+ num)))))))
                (setq x (cons header x))))
       (cond (old (setq max-ar (caddr old))
                  (setf (aref (the (array (unsigned-byte 31) (*)) max-ar)
@@ -12569,8 +13451,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (cond ((and old
                 (= 2 (array-rank (cadr old)))
-                (and (= dimension1 (array-dimension (cadr old) 0))
-                     (= dimension2 (array-dimension (cadr old) 1))))
+                (and (>= (array-dimension (cadr old) 0) dimension1)
+                     (>= (array-dimension (cadr old) 1) dimension2)))
            (setq old-car (car old))
            (setf (car old) *invisible-array-mark*)
            (setq ar (cadr old))
@@ -12907,256 +13789,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (<= 0 i))))
   (cond ((zp i) x)
         (t (cdrn (list 'cdr x) (- i 1)))))
-
-(defun mv-nth (n l)
-  (declare (xargs :guard (and (integerp n)
-                              (>= n 0))))
-  (if (atom l)
-      nil
-    (if (zp n)
-        (car l)
-      (mv-nth (- n 1) (cdr l)))))
-
-(defun make-mv-nths (args call i)
-  (declare (xargs :guard (and (true-listp args)
-                              (integerp i))))
-  (cond ((endp args) nil)
-        (t (cons (list (car args) (list 'mv-nth i call))
-                 (make-mv-nths (cdr args) call (+ i 1))))))
-
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-bindings (lst)
-
-; Gensym a var for every element of lst except the last and pair
-; that var with its element in a doublet.  Return the list of doublets.
-
-  (cond ((null (cdr lst)) nil)
-        (t (cons (list (gensym) (car lst))
-                 (mv-bindings (cdr lst))))))
-
-#-(or acl2-loop-only acl2-mv-as-values)
-(defun mv-set-mvs (bindings i)
-  (cond ((null bindings) nil)
-        (t (cons `(set-mv ,i ,(caar bindings))
-                 (mv-set-mvs (cdr bindings) (1+ i))))))
-
-(defmacro mv (&rest l)
-  (declare (xargs :guard (>= (length l) 2)))
-  #+acl2-loop-only
-  (cons 'list l)
-  #+(and (not acl2-loop-only) acl2-mv-as-values)
-  (return-from mv (cons 'values l))
-  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
-
-; In an earlier version of the mv macro, we had a terrible bug.
-; (mv a b ... z) expanded to
-
-; (LET ((#:G1 a))
-;   (SET-MV 1 b)
-;   ...
-;   (SET-MV k z)
-;   (SETQ *MOST-RECENT-MULTIPLICITY* 3)
-;   #:G1)
-
-; Note that if the evaluation of z uses a multiple value then it overwrites the
-; earlier SET-MV.  Now this expansion is safe if there are only two values
-; because the only SET-MV is done after the second value is computed.  If there
-; are three or more value forms, then this expansion is also safe if all but
-; the first two are atomic.  For example, (mv & & (killer)) is unsafe because
-; (killer) may overwrite the SET-MV, but (mv & & STATE) is safe because the
-; evaluation of an atomic form is guaranteed not to overwrite SET-MV settings.
-; In general, all forms after the second must be atomic for the above expansion
-; to be used.
-
-; Suppose we are using GCL.  In some cases we can avoid boxing fixnums that are
-; the first value returned, by making the following two optimizations.  First,
-; we insert a declaration when we see (mv (the type expr) ...) where type is
-; contained in the set of fixnums.  Our second optimization is for the case
-; of (mv v ...) where v is an atom, when we avoid let-binding v.  To see why
-; this second optimization is helpful, consider the following definition.
-
-; (defun foo (x y)
-;   (declare (type (signed-byte 30) x))
-;   (the-mv 2
-;           (signed-byte 30)
-;           (mv x (cons y y))))
-
-; If we submit this definition to ACL2, the proclaim-form mechanism arranges
-; for the following declaim form to be evaluated.
-
-; (DECLAIM (FTYPE (FUNCTION ((SIGNED-BYTE 30) T)
-;                           (VALUES (SIGNED-BYTE 30)))
-;                 FOO))
-
-; Now let us exit the ACL2 loop and then, in raw Lisp, call disassemble on the
-; above defun.  Without our second optimization there is boxing: a call of
-; CMPmake_fixnum in the output of disassemble.  That happens because (mv x
-; (cons y y)) macroexpands to something like this:
-
-; (LET ((#:G5579 X)) (SET-MV 1 (CONS Y Y)) #:G5579)
-
-; With the second optimization, however, we get this macroexpansion instead:
-
-; (LET () (SET-MV 1 (CONS Y Y)) X)
-
-; GCL can see that the fixnum declaration for x applies at the occurrence
-; above, but fails (as of this writing, using GCL 2.6.8) to recognize that the
-; above gensym is a fixnum.
-
-  (cond ((atom-listp (cddr l))
-
-; We use the old expansion because it is safe and more efficient.
-
-         (let* ((v (if (atom (car l))
-                       (car l)
-                     (gensym)))
-                (bindings (if (atom (car l))
-                              nil
-                            `((,v ,(car l))))))
-           `(let ,bindings
-
-; See comment above regarding boxing fixnums.
-
-              ,@(and (consp (car l))
-                     (let ((output (macroexpand-till (car l) 'the)))
-                       (cond ((and (consp output)
-                                   (eq 'the (car output)))
-                              `((declare (type ,(cadr output) ,v))))
-                             (t nil))))
-              ,@(let (ans)
-                  (do ((tl (cdr l) (cdr tl))
-                       (i 1 (1+ i)))
-                      ((null tl))
-                      (push `(set-mv ,i ,(car tl))
-                            ans))
-                  (nreverse ans))
-              ,v)))
-        (t
-
-; We expand (mv a b ... y z) to
-; (LET ((#:G1 a)
-;       (#:G2 b)
-;       ...
-;       (#:Gk y))
-;  (SET-MV k z)
-;  (SET-MV 1 #:G2)
-;  ...
-;  (SET-MV k-1 #:Gk)
-;  #:G1)
-
-         (let* ((cdr-bindings (mv-bindings (cdr l)))
-                (v (if (atom (car l))
-                       (car l)
-                     (gensym)))
-                (bindings (if (atom (car l))
-                              cdr-bindings
-                            (cons (list v (car l))
-                                  cdr-bindings))))
-           `(let ,bindings
-
-; See comment above regarding boxing fixnums.
-
-              ,@(and (consp (car l))
-                     (let ((output (macroexpand-till (car l) 'the)))
-                       (cond ((and (consp output)
-                                   (eq 'the (car output)))
-                              `((declare (type ,(cadr output) ,v))))
-                             (t nil))))
-              (set-mv ,(1- (length l)) ,(car (last l)))
-              ,@(mv-set-mvs cdr-bindings 1)
-              ,v)))))
-
-(defmacro mv? (&rest l)
-
-; Why not simply extend mv and mv-let to handle single values?  The reason is
-; that there seem to be problems with defining (mv x) to be (list x) and other
-; problems with defining (mv x) to be x.
-
-; To see potential problems with defining (mv x) = (list x), consider this
-; form:
-
-; (mv-let (x)
-;         (f y)
-;         (g x y))
-
-; We presumably want it to expand as follows.
-
-; (let ((x (f y)))
-;   (g x y))
-
-; But suppose (f y) is defined to be (mv (h y)).  Then the above mv-let would
-; instead have to expand to something like this:
-
-; (let ((x (mv-nth 0 (f y)))) ; or, car instead of (mv-nth 0 ...)
-;   (g x y))
-
-; So in order to extend mv and mv-let to handle single values, we'd need to
-; look carefully at the rather subtle mv and mv-nth code.  It seems quite
-; possible that some show-stopping reason would emerge why this approach can't
-; work out, or if it does then it might be easy to make mistakes in the
-; implementation.  Note that we'd need to consider both the cases of
-; #+acl2-mv-as-values and #acl2-mv-as-values.
-
-; In a way it seems more natural anyhow that (mv x) is just x, since we don't
-; wrap single-valued returns into a list.  But that would ruin our simple story
-; that mv is logically just list, instead giving us:
-
-; (mv x) = x
-; (mv x1 x2 ...) = (list x1 x2 ...)
-
-; Thus it seems safest, and potentially less confusing to users, to introduce
-; mv? and mv?-let to be used in cases that single-valued returns are to be
-; allowed (presumably in generated code).
-
-  (declare (xargs :guard l))
-  (cond ((null (cdr l))
-         (car l))
-        (t `(mv ,@l))))
-
-(defmacro mv-let (&rest rst)
-
-; Warning: If the final logical form of a translated mv-let is
-; changed, be sure to reconsider translated-acl2-unwind-protectp.
-
-  (declare (xargs :guard (and (>= (length rst) 3)
-                              (true-listp (car rst))
-                              (>= (length (car rst)) 2))))
-  #+acl2-loop-only
-  (list* 'let
-         (make-mv-nths (car rst)
-                       (list 'mv-list (length (car rst)) (cadr rst))
-                       0)
-         (cddr rst))
-  #+(and (not acl2-loop-only) acl2-mv-as-values)
-  (return-from mv-let (cons 'multiple-value-bind rst))
-  #+(and (not acl2-loop-only) (not acl2-mv-as-values))
-  (cond ((> (length (car rst)) (+ 1 *number-of-return-values*))
-         (interface-er
-          "Need more *return-values*.  Increase ~
-           *number-of-return-values* and recompile ACL2."))
-        (t
-         `(let ((,(car (car rst)) ,(cadr rst))
-                (,(cadr (car rst)) (mv-ref 1))
-                ,@(let (ans)
-                    (do ((tl (cddr (car rst)) (cdr tl))
-                         (i 2 (1+ i)))
-                        ((null tl))
-                        (push (list (car tl) `(mv-ref ,i))
-                              ans))
-                    (nreverse ans)))
-            ,@ (cddr rst)))))
-
-(defmacro mv?-let (vars form &rest rst)
-
-; See the comment in mv? for reasons why we do not simply extend mv-let to
-; handle single values.
-
-  (declare (xargs :guard (and (true-listp vars)
-                              vars)))
-  (cond ((null (cdr vars))
-         `(let ((,(car vars) ,form))
-            ,@rst))
-        (t `(mv-let ,vars ,form ,@rst))))
 
 #+acl2-loop-only
 (defun mv-list (input-arity x)
@@ -13891,7 +14523,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     state-global-let* ; raw Lisp version for efficiency
     with-reckless-readtable
     with-lock
-    catch-throw-to-local-top-level
     with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     stobj-let
     add-ld-keyword-alias! set-ld-keyword-aliases!
@@ -14234,6 +14865,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (get-internal-time-as-realtime . nil) ; seems harmless to change
+    (global-ctx . nil)
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
     (guard-checking-on . t)
@@ -15184,9 +15816,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-error-triples . t)
     (ld-error-action . :continue)
     (ld-query-control-alist . nil)
-    (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|System books ~
-                   directory ~xb.~|Type :help for help.~%Type (good-bye) to ~
-                   quit completely out of ACL2.~|~%")
+    (ld-verbose . "System books directory ~xb.~|Type :help for help.~%Type ~
+                   (quit) to quit completely out of ACL2.~|~%")
     (ld-user-stobjs-modified-warning . nil)))
 
 (defun always-boundp-global (x)
@@ -15590,18 +16221,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
 
-; This variant of state-global-let* is only for use in raw Lisp.  See also
-; state-free-global-let*-safe for a safer, but probably less efficient,
-; alternative.  That alternative must be used inside the ACL2 loop when any
-; call of state-global-let* (or similar call of acl2-unwind-protect could bind
-; a variable of bindings during the evaluation of body.  Otherwise, the wrong
-; value will be stored in *acl2-unwind-protect-stack*, causing the wrong value
-; to be restored after an abort during that evaluation.
+; This variant of state-global-let* is only for use in #-acl2-loop-only code.
+; See also state-free-global-let*-safe for a safer, but probably less
+; efficient, alternative.
 
-; WARNING: If this macro is used when accessible in body, then the value read
-; for a variable bound in bindings may not be justified in the logic.  So state
-; should not be accessible in body unless you (think you) know what you are
-; doing!
+; WARNING 1: This macro probably needs to be avoided when a call of
+; state-global-let* (or similar call of acl2-unwind-protect) could bind a
+; variable of bindings during the evaluation of body; otherwise, the wrong
+; value may be restored from *acl2-unwind-protect-stack* after an abort during
+; that evaluation.
+
+; WARNING 2: If this macro is used when state accessible in body, then in body,
+; the value read for a state global bound in bindings may not be justified
+; logically.  State should not be accessible in body unless you know what you
+; are doing!
 
 ; Comment for #+acl2-par: When using state-free-global-let* inside functions
 ; that might execute in parallel (for example, functions that occur inside the
@@ -15625,28 +16258,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro state-free-global-let*-safe (bindings body)
 
-; Warning: Keep in sync with the #-acl2-loop-only code for acl2-unwind-protect.
-; We omit comments here; see state-global-let*.
-
-; This variant of state-global-let* is only for use in raw Lisp.  See also
-; state-free-global-let* for a more efficient alternative that can be used in
-; some situations.
-
-; WARNING: If this macro is used when accessible in body, then the value read
-; for a variable bound in bindings may not be justified in the logic.  So state
-; should not be accessible in body unless you (think you) know what you are
-; doing!
+; This variant of state-free-global-let* deals properly with the
+; *acl2-unwind-protect-stack* when inside the ACL2 loop, thus avoiding
+; restoration of state globals to incorrect values after an error if
+; state-global-let* is used within body.  But like state-free-global-let*, it
+; should be used with care if state is accessible in body.  See
+; state-free-global-let* (a more efficient alternative when state globals are
+; not set inside body) for relevant comments, including warnings.  Note that if
+; body returns multiple values then this returns only the first value when in
+; the ACL2 loop; that's unimportant of course if this function is called only
+; for side-effect or if body returns only one value.
 
   `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
-       (let* ((state *the-live-state*)
-              (state-global-let*-cleanup-lst
-               (list ,@(state-global-let*-get-globals bindings))))
-         ,@(and (null bindings)
-                '((declare (ignore state-global-let*-cleanup-lst))))
-         (acl2-unwind-protect-raw
-          "state-free-global-let*"
-          (check-vars-not-free (state-global-let*-cleanup-lst) ,body)
-          (progn ,@(state-global-let*-cleanup bindings 0))))
+       (with-live-state
+        (mv-let (erp val state)
+          (state-global-let* ,bindings (value ,body))
+          (declare (ignore erp state))
+          val))
        (state-free-global-let* ,bindings ,body)))
 
 ; With state-global-let* defined, we may now define a few more primitives and
@@ -15964,26 +16592,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Functions such as logand require significant arithmetic to prove.  Therefore
 ; part of the proofs for their "warming" will be deferred.
 
-; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
-; follows.  Although he has proved this lemma as part of a larger proof effort,
-; we are not yet in a hurry to isolate its proof just now.
-
-(local
- (skip-proofs
-  (defthm justify-integer-floor-recursion
-
-; To use this, be sure to disable acl2-count and floor.  If you leave
-; acl2-count enabled, then prove a version of this appropriate to that setting.
-
-    (implies
-     (and (integerp i)
-          (integerp j)
-          (not (equal i 0))
-          (not (equal i -1))
-          (> j 1))
-     (< (acl2-count (floor i j)) (acl2-count i)))
-    :rule-classes :linear)))
-
 #+acl2-loop-only
 (defmacro logand (&rest args)
   (cond
@@ -16233,92 +16841,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro reset-print-control ()
   (cons 'pprogn
         (set-forms-from-bindings *print-control-defaults*)))
-
-(defun digit-to-char (n)
-  (declare (xargs :guard (and (integerp n)
-                              (<= 0 n)
-                              (<= n 15))))
-  (case n
-        (1 #\1)
-        (2 #\2)
-        (3 #\3)
-        (4 #\4)
-        (5 #\5)
-        (6 #\6)
-        (7 #\7)
-        (8 #\8)
-        (9 #\9)
-        (10 #\A)
-        (11 #\B)
-        (12 #\C)
-        (13 #\D)
-        (14 #\E)
-        (15 #\F)
-        (otherwise #\0)))
-
-(defun print-base-p (print-base)
-
-; Warning: Keep this in sync with check-print-base.
-
-  (declare (xargs :guard t))
-  (and (member print-base '(2 8 10 16))
-       t))
-
-(defun explode-nonnegative-integer (n print-base ans)
-  (declare (xargs :guard (and (integerp n)
-                              (>= n 0)
-                              (print-base-p print-base))
-                  :mode :program))
-  (cond ((or (zp n)
-             (not (print-base-p print-base)))
-         (cond ((null ans)
-
-; We could use endp instead of null above, but what's the point?  Ans could be
-; other than a true-listp for reasons other than that it's a non-nil atom, so
-; why treat this case specially?
-
-                '(#\0))
-               (t ans)))
-        (t (explode-nonnegative-integer
-            (floor n print-base)
-            print-base
-            (cons (digit-to-char (mod n print-base))
-                  ans)))))
-
-(verify-termination-boot-strap
- explode-nonnegative-integer
- (declare (xargs :mode :logic
-                 :verify-guards nil
-                 :hints (("Goal" :in-theory (disable acl2-count floor))))))
-
-(defthm true-listp-explode-nonnegative-integer
-
-; This was made non-local in order to support the verify-termination-boot-strap
-; for chars-for-tilde-@-clause-id-phrase/periods in file
-; boot-strap-pass-2-a.lisp.
-
-  (implies (true-listp ans)
-           (true-listp (explode-nonnegative-integer n print-base ans)))
-  :rule-classes :type-prescription)
-
-(local
- (skip-proofs
-  (defthm mod-n-linear
-    (implies (and (not (< n 0))
-                  (integerp n)
-                  (print-base-p print-base))
-             (and (not (< (mod n print-base) 0))
-                  (not (< (1- print-base) (mod n print-base)))))
-    :rule-classes :linear)))
-
-(local
- (defthm integerp-mod
-   (implies (and (integerp n) (< 0 n) (print-base-p print-base))
-            (integerp (mod n print-base)))
-   :rule-classes :type-prescription))
-
-(verify-guards explode-nonnegative-integer
-               :hints (("Goal" :in-theory (disable mod))))
 
 (defun explode-atom (x print-base)
 
@@ -21774,166 +22296,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; acl2-mv-as-values is set), so for example, we can avoid boxing the fixnum x
 ; by suitable declarations and proclamations.
 
-(defun make-var-lst1 (root sym n acc)
-  (declare (xargs :guard (and (symbolp sym)
-                              (character-listp root)
-                              (integerp n)
-                              (<= 0 n))
-                  :mode :program))
-  (cond
-   ((zp n) acc)
-   (t (make-var-lst1 root sym (1- n)
-                     (cons (intern-in-package-of-symbol
-                            (coerce (append root
-                                            (explode-nonnegative-integer
-                                             (1- n) 10 nil))
-                                    'string)
-                            sym)
-                           acc)))))
-
-(encapsulate
- ()
-
- (local
-  (defthm character-listp-explode-nonnegative-integer
-    (implies (character-listp ans)
-             (character-listp (explode-nonnegative-integer n 10 ans)))))
-
- (verify-termination-boot-strap make-var-lst1))
-
-(defun make-var-lst (sym n)
-  (declare (xargs :guard (and (symbolp sym)
-                              (integerp n)
-                              (<= 0 n))))
-  (make-var-lst1 (coerce (symbol-name sym) 'list) sym n nil))
-
-; Union$
-
-(defun-with-guard-check union-eq-exec (l1 l2)
-  (and (true-listp l1)
-       (true-listp l2)
-       (or (symbol-listp l1)
-           (symbol-listp l2)))
-  (cond ((endp l1) l2)
-        ((member-eq (car l1) l2)
-         (union-eq-exec (cdr l1) l2))
-        (t (cons (car l1) (union-eq-exec (cdr l1) l2)))))
-
-(defun-with-guard-check union-eql-exec (l1 l2)
-  (and (true-listp l1)
-       (true-listp l2)
-       (or (eqlable-listp l1)
-           (eqlable-listp l2)))
-  (cond ((endp l1) l2)
-        ((member (car l1) l2)
-         (union-eql-exec (cdr l1) l2))
-        (t (cons (car l1) (union-eql-exec (cdr l1) l2)))))
-
-(defun union-equal (l1 l2)
-  (declare (xargs :guard (and (true-listp l1) (true-listp l2))))
-  (cond ((endp l1) l2)
-        ((member-equal (car l1) l2) (union-equal (cdr l1) l2))
-        (t (cons (car l1) (union-equal (cdr l1) l2)))))
-
-(defmacro union-eq (&rest lst)
-  `(union$ ,@lst :test 'eq))
-
-(defthm union-eq-exec-is-union-equal
-  (equal (union-eq-exec l1 l2)
-         (union-equal l1 l2)))
-
-(defthm union-eql-exec-is-union-equal
-  (equal (union-eql-exec l1 l2)
-         (union-equal l1 l2)))
-
-(defun parse-args-and-test (x tests default ctx form name)
-
-; We use this function in union$ and intersection$ to remove optional keyword
-; argument :TEST test from the given argument list, x.  The result is (mv args
-; test), where either x ends in :TEST test and args is the list of values
-; preceding :TEST, or else args is x and test is default.
-
-; Tests is the list of legal tests, typically '('eq 'eql 'equal).  Default is
-; the test to use by default, typically ''eql.  Ctx, form, and name are used
-; for error reporting.
-
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp tests)
-                              (symbolp name))))
-  (let* ((len (length x))
-         (len-2 (- len 2))
-         (kwd/val
-          (cond ((<= 2 len)
-                 (let ((kwd (nth len-2 x)))
-                   (cond ((keywordp kwd)
-                          (cond ((eq kwd :TEST)
-                                 (nthcdr len-2 x))
-                                (t (hard-error
-                                    ctx
-                                    "If a keyword is supplied in the ~
-                                     next-to-last argument of ~x0, that ~
-                                     keyword must be :TEST.  The keyword ~x1 ~
-                                     is thus illegal in the call ~x2."
-                                    (list (cons #\0 name)
-                                          (cons #\1 kwd)
-                                          (cons #\2 form))))))
-                         (t nil))))
-                (t nil))))
-    (mv (cond (kwd/val
-               (let ((test (car (last x))))
-                 (cond ((not (member-equal test tests))
-                        (hard-error
-                         ctx
-                         "The :TEST argument for ~x0 must be one of ~&1.  The ~
-                          form ~x2 is thus illegal.  See :DOC ~s3."
-                         (list (cons #\0 name)
-                               (cons #\1 tests)
-                               (cons #\2 form)
-                               (cons #\3 (symbol-name name)))))
-                       (t test))))
-              (t default))
-        (cond (kwd/val (butlast x 2))
-              (t x)))))
-
-(defmacro union-equal-with-union-eq-exec-guard (l1 l2)
-  `(let ((l1 ,l1) (l2 ,l2))
-     (prog2$ (,(guard-check-fn 'union-eq-exec) l1 l2)
-             (union-equal l1 l2))))
-
-(defmacro union-equal-with-union-eql-exec-guard (l1 l2)
-  `(let ((l1 ,l1) (l2 ,l2))
-     (prog2$ (,(guard-check-fn 'union-eql-exec) l1 l2)
-             (union-equal l1 l2))))
-
-(defmacro union$ (&whole form &rest x)
-  (mv-let
-   (test args)
-   (parse-args-and-test x '('eq 'eql 'equal) ''eql 'union$ form 'union$)
-   (cond
-    ((null args) nil)
-    ((null (cdr args))
-     (car args))
-    (t (let* ((vars (make-var-lst 'x (length args)))
-              (bindings (pairlis$ vars (pairlis$ args nil))))
-         (cond ((equal test ''eq)
-                `(let-mbe ,bindings
-                          :guardp nil ; guard handled by :logic
-                          :logic
-                          ,(xxxjoin 'union-equal-with-union-eq-exec-guard
-                                    vars)
-                          :exec
-                          ,(xxxjoin 'union-eq-exec vars)))
-               ((equal test ''eql)
-                `(let-mbe ,bindings
-                          :guardp nil ; guard handled by :logic
-                          :logic
-                          ,(xxxjoin 'union-equal-with-union-eql-exec-guard
-                                    vars)
-                          :exec
-                          ,(xxxjoin 'union-eql-exec vars)))
-               (t ; (equal test 'equal)
-                (xxxjoin 'union-equal args))))))))
-
 (defun subst-for-nth-arg (new n args)
   (declare (xargs :mode :program))
 
@@ -25082,16 +25444,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (add-to-set-eq (car lst) (duplicates (cdr lst))))
         (t (duplicates (cdr lst)))))
 
-(defun evens (l)
-  (declare (xargs :guard (true-listp l)))
-  (cond ((endp l) nil)
-        (t (cons (car l)
-                 (evens (cddr l))))))
-
-(defun odds (l)
-  (declare (xargs :guard (true-listp l)))
-  (evens (cdr l)))
-
 (defun set-equalp-equal (lst1 lst2)
   (declare (xargs :guard (and (true-listp lst1)
                               (true-listp lst2))))
@@ -28018,61 +28370,106 @@ Lisp definition."
 #-acl2-loop-only
 (defg *inside-absstobj-update*
 
-; Warning: Do not use #(0) here, because this variable can be destructively
-; modified.  We actually used #(0) here through Version_8.3 and did not see a
-; problem with that, but we see the comment in *fncall-cache* for why we avoid
-; using a constant here.
+; Essay on Illegal-states
 
-  (vector 0))
+; An illegal state is one in which ld-pre-eval-filter is :illegal-state; see
+; illegal-state-p.  Such a state is entered and exited as explained below.  For
+; additional background information see :DOC illegal-state.  Below we start
+; with a few orienting remarks, and then we summarize how we manage illegal
+; states.
 
-(defun set-absstobj-debug-fn (val always)
-  (declare (xargs :guard t))
-  #+acl2-loop-only
-  (declare (ignore always))
+; An abstract stobj export or stobj-let form may update its stobj
+; non-atomically, in which case an incomplete update may result in a state
+; where that abstract stobj does not satisfy its recognizer.  (See the
+; discussion of :protect in :DOC defabsstobj.)  The resulting illegal state is
+; marked by ACL2 as an illegal-state, from which continuing is at one's own
+; risk.  Moreover, ACL2 requires the user to submit the form,
+; (continue-from-illegal-state), before LD will accept further input.
+
+; If an execution is incomplete, there was presumably an error or a call of
+; throw that took us out of the execution.  Because we extend the content of
+; *inside-absstobj-update* on entry to a non-interruptable abstract stobj
+; update (by adding 1 or pushing onto a stack) and revert only on exit, a
+; record of that interruption will persist until we clear it.  A key idea is
+; that we only transition to an illegal state near the end of book
+; certification, to prevent a bogus certificate from being written, and when
+; returning control to LD, which allows error messages (for example, from guard
+; violations and step-limit violations) to be printed first.
+
+; All that said, here is a more complete and organized summary of how illegal
+; states are managed.
+
+; (a) When entering a non-interruptable abstract stobj update, the content of
+;     *inside-absstobj-update* is updated correspondingly: either incremented
+;     if a natural number, or else pushed onto the stack in the case that
+;     set-absstobj-debug has activated debugging.  The value is restored on
+;     exit.
+
+; (b) Whenever ACL2 code exits a non-interruptable abstract stobj update before
+;     completion, the content of *inside-absstobj-update* will reflect the
+;     in-progress status until cleared; chk-absstobj-invariants will notice
+;     that status when control is returned to LD.  At that time we can abort to
+;     the top level, using (abort!), just to keep things sane.  Note that this
+;     evaluation of (abort!) will take us out of any wormhole and avoid
+;     re-entry to the proof-builder (see the calls of illegal-state-p in
+;     pc-main-loop).
+
+; (c) Ld-read-eval-print runs chk-absstobj-invariants to check whether
+;     *inside-absstobj-update* shows that a non-interruptable abstract stobj
+;     update didn't complete.  If we are not already at the top level, we will
+;     abort to the top level (with (abort!), as mentioned above).  Otherwise
+;     ld-pre-eval-filter will be set to :illegal-state and a message will print
+;     a failure, with *inside-absstobj-update* cleared out.  Note that
+;     ld-pre-eval-filter remains at :illegal-state when popping to lower ld
+;     levels; see f-put-ld-specials.
+
+; (d) With ld-pre-eval-filter = :illegal-state, only one input will be
+;     accepted: (continue-from-illegal-state).  When that happens,
+;     ld-pre-eval-filter will be set to :all (even if a query or REBUILD was
+;     aborted).
+
+  (vector
+
+; Warning: Do not use #(0) here in place of (vector 0), because variable
+; *inside-absstobj-update* can be destructively modified.  We actually used
+; #(0) here through Version_8.3 and did not see a problem with that, but see
+; the comment in *fncall-cache* for why we avoid using a constant here.
+
+   0))
+
+(defun set-absstobj-debug-fn (val)
+
+; See :DOC set-absstobj-debug and see *inside-absstobj-update*.
+
+  (declare (xargs :guard t :verify-guards t :mode :logic))
   #-acl2-loop-only
   (let ((temp (svref *inside-absstobj-update* 0)))
-    (cond ((or (and (eq val :ignore)
-                    (or (ttag (w *the-live-state*))
-                        (er hard 'set-absstobj-debug
-                            "It is illegal to supply the value :ignore to ~
-                             set-absstobj-debug unless there is an active ~
-                             trust tag.")))
-               (null temp)
-               (eql temp 0)
-               (and always
-                    (or (ttag (w *the-live-state*))
-                        (er hard 'set-absstobj-debug
-                            "It is illegal to supply a non-nil value for ~
-                             keyword :always, for set-absstobj-debug, unless ~
-                             there is an active trust tag."))))
-           (setf (aref *inside-absstobj-update* 0)
-                 (cond ((eq val :reset)
-                        (if (natp temp) 0 nil))
-                       ((eq val :ignore)
-                        :ignore)
-                       (val nil)
-                       (t 0))))
-          (t (er hard 'set-absstobj-debug
-                 "It is illegal to call set-absstobj-debug with value other ~
-                  than :ignore in a context where an abstract stobj ~
-                  invariance violation has already occurred but not yet been ~
-                  processed.  You can overcome this restriction either by ~
-                  waiting for the top-level prompt, or by evaluating the ~
-                  following form: ~x0."
-                 `(set-abbstobj-debug ,(if (member-eq val '(nil :reset))
-                                           nil
-                                         t)
-                                      :always t)))))
+
+; The following assertion should be true because otherwise, ACL2 is accepting
+; input in an illegal-state!
+
+    (assert (or (null temp) (eql temp 0)))
+    (cond ((eq val :IGNORE)
+           (cond ((ttag (w *the-live-state*))
+                  (setf (aref *inside-absstobj-update* 0) :IGNORE))
+                 (t
+                  (er hard 'set-absstobj-debug
+                      "It is illegal to supply the value :IGNORE to ~x0 ~
+                       unless there is an active trust tag."
+                      'set-absstobj-debug))))
+          (t (setf (aref *inside-absstobj-update* 0)
+                   (cond (val nil)
+                         (t 0))))))
   val)
 
-(defmacro set-absstobj-debug (val &key (event-p 't) always on-skip-proofs)
+(defmacro set-absstobj-debug (val)
 
 ; Here is a book that was certifiable in ACL2 Version_5.0, obtained from Sol
 ; Swords (shown here with only very trivial changes).  It explains why we need
 ; the :protect keyword for defabsstobj, as explained in :doc note-6-0.
-; Community book books/misc/defabsstobj-example-4.lisp is based on this
-; example, but focuses on invariance violation and avoids the work Sol did to
-; get a proof of nil.
+; Community book file books/demos/defabsstobj-example-4-input.lsp is based on
+; this example, but focuses on invariance violation and avoids the work Sol did
+; to get a proof of nil.
 
 ;   (in-package "ACL2")
 ;
@@ -28188,16 +28585,9 @@ Lisp definition."
 ;                             (my-clause-proc clause nil const-stobj)))
 ;      :rule-classes nil)
 
-  (declare (xargs :guard
-
-; We provide this guard as a courtesy: since on-skip-proofs is not evaluated, a
-; non-nil form that evaluates to nil (such as 'nil) would otherwise be passed
-; without evaluation and hence treated as being true.
-
-                  (booleanp on-skip-proofs)))
-  (let ((form `(set-absstobj-debug-fn ,val ,always)))
-    (cond (event-p `(value-triple ,form :on-skip-proofs ,on-skip-proofs))
-          (t form))))
+  (declare (xargs :guard t))
+  `(value-triple (set-absstobj-debug-fn ,val)
+                 :on-skip-proofs t))
 
 ; The following functions are defined in logic mode because they will be
 ; used in tau bounder correctness theorems.  We basically define two functions,

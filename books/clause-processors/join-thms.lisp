@@ -194,11 +194,10 @@
                            ',alist)))
         (cond ((not if-rule)
                (er soft 'def-join-thms
-                   (msg "Unable to find a rewrite rule for (~x0 X A) when ~
-                         (CAR X) is IF~%" ',ev)))
+                   "Unable to find a rewrite rule for (~x0 X A) when ~
+                         (CAR X) is IF~%" ',ev))
               ((not quote-rule)
                (er soft 'def-join-thms
-                   (msg "Unable to find a rewrite rule for (~x0 X A) when ~
-                         (CAR X) is QUOTE~%" ',ev)))
+                   "Unable to find a rewrite rule for (~x0 X A) when ~
+                         (CAR X) is QUOTE~%" ',ev))
               (t (value (sublis alist *def-join-thms-body*))))))))
-

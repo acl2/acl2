@@ -146,7 +146,7 @@
              (with-output
                :stack :pop
                :on (acl2::summary acl2::event)
-               :summary (acl2::time acl2::rules)
+               :summary-off (:other-than acl2::time acl2::rules)
                (defthm ,rule-name
                  (and (implies ,hyp-body
                                (,(if iff `iff `equal)
@@ -159,7 +159,7 @@
            (with-output
              :stack :pop
              :on (acl2::summary acl2::event)
-             :summary (acl2::time acl2::rules)
+             :summary-off (:other-than acl2::time acl2::rules)
              (defthm ,rule-name
                ,untranslated-rule
                ,@hints))
@@ -628,7 +628,7 @@ RP-Rewriter will throw an eligible error.</p>"
                   :stack :pop
                   :on (acl2::summary acl2::event acl2::error)
                   :gag-mode :goals
-                  :summary (acl2::time acl2::rules)
+                  :summary-off (:other-than acl2::time acl2::rules)
                   (def-rp-rule ,',name ,',term
                     :rule-classes ,',rule-classes
                     :hints (("Goal"

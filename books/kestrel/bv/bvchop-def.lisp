@@ -15,8 +15,9 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
 
+;; TODO: Try make the :exec body more efficient, using ash and logand.
+
 ;; Chop X down to its least significant SIZE bits.
-;; TODO: Try make the :exec body more efficient.
 (defund bvchop (size x)
   (declare (xargs :guard (and (natp size)
                               (integerp x))))

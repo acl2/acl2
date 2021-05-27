@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -135,7 +135,7 @@
 
 (defun strip-caddrs (x)
   (declare (xargs :guard (all->=-len x 3)))
-  (cond ((null x) nil)
+  (cond ((endp x) nil)
         (t (cons (caddar x) (strip-caddrs (cdr x))))))
 
 ; In forming rules from terms we often strip out individual branches of the

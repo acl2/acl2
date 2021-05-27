@@ -37,6 +37,21 @@
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (std::add-default-post-define-hook :fix))
+
+;; (local (in-theory (enable bitops::loghead** bitops::logtail** bitops::logbitp**)))
+;; (local (DEFTHM
+;;                 LOGBITP***
+;;                 (EQUAL (LOGBITP ACL2::POS ACL2::I)
+;;                        (COND ((ZP ACL2::POS)
+;;                               (BIT->BOOL (LOGCAR ACL2::I)))
+;;                              (T (LOGBITP (1- ACL2::POS)
+;;                                          (LOGCDR ACL2::I)))))
+;;                 :RULE-CLASSES
+;;                 ((:DEFINITION :CLIQUE (LOGBITP)
+;;                               :CONTROLLER-ALIST ((LOGBITP T nil))))))
+
 
 (defflexsum svar
   :parents (svex)
@@ -51,11 +66,15 @@
                        (not (booleanp x))))
             (and (eq (car x) :var)
                  (consp (cdr x))
-                 (integerp (cddr x))
-                 (not (and (or (stringp (cadr x))
-                               (and (symbolp (cadr x))
-                                    (not (booleanp (cadr x)))))
-                           (eql (cddr x) 0)))))
+                 (let* ((name (cadr x))
+                        (bits (cddr x)))
+                   (and (integerp bits)
+                        (implies (< bits 0)
+                                 (not (eql (loghead 3 bits) 0)))
+                        (not (and (or (stringp name)
+                                      (and (symbolp name)
+                                           (not (booleanp name))))
+                                  (eql bits 0)))))))
    :fields
    ((name :acc-body (if (atom x)
                         x
@@ -64,7 +83,7 @@
                 but our representation is optimized for @(see stringp) or @(see
                 symbolp) names.")
     (delay :type natp
-           :acc-body (if (atom x) 0 (if (< (cddr x) 0) (lognot (cddr x)) (cddr x)))
+           :acc-body (if (atom x) 0 (if (< (cddr x) 0) (logtail 3 (lognot (cddr x))) (cddr x)))
            :default 0
            :doc "A natural valued index for this variable, used for instance
                  to support the encoding of, e.g., previous versus current
@@ -72,18 +91,44 @@
                  optimized representation) is 0.  See below for some motivation
                  and explanation.")
     (nonblocking :type booleanp
-               :acc-body (if (atom x) nil (< (cddr x) 0))
-               :doc "A flag used in statement processing to indicate a reference
+                 :acc-body (if (atom x)
+                               nil
+                             (let ((bits (cddr x)))
+                               (and (< bits 0)
+                                    (logbitp 2 bits))))
+                 :doc "A flag used in statement processing to indicate a reference
                      to a variable after nonblocking assignments have been done.
-                      Not used in other contexts."))
+                      Not used in other contexts.")
+    (override-test :type booleanp
+                   :acc-body (if (atom x)
+                                 nil
+                               (let ((bits (cddr x)))
+                                 (and (< bits 0)
+                                      (logbitp 0 bits)))))
+    (override-val :type booleanp
+                  :acc-body (if (atom x)
+                                nil
+                              (let ((bits (cddr x)))
+                                (and (< bits 0)
+                                     (logbitp 1 bits))))))
    :ctor-body
    (if (and (or (stringp name)
                 (and (symbolp name)
                      (not (booleanp name))))
             (not nonblocking)
+            (not override-test)
+            (not override-val)
             (eql delay 0))
        name
-     (hons :var (hons name (if nonblocking (lognot delay) delay))))
+     (hons :var (hons name (if (or nonblocking
+                                   override-test
+                                   override-val)
+                               (acl2::loglist*
+                                (bool->bit override-test)
+                                (bool->bit override-val)
+                                (bool->bit nonblocking)
+                                (lognot delay))
+                             delay))))
    :long "<p>Each variable in an @(see svex) represents a @(see 4vec).</p>
 
 <p>In most s-expression formats, e.g., s-expressions in Lisp or in the @(see
@@ -100,7 +145,39 @@ variables.</p>
 distinct whenever they differ by name <b>or</b> by delay.  That is, as far as
 expression evaluation is concerned, the variable named \"v\" with delay 5 is
 completely distinct from \"v\" with delay 4.  Think of them as you would
-indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>"))
+indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>")
+  
+  :prepwork ((local (defthm logbitp-open
+                      (implies (syntaxp (quotep n))
+                               (equal (logbitp n x)
+                                      (cond ((zp n) (bit->bool (logcar x)))
+                                            (t (logbitp (1- n) (logcdr x))))))
+                      :hints(("Goal" :in-theory (enable bitops::logbitp**)))))
+
+             (local (defthm loghead-open
+                      (implies (syntaxp (quotep n))
+                               (equal (loghead n x)
+                                      (cond ((zp n) 0)
+                                            (t (logcons (logcar x) (loghead (1- n) (logcdr x)))))))
+                      :hints(("Goal" :in-theory (enable bitops::loghead**)))))
+
+             (local (defthm logtail-open
+                      (implies (syntaxp (quotep n))
+                               (equal (logtail n x)
+                                      (cond ((zp n) (ifix x))
+                                            (t (logtail (1- n) (logcdr x))))))
+                      :hints(("Goal" :in-theory (enable bitops::logtail**)))))
+
+             ;; (local (in-theory (enable bitops::equal-logcons-strong)))
+             ;; (local (defthm equal-of-cons
+             ;;          (equal (equal (cons a b) c)
+             ;;                 (and (consp c)
+             ;;                      (equal a (car c))
+             ;;                      (equal b (cdr c))))))
+             (local (in-theory (disable default-car default-cdr
+                                        bitops::logcons-posp-2
+                                        bitops::logcons-posp-1
+                                        acl2::natp-when-gte-0)))))
 
 (deflist svarlist
   :elt-type svar
@@ -211,6 +288,15 @@ typically be @(see memoize)d in some way or another.</p>"
                       (implies (svar-p x)
                                (not (4vec-p x)))
                       :hints(("Goal" :in-theory (enable 4vec-p svar-p)))))
+             (local (defthm car-of-4vec-fix-type
+                      (or (integerp (car (4vec-fix x)))
+                          (not (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))
+                      :rule-classes ((:type-prescription :typed-term (car (4vec-fix x))))))
+             (local (defthm car-of-4vec-fix-integerp
+                      (implies (consp (4vec-fix x))
+                               (integerp (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))))
              (local (defthm cons-fnsym-not-svar-p
                       (implies (not (eq x :var))
                                (not (svar-p (cons x y))))
@@ -227,13 +313,10 @@ typically be @(see memoize)d in some way or another.</p>"
     (:quote
      :short "A ``quoted constant'' @(see 4vec), which represents itself."
      :cond (or (atom x)
-               (eq (car x) 'quote))
-     :shape (or (atom x) (and (consp (cdr x))
-                              (consp (cadr x))
-                              (not (cddr x))))
-     :fields ((val :acc-body (if (atom x) x (cadr x))
+               (integerp (car x)))
+     :fields ((val :acc-body x
                    :type 4vec))
-     :ctor-body (if (atom val) val (hons 'quote (hons val nil))))
+     :ctor-body val)
     (:call
      :short "A function applied to some expressions."
      :cond t
@@ -287,6 +370,17 @@ typically be @(see memoize)d in some way or another.</p>"
 (defthm len-of-svexlist-fix
   (equal (len (svexlist-fix x))
          (len x)))
+
+
+(define svarlist->svexes ((x svarlist-p))
+  :returns (svexes svexlist-p)
+  (if (atom x)
+      nil
+    (cons (make-svex-var :name (car x))
+          (svarlist->svexes (cdr x))))
+  ///
+  (defret len-of-svarlist->svexes
+    (equal (len svexes) (len x))))
 
 (defthm svex-count-of-car-weak
   (<= (svex-count (car args))
@@ -409,6 +503,7 @@ typically be @(see memoize)d in some way or another.</p>"
 (define svarlist-filter ((x svarlist-p))
   :returns (new-x svarlist-p)
   :verify-guards nil
+  :hooks nil
   (mbe :logic
        (if (atom x)
            nil

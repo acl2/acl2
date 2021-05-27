@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
+(include-book "add-io-pairs")
 (include-book "defaggregate")
 (include-book "defaggrify-defrec")
 (include-book "defalist")
@@ -40,6 +41,7 @@
 (include-book "defprojection")
 (include-book "define")
 (include-book "defines")
+(include-book "define-sk")
 (include-book "defrule")
 (include-book "defredundant")
 (include-book "defsum")

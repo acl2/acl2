@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STR")
 (include-book "ieqv")
@@ -44,11 +45,11 @@
 
 (local (xdoc::set-default-parents decimal))
 
-(define digitp (x)
+(define dec-digit-char-p (x)
   :short "Recognizer for numeric characters (0-9)."
   :returns bool
   :long "<p>ACL2 provides @(see digit-char-p) which is more flexible and can
-recognize numeric characters in other bases.  @(call digitp) only recognizes
+recognize numeric characters in other bases.  @(call dec-digit-char-p) only recognizes
 base-10 digits, but is much faster, at least on CCL.  Here is an experiment you
 can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
 
@@ -62,7 +63,7 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
 
   ;; 3.772 seconds, no garbage
   (time (loop for i fixnum from 1 to 10000000 do
-              (loop for c in *chars* do (str::digitp c))))
+              (loop for c in *chars* do (str::dec-digit-char-p c))))
 })"
   :inline t
   (mbe :logic (let ((code (char-code (char-fix x))))
@@ -77,16 +78,16 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
                          (<= (the (unsigned-byte 8) 48)
                              (the (unsigned-byte 8) code))))))
   ///
-  (defcong ichareqv equal (digitp x) 1
+  (defcong ichareqv equal (dec-digit-char-p x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
                                       char-fix))))
-  (defthm characterp-when-digitp
-    (implies (digitp char)
+  (defthm characterp-when-dec-digit-char-p
+    (implies (dec-digit-char-p char)
              (characterp char))
     :rule-classes :compound-recognizer))
 
-(define nonzero-digitp (x)
+(define nonzero-dec-digit-char-p (x)
   :short "Recognizer for non-zero numeric characters (1-9)."
   :returns bool
   :inline t
@@ -102,25 +103,25 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
                          (<= (the (unsigned-byte 8) 49)
                              (the (unsigned-byte 8) code))))))
   ///
-  (defcong ichareqv equal (nonzero-digitp x) 1
+  (defcong ichareqv equal (nonzero-dec-digit-char-p x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
                                       char-fix))))
-  (defthm digitp-when-nonzero-digitp
-    (implies (nonzero-digitp x)
-             (digitp x))
-    :hints(("Goal" :in-theory (enable digitp)))))
+  (defthm dec-digit-char-p-when-nonzero-dec-digit-char-p
+    (implies (nonzero-dec-digit-char-p x)
+             (dec-digit-char-p x))
+    :hints(("Goal" :in-theory (enable dec-digit-char-p)))))
 
-(define digit-val
-  :short "Coerces a @(see digitp) character into a number."
-  ((x digitp :type character))
+(define dec-digit-char-value
+  :short "Coerces a @(see dec-digit-char-p) character into a number."
+  ((x dec-digit-char-p :type character))
   :split-types t
   :returns (val natp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(digit-val #\\3)') is 3.  For any non-digitp, 0 is
+  :long "<p>For instance, @('(dec-digit-char-value #\\3)') is 3.  For any non-dec-digit-char-p, 0 is
          returned.</p>"
   :inline t
   (mbe :logic
-       (if (digitp x)
+       (if (dec-digit-char-p x)
            (- (char-code (char-fix x))
               (char-code #\0))
          0)
@@ -129,47 +130,47 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
          (- (the (unsigned-byte 8) (char-code (the character x)))
             (the (unsigned-byte 8) 48))))
   :prepwork
-  ((local (in-theory (enable digitp char-fix))))
+  ((local (in-theory (enable dec-digit-char-p char-fix))))
   ///
-  (defcong ichareqv equal (digit-val x) 1
+  (defcong ichareqv equal (dec-digit-char-value x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char))))
-  (defthm digit-val-upper-bound
-    (< (digit-val x) 10)
+  (defthm dec-digit-char-value-upper-bound
+    (< (dec-digit-char-value x) 10)
     :rule-classes ((:rewrite) (:linear)))
-  (defthm equal-of-digit-val-and-digit-val
-    (implies (and (digitp x)
-                  (digitp y))
-             (equal (equal (digit-val x) (digit-val y))
+  (defthm equal-of-dec-digit-char-value-and-dec-digit-char-value
+    (implies (and (dec-digit-char-p x)
+                  (dec-digit-char-p y))
+             (equal (equal (dec-digit-char-value x) (dec-digit-char-value y))
                     (equal x y))))
-  (defthm digit-val-of-digit-to-char
+  (defthm dec-digit-char-value-of-digit-to-char
     (implies (and (natp n)
                   (< n 10))
-             (equal (digit-val (digit-to-char n))
+             (equal (dec-digit-char-value (digit-to-char n))
                     n))))
 
-(std::deflist digit-listp (x)
-  :short "Recognizes lists of @(see digitp) characters."
-  (digitp x)
+(std::deflist dec-digit-char-listp (x)
+  :short "Recognizes lists of @(see dec-digit-char-p) characters."
+  (dec-digit-char-p x)
   ///
-  (defcong icharlisteqv equal (digit-listp x) 1
+  (defcong icharlisteqv equal (dec-digit-char-listp x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm character-listp-when-digit-listp
-    (implies (digit-listp x)
+  (defthm character-listp-when-dec-digit-char-listp
+    (implies (dec-digit-char-listp x)
              (equal (character-listp x)
                     (true-listp x)))
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
-(define digit-list-value1
-  :parents (digit-list-value)
-  ((x digit-listp)
+(define dec-digit-chars-value1
+  :parents (dec-digit-chars-value)
+  ((x dec-digit-char-listp)
    (val :type unsigned-byte))
   (mbe :logic (if (consp x)
-                  (digit-list-value1 (cdr x)
-                                     (+ (digit-val (car x))
-                                        (* 10 (nfix val))))
+                  (dec-digit-chars-value1 (cdr x)
+                                          (+ (dec-digit-char-value (car x))
+                                             (* 10 (nfix val))))
                 (nfix val))
        :exec (if (consp x)
-                 (digit-list-value1
+                 (dec-digit-chars-value1
                   (cdr x)
                   (the unsigned-byte
                     (+ (the (unsigned-byte 8)
@@ -179,52 +180,52 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
                        (* (the unsigned-byte 10)
                           (the unsigned-byte val)))))
                (the unsigned-byte val)))
-  :guard-hints (("Goal" :in-theory (enable digit-val digitp))))
+  :guard-hints (("Goal" :in-theory (enable dec-digit-char-value dec-digit-char-p))))
 
-(define digit-list-value
-  :short "Coerces a @(see digit-listp) into a natural number."
-  ((x digit-listp))
+(define dec-digit-chars-value
+  :short "Coerces a @(see dec-digit-char-listp) into a natural number."
+  ((x dec-digit-char-listp))
   :returns (value natp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(digit-list-value '(#\1 #\0 #\3))') is 103.  See
+  :long "<p>For instance, @('(dec-digit-chars-value '(#\1 #\0 #\3))') is 103.  See
          also @(see parse-nat-from-charlist) for a more flexible function that
          can tolerate non-numeric characters after the number.</p>"
   :inline t
   :verify-guards nil
   (mbe :logic (if (consp x)
                   (+ (* (expt 10 (1- (len x)))
-                        (digit-val (car x)))
-                     (digit-list-value (cdr x)))
+                        (dec-digit-char-value (car x)))
+                     (dec-digit-chars-value (cdr x)))
                 0)
-       :exec (digit-list-value1 x 0))
+       :exec (dec-digit-chars-value1 x 0))
   ///
-  (defcong icharlisteqv equal (digit-list-value x) 1
+  (defcong icharlisteqv equal (dec-digit-chars-value x) 1
     :hints(("Goal" :in-theory (e/d (icharlisteqv)))))
-  (defthm digit-list-value-upper-bound
-    (< (digit-list-value x)
+  (defthm dec-digit-chars-value-upper-bound
+    (< (dec-digit-chars-value x)
        (expt 10 (len x)))
     :hints(("Goal" :nonlinearp t)))
-  (defthm digit-list-value-upper-bound-free
+  (defthm dec-digit-chars-value-upper-bound-free
     (implies (equal n (len x))
-             (< (digit-list-value x) (expt 10 n))))
-  (defthm digit-list-value1-removal
-    (equal (digit-list-value1 x val)
-           (+ (digit-list-value x)
+             (< (dec-digit-chars-value x) (expt 10 n))))
+  (defthm dec-digit-chars-value1-removal
+    (equal (dec-digit-chars-value1 x val)
+           (+ (dec-digit-chars-value x)
               (* (nfix val) (expt 10 (len x)))))
     :hints(("Goal"
-            :in-theory (enable digit-list-value1)
-            :induct (digit-list-value1 x val))))
-  (verify-guards digit-list-value$inline)
-  (defthm digit-list-value-of-append
-    (equal (digit-list-value (append x (list a)))
-           (+ (* 10 (digit-list-value x))
-              (digit-val a)))))
+            :in-theory (enable dec-digit-chars-value1)
+            :induct (dec-digit-chars-value1 x val))))
+  (verify-guards dec-digit-chars-value$inline)
+  (defthm dec-digit-chars-value-of-append
+    (equal (dec-digit-chars-value (append x (list a)))
+           (+ (* 10 (dec-digit-chars-value x))
+              (dec-digit-char-value a)))))
 
 (define skip-leading-digits
   :short "Skip over any leading digits at the start of a character list."
   (x)
   :returns (tail character-listp :hyp (character-listp x))
   (cond ((atom x)         nil)
-        ((digitp (car x)) (skip-leading-digits (cdr x)))
+        ((dec-digit-char-p (car x)) (skip-leading-digits (cdr x)))
         (t                x))
   ///
   (local (defun ind (x y)
@@ -238,48 +239,48 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
   (defthm len-of-skip-leading-digits
     (equal (< (len (skip-leading-digits x))
               (len x))
-           (digitp (car x)))
+           (dec-digit-char-p (car x)))
     :rule-classes ((:rewrite)
-                   (:linear :corollary (implies (digitp (car x))
+                   (:linear :corollary (implies (dec-digit-char-p (car x))
                                                 (< (len (skip-leading-digits x))
                                                    (len x)))))))
 
-(define take-leading-digits
+(define take-leading-dec-digit-chars
   :short "Collect any leading digits from the start of a character list."
   (x)
   :returns (head character-listp :hyp (character-listp x))
   (cond ((atom x)         nil)
-        ((digitp (car x)) (cons (car x) (take-leading-digits (cdr x))))
+        ((dec-digit-char-p (car x)) (cons (car x) (take-leading-dec-digit-chars (cdr x))))
         (t                nil))
   ///
   (local (defthm l0 ;; Gross, but gets us an equal congruence
-           (implies (digitp x)
+           (implies (dec-digit-char-p x)
                     (equal (ichareqv x y)
                            (equal x y)))
            :hints(("Goal" :in-theory (enable ichareqv
                                              downcase-char
-                                             digitp
+                                             dec-digit-char-p
                                              char-fix)))))
-  (defcong icharlisteqv equal (take-leading-digits x) 1
+  (defcong icharlisteqv equal (take-leading-dec-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm digit-listp-of-take-leading-digits
-    (digit-listp (take-leading-digits x)))
-  (defthm bound-of-len-of-take-leading-digits
-    (<= (len (take-leading-digits x)) (len x))
+  (defthm dec-digit-char-listp-of-take-leading-dec-digit-chars
+    (dec-digit-char-listp (take-leading-dec-digit-chars x)))
+  (defthm bound-of-len-of-take-leading-dec-digit-chars
+    (<= (len (take-leading-dec-digit-chars x)) (len x))
     :rule-classes :linear)
-  (defthm equal-of-take-leading-digits-and-length
-    (equal (equal (len (take-leading-digits x)) (len x))
-           (digit-listp x)))
-  (defthm take-leading-digits-when-digit-listp
-    (implies (digit-listp x)
-             (equal (take-leading-digits x)
+  (defthm equal-of-take-leading-dec-digit-chars-and-length
+    (equal (equal (len (take-leading-dec-digit-chars x)) (len x))
+           (dec-digit-char-listp x)))
+  (defthm take-leading-dec-digit-chars-when-dec-digit-char-listp
+    (implies (dec-digit-char-listp x)
+             (equal (take-leading-dec-digit-chars x)
                     (list-fix x))))
-  (defthm consp-of-take-leading-digits
-    (equal (consp (take-leading-digits x))
-           (digitp (car x)))))
+  (defthm consp-of-take-leading-dec-digit-chars
+    (equal (consp (take-leading-dec-digit-chars x))
+           (dec-digit-char-p (car x)))))
 
-(define digit-string-p-aux
-  :parents (digit-string-p)
+(define dec-digit-string-p-aux
+  :parents (dec-digit-string-p)
   ((x  stringp             :type string)
    (n  natp                :type unsigned-byte)
    (xl (eql xl (length x)) :type unsigned-byte))
@@ -291,26 +292,26 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (digit-listp (nthcdr n (explode x)))
+       (dec-digit-char-listp (nthcdr n (explode x)))
        :exec
        (if (eql n xl)
            t
-         (and (digitp (char x n))
-              (digit-string-p-aux x
-                                  (the unsigned-byte (+ 1 n))
-                                  xl))))
+         (and (dec-digit-char-p (char x n))
+              (dec-digit-string-p-aux x
+                                      (the unsigned-byte (+ 1 n))
+                                      xl))))
   ///
-  (verify-guards digit-string-p-aux
-    :hints(("Goal" :in-theory (enable digit-listp)))))
+  (verify-guards dec-digit-string-p-aux
+    :hints(("Goal" :in-theory (enable dec-digit-char-listp)))))
 
-(define digit-string-p
+(define dec-digit-string-p
   :short "Recognizer for strings whose characters are all decimal digits."
   ((x :type string))
   :returns bool
   :long "<p>Corner case: this accepts the empty string since all of its
 characters are decimal digits.</p>
 
-<p>Logically this is defined in terms of @(see digit-listp).  But in the
+<p>Logically this is defined in terms of @(see dec-digit-char-listp).  But in the
 execution, we use a @(see char)-based function that avoids exploding the
 string.  This provides much better performance, e.g., on an AMD FX-8350
 with CCL:</p>
@@ -319,26 +320,26 @@ with CCL:</p>
     ;; 0.48 seconds, no garbage
     (let ((x \"1234\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::digit-string-p x))))
+                   (str::dec-digit-string-p x))))
 
     ;; 0.82 seconds, 640 MB allocated
     (let ((x \"1234\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::digit-listp (coerce x 'list)))))
+                   (str::dec-digit-char-listp (coerce x 'list)))))
 })"
   :inline t
   :enabled t
-  (mbe :logic (digit-listp (explode x))
-       :exec (digit-string-p-aux x 0 (length x)))
+  (mbe :logic (dec-digit-char-listp (explode x))
+       :exec (dec-digit-string-p-aux x 0 (length x)))
   ///
-  (defcong istreqv equal (digit-string-p x) 1))
+  (defcong istreqv equal (dec-digit-string-p x) 1))
 
 
 (define basic-natchars
   :parents (natchars)
   :short "Logically simple definition that is similar to @(see natchars)."
   ((n natp))
-  :returns (chars digit-listp)
+  :returns (chars dec-digit-char-listp)
   :long "<p>This <i>almost</i> computes @('(natchars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
@@ -358,7 +359,7 @@ natchars).</p>"
    (local (defthm l1
             (implies (and (< a 10)
                           (natp a))
-                     (digitp (digit-to-char a)))))
+                     (dec-digit-char-p (digit-to-char a)))))
    (local (in-theory (disable digit-to-char))))
   ///
   (defthm basic-natchars-when-zp
@@ -412,13 +413,13 @@ natchars).</p>"
 (define natchars
   :short "Convert a natural number into a list of characters."
   ((n natp))
-  :returns (chars digit-listp)
+  :returns (chars dec-digit-char-listp)
   :long "<p>For instance, @('(natchars 123)') is @('(#\\1 #\\2 #\\3)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base 10
 numbers.  These simplifications lead to particularly nice rules, e.g., about
-@(see digit-list-value), and somewhat better performance:</p>
+@(see dec-digit-chars-value), and somewhat better performance:</p>
 
 @({
   ;; Times reported by an AMD FX-8350, Linux, 64-bit CCL:
@@ -459,15 +460,15 @@ numbers.  These simplifications lead to particularly nice rules, e.g., about
             :use ((:instance basic-natchars-one-to-one)
                   (:instance lemma2)
                   (:instance lemma2 (n m))))))
-  (local (defthm digit-list-value-of-rev-of-basic-natchars
-           (equal (digit-list-value (rev (basic-natchars n)))
+  (local (defthm dec-digit-chars-value-of-rev-of-basic-natchars
+           (equal (dec-digit-chars-value (rev (basic-natchars n)))
                   (nfix n))
            :hints(("Goal"
                    :induct (basic-natchars n)
                    :in-theory (e/d (basic-natchars)
                                    (digit-to-char))))))
-  (defthm digit-list-value-of-natchars
-    (equal (digit-list-value (natchars n))
+  (defthm dec-digit-chars-value-of-natchars
+    (equal (dec-digit-chars-value (natchars n))
            (nfix n))))
 
 (define revappend-natchars-aux ((n natp) (acc))
@@ -514,13 +515,13 @@ consing together characters in reverse order.</p>"
   :inline t
   (implode (natchars n))
   ///
-  (defthm digit-listp-of-natstr
-    (digit-listp (explode (natstr n))))
+  (defthm dec-digit-char-listp-of-natstr
+    (dec-digit-char-listp (explode (natstr n))))
   (defthm natstr-one-to-one
     (equal (equal (natstr n) (natstr m))
            (equal (nfix n) (nfix m))))
-  (defthm digit-list-value-of-natstr
-    (equal (digit-list-value (explode (natstr n)))
+  (defthm dec-digit-chars-value-of-natstr
+    (equal (dec-digit-chars-value (explode (natstr n)))
            (nfix n)))
   (defthm natstr-nonempty
     (not (equal (natstr n) ""))))
@@ -544,8 +545,8 @@ more-significant bits are truncated.</p>"
             (implies (character-listp x)
                      (character-listp (nthcdr n x))))))
   ///
-  (defthm digit-listp-of-natstr-width
-    (digit-listp (explode (natstr-width n width))))
+  (defthm dec-digit-char-listp-of-natstr-width
+    (dec-digit-char-listp (explode (natstr-width n width))))
   (defthm natstr-width-nonempty
     (not (equal (natstr-width n width) ""))))
 
@@ -564,7 +565,7 @@ more-significant bits are truncated.</p>"
     (not (equal (intstr i) "")))
 
   (local (defthm l0
-           (implies (digit-listp x)
+           (implies (dec-digit-char-listp x)
                     (not (equal x (cons #\- y))))))
 
   (local (defthm l2
@@ -710,7 +711,7 @@ more-significant bits are truncated.</p>"
       (len  "Number of initial digits we read.")
       (rest "The rest of @('x'), past the leading digits."))
   :long "<p>This function is somewhat complicated.  See also @(call
-digit-list-value), which is a simpler way to interpret strings where all of the
+dec-digit-chars-value), which is a simpler way to interpret strings where all of the
 characters are digits.</p>"
   :split-types t
   (declare (type unsigned-byte val len))
@@ -718,10 +719,10 @@ characters are digits.</p>"
   (mbe :logic
        (cond ((atom x)
               (mv (nfix val) (nfix len) nil))
-             ((digitp (car x))
-              (let ((digit-val (digit-val (car x))))
+             ((dec-digit-char-p (car x))
+              (let ((dec-digit-char-value (dec-digit-char-value (car x))))
                 (parse-nat-from-charlist (cdr x)
-                                         (+ digit-val (* 10 (nfix val)))
+                                         (+ dec-digit-char-value (* 10 (nfix val)))
                                          (+ 1 (nfix len)))))
              (t
               (mv (nfix val) (nfix len) x)))
@@ -733,28 +734,28 @@ characters are digits.</p>"
             ((unless (and (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57))
                           (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))))
              (mv val len x))
-            ((the (unsigned-byte 8) digit-val) (the (unsigned-byte 8)
-                                                    (- (the (unsigned-byte 8) code)
-                                                       (the (unsigned-byte 8) 48)))))
+            ((the (unsigned-byte 8) dec-digit-char-value) (the (unsigned-byte 8)
+                                                               (- (the (unsigned-byte 8) code)
+                                                                  (the (unsigned-byte 8) 48)))))
          (parse-nat-from-charlist
           (cdr x)
-          (the unsigned-byte (+ (the (unsigned-byte 8) digit-val)
+          (the unsigned-byte (+ (the (unsigned-byte 8) dec-digit-char-value)
                                 (the unsigned-byte (* 10 val))))
           (the unsigned-byte (+ 1 (the integer len))))))
   ///
   (verify-guards parse-nat-from-charlist
-    :hints(("Goal" :in-theory (enable digitp digit-val char-fix))))
+    :hints(("Goal" :in-theory (enable dec-digit-char-p dec-digit-char-value char-fix))))
 
   (defthm val-of-parse-nat-from-charlist
     (equal (mv-nth 0 (parse-nat-from-charlist x val len))
-           (+ (digit-list-value (take-leading-digits x))
-              (* (nfix val) (expt 10 (len (take-leading-digits x))))))
-    :hints(("Goal" :in-theory (enable take-leading-digits
-                                      digit-list-value))))
+           (+ (dec-digit-chars-value (take-leading-dec-digit-chars x))
+              (* (nfix val) (expt 10 (len (take-leading-dec-digit-chars x))))))
+    :hints(("Goal" :in-theory (enable take-leading-dec-digit-chars
+                                      dec-digit-chars-value))))
   (defthm len-of-parse-nat-from-charlist
     (equal (mv-nth 1 (parse-nat-from-charlist x val len))
-           (+ (nfix len) (len (take-leading-digits x))))
-    :hints(("Goal" :in-theory (enable take-leading-digits))))
+           (+ (nfix len) (len (take-leading-dec-digit-chars x))))
+    :hints(("Goal" :in-theory (enable take-leading-dec-digit-chars))))
   (defthm rest-of-parse-nat-from-charlist
     (equal (mv-nth 2 (parse-nat-from-charlist x val len))
            (skip-leading-digits x))
@@ -815,14 +816,14 @@ of our logical definition.</p>"
                           (<= (the (unsigned-byte 8) 48)
                               (the (unsigned-byte 8) code))))
              (mv val len))
-            ((the (unsigned-byte 8) digit-val)
+            ((the (unsigned-byte 8) dec-digit-char-value)
              (the (unsigned-byte 8)
                   (- (the (unsigned-byte 8) code)
                      (the (unsigned-byte 8) 48)))))
          (parse-nat-from-string
           (the string x)
           (the unsigned-byte
-               (+ (the (unsigned-byte 8) digit-val)
+               (+ (the (unsigned-byte 8) dec-digit-char-value)
                   (the unsigned-byte (* 10 (the unsigned-byte val)))))
           (the unsigned-byte (+ 1 (the unsigned-byte len)))
           (the unsigned-byte (+ 1 (the unsigned-byte n)))
@@ -839,10 +840,10 @@ of our logical definition.</p>"
                              ACL2::|x < y  =>  0 < y-x|)))
 
   (verify-guards parse-nat-from-string
-    :hints(("Goal" :in-theory (enable digitp
-                                      digit-val
-                                      take-leading-digits
-                                      digit-list-value
+    :hints(("Goal" :in-theory (enable dec-digit-char-p
+                                      dec-digit-char-value
+                                      take-leading-dec-digit-chars
+                                      dec-digit-chars-value
                                       )))))
 
 (define strval
@@ -858,8 +859,8 @@ non-decimal digit characters or is empty, we return @('nil').</p>"
   (mbe :logic
        (let ((chars (explode x)))
          (and (consp chars)
-              (digit-listp chars)
-              (digit-list-value chars)))
+              (dec-digit-char-listp chars)
+              (dec-digit-chars-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))
             ((mv (the unsigned-byte val) (the unsigned-byte len))

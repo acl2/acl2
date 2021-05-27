@@ -402,6 +402,8 @@
   (pand (check-thread1 n)
         (check-thread2 n)))
 
+(comp t) ;; so gcl will compile to avoid stack overflow in (check-both 100) below
+
 ;; Timings on compute-1-1:
 ;;  - ACL2(hp): no memoization: 12.33 seconds (many GC messages)
 ;;  - ACL2(h):  no memoization: 15.54 seconds (many GC messages)

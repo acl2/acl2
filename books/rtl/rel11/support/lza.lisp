@@ -6,6 +6,7 @@
 (include-book "bits")
 (include-book "log")
 (include-book "float")
+(include-book "ppa")
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)|
                                 |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
@@ -23,6 +24,11 @@
   (declare (xargs :guard (and (integerp a)
                               (integerp b))))
   (logxor a b))
+
+(defund g0 (a b)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b))))
+  (logand a b))
 
 (defund k0 (a b n)
   (declare (xargs :guard (and (integerp a)
@@ -49,6 +55,17 @@
 	          (if (= (bitn a j) (bitn b j))
 		      0 1)))
   :hints (("Goal" :in-theory (enable p0 bitn-logxor)
+                  :use ((:instance bitn-0-1 (x a) (n j))
+		        (:instance bitn-0-1 (x b) (n j))))))
+
+(defthmd g0-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(integerp j))
+	   (equal (bitn (g0 a b) j)
+	          (if (and (= (bitn a j) 1) (= (bitn b j) 1))
+		      1 0)))
+  :hints (("Goal" :in-theory (enable g0 bitn-logand)
                   :use ((:instance bitn-0-1 (x a) (n j))
 		        (:instance bitn-0-1 (x b) (n j))))))
 
@@ -817,118 +834,6 @@
 
 ;;----------------------------------------------------------------------------------------
 
-(local-defund equivs (x y n)
-  (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-            (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
-       (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-            (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-
-(local-defthmd lutz-1
-   (implies (and (integerp z) (natp n))
-            (iff (= (bits z n 0) (1- (expt 2 (1+ n))))
-	         (and (= (bitn z n) 1)
-		      (= (bits z (1- n) 0) (1- (expt 2 n))))))
-  :hints (("Goal" :use ((:instance bitn-plus-bits (x z) (m 0))
-                        (:instance bits-bounds (x z) (i (1- n)) (j 0))
-			(:instance bitn-0-1 (x z)))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-2
-   (implies (and (integerp x) (integerp y) (natp n))
-            (iff (= (+ (bits x n 0) (bits y n 0)) (1- (expt 2 (1+ n))))
-	         (and (not (= (bitn x n) (bitn y n)))
-		      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-  :hints (("Goal" :use (bitn-0-1
-                        (:instance bitn-0-1 (x y))
-			(:instance bitn-plus-bits (m 0))
-                        (:instance bitn-plus-bits (x y) (m 0))
-                        (:instance bits-bounds (i (1- n)) (j 0))
-                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-3
-   (implies (and (integerp x) (integerp y) (natp n)
-                 (equivs x y n)
-		 (not (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
-	    (equivs x y (1+ n)))
-  :hints (("Goal" :in-theory (enable equivs logxor)
-                  :use (lutz-2
-                        (:instance lutz-1 (z (+ x y)))
-			(:instance lutz-1 (z (logxor x y))))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-4
-  (implies (and (integerp x) (integerp y) (natp n))
-           (equal (bits (+ x y) n 0)
-                  (mod (+ (bits x n 0) (bits y n 0))
-                       (expt 2 (1+ n)))))
-  :hints (("Goal" :in-theory (enable bits-mod))))
-
-(local-defthmd lutz-5
-  (implies (and (integerp x) (integerp y) (natp n)
-                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
-           (equal (bits (+ x y) n 0)
-                  (mod (+ (* (expt 2 n) (+ (bitn x n) (bitn y n)))
-		          (1- (expt 2 n)))
-                       (expt 2 (1+ n)))))
-  :hints (("Goal" :in-theory (enable lutz-4)
-                  :nonlinearp t
-                  :use (bitn-0-1
-		        (:instance bitn-0-1 (x y))
-			(:instance bitn-plus-bits (m 0))
-		        (:instance bitn-plus-bits (x y) (m 0))))))
-
-(local-defthmd lutz-6
-  (implies (and (integerp x) (integerp y) (natp n)
-                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
-           (iff (= (bits (+ x y) n 0) (1- (expt 2 (1+ n))))
-                (not (= (bitn x n) (bitn y n)))))
-  :hints (("Goal" :in-theory (enable lutz-5)
-                  :nonlinearp t
-                  :use (bitn-0-1
-		        (:instance bitn-0-1 (x y))))))
-
-(local-defthmd lutz-7
-   (implies (and (integerp x) (integerp y) (natp n)
-                 (equivs x y n)
-		 (= (bits (+ x y) (1- n) 0) (1- (expt 2 n))))
-	    (equivs x y (1+ n)))
-  :hints (("Goal" :in-theory (enable equivs logxor)
-                  :use (lutz-2 lutz-6 bitn-logxor bitn-0-1
-		        (:instance bitn-0-1 (x y))
-                        (:instance lutz-1 (z (+ x y)))
-			(:instance lutz-1 (z (logxor x y))))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-8
-   (implies (and (integerp x) (integerp y) (not (zp n))
-                 (equivs x y (1- n)))
-	    (equivs x y n))
-  :hints (("Goal" :use ((:instance lutz-3 (n (1- n)))
-                        (:instance lutz-7 (n (1- n)))))))
-
-(local-defthmd lutz-9
-   (implies (and (integerp x) (integerp y))
-	    (equivs x y 0))
-  :hints (("Goal" :in-theory (enable equivs))))
-
-(local-defthmd lutz-10
-   (implies (and (integerp x) (integerp y) (natp n))
-	    (equivs x y n))
-  :hints (("Goal" :induct (nats n))
-          ("Subgoal *1/2" :use (lutz-8))
-	  ("Subgoal *1/1" :use (lutz-9))))
-
-(defthmd lutz-lemma
-   (implies (and (integerp x) (integerp y) (natp n))
-            (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                      (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
-                 (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-  :hints (("Goal" :in-theory (enable equivs) :use (lutz-10))))
-
-;;----------------------------------------------------------------------------------------
-
 (local-defthmd lza-cor-21
   (implies (assumps+ a b n)
            (and (equal (bits (+ a b) (e a b n) 0) (1- (expt 2 (e a b n))))
@@ -1001,3 +906,634 @@
                (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
   :rule-classes ()
   :hints (("Goal" :use (lza-thm lza-cor-27 lza-cor-28))))
+
+(defthm lza-thm-1-case-2
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+                (> (+ a b) (expt 2 n)))
+           (and (>= (w0 a b n) 2)
+                (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))
+                (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n)))))))
+  :rule-classes ()
+  :hints (("Goal" :use (lza-thm lza-cor-alt))))
+
+;;----------------------------------------------------------------------------------------
+
+(local-defthmd lza-special-10
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n))
+ 	   (equal (bitn (w0 a b n) 0)
+	          (if (= (bitn (p0 a b) 0) 0)
+		      1 0)))
+  :hints (("Goal" :in-theory (enable bitn-bits bitn-logxor w0 p0-rewrite)
+	          :use ((:instance bitn-shift-up (x (k0 a b n)) (k 1) (n -1))
+		        (:instance bitn-lognot (x (LOGXOR (P0 A B) (* 2 (K0 A B N)))) (n 0))))))
+
+(local-defthmd lza-special-11
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n)))
+ 	   (equal (bitn a 0) (bitn b 0)))
+  :hints (("Goal" :use (mod-plus-mod-2 (:instance mod012 (m a)) (:instance mod012 (m b)))
+	          :in-theory (e/d (bitn-rec-0 bits-mod) (ACL2::|(mod x 2)|)))))
+
+(local-defthmd lza-special-12
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n)))
+ 	   (equal (bitn (w0 a b n) 0)
+	          1))
+  :hints (("Goal" :use (lza-special-11)
+	          :in-theory (enable lza-special-10 p0-rewrite))))
+
+(defund inset (a b n i)
+  (or (and (= (bitn (p0 a b) i) 1) (= (bitn (p0 a b) (1- i)) 1))
+      (and (= (bitn (p0 a b) i) 1) (= (bitn (g0 a b) (1- i)) 1))
+      (and (= (bitn (g0 a b) i) 1) (= (bitn (k0 a b n) (1- i)) 1))
+      (and (= (bitn (k0 a b n) i) 1) (= (bitn (k0 a b n) (1- i)) 1))))
+
+(local-defthmd lza-special-13
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(not (zp i))
+		(< i n)
+		(inset a b n i))
+	   (equal (bitn (w0 a b n) i)
+	          0))
+  :hints (("Goal" :in-theory (enable inset w0-rewrite p0-rewrite k0-rewrite g0-rewrite))))
+
+(local-defthmd lza-special-14
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(natp j))
+           (iff (= (bitn (p0 a b) (1+ j)) (bitn (+ a b) (1+ j)))
+	        (< (+ (bits a j 0) (bits b j 0)) (expt 2 (1+ j)))))
+  :hints (("Goal" :in-theory (enable p0 bitn-logxor gen-val)
+                  :use ((:instance bitn-0-1 (x a) (n (1+ j)))
+		        (:instance bitn-0-1 (x b) (n (1+ j)))
+		        (:instance ripple-carry-lemma (x a) (y b) (i (1+ j)) (cin 0))
+		        (:instance cbit-rewrite (x a) (y b) (i j) (cin 0))))))
+
+(local-defthmd lza-special-15
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(natp i)
+		(< i n))
+	   (equal (bitn (+ a b) i)
+	          0))		  
+  :hints (("Goal" :in-theory (enable bitn-expt-0))))
+
+(local-defthmd lza-special-16
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (p0 a b) i) 1))
+	   (>= (+ (bits a (1- i) 0) (bits b (1- i) 0))
+	       (expt 2 i)))
+  :hints (("Goal" :use (lza-special-15 (:instance lza-special-14 (j (1- i)))))))
+
+(local-defthmd lza-special-17
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (p0 a b) i) 1))
+	   (equal (bitn (k0 a b n) (1- i)) 0))
+  :hints (("Goal" :in-theory (enable k0-rewrite)
+                  :nonlinearp t
+                  :use (lza-special-16
+                        (:instance bitn-plus-bits (x a) (n (1- i)) (m 0))
+                        (:instance bitn-plus-bits (x b) (n (1- i)) (m 0))
+                        (:instance bitn-0-1 (x a) (n (1- i)))
+			(:instance bits-bounds (x a) (i (- i 2)) (j 0))
+                        (:instance bitn-0-1 (x b) (n (1- i)))
+			(:instance bits-bounds (x b) (i (- i 2)) (j 0))))))
+
+(local-defthmd lza-special-20
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (p0 a b) i) 1))
+	   (inset a b n i))
+  :hints (("Goal" :use (lza-special-17)
+                  :in-theory (enable p0-rewrite g0-rewrite k0-rewrite inset))))
+
+(local-defthmd lza-special-21
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n))
+	   (equal (mod (+ (bits a i 0) (bits b i 0)) (expt 2 (1+ i)))
+	          (bits (+ a b) i 0)))
+  :hints (("Goal" :use ((:instance mod-sum (a (bits a i 0)) (n (expt 2 (1+ i))))
+                        (:instance mod-sum (a b) (b a) (n (expt 2 (1+ i)))))
+		  :nonlinearp t
+		  :in-theory (enable bits-mod))))
+
+(local-defthmd lza-special-22
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (k0 a b n) i) 1))
+	   (equal (+ (bits a i 0) (bits b i 0))
+	          (bits (+ a b) i 0)))
+  :hints (("Goal" :use (lza-special-21
+                        (:instance bitn-plus-bits (x a) (n i) (m 0))
+                        (:instance bitn-plus-bits (x b) (n i) (m 0))
+			(:instance bits-bounds (x a) (i (1- i)) (j 0))
+			(:instance bits-bounds (x b) (i (1- i)) (j 0)))
+		  :nonlinearp t
+		  :in-theory (enable k0-rewrite))))
+
+(local-defthmd lza-special-23
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (k0 a b n) i) 1))
+	   (equal (+ (bits a i 0) (bits b i 0))
+	          0))
+  :hints (("Goal" :use (lza-special-22 (:instance bits-plus-mult-2 (x 0) (y 1) (k n) (n i) (m 0))))))
+
+(local-defthmd lza-special-24
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (k0 a b n) i) 1))
+	   (equal (bitn (k0 a b n) (1- i))
+	          1))
+  :hints (("Goal" :use (lza-special-23
+                        (:instance bitn-bits (x a) (j 0) (k (1- i)))
+                        (:instance bitn-bits (x b) (j 0) (k (1- i))))
+		  :in-theory (enable k0-rewrite))))
+
+(local-defthmd lza-special-26
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (k0 a b n) i) 1))
+	   (inset a b n i))
+  :hints (("Goal" :use (lza-special-24)
+                  :in-theory (enable p0-rewrite g0-rewrite k0-rewrite inset))))
+
+(local-defthmd lza-special-27
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n))
+	   (equal (mod (+ (bits a (1- i) 0) (bits b (1- i) 0)) (expt 2 i))
+	          (bits (+ a b) (1- i) 0)))
+  :hints (("Goal" :use ((:instance mod-sum (a (bits a (1- i) 0)) (n (expt 2 i)))
+                        (:instance mod-sum (a b) (b a) (n (expt 2 i))))
+		  :nonlinearp t
+		  :in-theory (enable bits-mod))))
+
+(local-defthmd lza-special-28
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (g0 a b) i) 1))
+	   (< (+ (bits a (1- i) 0) (bits b (1- i) 0)) (expt 2 i)))
+  :hints (("Goal" :use (lza-special-15 (:instance lza-special-14 (j (1- i))))
+                  :in-theory (enable p0-rewrite g0-rewrite))))
+
+(local-defthmd lza-special-30
+  (implies (and (not (zp n))
+                (> n 1)
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (g0 a b) i) 1))
+	   (equal (+ (bits a (1- i) 0) (bits b (1- i) 0))
+	          (bits (+ a b) (1- i) 0)))
+  :hints (("Goal" :use (lza-special-27 lza-special-28))))
+
+(local-defthmd lza-special-31
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (g0 a b) i) 1))
+	   (equal (+ (bits a (1- i) 0) (bits b (1- i) 0))
+	          0))
+  :hints (("Goal" :use (lza-special-30 (:instance bits-plus-mult-2 (x 0) (y 1) (k n) (n (1- i)) (m 0))))))
+
+(local-defthmd lza-special-32
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (g0 a b) i) 1))
+	   (equal (bitn (k0 a b n) (1- i))
+	          1))
+  :hints (("Goal" :use (lza-special-31
+                        (:instance bitn-bits (x a) (i (1- i)) (j 0) (k (1- i)))
+                        (:instance bitn-bits (x b) (i (1- i)) (j 0) (k (1- i))))
+		  :in-theory (enable k0-rewrite))))
+(local-defthmd lza-special-34
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n)
+		(= (bitn (g0 a b) i) 1))
+	   (inset a b n i))
+  :hints (("Goal" :use (lza-special-32)
+                  :in-theory (enable p0-rewrite g0-rewrite k0-rewrite inset))))
+
+(local-defthmd lza-special-35
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(not (zp i))
+		(< i n))
+	   (equal (bitn (w0 a b n) i)
+	          0))
+  :hints (("Goal" :use (lza-special-13 lza-special-20 lza-special-26 lza-special-34)
+                  :in-theory (enable p0-rewrite g0-rewrite k0-rewrite))))
+
+(local-defthmd lza-special-36
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n))
+		(natp i)
+		(< i n))
+	   (equal (bits (w0 a b n) i 0)
+	          1))
+  :hints (("Goal" :induct (nats i))
+          ("Subgoal *1/2" :use (lza-special-35 (:instance bitn-plus-bits (x (w0 a b n)) (n i) (m 0))))
+	  ("Subgoal *1/1" :use (lza-special-12))))
+
+(defthmd lza-thm-1-case-1
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n)))
+	   (equal (w0 a b n)
+	          1))
+  :hints (("Goal" :use ((:instance lza-special-36 (i (1- n))))
+                  :in-theory (enable w0))))
+
+;;----------------------------------------------------------------------------------------
+
+(defund u0 (x y n)
+  (bits (logior x (lognot y)) (- n 2) 0))
+
+(local-defthm lza0-1
+  (implies (and (not (zp n))
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (and (>= x (expt 2 (1- n)))
+		(<= y (1- (expt 2 (1- n))))))
+  :rule-classes ()
+  :hints (("Goal" :nonlinearp t :use (expo-lower-bound (:instance expo-upper-bound (x y))))))
+
+(local-defthmd lza0-2
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (= (- x y) 1)
+	        (and (= x (expt 2 (1- n)))
+		     (= y (1- (expt 2 (1- n)))))))
+  :hints (("Goal" :nonlinearp t :use (lza0-1))))
+
+(local-defthmd lza0-3
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(= (expo x) (1- n)))
+	   (iff (= x (expt 2 (1- n)))
+	        (= (bits x (- n 2) 0) 0)))
+  :hints (("Goal" :in-theory (enable bvecp)
+                  :use (expo-upper-bound
+		        (:instance bitn-0-1 (n (1- n)))
+		        (:instance bitn-expt (n (1- n)))
+		        (:instance bitn-plus-bits (n (1- n)) (m 0))))))
+
+(local-defthmd lza0-4
+  (implies (and (natp n)
+                (> n 1)
+                (natp y)
+		(= (expo y) (- n 2)))
+	   (iff (= y (1- (expt 2 (1- n))))
+	        (= (bits (lognot y) (- n 2) 0) 0)))
+  :hints (("Goal" :in-theory (enable bits-lognot bvecp)
+                  :use ((:instance expo-upper-bound (x y))))))
+
+(local-defthmd lza0-5
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (and (= (bits x (- n 2) 0) 0)
+	             (= (bits (lognot y) (- n 2) 0) 0))
+	        (equal (u0 x y n) 0)))
+  :hints (("Goal" :in-theory (enable u0 bits-logior))))
+
+(defthmd lza-thm-0-a
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2)))
+	   (iff (equal (- x y) 1)
+	        (equal (u0 x y n) 0)))
+  :hints (("Goal" :use (lza0-2 lza0-3 lza0-4 lza0-5)
+                  :in-theory (theory 'minimal-theory))))
+
+(local-defthmd lza0-6
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (equal (fl (/ (u0 x y n) (expt 2 (1+ (expo (u0 x y n))))))
+	          0))
+  :hints (("Goal" :nonlinearp t
+                  :use ((:instance expo-upper-bound (x (u0 x y n)))))))
+
+(local-defthmd lza0-7
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (equal (bits (u0 x y n) (- n 2) (1+ (expo (u0 x y n))))
+	          0))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-6 (:instance bits-shift-down-1 (x (u0 x y n)) (k (1+ (expo (u0 x y n)))) (i (- n (+ (expo (u0 x y n)) 3))) (j 0))))))
+
+(local-defthmd lza0-8
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y))
+           (>= (expo (u0 x y n)) 0))
+  :hints (("Goal" :in-theory (enable u0)
+                  :use ((:instance expo-monotone (x 1) (y (u0 x y n)))))))
+
+(local-defthmd lza0-9
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y))
+           (<= (expo (u0 x y n)) (- n 2)))
+  :hints (("Goal" :in-theory (enable u0)
+                  :use ((:instance expo<= (x (u0 x y n)) (n (- n 2)))
+		        (:instance bits-bounds (x (logior x (lognot y))) (i (- n 2)) (j 0))))))
+
+(local-defthmd lza0-10
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(not (= (u0 x y n) 0)))
+	   (and (equal (bits x (- n 2) (1+ (expo (u0 x y n))))
+	               0)
+		(equal (bits (lognot y) (- n 2) (1+ (expo (u0 x y n))))
+	               0)))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-7 lza0-8)
+		  :in-theory (enable bits-bits bits-logior u0))))
+
+(local-defthmd lza0-11
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n)) (bits x (- n 2) 0))
+	          x))
+  :hints (("Goal" :in-theory (enable bvecp)
+                  :use (expo-upper-bound expo-lower-bound
+		        (:instance bits-bounds (i (- n 2)) (j 0))
+		        (:instance bitn-0-1 (n (1- n)))
+		        (:instance bitn-expt (n (1- n)))
+		        (:instance bitn-plus-bits (n (1- n)) (m 0))
+			(:instance bits-plus-bits (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0))))))
+
+(local-defthmd lza0-12
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0))
+		(not (= (expo (u0 x y n)) (- n 2))))
+	   (equal (bits x (- n 2) 0)
+	          (bits x (expo (u0 x y n)) 0)))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-10 (:instance bits-plus-bits (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0))))))
+
+(local-defthmd lza0-13
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n)) (bits x (expo (u0 x y n)) 0))
+	          x))
+  :hints (("Goal" :use (lza0-11 lza0-12))))
+
+(local-defthmd lza0-14
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(not (= (u0 x y n) 0)))
+	   (equal (bits y (- n 2) (1+ (expo (u0 x y n))))
+	          (1- (expt 2 (- n (+ (expo (u0 x y n)) 2))))))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-10)
+                  :cases ((= (expo (u0 x y n)) (- n 2)))
+                  :in-theory (enable bits-lognot))))
+
+(local-defthmd lza0-15
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (+ (expt 2 (1- n))
+	             (- (expt 2 (1+ (expo (u0 x y n)))))
+		     (bits y (expo (u0 x y n)) 0))
+	          y))
+  :hints (("Goal" :use (lza0-8 lza0-9 lza0-14
+                        (:instance expo-upper-bound (x y))
+			(:instance bits-plus-bits (x y) (n (- n 2)) (p (1+ (expo (u0 x y n)))) (m 0)))
+                  :cases ((= (expo (u0 x y n)) (- n 2)))
+                  :in-theory (enable bvecp))))
+
+(local-defthmd lza0-16
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (- x y)
+	          (+ (expt 2 (1+ (expo (u0 x y n))))
+		     (- (bits x (expo (u0 x y n)) 0)
+		        (bits y (expo (u0 x y n)) 0)))))
+  :hints (("Goal" :use (lza0-13 lza0-15))))
+
+(local-defthmd lza0-16
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (- x y)
+	          (+ (expt 2 (1+ (expo (u0 x y n))))
+		     (- (bits x (expo (u0 x y n)) 0)
+		        (bits y (expo (u0 x y n)) 0)))))
+  :hints (("Goal" :use (lza0-13 lza0-15))))
+
+(local-defthmd lza0-17
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (< (- x y)
+	      (expt 2 (+ 2 (expo (u0 x y n))))))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-16 lza0-8 lza0-9
+                        (:instance bits-bounds (i (expo (u0 x y n))) (j 0))
+			(:instance bits-bounds (x y) (i (expo (u0 x y n))) (j 0))))))
+
+;; This should be in bits.lisp:
+
+(defthmd bitn-expo
+  (implies (not (zp x))
+           (equal (bitn x (expo x)) 1))
+  :hints (("Goal" :use (expo-upper-bound expo-lower-bound
+                        (:instance expo>= (n 0))
+                        (:instance bvecp-bitn-2 (n (1+ (expo x))) (k (expo x))))
+		  :in-theory (enable bvecp)
+                  :nonlinearp t)))
+
+(local-defthmd lza0-18
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+	   (equal (bitn (u0 x y n) (expo (u0 x y n)))
+	          1))
+  :hints (("Goal" :in-theory (enable bitn-expo))))
+
+(local-defthmd lza0-19
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (>= (- (bitn x (expo (u0 x y n)))
+	          (bitn y (expo (u0 x y n))))
+	       0))
+  :hints (("Goal" :use (lza0-18 lza0-8 lza0-9
+                        (:instance bitn-lognot (x y) (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x (lognot y)) (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x y) (n (expo (u0 x y n)))))
+		  :in-theory (enable bits-logior bitn-bits bitn-logior u0))))
+
+(local-defthmd lza0-20
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (> (- x y)
+	      (expt 2 (expo (u0 x y n)))))
+  :hints (("Goal" :nonlinearp t
+                  :use (lza0-16 lza0-19 lza0-8 lza0-9
+			(:instance bitn-0-1 (n (expo (u0 x y n))))
+			(:instance bitn-0-1 (x y) (n (expo (u0 x y n))))
+			(:instance bitn-plus-bits (n (expo (u0 x y n))) (m 0))
+			(:instance bitn-plus-bits (x y) (n (expo (u0 x y n))) (m 0))
+                        (:instance bits-bounds (i (1- (expo (u0 x y n)))) (j 0))
+			(:instance bits-bounds (x y) (i (1- (expo (u0 x y n)))) (j 0))))))
+
+(defthmd lza-thm-0-b
+  (implies (and (natp n)
+                (> n 1)
+                (natp x)
+		(natp y)
+		(= (expo x) (1- n))
+		(= (expo y) (- n 2))
+		(not (= (u0 x y n) 0)))
+           (and (<= (expo (u0 x y n)) (expo (- x y)))
+	        (<= (expo (- x y)) (1+ (expo (u0 x y n))))))
+  :hints (("Goal" :use (lza0-17 lza0-20 lza0-8 lza0-9
+			(:instance expo<= (x (- x y)) (n (1+ (expo (u0 x y n)))))
+			(:instance expo>= (x (- x y)) (n (expo (u0 x y n))))))))
+

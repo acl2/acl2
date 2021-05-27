@@ -15,7 +15,10 @@
 
 (defttag file-io!)
 
-;returns (mv erp state)
+;; Writes the BYTES to file FILENAME, overwriting its previous contents.
+;; Returns (mv erp state).  The ttag is needed because this calls
+;; open-output-channel!, but that makes this version usable during make-event
+;; expansion, clause-processors, etc.
 (defun write-bytes-to-file! (bytes filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (all-bytep bytes)

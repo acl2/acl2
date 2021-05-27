@@ -33,6 +33,7 @@
 
 ;; TODO: Add a check for a primitive function (using *primitive-formals-and-guards*)
 
+;; Returns the body (as a translated term) of NAME, which should be a function.
 ;ffixme any time we lookup unnormalized-body (here and elsewhere) consider what happens when we try to lookup the body of a primitive..  fixme and what about a constrained function?
 ;todo: make a safe version of this whose guard is fn-definedp
 ;TODO: This doesn't work for :program mode functions like refinementp; consider using cltl-def-from-name.
@@ -120,6 +121,7 @@
 (defthm eqlable-listp-of-fn-formals
   (eqlable-listp (fn-formals fun wrld)))
 
+;; TODO: Just call arity, but I guess this one can throw an error:
 (defun fn-arity (name wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))

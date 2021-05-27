@@ -37,6 +37,7 @@
 (include-book "syntax-bind")
 (include-book "fgl-object")
 (include-book "checks")
+(include-book "ctrex-utils")
 (include-book "centaur/misc/starlogic" :dir :system)
 
 #!sv
@@ -403,3 +404,12 @@
               (if (equal a b) a 0))
             y))
   :hints(("Goal" :in-theory (enable sv::4vec))))
+
+
+(fgl::def-ctrex-rule 4vec-elim
+  :match ((upper (sv::4vec->upper x))
+          (lower (sv::4vec->lower x)))
+  :assign (sv::4vec upper lower)
+  :assigned-var x
+  ;;:hyp (alistp x)
+  :ruletype :elim)

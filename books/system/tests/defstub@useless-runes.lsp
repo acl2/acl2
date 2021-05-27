@@ -16,7 +16,9 @@
 (TRUE-LISTP-K)
 (F)
 (G)
-(H (1 1 (:TYPE-PRESCRIPTION H)))
+(H
+ (1 1 (:TYPE-PRESCRIPTION H))
+ )
 (K)
 (TRUE-LISTP-K)
 (L)
@@ -46,7 +48,9 @@
 (TRUE-LISTP-K)
 (F)
 (G)
-(H (1 1 (:TYPE-PRESCRIPTION H)))
+(H
+ (1 1 (:TYPE-PRESCRIPTION H))
+ )
 (K)
 (TRUE-LISTP-K)
 (L)

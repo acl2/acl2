@@ -1,4 +1,5 @@
 doc.lisp.backup
+make.log.bak
 workxxx*
 workyyy*
 aux
@@ -41,6 +42,4 @@ devel-check.out
 *.fn
 *.certdep
 !universal-dependency.certdep
-books/build/Makefile-features.sh
-books/system/doc/shellpool-*.tmp
 gitlog-all.txt

@@ -31,6 +31,7 @@
 (in-package "FTY")
 (include-book "database")
 (include-book "fty-parseutils")
+(include-book "std/lists/list-defuns" :dir :system)
 (program)
 
 (defconst *flexlist-keywords*
@@ -261,7 +262,23 @@
        (foo-fix-under-iff (intern-in-package-of-symbol (cat (symbol-name x.fix) "-UNDER-IFF") x.fix))
        (foo-fix-of-cons   (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS") x.fix))
        (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
-       (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)))
+       (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix))
+       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-REPEAT")
+                                                       x.fix))
+       (nth-of-foo-fix    (intern-in-package-of-symbol (cat "NTH-OF-" (symbol-name x.fix))
+                                                       x.fix))
+       (list-equiv-refines-foo-equiv
+        (intern-in-package-of-symbol (cat "LIST-EQUIV-REFINES-" (symbol-name x.equiv))
+                                                                 x.equiv))
+       (foo-equiv-implies-foo-equiv-append-1
+        (intern-in-package-of-symbol
+         (cat (symbol-name x.equiv) "-IMPLIES-" (symbol-name x.equiv) "-APPEND-1")
+         x.equiv))
+       (foo-equiv-implies-foo-equiv-append-2
+        (intern-in-package-of-symbol
+         (cat (symbol-name x.equiv) "-IMPLIES-" (symbol-name x.equiv) "-APPEND-2")
+         x.equiv)))
+
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
         :pkg ,x.equiv
         :hints (("goal" :expand ((,x.fix x))
@@ -344,7 +361,71 @@
                                    (:free (b) (append std::a b))
                                    (:free (b) (append nil b))
                                    (:free (a b c) (append (cons a b) c)))
-                          :in-theory (enable (:i append))))))))))
+                          :in-theory (enable (:i append)))))))
+
+      ,@(and (not x.non-emptyp)
+             `((defthm ,foo-fix-of-repeat
+                 (equal (,x.fix (repeat n x))
+                        (repeat n (,x.elt-fix x)))
+                 :hints (("goal" :induct (repeat n x)
+                          :expand ((repeat n x)
+                                   (repeat n (,x.elt-fix x))
+                                   (:free (a b) (,x.fix (cons a b))))
+                          :in-theory (enable (:i repeat)))))))
+
+      ;; Mihir M. mod: 6 lemmas are added below.
+      ,@(and x.true-listp (not x.non-emptyp)
+             `((defthm ,list-equiv-refines-foo-equiv
+                 (implies (list-equiv x y) (,x.equiv x y))
+                 :hints
+                 (("Goal" :induct (acl2::fast-list-equiv x y)
+                   :in-theory (enable ,x.fix acl2::fast-list-equiv
+                                      acl2::list-equiv acl2::true-list-fix)
+                   :expand ((acl2::true-list-fix x) (acl2::true-list-fix y)
+                            (,x.fix x) (,x.fix y))))
+                 :rule-classes :refinement)))
+
+      ,@(and (not x.non-emptyp)
+             `((defthm ,nth-of-foo-fix
+                 (equal (nth n (,x.fix x))
+                        (if (< (nfix n) (len x))
+                            (,x.elt-fix (nth n x))
+                          nil))
+                 :hints (("goal"
+                          :induct (nth n x)
+                          :expand ((,x.fix x))
+                          :in-theory (enable nth len))))
+               (defthm ,foo-equiv-implies-foo-equiv-append-1
+                 (implies (,x.equiv x x-equiv)
+                          (,x.equiv (append x y)
+                                    (append x-equiv y)))
+                 :rule-classes (:congruence)
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
+                          :induct (append x y))))
+               (defthm ,foo-equiv-implies-foo-equiv-append-2
+                 (implies (,x.equiv y y-equiv)
+                          (,x.equiv (append x y)
+                                    (append x y-equiv)))
+                 :rule-classes (:congruence)
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix append)
+                          :induct (append x y))))
+               (defcong
+                 ,x.equiv
+                 ,x.equiv
+                 (nthcdr n l)
+                 2
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix nthcdr)
+                          :induct t
+                          :expand ((,x.fix l) (,x.fix l-equiv)))))
+               (defcong
+                 ,x.equiv
+                 ,x.equiv
+                 (take n l)
+                 2
+                 :hints (("goal" :in-theory (enable ,x.equiv ,x.fix take
+                                                    cons-equal default-car)
+                          :induct t
+                          :expand ((,x.fix l) (,x.fix l-equiv))))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))

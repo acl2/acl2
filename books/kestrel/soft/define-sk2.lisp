@@ -12,7 +12,7 @@
 
 (include-book "gen-macro2-of-macro")
 
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

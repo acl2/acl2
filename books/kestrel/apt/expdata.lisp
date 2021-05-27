@@ -10,10 +10,15 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -224,11 +229,7 @@
   (defrule expdata-surjmapp-of-val-of-symbol-surjmap-alist
     (implies (and (expdata-symbol-surjmap-alistp x)
                   (consp (assoc-equal k x)))
-             (expdata-surjmapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-expdata-symbol-surjmap-alistp-rewrite
-    (implies (expdata-symbol-surjmap-alistp x)
-             (alistp x))))
+             (expdata-surjmapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,11 +251,7 @@
   (defrule expdata-surjmapp-of-val-of-pos-surjmap-alist
     (implies (and (expdata-pos-surjmap-alistp x)
                   (consp (assoc-equal k x)))
-             (expdata-surjmapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-expdata-pos-surjmap-alistp-rewrite
-    (implies (expdata-pos-surjmap-alistp x)
-             (alistp x))))
+             (expdata-surjmapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,8 +267,8 @@
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-has-args$ old$ description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq predicate t)
@@ -292,7 +289,7 @@
                                                             description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -379,7 +376,7 @@
                           is not an atom, it"
                          (list k))
                     t nil))
-           ((er &) (ensure-list-no-duplicates$
+           ((er &) (ensure-list-has-no-duplicates$
                     arg/res-list
                     (msg "The list ~x0 that is ~
                           the ~n1 ARG/RES-LIST component of the second input"
@@ -1144,8 +1141,7 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* ((wrld (w state))
-       ((er old$) (expdata-process-old old predicate verify-guards ctx state))
+  (b* (((er old$) (expdata-process-old old predicate verify-guards ctx state))
        ((er (list new$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
@@ -1170,10 +1166,10 @@
                                           names-to-avoid
                                           ctx
                                           state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er (list arg-surjmaps res-surjmaps names-to-avoid))
         (expdata-process-surjmaps surjmaps
                                   old$
@@ -1183,11 +1179,7 @@
                                   state))
        ((er &) (ensure-value-is-boolean$ predicate
                                          "The :PREDICATE input" t nil))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old$ state)
-                          "The :NEW-ENABLE input"
-                          t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er old-to-new-enable$) (process-input-old-to-new-enable
                                  old-to-new-enable
                                  old-to-new-enable-suppliedp
@@ -2805,8 +2797,7 @@
                (new-to-old-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('new-to-old') theorem."
-  (b* ((macro (theorem-intro-macro new-to-old-enable$))
-       (formula (expdata-gen-new-to-old-thm-formula old$
+  (b* ((formula (expdata-gen-new-to-old-thm-formula old$
                                                     arg-surjmaps
                                                     res-surjmaps
                                                     new$
@@ -2819,14 +2810,11 @@
                                                 new$
                                                 old-fn-unnorm-name
                                                 new-fn-unnorm-name
-                                                wrld))
-       (local-event `(local
-                      (defthm ,new-to-old$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,new-to-old$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                wrld)))
+    (evmac-generate-defthm new-to-old$
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3015,8 +3003,7 @@
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('old-to-new') theorem."
-  (b* ((macro (theorem-intro-macro old-to-new-enable$))
-       (formula (expdata-gen-old-to-new-thm-formula
+  (b* ((formula (expdata-gen-old-to-new-thm-formula
                  old$ arg-surjmaps res-surjmaps new$ wrld))
        (formula (untranslate formula t wrld))
        (hints (expdata-gen-old-to-new-thm-hints appcond-thm-names
@@ -3024,14 +3011,11 @@
                                                 arg-surjmaps
                                                 res-surjmaps
                                                 new-to-old$
-                                                wrld))
-       (local-event `(local
-                      (defthm ,old-to-new$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,old-to-new$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                wrld)))
+    (evmac-generate-defthm old-to-new$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3128,8 +3112,7 @@
   :short "Generate the theorem that says that
           the new function maps values in the new representation
           to values in the old representation."
-  (b* ((macro (theorem-intro-macro newp-of-new-enable$))
-       (formula (expdata-gen-newp-of-new-thm-formula old$
+  (b* ((formula (expdata-gen-newp-of-new-thm-formula old$
                                                      arg-surjmaps
                                                      res-surjmaps
                                                      new$
@@ -3140,14 +3123,11 @@
                                                  arg-surjmaps
                                                  res-surjmaps
                                                  new-to-old$
-                                                 wrld))
-       (local-event `(local
-                      (defthm ,newp-of-new$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,newp-of-new$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                 wrld)))
+    (evmac-generate-defthm newp-of-new$
+                           :formula formula
+                           :hints hints
+                           :enable newp-of-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

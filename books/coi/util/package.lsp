@@ -64,3 +64,5 @@
             acl2::ts-union acl2::ts-subsetp acl2::ts-intersectp)
           *acl2-exports*
           *common-lisp-symbols-from-main-lisp-package*))
+
+(ld "centaur/fty/package.lsp" :dir :system)

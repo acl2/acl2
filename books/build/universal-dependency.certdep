@@ -2,5 +2,9 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-(6/15/2020) Changes that may invalidate existing compiled files include
-the raw Lisp implementation of defstobj.
+[Late Fri May 21 2021]
+
+Significant changes to abstract stobjs seem to require cleaning the
+books.  (Although an "everything" regression passed after cleanning
+the books, certification failed for books/centaur/gl/hyp-fix.lisp.  So
+it seems safest and simplest just to clean the books.

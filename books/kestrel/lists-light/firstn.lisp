@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2020 Kestrel Institute
+; Copyright (C) 2018-2021 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -44,6 +44,11 @@
            (equal (firstn n x)
                   nil))
   :hints (("Goal" :in-theory (enable firstn))))
+
+;; disabled since firstn-when-zp-cheap should suffice
+(defthmd firstn-of-0
+  (equal (firstn 0 x)
+         nil))
 
 (defthm len-of-firstn
   (equal (len (firstn n l))
@@ -89,11 +94,12 @@
   :hints (("Goal" :in-theory (enable firstn take))))
 
 (defthm firstn-becomes-take-gen
-  (implies (natp n)
-           (equal (firstn n lst)
-                  (if (<= n (len lst))
-                      (take n lst)
-                    (take (len lst) lst))))
+  (equal (firstn n lst)
+         (if (natp n)
+             (if (<= n (len lst))
+                 (take n lst)
+               (take (len lst) lst))
+           nil))
   :hints (("Goal" :in-theory (enable firstn take))))
 
 (defthm firstn-of-1
@@ -131,3 +137,11 @@
   (equal (firstn n1 (firstn n2 l))
          (firstn (min (nfix n1) (nfix n2)) l))
   :hints (("Goal" :in-theory (enable firstn))))
+
+(defthm firstn-of-take
+  (implies (and (<= len1 len2)
+                (natp len1)
+                (natp len2))
+           (equal (firstn len1 (take len2 lst))
+                  (take len1 lst)))
+  :hints (("Goal" :in-theory (enable take firstn))))

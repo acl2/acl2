@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -17,12 +17,6 @@
 
 ; The atoms of the DE description language are symbols.  We define
 ; functions to aid their manipulation.
-
-;; (defthm alistp-symbol-listp-symbol-alistp-are-true-listp
-;;   (implies (or (alistp        lst)
-;; 	       (symbol-listp  lst)
-;; 	       (symbol-alistp lst))
-;; 	   (true-listp lst)))
 
 (defun true-list-alistp (x)
   (declare (xargs :guard t))
@@ -545,9 +539,9 @@
 (defun make-tree (n)
   (declare (xargs :guard (natp n)))
   (if (zp n)
-      0
+      nil
     (if (equal n 1)
-        0
+        nil
       (cons (make-tree (floor n 2))
             (make-tree (- n (floor n 2)))))))
 

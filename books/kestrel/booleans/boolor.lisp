@@ -130,3 +130,13 @@
   (equal (boolor x (bool-fix y))
          (boolor x y))
   :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+;; These help justify some things that Axe does:
+(defcong iff equal (boolor x y) 1 :hints (("Goal" :in-theory (enable boolor))))
+(defcong iff equal (boolor x y) 2 :hints (("Goal" :in-theory (enable boolor))))
+
+(defthmd not-of-if-of-nil-arg3-when-booleans
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (not (if x y nil)) ;; "not and"
+                  (acl2::boolor (not x) (not y)))))

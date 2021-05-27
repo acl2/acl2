@@ -15,8 +15,12 @@
 
 (defttag file-io!)
 
-;can be called from a make-event or clause processor because open-output-channel! is used (but requires a trust-tag)
-;returns (mv erp state)
+;; Writes the STRINGS to file FILENAME, overwriting its previous contents.
+;; Effectively, all the STRINGS get concatenated and the result becomes the new
+;; contents of the file.  Returns (mv erp state).  CTX is a context for error
+;; printing.  The ttag is needed because this calls open-output-channel!, but
+;; that makes this version usable during make-event expansion,
+;; clause-processors, etc.
 (defund write-strings-to-file! (strings filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (string-listp strings)

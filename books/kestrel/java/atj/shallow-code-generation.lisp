@@ -27,7 +27,7 @@
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
-(local (include-book "kestrel/std/basic/symbol-name-lst" :dir :system))
+(local (include-book "std/basic/symbol-name-lst" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

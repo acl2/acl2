@@ -36,7 +36,6 @@
 (verify-termination arglistp1)
 (verify-termination arglistp)
 (verify-termination lambda-keywordp)
-(verify-termination legal-constantp1)
 
 (verify-guards legal-variable-or-constant-namep)
 (verify-guards legal-variablep)

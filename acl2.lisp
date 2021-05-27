@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -157,7 +157,7 @@
 ; file acl2-status.txt that the system has allegedly been compiled, the
 ; following procedure works.
 
-;   # Write :COMPILED to acl2-status.txt.
+;   # Write :COMPILE-SKIPPED to acl2-status.txt.
 ;   make full LISP=ccl
 
 ;   # Next, edit acl2r.lisp with the desired variant of *acl2-optimize-form*,
@@ -548,13 +548,6 @@
 ; isn't typically exploited by ACL2 users.
 #+ccl
 (setq ccl::*record-source-file* nil)
-
-; Camm Maguire has suggested, on 9/22/2013, the following forms, which allowed
-; him to complete an ACL2 regression using 2.6.10pre.
-#+gcl
-(progn
-  (si::allocate 'contiguous 15000 t)
-  (si::allocate-sgc 'contiguous 15000 100000 10))
 
 ; The following avoids errors from extra right parentheses, but we leave it
 ; commented out since it doesn't seem important enough to merit messing around
@@ -1490,7 +1483,10 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #+lispworks
+; We include allegro below to avoid "unreachable" warnings from the compiler,
+; as would otherwise appear when compiling function FROM-TO-BY-AC during the
+; build.
+  #+(or lispworks allegro)
   `(with-redefinition-suppressed
     (handler-bind
      ((style-warning (lambda (c)
@@ -1498,7 +1494,7 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
      ,@forms))
 
-  #-(or sbcl cmu lispworks)
+  #-(or sbcl cmu lispworks allegro)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
@@ -1514,12 +1510,8 @@ ACL2 from scratch.")
 ; of style-warnings (as commented there), that form doesn't seem to work for
 ; CCL, Allegro CL, or CLISP.  So we bind some globals instead.
 
-  #+allegro
-  `(handler-bind
-    ((style-warning (lambda (c)
-                      (declare (ignore c))
-                      (invoke-restart 'muffle-warning))))
-    ,@forms)
+; Through Version_8.3 we dealt with style-warning here when #+allegro, but that
+; is now done in with-warnings-suppressed.
 
   #+clisp
   `(let ((*compile-verbose* nil))
@@ -1529,7 +1521,7 @@ ACL2 from scratch.")
   `(let ((ccl::*suppress-compiler-warnings* t))
      ,@forms)
 
-  #-(or allegro clisp ccl)
+  #-(or clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)
@@ -1588,7 +1580,9 @@ ACL2 from scratch.")
                               :direction :output)
                          (format str
                                  "~s"
-                                 :compiled))))
+                                 (if *suppress-compile-build-time*
+                                     :compile-skipped
+                                   :compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                       COMPILING and LOADING, PART 1
@@ -1606,10 +1600,9 @@ ACL2 from scratch.")
 ; NOTE: In order to compile ACL2, checks must first be run on the suitability
 ; of the underlying Common Lisp implementation, by executing
 ; (check-suitability-for-acl2).  Successful compilation should write out file
-; *acl2-status* with the symbol :COMPILED.
-
-; Compiling is a no-op if *suppress-compile-build-time* is non-nil, but we
-; still write :COMPILED as indicated above.
+; *acl2-status* with the symbol :COMPILED unless *suppress-compile-build-time*
+; is non-nil, in which case we skip compilation and write :COMPILE-SKIPPED
+; instead.
 
 (defvar *lisp-extension* "lisp")
 
@@ -2260,12 +2253,13 @@ You are using version ~s.~s.~s."
    (unless (and (probe-file *acl2-status-file*)
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
-                                (eq (read str nil)
+                                (member (read str nil)
 
 ; This check is insufficient to avoid running the check twice, but that's OK.
 ; See the comment about ":CHECKED" in check-suitability-for-acl2.
 
-                                    :compiled)))
+                                        '(:compiled
+                                          :compile-skipped))))
      (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit
@@ -2343,15 +2337,15 @@ You are using version ~s.~s.~s."
               )
        do
        (si::allocate-growth type 1 10 50 2)))
-    (cond
-     ((or (not (probe-file *acl2-status-file*))
-          (with-open-file (str *acl2-status-file*
-                               :direction :input)
-                          (not (member (read str nil)
-                                       '(:compiled :initialized)))))
-      (error "Please compile ACL2 using ~s, which will write~%~
-              the token :COMPILED to the file acl2-status.txt."
-             '(compile-acl2))))
+    (when (or (not (probe-file *acl2-status-file*))
+              (with-open-file (str *acl2-status-file*
+                                   :direction :input)
+                (not (member (read str nil)
+                             '(:compiled :compile-skipped :initialized)))))
+      (error "Please run ~s, which will write the token ~s to the file ~
+              acl2-status.txt."
+             '(compile-acl2)
+             (if *suppress-compile-build-time* :COMPILED :COMPILE-SKIPPED)))
     (let ((*readtable* *acl2-readtable*)
           (extension (if *suppress-compile-build-time*
                          *lisp-extension*

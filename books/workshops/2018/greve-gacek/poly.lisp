@@ -1,11 +1,11 @@
-;; 
+;;
 ;; Copyright (C) 2018, Rockwell Collins
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
-;; 
-;; 
+;;
+;;
 (in-package "ACL2")
 (include-book "coi/quantification/quantification" :dir :system)
 (include-book "coi/util/deffix" :dir :system)
@@ -107,7 +107,6 @@
 (theory-invariant (incompatible (:definition pair-list-equiv$inline)
                                 (:rewrite equal-pair-list-fix-to-pair-list-equiv)))
 
-(in-theory (disable CONS-OF-VARID-FIX-X-NORMALIZE-CONST-UNDER-VARID-LIST-EQUIV))
 ;;(in-theory (disable CONS-OF-WF-BINDING-FIX-X-NORMALIZE-CONST-UNDER-ENV-TYPE-EQUIV))
 
 (defthm car-pair-list-fix
@@ -358,14 +357,14 @@
          (varid-p a))
         (list::memberp a (PAIR-LIST-KEYS poly)))
        :rule-classes (:forward-chaining :rewrite))
-     
+
      (defthm equal-boolean-reduction
        (implies
         (booleanp x)
         (iff (equal x y)
              (and (booleanp y)
                   (iff x y)))))
-     
+
      (defthm varid-p-from-membership
        (implies
         (and
@@ -385,9 +384,9 @@
   (iff (list::memberp a (pair-list-nz-keys x))
        (and (list::memberp a (pair-list-keys x))
             (not (equal (get-coeff a x) 0)))))
- 
+
 (defthm member-pair-list-nz-keys-implication
-  (implies 
+  (implies
    (list::memberp a (pair-list-nz-keys x))
    (and (list::memberp a (pair-list-keys x))
         (not (equal (get-coeff a x) 0))))
@@ -402,7 +401,7 @@
 (defthm zero-property-of-non-membership
   (implies
    (not (list::memberp (varid-fix a) (pair-list-nz-keys list)))
-   (equal (get-coeff a list) 
+   (equal (get-coeff a list)
           0)))
 
 (defthm empty-nz-keys-implies-get-coeff-zero
@@ -420,8 +419,19 @@
 
 (defrefinement pair-list-both-equiv pair-list-nz-key-equiv)
 (defcong pair-list-nz-key-equiv set-equiv-quant (pair-list-nz-keys x) 1)
+
+;; Mihir M. mod Nov. 2020: I disabled a whole bunch of rules that were causing
+;; this lemma to fail.
 (defrefinement pair-list-get-equiv pair-list-nz-key-equiv
-    :rule-classes (:refinement :forward-chaining))
+  :rule-classes (:refinement :forward-chaining)
+  :hints (("Goal"
+           :in-theory (disable
+                       (:congruence pair-list-get-equiv-1-implies-equal-keep-nz-keys)
+                       (:definition pair-list-nz-keys)
+                       (:definition synp)
+                       (:meta *meta*-beta-reduce-hide)
+                       (:rewrite memberp-keep-nz-keys)
+                       (:rewrite set-equiv-quant-by-multiplicity)))))
 
 (encapsulate
  ()
@@ -471,7 +481,7 @@
     ()
 
   (local (in-theory (enable member-pair-list-nz-keys)))
-  
+
   (local
    (defthm varid-p-from-membership
      (implies
@@ -494,32 +504,32 @@
     ()
 
   ;; --------------------------------------------------------------------------
-  
+
   (def::un exists-nz-key (list)
     (declare (xargs :signature ((t) booleanp)
                     :guard (pair-listp list)
                     :congruence ((pair-list-get-equiv) equal)))
     (consp (pair-list-nz-keys list)))
-  
+
   (defthm no-keys-impact
     (implies
      (not (exists-nz-key list))
      (set-equiv-quant (pair-list-nz-keys list) nil)))
 
   ;; --------------------------------------------------------------------------
-  
+
   (def::un nz-key-count (list)
     (declare (xargs :signature ((t) natp)
                     :congruence ((pair-list-get-equiv) equal)))
     (set-size (pair-list-nz-keys list)))
-  
+
   (defthm nz-key-count-drop-varid
     (equal (nz-key-count (drop-varid varid list))
            (if (list::memberp (varid-fix varid) (pair-list-nz-keys list))
                (1- (nz-key-count list))
              (nz-key-count list))))
 
-  
+
   ;; --------------------------------------------------------------------------
 
   (def::un next-nz-key (list)
@@ -527,15 +537,15 @@
                     :guard (pair-listp list)))
     (if (not (exists-nz-key list)) (varid-witness)
       (car (pair-list-nz-keys list))))
-  
+
   (defthm exists-nz-key-implies-next-key-memberp
     (implies
      (exists-nz-key list)
      (list::memberp (next-nz-key list) (pair-list-nz-keys list)))
     :rule-classes (:rewrite :forward-chaining))
-  
+
   ;; --------------------------------------------------------------------------
-  
+
   (defthm nz-key-count-drop-next-nz-key
     (implies
      (exists-nz-key list)
@@ -545,9 +555,9 @@
   (in-theory (disable next-nz-key))
   (in-theory (disable nz-key-count))
   (in-theory (disable exists-nz-key))
-  
+
   ;; --------------------------------------------------------------------------
-  
+
   )
 
 (in-theory (enable varid-p-implies))
@@ -581,13 +591,13 @@
         (list::memberp v list)
         (equal (>=all a list)
                (and (>= (varid-fix a) (varid-fix v)) (>=all a (remove-equal v list))))))
-     
+
      (defun >=all-induction2 (x y)
        (declare (xargs :measure (len x)))
        (if (not (consp x)) (list x y)
          (>=all-induction2 (remove-equal (car x) x)
                            (remove-equal (car x) y))))
-     
+
      (defthm memberp-cong
        (implies
         (and
@@ -595,7 +605,7 @@
          (list::memberp a x))
         (list::memberp a y))
        :rule-classes (:forward-chaining))
-     
+
      ))
 
   ;; I bet this is easier with pick-a-point ..
@@ -608,7 +618,7 @@
     :hints (("Goal" :induct (>=all-induction2 x y))))
 
   )
-  
+
 (defthm >=all-member
   (implies
    (and
@@ -769,7 +779,7 @@
  )
 
 (defthm >-all-is-greater-than-members-hyps
-  (implies 
+  (implies
    (and
     (list::memberp a list)
     (varid-listp list)
@@ -830,7 +840,7 @@
        (implies
         (>-all x list)
         (>=all x list)))
-     
+
      (def::signature remove-equal (t varid-listp) varid-listp)
 
      ))
@@ -887,7 +897,7 @@
         (case-split (not (equal varid (car list))))
         (equal (car (remove-equal varid list))
                (car list))))
-     
+
      (defthm member-over-remove-equal
        (implies
         (and
@@ -895,7 +905,7 @@
          (not (equal a b)))
         (list::memberp a (remove-equal b list)))
        :rule-classes ((:forward-chaining :trigger-terms ((remove-equal b list)))))
-     
+
      ))
 
   (defthm open-largest-varid-on-memberp
@@ -948,7 +958,7 @@
    (list::memberp (largest-varid x) x))
   :rule-classes (:rewrite (:forward-chaining :trigger-terms ((largest-varid x)))))
 
-;; ----------------------------------------------------------------------           
+;; ----------------------------------------------------------------------
 
 (def::un largest-nz-varid (x)
   (declare (xargs :signature ((t) varid-p)
@@ -980,12 +990,6 @@
 
 ;; ----------------------------------------------------------------------
 
-(in-theory 
- (disable 
-  cons-of-pair-fix-x-normalize-const-under-pair-list-equiv
-  cons-of-wf-binding-fix-x-normalize-const-under-env-fix-equiv
-  ))
-
 (def::un sum-rlist (x)
   (declare (xargs :signature ((t) rationalp)))
   (if (not (consp x)) 0
@@ -1013,7 +1017,7 @@
   (local (defun list-equiv-hyps () nil))
   (local (defun list-equiv-left () nil))
   (local (defun list-equiv-right () nil))
-  
+
   (defthm list-equiv-multiplicity-constraint
     (implies
      (list-equiv-hyps)
@@ -1038,14 +1042,14 @@
               (equal (nth (list-equiv-bad-guy x y) x)
                      (nth (list-equiv-bad-guy x y) y))))
     :hints (("Goal" :in-theory (enable nth)))))
-  
+
  (defthm list-equiv-by-multiplicity-driver
    (implies (list-equiv-hyps)
             (list-equiv (list-equiv-left) (list-equiv-right)))
    :rule-classes nil
    :hints (("Goal" :use (:instance list-equiv-multiplicity-constraint
                                    (arbitrary-index (list-equiv-bad-guy (list-equiv-left) (list-equiv-right)))))))
- 
+
  (ADVISER::defadvice ADVISER::list-equiv-by-multiplicity
    (implies (list-equiv-hyps)
             (list-equiv (list-equiv-left) (list-equiv-right)))
@@ -1062,7 +1066,7 @@
     ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
-  
+
   (def::un eval-pair (pair env)
     (declare (xargs :signature ((t t) rationalp)
                     :congruence ((pair-equiv env-equiv) equal)))
@@ -1204,7 +1208,7 @@
       (iff (equal x y)
            (and (booleanp y)
                 (iff x y))))))
-   
+
   (defthmd open-set-equiv-quant-on-memberp
     (implies
      (list::memberp a x)
@@ -1223,7 +1227,7 @@
                              (a hide)
                              (x (remove-equal a x))
                              (y (remove-equal a y))))))
-  
+
   )
 
 (defun removex (a list)
@@ -1284,7 +1288,7 @@
     ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
-  
+
   (defthm eval-pair-list-aux-drop-varid
     (implies
      (varid-listp list)
@@ -1313,11 +1317,11 @@
 ;;          (consp x))
 ;;         (consp y))
 ;;        :rule-classes (:forward-chaining))
-     
+
 ;;      (defthm beta
 ;;        (set-equiv-quant (set-fix x) x)
 ;;        :rule-classes ((:forward-chaining :trigger-terms ((set-fix x)))))
-     
+
 ;;      ))
 
 ;;   (def::un eval-pair-list-aux (keys poly env)
@@ -1379,7 +1383,7 @@
          (eval-pair-list y env)))
 
 (defun-sk eval-pair-list-equiv-bad-guy (p1 p2)
-  (exists (env) 
+  (exists (env)
           (not (equal (eval-pair-list p1 env)
                       (eval-pair-list p2 env)))))
 
@@ -1419,7 +1423,7 @@
                          (remove-equal (varid-fix varid) (pair-list-nz-keys y))
                        (cons (varid-fix varid) (pair-list-nz-keys y))))
     :hints (("Goal" :in-theory (enable pair-list-nz-keys set-coeff))))
-  
+
   (defthm eval-pair-list-aux-set-coeff
     (implies
      (varid-listp list)
@@ -1436,7 +1440,7 @@
      (implies
       (list::memberp a list)
       (set-equiv-quant (cons a list) list))))
-  
+
   (defthm eval-pair-list-set-coeff
     (equal (eval-pair-list (set-coeff varid value y) env)
            (+ (eval-pair-list y env)
@@ -1465,7 +1469,7 @@
     :keywords nil
     :skip nil
     )
-  
+
   (defequiv+ (list::memberp a x)
     :pred    memberp-upper-bound-pred
     :equiv   memberp-upper-bound-equiv
@@ -1500,7 +1504,7 @@
            (y (equal b (set-upper-bound-ctx y))))
     :skip nil
     )
-  
+
   ;; --------------------------------------------------------------
 
   (defthm memberp-member-upper-bound-backchaining-subset
@@ -1523,14 +1527,14 @@
       (bind-contextp (x (equal max (set-upper-bound-ctx x))))
       (double-rewrite (not (list::memberp a max))))
      (not (list::memberp a x))))
-  
+
   (defthm subset-p-upper-bound-backchaining
     (implies
      (and
       (bind-contextp (x (equal max (set-upper-bound-ctx x))))
       (force (double-rewrite (subset-p max z))))
      (subset-p x z)))
-  
+
   (defthm >-all-upper-bound-backchaining
     (implies
      (and
@@ -1548,28 +1552,28 @@
   (local
    (encapsulate
        ()
-     
+
      (defun foo (x)
        (if (< (ifix x) 100) '(a b c) nil))
-     
+
      (defthm set-upper-bound-foo-driver
        (set-upper-bound-equiv (foo x) '(a b c)))
-     
+
      (in-theory (disable foo))
-     
+
      (defthm set-upper-bound-append-foo-1
        (subset-p (append (foo x) (foo y) (foo z))
                  '(a b c))
        :rule-classes nil)
-     
+
      (defthm set-upper-bound-append-foo-2
        (subset-p (append (foo x) (foo y) (foo z))
                  '(a b c))
        :hints (("Goal" :in-theory (disable SUBSET-P-BY-MULTIPLICITY ADVISER::SUBSET-P-BY-MULTIPLICITY)))
        :rule-classes nil)
-     
+
      ))
-  
+
   )
 
 ;; ------------------------------------------------------------
@@ -1776,7 +1780,7 @@
                   :congruence ((poly-type-equiv poly-type-equiv) equal)))
   (let ((p1 (poly-fix! p1))
         (p2 (poly-fix! p2)))
-    (poly 
+    (poly
      (+ (get-poly-constant p1)
         (get-poly-constant p2))
      (add-pair-list (poly->coeff p1)
@@ -1873,7 +1877,7 @@
   (defthm get-coeff-mul-pair-list
     (equal (get-coeff varid (mul-pair-list c poly))
            (* (rfix c) (get-coeff varid poly))))
-  
+
   (defthm eval-pair-list-mul
     (equal (eval-pair-list (mul-pair-list c poly) env)
            (* (rfix c) (eval-pair-list poly env))))
@@ -2006,7 +2010,7 @@
 ;;   (declare (xargs :signature ((one-var-poly-p) natp)))
 ;;   (let ((pair (car x)))
 ;;     (pair-varid pair)))
-  
+
 ;; =========================================
 
 ;; -------------------------------------------------------------------------
@@ -2069,7 +2073,7 @@
   :hints (("Goal" :do-not-induct t
            :in-theory (enable PAIR-LIST-NZ-KEYS
                               SET-INSERT
-                              EVAL-PAIR-LIST 
+                              EVAL-PAIR-LIST
                               eval-poly))))
 
 (def::type+ bound-poly-p (term)

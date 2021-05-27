@@ -1007,7 +1007,7 @@ records book.  See @(see def-typed-record).</p>")
 
     `(with-output
        :off (event acl2::prove)
-       :summary (acl2::form time)
+       :summary-off (:other-than acl2::form time)
        (encapsulate
          ()
 

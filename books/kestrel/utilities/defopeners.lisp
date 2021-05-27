@@ -1,6 +1,6 @@
 ; A utility to build "opener" rules
 ;
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,13 +13,15 @@
 ;; This book contains a utility for making opener rules for recursive
 ;; functions.  Using such rules can be faster and more predictable than relying
 ;; on ACL2's heuristics to decide whether to open calls to recursive functions.
-;; Opener rules are also used by the Axe tool, which lacks such heuristics, for
-;; which they help to avoid rewrite loops.
+;; (Opener rules are also used by the Axe tool, which lacks such heuristics, for
+;; which they help to avoid rewrite loops.)  Essentially, one opener rule is
+;; produced for each top-level IF branch in the function (where an IF branch
+;; can be considered top-level even if there are lambdas around it).
 
 ;; Unlike the tool in books/misc/defopener, this one doesn't do any
 ;; simplification.
 
-;; Terminology: The "opener" rules for a function inclide the "unroll" rules
+;; Terminology: The "opener" rules for a function include the "unroll" rules
 ;; and the "base case" rules.
 
 ;; TODO: handle ignored let-bound params
@@ -228,6 +230,7 @@
 ;fixme think this through
 ;claim is a nest of implies bottoming out in an (equal <function-call> <body>) where <body> and the conditions of the implies may already have lambdas wrapped around them?
 ;the point of this is that we don't want to wrap the function call buried deep in the equality
+;; TOOD: A nest of implies may no longer be possible here.
 (defun wrap-lambda-around-claim (claim lambda-formals lambda-actuals)
   (declare (xargs :guard (and (pseudo-termp claim)
                               (pseudo-term-listp lambda-actuals)
@@ -319,12 +322,12 @@
         (make-unroll-and-base-claims-aux (farg3 term) fns fn-call)
         (if (and (not base-claims1) (not base-claims2))
             ;; no base cases in either branch, so the IF is irrelevant, and this whole branch is an -unroll theorem
-            (mv nil ;empty-list
+            (mv nil ; no base-claims
                 (list `(equal ,fn-call ,term)))
           (if (and (not unroll-claims1) (not unroll-claims2))
               ;; no recursive calls in either branch, so the IF is irrelevant, and this whole branch is a -base theorem
               (mv (list `(equal ,fn-call ,term))
-                  nil ;;empty-list
+                  nil ; no unroll-claims
                   )
             (mv (append (add-hyp-to-claims (farg1 term) base-claims1) ;; the claims from the then-branch get the IF test as a hyp
                         (add-hyp-to-claims `(not ,(farg1 term)) base-claims2)) ;; the claims from the else-branch get the negated IF test as a hyp
@@ -339,31 +342,31 @@
               (lambda-actuals (fargs term)))
           ;; FIXME: Think about this:  If there is a recursive call in one of the args, we just consider the whole term a recursive case:
           (if (some-expr-calls-some-fn fns lambda-actuals)
-              (mv nil ;empty-list
+              (mv nil ; no base-claims
                (list `(equal ,fn-call ,term)))
             (mv-let
              (base-claims unroll-claims)
              (make-unroll-and-base-claims-aux lambda-body fns fn-call)
              (if (not base-claims)
                  ;; no base cases, so this whole branch is an -unroll theorem
-                 (mv nil ;empty-list
+                 (mv nil ; no base-claims
                   (list `(equal ,fn-call ,term)))
                (if (not unroll-claims)
                    ;; no recursive calls, so this whole branch is a -base theorem
                    (mv (list `(equal ,fn-call ,term))
-                       nil ;empty-list
+                       nil ; no unroll-claims
                        )
                  (mv (wrap-lambda-around-claims base-claims lambda-formals lambda-actuals)
                      (wrap-lambda-around-claims unroll-claims lambda-formals lambda-actuals)))))))
 
-      ;; not and IF or LET:
+      ;; not an IF or LET:
       (if (expr-calls-some-fn fns term)
           ;; a recursive case, so make an unroll rule:
-          (mv nil ;empty-list
+          (mv nil ; no base-claims
               (list `(equal ,fn-call ,term)))
         ;; a base case, so make a base case rule:
         (mv  (list `(equal ,fn-call ,term))
-             nil ;empty-list
+             nil ; no unroll-claims
              )))))
 
 (defthm true-listp-of-mv-nth-0-of-make-unroll-and-base-claims-aux
@@ -412,16 +415,12 @@
            (claim (clean-up-hyps-in-claim claim)))
       (cons `(,(if disable 'defthmd 'defthm)
               ,(if (> totalnum 1)
-                   (intern-in-package-of-symbol (symbol-name (pack$ defthmnameprefix '- (nat-to-string num))) defthmnameprefix)
+                   (add-suffix defthmnameprefix (concatenate 'string "-" (nat-to-string num)))
                  defthmnameprefix)
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(intern-in-package-of-symbol (symbol-name (pack$ fn '$not-normalized)) fn)
-;,@(0-ary-executable-counterpart-theory state)
-                                                    ;;TODO: These are not 0-ary but still get expanded:
-;illegal hard-error ;can be turned into nil during function normalization (fixme think about using the normalized body?)
-                                                    )
+                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
             (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
 
@@ -430,21 +429,20 @@
                   :guard (and (natp num)
                               (natp totalnum)
                               (symbolp fn)
-                              (true-listp claims)
+                              (pseudo-term-listp claims)
                               (symbolp defthmnameprefix))))
   (if (endp claims)
       nil
-    (let ((claim (first claims)))
-      (cons `(,(if disable 'defthmd 'defthm) ,(if (> totalnum 1)
-                                                  (intern-in-package-of-symbol (symbol-name (pack$ defthmnameprefix '- (nat-to-string num))) defthmnameprefix)
-                                                defthmnameprefix)
+    (let* ((claim (first claims))
+           (claim (clean-up-hyps-in-claim claim)))
+      (cons `(,(if disable 'defthmd 'defthm)
+              ,(if (> totalnum 1)
+                   (add-suffix defthmnameprefix (concatenate 'string "-" (nat-to-string num)))
+                 defthmnameprefix)
               ,claim
               :hints (("Goal" ;:in-theory (enable ,fn)
                        :expand ((,fn ,@formals))
-                       :in-theory (union-theories '(,(intern-in-package-of-symbol (symbol-name (pack$ fn '$not-normalized)) fn)
-;,@(0-ary-executable-counterpart-theory state)
-;illegal hard-error ;can be turned into nil during function normalization (fixme think about using the normalized body?
-                                                    )
+                       :in-theory (union-theories '(,(add-suffix fn "$NOT-NORMALIZED"))
                                                   (theory 'minimal-theory)))))
             (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable state)))))
 
@@ -502,6 +500,7 @@
                               (symbolp existing-symbol))))
   (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
 
+;; Returns (mv event generated-names).
 (defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil
@@ -513,7 +512,7 @@
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals))
       (b* ((base-claims (add-hyps-to-claims hyps base-claims))
            (unroll-claims (add-hyps-to-claims hyps unroll-claims))
-           (base-theorems-name-root (pack$ fn '-base))
+           (base-theorems-name-root (pack$ fn '-base)) ;todo: use add-suffix to get this in the same package as fn?  also below...
            (base-theorems-name-root (if suffix
                                         (pack$ base-theorems-name-root suffix)
                                       base-theorems-name-root))
@@ -533,28 +532,33 @@
                                                   fn formals disable state))
            (base-theorem-names (strip-cadrs base-theorems))
            (unroll-theorem-names (strip-cadrs unroll-theorems))
-           ;;TODO: Elide the hints even when we print?
            (- (and verbose
                    (progn$ (cw "Base theorems for ~x0:~%" fn)
                            (cw-theorems base-theorems)
                            (cw "Unroll theorems for ~x0:~%" fn)
                            (cw-theorems unroll-theorems)))))
-        `(progn (encapsulate ()
+        (mv `(progn (encapsulate ()
                   (local (install-not-normalized ,fn))
                   (set-ignore-ok t)
                   ,@base-theorems
                   ,@unroll-theorems)
-                (value-triple ',(append base-theorem-names unroll-theorem-names)))))))
+                    (value-triple ',(append base-theorem-names unroll-theorem-names)))
+            (append base-theorem-names unroll-theorem-names))))))
 
 ;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
 
-;for non-mut-rec
+;for non-mut-rec.  Returns an event.
+;; KEEP IN SYNC WITH DEFOPENERS-NAMES-FN.
 (defun defopeners-fn (fn hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
-  (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (declare (ignore names))
+    event))
 
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
+;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
 (defmacro defopeners (fn &key
                          (hyps 'nil)
                          (disable 'nil)
@@ -565,11 +569,36 @@
    (if (member-eq verbose '(t 't)) t nil) ;verbose
    `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
 
+;for non-mut-rec.  Returns a list of names
+;; KEEP IN SYNC WITH DEFOPENERS-FN.
+(defun defopeners-names-fn (fn hyps disable suffix verbose state)
+  (declare (xargs :stobjs state
+                  :verify-guards nil))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (declare (ignore event))
+    names))
+
+;; Returns the list of theorem names that defopeners would introduce.
+;; KEEP IN SYNC WITH DEFOPENERS.
+(defmacro defopeners-names (fn &key
+                               (hyps 'nil)
+                               (disable 'nil)
+                               (verbose 'nil)
+                               (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
+                               )
+  `(defopeners-names-fn ',fn ',hyps ',disable ',suffix ',verbose state))
+
+;; Returns an event
 (defun defopeners-mut-rec-fn (fn hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
-  (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state)
+    (declare (ignore names))
+    event))
 
+;; TODO: Add defopeners-mut-rec-name, like defopeners-names.
 ;TODO: Call control-screen-output here, as above?
 ;TODO: Combine this with the non-mut-rec version (query the world to check whether it's a mut rec and what the other functions are)
 (defmacro defopeners-mut-rec (fn &key

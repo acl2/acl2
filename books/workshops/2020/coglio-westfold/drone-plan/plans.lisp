@@ -18,8 +18,6 @@
 
 (include-book "coi/adviser/adviser" :dir :system)
 
-(local (include-book "kestrel/lists-light/top" :dir :system))
-
 
 (in-theory (enable subsequencep-equal-subsetp-equal no-duplicatesp-equal))
 

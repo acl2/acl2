@@ -10,6 +10,9 @@
 
 (in-package "SMAN")
 
+; Matt K.: Avoid ACL2(p) error (type error during hons-copy)
+(set-waterfall-parallelism nil)
+
 (set-state-ok t)
 
 (defmacro hlist (&rest x) (xxxjoin 'hons (append x '(nil))))

@@ -174,6 +174,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
 (include-book "tools/rewrite-dollar" :dir :system)
+(include-book "tools/open-trace-file-bang" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
@@ -247,6 +248,7 @@
 (include-book "centaur/memoize/old/watch" :dir :system)
 
 (include-book "acl2s/doc" :dir :system)
+(include-book "projects/smtlink/top" :dir :system :ttags :all)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
@@ -618,4 +620,3 @@
 
 (collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
 ||#
-

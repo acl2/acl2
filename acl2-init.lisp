@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -864,8 +864,7 @@ implementations.")
                                    "parallel-raw.lisp"
                                    "serialize-raw.lisp")))))
 
-(defvar *saved-build-date-lst*)
-(defvar *saved-mode*)
+(defvar *saved-build-date-lst* nil)
 
 (defun git-commit-hash (&optional quiet)
   (multiple-value-bind
@@ -887,60 +886,44 @@ implementations.")
            to a message to use in its place, or set it to NONE if you simply~%~
            want to avoid this error."))
     (cond ((and s (string-equal s "NONE"))
-           " +~71t+")
+           (format nil "~% +~72t+"))
           ((and s (not (equal s "")))
            (format nil
-                   " + (Note from the environment when this executable was ~
-                    saved:~71t+~% +  ~a)~71t+"
+                   "~% +   (Note from the environment when this executable was ~
+                    saved:~72t+~% +    ~a)~72t+"
                    s))
           (t (let ((h (git-commit-hash t)))
                (cond (h
                       (format nil
-                              " + (Git commit hash: ~a)~71t+"
+                              "~% +   (Git commit hash: ~a)~72t+"
                               h))
                      (t (error err-string var))))))))
 
-(defconstant *acl2-snapshot-string*
+(defvar *acl2-release-p*
 
 ; Notes to developers (users should ignore this!):
 
-;   (1) Replace the value below by "" when making a release.
-;       (Just query-replace control-j by control-j followed by `;'.)
+;   (1) Replace the value below by t when making a release, then to nil after a
+;       release.
 
-;   (2) More generally, see UT file
+;   (2) More generally, see UT CS file
 ;       /projects/acl2/devel-misc/release.cmds
 ;       for release instructions.
 
-; Temporarily, for a release:
-; ""
-
-; Normally:
-
-  (format
-   nil
-   "
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
-~a
- + On rare occasions development snapshots may be incomplete, fragile, +
- + or unable to pass the usual regression tests.                       +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"
-   (acl2-snapshot-info))
-  )
+  nil)
 
 (defvar *saved-string*
   (concatenate
    'string
-   "~% ~a built ~a.~
-    ~% Copyright (C) 2020, Regents of the University of Texas"
-   "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
-    ~% are welcome to redistribute it under certain conditions.  For details,~
-    ~% see the LICENSE file distributed with ACL2.~%"
-
-   *acl2-snapshot-string*
-
-   "~a"
+   "~% ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+   "~% + ~a~72t+"
+   "~% +   built ~a.~72t+"
+   (acl2-snapshot-info)
+   "~% + Copyright (C) 2021, Regents of the University of Texas.~72t+"
+   "~% + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and~72t+"
+   "~% + you are welcome to redistribute it under certain conditions.  For~72t+"
+   "~% + details, see the LICENSE file distributed with ACL2.~72t+"
+   "~% ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++~%"
 
 ; Here, we formerly printed "Includes support for hash cons, memoization, and
 ; applicative hash tables."  Now that ACL2(c) is deprecated, we have decided
@@ -952,10 +935,7 @@ implementations.")
     ~% even eliminated in future releases.~%"
    #+acl2-par
    "~%~% Experimental modification for parallel evaluation.  Please expect at~
-    ~% most limited maintenance for this version~%"
-   "~% See the documentation topic ~a for recent changes."
-   "~% Note: We have modified the prompt in some underlying Lisps to further~
-    ~% distinguish it from the ACL2 prompt.~%"))
+    ~% most limited maintenance for this version~%"))
 
 (defun maybe-load-acl2-init ()
   (let* ((home (our-user-homedir-pathname))
@@ -988,13 +968,27 @@ implementations.")
 
 (defmacro our-with-standard-io-syntax (&rest args)
 
+; See comment about SBCL below.
+
 ; Note for GCL:
 ; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
 ; GCL.
 
-  (cons #-cltl2 'progn
-        #+cltl2 'with-standard-io-syntax
-        args))
+  #-cltl2
+  (cons 'progn args)
+
+  #+(and cltl2 (not sbcl))
+  (cons 'with-standard-io-syntax args)
+
+; For sbcl we bind *print-readably* to nil.  Otherwise, there is a problem with
+; the call of write-exec-file in save-acl2-in-sbcl-aux: write-exec-file uses
+; our-with-standard-io-syntax, which (without the fix below) has caused the
+; printing of variable PROG (using format directive ~s) to produce not a
+; string, but rather, a structure like this: #A((62) BASE-CHAR . "<string>").
+  #+(and cltl2 sbcl)
+  `(with-standard-io-syntax
+    (let ((*print-readably* nil))
+      ,@args)))
 
 (defun user-args-string (inert-args &optional (separator '"--"))
 
@@ -1192,7 +1186,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 #+akcl
 (defun save-acl2-in-akcl (sysout-name gcl-exec-name
                                       &optional mode do-not-save-gcl)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (setq *acl2-allocation-alist*
 
 ; If *acl2-allocation-alist* is rebound before allocation is done in
@@ -1444,9 +1438,20 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 (defvar *lp-ever-entered-p* nil)
 
-(defun acl2-default-restart ()
+(defun acl2-version+ ()
+  (format nil "~a~a"
+          *copy-of-acl2-version*
+          (cond
+           (*acl2-release-p* "")
+           (t (format nil "+ (a development snapshot based on ~a)"
+                      *copy-of-acl2-version*)))))
+
+(defun acl2-default-restart (&optional called-by-lp)
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
+  #+cmu
+  (when *print-startup-banner*
+    (extensions::print-herald t))
   (let (#+hons (produced-by-save-exec-p *lp-ever-entered-p*))
     (proclaim-optimize) ; see comment in proclaim-optimize
     (setq *lp-ever-entered-p* nil)
@@ -1497,13 +1502,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     (when *print-startup-banner*
       (format t
               *saved-string*
-              *copy-of-acl2-version*
-              (saved-build-dates :terminal)
-              (cond (*saved-mode*
-                     (format nil "~% Initialized with ~a." *saved-mode*))
-                    (t ""))
-              (eval '(latest-release-note-string)) ; avoid possible warning
-              ))
+              (acl2-version+)
+              (saved-build-dates :terminal)))
     (maybe-load-acl2-init)
     (eval `(in-package ,*startup-package-name*))
 
@@ -1514,17 +1514,20 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     #+allegro (rplacd (assoc 'tpl::*saved-package*
                              tpl:*default-lisp-listener-bindings*)
                       'common-lisp:*package*)
-    #+allegro (lp)
-    #+lispworks (lp)
-    #+ccl (eval '(lp)) ; using eval to avoid compiler warning
-
     (setq *acl2-default-restart-complete* t)
+    (when (not called-by-lp)
+
+; GCL handles (lp) using si::*top-level-hook*.
+; CLISP handles (lp) via write-acl2rc.
+
+      #+allegro (lp)
+      #+lispworks (lp)
+      #+ccl (eval '(lp)) ; using eval to avoid compiler warning
+      )
     nil))
 
 #+cmu
 (defun cmulisp-restart ()
-  (when *print-startup-banner*
-    (extensions::print-herald t))
   (acl2-default-restart)
   (lp))
 
@@ -1536,7 +1539,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+lucid
 (defun save-acl2-in-lucid (sysout-name &optional mode)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (user::disksave sysout-name :restart-function 'acl2-default-restart
                   :full-gc t))
 
@@ -1646,7 +1649,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+lispworks
 (defun save-acl2-in-lispworks (sysout-name mode eventual-sysout-name)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (if (probe-file "worklispext")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
@@ -1700,10 +1703,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; probably later), which has the correct path (doesn't need "lisp" appended).
 
                          ((equal (subseq prog1 (- len 4) len) "bin/")
-                          (concatenate 'string prog1 "lisp"))
+                          (our-truename (concatenate 'string prog1 "lisp") t))
                          ((equal (subseq prog1 (- len 3) len) "bin")
-                          (concatenate 'string prog1 "/lisp"))
-                         (t prog1))))
+                          (our-truename (concatenate 'string prog1 "/lisp") t))
+                         (t (our-truename prog1 t)))))
        (write-exec-file str
                         ("~a"
                          (if use-thisscriptdir-p *thisscriptdir-def* ""))
@@ -1748,7 +1751,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+cmu
 (defun save-acl2-in-cmulisp (sysout-name &optional mode core-name)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (if (probe-file "worklispext")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
@@ -1916,7 +1919,26 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
             (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
       (str sysout-name :direction :output)
-      (let* ((prog (car sb-ext:*posix-argv*)))
+      (let ((prog
+
+; This is the program that will be invoked when starting ACL2.  We prefer an
+; absolute pathname, rather than just "sbcl" or a relative pathname, so that
+; ACL2 is invoked successfully even by those for whom "sbcl" points elsewhere
+; (because of a different PATH).  At one point, between Versions 8.3 and 8.4,
+; we applied our-truename to (car sb-ext:*posix-argv*).  But Andrew Walter
+; reported a problem on 4/30/2021 (GitHub Issue #1254) that was due to nil
+; being returned by that our-truename call, because (car sb-ext:*posix-argv*)
+; is "sbcl" in his environment.  He suggested using undocumented SBCL global
+; sb-ext:*runtime-pathname*, and we took that suggestion.
+
+             (or (our-truename sb-ext:*runtime-pathname* t)
+
+; If somehow the value above is nil, then we go with the called program.  We
+; avoid calling our-truename in that case, since if "make LISP=sbcl" invokes a
+; different sbcl than ./sbcl because "." is not at the front of the PATH at
+; build time, then (our-truename "sbcl" t) would return the wrong path.
+
+                 (car sb-ext:*posix-argv*))))
         (write-exec-file
          str
          ("~a~a~%"
@@ -1950,8 +1972,19 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; Example:
 ; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
 
-         "~s --dynamic-space-size ~s --control-stack-size 64 ~
-          --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
+; On October 9, 2020 we added --tls-limit 8192, because certification of
+; community book books/kestrel/apt/schemalg-template-proofs.lisp failed with
+; ACL2 built on SBCL.  The error was "Thread local storage exhausted", which we
+; apparently indicates too many special variables.  The SBCL 1.5.2 release
+; notes say that "command-line option "--tls-limit" can be used to alter the
+; maximum number of thread-local symbols from its default of 4096".  We chose
+; 8192 because it was sufficient for the book above, but perhaps it can be
+; increased significantly more without bad effect (not sure).  But then in
+; March 2021, on a Mac, that same book again failed with the same error; so we
+; doubled the tls-limit.
+
+         "~s --tls-limit 16384 --dynamic-space-size ~s --control-stack-size ~
+          64 --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
           --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
          prog
          *sbcl-dynamic-space-size*
@@ -1973,8 +2006,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+sbcl
 (defun save-acl2-in-sbcl (sysout-name &optional mode core-name)
+  (declare (ignore mode))
   (with-warnings-suppressed
-   (setq *saved-mode* mode)
    (if (probe-file "worklispext")
        (delete-file "worklispext"))
    (with-open-file (str "worklispext" :direction :output)
@@ -2044,7 +2077,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ;         "~s -I ~s -L ~s ~s~%"
 
           "~s -I ~s~s ~a~%"
-          (system::command-line-argument 0)
+          (our-truename (system::command-line-argument 0) t)
           eventual-sysout-dxl
           (insert-string host-lisp-args)
           (user-args-string inert-args)))
@@ -2063,7 +2096,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; Note that dxl-name should, if supplied, be a relative pathname string, not
 ; absolute.
 
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (if (probe-file "worklispext")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
@@ -2148,7 +2181,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+clisp
 (defun save-acl2-in-clisp (sysout-name &optional mode mem-name)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (if (probe-file "worklispext")
       (delete-file "worklispext"))
   (with-open-file (str "worklispext" :direction :output)
@@ -2170,7 +2203,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
               (error "Unable to determine CCL program pathname!")))
          (os (get-os))
          (ccl-program (qfuncall pathname-os-to-unix
-                                ccl-program0
+                                (our-truename ccl-program0 t)
                                 os
                                 *the-live-state*))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
@@ -2277,7 +2310,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 #+ccl
 (defun save-acl2-in-ccl (sysout-name &optional mode core-name)
-  (setq *saved-mode* mode)
+  (declare (ignore mode))
   (load "openmcl-acl2-trace.lisp")
   (save-acl2-in-ccl-aux sysout-name core-name))
 
@@ -2312,12 +2345,6 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; for the Mac.
 
   (load-acl2 :load-acl2-proclaims *do-proclaims*)
-  (setq *saved-build-date-lst*
-
-; The call of eval below should avoid a warning in cmucl version 18d.  Note
-; that saved-build-date-string is defined in interface-raw.lisp.
-
-        (list (eval '(saved-build-date-string))))
   (eval mode)
   (princ "
 ******************************************************************************

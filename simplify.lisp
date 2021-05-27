@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4492,10 +4492,6 @@
 ; from some subset of the negations of literals of cl and ttree is fcd-free and
 ; tags the :FORWARD-CHAINING 'lemmas used and all parents (via 'pt tags).
 
-; Note: The type-alist returned assumes the falsity of every literal in
-; the clause and thus is not suitable for use by rewrite.  We return it
-; strictly for the use of setup-simplify-clause-pot-lst and bdd-clause.
-
 ; In reading the code below, read (fc-exit a b c ...) as though it
 ; were (mv a b c).  The stuff in ... is just used in the reporting.
 
@@ -4876,7 +4872,7 @@
 ;       (z-p x)))
 
 (defun rewrite-clause-type-alist (tail new-clause fc-pair-lst rcnst wrld
-                                       pot-lst pt)
+                                       pot-lst)
 
 ; We construct a type alist in which we assume (a) the falsity of every literal
 ; in tail except the first, (b) the falsity of every literal in new-clause, and
@@ -4903,32 +4899,31 @@
 ; we only put accessible assumptions in it -- but we don't.  We must record the
 ; ttrees because of the possible 'assumption tags.
 
-  (mv-let
-   (lits ttree-lst)
-   (select-forward-chained-concls-and-ttrees fc-pair-lst
-                                             (access rewrite-constant rcnst :pt)
-                                             nil nil)
-   (mv-let (current-clause current-ttree-lst)
+  (let ((pt (access rewrite-constant rcnst :pt)))
+    (mv-let
+      (lits ttree-lst)
+      (select-forward-chained-concls-and-ttrees fc-pair-lst pt nil nil)
+      (mv-let (current-clause current-ttree-lst)
 ; The ``smart'' approach was this:
 ;           (reorder-lits-and-ttrees-for-type-alist-clause new-clause nil
 ;                                                          (cdr tail) nil
 ;                                                          lits ttree-lst)
 ; See the essay above for explanations.
 
-           (mv (append new-clause (cdr tail) lits)
-               (make-list-ac (+ (len new-clause) (len (cdr tail)))
-                             nil
-                             ttree-lst))
-           (mv-let (contradictionp type-alist ttree)
-                   (type-alist-clause
-                    current-clause
-                    current-ttree-lst
-                    nil ; force-flg
-                    nil ; initial type-alist
-                    (access rewrite-constant rcnst :current-enabled-structure)
-                    wrld
-                    pot-lst pt)
-                   (mv contradictionp type-alist ttree current-clause)))))
+        (mv (append new-clause (cdr tail) lits)
+            (make-list-ac (+ (len new-clause) (len (cdr tail)))
+                          nil
+                          ttree-lst))
+        (mv-let (contradictionp type-alist ttree)
+          (type-alist-clause
+           current-clause
+           current-ttree-lst
+           nil          ; force-flg
+           nil          ; initial type-alist
+           (access rewrite-constant rcnst :current-enabled-structure)
+           wrld
+           pot-lst pt)
+          (mv contradictionp type-alist ttree current-clause))))))
 
 ; Historical Plaque on Forward Chaining
 
@@ -7275,8 +7270,7 @@
                                    fc-pair-lst
                                    local-rcnst
                                    wrld
-                                   simplify-clause-pot-lst
-                                   new-pts)
+                                   simplify-clause-pot-lst)
 
 ; Ttree0 is relevant only if we got a contradiction.
 

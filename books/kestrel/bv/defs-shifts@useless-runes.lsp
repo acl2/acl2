@@ -1,2 +1,2 @@
-(SHL)
-(SHR)
+(BVSHL)
+(BVSHR)

@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "../bv/bvchop")
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
 (local (include-book "../lists-light/cons"))
@@ -227,4 +227,16 @@
   (implies (< arg 0)
            (equal (bvchop-list arg lst)
                   (bvchop-list 0 lst)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm bvchop-list-of-true-list-fix
+  (equal (bvchop-list element-size (true-list-fix lst))
+         (bvchop-list element-size lst))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm equal-of-true-list-fix-and-bvchop-list-same
+  (implies (natp size)
+           (equal (equal (true-list-fix x)
+                         (bvchop-list size x))
+                  (all-unsigned-byte-p size x)))
   :hints (("Goal" :in-theory (enable bvchop-list))))

@@ -1,7 +1,7 @@
 ; Theorems about memberp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -194,6 +194,12 @@
               (memberp a y)))
   :hints (("Goal" :in-theory (enable memberp intersection-equal))))
 
+(defthm intersection-equal-when-memberp-and-memberp-same-iff
+  (implies (and (memberp a y) ;a is a free var
+                (memberp a x))
+           (intersection-equal x y))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
 (defthm memberp-of-union-equal
   (equal (memberp a (union-equal x y))
          (or (memberp a x)
@@ -300,3 +306,23 @@
   (equal (memberp a (add-to-set-equal x l))
          (or (equal a x)
              (memberp a l))))
+
+(defthm memberp-nth-of-self-helper
+  (implies (< n (len lst))
+           (equal (memberp (nth n lst) lst)
+                  (if (<= 0 n)
+                      t
+                    (consp lst)
+                    )))
+  :hints (("Goal" :in-theory (enable memberp))))
+
+(defthm memberp-nth-of-self
+  (equal (memberp (nth n lst) lst)
+         (if (<= 0 n)
+             (if (< n (len lst))
+                 t
+               (if (integerp n)
+                   (memberp nil lst)
+                 (consp lst))) ;clean this up?
+           (consp lst)))
+  :hints (("Goal" :in-theory (enable memberp ))))

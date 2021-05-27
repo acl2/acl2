@@ -2,7 +2,41 @@
 ; Written by Matt Kaufmann (with inspiration from Alessandro Coglio and Eric Smith)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; TODO and FIXME items to consider doing:
+(in-package "APT")
+
+;;; TABLE OF CONTENTS
+;;; -----------------
+;;; TODO and FIXME items to consider doing
+;;; Introductory remarks
+;;; Included books
+;;; Functions record (fnsr) structures
+;;; Generating names and lists containing names
+;;; Argument processing
+;;; Miscellaneous utilities
+;;; Handling hypotheses
+;;; Deal with whether simplification must take place
+;;; Rewriting
+;;; Return-last blockers
+;;; Simplifying a term
+;;; Additional main utilities
+;;; Putting it all together
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TODO and FIXME items to consider doing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; - Perhaps add to ./package.lsp to eliminate "acl2::" prefixes below.
+; - Consider showing simplified hypotheses, as was done before mid-October
+;   2020.  Note however that now we simplify hypotheses and governors together,
+;   so we would presumably show both.
+; - Consider arranging that :backchain-limit and :repeat arguments are
+;   consistent, in particular between s-cmd in before-vs-after-lemmas
+;   and arguments to acl2::rewrite$ and acl2::rewrite$-hyps.  :Repeat seems
+;   consistent at 3, but currently we use :repeat 1 for rewrite$-hyps -- that
+;   seems reasonable, to avoid too much computation for too little gain -- and
+;   :repeat 3 for simplifying subterms.
+; - Consider whether sorting of runes can be done more efficiently, by doing
+;   more sorting along the way.  Search below for merge-sort-lexorder.
 ; - Support stobjs.  Of course this will require preserving stobj declarations.
 ;   It might be up to the user to disable stobj accessors and updaters.
 ;   Although there might be no immediate need, there will likely be a need for
@@ -62,22 +96,53 @@
 ;   equivalence relations" and the related comment in the defxdoc form) for
 ;   more information.
 
-(in-package "APT")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Introductory remarks
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; TABLE OF CONTENTS
-;;; -----------------
-;;; Included books
-;;; Functions record (fnsr) structures
-;;; Generating names and lists containing names
-;;; Argument processing
-;;; Miscellaneous utilities
-;;; Handling hypotheses
-;;; Deal with whether simplification must take place
-;;; Rewriting
-;;; Return-last blockers
-;;; Simplifying a term
-;;; Additional main utilities
-;;; Putting it all together
+; This section is probably woefully incomplete, but ideally will get fleshed
+; out over time.
+
+; Consider the following questions.
+
+; - How much work should we do when simplifying each subterm?
+; - How much work should we do when simplifying :assumptions?
+; - How much work should we do when simplifying governors of each subterm?
+
+; The following two goals are critical.
+
+; (A) Don't miss important simplifications; try to do a reasonably complete
+;     simplification job.
+
+; (B) Proofs will ideally be reliable and efficient.
+
+; Here are some relevant observations.
+
+; (1) The before-vs-after lemma conjoins the :assumptions and governors to form
+;     the top-level hypotheses.
+
+; (2) The proof-builder then attempts to use S to simplify those top-level
+;     hyps, after diving into them.  (See before-vs-after-lemmas below.)  The
+;     :assumptions could therefore be used to simplify the governors, but not
+;     vice-versa.  No forward-chaining or linear will be done.
+;
+; (3) If the resulting top-level hyps don't allow the S command to reduce the
+;     "before" to the "after", then the prover is called on to do this (using
+;     ORELSE).  The prover will treat the :assumptions and governors
+;     symmetrically.
+;
+; (4) To get the greatest subterm simplification (goal A above), it makes sense
+;     to try to get the greatest simplification for top-level hypothesis, since
+;     presumably normal forms are best (e.g., for rewrite rules with
+;     free-variable hyps and for forward-chaining).
+;
+; From (2) we might want to simplify the hyps and governors separately, without
+; any forward-chaining or linear.  But that is in tension with (4).  Now (3)
+; suggests that we would ultimately do best to mimic the prover in support of
+; reliable proofs (goal B above); fortunately, this aligns with (4).  Efficient
+; proofs might give (2) more weight compared to (4), but reliability is
+; probably more important than efficiency, and normally we will probably get
+; efficiency anyhow.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Included books
@@ -101,7 +166,6 @@
 (include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ; for control-screen-output
 (include-book "kestrel/utilities/defmacroq" :dir :system)
-(include-book "misc/expander" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-dollar" :dir :system)
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
@@ -686,6 +750,23 @@
          (set-difference-rassoc-eq (cdr lst) alist))
         (t (cons (car lst) (set-difference-rassoc-eq (cdr lst) alist)))))
 
+#!acl2
+(defun geneqv-from-g?equiv (g?equiv wrld)
+
+; This function is from the community books, file misc/expander.lisp.
+
+; We write g?equiv to indicate that we have either a geneqv or else a symbol
+; that is an equivalence relation (where nil represents equal).
+
+  (if (symbolp g?equiv)
+      (cadr (car (last (getprop
+                        g?equiv
+                        'congruences
+                        nil
+                        'current-acl2-world
+                        wrld))))
+    g?equiv))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Handling hypotheses
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -807,42 +888,6 @@
               ,@(and expand-lst `(:expand ,expand-lst))))
             :rule-classes nil)))))))
 
-(defun sd-simplify-hyps (thyps theory expand ctx state)
-
-; Returns (list* runes (list rewritten-hyp-list) assumptions) when there is no
-; error.
-
-  (mv-let
-    (erp val state)
-    (with-guard-checking-error-triple
-     nil ; as in prover
-     (simplify-hyps ; defined using tool2-fn in misc/expander.lisp
-      thyps
-      nil  ; rewritten-previous-hyps-rev
-      nil  ; runes
-      nil  ; assns (from forcing, I think)
-      nil  ; equiv
-      state
-      (theory+expand-to-hints theory expand)
-      t    ; prove-assumptions
-      :prove  ; inhibit-output
-      nil  ; print-flg
-      nil  ; must-rewrite-flg
-      ctx))
-    (cond
-     ((null erp) (value val))
-     (t
-
-; I think it will be really rare for simplify-hyps to fail.  Looking at its
-; subfunctions (tool2-fn and below) in expander.lisp, I see bad hints
-; (shouldn't happen), contradiction in hypotheses, and false assumption.  I'm
-; willing to label this an implementation error, meaning that at the least, it
-; might be desirable to report such errors here instead of saying "unable to
-; simplify".  But there are bigger fish to fry right now.
-
-      (er-soft+ ctx :implementation-error nil
-        "Miscellaneous error attempting to simplify the given assumptions.")))))
-
 (defun translate-hyp-list (hyps fn ctx wrld state)
 
 ; Fn is used only to check that the vars of hyps are all among the formals of
@@ -879,25 +924,49 @@
                           hyps
                           fn))))))))
 
-(defun simplify-hyp-list (thyps theory expand ctx state)
+(defun simplify-hyp-list (hyps governors thints ctx state)
 
-; We assume that thyps is a non-empty list of translated terms, and return an
-; error triple whose value in the non-error case is a corresponding list of
-; simplified terms.
+; Given a context formed from the given translated hypotheses and governors,
+; and theory and expand derived from the top-level simplify[-defun[-sk]] call,
+; we return (list* rewritten-context rrec runes) when there is no error.
 
-  (assert$
-   thyps          ; else don't call this function
-   (er-let* ((tmp ; (list* runes (list rewritten-hyp-list) assumptions)
-              (sd-simplify-hyps thyps theory expand ctx state)))
-     (let ((runes (drop-fake-runes (car tmp)))
-           (simplified-hyps (assert$ (null (cdr (cadr tmp))) ; singleton check
-                                     (flatten-ands-in-lit-lst
-                                      (car (cadr tmp)))))
-           (assns (cddr tmp)))
-       (cond (assns (er-soft+ ctx :unsupported nil
-                      "Assumptions were generated by forcing (handling them ~
-                       is not yet implemented)."))
-             (t (value (cons runes simplified-hyps))))))))
+  (b* ((context (append hyps governors))
+       ((mv erp
+            (list* ?rewritten-context rrec ttree pairs)
+            state)
+        (acl2::rewrite$-hyps context
+                             :thints thints
+                             :ctx ctx
+
+; List explicitly some defaults as of this writing:
+
+                             :update-rrec t
+                             :repeat 1
+                             :prove-forced-assumptions 't)))
+    (cond
+     ((null erp)
+      (assert$ (null pairs) ; since :prove-forced-assumptions is t
+               (value (cons rrec
+                            (acl2::all-runes-in-ttree ttree nil)))))
+     (t
+
+; It should be rare or impossible to fail here, so let's call it an
+; implementation error until learning that we should handle this case
+; differently.
+
+      (er-soft+ ctx :bad-input nil
+                "The error noted above was caused by an attempt to build a ~
+                 context from the given ~@0"
+                (cond
+                 (hyps
+                  (cond
+                   (governors (msg "list of assumptions,~|  ~y0,~|and list of ~
+                                    governing IF tests,~|  ~y1."
+                                   hyps governors))
+                   (t (msg "list of assumptions,~|  ~y0."
+                           hyps))))
+                 (t (msg "list of governing IF tests,~|  ~y0."
+                         governors))))))))
 
 (defconst *must-simplify-keywords*
 ; Keep this in sync with the default value in (show-)simplify-defun.
@@ -930,143 +999,35 @@
 ;;; Rewriting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#!acl2
-(defstub placeholder-literal-fn () t)
+(defun rewrite1 (tterm alist geneqv rrec ctx wrld state)
 
-#!acl2
-(defconst *placeholder-literal*
-  (fcons-term* 'placeholder-literal-fn))
+; We rewrite term under alist with the given geneqv and rewrite$-record,
+; returning an error triple with non-erroneous value (cons rewritten-term
+; runes).
 
-#!acl2
-(defun rewrite** (term alist hyps ctx
-                       repeat-limit
-                       completed-iterations
-                       ;; alist bkptr
-                       ;; &extra formals
-                       type-alist
-                       ;; obj
-                       geneqv wrld state
-                       ;; fnstack ancestors backchain-limit
-                       step-limit
-                       simplify-clause-pot-lst
-                       rcnst gstack ttree
-                       ;;DARON: added must-rewrite-flg, which is T if we want to
-                       ;;throw an error if the term fails to rewrite, and NIL
-                       ;;otherwise.
-                       must-rewrite-flg)
-
-; This function is a slight modification of function rewrite* in the expander,
-; by adding an alist argument that need not be nil.  It might be appropriate
-; replace rewrite* with this function, except that then the recursive call
-; below would take nil for the new alist argument.
-
-; Rewrite term repeatedly, (- repeat-limit completed-iterations) times.  Note
-; that hyps is T after the first time through.
-
-  (sl-let (val new-ttree)
-          (rewrite-entry (rewrite term alist 1)
-                         :obj '?
-                         :fnstack
-; We want to fool rewrite-fncall on lambdas.
-                         '(silly-rec-fn-for-rewrite*)
-                         :pre-dwp nil ;; RBK:
-                         :ancestors nil
-                         :backchain-limit 500
-                         :step-limit step-limit ; explicit to avoid decrement
-                         :rdepth (rewrite-stack-limit wrld)
-                         :pequiv-info nil)
-          (cond
-           ((equal val term)
-            (cond
-             ;; DARON: if must-rewrite-flg is NIL, we just return the term.
-             ((or (not must-rewrite-flg)
-                  (eq hyps t))
-              (mv step-limit term ttree state))
-             ;; otherwise, we throw the error.
-             (t (prepend-step-limit
-                 (erp val state)
-                 (er soft ctx
-                     "The term~%  ~p0~%failed to rewrite to a new term under ~
-                      hypotheses~%  ~p1."
-                     (untranslate val nil wrld)
-                     (untranslate-lst hyps t wrld))))))
-           ((= repeat-limit completed-iterations)
-            (pprogn
-             ;; DARON: wrapped this fms in an io? so we can inhibit it if we
-             ;; want.
-             (io? prove nil state
-                  (completed-iterations)
-                  (fms "OUT OF PATIENCE!  Completed ~n0 iterations."
-                       (list (cons #\0 (list completed-iterations)))
-                       *standard-co* state nil))
-             (mv step-limit val new-ttree state)))
-           (t (pprogn (if (eql completed-iterations 0)
-                          state
-                        ;; DARON: wrapped this fms in an io? so we can inhibit
-                        ;; output if we want.
-                        (io? prove nil state
-                             (completed-iterations)
-                             (fms "NOTE:  Starting ~n0 repetition of rewrite.~%"
-                                  (list (cons #\0 (list (1+ completed-iterations))))
-                                  *standard-co* state nil)))
-                      (rewrite* val t ctx
-                                repeat-limit
-                                (1+ completed-iterations)
-                                type-alist geneqv wrld state step-limit
-                                simplify-clause-pot-lst rcnst gstack
-                                new-ttree
-                                ;; DARON: we must pass must-rewrite-flg to
-                                ;; subsequent iterations.
-                                must-rewrite-flg))))))
-
-#!acl2
-(defrec rewrite1-record
-
-; This record holds values precomputed for calls of rewrite1 and rewrite1-lst.
-; The fields are listed alphabetically.
-
-  (rcnst saved-pspv)
-  nil)
-
-#!acl2
-(defun rewrite1-inputs (thyps thints ctx wrld state)
-
-; See rewrite1.  We return an error triple whose value component (in the
-; non-error case) is a rewrite1-record, to serve as input for rewrite1.
-
-  (declare (xargs :stobjs state))
-  (b* ((saved-pspv (acl2::rewrite$-pspv thints wrld state))
-       (hyps-clause (dumb-negate-lit-lst thyps))
-       ((er rcnst)
-        (acl2::rewrite$-rcnst hyps-clause saved-pspv thints ctx wrld state)))
-    (value (make rewrite1-record
-                 :rcnst rcnst
-                 :saved-pspv saved-pspv))))
-
-#!acl2
-(defun rewrite1 (tterm alist thyps geneqv rec ctx wrld state)
   (b* (((er (list* rewritten-term runes pairs))
         (acl2::rewrite$
          tterm
          :alist alist
-         :hyps thyps
          :geneqv geneqv
-         :prove-forced-assumptions t ; the default, but let's be explicit
-         :translate nil
+         :repeat 3 ; somewhat arbitrary
          :default-hints-p nil
-         :repeat 3
          :ctx ctx
          :wrld wrld
-         :rcnst (access rewrite1-record rec :rcnst)
-         :saved-pspv (access rewrite1-record rec :saved-pspv)))
+         :rrec rrec
+
+; List explicitly some defaults as of this writing:
+
+         :prove-forced-assumptions t
+         :translate nil))
        ((when pairs)
-        (er soft ctx
-            "Implementation error: We are surprised to see unproved ~
-             assumptions returned by ~x0."
-            'acl2::rewrite$)))
+        (er-soft+ ctx :implementation-error nil
+                  "Implementation error: We are surprised to see unproved ~
+                   assumptions returned by ~x0."
+                  'acl2::rewrite$)))
     (value (cons rewritten-term runes))))
 
-(defun rewrite1-lst (tterm-lst alist thyps rec ctx wrld state)
+(defun rewrite1-lst (tterm-lst alist rrec ctx wrld state)
 
 ; See rewrite1.  This function returns (mv erp val state), where if erp is nil,
 ; then val is (cons rewritten-tterm-lst runes), where runes collects all runes
@@ -1074,11 +1035,33 @@
 
   (cond ((endp tterm-lst) (value (cons nil nil)))
         (t (b* (((er (cons new-tterm runes1))
-                 (rewrite1 (car tterm-lst) alist thyps nil rec ctx wrld state))
+                 (rewrite1 (car tterm-lst) alist nil rrec ctx wrld state))
                 ((er (cons new-tterm-lst runes2))
-                 (rewrite1-lst (cdr tterm-lst) alist thyps rec ctx wrld state)))
+                 (rewrite1-lst (cdr tterm-lst) alist rrec ctx wrld state)))
              (value (cons (cons new-tterm new-tterm-lst)
                           (union-equal? runes1 runes2)))))))
+
+(defun term-to-lits (term wrld)
+
+; This function may be a bit heavy-handed, but it makes convenient use of
+; existing utilities to do something reasonably powerful.  We have seen an
+; example where if we didn't apply this function to the conjunction of
+; governors, we don't get what we want.  The example had this
+
+;   :simplify-body
+;   (if (or (not expr1)
+;           expr2)
+;       outputs
+;     @)
+
+; and gave us a single hypothesis of the form (not (if ...)), while the present
+; code instead gave the expected list of 9 terms (note that expr1 called a
+; function that is is defined to be a rather large conjunction), implicitly
+; conjoined.
+
+  (flatten-ands-in-lit
+   (termify-clause-set
+    (clausify term nil t (sr-limit wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Return-last blockers
@@ -1335,7 +1318,6 @@
                               (t (mv term nil))))))
                    (t (mv term nil)))))))
 
-#!apt
 (defun sublis-expr+ (alist term)
 
 ; This function was conceived as one for which term is the result of rewriting
@@ -1459,30 +1441,7 @@
 
     (make-proper-lambda formals1 actuals body1)))
 
-(defun term-to-lits (term wrld)
-
-; This function may be a bit heavy-handed, but it makes convenient use of
-; existing utilities to do something reasonably powerful.  We have seen an
-; example where if we didn't apply this function to the conjunction of
-; governors, we don't get what we want.  The example had this
-
-;   :simplify-body
-;   (if (or (not expr1)
-;           expr2)
-;       outputs
-;     @)
-
-; and gave us a single hypothesis of the form (not (if ...)), while the present
-; code instead gave the expected list of 9 terms (note that expr1 called a
-; function that is is defined to be a rather large conjunction), implicitly
-; conjoined.
-
-  (flatten-ands-in-lit
-   (termify-clause-set
-    (clausify term nil t (sr-limit wrld)))))
-
-(defun rewrite-augmented-term-rec (aterm alist hyps geneqv rec runes ctx wrld
-                                         state)
+(defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld state)
 
 ; The key idea here is that when rewriting (let ((x expr)) body), we rewrite
 ; expr to expr', then we rewrite body with x bound to expr' to produce body',
@@ -1493,60 +1452,57 @@
   (case-match aterm
     ((':IF tst tbr fbr)
      (b* (((er (cons tst2 runes-tst))
-           (rewrite1 tst alist hyps *geneqv-iff* rec ctx wrld state))
-          (runes (union-equal? runes-tst runes)))
-       (cond ((equal tst2 *nil*)
-              (rewrite-augmented-term-rec fbr alist hyps geneqv rec
-                                          runes ctx wrld state))
-             ((quotep tst2)
-              (rewrite-augmented-term-rec tbr alist hyps geneqv rec
-                                          runes ctx wrld state))
+           (rewrite1 tst alist *geneqv-iff* rrec ctx wrld state))
+          (runes (union-equal? runes-tst runes))
+          (rcnst (access acl2::rewrite$-record rrec :rcnst))
+          (ens (access acl2::rewrite-constant rcnst
+                       :current-enabled-structure))
+          (ok-to-force (acl2::ok-to-force rcnst))
+          (type-alist (access acl2::rewrite$-record rrec :type-alist))
+          (pot-lst (access acl2::rewrite$-record rrec :pot-lst))
+          ((mv must-be-true
+               must-be-false
+               true-type-alist
+               false-type-alist
+               ts-ttree)
+           (acl2::assume-true-false tst2 nil ok-to-force nil type-alist ens
+                                    wrld pot-lst nil nil)))
+       (cond (must-be-true
+              (rewrite-augmented-term-rec tbr alist geneqv rrec
+                                          (all-runes-in-ttree ts-ttree runes)
+                                          ctx wrld state))
+             (must-be-false
+              (rewrite-augmented-term-rec fbr alist geneqv rrec
+                                          (all-runes-in-ttree ts-ttree runes)
+                                          ctx wrld state))
              (t (b* (((er (cons tbr2 runes))
-                      (rewrite-augmented-term-rec
-                       tbr alist
-
-; Notice that the hyps are extended here, yet rec was created using the
-; original hyps.  This seems reasonable, since the only use of hyps in creating
-; rec was for extracting hints based on the clause (and presumably, the clause
-; was only relevant for computed hints) -- and anyhow, it makes sense for the
-; hints to be based on the original term being simplified, rather than
-; modifying hints based on tests picked up while exploring the IF calls in
-; subterms of a term.
-
-                       (append (term-to-lits tst2 wrld)
-                               hyps)
-                       geneqv rec runes ctx wrld state))
+                      (rewrite-augmented-term-rec tbr alist geneqv
+                                                  (change acl2::rewrite$-record
+                                                          rrec
+                                                          :type-alist
+                                                          true-type-alist)
+                                                  runes ctx wrld state))
                      ((er (cons fbr2 runes))
-                      (rewrite-augmented-term-rec
-                       fbr alist
-
-; See the comment above about "hyps are extended".
-
-                       (append (term-to-lits (dumb-negate-lit tst2) wrld)
-                               hyps)
-                       geneqv rec runes ctx wrld state))
-                     (rcnst (access acl2::rewrite1-record rec :rcnst))
-                     (ens (access acl2::rewrite-constant rcnst
-                                  :current-enabled-structure))
+                      (rewrite-augmented-term-rec fbr alist geneqv
+                                                  (change acl2::rewrite$-record
+                                                          rrec
+                                                          :type-alist
+                                                          false-type-alist)
+                                                  runes ctx wrld state))
                      ((mv term ttree)
                       (rewrite-if1 tst2 tbr2 fbr2
                                    nil ; swapped-p
-                                   nil ; type-alist
-                                   geneqv
-                                   ens
-                                   (enabled-numep *force-xnume*
-                                                  ens) ; ok-to-force
-                                   wrld
-                                   nil)))
+                                   type-alist
+                                   geneqv ens ok-to-force wrld nil)))
                   (value (cons term (all-runes-in-ttree ttree runes))))))))
     ((('LAMBDA formals body) . actuals)
      (b* (((er (cons rewritten-actuals runes-actuals))
-           (rewrite1-lst actuals alist hyps rec ctx wrld state))
+           (rewrite1-lst actuals alist rrec ctx wrld state))
           (runes (union-equal? runes-actuals runes))
           ((er (cons rewritten-body runes))
            (rewrite-augmented-term-rec body
                                        (pairlis$ formals rewritten-actuals)
-                                       hyps geneqv rec runes ctx wrld state))
+                                       geneqv rrec runes ctx wrld state))
           (new-body
 
 ; I haven't given a lot of thought to the case that rewritten-body is a lambda
@@ -1558,7 +1514,7 @@
             (t rewritten-body))))
        (value (cons new-body runes))))
     ((':BLOCKER ('QUOTE blocker-fn) arg1 arg2)
-     (let* ((rcnst (access acl2::rewrite1-record rec :rcnst))
+     (let* ((rcnst (access acl2::rewrite$-record rrec :rcnst))
             (ens (access acl2::rewrite-constant rcnst
                          :current-enabled-structure)))
        (cond
@@ -1570,28 +1526,27 @@
                                               blocker-fn)
                                         runes))))
         ((enabled-numep (fn-rune-nume blocker-fn t nil wrld) ens)
-         (rewrite-augmented-term-rec arg2 alist hyps geneqv rec runes ctx
+         (rewrite-augmented-term-rec arg2 alist geneqv rrec runes ctx
                                      wrld state))
         (t
          (b* (((er (cons arg1-new runes))
-               (rewrite-augmented-term-rec arg1 alist hyps
+               (rewrite-augmented-term-rec arg1 alist
 ; It's not clear, for all blockers, what to use for geneqv for this argument.
 ; So we are conservative here.
                                            nil ; geneqv
-                                           rec runes ctx wrld state))
+                                           rrec runes ctx wrld state))
               ((er (cons arg2-new runes))
-               (rewrite-augmented-term-rec arg2 alist hyps geneqv rec runes ctx
+               (rewrite-augmented-term-rec arg2 alist geneqv rrec runes ctx
                                            wrld state)))
            (value (cons (fcons-term* blocker-fn arg1-new arg2-new)
                         runes)))))))
     (& ; aterm is a term
      (b* (((er (cons new-term new-runes))
-           (rewrite1 aterm alist hyps geneqv rec ctx wrld state)))
+           (rewrite1 aterm alist geneqv rrec ctx wrld state)))
        (value (cons new-term
                     (union-equal? new-runes runes)))))))
 
-(defun rewrite-with-augmentation (term alist hyps geneqv hints must-rewrite ctx
-                                       state)
+(defun rewrite-with-augmentation (term alist geneqv rrec must-rewrite ctx state)
 
 ; We augment term (see augment-term) and then call the rewriter in a top-down
 ; traversal of the augmented term tree, with rewrite-augmented-term-rec.
@@ -1599,53 +1554,43 @@
   (b* ((wrld (w state))
        ((mv aterm &)
         (augment-term term))
-       ((er thints) ; from tool2-fn0
-        (translate-hints 'simplify hints ctx wrld state))
-       ((er rec)
-        (acl2::rewrite1-inputs hyps thints ctx wrld state))
        ((er val)
-        (rewrite-augmented-term-rec aterm alist hyps geneqv rec nil ctx wrld
+        (rewrite-augmented-term-rec aterm alist geneqv rrec nil ctx wrld
                                     state)))
     (cond ((and must-rewrite
                 (equal (car val) ; rewritten-term
-                       aterm))
+                       (fsublis-var alist term)))
            (er soft ctx
-               "The term~%  ~p0~%failed to rewrite to a new term under ~
-                hypotheses~%  ~p1."
+               "The term~%  ~x0~%with alist~%  ~x1~%failed to rewrite to a ~
+                new term."
                (untranslate term nil wrld)
-               (untranslate-lst hyps t wrld)))
+               (pairlis$ (strip-cars alist)
+                         (pairlis$ (untranslate-lst (strip-cdrs alist) nil
+                                                    wrld)
+                                   nil))))
           (t (value val)))))
 
-(defun simplify-defun-term (term alist hyps g?equiv hints-from-theory+expand
-                                 must-rewrite ctx state)
+(defun simplify-defun-term (term alist g?equiv rrec must-rewrite ctx state)
 
 ; Warning: A more natural name for this function might be simplify-term, but
-; that name is already used in axe/axe.lisp.
+; that name has been used at times in Axe (see community books directory
+; books/kestrel/axe/).
 
-; G?equiv is either a geneqv or else a symbol that represents an equivalence
-; relation (where nil represents equal).
-
-; Term is a translated term, hyps is a list of translated terms, and
-; hints-from-theory+expand is either nil or what you'd expect to find after
-; :hints in a defthm, e.g., (("Goal" :use foo)); probably only hints for "Goal"
-; and forcing rounds are relevant.  This function returns an error triple (mv
-; erp val state), where if erp is nil then val is (cons rewritten-term runes),
-; where runes contains no fake runes (e.g.,
-; *fake-rune-for-anonymous-enabled-rule*).
+; Term is a translated term; alist maps variables to translated terms; g?equiv
+; is either a geneqv or else a symbol that represents an equivalence relation
+; (where nil represents equal); and rrec is a suitable rewrite$-record, as
+; returned by rewrite$-hyps.  This function returns an error triple (mv erp val
+; state), where if erp is nil then val is (cons rewritten-term runes).
 
   (with-output!
     :off prove
     (b* (((mv changedp bterm)
           (block-return-last term))
          ((mv erp (cons new-term runes) state)
-          (with-guard-checking-error-triple
-           nil ; as in prover
-           (rewrite-with-augmentation bterm
-                                      alist
-                                      hyps
-                                      (geneqv-from-g?equiv g?equiv (w state))
-                                      hints-from-theory+expand
-                                      must-rewrite ctx state))))
+          (rewrite-with-augmentation bterm
+                                     alist
+                                     (geneqv-from-g?equiv g?equiv (w state))
+                                     rrec must-rewrite ctx state)))
       (cond
        ((msgp erp) ; failure to prove assumptions (maybe other failures too?)
         (er-soft+ ctx :condition-failed nil "~@0" erp))
@@ -1656,16 +1601,16 @@
 ; under the assumption that must-rewrite is true.
 
         (er-soft+ ctx :condition-failed nil
-          "Simplification failed.  Specify :simplify-body nil or perhaps use ~
-           option :must-simplify in order to avoid this error."))
+                  "Simplification failed.  Specify :simplify-body nil or ~
+                   perhaps use option :must-simplify in order to avoid this ~
+                   error."))
        (t (value
            (cons (if changedp
-                           (unblock-return-last new-term)
-                         new-term)
-                 (let ((r (set-difference-equal runes *fake-runes*)))
-                   (if changedp ; then add to runes for before-vs.-after lemmas
-                       (add-to-set-equal '(:definition return-last) r)
-                     r)))))))))
+                     (unblock-return-last new-term)
+                   new-term)
+                 (if changedp ; then add to runes for before-vs.-after lemmas
+                     (add-to-set-equal '(:definition return-last) runes)
+                   runes))))))))
 
 (defun check-simplified (old-untrans* old-trans new-untrans new-trans msg ctx
                                       state)
@@ -1703,11 +1648,9 @@
    . recursivep) ; recursivep is for the new function, rather than for the old
   nil)
 
-(defun fn-simp-body-rec (body simp-hyps theory expand
-                              hints-from-theory+expand
-                              address-subterm-governors-lst
-                              geneqv must-simplify
-                              ctx state
+(defun fn-simp-body-rec (body thyps address-subterm-governors-lst
+                              geneqv thints must-simplify
+                              ctx wrld state
                               runes subterm-equalities)
 
 ; See fn-simp-body.  Here we recur, simplifying at each indicated subterm.  The
@@ -1727,59 +1670,37 @@
                  :recursivep nil                          ; to be filled in
                  )))
    (t
-    (let* ((wrld (w state))
-           (address-subterm-governors (car address-subterm-governors-lst))
-           (subterm (cadr address-subterm-governors))
-           (geneqv-subterm
-            (ext-geneqv-at-subterm body
-                                   (car address-subterm-governors)
-                                   geneqv
-                                   nil ; pequiv-info
-                                   (ens state)
-                                   wrld))
-           (equiv-at-subterm (equiv-from-geneqv geneqv-subterm))
-           (bindings (caddr address-subterm-governors))
-           (governors (cdddr address-subterm-governors)))
-      (er-let* ((runes/simp-governors
-                 (if governors
-                     (simplify-hyp-list
-                      (term-to-lits (conjoin governors) wrld)
-                      theory expand ctx state)
-                   (value nil)))
-                (new-subterm/runes (simplify-defun-term
-                                    subterm
-                                    bindings
-                                    (append? simp-hyps
-                                             (cdr runes/simp-governors))
-                                    geneqv-subterm hints-from-theory+expand
-                                    (get-must-simplify :body must-simplify)
-                                    ctx state)))
-        (let* ((runes (union-equal (car runes/simp-governors)
-                                   (union-equal (cdr new-subterm/runes)
-                                                runes)))
-               (old-subterm (sublis-var bindings subterm))
-               (new-subterm (car new-subterm/runes))
-               (subterm-equality
-                (if (equal old-subterm new-subterm)
-                    *t* ; special marker when no before-vs-after lemma
-                  `(,equiv-at-subterm ,old-subterm ,new-subterm)))
-               (new-body (ext-fdeposit-term
-                          body
-                          (car address-subterm-governors)
-                          new-subterm)))
-          (fn-simp-body-rec new-body simp-hyps theory expand
-                            hints-from-theory+expand
-                            (cdr address-subterm-governors-lst)
-                            geneqv must-simplify
-                            ctx state
-                            runes
-                            (cons subterm-equality subterm-equalities))))))))
+    (b* (((list* address subterm bindings governors)
+          (car address-subterm-governors-lst))
+         (geneqv-subterm (ext-geneqv-at-subterm body address geneqv
+                                                nil ; pequiv-info
+                                                (ens state)
+                                                wrld))
+         (equiv-at-subterm (equiv-from-geneqv geneqv-subterm))
+         ((er (cons rrec runes1))
+          (simplify-hyp-list thyps governors thints ctx state))
+         ((er (cons new-subterm runes2))
+          (simplify-defun-term subterm bindings geneqv-subterm rrec
+                               (get-must-simplify :body must-simplify)
+                               ctx state))
+         (runes (union-equal runes1 (union-equal runes2 runes)))
+         (old-subterm (sublis-var bindings subterm))
+         (subterm-equality
+          (if (equal old-subterm new-subterm)
+              *t* ; special marker when no before-vs-after lemma
+            `(,equiv-at-subterm ,old-subterm ,new-subterm)))
+         (new-body (ext-fdeposit-term body address new-subterm)))
+      (fn-simp-body-rec new-body thyps
+                        (cdr address-subterm-governors-lst)
+                        geneqv thints must-simplify
+                        ctx wrld state
+                        runes
+                        (cons subterm-equality subterm-equalities))))))
 
 (defun fn-simp-body (fn fn-simp mut-rec-p
-                        simplify-body body simp-hyps theory expand
-                        hints-from-theory+expand
+                        simplify-body body thyps
                         address-subterm-governors-lst
-                        geneqv must-simplify fn-simp-alist
+                        geneqv thints must-simplify fn-simp-alist
                         ctx wrld state)
 
 ; We return an error triple such that, in the non-error case, the value is a
@@ -1796,34 +1717,32 @@
                    :equalities nil
                    :fnsr (make-fnsr fn fn-simp
                                     (and (not mut-rec-p) recursivep)
-                                    simp-hyps wrld)
+                                    thyps wrld)
                    :recursivep recursivep))))
    (t
-    (er-let* ((result (fn-simp-body-rec body simp-hyps theory expand
-                                        hints-from-theory+expand
-                                        address-subterm-governors-lst geneqv
-                                        must-simplify
-                                        ctx state
-                                        nil nil)))
-      (let* ((new-body (fsublis-fn-simple fn-simp-alist
-                                          (access fn-simp-body-result
-                                                  result
-                                                  :body)))
-             (recursivep (or mut-rec-p ; always preserve mutual-recursion
-                             (ffnnamep fn-simp new-body)))
-             (fnsr (make-fnsr fn fn-simp
-                              (and (not mut-rec-p) recursivep)
-                              simp-hyps wrld))
-             (fnc (access fnsr fnsr :copy))
-             (equalities (access fn-simp-body-result result :equalities)))
-        (value (change fn-simp-body-result result ; :runes is unchanged
-                       :body new-body
-                       :equalities (if (eq fn fnc)
-                                       (fsublis-fn-lst-simple
-                                        fn-simp-alist equalities)
-                                     equalities)
-                       :fnsr fnsr
-                       :recursivep recursivep)))))))
+    (b* (((er result) (fn-simp-body-rec body thyps
+                                        address-subterm-governors-lst
+                                        geneqv thints must-simplify
+                                        ctx wrld state
+                                        nil nil))
+         (new-body (fsublis-fn-simple fn-simp-alist
+                                      (access fn-simp-body-result result
+                                              :body)))
+         (recursivep (or mut-rec-p ; always preserve mutual-recursion
+                         (ffnnamep fn-simp new-body)))
+         (fnsr (make-fnsr fn fn-simp
+                          (and (not mut-rec-p) recursivep)
+                          thyps wrld))
+         (fnc (access fnsr fnsr :copy))
+         (equalities (access fn-simp-body-result result :equalities)))
+      (value (change fn-simp-body-result result ; :runes is unchanged
+                     :body new-body
+                     :equalities (if (eq fn fnc)
+                                     (fsublis-fn-lst-simple fn-simp-alist
+                                                            equalities)
+                                   equalities)
+                     :fnsr fnsr
+                     :recursivep recursivep))))))
 
 (define-pc-macro sd-simplify-equality (s-cmd)
   (let* ((conc (conc t))
@@ -1863,8 +1782,8 @@
    (t
     (let ((s-cmd
            `(:then (:succeed
-                    (:s :repeat 3 ; default for (expander-repeat-limit state)
-                        :backchain-limit 500 ; from rewrite*
+                    (:s :repeat 3 ; somewhat arbitrary
+                        :backchain-limit 500 ; somewhat arbitrary
                         :expand ,expand
                         :normalize nil))
                    (:prove ,@(and expand
@@ -1975,20 +1894,22 @@
 (defun fn-simp-defs-termination-hints (hints fn wrld
                                              computed-hint-lst
                                              theory
-                                             theory-alt)
+                                             theory-alt
+                                             verbose)
   (if (not (eq hints :auto))
       hints
     (let ((old-recursivep (getpropc fn 'recursivep nil wrld)))
       `(("Goal"
          ,@(and old-recursivep
                 `(:instructions
-                  ((:prove-termination ,fn ,theory ,theory-alt)))))
+                  ((:prove-termination ,fn ,theory ,theory-alt ,verbose)))))
         ,@computed-hint-lst))))
 
 (defun fn-simp-defs-verify-guards-hints (guard-hints fn wrld
                                                      computed-hint-lst
                                                      theory
-                                                     theory-alt)
+                                                     theory-alt
+                                                     verbose)
   (if (not (eq guard-hints :auto))
       guard-hints
     (let ((compliant-p (eq (symbol-class fn wrld)
@@ -1996,7 +1917,7 @@
       (cond (compliant-p
              `(("Goal"
                 :instructions
-                ((:prove-guard ,fn ,theory ,theory-alt)))))
+                ((:prove-guard ,fn ,theory ,theory-alt ,verbose)))))
             (computed-hint-lst
              `(,@computed-hint-lst))
             (t nil)))))
@@ -2012,13 +1933,6 @@
                         fn-simp-alist fn-simp-is-fn-name
                         verbose ctx wrld state)
 
-; This function returns an error triple whose value component (in the case of
-; error component nil) is (list fnsr defun-form defconst-form hints?), where
-; fnsr is a functions record (see make-fnsr), defun-form defines the new
-; function, defconst-form defines a constant containing the runes used in the
-; simplification, and hints? is either nil or a local in-theory hint based on
-; the input theory.
-
 ; Note that measure has already gone through a bit of checking in
 ; simplify-defun-fn.
 
@@ -2033,35 +1947,15 @@
        (ev (get-event fn wrld))
        ((when (null ev))
         (er-soft+ ctx :implementation-error nil
-          "There is no event for ~x0.  We thought we had checked that ~x0 was ~
-           introduced with DEFUN or DEFUN-SK."
-          fn))
+                  "There is no event for ~x0.  We thought we had checked that ~
+                   ~x0 was introduced with DEFUN or DEFUN-SK."
+                  fn))
        (fn-ubody (fn-ubody fn fn-body wrld ev))
-       ((er runes-hyps/simp-hyps)
-        (if thyps
-            (simplify-hyp-list thyps theory expand ctx state)
-          (value nil)))
-       (runes-hyps (car runes-hyps/simp-hyps))
-       (simp-hyps (cdr runes-hyps/simp-hyps))
-       (state (cond ((or (not verbose)
-                         (null simplify-body)
-                         (null hyps)
-                         (equal hyps '(t)))
-                     state)
-                    (t (fms "Simplified :ASSUMPTIONS~@0:~|~y1"
-                            (list (cons #\0 (if mut-rec-p
-                                                (msg " for function ~x0"
-                                                     fn)
-                                              ""))
-                                  (cons #\1
-                                        (untranslate-lst simp-hyps t wrld)))
-                            (standard-co state) state nil))))
        (fn-guard (guard fn nil wrld))
        (fn-ruler-extenders
         (let ((just (getpropc fn 'justification nil wrld)))
           (and just
-               (let ((tmp (access justification just
-                                  :ruler-extenders)))
+               (let ((tmp (access justification just :ruler-extenders)))
                  (and (not (equal tmp (default-ruler-extenders wrld)))
                       tmp)))))
        ((er address-subterm-governors-lst)
@@ -2077,27 +1971,32 @@
                     (t (value msg-or-val))))
           (value (list (list* nil fn-body nil nil)))))
        (governors-lst (strip-cddrs (strip-cdrs address-subterm-governors-lst)))
+       ((er thints)
+        (translate-hints ctx hints-from-theory+expand ctx wrld state))
        ((er body-result)
         (fn-simp-body fn fn-simp mut-rec-p
-                      simplify-body fn-body simp-hyps
-                      theory expand hints-from-theory+expand
+                      simplify-body fn-body thyps
                       address-subterm-governors-lst
                       (geneqv-from-g?equiv equiv wrld)
+                      thints
                       (get-must-simplify :body must-simplify)
                       fn-simp-alist
                       ctx wrld state))
        (fnsr (access fn-simp-body-result body-result :fnsr))
        (new-body (access fn-simp-body-result body-result :body))
        (new-recursivep (access fn-simp-body-result body-result :recursivep))
+       ((er trivial-rrec)
+        (cond
+         ((or simplify-guard (and measure simplify-measure)) ; optimization
+          (acl2::make-rrec nil thints untranslate ctx wrld state))
+         (t (value nil))))
        ((er guard-result)
         (if simplify-guard
-            (simplify-defun-term
-             fn-guard
-             nil ; alist
-             nil ; hyps might be guard itself
-             'iff hints-from-theory+expand
-             (get-must-simplify :guard must-simplify)
-             ctx state)
+            (simplify-defun-term fn-guard
+                                 nil ; alist
+                                 *geneqv-iff* trivial-rrec
+                                 (get-must-simplify :guard must-simplify)
+                                 ctx state)
           (value (cons fn-guard nil))))
        (new-guard (car guard-result))
        (verify-guards-p (or (eq verify-guards t)
@@ -2142,28 +2041,27 @@
 
 ; It's not fair in this case to besmirch the simplify command with :bad-input!
 
-                     "It is illegal to verify guards for the new function, ~
-                      ~x0, because ~@1~@2."
-                     fn-simp
-                     (cond (bad-fns-guard
-                            (reason "guard" new-guard bad-fns-guard wrld))
-                           (t ; bad-fns-body
-                            (reason "body" new-body bad-fns-body wrld)))
-                     (cond
-                      ((and bad-fns-guard bad-fns-body)
-                       (msg ", and ~@0"
-                            (reason "body" new-body bad-fns-body wrld)))
-                      (t "")))))
+                             "It is illegal to verify guards for the new ~
+                              function, ~x0, because ~@1~@2."
+                             fn-simp
+                             (cond (bad-fns-guard
+                                    (reason "guard" new-guard bad-fns-guard wrld))
+                                   (t ; bad-fns-body
+                                    (reason "body" new-body bad-fns-body wrld)))
+                             (cond
+                              ((and bad-fns-guard bad-fns-body)
+                               (msg ", and ~@0"
+                                    (reason "body" new-body bad-fns-body wrld)))
+                              (t "")))))
                 (t (value nil)))))
        ((er measure-result)
         (if (and measure simplify-measure)
-            (simplify-defun-term
-             measure
-             nil ; alist
-             nil ; hyps might be guard itself
-             nil hints-from-theory+expand
-             (get-must-simplify :measure must-simplify)
-             ctx state)
+            (simplify-defun-term measure
+                                 nil ; alist
+                                 nil ; g?equiv
+                                 trivial-rrec
+                                 (get-must-simplify :measure must-simplify)
+                                 ctx state)
           (value (cons measure nil))))
        (defun? (if non-executable
                    (if new-enable 'defun-nx 'defund-nx)
@@ -2232,13 +2130,12 @@
                 (union$ (access fn-simp-body-result body-result :runes)
                         (cdr guard-result)   ; possibly nil
                         (cdr measure-result) ; possibly nil
-                        runes-hyps
                         :test 'equal)))
        (state (cond (verbose
                      (fms "List of runes used in simplification for ~
                            ~x0:~|~x1~%"
                           (list (cons #\0 fn)
-                                (cons #\1 runes0))
+                                (cons #\1 (acl2::drop-fake-runes runes0)))
                           (standard-co state) state nil))
                     (t state)))
        (runes (if hyps
@@ -2252,7 +2149,8 @@
        (termination-hints (fn-simp-defs-termination-hints measure-hints fn wrld
                                                           computed-hint-lst
                                                           fn-runes
-                                                          theory))
+                                                          theory
+                                                          verbose))
        (new-def-event-pre
         (sd-new-def-event
 
@@ -2276,7 +2174,8 @@
                                           `(cons ',fn-simp-is-fn-name
                                                  ,fn-runes)
                                           `(cons ',fn-simp-is-fn-name
-                                                 ,theory)))
+                                                 ,theory)
+                                          verbose))
        (new-def-event-installed
         (sd-new-def-event defun? fn-simp formals fn-ruler-extenders simp-guard
                           simp-measure new-recursivep verify-guards-p
@@ -2297,7 +2196,7 @@
        ,new-def-event-pre
        (make-event (let ((thy (merge-sort-lexorder
                                (union-equal
-                                ',runes
+                                ',(acl2::drop-fake-runes runes)
                                 (acl2::congruence-theory-fn :here
                                                             (w state))))))
                      (list 'defconst ',fn-runes
@@ -2551,26 +2450,23 @@
                        '(t nil :auto)
                        non-executable))))
        (fn-simp-is-fn-name (fn-simp-is-fn-name fn fn-simp theorem-name wrld))
-       ((er fn-simp-defs)
+       ((er (list body-result
+                  new-defun-pre ; (defun foo$1 ...)
+                  runes-def     ; (defconst *foo-runes* ...)
+                  before-vs-after-lemmas
+                  verify-guards-form? new-defun-installed new-defun-show))
         (fn-simp-defs fn fn-simp mut-rec-p hyps thyps theory equiv expand
                       new-enable simplify-body simplify-guard
                       guard-hints verify-guards simplify-measure
                       measure-hints measure untranslate must-simplify
                       non-executable fn-simp-alist fn-simp-is-fn-name
                       verbose ctx wrld state))
-       (body-result (nth 0 fn-simp-defs))
        (new-recursivep (access fn-simp-body-result body-result :recursivep))
        (fnsr (access fn-simp-body-result body-result :fnsr))
        (fnc (access fnsr fnsr :copy))
        (fnc-recursivep (if (eq fn fnc)
                            (recursivep fn nil wrld)
                          new-recursivep))
-       (new-defun-pre (nth 1 fn-simp-defs))  ; (defun foo$1 ...)
-       (runes-def (nth 2 fn-simp-defs)) ; (defconst *foo-runes* ...)
-       (before-vs-after-lemmas (nth 3 fn-simp-defs))
-       (verify-guards-form? (nth 4 fn-simp-defs))
-       (new-defun-installed (nth 5 fn-simp-defs))
-       (new-defun-show (nth 6 fn-simp-defs))
        (fn-simp-is-fn-lemma (fn-simp-is-fn-lemma fnsr fn-hyps theorem-name
                                                  equiv wrld))
        (fn-simp-is-fn (fn-simp-is-fn fnsr fn-hyps hyps theorem-name

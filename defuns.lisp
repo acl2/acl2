@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2540,6 +2540,88 @@
            set-bogus-measure-ok."
           name)))))
 
+(defun collect-problematic-quoted-fns (names0 fns wrld progs unwars)
+
+; Fns is a list of quoted symbols used as function symbols in :FN or :EXPR
+; slots.  We collect into progs and unwars the :program mode ones and the
+; un-warranted :logic ones that require warrants.
+
+; Warning: Do not call this function during boot-strapping!  Warrant
+; information is not available.
+
+  (cond ((endp fns)
+         (mv (reverse progs)
+             (reverse unwars)))
+        ((or
+          (member-eq (car fns) names0)
+; The following hons-get is equivalent to (apply$-primp (car fns)).
+          (hons-get (car fns) ; *badge-prim-falist* is not yet defined!
+                    (unquote
+                     (getpropc '*badge-prim-falist*
+                               'const nil wrld)))
+; We similarly inspect the value of *apply$-boot-fns-badge-alist*
+          (assoc-eq (car fns)
+                    (unquote
+                     (getpropc '*apply$-boot-fns-badge-alist*
+                               'const nil wrld))))
+         (collect-problematic-quoted-fns names0 (cdr fns)
+                                         wrld progs unwars))
+        ((programp (car fns) wrld)
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld
+                                         (add-to-set-eq (car fns) progs)
+                                         unwars))
+        ((not (get-warrantp (car fns) wrld))
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld progs
+                                         (add-to-set-eq (car fns) unwars)))
+        (t
+         (collect-problematic-quoted-fns names0 (cdr fns) wrld
+                                         progs unwars))))
+
+
+(defun maybe-warn-on-problematic-quoted-fns (names measures bodies ctx wrld state)
+  (if (global-val 'boot-strap-flg wrld)
+      (value nil)
+      (mv-let (progs unwars)
+        (collect-problematic-quoted-fns
+         names
+         (all-fnnames! t       ; list of terms flg
+                       :inside ; collect from inside quotes
+                       nil     ; these terms are outside of quotes
+                       (append measures bodies)
+                       nil ; ilks
+                       wrld
+                       nil)
+         wrld nil nil)
+        (pprogn
+         (cond
+          (progs
+           (warning$ ctx "Problematic-quoted-fns"
+                     "The definition~#0~[~/s~] of ~&0 ~#0~[is~/are~] in ~
+                      :LOGIC mode but mention~#0~[s~/~] the :PROGRAM mode ~
+                      function~#1~[~/s~] ~&1 in one or more :FN or :EXPR ~
+                      slots.  Conjectures about ~#0~[~&0~/the functions ~
+                      defined in the clique~] may not be provable until ~
+                      ~#1~[this program is~/these programs are~] converted to ~
+                      :LOGIC mode and warranted!  See :DOC verify-termination ~
+                      and defwarrant."
+                     names
+                     progs))
+          (t state))
+         (cond
+          (unwars
+           (warning$ ctx "Problematic-quoted-fns"
+                     "The definition~#0~[~/s~] of ~&0 ~#0~[is~/are~] in ~
+                      :LOGIC mode but mention~#0~[s~/~] the unwarranted ~
+                      function~#1~[~/s~] ~&1 in one or more :FN or :EXPR ~
+                      slots.  Conjectures about ~#0~[~&0~/the functions ~
+                      defined in the clique~] may not be provable until ~
+                      ~#1~[this unwarranted function is~/these unwarranted ~
+                      functions are~] warranted!  See :DOC defwarrant."
+                     names
+                     unwars))
+          (t state))
+         (value nil)))))
+
 (defun put-induction-info ( ; we assume loop$-recursion-checkedp = t
                            loop$-recursion
                            names arglists measures ruler-extenders-lst bodies
@@ -2595,14 +2677,22 @@
                 (null (getpropc (car names) 'recursivep nil wrld1)))
 
 ; If only one function is being defined and it is non-recursive, we can quit.
-; But we have to store the symbol-class and we have to print out the admission
-; message with prove-termination so the rest of our processing is uniform.
+; But we have to store the symbol-class and we have to print out the
+; program/unwarrated warning and the admission messages with prove-termination
+; so the rest of our processing is uniform.
 
            (er-progn
             (cond ((equal (car measures) *no-measure*)
                    (value nil))
                   (t (maybe-warn-or-error-on-non-rec-measure (car names) ctx
-                                                             wrld state)))
+                                                             wrld1 state)))
+            (maybe-warn-on-problematic-quoted-fns
+             names
+             (if (equal (car measures) *no-measure*)
+                 nil
+                 measures)
+             bodies
+             ctx wrld1 state)
             (prove-termination-non-recursive names bodies mp rel hints otf-flg
                                              big-mutrec ctx ens wrld1 state)))
           (t
@@ -2630,6 +2720,14 @@
 
                           t ; formerly big-mutrec
                           wrld1))
+                  (temp (maybe-warn-on-problematic-quoted-fns
+                         names
+                         (if (equal (car measures) *no-measure*)
+                             nil
+                             measures)
+                         bodies
+                         ctx wrld1 state))
+; Temp is intentially ignored; it is nil and a warning may have been printed.
                   (triple (prove-termination-recursive
                            names arglists measures t-machines mp rel hints
                            otf-flg bodies measure-debug ctx ens wrld1 state)))
@@ -4905,7 +5003,11 @@
                                      (car terms)
                                      wrld
                                      nil))))
-                         nil)
+                         (if (global-val 'boot-strap-flg wrld)
+                             nil
+                             (all-fnnames! nil :inside nil
+                                           (car terms)
+                                           nil wrld nil)))
                         names0)
                        wrld)))
              (cond
@@ -4979,7 +5081,12 @@
               (collect-non-common-lisp-compliants (all-fnnames-exec term)
                                                   wrld)))
      (t
-      (value-cmp (cons :term term))))))
+      (er-progn-cmp
+       (chk-common-lisp-compliant-subfunctions-cmp
+        (list name) (list name)
+        (list term)
+        wrld "formula" ctx)
+      (value-cmp (cons :term term)))))))
 
 (defun chk-acceptable-verify-guards-cmp (name rrp ctx wrld state-vars)
 
@@ -4998,6 +5105,7 @@
 ;   and rrp = t:
 ;   Test: T
 ;   Non-Erroneous Value: 'redundant.
+
 ; * if name is a function symbol:
 ;   Test: is every subfunction in the definitions of names -- including symbols
 ;   in quoted well-formed lambda objects -- except possibly names themselves
@@ -5099,10 +5207,12 @@
                  :common-lisp-compliant)
                 (t
 
-; Since name is known to be a well-formed lambda, every function in it and its
-; guard is in :logic mode.
+; Name is known to be a well-formed lambda, but it may contain all classes of
+; badged symbols, including :program mode ones.  We don't know how to classify
+; the lambda and so we'll choose the worst possibility.  But as of this writing
+; symbol-class is not used in the lambda case below!
 
-                 :ideal))))
+                 :program))))
      (cond
       ((and rrp
             (eq symbol-class :common-lisp-compliant))
@@ -6017,7 +6127,9 @@
    'print-useless-runes
    (er-let* ((accp-info (accp-info state)))
      (state-global-let*
-      ((current-package "ACL2" set-current-package-state))
+      ((current-package "ACL2" set-current-package-state)
+       (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+       (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
       (cond
        ((member-equal (symbol-package-name name) known-pkgs)
         (let* ((useless-runes0 (remove-executable-counterpart-useless-runes
@@ -6028,7 +6140,7 @@
                                 (set-difference-equal-sorted useless-runes0
                                                              bad-tuples))))
           (mv-let (col state)
-            (fmt1 "~@0~Y12"
+            (fmt1 "~@0(~x1~*2"
                   (list (cons #\0 (if bad-tuples
                                       (msg "; Skipping ~#0~[this ~
                                             useless-rune~/these useless ~
@@ -6042,7 +6154,13 @@
                                              "~x*~|"
                                              ,bad-tuples))
                                     ""))
-                        (cons #\1 (cons name useless-runes))
+                        (cons #\1 name)
+                        (cons #\2
+                              `(")~%"          ; when there's nothing to print
+                                "~% ~x*~% )~%" ; print the last element
+                                "~% ~x*"       ; print the 2nd to last element
+                                "~% ~x*"       ; print all other elements
+                                ,useless-runes))
                         (cons #\2 nil))
                   0 channel state nil)
             (declare (ignore col))
@@ -6506,59 +6624,96 @@
                                       (all-fnnames1-exec t bodies nil)
                                       wrld)))))))
 
-(defun defuns-fn-short-cut (names docs pairs guards measures split-types-terms
-                                  bodies non-executablep ctx wrld state)
+(defun defuns-fn-short-cut (loop$-recursion-checkedp
+                            loop$-recursion
+                            names docs pairs guards measures split-types-terms
+                            bodies non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
 ; analysis of defuns.  The function essentially makes the named functions look
-; like primitives in the sense that they can be used in formulas and they can
-; be evaluated on explicit constants but no axioms or rules are available about
-; them.  In particular, we do not store 'def-bodies, type-prescriptions, or
-; any of the recursion/induction properties normally associated with defuns and
-; the prover will not execute them on explicit constants.
+; like primitives in the sense that they can be used in terms and they can be
+; evaluated on explicit constants but no axioms or rules are available about
+; them.  In particular, we do not store 'def-bodies, type-prescriptions, or any
+; of the recursion/induction properties normally associated with defuns.  The
+; the prover will reject a formula that contains a call of a :program mode
+; function.
 
 ; We do take care of the documentation database.
 
 ; Like defuns-fn0, this function returns a pair consisting of the new world and
 ; a tag-tree recording the proofs that were done.
 
+; Quick Refresher on Badged :Program Mode Functions
+
+; :Program mode functions can be badged and can be used, even in formulas
+; submitted to the prover, in apply$ contexts, i.e., in quoted lambda objects,
+; lambda$ and loop$ and other scions.  Thus, such functions can find their way
+; into the prover -- but the prover should NEVER encounter a first-order
+; application of :program mode function.  That is, while the prover might see
+; (apply$ 'progmode-fn (list x)) or (collect$ (lambda$ (e) (progmode-fn e))
+; lst) it should never see (progmode-fn x) or (progmode-fn (car lst)).  In
+; particular, when considering rewriting the body of a well-formed lambda
+; object the prover must check that there are no :program mode functions in it.
+; This can get tricky.
+
+; E.g., one might be tempted to expand (apply$ (lambda$ (e)(progmode-fn e))
+; '(5)) to (progmode-fn '5) by beta reduction, but that would be wrong!  It
+; actually expands to (ev$ '(progmode-fn e) '((e . 5))) which stops because in
+; the proof theory (badge 'progmode-fn) is undefined.  It is not defined unless
+; a warrant for progmode-fn is available and that can't happen until
+; progmode-fn is promoted to :logic mode.  Note also that while (badge
+; 'progmode-fn) is undefined in the proof theory, (badge 'progmode-fn) will
+; evaluate to a badge in the evaluation theory if progmode-fn has been badged.
+; It's the warrant that moves this knowledge into the proof theory.
+
+; Another issue is how we handle loop$-recursive :program mode functions.  At
+; the moment defuns-fn0, the only caller of defuns-fn-short-cut, causes an
+; error if a :program mode function has a :loop$-recursion t xarg.  So we never
+; get to this function if loop$-recursion is set.
+
   (declare (ignore docs pairs))
-  (er-progn
-   (cond
-    ((and (null (cdr names))                                 ; single function
-          (not (equal (car measures) *no-measure*))          ; explicit measure
-          (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
+  (prog2$
+   (choke-on-loop$-recursion loop$-recursion-checkedp
+                             names
+                             bodies
+                             'defuns-fn-short-cut)
+   (er-progn
+    (cond
+     ((and (null (cdr names))                                ; single function
+           (not (equal (car measures) *no-measure*))         ; explicit measure
+           (not loop$-recursion)
+           (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
 
 ; Warning: Keep the test just above in sync with putprop-recursivep-lst, in the
 ; sense that a measure is legal only for a singly-recursive function or a list
 ; of at least two functions.
 
-     (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
-    (t (value nil)))
-   (let* (#-acl2-save-unnormalized-bodies
-          (boot-strap-flg (global-val 'boot-strap-flg wrld))
-          (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
-                                                        non-executablep
-                                                        wrld))
-                       (t wrld)))
-          (wrld1 (cond
-                  #-acl2-save-unnormalized-bodies
-                  (boot-strap-flg wrld0)
-                  (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
-          (wrld2 (put-invariant-risk
-                  names
-                  bodies
-                  non-executablep
-                  :program ; symbol-class
-                  guards
-                  (putprop-x-lst2-unless
-                   names 'guard guards *t*
+      (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
+     (t (value nil)))
+    (let* (#-acl2-save-unnormalized-bodies
+           (boot-strap-flg (global-val 'boot-strap-flg wrld))
+           (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
+                                                         non-executablep
+                                                         wrld))
+                        (t wrld)))
+           (wrld1 (cond
+                   #-acl2-save-unnormalized-bodies
+                   (boot-strap-flg wrld0)
+                   (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
+           (wrld2 (put-invariant-risk
+                   names
+                   bodies
+                   non-executablep
+                   :program ; symbol-class
+                   guards
                    (putprop-x-lst2-unless
-                    names 'split-types-term split-types-terms *t*
-                    (putprop-x-lst1
-                     names 'symbol-class :program wrld1))))))
-     (value (cons wrld2 nil)))))
+                    names 'guard guards *t*
+                    (putprop-x-lst2-unless
+                     names 'split-types-term split-types-terms *t*
+                     (putprop-x-lst1
+                      names 'symbol-class :program wrld1))))))
+      (value (cons wrld2 nil))))))
 
 ; Now we develop the output for the defun event.
 
@@ -6954,66 +7109,6 @@
          (cddar wrld))
         (t (scan-to-cltl-command (cdr wrld)))))
 
-(defconst *xargs-keywords*
-
-; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
-; modifying memoize-partial-declare accordingly.
-
-  '(:guard :guard-hints :guard-debug :guard-simplify
-           :hints :measure :measure-debug
-           :ruler-extenders :mode :non-executable :normalize
-           :otf-flg #+:non-standard-analysis :std-hints
-           :stobjs :verify-guards :well-founded-relation
-           :split-types :loop$-recursion))
-
-(defun plausible-dclsp1 (lst)
-
-; We determine whether lst is a plausible cdr for a DECLARE form.  Ignoring the
-; order of presentation and the number of occurrences of each element
-; (including 0), we ensure that lst is of the form (... (TYPE ...) ... (IGNORE
-; ...) ... (IGNORABLE ...) ... (IRRELEVANT ...) ... (XARGS ... :key val ...)
-; ...)  where the :keys are our xarg keys (members of *xargs-keywords*).
-
-  (declare (xargs :guard t))
-  (cond ((atom lst) (null lst))
-        ((and (consp (car lst))
-              (true-listp (car lst))
-              (or (member-eq (caar lst) '(type ignore ignorable irrelevant))
-                  (and (eq (caar lst) 'xargs)
-                       (keyword-value-listp (cdar lst))
-                       (subsetp-eq (evens (cdar lst)) *xargs-keywords*))))
-         (plausible-dclsp1 (cdr lst)))
-        (t nil)))
-
-(defun plausible-dclsp (lst)
-
-; We determine whether lst is a plausible thing to include between the formals
-; and the body in a defun, e.g., a list of doc strings and DECLARE forms.  We
-; do not insist that the DECLARE forms are "perfectly legal" -- for example, we
-; would approve (DECLARE (XARGS :measure m1 :measure m2)) -- but they are
-; well-enough formed to permit us to walk through them with the fetch-from-dcls
-; functions below.
-
-; Note: This predicate is not actually used by defuns but is used by
-; verify-termination in order to guard its exploration of the proposed dcls to
-; merge them with the existing ones.  After we define the predicate we define
-; the exploration functions, which assume this fn as their guard.  The
-; exploration functions below are used in defuns, in particular, in the
-; determination of whether a proposed defun is redundant.
-
-  (declare (xargs :guard t))
-  (cond ((atom lst) (null lst))
-        ((stringp (car lst)) (plausible-dclsp (cdr lst)))
-        ((and (consp (car lst))
-              (eq (caar lst) 'declare)
-              (plausible-dclsp1 (cdar lst)))
-         (plausible-dclsp (cdr lst)))
-        (t nil)))
-
-; The above function, plausible-dclsp, is the guard and the role model for the
-; following functions which explore plausible-dcls and either collect all the
-; "fields" used or delete certain fields.
-
 (defun dcl-fields1 (lst)
   (declare (xargs :guard (plausible-dclsp1 lst)))
   (cond ((endp lst) nil)
@@ -7035,103 +7130,6 @@
          (add-to-set-eq 'comment (dcl-fields (cdr lst))))
         (t (union-eq (dcl-fields1 (cdar lst))
                      (dcl-fields (cdr lst))))))
-
-(defun strip-keyword-list (fields lst)
-
-; Lst is a keyword-value-listp, i.e., (:key1 val1 ...).  We remove any key/val
-; pair whose key is in fields.
-
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (keyword-value-listp lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (car lst) fields)
-         (strip-keyword-list fields (cddr lst)))
-        (t (cons (car lst)
-                 (cons (cadr lst)
-                       (strip-keyword-list fields (cddr lst)))))))
-
-(defun strip-dcls1 (fields lst)
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (plausible-dclsp1 lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
-         (cond ((member-eq (caar lst) fields) (strip-dcls1 fields (cdr lst)))
-               (t (cons (car lst) (strip-dcls1 fields (cdr lst))))))
-        (t
-         (let ((temp (strip-keyword-list fields (cdar lst))))
-           (cond ((null temp) (strip-dcls1 fields (cdr lst)))
-                 (t (cons (cons 'xargs temp)
-                          (strip-dcls1 fields (cdr lst)))))))))
-
-(defun strip-dcls (fields lst)
-
-; Lst satisfies plausible-dclsp.  Fields is a list as returned by dcl-fields,
-; i.e., a subset of the union of the values of '(comment type ignore ignorable
-; irrelevant) and *xargs-keywords*.  We copy lst deleting any part of it that
-; specifies a value for one of the fields named, where 'comment denotes a
-; string.  The result satisfies plausible-dclsp.
-
-  (declare (xargs :guard (and (symbol-listp fields)
-                              (plausible-dclsp lst))))
-  (cond ((endp lst) nil)
-        ((stringp (car lst))
-         (cond ((member-eq 'comment fields) (strip-dcls fields (cdr lst)))
-               (t (cons (car lst) (strip-dcls fields (cdr lst))))))
-        (t (let ((temp (strip-dcls1 fields (cdar lst))))
-             (cond ((null temp) (strip-dcls fields (cdr lst)))
-                   (t (cons (cons 'declare temp)
-                            (strip-dcls fields (cdr lst)))))))))
-
-(defun fetch-dcl-fields2 (field-names kwd-list acc)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (keyword-value-listp kwd-list))))
-  (cond ((endp kwd-list)
-         acc)
-        (t (let ((acc (fetch-dcl-fields2 field-names (cddr kwd-list) acc)))
-             (if (member-eq (car kwd-list) field-names)
-                 (cons (cadr kwd-list) acc)
-               acc)))))
-
-(defun fetch-dcl-fields1 (field-names lst)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (plausible-dclsp1 lst))))
-  (cond ((endp lst) nil)
-        ((member-eq (caar lst) '(type ignore ignorable irrelevant))
-         (if (member-eq (caar lst) field-names)
-             (cons (cdar lst) (fetch-dcl-fields1 field-names (cdr lst)))
-           (fetch-dcl-fields1 field-names (cdr lst))))
-        (t (fetch-dcl-fields2 field-names (cdar lst)
-                             (fetch-dcl-fields1 field-names (cdr lst))))))
-
-(defun fetch-dcl-fields (field-names lst)
-  (declare (xargs :guard (and (symbol-listp field-names)
-                              (plausible-dclsp lst))))
-  (cond ((endp lst) nil)
-        ((stringp (car lst))
-         (if (member-eq 'comment field-names)
-             (cons (car lst) (fetch-dcl-fields field-names (cdr lst)))
-           (fetch-dcl-fields field-names (cdr lst))))
-        (t (append (fetch-dcl-fields1 field-names (cdar lst))
-                   (fetch-dcl-fields field-names (cdr lst))))))
-
-(defun fetch-dcl-field (field-name lst)
-
-; Lst satisfies plausible-dclsp, i.e., is the sort of thing you would find
-; between the formals and the body of a DEFUN.  Field-name is either in the
-; list (comment type ignore ignorable irrelevant) or is one of the symbols in
-; the list *xargs-keywords*.  We return the list of the contents of all fields
-; with that name.  We assume we will find at most one specification per XARGS
-; entry for a given keyword.
-
-; For example, if field-name is :GUARD and there are two XARGS among the
-; DECLAREs in lst, one with :GUARD g1 and the other with :GUARD g2 we return
-; (g1 g2).  Similarly, if field-name is TYPE and lst contains (DECLARE (TYPE
-; INTEGER X Y)) then our output will be (... (INTEGER X Y) ...) where the ...
-; are the other TYPE entries.
-
-  (declare (xargs :guard (and (symbolp field-name)
-                              (plausible-dclsp lst))))
-  (fetch-dcl-fields (list field-name) lst))
 
 (defun set-equalp-eq (lst1 lst2)
   (declare (xargs :guard (and (true-listp lst1)
@@ -7269,7 +7267,12 @@
      ((not (equal (fetch-dcl-field :non-executable all-but-body1)
                   (fetch-dcl-field :non-executable all-but-body2)))
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :non-executable declarations."
+            :non-executable declarations."
+           (car def1)))
+     ((not (equal (fetch-dcl-field :type-prescription all-but-body1)
+                  (fetch-dcl-field :type-prescription all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            :type-prescription declarations."
            (car def1)))
      ((flet ((normalize-value
               (x)
@@ -7288,7 +7291,7 @@
                         (normalize-value
                          (fetch-dcl-field :normalize all-but-body2)))))
       (msg "the proposed and existing definitions for ~x0 differ on the ~
-                values supplied by :normalize declarations."
+            values supplied by :normalize declarations."
            (car def1)))
      ((not (let ((stobjs1 (fetch-dcl-field :stobjs all-but-body1))
                  (stobjs2 (fetch-dcl-field :stobjs all-but-body2)))
@@ -7327,7 +7330,7 @@
 ; that treats 3 as a stobj.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :stobj declarations."
+            :stobj declarations."
            (car def1)))
      ((not (equal (fetch-dcl-field 'type all-but-body1)
                   (fetch-dcl-field 'type all-but-body2)))
@@ -7344,7 +7347,7 @@
 ; was certified, this might not always be the case.
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                type declarations."
+            type declarations."
            (car def1)))
      ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
              (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
@@ -7359,8 +7362,8 @@
         (cond ((and guards1-trivial-p guards2-trivial-p)
                nil)
               ((not (equal guards1 guards2))
-               (msg "the proposed and existing definitions for ~x0 differ ~
-                         on their :guard declarations."
+               (msg "the proposed and existing definitions for ~x0 differ on ~
+                     their :guard declarations."
                     (car def1)))
 
 ; So now we know that the guards are equal and non-trivial.  If the types are
@@ -7384,10 +7387,9 @@
               ((not (equal (fetch-dcl-fields '(type :guard) all-but-body1)
                            (fetch-dcl-fields '(type :guard)
                                              all-but-body2)))
-               (msg "although the proposed and existing definitions for ~
-                         ~x0 agree on the their type and :guard declarations, ~
-                         they disagree on the combined orders of those ~
-                         declarations.")))))
+               (msg "although the proposed and existing definitions for ~x0 ~
+                     agree on the their type and :guard declarations, they ~
+                     disagree on the combined orders of those declarations.")))))
      ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
             (split-types2 (fetch-dcl-field :split-types all-but-body2)))
         (or (not (eq (all-nils split-types1) (all-nils split-types2)))
@@ -7398,7 +7400,7 @@
             (and (member-eq nil split-types1)
                  (member-eq t split-types1))))
       (msg "the proposed and existing definitions for ~x0 differ on their ~
-                :split-types declarations."
+            :split-types declarations."
            (car def1)))
      ((not chk-measure-p)
       nil)
@@ -8515,12 +8517,153 @@
                    (value nil)))
                  (t (er soft ctx "~@0" msg))))))))))))))
 
+; Essay on the Use of :PROGRAM Mode Functions by :LOGIC Mode Functions
+
+; This essay does not reveal anything that a user familiar with apply$ doesn't
+; already know!  It's not really about implementation details though it served
+; as a sort of design document for allowing :program mode functions to be
+; badged.
+
+; Before the introduction of apply$, there was a simple rule: :logic mode
+; functions are defined entirely in terms of :logic mode subfunctions.  When
+; apply$ was first introduced (in Version 8.0), every badged function had also
+; a warrant (and all warranted functions are necessarily in :logic mode), so
+; every badged function was in :logic mode.  But it was possible to define an
+; unbadged :logic mode function to appear to call a :program mode function (or
+; even an undefined function!).  The following commands were carried out in
+; V8.3, which has the same restrictions as V8.0 but was more powerful mainly
+; because all warrants are true in its evaluation theory (enabling top-level
+; evaluation of apply$ forms), loop$ recursion was supported, and lambda object
+; rewriting was done.
+
+; Consider this sketch of a V8.3 session:
+
+; ; Successful defun of :logic mode fn ``calling'' an undefined function:
+; (defun foo (x y)
+;    (declare (xargs :mode :logic))
+;    (apply$ 'undefined-fn (list x y)))
+;
+; ; Two tests and results:
+; (foo 1 2)
+;
+; ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+; on UNDEFINED-FN because UNDEFINED-FN is not a known function symbol.
+;
+; (thm (consp (foo 1 2)))
+; *** Key checkpoint at the top level: ***
+; Goal'
+; (CONSP (APPLY$ 'UNDEFINED-FN '(1 2)))
+;
+; ; The checkpoint could be further reduced, with hints to (CONSP (APPLY$-USERFN
+; ; 'UNDEFINED-FN '(1 2))).
+;
+; ; Define the formerly undefined function:
+; (defun undefined-fn (x y)(declare (xargs :mode :program)) (list 'hello x y))
+;
+; ; Repeating the two tests above produces virtually the same results, except the
+; ; error message now complains about undefined-fn being in :program mode.
+;
+; ; So convert undefined-fn to :logic mode:
+; (verify-termination undefined-fn)
+;
+; ; Repeating the two tests above produces virtually the same results, except the
+; ; error message now complains about undefined-fn being unwarranted (which also
+; ; means unbadged here).
+;
+; ; So badge and warrant it:
+; (defwarrant undefined-fn)
+;
+; ; Repeating the two tests:
+;
+; (foo 1 2)
+; ==> (HELLO 1 2)
+;
+; (thm (consp (foo 1 2)))
+; q.e.d. (given one forced hypothesis)
+; [1]Goal
+; (APPLY$-WARRANT-UNDEFINED-FN)
+;
+; ; So supply the warrant:
+; (thm (implies (warrant undefined-fn) (consp (foo 1 2))))
+; Q.E.D.
+
+; What we've seen is that ACL2 has always supported the idea that a :logic mode
+; function might use apply$ to call undefined quoted ``function symbol'' and
+; the :logic mode function behaves reasonably (soundly) as the formerly
+; undefined function becomes more acceptable to apply$.
+
+; Furthermore, it not possible to determine all the functions a :logic
+; mode function might call via apply$.  Consider
+
+; (defun foo (fn x y) (apply$ fn (list x y))).
+
+; If you replace every call of (foo 1 2) in the session above with (foo
+; 'undefined-fn 1 2) you get the same behavior as before.  So it's simply
+; hopeless to imagine enforcing a rule against :logic mode functions
+; ``calling'' :program mode functions via apply$.  The best we can do is
+; guarantee that evaluation -- whether in the evaluation theory or the logic --
+; handles non-logical arguments correctly.  And that's pretty straightforward
+; simply because the logic doesn't know anything about userfns except what
+; warrants tell it, and the doppelgangers for badge-userfn and apply$-userfn
+; handle things correctly.
+
+; Here is an example of an unbadgeable function that computes a new lambda
+; expression on every recursion, and we reason about it perfectly well:
+
+; (defun enumerate (fn lst)
+;   (if (endp lst)
+;       nil
+;       (cons (apply$ fn (list (car lst)))
+;             (enumerate `(lambda (e)
+;                           (cons (binary-+ '1 ,(cadr (caddr fn)))
+;                                 ,(caddr (caddr fn))))
+;                        (cdr lst)))))
+
+; (thm (equal (enumerate '(lambda (e) (cons '0 e)) '(a b c d))
+;             '((0 . a) (1 . b) (2 . c) (3 . d))))
+
+; In Version 8.4 we allowed :program mode functions to have badges so that
+; loop$s, for example, could be run using :program mode functions in their
+; bodies.  Of course, :program mode functions cannot have warrants because
+; warrants make a logical statement about the function.  The session sketched
+; above should still be valid, except that in 8.4 we'd expect (foo 1 2) to
+; evaluate in the evaluation theory even if undefined-fn is just a :program
+; mode function -- as long as it has a badge.
+
+; The change from v8.3 to v8.4 really only raises source-code programming
+; problems: prior to v8.4 we knew that if a userfn had a badge the function was
+; in :logic mode and had a warrant.  But in v8.4 we must explicitly test each
+; of those conditions before carrying out certain acts.  The challenge was
+; finding all the places we tested for badges or tameness and implicitly relied
+; on the existence of a warrant.
+
+; It is also worth noting that rewrite-lambda-object invites trouble because it
+; offers an opportunity to get into evaluation without explicitly going through
+; apply$ or the doppelgangers.  If a lambda object can have a body that
+; mentions undefined or :program mode functions and the rewriter just barged
+; into the body treating it like a logical term, we could easily get hard
+; errors (or worse) because we'd be violating a basic invariant of our code:
+; the theorem prover deals with :logic terms.  The lambda rewriter checked that
+; the body was well-formed, which included tame, which pre-v8.4 guaranteed
+; warrants, and so we knew that (ev$ '(undefined-fn '1 '2) a) = (undefined-fn
+; '1 '2).  But now tameness doesn't guarantee that warrants exist.
+
+; Some good guidelines to keep in mind:
+; (1) Apply$ can encounter anything!
+; (2) Badges are necessary to know that :FNs are respected.
+; (3) Badges are necessary to run safely.
+; (4) Not every function using apply$ will be badged.
+; (5) Warrants are necessary to prove anything.
+; (6) Warrants imply badges and :logic mode.
+
 (defun chk-logic-subfunctions (names0 names terms wrld str ctx state)
 
 ; Assume we are defining names in terms of terms (1:1 correspondence).  Assume
 ; also that the definitions are to be :logic.  Then we insist that every
-; function used in terms be :logic.  Str is a string used in our error
-; message and is either "guard", "split-types expression", or "body".
+; function used in terms be :logic.  Str is a string used in our error message
+; and is either "guard", "split-types expression", or "body".  But we allow
+; quoted function symbols in :FN slots to be in :program mode.  See the Essay
+; on the Use of :PROGRAM Mode Functions by :LOGIC Mode Functions.
 
 ; WARNING: This function guarantees that a call of a :logic mode function
 ; cannot lead to a call of a :program mode function.  This guarantee justifies
@@ -8531,13 +8674,16 @@
 ; past the end of an array.  So be careful when considering a relaxation of
 ; this guarantee!
 
-  (cond ((null names) (value nil))
-        (t (let ((bad (collect-programs
-                       (set-difference-eq (all-fnnames (car terms))
-                                          names0)
-                       wrld)))
-             (cond
-              (bad
+  (cond
+   ((null names) (value nil))
+   (t
+    (let
+      ((bad (collect-programs
+             (set-difference-eq (all-fnnames (car terms))
+                                names0)
+             wrld)))
+      (cond
+       (bad
 
 ; Before eliminating the error below, think carefully!  In particular, consider
 ; the following problem involving trans-eval.  A related concern, which points
@@ -8589,14 +8735,62 @@
 ;           (assert$ (equal val 2)
 ;                    (mv state val st)))
 
-               (er soft ctx
-                   "The ~@0 for ~x1 calls the :program function~#2~[ ~
-                    ~&2~/s ~&2~].  We require that :logic definitions be ~
-                    defined entirely in terms of :logically defined ~
-                    functions.  See :DOC defun-mode."
-                   str (car names) bad))
-              (t (chk-logic-subfunctions names0 (cdr names) (cdr terms)
-                                             wrld str ctx state)))))))
+        (er
+         soft ctx
+         "The ~@0 for ~x1 calls the :program function~#2~[ ~&2~/s ~&2~].  We ~
+          require that :logic definitions be defined entirely in terms of ~
+          :logically defined functions.  See :DOC defun-mode."
+         str (car names)
+         (reverse bad)))
+       (t (chk-logic-subfunctions names0 (cdr names)
+                                  (cdr terms)
+                                  wrld str ctx state)))))))
+
+(defun collect-unbadged (fns wrld)
+  (cond ((endp fns) nil)
+        ((executable-badge (car fns) wrld)
+         (collect-unbadged (cdr fns) wrld))
+        (t (cons (car fns)
+                 (collect-unbadged (cdr fns) wrld)))))
+
+(defun chk-badged-quoted-subfunctions (names0 names terms wrld str ctx state)
+
+; Assume we are defining names in terms of terms (1:1 correspondence).  Then we
+; insist that every quoted symbol used as a function in a :FN or :EXPR slot be
+; badged.  Note that we do not require the subfunctions to be in :logic mode
+; even if the functions being defined are in :logic mode.  The only reason we
+; check this condition is to cause an error on (apply$ 'foo ...) where foo is
+; unbadged.  And the reason we do that is because we cause such an error on
+; (lambda$ (x) (foo ...)) and it just seems confusing to allow unbadged symbols
+; to (apparently) be applied with apply$ but not evaluated by ev$.
+
+; Warning:  Do not call this function during boot-strap!
+
+  (cond
+   ((null names) (value nil))
+   (t
+    (let
+      ((bad (collect-unbadged
+             (set-difference-eq (all-fnnames! nil     ; term flg
+                                              :inside ; collect inside quotes
+                                              nil     ; don't start til inside
+                                              (car terms)
+                                              nil ; ilk
+                                              wrld nil)
+                                names0)
+             wrld)))
+      (cond
+       (bad
+        (er
+         soft ctx
+         "The ~@0 for ~x1 uses the unbadged symbol~#2~[ ~&2~/s ~&2~] in one ~
+          or more :FN or :EXPR slots.  We require that all such symbols be ~
+          badged function symbols.  See :DOC defun and defbadge."
+         str (car names)
+         (reverse bad)))
+       (t (chk-badged-quoted-subfunctions names0 (cdr names)
+                                          (cdr terms)
+                                          wrld str ctx state)))))))
 
 ;; Historical Comment from Ruben Gamboa:
 ;; This function strips out the functions which are
@@ -9970,6 +10164,479 @@
    )
   nil)
 
+; We need some machinery about type-prescriptions, which was in defthm.lisp
+; before April 2021, in support of xargs :type-prescription for defun.
+
+(mutual-recursion
+
+(defun remove-lambdas1 (term)
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (cond ((or (variablep term)
+             (fquotep term))
+         (mv nil term))
+        (t (mv-let (changedp args)
+             (remove-lambdas-lst (fargs term))
+             (let ((fn (ffn-symb term)))
+               (cond ((flambdap fn)
+                      (mv-let (changedp body)
+                        (remove-lambdas1 (lambda-body fn))
+                        (declare (ignore changedp))
+                        (mv t
+                            (subcor-var (lambda-formals fn)
+                                        args
+                                        body))))
+                     (changedp (mv t (cons-term fn args)))
+                     (t (mv nil term))))))))
+
+(defun remove-lambdas-lst (termlist)
+  (declare (xargs :guard (pseudo-term-listp termlist)))
+  (cond ((consp termlist)
+         (mv-let (changedp1 term)
+           (remove-lambdas1 (car termlist))
+           (mv-let (changedp2 rest)
+             (remove-lambdas-lst (cdr termlist))
+             (mv (or changedp1 changedp2)
+                 (cons term rest)))))
+        (t (mv nil nil))))
+)
+
+(defun remove-lambdas (term)
+
+; Remove-lambdas returns the result of applying beta-reductions in term.  This
+; function preserves quote-normal form: if term is in quote-normal form, then
+; so is the result.
+
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (mv-let (changedp ans)
+    (remove-lambdas1 term)
+    (declare (ignore changedp))
+    ans))
+
+(defun type-prescription-disjunctp (var term)
+
+; Warning: Keep this function in sync with
+; subst-nil-into-type-prescription-disjunct.
+
+; Var is a variable and term is a term.  Essentially we are answering
+; the question, ``is term a legal disjunct in the conclusion of a
+; type-prescription about pat'' for some term pat.  However, by this
+; time all occurrences of the candidate pat in the conclusion have
+; been replaced by some new variable symbol and that symbol is var.
+; Furthermore, we will have already checked that the resulting
+; generalized concl contains no variables other than var and the
+; variables occurring in pat.  So what this function actually checks
+; is that term is either (equal var other-var), (equal other-var var),
+; or else is some arbitrary term whose all-vars is identically the
+; singleton list containing var.
+
+; If term is one of the two equality forms above, then we know
+; other-var is a variable in pat and that term is one of the disjuncts
+; that says ``pat sometimes returns this part of its input.''  If term
+; is of the third form, then it might have come from a
+; type-restriction on pat, e.g., (and (rationalp pat) (<= pat 0)) or
+; (compound-recognizerp pat), or it might be some pretty arbitrary
+; term.  However, we at least know that it contains no variables at
+; all outside the occurrences of pat and that means that we can trust
+; type-set-implied-by-term to tell us what this term implies about
+; pat.
+
+  (cond ((variablep term)
+
+; This could be a type-prescription disjunct in the generalized concl
+; only if term is var, i.e., the original disjunct was equivalent to
+; (not (equal pat 'nil)).
+
+         (eq term var))
+        ((fquotep term) nil)
+        ((flambda-applicationp term) nil)
+        (t (or (and (eq (ffn-symb term) 'equal)
+                    (or (and (eq var (fargn term 1))
+                             (variablep (fargn term 2))
+                             (not (eq (fargn term 1) (fargn term 2))))
+                        (and (eq var (fargn term 2))
+                             (variablep (fargn term 1))
+                             (not (eq (fargn term 2) (fargn term 1))))))
+               (equal (all-vars term) (list var))))))
+
+(defun type-prescription-conclp (var concl)
+
+; Warning: Keep this function in sync with
+; subst-nil-into-type-prescription-concl.
+
+; Var is a variable and concl is a term.  We recognize those concl
+; that are the macroexpansion of (or t1 ... tk) where every ti is a
+; type-prescription-disjunctp about var.
+
+; In the grand scheme of things, concl was obtained from the
+; conclusion of an alleged :TYPE-PRESCRIPTION lemma about some term,
+; pat, by replacing all occurrences of pat with some new variable,
+; var.  We also know that concl involves no variables other than var
+; and those that occurred in pat.
+
+  (cond ((variablep concl) (type-prescription-disjunctp var concl))
+        ((fquotep concl) nil)
+        ((flambda-applicationp concl) nil)
+        ((eq (ffn-symb concl) 'if)
+         (cond ((equal (fargn concl 1) (fargn concl 2))
+                (and (type-prescription-disjunctp var (fargn concl 1))
+                     (type-prescription-conclp var (fargn concl 3))))
+               (t (type-prescription-disjunctp var concl))))
+        (t (type-prescription-disjunctp var concl))))
+
+(defun subst-nil-into-type-prescription-disjunct (var term)
+
+; Warning:  Keep this function in sync with type-prescription-disjunctp.
+
+; We assume var and term are ok'd by type-prescription-disjunctp.
+; If term is of the form (equal var other-var) or (equal other-var var)
+; we replace it by nil, otherwise we leave it alone.
+
+  (cond ((variablep term) term)
+
+; The next two cases never happen, but we leave them in just to make
+; sure we copy term modulo this substitution.
+
+        ((fquotep term) term)
+        ((flambda-applicationp term) term)
+        ((and (eq (ffn-symb term) 'equal)
+              (or (and (eq var (fargn term 1))
+                       (variablep (fargn term 2))
+                       (not (eq (fargn term 1) (fargn term 2))))
+                  (and (eq var (fargn term 2))
+                       (variablep (fargn term 1))
+                       (not (eq (fargn term 2) (fargn term 1))))))
+         *nil*)
+        (t term)))
+
+(defun subst-nil-into-type-prescription-concl (var concl)
+
+; Warning:  Keep this function in sync with type-prescription-conclp.
+
+; We know that var and concl are ok'd by type-prescription-conclp.  So
+; concl is a disjunction of terms, some of which are of the form
+; (equal var other-var).  We replace each of those disjuncts in concl
+; with nil so as to produce that part of concl that is a disjunct of
+; type restrictions.  That is, if our answer is basic-term and vars is
+; the list of all the other-vars in concl, then concl is equivalent to
+; basic-term disjoined with the equality between var and each variable
+; in vars.
+
+  (cond
+   ((variablep concl) (subst-nil-into-type-prescription-disjunct var concl))
+
+; The next two cases never happen.
+
+   ((fquotep concl) concl)
+   ((flambda-applicationp concl) concl)
+   ((eq (ffn-symb concl) 'if)
+    (cond ((equal (fargn concl 1) (fargn concl 2))
+           (let ((temp (subst-nil-into-type-prescription-disjunct var
+                                                                  (fargn concl 1))))
+             (fcons-term* 'if
+                          temp
+                          temp
+                          (subst-nil-into-type-prescription-concl var
+                                                                  (fargn concl 3)))))
+          (t (subst-nil-into-type-prescription-disjunct var concl))))
+   (t (subst-nil-into-type-prescription-disjunct var concl))))
+
+(defun unprettyify-tp (term)
+
+; This variant of unprettyify avoids giving special treatment to conjunctions,
+; and hence is suitable for parsing terms into type-prescription rules.  Unlike
+; unprettyify, it returns (mv hyps concl).
+
+  (case-match term
+    (('implies t1 t2)
+     (mv-let (hyps concl)
+             (unprettyify-tp t2)
+             (mv (append? (flatten-ands-in-lit t1)
+                          hyps)
+                 concl)))
+    ((('lambda vars body) . args)
+     (unprettyify-tp (subcor-var vars args body)))
+    (& (mv nil (remove-lambdas term)))))
+
+(defun destructure-type-prescription (name typed-term term ens wrld)
+
+; Warning: Keep this in sync with the :BACKCHAIN-LIMIT-LST case of
+; translate-rule-class-alist.
+
+; Note: This function does more than "destructure" term into a
+; :TYPE-PRESCRIPTION rule, it checks a lot of conditions too and
+; computes type-sets.  However, it doesn't actually cause errors --
+; note that state is not among its arguments -- but may return an
+; error message suitable for printing with ~@.  We return many
+; results.  The first is nil or an error message.  The rest are
+; relevant only if the first is nil and are described below.  We code
+; this way because the destructuring and checking are inextricably
+; intertwined and when we destructure in order to add the rule, we do
+; not have state around.
+
+; We determine whether term is a suitable :TYPE-PRESCRIPTION lemma
+; about the term typed-term.  Term is suitable as a :TYPE-
+; PRESCRIPTION lemma about typed-term if the conclusion of term,
+; concl, is a disjunction of type-prescription disjuncts about
+; typed-term.  Each disjunct must either be an equality between
+; typed-term and one of the variables occurring in typed-term, or else
+; must be some term, such as (and (rationalp typed-term) (<=
+; typed-term 0)) or (compound-recognizerp typed-term), that mentions
+; typed-term and contains no variables outside those occurrences of
+; typed-term.
+
+; If term is unsuitable we return an error msg and nils.  Otherwise we
+; return nil and four more things: the list of hyps, a basic type
+; set, a list of variables, and a ttree.  In that case, term implies
+; that when hyps are true, the type-set of typed-term is the union of the
+; basic type-set together with the type-sets of the variables listed.
+; The ttree records our dependencies on compound recognizers or other
+; type-set lemmas in wrld.  The ttree returned contains no 'assumption
+; tags.
+
+  (let ((term (remove-guard-holders term wrld)))
+    (mv-let
+     (hyps concl)
+     (unprettyify-tp term)
+     (cond
+      ((or (variablep typed-term)
+           (fquotep typed-term)
+           (flambda-applicationp typed-term))
+       (mv (msg "The :TYPED-TERM, ~x0, provided in the :TYPE-PRESCRIPTION ~
+                 rule class for ~x1 is illegal because it is a variable, ~
+                 constant, or lambda application.  See :DOC type-prescription."
+                typed-term name)
+           nil nil nil nil nil))
+      ((dumb-occur-lst typed-term hyps)
+       (mv (msg "The :TYPED-TERM, ~x0, of the proposed :TYPE-PRESCRIPTION ~
+                 rule ~x1 occurs in the hypotheses of the rule.  This would ~
+                 cause ``infinite backchaining'' if we permitted ~x1 as a ~
+                 :TYPE-PRESCRIPTION.  (Don't feel reassured by this check:  ~
+                 infinite backchaining may occur anyway since it can be ~
+                 caused by the combination of several rules.)"
+                typed-term
+                name)
+           nil nil nil nil nil))
+      (t
+       (let ((all-vars-typed-term (all-vars typed-term))
+             (all-vars-concl (all-vars concl)))
+         (cond
+          ((not (subsetp-eq all-vars-concl all-vars-typed-term))
+           (mv (msg "~x0 cannot be used as a :TYPE-PRESCRIPTION rule as ~
+                     described by the given rule class because the ~
+                     :TYPED-TERM, ~x1, does not contain the ~#2~[variable ~&2 ~
+                     which is~/variables ~&2 which are~] mentioned in the ~
+                     conclusion.  See :DOC type-prescription."
+                    name
+                    typed-term
+                    (reverse
+                     (set-difference-eq all-vars-concl all-vars-typed-term)))
+               nil nil nil nil nil))
+          (t (let* ((new-var (genvar (find-pkg-witness typed-term)
+                                     "TYPED-TERM" nil all-vars-typed-term))
+                    (concl1 (subst-expr new-var typed-term concl)))
+               (cond
+                ((not (type-prescription-conclp new-var concl1))
+                 (mv (msg "~x0 is an illegal :TYPE-PRESCRIPTION lemma of the ~
+                           class indicated because its conclusion is not a ~
+                           disjunction of type restrictions about the ~
+                           :TYPED-TERM ~x1.  See :DOC type-prescription."
+                          name typed-term)
+                     nil nil nil nil nil))
+                (t (let ((vars (remove1-eq new-var (all-vars concl1)))
+                         (basic-term
+                          (subst-nil-into-type-prescription-concl new-var concl1)))
+
+; Once upon a time, briefly, we got the type-set implied by (and hyps
+; basic-term), thinking that we might need hyps to extract type
+; information from basic-term.  But the only var in basic-term is new
+; so the hyps don't help much.  The idea was to permit lemmas like
+; (implies (rationalp x) (<= 0 (* x x))).  Note that the guard for <=
+; is satisfied only if we know that the product is rational, which we
+; can deduce from the hyp.  But when we try to process that lemma, the
+; typed-term in generalized away, e.g., (implies (rationalp x) (<= 0
+; Z)).  Thus, the hyps don't help: the only var in basic-term is
+; new-var.  You could conjoin hyps and concl1 and THEN generalize the
+; typed-term to new-var, thereby linking the occurrences of typed-term
+; in the hyps to those in the concl.  But this is very unhelpful
+; because it encourages the creation of lemmas that contain the
+; typed-term in the hyps.  That is bad because type-set then
+; infinitely backchains.  In the face of these difficulties, we have
+; reverted back to the simplest treatment of type-prescription lemmas.
+
+                     (mv-let
+                      (ts ttree)
+                      (type-set-implied-by-term new-var nil basic-term ens wrld
+                                                nil)
+                      (cond ((ts= ts *ts-unknown*)
+                             (mv (msg "~x0 is a useless :TYPE-PRESCRIPTION ~
+                                       lemma because we can deduce no type ~
+                                       restriction about its :TYPED-TERM ~
+                                       (below represented by ~x1) from the ~
+                                       generalized conclusion, ~p2.  See :DOC ~
+                                       type-prescription."
+                                      name
+                                      new-var
+                                      (untranslate concl1 t wrld))
+                                 nil nil nil nil nil))
+                            ((not (assumption-free-ttreep ttree))
+
+; If type-set-implied-by-term requires that we force some assumptions,
+; it is not clear what to do.  For example, it is possible that the
+; assumptions involve new-var, which makes no sense in the context of
+; an application of this rule.  My intuition tells me this error will
+; never arise because for legal concls, basic-term is guard free.  If
+; there are :TYPE-PRESCRIPTION lemmas about the compound recognizers
+; in it, they could have forced hyps.  I think it unlikely, since the
+; recognizers are Boolean.  Well, I guess I could add a
+; :TYPE-PRESCRIPTION lemma that said that under some forced hyp the
+; compound-recognizer was actually t.  In that case, the forced hyp
+; would necessarily involve new-var, since that is the only argument
+; to a compound recognizer.  It would be interesting to see a living
+; example of this situation.
+
+                             (mv
+                              (if (tagged-objectsp 'fc-derivation ttree)
+                                  (er hard 'destructure-type-prescription
+                                      "Somehow an 'fc-derivation, ~x0, has ~
+                                       found its way into the ttree returned ~
+                                       by type-set-implied-by-term."
+                                      (car (tagged-objects 'fc-derivation
+                                                           ttree)))
+                                (msg "~x0 is an illegal :TYPE-PRESCRIPTION ~
+                                      lemma because in determining the ~
+                                      type-set implied for its :TYPED-TERM, ~
+                                      ~x1, by its conclusion the ~
+                                      ~#2~[assumption ~&2 was~/assumptions ~
+                                      ~&2 were~] and our :TYPE-PRESCRIPTION ~
+                                      preprocessor, ~
+                                      CHK-ACCEPTABLE-TYPE-PRESCRIPTION-RULE, ~
+                                      does not know how to handle this ~
+                                      supposedly unusual situation.  It would ~
+                                      be very helpful to report this error to ~
+                                      the authors."
+                                     name typed-term
+                                     (tagged-objects 'assumption ttree)))
+                              nil nil nil nil nil))
+                            (t (mv nil hyps concl ts vars ttree))))))))))))))))
+
+(defun get-xargs-type-prescription-lst (fives ctx state)
+
+; Returns a list corresponding to fives that represents the unique value of the
+; :type-prescription xargs (nil, when not supplied).
+
+  (cond
+   ((endp fives) (value nil))
+   (t
+    (er-let* ((rest (get-xargs-type-prescription-lst (cdr fives) ctx state)))
+      (let* ((five (car fives))
+             (lst (fetch-dcl-fields1 '(:type-prescription) (fourth five))))
+        (cond
+         ((null lst) (value (cons nil rest)))
+         ((cdr lst)
+          (er soft ctx
+              "The :type-prescription keyword for xargs must occur at most ~
+               once in the declare forms for a function."))
+         (t (value (cons (car lst) rest)))))))))
+
+(defun chk-type-prescription-lst (names arglists type-prescription-lst
+                                        ens wrld ctx state)
+
+; Names and type-prescription-lst are true lists of the same length.  We check
+; that each name in names has a type-prescription in wrld that implies (is a
+; subset of) the type-prescription represented by the pair (basic-ts . vars) at
+; the corresponding position in type-prescription-lst, but we skip the check
+; when there is nil rather than a pair at that position.  We issue a warning
+; when thse are not equal.
+
+; Note that wrld is a world constructed during admission of definitions of
+; names, after type-prescriptions for names have been placed into wrld.  So we
+; expect these type-prescriptions to be hypothesis-free.
+
+  (cond
+   ((endp names) (value nil))
+   ((null (car type-prescription-lst))
+    (chk-type-prescription-lst (cdr names)
+                               (cdr arglists)
+                               (cdr type-prescription-lst)
+                               ens wrld ctx state))
+   (t
+    (er-let* ((term (translate (car type-prescription-lst)
+                               t
+                               t ; logic-modep
+                               t ; known-stobjs
+                               ctx wrld state)))
+      (mv-let (erp hyps concl basic-ts vars ttree)
+        (destructure-type-prescription
+         (car names)
+         (cons (car names) (car arglists))
+         term ens wrld)
+        (declare (ignore concl ttree))
+        (cond
+         (erp (er soft ctx
+                  "Illegal :type-prescription specified in xargs for name ~
+                   ~x0.  Here is the error message one would see upon trying ~
+                   to submit it as a :type-prescription rule:~|~%~@1"
+                  (car names)
+                  erp))
+         (hyps (er soft ctx
+                   "Illegal :type-prescription specified in xargs for name ~
+                    ~x0: hypotheses are not allowed."
+                   (car names)))
+         (t
+          (let* ((name (car names))
+                 (old-tp (car (getpropc name 'type-prescriptions nil wrld))))
+            (cond
+             ((null old-tp)
+              (er soft ctx
+                  "It is illegal to specify a non-nil :type-prescription in ~
+                   an xargs declaration for ~x0, because ACL2 computed no ~
+                   built-in type prescription for ~x0."
+                  name))
+             (t
+              (let* ((old-basic-ts (access type-prescription old-tp :basic-ts))
+                     (old-vars (access type-prescription old-tp :vars))
+                     (subsetp-vars (subsetp-eq old-vars vars)))
+                (assert$
+                 (null (access type-prescription old-tp :hyps))
+                 (cond
+                  ((and (ts= old-basic-ts basic-ts)
+                        (or (equal vars old-vars) ; optimization
+                            (and subsetp-vars
+                                 (subsetp-eq vars old-vars))))
+                   (chk-type-prescription-lst (cdr names)
+                                              (cdr arglists)
+                                              (cdr type-prescription-lst)
+                                              ens wrld ctx state))
+                  ((and (ts-subsetp old-basic-ts basic-ts)
+                        (subsetp-eq old-vars vars))
+                   (pprogn
+                    (warning$ ctx "Type-prescription"
+                              "The type-prescription specified by the xargs ~
+                               :type-prescription for ~x0 is strictly weaker ~
+                               than the computed type of ~x0~@1."
+                              name
+                              (if (member-eq 'event
+                                             (f-get-global 'inhibit-output-lst
+                                                           state))
+                                  ""
+                                " that is noted above"))
+                    (chk-type-prescription-lst (cdr names)
+                                               (cdr arglists)
+                                               (cdr type-prescription-lst)
+                                               ens wrld ctx state)))
+                  (t (er soft ctx
+                         "The type-prescription specified by the xargs ~
+                          :type-prescription for ~x0 is not implied by the ~
+                          computed type of ~x0~@1."
+                         name
+                         (if (member-eq 'event
+                                        (f-get-global 'inhibit-output-lst
+                                                      state))
+                             ""
+                           " that is noted above"))))))))))))))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -10096,7 +10763,9 @@
         :LOOP$-RECURSION
         fives
         nil ; :loop$-recursion default value
-        ctx state)))
+        ctx state))
+      (type-prescription-lst
+       (get-xargs-type-prescription-lst fives ctx state)))
      (er-progn
       (cond
        ((and (consp (cdr loop$-recursion-lst))
@@ -10166,8 +10835,10 @@
                      'badge-table
                      'table-alist
                      (put-assoc-eq :badge-userfn-structure
-                                   (cons (cons fn badge)
-                                         userfn-structure)
+                                   (put-badge-userfn-structure-tuple-in-alist
+                                    (make-badge-userfn-structure-tuple
+                                     fn nil badge)
+                                    userfn-structure)
                                    badge-table)
                      wrld2))))
                 (value wrld2))))
@@ -10340,17 +11011,36 @@
 ; translate11 and translate1 do not.
 
                          (er-progn
-                          (chk-logic-subfunctions names names
-                                                  guards wrld3 "guard"
-                                                  ctx state)
-                          (chk-logic-subfunctions names names
-                                                  split-types-terms wrld3
-                                                  "split-types expression"
-                                                  ctx state)
-                          (chk-logic-subfunctions names names bodies
-                                                  wrld3 "body"
-                                                  ctx state))
+                          (chk-logic-subfunctions
+                           names names
+                           guards wrld3 "guard"
+                           ctx state)
+                          (chk-logic-subfunctions
+                           names names
+                           split-types-terms wrld3
+                           "split-types expression"
+                           ctx state)
+                          (chk-logic-subfunctions
+                           names names
+                           bodies wrld3 "body"
+                           ctx state))
                          (value nil))
+                     (if (global-val 'boot-strap-flg (w state))
+                         (value nil)
+                         (er-progn
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           guards wrld3 "guard"
+                           ctx state)
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           split-types-terms wrld3
+                           "split-types expression"
+                           ctx state)
+                          (chk-badged-quoted-subfunctions
+                           names names
+                           bodies wrld3 "body"
+                           ctx state)))
                      (if (eq symbol-class :common-lisp-compliant)
                          (er-progn
                           (chk-common-lisp-compliant-subfunctions
@@ -10437,7 +11127,8 @@
                                                 new-lambda$-alist-pairs
                                                 :new-loop$-alist-pairs
                                                 new-loop$-alist-pairs)
-                                          guard-simplify)))))))))))))))))))
+                                          guard-simplify
+                                          type-prescription-lst)))))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -10526,6 +11217,11 @@
 ;    guard-simplify
 ;               - t or nil, determining whether to simplify while generating
 ;                 the guard conjectures
+
+;    type-prescription-lst
+;               - collect all values of :type-prescription xargs, where each
+;                 value is a type-prescription record derived from the formula
+;                 supplied if any, else nil
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -10755,6 +11451,7 @@
                          bodies symbol-class normalizeps split-types-terms
                          lambda-info
                          non-executablep
+                         type-prescription-lst
                          #+:non-standard-analysis std-p
                          ctx state)
 
@@ -10814,6 +11511,11 @@
                                                      t nil wrld5)
                                        ens wrld5 ttree2 state)
         (er-progn
+
+; We want to defer printing the :type-prescription xargs warning, if any, until
+; after printing the message about the type prescription (see
+; print-defun-msg/type-prescriptions).
+
          (update-w big-mutrec wrld6)
          (let* ((wrld6a
                  (if (access lambda-info
@@ -10899,33 +11601,37 @@
                 (pprogn
                  (print-defun-msg names ttree2 wrld12 col state)
                  (set-w 'extension wrld12 state)
-                 (cond
-                  ((eq symbol-class :common-lisp-compliant)
-                   (er-let*
-                       ((guard-hints (if guard-hints
-                                         (translate-hints
-                                          (cons "Guard for" (car names))
-                                          guard-hints
-                                          ctx wrld12 state)
-                                         (value nil)))
-                        (pair (verify-guards-fn1 names guard-hints otf-flg
-                                                 guard-debug guard-simplify ctx
-                                                 state)))
+                 (er-progn
+                  (chk-type-prescription-lst names arglists
+                                             type-prescription-lst
+                                             ens wrld12 ctx state)
+                  (cond
+                   ((eq symbol-class :common-lisp-compliant)
+                    (er-let*
+                        ((guard-hints (if guard-hints
+                                          (translate-hints
+                                           (cons "Guard for" (car names))
+                                           guard-hints
+                                           ctx wrld12 state)
+                                        (value nil)))
+                         (pair (verify-guards-fn1 names guard-hints otf-flg
+                                                  guard-debug guard-simplify ctx
+                                                  state)))
 
 ; Pair is of the form (wrld . ttree3) and we return a pair of the same
 ; form, but we must combine this ttree with the ones produced by the
 ; termination proofs and type-prescriptions.
 
-                     (value
-                      (cons (car pair)
-                            (cons-tag-trees ttree1
-                                            (cons-tag-trees
-                                             ttree2
-                                             (cdr pair)))))))
-                  (t (value
-                      (cons wrld12
-                            (cons-tag-trees ttree1
-                                            ttree2)))))))))))))))))
+                      (value
+                       (cons (car pair)
+                             (cons-tag-trees ttree1
+                                             (cons-tag-trees
+                                              ttree2
+                                              (cdr pair)))))))
+                   (t (value
+                       (cons wrld12
+                             (cons-tag-trees ttree1
+                                             ttree2))))))))))))))))))
 
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
@@ -10933,6 +11639,7 @@
                          symbol-class normalizeps split-types-terms
                          lambda-info
                          non-executablep
+                         type-prescription-lst
                          #+:non-standard-analysis std-p
                          ctx wrld state)
 
@@ -10942,7 +11649,10 @@
 
   (cond
    ((eq symbol-class :program)
-    (defuns-fn-short-cut names docs pairs guards measures split-types-terms
+    (defuns-fn-short-cut
+      t ; loop$-recursion-checkp, because chk-acceptable-defuns has approved.
+      (access lambda-info lambda-info :loop$-recursion)
+      names docs pairs guards measures split-types-terms
       bodies non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
@@ -10981,6 +11691,7 @@
          split-types-terms
          lambda-info
          non-executablep
+         type-prescription-lst
          #+:non-standard-analysis std-p
          ctx
          state))))))
@@ -11007,12 +11718,17 @@
         ((not (find-non-hidden-package-entry str (known-package-alist state)))
          (er soft 'in-package
              "The argument to IN-PACKAGE must be a known package ~
-              name, but ~x0 is not.  The known packages are ~*1"
+              name, but ~x0 is not.  The known packages are ~*1~@2"
              str
              (tilde-*-&v-strings
               '&
               (strip-non-hidden-package-names (known-package-alist state))
-              #\.)))
+              #\.)
+             (if (global-val 'include-book-path (w state))
+                 (msg "~%NOTE: This error might be eliminated by certifying ~
+                       the book,~|~x0.~|See :DOC certify-book."
+                      (car (global-val 'include-book-path (w state))))
+               "")))
         (t (let ((state (f-put-global 'current-package str state)))
              (value str)))))
 
@@ -11262,6 +11978,10 @@
                                    reclassifyingp non-executablep pair ctx wrld
                                    state)
 
+; Warning: Before changing the cltl-cmd argument of the call below of
+; install-event, see the comment in cltl-def-from-name about how the
+; cltl-command is used in cltl-def-from-name.
+
 ; See defuns-fn.
 
   (install-event (cond ((null (cdr names)) (car names))
@@ -11420,7 +12140,8 @@
                 (measure-debug (nth 21 tuple))
                 (split-types-terms (nth 22 tuple))
                 (lambda-info (nth 23 tuple))
-                (guard-simplify (nth 24 tuple)))
+                (guard-simplify (nth 24 tuple))
+                (type-prescription-lst (nth 25 tuple)))
             (with-useless-runes
              (car names)
              wrld
@@ -11448,6 +12169,7 @@
                           split-types-terms
                           lambda-info
                           non-executablep
+                          type-prescription-lst
                           #+:non-standard-analysis std-p
                           ctx
                           wrld
@@ -11460,58 +12182,62 @@
                 (if (access lambda-info lambda-info :loop$-recursion)
 ; If loop$-recursion is set we know this is a singly-recursive (not mutually
 ; recursive) defun that the user alleged was tame.  We check that now.
-                    (mv-let (erp msg-and-badge)
-                      (ev-fncall-w 'badger
-                                   (list (car names) (ens state) (w state))
-                                   (w state) nil nil nil t t)
+                    (let ((wrld (car pair)))
+                      (mv-let (erp msg-and-badge)
+                        (ev-fncall-w 'badger
+                                     (list (car names) wrld)
+                                     wrld nil nil nil t t)
 
 ; If erp is t, then msg-and-badge is actually an error msg.  Otherwise,
 ; msg-and-badge is (msg badge), where msg is either an error message or nil.
 ; When msg is nil, badge is the computed badge.
 
-                      (let ((msg1 msg-and-badge)
-                            (msg2 (if erp
-                                      nil
-                                    (car msg-and-badge)))
-                            (badge (if erp
-                                       nil
-                                     (cadr msg-and-badge))))
-                        (cond
-                         ((or erp msg2)
-                          (er soft 'defun
-                              "When :LOOP$-RECURSION T is declared for a ~
-                             function, as it was for ~x0, we must assign it a ~
-                             badge before we translate its body.  That ~
-                             assigned badge asserts that ~x0 returns a single ~
-                             value and is tame.  We then check that ~
-                             assumption after translation by generating the ~
-                             badge using the technique that DEFWARRANT would ~
-                             use.  But the attempt to generate the badge has ~
-                             failed, indicating that it is illegal to declare ~
-                             :LOOP$-RECURSION T for this function.  ~#1~[Our ~
-                             attempt to generate a badge produced the ~
-                             following error:~/The error message that would ~
-                             be reported by DEFWARRANT is:~]~%~%~@2"
-                              (car names) (if erp 0 1) (if erp msg1 msg2)))
-                         ((not (equal (access apply$-badge badge :out-arity) 1))
+                        (let ((msg1 msg-and-badge)
+                              (msg2 (if erp
+                                        nil
+                                        (car msg-and-badge)))
+                              (badge (if erp
+                                         nil
+                                         (cadr msg-and-badge))))
+                          (cond
+                           ((or erp msg2)
+                            (er soft 'defun
+                                "When :LOOP$-RECURSION T is declared for a ~
+                                 function, as it was for ~x0, we must assign ~
+                                 it a badge before we translate its body.  ~
+                                 That assigned badge asserts that ~x0 returns ~
+                                 a single value and is tame.  We then check ~
+                                 that assumption after translation by ~
+                                 generating the badge using the technique ~
+                                 that DEFWARRANT would use.  But the attempt ~
+                                 to generate the badge has failed, indicating ~
+                                 that it is illegal to declare ~
+                                 :LOOP$-RECURSION T for this function.  ~
+                                 ~#1~[Our attempt to generate a badge ~
+                                 produced the following error:~/The error ~
+                                 message that would be reported by DEFWARRANT ~
+                                 is:~]~%~%~@2"
+                                (car names) (if erp 0 1) (if erp msg1 msg2)))
+                           ((not (equal (access apply$-badge badge :out-arity) 1))
 
 ; This error can't happen!  The world -- wrld3 of chk-acceptable-defuns1 -- has
 ; the stobjs-out property of fn set to a list of length 1.  And the badger just
 ; looks there to find the :out-arity.
 
-                          (er soft 'defun
-                              "Impossible error!  The final badger check in ~
-                              DEFUNS-FN has failed on the :OUT-ARITY.  This ~
-                              is impossible given chk-acceptable-defuns1. ~
-                              Please show the implementors this bug!"))
-                         ((not (eq (access apply$-badge badge :ilks) t))
-                          (er soft 'defun
-                              "When :LOOP$-RECURSION T is declared for a ~
-                              function the function must be tame.  But ~x0 is ~
-                              not!  Its ilks are actually ~x1."
-                              (car names)
-                              (access apply$-badge badge :ilks)))
-                         (t (value nil)))))
+                            (er soft 'defun
+                                "Impossible error!  The final badger check in ~
+                                 DEFUNS-FN has failed on the :OUT-ARITY.  ~
+                                 This is impossible given ~
+                                 chk-acceptable-defuns1. Please show the ~
+                                 implementors this bug!"))
+                           ((not (eq (access apply$-badge badge :ilks) t))
+                            (er soft 'defun
+                                "When :LOOP$-RECURSION T is declared for a ~
+                                 function the function must be tame.  But ~x0 ~
+                                 is not!  Its ilks are actually ~x1."
+                                (car names)
+                                (access apply$-badge badge :ilks)))
+                           (t (value nil))))))
                   (value nil))
                 (install-event-defuns names event-form def-lst0 symbol-class
                                       reclassifyingp non-executablep pair ctx wrld
@@ -11565,18 +12291,7 @@
 ; *badge-prim-falist* because it will not be known to the compiler during the
 ; boot-strapping.
 
-                  (warrant (cond ((assoc-eq name
-                                            (unquote
-                                             (getpropc '*badge-prim-falist*
-                                                       'const nil wrld)))
-                                  t)
-                                 (badge
-                                  (list (intern-in-package-of-symbol
-                                         (concatenate 'string
-                                                      "APPLY$-WARRANT-"
-                                                      (symbol-name name))
-                                         name)))
-                                 (t nil)))
+                  (warrant (find-warrant-function-name name wrld))
                   (constraint-msg
                    (mv-let
                      (some-name constraint-lst)
@@ -11600,8 +12315,8 @@
                Guards Verified: ~y5~|~
                Defun-Mode:      ~@6~|~
                Type:            ~#7~[built-in (or unrestricted)~/~q8~]~|~
-               Badge:           ~#b~[built-in to apply$~/~yc~/none~]~|~
-               Warrant:         ~#b~[none needed~/~yd~/none~]~|~
+               Badge:           ~#b~[~yc~/none~]~|~
+               Warrant:         ~#d~[built-in~/~ye~/none~]~|~
                ~#9~[~/Constraint:      ~@a~|~]~
                ~%"
                    (list (cons #\0 name)
@@ -11617,9 +12332,10 @@
                          (cons #\8 tpthm)
                          (cons #\9 (if (equal constraint-msg "") 0 1))
                          (cons #\a constraint-msg)
-                         (cons #\b (if (eq warrant t) 0 (if warrant 1 2)))
+                         (cons #\b (if badge 0 1))
                          (cons #\c badge)
-                         (cons #\d warrant))
+                         (cons #\d (if (eq warrant t) 0 (if warrant 1 2)))
+                         (cons #\e warrant))
                    channel state nil)
               (value name))))
           ((and (symbolp name)

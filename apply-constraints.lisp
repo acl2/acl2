@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -202,7 +202,9 @@
 (defstub untame-ev$ (x a) t)
 
 ; The ``badge table'' is a table that associates badges with nonprimitive
-; function symbols.  It is extended by defwarrant.
+; function symbols.  It also contains a flag on each function symbol indicating
+; whether there is a warrant function for it.  The badge-table is maintained by
+; defwarrant.
 
 ; Three categories of function symbols have badges:
 
@@ -223,6 +225,11 @@
 ; * user-defined functions -- functions successfully processed by defwarrant
 ;   and listed under the key :badge-userfn-structure (currently a simple alist)
 ;   in the badge-table and maintained by defwarrant.
+
+; Only function symbols in the last category may have warrants.  Primitives and
+; apply$ boot fns do not need warrants because they're built into the
+; definition of apply$.  It was once the case that every function in the last
+; category had a warrant but that should no longer be assumed.
 
 (defconst *apply$-boot-fns-badge-alist*
   `((BADGE . ,*generic-tame-badge-1*)
@@ -256,16 +263,13 @@
 ; (``warrant\b'' or ``warranted,'' excluding ``warranty'' which occurs twice at
 ; the top of nearly every file).
 
-; Some functions have badges but not warrants!  Approximately 800 primitives
+; Functions can have badges but not warrants!  Approximately 800 primitives
 ; have badges known to the logical definition of BADGE but do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and
 ; do not have warrants: e.g., apply$ knows how to apply$ itself.  Once upon a
 ; time multi-valued user-defined functions could have badges but no warrants.
-; However, now that apply$ supports such functions all badged user-defined
-; functions have warrants. Every function listed in the :badge-userfn-structure
-; of the badge-table has a badge, and these are exactly the functions that have
-; a warrant.  The warrant for fn, if it exists, is named APPLY$-WARRANT-fn and
-; takes 0 arguments.
+; However, now that apply$ supports such functions multi-valued functions can
+; have warrants.  See the Essay on the Badge-Table in translate.lisp.
 
 )

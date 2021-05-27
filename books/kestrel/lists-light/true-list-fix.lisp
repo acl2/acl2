@@ -51,3 +51,16 @@
   (equal (true-list-fix (cons x y))
          (cons x (true-list-fix y)))
   :hints (("Goal" :in-theory (enable true-list-fix))))
+
+(local
+ (defun double-cdr-induct (x y)
+   (if (endp x)
+       (list x y)
+     (double-cdr-induct (cdr x) (cdr y)))))
+
+(defthmd equal-of-true-list-fix-and-true-list-fix-forward
+  (implies (equal (true-list-fix x) (true-list-fix y))
+           (equal (len x) (len y)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :induct (double-cdr-induct x y)
+           :in-theory (enable true-list-fix len))))

@@ -146,10 +146,7 @@
 
                            ACL2::CANCEL_TIMES-EQUAL-CORRECT
                            ACL2::CANCEL_PLUS-EQUAL-CORRECT
-                           ACL2::TRUE-LISTP-MEMBER-EQUAL
-
-                           VL-NONATOM->OP$INLINE-OF-VL-EXPR-FIX-X-NORMALIZE-CONST
-                           )))
+                           ACL2::TRUE-LISTP-MEMBER-EQUAL)))
 
 ;; Stupid little functions to avoid lots of case splitting.
 

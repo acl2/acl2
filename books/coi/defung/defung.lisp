@@ -36,13 +36,31 @@
 (include-book "coi/util/pseudo-translate" :dir :system)
 (include-book "coi/gensym/gensym" :dir :system)
 (include-book "coi/generalize/generalize" :dir :system)
-(INCLUDE-BOOK "ordinals/lexicographic-ordering" :dir :system)
+(INCLUDE-BOOK "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 (include-book "coi/util/table" :dir :system)
 (include-book "map-ec-call")
 (include-book "tools/flag" :dir :system)
 ;;
 ;; move to util ?
 ;;
+
+(defthmd natp-fc
+  (implies
+   (natp x)
+   (and (integerp x)
+        (<= 0 x)))
+  :rule-classes (:forward-chaining))
+
+(defthmd posp-fc
+  (implies
+   (posp x)
+   (and (integerp x)
+        (< 0 x)))
+  :rule-classes (:forward-chaining))
+
+(DEFTHMd <-+-NEGATIVE-0-1
+  (EQUAL (< (+ (- Y) X) 0)
+         (< X Y)))
 
 (defund ec-call-omit ()
   (declare (xargs :verify-guards t))
@@ -409,13 +427,18 @@
 	    ;;CANCEL_PLUS-LESSP-CORRECT
 	    acl2::O-FINP-<
 	    acl2::O-P-DEF-O-FINP-1
-	    acl2::<-+-NEGATIVE-0-1
+            ;; we may need a version of these ..
+	    ;;acl2::<-+-NEGATIVE-0-1
+	    ;;acl2::NATP-FC-1
+	    ;;acl2::NATP-FC-2
+	    ;;acl2::POSP-FC-1
+	    ;;acl2::POSP-FC-2
+	    ;;acl2::NATP-POSP--1
+            ;; here they are ..
+            <-+-NEGATIVE-0-1
+            posp-fc
+            natp-fc
 	    acl2::INTEGER-ABS
-	    acl2::NATP-FC-1
-	    acl2::NATP-FC-2
-	    acl2::POSP-FC-1
-	    acl2::POSP-FC-2
-	    acl2::NATP-POSP--1
 	    combine-and-evaluate-constants
 	    boolean-equal-reduction)
 	  (theory 'minimal-theory))))
@@ -2563,7 +2586,8 @@
 
   (met ((stest sbase sbody) (split-term-on-fset (list fn) tbody))
     ;;(let ((cbodyp (normalized-if-to-parallel-cond sbody)))
-      (met ((typespec signature sig-hints decls) (defun::extract-function-declaration decls))
+    (met ((typespec signature fty-sig sig-hints decls) (defun::extract-function-declaration decls))
+      (declare (ignore fty-sig))
       (met ((default-value decls) (defun::extract-xarg-key-from-decls :default-value decls))
       ;;(met ((default-type decls) (defun::extract-xarg-key-from-decls :default-type decls))
       (met ((nx decls) (defun::extract-xarg-key-from-decls :non-executable decls))

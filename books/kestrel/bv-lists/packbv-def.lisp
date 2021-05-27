@@ -15,7 +15,7 @@
 ;; vectors into larger bit vectors.  The smaller bit vectors can of course be
 ;; single bits.
 
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (include-book "../bv/bvcat-def")
 
 ;; Pack the ITEMS, each of which should be a bit-vector of size ITEMSIZE, into

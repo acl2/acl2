@@ -981,7 +981,7 @@ section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 (defxdoc acl2-system-feature-dependencies
   :parents (cert.pl)
   :short "Automatically forcing recertification when changes in the ACL2 sources
-          would invalidate a certificate"
+          would invalidate a certificate."
   :long "<p>In principle, every time the ACL2 system changes, all books should
 be recertified.  However, in practice many users don't do this because the ACL2
 system is updated frequently and it is time-consuming to rebuild all the
@@ -1249,8 +1249,8 @@ to the head node before returning control to the Makefile.</p>")
 ; added by Matt K., 8/14/2014
 (defxdoc cert_param
   :parents (cert.pl)
-  :short "restricting and modifying @(see community-books)
-certification using @('make')"
+  :short "Restricting and modifying @(see community-books)
+certification using @('make')."
   :long (concatenate 'string
  "<p>You can restrict the @(see books) to be certified using @('make')
   by adding a stylized ``@('cert_param:')'' comment.  For example, suppose that

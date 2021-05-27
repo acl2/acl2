@@ -1347,6 +1347,57 @@ another.</p>
   (deffixequiv 4vec-===))
 
 
+(define 4vec-===* ((left 4vec-p) (right 4vec-p))
+  :returns (equal 4vec-p)
+  :short "Approximation of Verilog-style ``case equality'' of @(see 4vec)s that
+          is X-monotonic when one argument is constant"
+
+  :long "<p>This is a substitute for @(see 4vec-===) that is X-monotonic, but
+is hoped to be good enough for most purposes.</p>
+
+<p>One of the common ways of using the @('===') operator in SystemVerilog is to
+check some value is exactly X, and if so, return an X result.  In such cases it
+suffices to produce X instead of 1 for the result of the ===, and this can make
+the result monotonic.</p>
+
+<p>We return, following the @(see boolean-convention),</p>
+
+<ul>
+<li>True (all 1s) when the inputs are both all non-X and identical, or</li>
+<li>False (all 0s) when some corresponding non-X bits of the inputs are not
+identical, or or when some bit of the left input is non-X and the corresponding
+bit of the right input is X</li>
+<li>Otherwise, X.</li>
+</ul>"
+  (b* (((4vec left))
+       ((4vec right))
+       (uppers-diff (logxor left.upper right.upper))
+       (lowers-diff (logxor left.lower right.lower))
+       (diff (logior uppers-diff lowers-diff))
+       (left-non-x (logorc1 left.upper left.lower))
+       (true ;; inputs are non-x and identical
+        (equal -1
+               (logandc1 diff
+                       ;; not X: ~(upper & ~lower) = ~upper | lower
+                       left-non-x)))
+       ((when true) -1)
+       (right-non-x (logorc1 right.upper right.lower))
+       (not-false (equal 0
+                         (logand
+                          left-non-x ;; factor this out because both conditions below include it
+                          (logorc2
+                           ;; bits are Boolean and not equal
+                           ;; (logand right-non-x
+                           diff
+                           ;; left is non-x and y is X
+                           right-non-x))))
+       ((when not-false) (4vec-x)))
+    0)
+
+  ///
+  (deffixequiv 4vec-===*))
+
+
 (define 3vec-? ((test 4vec-p)
                 (then 4vec-p)
                 (else 4vec-p))
@@ -1518,6 +1569,81 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
     :args ((tests 3vec)
            (thens 4vec)
            (elses 4vec))))
+
+(define 4vec-bit?! ((tests 4vec-p)
+                    (thens 4vec-p)
+                    (elses 4vec-p))
+  :returns (choices 4vec-p)
+  :short "Bitwise multiple if-then-elses of @(see 4vec)s; doesn't unfloat
+then/else values; uses else branch bits for any test bits not equal to
+1 (non-monotonic semantics in this respect)."
+
+  :long "<p>We carry out an independent if-then-else for each bit of
+@('tests'), @('thens'), and @('elses'), producing a new vector with all of the
+answers.  This result is computed bit by bit, with @('result[i]') being set
+to:</p>
+
+<ul>
+<li>@('thens[i]') if @('tests[i]') is 1,</li>
+<li>@('elses[i]') if @('tests[i]') is not 1.</li>
+</ul>
+
+<p>This is used for conditionally overriding signals, as in:</p>
+@({
+ (bit?! override-test override-val regular-val)
+ })
+
+<p>This way, if the override-test is left out of the environment (therefore its
+value is X), the regular value will go through.</p>"
+
+  (b* (((4vec tests))
+       ((4vec thens))
+       ((4vec elses))
+       (pick-then (logand tests.upper tests.lower)))
+    (mbe :logic (b* ((pick-else (lognot pick-then))
+                     (upper (logior (logand pick-then thens.upper)
+                                    (logand pick-else elses.upper)))
+                     (lower (logior (logand pick-then thens.lower)
+                                    (logand pick-else elses.lower))))
+                  (4vec upper lower))
+         :exec (b* (((when (eql pick-then -1)) thens)
+                    ((when (eql pick-then 0)) elses)
+                    (pick-else (lognot pick-then))
+                    (upper (logior (logand pick-then thens.upper)
+                                   (logand pick-else elses.upper)))
+                    (lower (logior (logand pick-then thens.lower)
+                                   (logand pick-else elses.lower))))
+                 (4vec upper lower))))
+                 
+  ///
+  (deffixequiv 4vec-bit?!
+    :args ((tests 4vec)
+           (thens 4vec)
+           (elses 4vec))))
+
+
+
+(define 4vec-?! ((test 4vec-p)
+                 (then 4vec-p)
+                 (else 4vec-p))
+  :returns (choices 4vec-p)
+  :short "If-then-elses of @(see 4vec)s following the SystemVerilog semantics for
+          procedural conditional branches, i.e. if the test has any bit that is
+          exactly 1 (not 0, Z, or X), we choose the then branch, else the else
+          branch. (Non-monotonic semantics)."
+
+  (b* (((4vec test))
+       ;; We choose the THEN branch if any bit has upper and lower both set.
+       (pick-else (equal 0 (logand test.upper test.lower))))
+    (if pick-else (4vec-fix else) (4vec-fix then)))
+                 
+  ///
+  (deffixequiv 4vec-?!
+    :args ((test 4vec)
+           (then 4vec)
+           (else 4vec))))
+
+
 
 
 (define 3vec-?* ((test 4vec-p)

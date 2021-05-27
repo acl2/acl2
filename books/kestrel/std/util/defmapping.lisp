@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
@@ -406,7 +407,7 @@
        (keys (strip-cars thm-names-alist))
        (description
         (msg "The list ~x0 of keywords of the :THM-NAMES input" keys))
-       ((er &) (ensure-list-no-duplicates$ keys description t nil))
+       ((er &) (ensure-list-has-no-duplicates$ keys description t nil))
        (thm-keywords (defmapping-thm-keywords
                        beta-of-alpha-thm$
                        alpha-of-beta-thm$
@@ -419,7 +420,7 @@
                           some of which may be supplied ~
                           in the :THM-NAMES input,"
                          names))
-       ((er &) (ensure-list-no-duplicates$ names description t nil)))
+       ((er &) (ensure-list-has-no-duplicates$ names description t nil)))
     (value thm-names$))
 
   :prepwork

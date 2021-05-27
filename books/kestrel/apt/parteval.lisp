@@ -10,11 +10,16 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
@@ -106,13 +111,13 @@
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -187,7 +192,7 @@
         (msg "The list ~x0 of static parameters" y1...ym))
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
-       ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
+       ((er &) (ensure-list-has-no-duplicates$ y1...ym description t nil))
        ((er &) (ensure-value-is-symbol-list$ y1...ym description t nil))
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))
@@ -351,19 +356,16 @@
     (see @(tsee parteval-process-old)).")
   (b* ((wrld (w state))
        ((er old$) (parteval-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
        ((er (list new-name$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old$ state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
        (names-to-avoid (cons thm-name$ names-to-avoid))
@@ -634,8 +636,7 @@
    (xdoc::p
     "The hints follow the proof
      in the design notes and in @('parteval-template.lisp')."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (equalities (parteval-gen-static-equalities static$))
+  (b* ((equalities (parteval-gen-static-equalities static$))
        (antecedent (conjoin equalities))
        (consequent `(equal (,old$ ,@(formals old$ wrld))
                            (,new-name$ ,@new-formals)))
@@ -647,10 +648,11 @@
                       :in-theory '(,old$ ,new-name$)
                       :induct (,new-name$ ,@new-formals))))
                 (3 `(("Goal" :in-theory '(,new-name$))))
-                (t (impossible))))
-       (local-event `(local (,macro ,thm-name$ ,formula :hints ,hints)))
-       (exported-event `(,macro ,thm-name$ ,formula)))
-    (mv local-event exported-event)))
+                (t (impossible)))))
+    (evmac-generate-defthm thm-name$
+                           :formula formula
+                           :hints hints
+                           :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -79,7 +79,7 @@ esac
 echo "Using ACL2_SUFFIX = $ACL2_SUFFIX"
 
 echo "Making ACL2(${ACL2_SUFFIX})"
-$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> make.log"
+$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP"
 
 echo "Building the books."
 cd books

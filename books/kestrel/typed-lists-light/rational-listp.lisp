@@ -25,3 +25,10 @@
          (and (rationalp a)
               (rational-listp x)))
   :hints (("Goal" :in-theory (enable rational-listp))))
+
+;; Kept disabledp by default
+(defthmd rational-listp-when-nat-listp
+  (implies (nat-listp items)
+           (equal (rational-listp items)
+                  (true-listp items)))
+  :hints (("Goal" :in-theory (enable nat-listp rational-listp))))

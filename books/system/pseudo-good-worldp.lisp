@@ -2,6 +2,23 @@
 ; Written by Matt Kaufmann and J Strother Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Members of the ACL2 community are invited to strengthen the
+; predicate pseudo-good-worldp that is defined in this book.  If you
+; do so, then please include your name in a standard-form comment in
+; the relevant code, like this, and also add your name to the list of
+; additional contributors just above this comment.
+
+; Contributed by: Frank N. Stein
+
+; Also, please understand that you are responsible for fixing any
+; resulting errors in running "make chk-include-book-worlds" (in
+; either the top-level ACL2 directory or, equivalently, in the books/
+; subdirectory).  That target checks worlds after including most
+; community books (some with ttags are exempted, for example, since
+; they put unusual triples in the world).  Note that every ordinary
+; regression does one such check by certifying
+; books/system/worldp-check.lisp.
+
 (in-package "ACL2")
 
 ; -----------------------------------------------------------------
@@ -1339,9 +1356,13 @@
 (defun absstobj-infop (val)
   (and (weak-absstobj-info-p val)
        (symbolp (access absstobj-info val :st$c))
-       (let ((logic-exec-pairs (access absstobj-info val :logic-exec-pairs)))
-         (and (symbol-alistp logic-exec-pairs)
-              (r-symbol-alistp logic-exec-pairs)))))
+       (let ((absstobj-tuples (access absstobj-info val :absstobj-tuples)))
+         (and (symbol-alistp absstobj-tuples)
+              (let ((cdrs (strip-cdrs absstobj-tuples)))
+                (and (symbol-alistp cdrs)
+                     (let ((cddrs (strip-cdrs cdrs)))
+                       (and (symbol-alistp cddrs)
+                            (r-symbol-alistp cddrs)))))))))
 
 ;-----------------------------------------------------------------
 ; ACCESSOR-NAMES

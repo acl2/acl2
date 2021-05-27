@@ -113,3 +113,19 @@
   (implies (true-listp x)
            (equal (equal 1 (len x))
                   (equal x (list (car x))))))
+
+;; not needed for more than 3 cdrs if we turn those into nthcdr
+(defthm len-of-cddr-when-equal-of-len
+  (implies (and (equal (len x) k) ; k is a free var
+                (syntaxp (quotep k))
+                (<= 2 k))
+           (equal (len (cddr x))
+                  (+ -2 k))))
+
+;if we know that the length is equal to something, turn a consp question into a question about that thing..
+(defthm consp-when-len-equal-constant
+  (implies (and (equal (len x) free) ;putting the free variable first made this a binding hyp, which led to loops
+                (syntaxp (quotep free))) ;new to prevent loops with len-equal-0-rewrite-alt - could just require free to be smaller than (len x)?
+           (equal (consp x)
+                  (< 0 free)))
+  :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))

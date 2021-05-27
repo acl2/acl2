@@ -18,8 +18,6 @@
 (include-book "utilities")
 (include-book "misc/bash" :dir :system)
 (include-book "data-structures/utilities" :dir :system)
-;(include-book "../defdata/cgen-rules")
-;; (include-book "fixers-gl-backend" :ttags :all)
 (include-book "cgen-state")
 
 (program)

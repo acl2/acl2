@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1913,6 +1913,22 @@
    (t (cons (car alist)
             (clear-warning-summaries-alist (cdr alist))))))
 
+(defun clear-warning-summaries ()
+
+; We update the COMMENT-WINDOW-IO wormhole data to remove all the
+; *tracked-warning-summaries*.  Doing this means that the next time those
+; warning situations arise the warnings are actually printed.
+
+  (wormhole 'COMMENT-WINDOW-IO
+            '(lambda (whs)
+               (make-wormhole-status
+                whs
+                :SKIP
+                (clear-warning-summaries-alist
+                 (wormhole-data whs))))
+            nil 
+            nil))
+
 (defun print-warnings-summary (state)
   (mv-let
    (warnings state)
@@ -2839,12 +2855,6 @@
                                      state)
                        (value mods)))))))
 
-(defun alist-to-doublets (alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        (t (cons (list (caar alist) (cdar alist))
-                 (alist-to-doublets (cdr alist))))))
-
 (defun print-system-attachments-summary (state)
   (cond
    ((f-get-global 'boot-strap-flg state)
@@ -2942,6 +2952,7 @@
       (let ((steps (prover-steps state)))
         (pprogn
          (clear-event-data state)
+         (prog2$ (clear-warning-summaries) state)
          (let ((trip (car wrld)))
            (cond ((and (not noop-flg)
                        (eq (car trip) 'EVENT-LANDMARK)
@@ -3873,9 +3884,9 @@
             iprint-fal            ;;; see just above
             iprint-soft-bound     ;;; see just above
             iprint-hard-bound     ;;; see just above
+            trace-co              ;;; see just above
+            trace-specs           ;;; see just above
             show-custom-keyword-hint-expansion
-            trace-specs                ;;; keep in sync with functions that are
-;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key
@@ -4047,8 +4058,16 @@
 ; Uterm is an untranslated term with an output signature of * or (mv * *
 ; state).  We translate it and eval it under alist (after extending alist with
 ; state bound to the current state) and return the resulting error triple or
-; signal a translate or evaluation error.  We restore the world and certain
-; state globals (*protected-system-state-globals*) after the evaluation.
+; signal a translate or evaluation error.
+
+; We restore the world and certain state globals
+; (*protected-system-state-globals*) after the evaluation, by using
+; protect-system-state-globals below.  Be sure not to change that protection
+; without considering the consequences; in particular, make-event expansion
+; relies on this restoration (via protected-eval, which calls
+; protect-system-state-globals), as do proof-builder macro commands.  Without
+; that protection we expect that unsoundness or bad errors could arise during
+; book certification.
 
 ; If trans-flg is nil, we do not translate.  We *assume* uterm is a
 ; single-threaded translated term with output signature (mv * * state)!
@@ -4276,7 +4295,8 @@
 ; warnings that are recovered from the currently installed world in state and
 ; we print the runes from 'accumulated-ttree.
 
-  `(let ((ctx ,ctx)
+  `(let ((ctx (or (f-get-global 'global-ctx state)
+                  ,ctx))
          (saved-wrld (w state)))
      (pprogn (initialize-summary-accumulators state)
              (mv-let
@@ -4761,6 +4781,17 @@
           (,condition ,form)
           (t (value wrld))))))))
 
+(defun skip-proofs-due-to-system (state)
+
+; This utility returns true when we are skipping proofs because the system
+; insists on that, but not because of any user action that is taken to skip
+; proofs.  Normally we can just check state global 'skip-proofs-by-system.
+; However, without the first disjunct below, we fail to pick up a skip-proofs
+; during the Pcertify step of provisional certification.
+
+  (and (not (f-get-global 'inside-skip-proofs state))
+       (f-get-global 'skip-proofs-by-system state)))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4882,13 +4913,14 @@
 
 ; Comment on irrelevance of skip-proofs:
 
-; The following event types do not generate any proof obligations, so for these
-; it is irrelevant whether or not proofs are skipped.  Do not include defaxiom,
-; or any other event that can have a :corollary rule class, since that can
-; generate a proof obligation.  Also do not include encapsulate; even though it
-; takes responsibility for setting skip-proofs-seen based on its first pass,
-; nevertheless it does not account for a skip-proofs surrounding the
-; encapsulate.  Finally, do not include defattach; the use of (skip-proofs
+; The following event types do not generate any proof obligations that can be
+; skipped, so for these, there is no point in storing whether proofs have been
+; skipped (either in the event tuple or in skip-proofs-seen).  Do not include
+; defaxiom, or any other event that can have a :corollary rule class, since
+; that can generate a proof obligation.  Also do not include encapsulate; even
+; though it takes responsibility for setting skip-proofs-seen based on its
+; first pass, nevertheless it does not account for a skip-proofs surrounding
+; the encapsulate.  Finally, do not include defattach; the use of (skip-proofs
 ; (defattach f g)) can generate bogus data in world global
 ; 'proved-functional-instances-alist that can be used to prove nil later.
 
@@ -4908,22 +4940,7 @@
                                     reset-prehistory
                                     set-body
                                     table)))
-
-; We include the following test so that we can distinguish between the
-; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.  Without the disjunct below, we fail to
-; pick up a skip-proofs during the Pcertify step of provisional certification.
-; Perhaps someday there will be other times a user-supplied skip-proofs form
-; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
-; true; if that turns out to be too aggressive, we'll think about this then,
-; but for now, we are happy to be conservative, making sure that
-; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
-
-
-                  (or (f-get-global 'inside-skip-proofs state)
-                      (not (f-get-global 'skip-proofs-by-system
-                                         state)))))
-
+                  (not (skip-proofs-due-to-system state))))
             (wrld2 (cond
                     ((and skipped-proofs-p
                           (let ((old (global-val 'skip-proofs-seen wrld)))
@@ -4991,35 +5008,47 @@
                           (value val)))
                         (t (value val)))))))))))))
 
+(defun stop-redundant-event-fn1 (chan ctx extra-msg state)
+  (mv-let (col state)
+    (fmt "The event " nil chan state nil)
+    (mv-let (col state)
+      (fmt-ctx ctx col chan state)
+      (mv-let (col state)
+        (fmt1 " is redundant.  See :DOC redundant-events.~#0~[~/  ~@1~]~%"
+              (list (cons #\0 (if (null extra-msg) 0 1))
+                    (cons #\1 extra-msg))
+              col chan state nil)
+        (declare (ignore col))
+        state))))
+
 (defun stop-redundant-event-fn (ctx state extra-msg)
-  (let ((chan (proofs-co state)))
+
+; Through Version_8.3 we printed an "is redundant" message as event output (in
+; the sense of io?)  only.  But when we reduced output from defstub, we still
+; wanted that message even though we were inhibiting event output.  We
+; considered simply switching to summary output, but we want the user to see
+; "is redundant" when summary output is inhibited but event output is not; the
+; "is redundant" output is appropriate both as event-level and summary-level
+; explanations, though it should only be printed once.  Our solution is to
+; print it as event output if event output is not inhibited, and otherwise as
+; summary output unless 'redundant is among the inhibited summary types.
+
+  (let ((chan (proofs-co state))
+        (ctx (or (f-get-global 'global-ctx state)
+                 ctx)))
     (pprogn
      (cond ((ld-skip-proofsp state) state)
-           (t (io? event nil state
+           ((not (member-eq 'event
+                            (f-get-global 'inhibit-output-lst state)))
+            (io? event nil state
+                 (chan ctx extra-msg)
+                 (stop-redundant-event-fn1 chan ctx extra-msg state)))
+           ((member-eq 'redundant
+                       (f-get-global 'inhibited-summary-types state))
+            state)
+           (t (io? summary nil state
                    (chan ctx extra-msg)
-                   (mv-let
-                    (col state)
-                    (fmt "The event "
-                         nil
-                         chan
-                         state
-                         nil)
-                    (mv-let
-                     (col state)
-                     (fmt-ctx ctx col chan state)
-                     (mv-let
-                      (col state)
-                      (fmt1 " is redundant.  See :DOC ~
-                             redundant-events.~#0~[~/  ~@1~]~%"
-                            (list (cons #\0 (if (null extra-msg) 0 1))
-                                  (cons #\1 extra-msg))
-                            col
-                            chan
-                            state
-                            nil)
-                      (declare (ignore col))
-                      state)))
-                   :default-bindings ((col 0)))))
+                   (stop-redundant-event-fn1 chan ctx extra-msg state))))
      (value :redundant))))
 
 (defmacro stop-redundant-event (ctx state &optional extra-msg)
@@ -6373,37 +6402,6 @@
         (t (fmt1 "~@0"
                  (list (cons #\0 (print-indented-list-msg objects indent nil)))
                  0 channel state evisc-tuple))))
-
-(defun string-prefixp-1 (str1 i str2)
-  (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
-           (xargs :guard (and (<= i (length str1))
-                              (<= i (length str2)))))
-  (cond ((zpf i) t)
-        (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
-             (cond ((eql (the character (char str1 i))
-                         (the character (char str2 i)))
-                    (string-prefixp-1 str1 i str2))
-                   (t nil))))))
-
-(defun string-prefixp (root string)
-
-; We return a result propositionally equivalent to
-;   (and (<= (length root) (length string))
-;        (equal root (subseq string 0 (length root))))
-; but, unlike subseq, without allocating memory.
-
-; At one time this was a macro that checked `(eql 0 (search ,root ,string
-; :start2 0)).  But it seems potentially inefficient to search for any match,
-; only to insist at the end that the match is at 0.
-
-  (declare (type string root string)
-           (xargs :guard (<= (length root) (fixnum-bound))))
-  (let ((len (length root)))
-    (and (<= len (length string))
-         (assert$ (<= len (fixnum-bound))
-                  (string-prefixp-1 root len string)))))
 
 (defun relativize-book-path (filename system-books-dir action)
 
@@ -8509,20 +8507,15 @@
 
 ; We ensure that these are sorted, although this may no longer be important.
 
-  (let ((lst '(mv-list return-last)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+  (let ((lst '(if mv-list return-last)))
+    (sort-symbol-listp lst)))
 
 (defconst *basic-ruler-extenders-plus-lambdas*
 
 ; We ensure that these are sorted, although this may no longer be important.
-; If we change *basic-ruler-extenders* so that the cons of :lambdas to the
-; front is no longer sorted, then we will have to call sort-symbol-listp.  But
-; here we got lucky.
 
   (let ((lst (cons :lambdas *basic-ruler-extenders*)))
-    (assert$ (strict-symbol-<-sortedp lst)
-             lst)))
+    (sort-symbol-listp lst)))
 
 (defun get-ruler-extenders1 (r edcls default ctx wrld state)
 
@@ -11794,7 +11787,7 @@
 
 ; Loop$-recursion, a different but similarly named flag, has the value declared
 ; in the :loop$-recursion xarg.  If non-nil it means loop$ recursion is
-; permited and present!  If NIL it means loop$ recursion is prohibited and
+; permitted and present!  If NIL it means loop$ recursion is prohibited and
 ; doesn't occur.  But it is only valid if loop$ recursion has been checked.
 
 ; Note that loop$-recursion-checkedp does not mean that loop$ recursion is
@@ -12054,8 +12047,8 @@
 
 (defun all-loop$-scion-quote-lambdas (term alist)
 
-; We collect every subterm of term/alist that that is a call of a loop$ scion
-; on a quoted lambda and that is not within another such call.
+; We collect every subterm of term/alist that is a call of a loop$ scion on a
+; quoted lambda and that is not within another such call.
 
   (cond
    ((variablep term) nil)
@@ -12776,7 +12769,8 @@
                      (msg "The measures specified for ~&0 (mutually recursive ~
                            with ~x1) are \"calls\" of :?, rather than true ~
                            measures"
-                          bad-names))
+                          bad-names
+                          fn))
                     (t
                      (msg "The measure specified for ~&0~@1 is a \"call\" of ~
                            :?, rather than a true measure"
@@ -13394,31 +13388,6 @@
                         (if (eq style :plain) 1 2))))))
     (t nil)))
 
-(defun warrant-name-inverse (warrant-fn)
-
-; Warning: Keep this in sync with warrant-name.
-
-  (declare (xargs :guard (symbolp warrant-fn)))
-  (let ((warrant-fn-name (symbol-name warrant-fn)))
-    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
-         (intern-in-package-of-symbol
-          (subseq warrant-fn-name
-                  15 ; (length "APPLY$-WARRANT-")
-                  (length warrant-fn-name))
-          warrant-fn))))
-
-(defun warrantp (warrant-fn wrld)
-
-; We check whether warrant-fn is the warrant of some function, fn.  But fn has
-; a warrant iff fn has a badge in the badge-table.
-
-  (declare (xargs :guard (and (symbolp warrant-fn)
-                              (plist-worldp wrld))))
-  (let* ((fn (warrant-name-inverse warrant-fn))
-         (badge (and fn
-                     (get-badge fn wrld))))
-    (and badge t)))
-
 (mutual-recursion
 
 (defun collect-warranted-fns (term ilk collect-p wrld)
@@ -13436,6 +13405,12 @@
         ((fquotep term)
          (let ((val (unquote term)))
            (cond ((eq ilk :FN)
+
+; Note: The case-match below is a little odd.  If an ill-formed quoted lambda
+; occurred here (car (last val)) might treat the formals as the body, or might
+; treat the declare as the body.  But if it collects fns from that object they
+; really will have warrants, even though they may completely irrelevant.
+
                   (cond ((case-match val
                            (('lambda . &) t)
                            (& nil))
@@ -13443,7 +13418,13 @@
                            (and (pseudo-termp body)
                                 (collect-warranted-fns body nil t wrld))))
                         ((and (symbolp val)
-                              (warrantp val wrld))
+                              (get-warrantp val wrld))
+
+; We use get-warrantp, above, to determine if val has a warrant function.
+; Every function with a warrant is so marked in the :badge-userfn-structure of
+; the badge-table.  All other functions known to apply$, e.g., primitives and
+; boot functions, have no warrants.
+
                          (list val))
                         (t nil)))
                  ((eq ilk :EXPR)
@@ -13455,9 +13436,11 @@
           (collect-warranted-fns (lambda-body (ffn-symb term)) nil collect-p
                                  wrld)
           (collect-warranted-fns-lst (fargs term) nil collect-p wrld)))
-        (t (let ((badge (get-badge (ffn-symb term) wrld)))
+        (t (mv-let (badge warrantp)
+             (get-badge-and-warrantp (ffn-symb term) wrld)
+; If warrantp is t, there is a badge, not not vice versa.
              (cond
-              (badge
+              (warrantp
                (let* ((ilks0 (access apply$-badge badge :ilks))
                       (ilks (if (eq ilks0 t) nil ilks0))
                       (fns (collect-warranted-fns-lst (fargs term) ilks
@@ -13478,6 +13461,10 @@
 )
 
 (defun collect-negated-warrants1 (lst clause)
+
+; Lst is a list of function names, each of which is known to have a warrant
+; function.
+
   (cond ((endp lst) clause)
         ((equal clause *true-clause*) clause)
         (t (collect-negated-warrants1
@@ -16881,25 +16868,28 @@
                               ctx wrld state)))
                            (cond
 
-; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
-; If :key1 is :OR, we know n=1; translated :ORs always occur as
-; singletons.  But in ((:OR . val1)), val1 is always
-; (((key . val) ...) ... ), i.e., is a list of alists.
-; If there is only one alist in that list, then we're dealing
-; with an :OR with only one disjunct.
+; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).  If :key1 is
+; :OR, we know n=1; translated :ORs always occur as singletons.  But in ((:OR
+; . val1)), val1 is always a list of pairs.  If there is only one pair in that
+; list, then we're dealing with an :OR with only one disjunct: hint-settings is
+; of the form ((:OR (orig . hint-settings2))), where orig is what the user
+; typed (see translate-or-hint).
 
                             ((and (consp hint-settings)
                                   (eq (caar hint-settings) :OR)
                                   (consp (cdr (car hint-settings)))
                                   (null (cddr (car hint-settings))))
 
-; This is a singleton :OR.  We just drop the :OR.
+; This is a singleton :OR, as above.  We just drop the :OR and the "orig" shown
+; above to obtain the "hint-settings2" shown above.
 
                              (assert$
                               (null (cdr hint-settings))
                               (value@par
-                               (cons cl-id
-                                     (car (cdr (car hint-settings)))))))
+                               (let* ((pair ; (orig . hint-settings2)
+                                       (cadr (car hint-settings)))
+                                      (hint-settings2 (cdr pair)))
+                                 (cons cl-id hint-settings2)))))
                             (t (value@par
                                 (cons cl-id hint-settings))))))))))))))))))))
 )
@@ -18009,6 +17999,19 @@
              op bad-argn bad-arg))
         (t (value nil))))
 
+(defconst *badge-table-guard-msg*
+
+; This constant isn't used until apply.lisp, where it is used in functions
+; supporting badge-table-guard.  But if this defconst is placed in apply.lisp
+; the build fails because *badge-table-guard-msg* is unbound.  Presumably this
+; happens when we're checking table guards as we build.  There might well be a
+; better place to put such a defconst, but it doesn't seem worth the trouble to
+; figure that out.
+
+  (msg "The attempt to change the :badge-userfn-structure of the badge-table ~
+        failed because "
+       nil))
+
 (defun chk-table-guard (name key val ctx wrld ens state)
 
 ; This function returns an error triple.  In the non-error case, the value is
@@ -18043,36 +18046,47 @@
     (er soft ctx
         "Illegal attempt to set the puff-included-books table.  This can only ~
          be done by calling :puff or :puff*."))
-   (t (let ((term (getpropc name 'table-guard *t* wrld)))
+   (t (let* ((prop (getpropc name 'table-guard *t* wrld))
+             (mvp (and (consp prop)
+                       (eq (car prop) :mv)))
+             (term (if mvp (cdr prop) prop)))
         (er-progn
          (mv-let
-          (erp okp latches)
-          (ev term
-              (list (cons 'key key)
-                    (cons 'val val)
-                    (cons 'world wrld)
-                    (cons 'ens ens))
-              state nil nil
+           (erp ev-result latches)
+           (ev term
+               (list (cons 'key key)
+                     (cons 'val val)
+                     (cons 'world wrld)
+                     (cons 'ens ens)
+                     (cons 'state (coerce-state-to-object state)))
+               state
+               (list (cons 'state (coerce-state-to-object state)))
+               nil
 
 ; We need aokp to be true; otherwise defwarrant can run into the following
 ; problem.  The function badge-table-guard calls badger, which can call
 ; g2-justification which can call type-set, which can lead to a call of
 ; ancestors-check, which typically has an attachment, ancestors-check-builtin.
 
-              t)
-          (declare (ignore latches))
-          (cond
-           (erp (pprogn
-                 (error-fms nil ctx (car okp) (cdr okp) state)
-                 (er soft ctx
-                     "The TABLE :guard for ~x0 on the key ~x1 and value ~x2 ~
+               t)
+           (declare (ignore latches))
+           (cond
+            (erp (pprogn
+                  (error-fms nil ctx (car ev-result) (cdr ev-result) state)
+                  (er soft ctx
+                      "The TABLE :guard for ~x0 on the key ~x1 and value ~x2 ~
                       could not be evaluated."
-                     name key val)))
-           (okp (value nil))
-           (t (er soft ctx
-                  "The TABLE :guard for ~x0 disallows the combination of key ~
+                      name key val)))
+            ((if mvp (car ev-result) ev-result)
+             (value nil))
+            ((and mvp (cadr ev-result))
+             (er soft ctx
+                 "~@0"
+                 (cadr ev-result)))
+            (t (er soft ctx
+                   "The TABLE :guard for ~x0 disallows the combination of key ~
                    ~x1 and value ~x2.  The :guard is ~x3.  See :DOC table."
-                  name key val (untranslate term t wrld)))))
+                   name key val (untranslate term t wrld)))))
          (if (and (eq name 'acl2-defaults-table)
                   (eq key :ttag))
              (chk-acceptable-ttag val nil ctx wrld state)
@@ -18122,13 +18136,9 @@
       wrld
     (global-set var val wrld)))
 
-(defrec absstobj-info
-  (st$c . logic-exec-pairs)
-  t)
-
 (defun cltl-def-memoize-partial (fn total wrld)
 
-; Fn and total and function symbols, where we expect that with respect to the
+; Fn and total are function symbols, where we expect that with respect to the
 ; Essay on Memoization with Partial Functions (Memoize-partial), fn plays the
 ; role of the Common Lisp function fn1 to be used for computing the limiting
 ; value of the ACL2 function (with a "limit" or "clock" argument), fn0-limit.
@@ -18229,7 +18239,8 @@
                           ,(cdr (assoc-eq :forget val))
                           ,(cdr (assoc-eq :memo-table-init-size val))
                           ,(cdr (assoc-eq :aokp val))
-                          ,(cdr (assoc-eq :stats val)))))
+                          ,(cdr (assoc-eq :stats val))
+                          ,(cdr (assoc-eq :invoke val)))))
              (t `(unmemoize ,key))))
       #+hons
       (badge-table *special-cltl-cmd-attachment-mark*)
@@ -18246,39 +18257,41 @@
 ; table-fn explains the legal ops and arguments.
 
   (case op
-        (:alist
-         (er-progn
-          (chk-table-nil-args :alist
-                              (or key val term)
-                              (cond (key '(2)) (val '(3)) (t '(5)))
-                              ctx state)
-          (value (table-alist name wrld))))
-        (:get
-         (er-progn
-          (chk-table-nil-args :get
-                              (or val term)
-                              (cond (val '(3)) (t '(5)))
-                              ctx state)
-          (value
-           (cdr (assoc-equal key
-                             (getpropc name 'table-alist nil wrld))))))
-        (:put
-         (with-ctx-summarized
-          (make-ctx-for-event event-form ctx)
-          (let* ((tbl (getpropc name 'table-alist nil wrld))
-                 (old-pair (assoc-equal key tbl)))
-            (er-progn
-             (chk-table-nil-args :put term '(5) ctx state)
-             (cond
-              ((and old-pair (equal val (cdr old-pair)))
-               (stop-redundant-event ctx state))
-              (t (er-let*
-                     ((pair (chk-table-guard name key val ctx wrld ens state))
-                      (wrld0 (value
-                              (cond
-                               ((eq name 'puff-included-books)
-                                (global-set
-                                 'include-book-alist
+    (:alist
+     (er-progn
+      (chk-table-nil-args :alist
+                          (or key val term)
+                          (cond (key '(2)) (val '(3)) (t '(5)))
+                          ctx state)
+      (value (table-alist name wrld))))
+    (:get
+     (er-progn
+      (chk-table-nil-args :get
+                          (or val term)
+                          (cond (val '(3)) (t '(5)))
+                          ctx state)
+      (value
+       (cdr (assoc-equal key
+                         (getpropc name 'table-alist nil wrld))))))
+    (:put
+     (with-ctx-summarized
+      (make-ctx-for-event event-form ctx)
+      (let* ((tbl (getpropc name 'table-alist nil wrld))
+             (old-pair (assoc-equal key tbl)))
+        (er-progn
+         (chk-table-nil-args :put term '(5) ctx state)
+         (cond
+          ((and (or old-pair
+                    (eq name 'memoize-table)) ; see :doc redundant-events
+                (equal val (cdr old-pair)))
+           (stop-redundant-event ctx state))
+          (t (er-let*
+                 ((pair (chk-table-guard name key val ctx wrld ens state))
+                  (wrld0 (value
+                          (cond
+                           ((eq name 'puff-included-books)
+                            (global-set
+                             'include-book-alist
 
 ; This setting is for use in the implementation of :puff, where the
 ; puff-included-books table records books that have been puffed.  We could
@@ -18287,157 +18300,189 @@
 ; (If that changes, then be careful that val is also the right tuple to push
 ; onto the global value of 'include-book-alist-all.)
 
-                                 (cons val
-                                       (global-val 'include-book-alist
-                                                   wrld))
-                                 wrld))
-                               (t wrld))))
-                      (wrld1 (cond
-                              ((null pair)
-                               (value wrld0))
-                              (t (let ((ttags-allowed1 (car pair))
-                                       (ttags-seen1 (cdr pair)))
-                                   (pprogn (f-put-global 'ttags-allowed
-                                                         ttags-allowed1
-                                                         state)
-                                           (value (global-set?
-                                                   'ttags-seen
-                                                   ttags-seen1
-                                                   wrld0
-                                                   (global-val 'ttags-seen
-                                                               wrld)))))))))
-                   (install-event
-                    name
-                    event-form
-                    'table
-                    0
-                    nil
-                    (table-cltl-cmd name key val op ctx wrld)
-                    nil ; theory-related events do their own checking
-                    nil
-                    (putprop name 'table-alist
-                             (if old-pair
-                                 (put-assoc-equal key val tbl)
-                               (acons key val tbl))
-                             wrld1)
-                    state))))))))
-        (:clear
-         (with-ctx-summarized
-          (make-ctx-for-event event-form ctx)
-          (er-progn
-           (chk-table-nil-args :clear
-                               (or key term)
-                               (cond (key '(2)) (t '(5)))
-                               ctx state)
+                             (cons val
+                                   (global-val 'include-book-alist
+                                               wrld))
+                             wrld))
+                           (t wrld))))
+                  (wrld1 (cond
+                          ((null pair)
+                           (value wrld0))
+                          (t (let ((ttags-allowed1 (car pair))
+                                   (ttags-seen1 (cdr pair)))
+                               (pprogn (f-put-global 'ttags-allowed
+                                                     ttags-allowed1
+                                                     state)
+                                       (value (global-set?
+                                               'ttags-seen
+                                               ttags-seen1
+                                               wrld0
+                                               (global-val 'ttags-seen
+                                                           wrld)))))))))
+               (install-event
+                name
+                event-form
+                'table
+                0
+                nil
+                (table-cltl-cmd name key val op ctx wrld)
+                nil ; theory-related events do their own checking
+                nil
+                (putprop name 'table-alist
+                         (if old-pair
+                             (put-assoc-equal key val tbl)
+                           (acons key val tbl))
+                         wrld1)
+                state))))))))
+    (:clear
+     (with-ctx-summarized
+      (make-ctx-for-event event-form ctx)
+      (er-progn
+       (chk-table-nil-args :clear
+                           (or key term)
+                           (cond (key '(2)) (t '(5)))
+                           ctx state)
+       (cond
+        ((equal val (table-alist name wrld))
+         (stop-redundant-event ctx state))
+        ((not (alistp val))
+         (er soft 'table ":CLEAR requires an alist, but ~x0 is not." val))
+        (t
+         (let ((val (if (duplicate-keysp val)
+                        (reverse (clean-up-alist val nil))
+                      val)))
+           (er-let*
+               ((wrld1
+                 (er-let* ((pair (chk-table-guards name val ctx wrld ens
+                                                   state)))
+                   (cond
+                    ((null pair)
+                     (value wrld))
+                    (t (let ((ttags-allowed1 (car pair))
+                             (ttags-seen1 (cdr pair)))
+                         (pprogn (f-put-global 'ttags-allowed
+                                               ttags-allowed1
+                                               state)
+                                 (value (global-set? 'ttags-seen
+                                                     ttags-seen1
+                                                     wrld
+                                                     (global-val
+                                                      'ttags-seen
+                                                      wrld))))))))))
+             (install-event name event-form 'table 0 nil
+                            (table-cltl-cmd name key val op ctx wrld)
+                            nil ; theory-related events do their own checking
+                            nil
+                            (putprop name 'table-alist val wrld1)
+                            state))))))))
+    (:guard
+     (cond
+      ((eq term nil)
+       (er-progn
+        (chk-table-nil-args op
+                            (or key val)
+                            (cond (key '(2)) (t '(3)))
+                            ctx state)
+        (value (getpropc name 'table-guard *t* wrld))))
+      (t
+       (with-ctx-summarized
+        (make-ctx-for-event event-form ctx)
+        (er-progn
+         (chk-table-nil-args op
+                             (or key val)
+                             (cond (key '(2)) (t '(3)))
+                             ctx state)
+         (mv-let (erp tterm bindings state)
+           (translate1 term :stobjs-out
+                       '((:stobjs-out . :stobjs-out))
+                       '(state) ; known-stobjs
+                       ctx wrld state)
+
+; Note that since known-stobjs above is '(state), no stobj can be returned.
+; Note that translate11 doesn't allow stobj creators for execution even when
+; there is an active trust tag.
+
            (cond
-            ((equal val (table-alist name wrld))
-             (stop-redundant-event ctx state))
-            ((not (alistp val))
-             (er soft 'table ":CLEAR requires an alist, but ~x0 is not." val))
+            (erp (silent-error state)) ; already printed any message
             (t
-             (let ((val (if (duplicate-keysp val)
-                            (reverse (clean-up-alist val nil))
-                          val)))
-               (er-let*
-                ((wrld1
-                  (er-let* ((pair (chk-table-guards name val ctx wrld ens
-                                                    state)))
-                           (cond
-                            ((null pair)
-                             (value wrld))
-                            (t (let ((ttags-allowed1 (car pair))
-                                     (ttags-seen1 (cdr pair)))
-                                 (pprogn (f-put-global 'ttags-allowed
-                                                       ttags-allowed1
-                                                       state)
-                                         (value (global-set? 'ttags-seen
-                                                             ttags-seen1
-                                                             wrld
-                                                             (global-val
-                                                              'ttags-seen
-                                                              wrld))))))))))
-                (install-event name event-form 'table 0 nil
-                               (table-cltl-cmd name key val op ctx wrld)
-                               nil ; theory-related events do their own checking
-                               nil
-                               (putprop name 'table-alist val wrld1)
-                               state))))))))
-        (:guard
-         (cond
-          ((eq term nil)
-           (er-progn
-            (chk-table-nil-args op
-                                (or key val)
-                                (cond (key '(2)) (t '(3)))
-                                ctx state)
-            (value (getpropc name 'table-guard *t* wrld))))
-          (t
-           (with-ctx-summarized
-            (make-ctx-for-event event-form ctx)
-            (er-progn
-             (chk-table-nil-args op
-                                 (or key val)
-                                 (cond (key '(2)) (t '(3)))
-                                 ctx state)
-             (er-let* ((tterm (translate term '(nil) nil nil ctx wrld state)))
+             (let ((stobjs-out (translate-deref :stobjs-out bindings)))
+               (cond
+                ((not (or (equal stobjs-out '(nil))
+                          (equal stobjs-out '(nil nil))))
+                 (er soft 'table
+                     "The table :guard must return either one or two ~
+                      values~@0, but ~x1 ~@2."
+                     (if (all-nils stobjs-out)
+                         ""
+                       ", none of them STATE or stobjs")
+                     term
+                     (if (cdr stobjs-out)
+                         (msg "has output signature"
+                              (cons 'mv stobjs-out))
+                       (assert$ ; See comment above about stobj creators.
+                        (eq (car stobjs-out) 'state)
+                        (msg "returns STATE"
+                             (car stobjs-out))))))
+                (t
 
-; known-stobjs = nil.  No variable is treated as a stobj in tterm.  But below
-; we check that the only vars mentioned are KEY, VAL, WORLD, and ENS.  These
-; could, in principle, be declared stobjs by the user.  But when we ev tterm in
-; the future, we will always bind them to non-stobjs.
+; Known-stobjs includes only STATE.  No variable other than STATE is treated
+; as a stobj in tterm.  Below we check that the only vars mentioned besides
+; STATE are KEY, VAL, WORLD, and ENS.  These could, in principle, be declared
+; stobjs by the user.  But when we ev tterm in the future, we will always bind
+; them to non-stobjs.
 
-                      (let ((old-guard
-                             (getpropc name 'table-guard nil wrld)))
-                        (cond
-                         ((equal old-guard tterm)
-                          (stop-redundant-event ctx state))
-                         (old-guard
-                          (er soft ctx
-                              "It is illegal to change the :guard on a table ~
-                               after it has been given an explicit :guard.  ~
-                               The :guard of ~x0 is ~x1 and this can be ~
-                               changed only by undoing the event that set it.  ~
-                               See :DOC table."
-                              name
-                              (untranslate (getpropc name 'table-guard nil
-                                                     wrld)
-                                           t wrld)))
-                         ((getpropc name 'table-alist nil wrld)
+                 (let ((old-guard (getpropc name 'table-guard nil wrld)))
+                   (cond
+                    ((equal old-guard tterm)
+                     (stop-redundant-event ctx state))
+                    (old-guard
+                     (er soft ctx
+                         "It is illegal to change the :guard on a table after ~
+                          it has been given an explicit :guard.  The :guard ~
+                          of ~x0 is ~x1 and this can be changed only by ~
+                          undoing the event that set it.  See :DOC table."
+                         name
+                         (untranslate (getpropc name 'table-guard nil
+                                                wrld)
+                                      t wrld)))
+                    ((getpropc name 'table-alist nil wrld)
 
 ; At one time Matt wanted the option of setting the :val-guard of a
 ; non-empty table, but he doesn't recall why.  Perhaps we'll add such
 ; an option in the future if others express such a desire.
 
-                          (er soft ctx
-                              "It is illegal to set the :guard of the ~
-                               non-empty table ~x0.  See :DOC table."
-                              name))
-                         (t
-                          (let ((legal-vars '(key val world ens))
-                                (vars (all-vars tterm)))
-                            (cond ((not (subsetp-eq vars legal-vars))
-                                   (er soft ctx
-                                       "The only variables permitted in the ~
-                                        :guard of a table are ~&0, but your ~
-                                        guard uses ~&1.  See :DOC table."
-                                       legal-vars (reverse vars)))
-                                  (t (install-event
-                                      name
-                                      event-form
-                                      'table
-                                      0
-                                      nil
-                                      (table-cltl-cmd name key val op ctx wrld)
-                                      nil ; theory-related events do the check
-                                      nil
-                                      (putprop name
-                                               'table-guard
-                                               tterm
-                                               wrld)
-                                      state)))))))))))))
-        (otherwise (er soft ctx
-                       "Unrecognized table operation, ~x0.  See :DOC table."
-                       op))))
+                     (er soft ctx
+                         "It is illegal to set the :guard of the non-empty ~
+                          table ~x0.  See :DOC table."
+                         name))
+                    (t
+                     (let ((legal-vars '(key val world ens state))
+                           (vars (all-vars tterm)))
+                       (cond ((not (subsetp-eq vars legal-vars))
+                              (er soft ctx
+                                  "The only variables permitted in the :guard ~
+                                   of a table are ~&0, but your guard uses ~
+                                   ~&1.  See :DOC table."
+                                  legal-vars (reverse vars)))
+                             (t (install-event
+                                 name
+                                 event-form
+                                 'table
+                                 0
+                                 nil
+                                 (table-cltl-cmd name key val op ctx wrld)
+                                 nil ; theory-related events do the check
+                                 nil
+                                 (putprop name
+                                          'table-guard
+                                          (if (cdr stobjs-out)
+                                              (cons :mv tterm)
+                                            tterm)
+                                          wrld)
+                                 state))))))))))))))))))
+    (otherwise (er soft ctx
+                   "Unrecognized table operation, ~x0.  See :DOC table."
+                   op))))
 
 (defun table-fn (name args state event-form)
 
@@ -18558,4 +18603,3 @@
    (er-progn
     (table-fn 'default-hints-table (list :override (kwote new)) state nil)
     (table-fn 'default-hints-table (list :override) state nil))))
-

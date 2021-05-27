@@ -74,15 +74,29 @@
     (mv svdesign state)))
 
 
-(defsvtv counter-step
-  :mod *counter*
-  :inputs '(("clk"    0  1)
-            ("reset"  reset _)
-            ("incr"   incr  _))
-  :outputs '(("count" count _))
-  :state-machine t)
+(defcycle counter-step
+  :design *counter*
+  :phases (list (make-svtv-cyclephase :constants '(("clk" . 0))
+                                      :inputs-free t
+                                      :outputs-captured t)
+                (make-svtv-cyclephase :constants '(("clk" . 1))))
+  :names '((reset . "reset")
+           (incr . "incr")
+           (count . "count")))
+
+;; (defconst *counter-step-fsm*
+;;   (b* (((svtv x) (counter-step-svtv)))
+;;     (make-svtv-fsm :values x.outexprs
+;;                    :nextstate x.nextstate
+;;                    :design *counter*)))
 
 
+;; (make-event
+;;  `(defun counter-step ()
+;;     (declare (xargs :guard t))
+;;     ',*counter-step-fsm*))
+
+(in-theory (disable counter-step (counter-step)))
 
 (local (defun my-satlink-config ()
          (declare (Xargs :guard t))
@@ -94,40 +108,49 @@
 (local (defattach gl::gl-satlink-config my-satlink-config))
 
 
-(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+(gl::gl-set-uninterpreted base-fsm-symbolic-env)
 
 
 (define counter-run-step ((ins svex-env-p)
                           (st svex-env-p))
   :guard (equal (alist-keys st)
-                (svex-alist-keys (svtv->nextstate (counter-step))))
+                (svex-alist-keys (svtv-fsm->nextstate (counter-step))))
   :guard-hints (("goal" :in-theory (enable ;; 
                                            (counter-step))))
-  :prepwork ((local (in-theory (enable svtv-fsm-run-outs-and-states))))
+  :guard-debug t
   :returns (mv (step svex-env-p)
                (nextst svex-env-p))
-  (b* (((svtv counter) (counter-step))
+  (b* (((svtv-fsm counter) (counter-step))
        (ins (make-fast-alist ins))
        ((mv (list step) (list nextst))
-        (svtv-fsm-run-outs-and-states (list ins) st (counter-step)
-                                      :out-signals '((count reset incr))
-                                      :state-signals (list (alist-keys counter.nextstate)))))
+        (svtv-fsm-run-outs-and-states
+         (list (make-fast-alist ins)) nil st (counter-step)
+         :out-signals'((count reset incr))
+         :state-signals (list (svex-alist-keys (svtv-fsm->nextstate (counter-step)))))))
     (mv (make-fast-alist step)
         (make-fast-alist nextst))))
 
+(gl::add-gl-rewrite svtv-fsm-run-outs-and-states-is-base-fsm-run-outs-and-states)
+(gl::gl-set-uninterpreted svtv-fsm-run-outs-and-states-fn)
+(gl::gl-set-uninterpreted svtv-env-to-values)
+(gl::gl-set-uninterpreted join-val/test-envs)
+(gl::add-gl-rewrite lookup-in-join-val/test-envs)
 
+(gl::def-glcp-ctrex-rewrite
+  ((svex-env-lookup key (svtv-env-to-values env map updates)) val)
+  (env (hons-acons (sv::change-svar key :override-val t) val env)))
 
 (define counter-ok ((st svex-env-p)
                     (ins svex-envlist-p))
   :measure (len ins)
   :verify-guards nil
   (b* (((when (atom ins)) t)
-       ((svtv counter) (counter-step))
+       ((svtv-fsm counter) (counter-step))
        (in (car ins))
        ((mv step nextst) (counter-run-step in st))
        (count (svex-env-lookup 'count step))
-       (reset (4vec-zero-ext 1 (svex-env-lookup 'reset in)))
-       (incr (4vec-zero-ext 1 (svex-env-lookup 'incr in)))
+       (reset (4vec-zero-ext 1 (svex-env-lookup 'reset step)))
+       (incr (4vec-zero-ext 1 (svex-env-lookup 'incr step)))
        ((unless (and (2vec-p reset)
                      (2vec-p incr))) t)
        ((unless (and (2vec-p count)
@@ -135,7 +158,18 @@
         nil))
     (counter-ok nextst (cdr ins))))
 
-(acl2::aig-env-lookup-missing-action nil)
+
+(local
+ (define gl-abc-mcheck-script-mine ((input-fname stringp) (ctrex-fname stringp))
+   :returns (script stringp :rule-classes :type-prescription)
+   (concatenate 'string
+                "&r " input-fname "
+                &put
+                dprove -v
+                print_status
+                write_cex " ctrex-fname)
+   ///
+   (defattach gl::gl-abc-mcheck-script gl-abc-mcheck-script-mine)))
 
 (defthm counter-is-ok
   (b* (((mv step &) (counter-run-step (car ins) st))
@@ -150,8 +184,8 @@
            :prop (b* ((count (svex-env-lookup 'count step)))
                    (and (2vec-p count)
                         (not (equal (2vec->val count) 14))))
-           :constraint (and (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'reset in)))
-                            (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'incr in))))
+           :constraint (and (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'reset step)))
+                            (2vec-p (4vec-zero-ext 1 (svex-env-lookup 'incr step))))
            :initstatep (b* ((count (svex-env-lookup 'count step)))
                          (and (2vec-p count)
                               (< count 5)))

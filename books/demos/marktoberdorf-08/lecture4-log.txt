@@ -8,6 +8,11 @@ ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>(SET-GAG-MODE NIL)
 <state>
 ACL2 >>(INCLUDE-BOOK "m1")
@@ -1203,7 +1208,7 @@ Summary
 Form:  ( ENCAPSULATE ((|G-INV-arity-1| ...) ...) ...)
 Rules: NIL
 Warnings:  Disable
-T
+|G-INV-arity-1|
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC G-INV (N0 A0 S)
@@ -1507,7 +1512,7 @@ Summary
 Form:  ( ENCAPSULATE ((G-INV ...) ...) ...)
 Rules: NIL
 Warnings:  Subsume, Non-rec and Disable
-T
+G-INV
 
 
 M1 >>>(DEFTHM G-INV-OPENER
@@ -3432,7 +3437,7 @@ Summary
 Form:  ( ENCAPSULATE ((|H-INV-arity-1| ...) ...) ...)
 Rules: NIL
 Warnings:  Disable
-T
+|H-INV-arity-1|
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC H-INV (N0 S)
@@ -3811,7 +3816,7 @@ Summary
 Form:  ( ENCAPSULATE ((H-INV ...) ...) ...)
 Rules: NIL
 Warnings:  Subsume, Non-rec and Disable
-T
+H-INV
 
 
 M1 >>>(DEFTHM H-INV-OPENER
@@ -4099,8 +4104,8 @@ This simplifies, using the :compound-recognizer rule
 ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST (if-intro),
 EXECUTE-LOAD, NEXT-INST, NTH (if-intro) and SYNP, the :executable-
 counterparts of ARG1, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL, NTH, OPCODE
-and ZP and the :rewrite rules H-INV-OPENER, NTH-ADD1!, STATES and 
-STEP-OPENER, to the following two conjectures.
+and ZP and the :rewrite rules H-INV-OPENER, NTH-ADD1!, STATES and STEP-OPENER,
+to the following two conjectures.
 
 Subgoal 1.2
 (IMPLIES (AND (EQUAL (PC S) 11)

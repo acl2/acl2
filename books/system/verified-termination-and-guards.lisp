@@ -72,6 +72,7 @@
 (verify-termination >=-len) ; and guards
 (verify-termination all->=-len) ; and guards
 (verify-termination strip-cadrs) ; and guards
+(verify-termination strip-caddrs) ; and guards
 (verify-termination alist-to-doublets) ; and guards
 (verify-termination ffnnamep) ; and guards
 (verify-termination world-evisceration-alist) ; and guards
@@ -98,23 +99,6 @@
 (verify-termination string-prefixp-1) ; and guards
 (verify-termination string-prefixp) ; and guards
 (verify-termination relativize-book-path) ; and guards
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; The following section was written by David L. Rager.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(verify-termination plausible-dclsp1)
-(verify-termination plausible-dclsp)
-
-(verify-termination fetch-dcl-fields2)
-(verify-termination fetch-dcl-fields1)
-(verify-termination fetch-dcl-fields)
-(verify-termination fetch-dcl-field)
-
-(verify-termination strip-keyword-list)
-
-(verify-termination strip-dcls1)
-(verify-termination strip-dcls)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by Matt Kaufmann.

@@ -32,7 +32,8 @@
   (implies (and (natp r)
                 (<= 0 i))
            (natp (expt r i)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-expt-type
   (implies (and (integerp r)
@@ -44,6 +45,13 @@
   (implies (and (< 0 r)
                 (rationalp r))
            (< 0 (expt r i)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable zip expt))))
+
+(defthm <=-of-0-and-expt
+  (implies (and (<= 0 r)
+                (rationalp r))
+           (<= 0 (expt r i)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable zip expt))))
 
@@ -63,7 +71,8 @@
                 (not (equal 0 r)))
            (equal (* (expt r (+ -1 x))
                      (expt r (+ 1 y)))
-                  (* (expt r x) (expt r y)))))
+                  (* (expt r x) (expt r y))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (local
  (defthm integerp-of-expt-helper
@@ -113,3 +122,61 @@
 (defthm expt-of-unary--
   (equal (expt r (- i))
          (/ (expt r i))))
+
+;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
+(defthm expt-half-linear
+  (implies (natp i)
+           (equal (expt 2 i)
+                  (+ (expt 2 (+ -1 i))
+                     (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable ;expt-of-+
+                              )))
+  :rule-classes :linear)
+
+;gen the 1
+(defthm <-of-1-and-expt
+  (implies (integerp n)
+           (equal (< 1 (expt 2 n))
+                  (< 0 n))))
+
+(defthm floor-of-expt-2-and-2
+  (implies (integerp n)
+           (equal (floor (expt 2 n) 2)
+                  (if (posp n)
+                      (expt 2 (+ -1 n))
+                    0)))
+  :hints (("Goal" :in-theory (e/d (expt) ()))))
+
+(defthm expt-of-*
+  (equal (expt (* r1 r2) i)
+         (* (expt r1 i)
+            (expt r2 i)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-monotone-strong
+  (implies (and (< i j)
+                (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (< (expt r i) (expt r j))))
+
+(defthmd <-of-expt-and-expt-helper
+  (implies (and (< (expt r i) (expt r j))
+                (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (< i j)))
+
+(defthm <-of-expt-and-expt
+  (implies (and (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (equal (< (expt r i) (expt r j))
+                  (< i j)))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-helper
+                                  (i 0)
+                                  (j (+ (- I) J)))
+           :in-theory (enable expt-monotone-strong))))

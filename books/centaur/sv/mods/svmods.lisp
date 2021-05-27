@@ -181,15 +181,15 @@ of adding the namespace.</p>"
   (b* (((svar x))
        ((address x.name))
        ((when (eq x.name.scope :root))
-        (mbe :logic (change-svar x :name (change-address x.name))
+        (mbe :logic (change-svar x :name (change-address x.name)
+                                 :override-test nil :override-val nil)
              :exec x))
        (new-addr (if (eql 0 x.name.scope)
                      (change-address
                       x.name :path (make-path-scope :namespace namespace
                                                     :subpath x.name.path))
                    (change-address x.name :scope (1- x.name.scope)))))
-    (change-svar x :name new-addr)))
-
+    (change-svar x :name new-addr :override-test nil :override-val nil)))
 (defines svex-add-namespace
   (define svex-add-namespace ((namespace name-p) (x svex-p))
     :verify-guards nil

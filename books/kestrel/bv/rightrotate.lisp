@@ -34,14 +34,28 @@
            (unsigned-byte-p size (rightrotate size x y)))
   :hints (("Goal" :in-theory (enable rightrotate natp))))
 
+(defthm rightrotate-of-0-arg2
+  (equal (rightrotate width 0 val)
+         (bvchop width val))
+  :hints (("Goal" :in-theory (enable rightrotate))))
+
 (defund rightrotate16 (amt val)
   (declare (type integer amt val))
   (rightrotate 16 amt val))
 
-(defund rightrotate32 (amt val)
-  (declare (type integer amt val))
-  (rightrotate 32 amt val))
-
 (defund rightrotate64 (amt val)
   (declare (type integer amt val))
   (rightrotate 64 amt val))
+
+(defthmd rightrotate-open-when-constant-shift-amount
+  (implies (and (syntaxp (quotep amt))
+                (syntaxp (quotep width)))
+           (equal (rightrotate width amt val)
+                  (if (equal 0 width)
+                      0
+                    (let* ((amt (mod (nfix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
+                                ))
+                      (bvcat amt (slice (+ -1 amt) 0 val)
+                             (- width amt)
+                             (slice (+ -1 width) amt val))))))
+  :hints (("Goal" :in-theory (e/d (rightrotate) ()))))

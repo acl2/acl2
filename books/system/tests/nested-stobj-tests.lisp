@@ -1197,7 +1197,7 @@ ACL2 !>
                                      (c-hidden-a-fld-update)))))
 
 (must-fail
- (defthm true-and-false-is-contradictory
+ (defthm true-and-false-is-contradictory-2
    nil
    :hints (("goal" :use true-and-false-is-true
             :in-theory (disable true-and-false-is-true)))
@@ -1368,21 +1368,22 @@ ACL2 !>
    (list (a-fld a) (a-fld aa))
    x))
 
-;; want this to fail its guard check
-(must-fail
- (defun access-aa-arr-as-a-arr-insufficient-guard (n m aa-arr)
-   (declare (xargs :stobjs aa-arr
-                   :guard (and (natp n)
-                               (natp m)
-                               (< n 2)
-                               (< m 2))))
-   (stobj-let
-    ((a (asi n aa-arr))
-     (aa (asi m aa-arr)))
-    (x)
-    (list (a-fld a) (a-fld aa))
-    x))
- :with-output-off nil)
+;; This formerly failed its guard verification because aliasing in array
+;; accesses is possible when n = m.  But starting in May 2021 (at the same time
+;; that ACL2 was changed to support stobj fields of abstract stobjs), such
+;; aliasing is permitted provided there is no updating involved.
+(defun access-aa-arr-as-a-arr-with-possible-aliasing (n m aa-arr)
+  (declare (xargs :stobjs aa-arr
+                  :guard (and (natp n)
+                              (natp m)
+                              (< n 2)
+                              (< m 2))))
+  (stobj-let
+   ((a (asi n aa-arr))
+    (aa (asi m aa-arr)))
+   (x)
+   (list (a-fld a) (a-fld aa))
+   x))
 
 (defstobj scal-and-arr
   (saa-sc1 :type a)

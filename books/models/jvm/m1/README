@@ -219,6 +219,15 @@ without characterizing how long it takes.  I prove that if the program halts
 the input was even, which also means: if the input is not even the program does
 not halt.
 
+* m1-fact-on-neg-runs-forever.lisp
+
+where I first use a clock function to show that the M1 factorial program runs
+forever when the input is a negative integer.  Then, independently, I use
+inductive assertions to prove more-or-less the same thing.  (More-or-less because
+the clock approach says it never reaches any (HALT) instruction and the inductive
+assertion approach says it never reaches pc 14 which is the location of the only
+(HALT) instruction in the program.)
+
 The Turing Equivalence of M1: The following files prove that M1 can simulate a
 Turing machine interpreter.  To do this, I write an M1 program that interprets
 an encoding of arbitrary Turing machines and then I prove the program correct.

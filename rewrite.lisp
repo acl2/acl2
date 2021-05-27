@@ -1,5 +1,5 @@
 ; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2021, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -109,48 +109,41 @@
 
 ; Next we develop the logical and raw Lisp definitions of ev-fncall+.
 
-(defun badged-fns-of-world (wrld)
+(defun warranted-fns-of-world1 (x wrld)
+
+; X is the :badge-userfn-structure of the badge-table.  It is always a
+; true-list of elements made by make-badge-userfn-structure-tuple containing a
+; fn symbol in the car and a warrantp and badge elsewhere.  We collect each fn
+; whose warrantp is non-nil.
+
+; However we must do this in guard-verified manner because the function is used
+; in the partial-encapsulate of ev-fncall+-fns.  Since we know x will always be
+; of the right shape, it doesn't matter what we do when the shape is wrong, as
+; long as we return a list of function symbols.  But we have to check.
+
+  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
+  (cond ((atom x) nil)
+        ((and (weak-badge-userfn-structure-tuplep (car x))
+              (access-badge-userfn-structure-tuple-warrantp (car x))
+              (symbolp (car (car x)))
+              (function-symbolp (car (car x)) wrld))
+         (cons (car (car x))
+               (warranted-fns-of-world1 (cdr x) wrld)))
+        (t nil)))
+
+; Matt:  The following function used to be called badged-fns-of-world
+(defun warranted-fns-of-world (wrld)
 
 ; We return the list of all warranted functions in wrld, but in a way that can
-; be guard-verified and can be proved to return a list of function symbols.
-
-; Historical Note: The name ``badged-fns-of-world'' is somewhat of a misnomer.
-; There are badged functions, like CAR, not in this list.  To be precise, this
-; function returns the names of all the functions in the
-; :badge-userfn-structure of the badge-table.  Those symbols are put there by
-; defwarrant and every symbol in the returned list has a warrant.  Every
-; function having a warrant is in the alist, and the alist associates the
-; function name with its badge, which sort of explains why ``badge'' is part of
-; the name of :badge-userfn-structure.  But it ought, perhaps be named
-; :badges-of-all-warranted-functions since there are functions not in the list
-; that have badges, i.e., the 800+ apply$ primitives!  Strictly speaking, even
-; the use of the term ``userfn'' in the name is a misnomer!  The list contains
-; many symbols that are not, strictly speaking, user-defined but are in fact
-; built-in, like the loop$ scions, COLLECT$ and COLLECT$+ and other loop$
-; supporters like FROM-TO-BY.  All uses of ``userfn'' in discussions related to
-; apply$ ought to be changed to ``warranted-fns'' or something!  The messiness
-; of our nomenclature is in part due to the facts that initially apply$ was
-; truly introduced after the fact in a book rather than as a system primitive,
-; and that even after it was a system primitive there were badged functions
-; that were not primitives but weren't warranted, i.e., multi-valued functions
-; to which defwarrant could assign a badge (so they could be used in tame
-; functions) but which were not given warrants (because at the time apply$ was
-; not axiomatized to handle multiple values).  It was only after the
-; accommodation of multi-valued functions that we achieved the goal that the
-; functions known to apply$ could be partitioned into three classes: the 800+
-; apply$ primitives, the apply$ boot functions (like badge and apply$), and
-; warranted functions.  The first two sets all have badges but not warrants,
-; all in the last set have badges and warrants.
+; be guard-verified and can be proved to return a list of function symbols that
+; is a subset of the warranted functions of wrld.
 
   (declare (xargs :mode :logic :guard (plist-worldp wrld)))
   (and (alistp (table-alist 'badge-table wrld))
-       (let ((badge-alist
-              (cdr (assoc-eq :badge-userfn-structure
-                             (table-alist 'badge-table wrld)))))
-         (and (alistp badge-alist)
-              (let ((syms (strip-cars badge-alist)))
-                (and (all-function-symbolps syms wrld)
-                     syms))))))
+       (warranted-fns-of-world1
+        (cdr (assoc-eq :badge-userfn-structure
+                       (table-alist 'badge-table wrld)))
+        wrld)))
 
 (partial-encapsulate
 
@@ -175,13 +168,17 @@
  (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
           (declare (ignore fn args big-n safe-mode gc-off))
           (and (not strictp)
-               (badged-fns-of-world wrld))))
+               (warranted-fns-of-world wrld))))
+ (local
+  (defthm all-function-symbolps-ev-fncall+-fns-lemma
+    (all-function-symbolps (warranted-fns-of-world1 x wrld) wrld)))
+
  (defthm all-function-symbolps-ev-fncall+-fns
    (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
      (all-function-symbolps fns wrld)))
  (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
    (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
-            (badged-fns-of-world wrld)))
+            (warranted-fns-of-world wrld)))
  (defthm function-symbolp-ev-fncall+-fns-strictp
    (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
      (and (symbolp fn)
@@ -1365,21 +1362,26 @@
    (t
     (flet ((reason-string
             (erp scons-term-p wrld state)
-            (let* ((fn
-                    (and (consp erp)
-                         (eq (car erp)
-                             'ev-fncall-null-body-er)
-                         (symbolp (cdr erp))
-                         (cdr erp))))
+            (let* ((fn (and (consp erp)
+                            (eq (car erp)
+                                'ev-fncall-null-body-er)
+                            (symbolp (cdr erp))
+                            (cdr erp)))
+                   (fn (if (eq fn :non-exec) 'non-exec fn)))
               (and fn
-                   (let* ((non-executablep (getpropc fn 'non-executablep nil wrld))
-                          (skip-pkg-prefix (symbol-in-current-package-p fn state))
+                   (let* ((non-executablep
+                           (getpropc fn 'non-executablep nil wrld))
+                          (skip-pkg-prefix
+                           (symbol-in-current-package-p fn state))
                           (str0 (if scons-term-p
-                                    "Failed attempt (when building a term) to call "
+                                    "Failed attempt (when building a term) to ~
+                                     call "
                                   "Failed attempt to call "))
-                          (str1 (if non-executablep
-                                    "non-executable function "
-                                  "constrained function ")))
+                          (str1 (if (eq fn 'non-exec)
+                                    ""
+                                  (if non-executablep
+                                      "non-executable function "
+                                    "constrained function "))))
                      (if skip-pkg-prefix
                          (concatenate 'string str0 str1 (symbol-name fn))
                        (concatenate 'string
@@ -1446,7 +1448,7 @@
                  'string
                  "the warrant for "
                  fn-str
-                 " is false"))))
+                 " is not known to be true"))))
            term)))
         (& (er hard 'hide-with-comment
                "Unexpected reason supplied to ~x0!"
@@ -2780,8 +2782,8 @@
 
 (defun member-complement-term1 (lit cl)
 
-; Lit is known not to begin with not and not to be an equality or iff.
-; This fn is equivalent to (member-equal `(not ,lit) cl).
+; Lit is known not to be an equality or iff.  This fn is equivalent to
+; (member-equal `(not ,lit) cl).
 
   (cond ((null cl) nil)
         ((and (ffn-symb-p (car cl) 'not)
@@ -2818,9 +2820,34 @@
              (eq (ffn-symb lit) 'iff))
          (member-complement-term2 (ffn-symb lit) (fargn lit 1) (fargn lit 2)
                                   cl))
-        ((eq (ffn-symb lit) 'not)
-         (member-term (fargn lit 1) cl))
-        (t (member-complement-term1 lit cl))))
+        (t
+
+; Before Version_8.4, in the case (eq (ffn-symb lit) 'not), we only checked
+; (member-term (fargn lit 1) cl).  But we found a case where lit was of the
+; form (not u) and cl contains (not (not u)), and we want to catch that case,
+; too.  This problem was evidenced as follows; after the fix, we get a more
+; appropriate result (NIL NIL).
+
+;   ACL2 !>(GUARD-CLAUSES '(FLOOR X Y)
+;                          NIL T
+;                          '((NOT (RATIONALP X))
+;                            (NOT (RATIONALP Y))
+;                            (NOT (NOT (EQL Y '0))))
+;                          (w state) NIL 'NEWV)
+;   ((((NOT (NOT (EQL Y '0)))
+;      (NOT (RATIONALP Y))
+;      (NOT (RATIONALP X))
+;      (NOT (EQL Y '0))))
+;    NIL)
+;   ACL2 !>
+
+; The term (NOT (NOT (EQL Y '0))) arises from clausify, specifically from a
+; call of call-stack under if-interp.  A long comment in call-stack explains
+; why we return (list 'not x), but not "simplify (not (not x)) to x".
+
+         (or (and (eq (ffn-symb lit) 'not)
+                  (member-term (fargn lit 1) cl))
+             (member-complement-term1 lit cl)))))
 
 )
 
@@ -6600,9 +6627,10 @@
 ; heuristically only.
 
 ; Current-literal -- a pair containing the not-flg and atm of the literal on
-; which rewrite-clause is currently working.  It is used to avoid biting our
-; tail (see below).  When we are adding a term to the pot-lst, we refuse to add
-; the negation of the current literal.
+; which rewrite-clause is currently working.  It was probably used at one time
+; to avoid biting our tail (see below), but parent trees now perform that
+; function.  We leave :current-literal in the rewrite-constant in case there
+; are tools that use it.
 
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
@@ -8195,17 +8223,6 @@
 ; Start support for find-rules-of-rune, in support of
 ; backchain-limit-enforcers.
 
-(defun scan-to-event (wrld)
-
-; We roll back wrld to the first (list order traversal) event landmark
-; on it.
-
-  (cond ((null wrld) wrld)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         wrld)
-        (t (scan-to-event (cdr wrld)))))
-
 (defun decode-logical-name (name wrld)
 
 ; Given a logical name, i.e., a symbol with an 'absolute-event-number property
@@ -8522,24 +8539,30 @@
 
 (defun backchain-limit-enforcers (position ancestors wrld)
 
-; Backchaining has failed due to a backchain-limit.  Find indices of all
-; ancestors whose backchain-limit could be the culprit, as reported by the
-; :ANCESTORS break-rewrite command.  Position is the position in the top-level
-; ancestors, which is 0 at the top level; it is a bound on how many times we
-; are allowed to backchain in order to avoid the current failure.
+; Backchaining has failed due to a backchain-limit, for a rule of class
+; :rewrite or :linear.  Find indices of all ancestors whose backchain-limit
+; could be the culprit, as reported by the :ANCESTORS break-rewrite command.
+; Position is the position in the top-level ancestors, which is 0 at the top
+; level; it is a bound on how many times we are allowed to backchain in order
+; to avoid the current failure.
 
   (cond ((endp ancestors) nil)
         (t (let* ((rune (ancestor-backchain-rune (car ancestors)))
                   (rule (and rune
                              (car (find-rules-of-rune rune wrld)))))
              (cond (rule
-                    (let* ((backchain-limit-lst
-                            (access rewrite-rule rule :backchain-limit-lst))
+                    (let* ((linearp (eq (car rune) :linear))
+                           (backchain-limit-lst
+                            (if linearp
+                                (access linear-lemma rule :backchain-limit-lst)
+                              (access rewrite-rule rule :backchain-limit-lst)))
                            (bkptr (access ancestor (car ancestors) :bkptr))
                            (hyp-backchain-limit
                             (and backchain-limit-lst
-                                 (if (eq (access rewrite-rule rule :subclass)
-                                         'meta)
+                                 (if (and (not linearp)
+                                          (eq (access rewrite-rule rule
+                                                      :subclass)
+                                              'meta))
                                      backchain-limit-lst ; a numeric limit
                                    (nth (1- bkptr)
                                         backchain-limit-lst)))))
@@ -8650,39 +8673,54 @@
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
-                                                       info
+                                                       ancestors
                                                        state
                                                        evisc-tuple)
   (msg
    "a backchain limit was reached while processing :HYP ~x0.  ~@1"
    hyp-number
-   (cond
-    ((eq info :limit-0) ; see relieve-hyp
-     (msg "Note that the limit is 0 for that :HYP."))
-    (t ; info is a list of ancestors
-     (let ((pairs (backchain-limit-enforcers 0 info (w state))))
-       (cond
-        ((null pairs)
-         (let ((str "  Note that the brr command, :ANCESTORS, will show you ~
-                     the ancestors stack."))
-           (cond ((backchain-limit (w state) :rewrite)
-                  (msg "This appears to be due to the global backchain-limit ~
-                        of ~x0.~@1"
-                       (backchain-limit (w state) :rewrite)
-                       str))
-                 (t
-                  (msg "It is not clear how this could have happened.  ~
-                        Consider emailing a reproducible example to the ACL2 ~
-                        implementors.~@0"
-                       str)))))
-        (t
-         (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
-               index ~&0 ~#0~[shows~/each show~] a rune whose ~
-               ~#0~[~/respective ~]backchain limit of ~v1 has been reached, ~
-               for backchaining through its indicated hypothesis.~|~%~@2"
-              (strip-cars pairs)
-              (strip-cdrs pairs)
-              (show-ancestors-stack-msg state evisc-tuple)))))))))
+   (let ((pairs (backchain-limit-enforcers 0 ancestors (w state))))
+     (cond
+      ((null pairs)
+       (let ((str "  Note that the brr command, :ANCESTORS, will show you the ~
+                   ancestors stack."))
+         (cond ((backchain-limit (w state) :rewrite)
+                (msg "This appears to be due to the global backchain-limit of ~
+                      ~x0.~@1"
+                     (backchain-limit (w state) :rewrite)
+                     str))
+               (t
+
+; If the global backchain-limit for :rewrite is nil, and no ancestor has a
+; relevant backchain-limit (i.e., pairs is nil), then the hypothesis at hand
+; must have a backchain-limit of 0.  Through Version_8.3 we did not handle this
+; case properly; it seems we assumed that if the hypothesis has a
+; backchain-limit of 0 then pairs must be nil, but that is not necessarily the
+; case as illustrated by the following example (inspired by a bug report from
+; Mihir Mehta).
+
+;   (defun p1 (x) (integerp x))
+;   (defun p2 (x) (integerp x))
+;   (defun p3 (x) (integerp x))
+;   (defthm p1->p2
+;     (implies (p1 x) (p2 x))
+;     :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;   (defthm p2->p3
+;     (implies (p2 x) (p3 x)))
+;   (in-theory (disable p1 p2 p3))
+;   (brr t)
+;   (monitor '(:rewrite p1->p2) t)
+;   (thm (p3 a))
+
+                (msg "Note that the limit is 0 for that :HYP.")))))
+      (t
+       (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
+             index ~&0 ~#0~[shows~/each show~] a rune whose ~#0~[~/respective ~
+             ~]backchain limit of ~v1 has been reached, for backchaining ~
+             through its indicated hypothesis.~|~%~@2"
+            (strip-cars pairs)
+            (strip-cdrs pairs)
+            (show-ancestors-stack-msg state evisc-tuple)))))))
 
 (mutual-recursion
 
@@ -12730,20 +12768,6 @@
 (defmacro all-ffn-symbs-lst (lst ans)
   `(all-fnnames1 t ,lst ,ans))
 
-(defun warrant-name (fn)
-
-; Warning: Keep this in sync with warrant-name-inverse.
-
-; From fn generate the name APPLY$-WARRANT-fn.
-
-  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn)))
-  (intern-in-package-of-symbol
-   (concatenate 'string
-                "APPLY$-WARRANT-"
-                (symbol-name fn))
-   fn))
-
 (defun apply$-rule-name (fn)
   (declare (xargs :guard (symbolp fn)))
   (intern-in-package-of-symbol
@@ -12866,13 +12890,118 @@
          t)
         (t (fn-slot-from-geneqvp (cdr geneqv)))))
 
-(defun rewrite-lambda-object-warning (evg rewritten-body ttree wrld)
+(defun partition-userfns-by-warrantp (fns wrld haves have-nots)
+
+; Background: Rewrite-lambda-object, defined in the rewrite clique below, tries
+; to rewrite the body of a well-formed quoted lambda object.  But it must first
+; make sure that every function symbol occurring in the body either has a
+; warrant or doesn't need one (by virtue of being an apply$ primitive or boot
+; function).  If all the fns that need a warrant have one, it rewrites the body
+; and then forces all the warrants that aren't among the hyps.  But if there
+; are fns that don't even have warrants, it doesn't rewrite at all and, at
+; most, prints a warning message that the lambda can't be rewritten for that
+; reason.  So rewrite-lambda-object needs the list of all fns in the body that
+; must have warrants to be apply$d and it needs the list of all fns in the body
+; that don't have warrants.  (Note that the question of whether the required
+; warrants are assumed true in the context is left unasked here.)
+
+; So let fns be the list of all function symbols occurring the body, then this
+; function ``partitions'' fns into those having warrants and those not having
+; warrants but requiring them.  We quote ``partitions'' because apply$ primitives
+; and apply$ boot functions are just left out all together!
+
+  (cond ((endp fns) (mv haves have-nots))
+        ((or
+; The following hons-get is equivalent to (apply$-primp (car fns)).
+          (hons-get (car fns) ; *badge-prim-falist* is not yet defined!
+                    (unquote
+                     (getpropc '*badge-prim-falist*
+                               'const nil wrld)))
+; We similarly inspect the value of *apply$-boot-fns-badge-alist*
+          (assoc-eq (car fns)
+                    (unquote
+                     (getpropc '*apply$-boot-fns-badge-alist*
+                               'const nil wrld))))
+         (partition-userfns-by-warrantp (cdr fns) wrld haves have-nots))
+        ((get-warrantp (car fns) wrld)
+         (partition-userfns-by-warrantp (cdr fns) wrld
+                                        (add-to-set-eq (car fns) haves)
+                                        have-nots))
+        (t
+         (partition-userfns-by-warrantp (cdr fns) wrld
+                                        haves
+                                        (add-to-set-eq (car fns) have-nots)))))
+
+(defun rewrite-lambda-object-pre-warning
+    (evg not-well-formedp progs pre-have-no-warrants wrld)
+
+; Evg is a lambda object whose body we did not even try to rewrite.  We explain
+; why.  Not-well-formedp = t means that evg is not well-formed.  Otherwise,
+; progs is the list of :program mode function symbols in the body and
+; pre-have-no-warrants is the list of function symbols in the body for which no
+; warrants have been issued but would require warrants for apply$ to handle
+; them.  We print a rather verbose warning.  This warning can be avoided by
+; doing (set-inhibit-warnings "rewrite-lambda-object").
+
+; Note: Wrld is used in the expansion of warning$-cw1.
+
+; Historical Note: Rewrite-lambda-object-pre-warning and
+; rewrite-lambda-object-post-warning are sort of parallel, one reporting why we
+; avoided rewriting and the other reporting why we rejected the rewrite we did.
+; But they are structured somewhat differently for mainly historical reasons.
+; The post-warning was done first and no explanation was ever offered for the
+; not trying rewriting.  The pre-warning was added only after :program mode
+; functions could find their way into well-formed lambdas.  The post-warning
+; takes pains to warn the user about combinations of conditions while the
+; pre-warning just warns of the first problem detected.  The post-warning
+; recomputes the reasons even though the caller, rewrite-lambda-object,
+; ``knew'' them, whereas the pre-warning is passed the information it needs to
+; avoid recomputation.  These differences are largely just due to laziness!
+
+  (let* ((violations
+          (if not-well-formedp
+              0
+              (if progs
+                  1
+                  (if pre-have-no-warrants
+                      2
+                      3)))))
+; violations =
+; 0 - not well-formed
+; 1 - one or more :program mode functions in body
+; 2 - one or more symbols without warrants
+; 3 - unknown reason for rejection
+
+    (let ((state-vars (default-state-vars nil)))
+      (warning$-cw1 'rewrite-lambda-object
+                    "rewrite-lambda-object"
+                    "We refused to try to rewrite the quoted lambda-like ~
+                     object~%~Y01 because ~#2~[it is not well-formed (e.g., ~
+                     contains free variables, has a body that is not a term, ~
+                     or that contains unbadged function symbols)~/it contains ~
+                     the :program mode function symbol~#3~[~/s~] ~&3~/it ~
+                     contains the function symbol~#4~[~/s~] ~&4 for which no ~
+                     warrant~#4~[ has~/s have~] been issued~/we didn't like ~
+                     it but failed to record why~].  See :DOC ~
+                     rewrite-lambda-object."
+                    evg
+                    nil
+                    violations
+                    progs
+                    pre-have-no-warrants))))
+
+(defun rewrite-lambda-object-post-warning
+    (evg rewritten-body post-have-no-warrants ttree wrld)
 
 ; Evg is a well-formed quoted lambda object whose body has been rewritten to
-; rewritten-body using the runes in ttree.  However, rewritten-body has been
-; rejected either because it contains free vars or is untame.  We print a
-; rather verbost warning.  This warning can be avoided by doing
-; (set-inhibit-warnings "rewrite-lambda-object").
+; rewritten-body using the runes in ttree.  Post-have-no-warrants is the list
+; of function symbols (if any) in rewritten-body for which no warrants have
+; been issued.  However, rewritten-body has been rejected for various reasons.
+; We print a rather verbose warning explaining why.  This warning can be
+; avoided by doing (set-inhibit-warnings "rewrite-lambda-object").
+
+; Historical Note: See the note in rewrite-lambda-object-pre-warning about the
+; differing styles of this function and its pre-warning version.
 
   (let* ((free-vars (set-difference-eq (all-vars rewritten-body)
                                        (lambda-object-formals evg)))
@@ -12882,14 +13011,17 @@
               (if (cdr free-vars)
                   (if untamep 0 1)
                   (if untamep 2 3))
-              (if untamep 4 5))))
+              (if untamep
+                  4
+                  (if post-have-no-warrants 5 6)))))
 ; violations =
 ; 0 - multiple free vars and untame
 ; 1 - multiple free vars [but tame]
 ; 2 - a single free var and untame
 ; 3 - a single free var [but tame]
 ; 4 - [no free vars] untame
-; 5 - [no free vars and tame, so rejected by push-warrants]
+; 5 - [no free vars and tame] but some fns have no warrants
+; 6 - [no free vars, tame, fully warranted] some warrant assumed false
 
     (let ((state-vars (default-state-vars nil)))
       (warning$-cw1 'rewrite-lambda-object
@@ -12901,17 +13033,19 @@
                      ~&4 not listed among the formals~/it contains the ~
                      variable ~&4 not listed among the formals, and it is not ~
                      tame~/it contains the variable ~&4 not listed among the ~
-                     formals~/it is not tame~/it may not be apply$-equivalent ~
-                     in the current prover environment (see :doc ~
-                     rewrite-lambda-object)~].  The following runes were used ~
-                     to produce this rejected object: ~X51.  See :DOC ~
+                     formals~/it is not tame~/it contains the function ~
+                     symbol~#5~[ ~&5 for which no warrant has~/s ~&5 for ~
+                     which no warrants have~] been issued~/some warrant is assumed false ~
+                     in the current prover environment~].  The following runes were ~
+                     used to produce this rejected object: ~X61.  See :DOC ~
                      rewrite-lambda-object."
                     evg            ; lambda object
                     nil            ; evisc tuple -- print everything
                     `(lambda ,(lambda-object-formals evg)
                        ,rewritten-body) ; rejected body
-                    violations     ; 0, 1, 2, 3, 4, or 5
+                    violations     ; 0, 1, 2, 3, 4, 5, or 6
                     free-vars
+                    post-have-no-warrants
                     (merge-sort-runes (all-runes-in-ttree ttree nil))))))
 
 (defun collect-0-ary-hyps (type-alist)
@@ -12937,19 +13071,6 @@
          (cons (car type-alist)
                (collect-0-ary-hyps (cdr type-alist))))
         (t (collect-0-ary-hyps (cdr type-alist)))))
-
-(defun warranted-fns (fns badge-userfn-alist)
-
-; Fns is a list if function symbols and we collect those elements that have
-; warrants.  Badge-userfn-alist is just the alist mapping warranted fns to
-; their badges, as found in :badge-userfn-structure of the badge-table
-; maintained by defwarrant.
-
-  (cond
-   ((endp fns) nil)
-   ((assoc-eq (car fns) badge-userfn-alist)
-    (cons (car fns) (warranted-fns (cdr fns) badge-userfn-alist)))
-   (t (warranted-fns (cdr fns) badge-userfn-alist))))
 
 ; Essay on Rewriting Quoted Constants
 
@@ -14515,15 +14636,7 @@
                                           nil
                                           (if on-ancestorsp
                                               'ancestors
-                                            (cons 'backchain-limit
-                                                  (or ancestors
-
-; If there are no ancestors, then the failure may be because the rune specifies
-; a backchain-limit of 0.
-
-                                                      (and (eql backchain-limit
-                                                                0)
-                                                           :limit-0))))
+                                            (cons 'backchain-limit ancestors))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let
@@ -19573,58 +19686,80 @@
   (the-mv
    3
    (signed-byte 30)
-   (cond ((well-formed-lambda-objectp evg wrld)
-          (let ((formals (lambda-object-formals evg))
-                (dcl (lambda-object-dcl evg))
-                (body (lambda-object-body evg))
-                (type-alist1 (collect-0-ary-hyps type-alist)))
-            (sl-let
-             (rewritten-body ttree1)
-             (rewrite-entry (rewrite body
-                                     nil
-                                     'lambda-object-body)
-                            :fnstack (cons :rewrite-lambda-object fnstack)
-                            :type-alist type-alist1
-                            :obj '?
-                            :geneqv nil ; maintain EQUAL
-                            :pequiv-info nil
-                            :ancestors nil
-                            :simplify-clause-pot-lst nil
-                            :ttree nil)
-             (mv-let (rewritten-body1 ttree1)
-               (normalize rewritten-body
-                          nil ; iff-flg
-                          nil ; type-alist
-                          (access rewrite-constant
-                                  rcnst
-                                  :current-enabled-structure)
-                          wrld
-                          ttree1
-                          (backchain-limit wrld :ts))
-               (cond
-                ((equal rewritten-body1 body)
-                 (cond
-                  ((null dcl)
-                   (mv step-limit evg ttree))
-                  (t (mv step-limit
-                         `(lambda ,formals ,body) ; Just drop the dcl
-                         ttree))))
-                ((or (not (subsetp-eq (all-vars rewritten-body1) formals))
-                     (not (executable-tamep rewritten-body1 wrld)))
+   (cond ((symbolp evg)
+
+; We don't mess with evg if it is a symbol.  If we did, it would fail the first
+; test below and report that the symbol was an ill-formed lambda object.  If
+; the user wants to rewrite a quoted symbol occurring in a :FN position that is
+; possible but he or she should prove a :rewrite-quoted-constant rule.
+
+          (mv step-limit evg ttree))
+         ((well-formed-lambda-objectp evg wrld)
+          (let* ((formals (lambda-object-formals evg))
+                 (dcl (lambda-object-dcl evg))
+                 (body (lambda-object-body evg))
+                 (type-alist1 (collect-0-ary-hyps type-alist))
+                 (fns (all-fnnames body))
+                 (progs (collect-programs fns wrld)))
+            (mv-let (pre-have-warrants pre-have-no-warrants)
+              (partition-userfns-by-warrantp fns wrld nil nil)
+
+; Fns is the list of fns in body.  It does not include fns buried in quoted
+; objects; they are handled by recursion.  Progs is the list of :program mode
+; functions in fns, pre-have-warrants are the symbols in fns that have warrants
+; (whether they're assumed in the current context or not), and
+; pre-have-no-warrants are the symbols in fns for which no warrants exist but
+; which would require a warrant to be apply$d.  (Primitives and apply$
+; primitives don't have warrants but don't need them.)
+
+              (cond
+               ((and (null progs)
+                     (null pre-have-no-warrants))
+
+; So body is in :logic mode and every function symbol occurring in it has a
+; warrant or doesn't need one.
+
+                (sl-let
+                 (rewritten-body ttree1)
+                 (rewrite-entry (rewrite body
+                                         nil
+                                         'lambda-object-body)
+                                :fnstack (cons :rewrite-lambda-object fnstack)
+                                :type-alist type-alist1
+                                :obj '?
+                                :geneqv nil ; maintain EQUAL
+                                :pequiv-info nil
+                                :ancestors nil
+                                :simplify-clause-pot-lst nil
+                                :ttree nil)
+                 (mv-let (rewritten-body1 ttree1)
+                   (normalize rewritten-body
+                              nil ; iff-flg
+                              nil ; type-alist
+                              (access rewrite-constant
+                                      rcnst
+                                      :current-enabled-structure)
+                              wrld
+                              ttree1
+                              (backchain-limit wrld :ts))
+                   (cond
+                    ((equal rewritten-body1 body)
+                     (cond
+                      ((null dcl)
+                       (mv step-limit evg ttree))
+                      (t (mv step-limit
+                             `(lambda ,formals ,body) ; Just drop the dcl
+                             ttree))))
+                    ((or (not (subsetp-eq (all-vars rewritten-body1) formals))
+                         (not (executable-tamep rewritten-body1 wrld)))
 
 ; If the rewritten body contains free variables or is not tame, we reject this
 ; whole rewrite, after possibly printing a warning.
 
-                 (prog2$ (rewrite-lambda-object-warning evg rewritten-body
-                                                        ttree1 wrld)
-                         (mv step-limit evg ttree)))
-                (t (let ((fns (warranted-fns
-                               (all-fnnames1 nil
-                                             rewritten-body
-                                             (all-fnnames1 nil body nil))
-                               (cdr (assoc-eq :badge-userfn-structure
-                                              (table-alist 'badge-table
-                                                           wrld))))))
+                     (prog2$ (rewrite-lambda-object-post-warning
+                              evg rewritten-body nil ttree1 wrld)
+                             (mv step-limit evg ttree)))
+                    (t
 
 ; The replacement of body by rewritten-body (or, actually, by the normalized
 ; rewritten-body) inside a quoted lambda object depends on the equivalence of
@@ -19636,43 +19771,63 @@
 ; ``ev$'' is used where a suitable evaluator is used in metafunction
 ; correctness theorems.)  But we have that theorem for every apply$ primitive
 ; and for every apply$ boot function (provided the two terms are both tame),
-; but we need it for every warranted function in either term.  (The tameness
-; hypotheses required in the warrants are already assured by the tameness
-; checks here.)  Furthermore, we need to have each warrant hypothesis!  The
-; tameness checks we've done just assure us that the warrants exist in the
-; logic; we need them to be assumed true in the type-alist!  So we ensure that
-; now, by collecting all the warranted functions occurring in either term and
-; then calling push-warrants.
+; but we warrants for every userfn in either term.  (The tameness hypotheses
+; required in the warrants are already assured by the tameness checks here, so
+; we know we have badges, but not necessarily warrants.  We know all fns in
+; rewritten-body1 are in :logic mode because it was produced by rewriting a
+; :logic mode term and the rewriter never introduces a :program mode fn.)
+; Furthermore, we don't just need the userfns to be warranted, we need to have
+; each warrant hypothesis.  We ensure that by collecting all the warranted
+; userfns functions occurring in either term and then calling push-warrants.
 
-                     (mv-let (erp ttree2)
-                       (push-warrants fns
-                                      body
-                                      type-alist1
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      wrld
-                                      (ok-to-force rcnst)
-                                      ttree1 ttree)
+                     (mv-let (post-have-warrants post-have-no-warrants)
+                       (partition-userfns-by-warrantp
+                        (all-fnnames rewritten-body1)
+                        wrld nil nil)
+                       (cond
+                        (post-have-no-warrants
+                         (prog2$
+                          (rewrite-lambda-object-post-warning
+                           evg rewritten-body post-have-no-warrants ttree1
+                           wrld)
+                          (mv step-limit evg ttree)))
+                        (t
+                         (mv-let (erp ttree2)
+                           (push-warrants (union-eq pre-have-warrants
+                                                    post-have-warrants)
+                                          body
+                                          type-alist1
+                                          (access rewrite-constant rcnst
+                                                  :current-enabled-structure)
+                                          wrld
+                                          (ok-to-force rcnst)
+                                          ttree1 ttree)
 
 ; Body, above, is passed in as the ``target'' for push-warrants.  The target is
 ; only used in commentary about the forcing.  The :target of a forced rewerite
 ; rule is generally the term to which the rule was applied, but here we're
 ; talking about function symbols that must (probably) be apply$'d during the
 ; rewriting of :target.
-                       (cond
-                        (erp
+                           (cond
+                            (erp
 
 ; A warrant is assumed false, the apply$ rule for a fn is disabled, or forcing
 ; is not allowed.
 
-                         (prog2$
-                          (rewrite-lambda-object-warning evg rewritten-body
-                                                         ttree1 wrld)
-                          (mv step-limit
-                              evg
-                              ttree)))
-                        (t (mv step-limit
-                               `(lambda ,formals ,rewritten-body1)
-                               (cons-tag-trees ttree2 ttree))))))))))))
-         (t (mv step-limit evg ttree)))))
+                             (prog2$
+                              (rewrite-lambda-object-post-warning
+                               evg rewritten-body nil ttree1 wrld)
+                              (mv step-limit
+                                  evg
+                                  ttree)))
+                            (t (mv step-limit
+                                   `(lambda ,formals ,rewritten-body1)
+                                   (cons-tag-trees ttree2 ttree)))))))))))))
+               (t (prog2$
+                   (rewrite-lambda-object-pre-warning
+                    evg nil progs pre-have-no-warrants wrld)
+                   (mv step-limit evg ttree)))))))
+         (t (prog2$
+             (rewrite-lambda-object-pre-warning evg t nil nil wrld)
+             (mv step-limit evg ttree))))))
 )

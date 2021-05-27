@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,6 +39,14 @@
            (equal (nth n x)
                   (nth 0 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable nth))))
+
+;drop?
+(defthmd nth-when-n-is-not-natp
+  (implies (not (natp n))
+           (equal (nth n lst)
+                  (car lst)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable nth))))
 
 (defthmd nth-when-<=-len
@@ -133,3 +141,10 @@
 (defthm equal-of-nth-2-and-caddr
   (equal (equal (nth 2 x) (caddr x))
          t))
+
+;;in case we are not rewriting either to the other
+(defthm not-<-of-car-and-nth-of-0
+  (not (< (car x) (nth 0 x))))
+
+(defthm not-<-of-nth-of-0-and-car
+  (not (< (nth 0 x) (car x))))

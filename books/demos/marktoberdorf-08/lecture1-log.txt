@@ -10,6 +10,11 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
 ACL2 !>>(SET-GAG-MODE NIL)
 <state>
 ACL2 !>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
 ACL2 >>'(END OF SETUP)
 (END OF SETUP)
 ACL2 >>(CONS 2 NIL)
@@ -4825,8 +4830,8 @@ Subgoal *1.12.1.1/6
          (EQUAL E X1)).
 
 This simplifies, using the :definitions HOW-MANY (if-intro), MEMBER!
-(if-intro), TRUE-LISTP and TWINS and the :type-prescription rule 
-MEMBER-EQUAL, to the following four conjectures.
+(if-intro), TRUE-LISTP and TWINS and the :type-prescription rule MEMBER-EQUAL,
+to the following four conjectures.
 
 Subgoal *1.12.1.1/6.4
 (IMPLIES (AND (CONSP R*)

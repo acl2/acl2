@@ -4,7 +4,7 @@
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-(include-book "../utilities")
+(include-book "acl2s/utilities" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 
 ; [2014-11-25 Tue] Make key package agnostic by always putting it into

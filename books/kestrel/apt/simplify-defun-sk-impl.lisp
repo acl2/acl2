@@ -36,7 +36,7 @@
 (defun fn-simp-defs-sk (fn fn-simp hyps theory expand simplify-body
                            skolem-name guard guard-hints
                            verify-guards rewrite untranslate must-simplify
-                           fn-simp-is-fn-name ctx state)
+                           fn-simp-is-fn-name verbose ctx state)
 
 ; See fn-simp-defs for the analogous function to use when fn is defined by
 ; defun; here, fn is defined by defun-sk.
@@ -45,7 +45,6 @@
 
   (b* ((wrld (w state))
        (fn-runes (fn-runes-name fn wrld))
-       (hints-from-theory (theory+expand-to-hints theory expand))
        ((unless (defun-sk-p fn wrld))
         (er soft ctx
             "The symbol ~x0 was not introduced by ~x1."
@@ -90,27 +89,19 @@
              'defun-sk2
            'defun-sk))
        ((er thyps) (translate-hyp-list hyps fn ctx wrld state))
-       ((er runes-hyps/simp-hyps)
-        (if hyps
-            (simplify-hyp-list thyps theory expand ctx state)
-          (value nil)))
-       (runes-hyps (car runes-hyps/simp-hyps))
-       (simp-hyps (cdr runes-hyps/simp-hyps))
        ((er address-subterm-governors-lst)
         (if (not (booleanp simplify-body)) ; then non-nil value (or, error)
             (ext-address-subterm-governors-lst-state
              simplify-body matrix ctx state)
           (value (list (list* nil matrix nil nil)))))
        (fn-simp-alist `((,fn . ,fn-simp)))
+       (hints-from-theory+expand (theory+expand-to-hints theory expand))
+       ((er thints)
+        (translate-hints ctx hints-from-theory+expand ctx wrld state))
        ((er body-result)
-        (fn-simp-body fn fn-simp nil simplify-body matrix
-                      simp-hyps theory expand
-                      hints-from-theory
-                      address-subterm-governors-lst
-                      *geneqv-iff*
-                      must-simplify
-                      fn-simp-alist
-                      ctx wrld state))
+        (fn-simp-body fn fn-simp nil simplify-body matrix thyps
+                      address-subterm-governors-lst *geneqv-iff* thints
+                      must-simplify fn-simp-alist ctx wrld state))
        (simp-body (sublis-fn-simple fn-simp-alist
                                     (access fn-simp-body-result
                                             body-result
@@ -134,11 +125,8 @@
                                  untrans-simp-body simp-body
                                  "" ctx state))
               (t (value nil))))
-       (runes (merge-sort-lexorder
-               (union$ (access fn-simp-body-result body-result
-                               :runes)
-                       runes-hyps
-                       :test 'equal)))
+       (runes (merge-sort-lexorder (access fn-simp-body-result body-result
+                                           :runes)))
        (guard-decl
         (cond ((eq guard :auto)
                (let ((guard (guard-raw fn wrld)))
@@ -189,7 +177,8 @@
                   `(cons ',fn-simp-is-fn-name
                          ,fn-runes)
                   `(cons ',fn-simp-is-fn-name
-                         ,theory))))))
+                         ,theory)
+                  verbose)))))
     (value
      `((,defun-sk? ,fn-simp ,formals
          (,quantifier ,bound-vars ,untrans-simp-body)
@@ -208,7 +197,7 @@
        (defconst ,fn-runes
 ; WARNING: Do not change the caddr of this form without considering the effect
 ; on the printing of runes done in simplify-defun-sk-form.
-         ',runes)
+         ',(acl2::drop-fake-runes runes))
        ,(and verify-guards-form
              `(on-failure
                ,verify-guards-form
@@ -337,7 +326,7 @@
                          skolem-name guard guard-hints
                          verify-guards rewrite untranslate must-simplify
                          fn-simp-is-fn-name
-                         ctx state))
+                         verbose ctx state))
        (new-defun
         (nth 0 fn-simp-defs)) ; (defun-sk foo$1 ...)
        (state (cond (verbose

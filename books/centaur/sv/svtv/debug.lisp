@@ -32,7 +32,7 @@
 (in-package "SV")
 
 (include-book "process")
-(include-book "fsm")
+(include-book "fsm-base")
 (include-book "vcd")
 (include-book "oslib/date" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
@@ -115,12 +115,13 @@
        (val (svtv-debug-lhs-eval lhs n wirevals vcd-vals))
        (prev-val (get-4vec n vcd-vals))
        (vcd-vals (set-4vec n val vcd-vals))
+       ((when (equal prev-val val))
+        (svtv-debug-eval-aliases-track
+         (1+ (lnfix n)) aliases wirevals vcd-vals))
        ((mv rest-changes vcd-vals)
         (svtv-debug-eval-aliases-track
          (1+ (lnfix n)) aliases wirevals vcd-vals)))
-    (mv (if (equal prev-val val)
-            rest-changes
-          (cons (lnfix n) rest-changes))
+    (mv (cons (lnfix n) rest-changes)
         vcd-vals))
   ///
   (defthm len-vcd-vals-of-svtv-debug-eval-aliases-track
@@ -253,15 +254,6 @@
            (true-list-listp (append a b)))
   :hints(("Goal" :in-theory (enable true-list-listp))))
 
-(defthm svex-env-p-of-pairlis$
-  (implies (and (svarlist-p x)
-                (4veclist-p y)
-                (equal (len x) (len y)))
-           (svex-env-p (pairlis$ x y)))
-  :hints(("Goal" :in-theory (enable svex-env-p
-                                    svarlist-p
-                                    4veclist-p
-                                    pairlis$))))
 
 (defenum debugdata-status-p
   (:empty :initialized :composed))

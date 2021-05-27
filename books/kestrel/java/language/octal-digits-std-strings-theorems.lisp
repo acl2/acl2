@@ -24,10 +24,10 @@
 
   (defrule oct-digitp-of-char-code
     (equal (oct-digitp (char-code char))
-           (str::octal-digitp char))
-    :enable (oct-digitp str::octal-digitp))
+           (str::oct-digit-char-p char))
+    :enable (oct-digitp str::oct-digit-char-p))
 
   (defrule oct-digit-listp-of-chars=>nats
     (equal (oct-digit-listp (chars=>nats chars))
-           (str::octal-digit-listp chars))
+           (str::oct-digit-char-listp chars))
     :enable chars=>nats))

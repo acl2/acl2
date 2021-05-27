@@ -13,6 +13,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "declares0")
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;move
 (defthm butlast-of-nil
@@ -42,14 +43,20 @@
        (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun, name, formals, and body.
        ))
 
-(defun get-declares-from-defun (defun)
+(defund get-declares-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
   (butlast (cdr (cdr (cdr defun))) 1)) ; (defun <name> <formals> <declare> ... <declare> <body>)
 
+(defthm all-declarep-of-get-declares-from-defun
+  (implies (defun-formp defun)
+           (all-declarep (get-declares-from-defun defun)))
+  :hints (("Goal" :in-theory (enable get-declares-from-defun
+                                     defun-formp))))
+
 ;; DEFUN is of the form (defun <name> <formals> <declare> ... <declare> <body>)
-(defun replace-declares-in-defun (defun declares)
+(defund replace-declares-in-defun (defun declares)
   (declare (xargs :guard (and (defun-formp defun)
                               (true-listp declares)
                               (all-declarep declares))
@@ -61,6 +68,15 @@
     ,@declares ;the new declares
     ,(car (last defun)) ;body
     ))
+
+(local (in-theory (disable all-declarep)))
+
+(defthm defun-formp-of-replace-declares-in-defun
+  (implies (and (defun-formp defun)
+                (true-listp declares)
+                (all-declarep declares))
+           (defun-formp (replace-declares-in-defun defun declares)))
+  :hints (("Goal" :in-theory (enable replace-declares-in-defun defun-formp))))
 
 (defun get-body-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
@@ -150,6 +166,8 @@
           (get-xargs-from-event fn defun)))
         (hard-error 'get-xargs-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
 
+;; Returns the *untranslated* body provided for FN in EVENT, which should be a DEFUN or MUTUAL-RECURSION.
+;; TODO: Perhaps add support for DEFUNS, which is like MUTUAL-RECURSION.
 (defund get-body-from-event (fn event)
   (declare (xargs :guard (and (symbolp fn)
                               (defun-or-mutual-recursion-formp event))
@@ -161,9 +179,9 @@
       (if (eq 'mutual-recursion event-type)
           (let ((defun (find-defun-in-mut-rec fn (fargs event))))
             (if (not (defun-formp defun))
-                nil ;TODO error!
+                (er hard? 'get-body-from-event "Failed to find a body for ~x0 in the event ~x1." fn event)
               (get-body-from-event fn defun)))
-        (hard-error 'get-body-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
+        (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
 
 (defun defun-has-explicit-guardp (defun)
   (declare (xargs :guard (defun-formp defun)
@@ -234,3 +252,33 @@
          (declares (add-verify-guards-t declares))
          (defun (replace-declares-in-defun defun declares)))
     defun))
+
+;todo: use this more
+(defund replace-xarg-in-defun (xarg val defun)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (defun-formp defun))
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (let* ((declares (get-declares-from-defun defun))
+         (declares (replace-xarg-in-declares xarg val declares))
+         (defun (replace-declares-in-defun defun declares)))
+    defun))
+
+(defthm defun-formp-of-replace-xarg-in-defun
+  (implies (and (keywordp xarg)
+                (defun-formp defun))
+           (defun-formp (replace-xarg-in-defun xarg val defun)))
+  :hints (("Goal" :in-theory (enable replace-xarg-in-defun))))
+
+(defund replace-xarg-in-defuns (xarg val defuns)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (true-listp defuns)
+                              (all-defun-formp defuns))))
+  (if (endp defuns)
+      nil
+    (cons (replace-xarg-in-defun xarg val (first defuns))
+          (replace-xarg-in-defuns xarg val (rest defuns)))))
+
+(defund replace-xarg-in-mutual-recursion (xarg val mutual-recursion)
+  (declare (xargs :guard (and (keywordp xarg)
+                              (mutual-recursion-formp mutual-recursion))))
+  `(mutual-recursion ,@(replace-xarg-in-defuns xarg val (fargs mutual-recursion))))

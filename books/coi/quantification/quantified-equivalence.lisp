@@ -178,18 +178,18 @@
   (declare (type t x))
   (or (not x) (equal x acl2::*nil*)))
       
-(defun subset (x y)
+(defun subset-p (x y)
   (declare (xargs :guard (and (symbol-listp x)
                               (symbol-listp y))))
   (if (not (consp x)) t
     (and (member (car x) y)
-         (subset (cdr x) y))))
+         (subset-p (cdr x) y))))
 
-(defun perm (x y)
+(defun perm-p (x y)
   (declare (xargs :guard (and (symbol-listp x)
                               (symbol-listp y))))
-  (and (subset x y)
-       (subset y x)))
+  (and (subset-p x y)
+       (subset-p y x)))
 
 (defun subs (alist list)
   (declare (type (satisfies alistp) alist))
@@ -249,7 +249,7 @@
            (ignorable quantifier)
            (xargs :guard (and (equal quantifier :forall)
                               (equal (len args) 2)
-                              (or (unbound formals) (perm formals (append args parms))))))
+                              (or (unbound formals) (perm-p formals (append args parms))))))
   (let* ((formals (if (unbound formals) (append args parms) formals))
          (parms  (if (unbound parms) nil parms))
          (x (nth 0 args))
@@ -400,9 +400,9 @@
 The @('quant::equiv') macro can be used to prove that a universally
 quantified formula satisfies the properties of a parameterized
 equivalence relation.  This macro is similar in nature to @(tsee
-def-universal-equiv) except that parameterized equivalences are
+acl2::def-universal-equiv) except that parameterized equivalences are
 supported.  If no paramaters are specified, however, we prove that the
-quantified formula is in fact a standard @(tsee equivalence) relation.
+quantified formula is in fact a standard @(tsee acl2::equivalence) relation.
 </p> 
 <p>Usage:</p> @({
   (include-book \"coi/quantification/quantified-equivalence\" :dir :system)

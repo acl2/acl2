@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/number-theory/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
@@ -28,6 +29,8 @@
             byte-list-fix
             byte-listp
             define
+            define-sk
+            defret
             defrule
             defruled
             defrulel
@@ -38,6 +41,7 @@
             i*
             i+
             i-
+            nat
             nat=>bebytes
             nat-equiv
             patbind-unless
@@ -51,6 +55,10 @@
             pfield::inv
             pfield::neg
             pfield::pow
+            primes::bls12-377-scalar-field-prime
+            primes::secp256k1-field-prime
+            primes::secp256k1-group-prime
+            rule
             str::strval16s
             ///
             )

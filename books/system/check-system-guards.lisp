@@ -48,6 +48,8 @@
 (report-guard-checks) ; should show lots of checking
 ||#
 
+; (depends-on "check-system-guards-raw.lsp")
+
 (in-package "ACL2")
 
 (local (include-book "tools/include-raw" :dir :system))

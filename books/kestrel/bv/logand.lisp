@@ -141,20 +141,23 @@
    (implies (equal 0 (logand i k))
             (equal (logand i j k) 0))
    :hints (("Goal" :in-theory (enable logand
-                                      floor-of-2-cases)))))
+                                      floor-of-2-cases
+                                      mod-sum-cases)))))
 
 (local
  (defthmd logand-is-zero-helper-2
    (implies (equal 0 (logand i j))
             (equal (logand i j k) 0))
    :hints (("Goal" :in-theory (enable logand
-                                      floor-of-2-cases)))))
+                                      floor-of-2-cases
+                                      mod-sum-cases)))))
 
 (defthm logand-associative
   (equal (logand (logand i j) k)
          (logand i (logand j k)))
   :hints (("Goal" :in-theory (enable logand
                                      floor-of-2-cases
+                                     mod-sum-cases
                                      zip
                                      logand-is-zero-helper
                                      logand-is-zero-helper-2)
@@ -271,7 +274,7 @@
                             zip
                             expt-of-+
                             mod-of-floor-of-2-and-expt-of-one-less
-                            )
+                            mod-sum-cases)
                            (;logand-with-mask-better-alt
                             mod-floor-2-expt-2
                             <=-of-logand-same-arg2)))))
@@ -295,7 +298,8 @@
                             ;mod-of-floor-and-expt-of-one-less
                             zip
                             expt-of-+
-                            mod-of-floor-of-2-and-expt-of-one-less)
+                            mod-of-floor-of-2-and-expt-of-one-less
+                            mod-sum-cases)
                            (;logand-with-mask-better-alt
                             mod-floor-2-expt-2
                             <=-of-logand-same-arg2)))))
@@ -463,7 +467,9 @@
            :in-theory (e/d (logand
                             mod-of-floor-of-2-and-expt-of-one-less-alt)
                            (expt-hack
-                            mod-floor-2-expt-2)))))
+                            <-of-1-and-expt
+                            mod-floor-2-expt-2
+                            my-floor-lower-bound-linear)))))
 
 (add-invisible-fns logand lognot)
 

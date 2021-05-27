@@ -107,11 +107,17 @@
          (member-equal a x)))
   :hints (("Goal" :in-theory (enable member-equal remove-equal))))
 
+(defthm member-equal-of-remove-equal-irrel
+  (implies (not (equal a b))
+           (iff (member-equal a (remove-equal b x))
+                (member-equal a x)))
+  :hints (("Goal" :in-theory (enable member-equal remove-equal))))
+
 (defthm member-equal-of-remove1-equal-irrel
   (implies (not (equal a b))
            (iff (member-equal a (remove1-equal b x))
                 (member-equal a x)))
-  :hints (("Goal" :in-theory (enable member-equal remove-equal))))
+  :hints (("Goal" :in-theory (enable member-equal))))
 
 ;; Disabled since consp is so common.
 (defthmd consp-when-member-equal
@@ -134,3 +140,37 @@
   (iff (consp (member-equal a x))
        (member-equal a x))
   :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-constant-when-not-equal-car
+  (implies (and (syntaxp (and (quotep x)
+                              (consp (unquote x))))
+                (not (equal a (car x))))
+           (equal (member-equal a x)
+                  (member-equal a (cdr x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-when-singleton
+  (equal (member-equal x (list y))
+         (if (equal x y)
+             (list x)
+           nil)))
+
+;; Should avoid case splitsa
+(defthm member-equal-when-singleton-iff
+  (iff (member-equal x (list y))
+       (equal x y)))
+
+;use polarities?
+(defthm member-equal-of-constant-trim
+  (implies (and (syntaxp (quotep k))
+                (not (equal x val)) ;val is a free var
+                (syntaxp (quotep val))
+                (member-equal val k))
+           (iff (member-equal x k)
+                (member-equal x (remove-equal val k))))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-nth-same
+  (implies (< (nfix n) (len x))
+           (member-equal (nth n x) x)))

@@ -50,13 +50,7 @@
       which may enable further optimizations
       by taking advantage of the added restrictions.")
 
-    (xdoc::p
-     "The " *restrict-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
-     ", provide the mathematical concepts and template proofs
-      upon which this transformation is based.
-      These notes should be read alongside this reference documentation,
-      which refers to them in some places."))
+    (xdoc::apt-design-notes-ref restrict))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,15 +58,17 @@
     (xdoc::codeblock
      "(restrict old"
      "          restriction"
-     "          :undefined       ; default :undefined"
-     "          :new-name        ; default :auto"
-     "          :new-enable      ; default :auto"
-     "          :thm-name        ; default :auto"
-     "          :thm-enable      ; default t"
-     "          :verify-guards   ; default :auto"
-     "          :hints           ; default nil"
-     "          :print           ; default :result"
-     "          :show-only       ; default nil"
+     "          :undefined          ; default :undefined"
+     "          :new-name           ; default :auto"
+     "          :new-enable         ; default :auto"
+     "          :old-to-new-name    ; default from table"
+     "          :old-to-new-enable  ; default from table"
+     "          :new-to-old-name    ; default from table"
+     "          :new-to-old-enable  ; default from table"
+     "          :verify-guards      ; default :auto"
+     "          :hints              ; default nil"
+     "          :print              ; default :result"
+     "          :show-only          ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,7 +79,7 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be " (xdoc::seetopic "definedness" "defined") ",
+       be " (xdoc::seetopic "acl2::function-definedness" "defined") ",
        have at least one formal argument,
        return a non-" (xdoc::seetopic "mv" "multiple") " value, and
        have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
@@ -197,9 +193,13 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name :never)
+    (xdoc::desc-apt-input-old-to-new-name)
 
-    (xdoc::desc-apt-input-thm-enable :never)
+    (xdoc::desc-apt-input-old-to-new-enable)
+
+    (xdoc::desc-apt-input-new-to-old-name)
+
+    (xdoc::desc-apt-input-new-to-old-enable)
 
     (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
@@ -310,7 +310,25 @@
       "                  (new x1 ... xn))))")
      (xdoc::p
       "In the " *restrict-design-notes* ",
-       @('old-to-new') is denoted by @($\\mathit{ff}'$).")))
+       @('old-to-new') is denoted by @($\\mathit{ff}'$)."))
+
+    (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that relates @('new') to @('old'):")
+     (xdoc::codeblock
+      "(defthm new-to-old"
+      "  (implies restriction<x1,...,xn>"
+      "           (equal (new x1 ... xn)"
+      "                  (old x1 ... xn))))")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('new-to-old') is denoted by @($f'f$)."))
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      both @('new-to-old') and @('old-to-new')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

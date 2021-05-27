@@ -227,6 +227,16 @@
                   ,2vec-body
                 ,4vec-body)))
 
+(define s4vec-equal ((x s4vec-p) (y s4vec-p))
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable s4vec->4vec)))
+  (mbe :logic (equal (s4vec->4vec x) (s4vec->4vec y))
+       :exec (if-s2vec-p (x y)
+                         (sparseint-equal (s2vec->val x) (s2vec->val y))
+                         (and (sparseint-equal (s4vec->upper x) (s4vec->upper y))
+                              (sparseint-equal (s4vec->lower x) (s4vec->lower y))))))
+
+
 (deflist s4veclist :elt-type s4vec :true-listp t)
 
 (define s4vec-index-p ((x s4vec-p))
@@ -753,12 +763,39 @@
   :returns (res s4vec-p)
   (b* (((s4vec x))
        ((s4vec y)))
-    (s2vec (int-to-sparseint (bool->vec (if-s2vec-p (x y)
-                                                    (sparseint-equal (s2vec->val x) (s2vec->val y))
-                                                    (and (sparseint-equal x.upper y.upper)
-                                                         (sparseint-equal x.lower y.lower)))))))
+    (s2vec (int-to-sparseint (bool->vec (s4vec-equal x y)))))
   ///
   (s4vec-correct :enable (s4vec->4vec bool->vec)))
+
+(define s4vec-===* ((left s4vec-p) (right s4vec-p))
+  :returns (equal s4vec-p)
+  (b* (((s4vec left))
+       ((s4vec right))
+       (uppers-diff (sparseint-bitxor left.upper right.upper))
+       (lowers-diff (sparseint-bitxor left.lower right.lower))
+       (diff (sparseint-bitor uppers-diff lowers-diff))
+       (left-non-x (sparseint-bitorc1 left.upper left.lower))
+       (right-non-x (sparseint-bitorc1 right.upper right.lower))
+       (true ;; inputs are non-x and identical
+        (sparseint-equal -1
+                         (sparseint-bitandc1 diff
+                                             ;; not X: ~(upper & ~lower) = ~upper | lower
+                                             left-non-x)))
+       ((when true) (mbe :logic (s4vec (int-to-sparseint -1) (int-to-sparseint -1)) :exec -1))
+       (not-false (sparseint-equal 0
+                                   (sparseint-bitand
+                                    left-non-x ;; factor this out because both conditions below include it
+                                    (sparseint-bitorc2
+                                     ;; bits are Boolean and not equal
+                                     ;; (sparseint-bitand right-non-x
+                                     diff
+                                     ;; left is non-x and y is X
+                                     right-non-x))))
+       ((when not-false) (s4vec-x)))
+    (mbe :logic (s4vec (int-to-sparseint 0) (int-to-sparseint 0)) :exec 0))
+
+  ///
+  (s4vec-correct))
 
 (define s3vec-? ((test s4vec-p)
                  (then s4vec-p)
@@ -818,6 +855,54 @@
   ///
   (s4vec-correct))
 
+(define s4vec-bit?! ((test s4vec-p)
+                     (thens s4vec-p)
+                     (elses s4vec-p))
+  :returns (res s4vec-p)
+  (b* (((s4vec test))
+       (pick-then (sparseint-bitand test.upper test.lower))
+       ((when (sparseint-equal pick-then -1)) (s4vec-fix thens))
+       ((when (sparseint-equal pick-then 0)) (s4vec-fix elses))
+       (pick-else (sparseint-bitnot pick-then))
+       ((s4vec thens))
+       ((s4vec elses))
+       (upper (sparseint-bitor (sparseint-bitand pick-then thens.upper)
+                               (sparseint-bitand pick-else elses.upper)))
+       (lower (sparseint-bitor (sparseint-bitand pick-then thens.lower)
+                               (sparseint-bitand pick-else elses.lower))))
+    (s4vec upper lower))
+  ///
+  (local (defthm logand-a-b-c-when-a-b-equal-cons
+           (implies (and (equal k (logand x y))
+                         (syntaxp (quotep k)))
+                    (equal (logand x y z) (logand k z)))
+           :hints(("Goal" :use ((:instance bitops::associativity-of-logand
+                                 (a x) (b y) (c z)))
+                   :in-theory (disable bitops::associativity-of-logand)))))
+  (local (defthm logior-0
+           (equal (logior x 0) (ifix x))
+           :hints(("Goal" :in-theory (enable bitops::logior**)))))
+  (local (in-theory (disable acl2::commutativity-of-logand
+                             acl2::commutativity-of-logior
+                             bitops::commutativity-2-of-logand)))
+  (s4vec-correct))
+
+
+(define s4vec-?! ((test s4vec-p)
+                  (then s4vec-p)
+                  (else s4vec-p))
+  :returns (choices s4vec-p)
+  :short "If-then-elses of @(see s4vec)s following the SystemVerilog semantics for
+          procedural conditional branches, i.e. if the test has any bit that is
+          exactly 1 (not 0, Z, or X), we choose the then branch, else the else
+          branch. (Non-monotonic semantics)."
+
+  (b* (((s4vec test))
+       ;; We choose the THEN branch if any bit has upper and lower both set.
+       (pick-else (sparseint-equal 0 (sparseint-bitand test.upper test.lower))))
+    (if pick-else (s4vec-fix else) (s4vec-fix then)))
+  ///
+  (s4vec-correct))
 
 (define s3vec-?* ((test s4vec-p)
                   (then s4vec-p)

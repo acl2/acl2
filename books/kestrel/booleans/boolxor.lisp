@@ -58,3 +58,7 @@
   (equal (boolxor x (bool-fix y))
          (boolxor x y))
   :hints (("Goal" :in-theory (enable bool-fix$inline boolxor))))
+
+;; These help justify some things that Axe does:
+(defcong iff equal (boolxor x y) 1 :hints (("Goal" :in-theory (enable boolxor))))
+(defcong iff equal (boolxor x y) 2 :hints (("Goal" :in-theory (enable boolxor))))

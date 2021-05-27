@@ -1,14 +1,41 @@
 #!/bin/sh
 
+##########
+
+# Cheat sheet for using this file (a more conventional description
+# follows):
+
+# (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
+#     to regenerate @useless-runes.lsp files.
+
+# (2) Run ordinary "everything" regression.
+
+# (3) Check for failures, avoiding bad @useless-runes.lsp files by
+#     editing .acl2 files and removing them (using git rm if already
+#     under git control).
+
+# (4) Run, in that same directory:
+
+#     ./bin/new-useless-runes-files.sh acl2 tmp
+
+# (5) After "cd books", run "git add" and "git rm" as suggested by the
+#     output.
+
+# (6) Commit, pull, commit, push.
+
+##########
+
 # Run
 
 # ./bin/new-useless-runes-files.sh acl2 tmp
 
 # in the main ACL2 directory (using any ACL2, but perhaps it's best to
 # use the one just built).  That will create a temporary file, tmp, in
-# the directory where this script is invoked, then execute that file
-# in ACL2 to obtain suitable output at the shell, of the following
-# form.  (Note that the temporary file, tmp, will then be deleted.)
+# the directory where this script is invoked; then it will execute
+# that file in ACL2 to obtain suitable output at the shell, of the
+# following form.  (Note that the temporary file, tmp, will then be
+# deleted.)  It is up to the user to run "git add" and "git rm" on the
+# files below (respectively); be sure to "cd books" first.
 
 # @@@ Untracked @useless-runes.lsp files to be added:
 # ("..." ... "...")

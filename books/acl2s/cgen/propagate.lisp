@@ -151,7 +151,7 @@
          ((er rest)  (simplify-term-lst (cdr terms) hyps hints state)))
       (value (cons sterm rest)))))
 
-(include-book "../defdata/defdata-util")
+(include-book "acl2s/defdata/defdata-util" :dir :system)
 (defun type-hyp-p (hyp wrld)
   (and (consp hyp)
        (let ((hyp (defdata::expand-lambda hyp)))

@@ -376,7 +376,7 @@
 
 
 (defund expdiffint ()
-  (bits (+ (- (+ (expint (expa)) (expint (expb))) (clz)) 1)
+  (bits (+ (- (+ (expint (expa)) (expint (expb))) (clz*)) 1)
         11 0))
 
 (defund expprodm1int () (bits (+ (expint (expa)) (expint (expb))) 11 0))
@@ -390,8 +390,8 @@
            (lognot1 (expdiffbiasedneg))))
 
 (defund lshift ()
-  (bits (if1 (expdiffbiasedzero) (- (clz) 1)
-            (if1 (expdiffbiasedpos) (clz) (expprodm1int)))
+  (bits (if1 (expdiffbiasedzero) (- (clz*) 1)
+            (if1 (expdiffbiasedpos) (clz*) (expprodm1int)))
         5 0))
 
 (defund lprodshft () (bits (ash (prod) (lshift)) 105 0))
@@ -463,7 +463,7 @@
 
 
 (defund expdiffint ()
-  (bits (+ (- (+ (expint (expa)) (expint (expb))) (clz)) 1)
+  (bits (+ (- (+ (expint (expa)) (expint (expb))) (clz*)) 1)
         11 0))
 
 (defund expprodm1int () (bits (+ (expint (expa)) (expint (expb))) 11 0))
@@ -477,8 +477,8 @@
            (lognot1 (expdiffbiasedneg))))
 
 (defund lshift ()
-  (bits (if1 (expdiffbiasedzero) (- (clz) 1)
-            (if1 (expdiffbiasedpos) (clz) (expprodm1int)))
+  (bits (if1 (expdiffbiasedzero) (- (clz*) 1)
+            (if1 (expdiffbiasedpos) (clz*) (expprodm1int)))
         5 0))
 
 (defund lprodshft () (bits (ash (prod) (lshift)) 105 0))
@@ -1463,13 +1463,13 @@
 (defthmd clz-rewrite
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-	   (equal (clz)
+	   (equal (clz*)
 	          (if (= (expa) 0)
 		      (clz53 (mana))
 		    (if (= (expb) 0)
 		        (clz53 (manb))
 		      0))))
-  :hints (("Goal" :use (clz-mana-pos clz-manb-pos si-expprodint-8) :in-theory (enable ea eb clz))))
+  :hints (("Goal" :use (clz-mana-pos clz-manb-pos si-expprodint-8) :in-theory (enable ea eb clz*))))
 
 (defthmd expo-sa
   (implies (not (specialp))
@@ -1495,7 +1495,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (+ (expo (sa)) (expo (sb)))
-	          (- 104 (clz))))
+	          (- 104 (clz*))))
   :hints (("Goal" :in-theory (enable clz-rewrite bvecp clz-expo expo-sa expo-sb)
                   :use (expa-expb-0 bvecp-mana bvecp-manb expa-0-mana expb-0-manb))))
 
@@ -1503,7 +1503,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (member (expo (prod))
-	           (list (- 104 (clz)) (- 105 (clz)))))
+	           (list (- 104 (clz*)) (- 105 (clz*)))))
   :hints (("Goal" :in-theory (enable sa sb prod-rewrite)
                   :use (bvecp-mana bvecp-manb expo-sa-sb (:instance expo-prod (x (sa)) (y (sb)))))))
 
@@ -1524,7 +1524,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffint)
-                  (mod (+ (- (+ (expint (expa)) (expint (expb))) (clz)) 1)
+                  (mod (+ (- (+ (expint (expa)) (expint (expb))) (clz*)) 1)
 		       (expt 2 12))))
   :hints (("Goal" :in-theory (enable si expdiffint bits-mod))))
 
@@ -1532,23 +1532,23 @@
 
 (local-defthmd case-2-4
   (implies (not (specialp))
-           (equal (mod (+ (- (+ (expint (expa)) (expint (expb))) (clz)) 1)
+           (equal (mod (+ (- (+ (expint (expa)) (expint (expb))) (clz*)) 1)
 		       (expt 2 12))
-                  (mod (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz)) 1)
+                  (mod (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz*)) 1)
 		       (expt 2 12))))
   :hints (("Goal" :in-theory (enable si)
-                  :use ((:instance mod-mult (m (+ (- (+ (expint (expa)) (expint (expb))) (clz)) 1))
+                  :use ((:instance mod-mult (m (+ (- (+ (expint (expa)) (expint (expb))) (clz*)) 1))
                                             (a -1)
 					    (n (expt 2 12)))))))
 
 (local-defthmd case-2-5
   (implies (not (specialp))
-           (equal (mod (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz)) 1)
+           (equal (mod (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz*)) 1)
 		       (expt 2 12))
-		  (mod (+ (- (+ (si (expint (expa)) 12) (si (expint (expb)) 12)) (clz)) 1)
+		  (mod (+ (- (+ (si (expint (expa)) 12) (si (expint (expb)) 12)) (clz*)) 1)
 		       (expt 2 12))))
   :hints (("Goal" :in-theory (enable si)
-                  :use ((:instance mod-mult (m (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz)) 1))
+                  :use ((:instance mod-mult (m (+ (- (+ (si (expint (expa)) 12) (expint (expb))) (clz*)) 1))
                                             (a -1)
 					    (n (expt 2 12)))))))
 
@@ -1556,7 +1556,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffint)
-                  (mod (+ (- (+ (si (expint (expa)) 12) (si (expint (expb)) 12)) (clz)) 1)
+                  (mod (+ (- (+ (si (expint (expa)) 12) (si (expint (expb)) 12)) (clz*)) 1)
 		       (expt 2 12))))
   :hints (("Goal" :use (case-2-3 case-2-4 case-2-5))))
 
@@ -1565,7 +1565,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffint)
-                  (mod (- (+ (ea) (eb)) (1+ (clz)))
+                  (mod (- (+ (ea) (eb)) (1+ (clz*)))
 		       (expt 2 12))))
   :hints (("Goal" :in-theory (enable si-expaint si-expbint case-2-6))))
 
@@ -1573,15 +1573,15 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffint)
-                  (mod (- (+ (ea) (eb)) (1+ (clz)))
+                  (mod (- (+ (ea) (eb)) (1+ (clz*)))
 		       (expt 2 12))))
   :hints (("Goal" :in-theory (enable si-expaint si-expbint case-2-6))))
 
 (defthmd clz-bounds
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-           (and (natp (clz))
-	        (<= (clz) 52)))
+           (and (natp (clz*))
+	        (<= (clz*) 52)))
   :hints (("Goal" :in-theory (enable bvecp clz-expo clz-rewrite)
                   :use (expa-0-mana expb-0-manb bvecp-mana bvecp-manb
 		        (:instance expo<= (x (mana)) (n 52))
@@ -1593,10 +1593,10 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (si (expdiffint) 12)
-                  (- (+ (ea) (eb)) (1+ (clz)))))
+                  (- (+ (ea) (eb)) (1+ (clz*)))))
   :hints (("Goal" :in-theory (enable bits-mod bvecp case-2-7 ea eb)
                   :use (clz-bounds bvecp-expa bvecp-expb si-expprodint-8
-		        (:instance si-bits (n 12) (x (- (+ (ea) (eb)) (1+ (clz)))))))))
+		        (:instance si-bits (n 12) (x (- (+ (ea) (eb)) (1+ (clz*)))))))))
 
 (defthmd bvecp-expdiffint
   (bvecp (expdiffint) 12)
@@ -1617,7 +1617,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffbiasedzero)
-	          (if (= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+	          (if (= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		      1 0)))
   :hints (("Goal" :use (bvecp-expdiffint)
                   :in-theory (enable expdiffbiasedzero-1 si-expdiffint-rewrite))))
@@ -1639,7 +1639,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffbiasedneg)
-	          (if (< (+ (ea) (eb) (1- (expt 2 10))) (clz))
+	          (if (< (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		      1 0)))
   :hints (("Goal" :use (bvecp-expdiffint)
                   :in-theory (enable expdiffbiasedneg-1 si-expdiffint-rewrite))))
@@ -1648,7 +1648,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
            (equal (expdiffbiasedpos)
-	          (if (> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+	          (if (> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		      1 0)))
   :hints (("Goal" :use (bvecp-expdiffint expdiffbiasedzero-rewrite expdiffbiasedneg-rewrite)
                   :in-theory (enable expdiffbiasedpos))))
@@ -1656,16 +1656,16 @@
 (local-defthmd case-2-9
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (eab)
-	          (+ (ea) (eb) (- (clz)) (expinc))))
+	          (+ (ea) (eb) (- (clz*)) (expinc))))
   :hints (("Goal" :in-theory (enable expdiffbiasedpos-rewrite bvecp eab lexpshftint si-expdiffint-rewrite)
                   :use (bvecp-expdiffint))))
 
 (local-defthmd case-2-10
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (> (+ (eab) (1- (expt 2 10)))
 	      0))
   :hints (("Goal" :in-theory (enable case-2-9)
@@ -1674,26 +1674,26 @@
 (defthmd case-2-11
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (equal (lshift) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (equal (lshift) (clz*)))
   :hints (("Goal" :in-theory (enable bvecp lshift expdiffbiasedzero-rewrite expdiffbiasedpos-rewrite)
                   :use (clz-bounds))))
 
 (local-defthmd case-2-12
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-           (< (* (expt 2 (clz)) (prod))
+           (< (* (expt 2 (clz*)) (prod))
 	      (expt 2 106)))
   :hints (("Goal" :in-theory (enable bvecp lprodshft)
-                  :use (bvecp-prod clz-bounds expo-product (:instance expo>= (x (prod)) (n (- 106 (clz)))))
+                  :use (bvecp-prod clz-bounds expo-product (:instance expo>= (x (prod)) (n (- 106 (clz*)))))
 		  :nonlinearp t)))
 
 (defthmd case-2-13
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lprodshft)
-	          (* (expt 2 (clz))
+	          (* (expt 2 (clz*))
 		     (prod))))
   :hints (("Goal" :in-theory (enable bvecp lprodshft case-2-11 ash-rewrite)
                   :use (bvecp-prod clz-bounds case-2-12))))
@@ -1701,46 +1701,46 @@
 (local-defthmd case-2-14
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (member (expo (lprodshft)) '(104 105)))
   :hints (("Goal" :in-theory (enable bvecp case-2-13)
                   :use (expo-product bvecp-prod clz-bounds
-		        (:instance expo-shift (x (prod)) (n (clz)))))))
+		        (:instance expo-shift (x (prod)) (n (clz*)))))))
 
 (local-defthmd case-2-15
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (ovfmask)
-	          (expt 2 (- 63 (clz)))))
+	          (expt 2 (- 63 (clz*)))))
   :hints (("Goal" :in-theory (enable bvecp ovfmask ash-rewrite case-2-11)
                   :use (clz-bounds))))
 
 (local-defthmd case-2-16
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (expinc)
-	          (bitn (prod) (- 105 (clz)))))
+	          (bitn (prod) (- 105 (clz*)))))
   :hints (("Goal" :in-theory (enable bitn-bits case-2-15 mulovf lexpinc expdiffbiasedzero-rewrite)
                   :use (clz-bounds
-		        (:instance bitn-0-1 (x (prod)) (n (- 105 (clz))))
-		        (:instance logand-bit (x (bits (prod) 105 42)) (n (- 63 (clz))))))))
+		        (:instance bitn-0-1 (x (prod)) (n (- 105 (clz*))))
+		        (:instance logand-bit (x (bits (prod) 105 42)) (n (- 63 (clz*))))))))
 
 (defthmd case-2-17
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (expinc)
 	          (bitn (lprodshft) 105)))
   :hints (("Goal" :in-theory (enable case-2-13 case-2-16)
                   :use (clz-bounds bvecp-prod
-		        (:instance bitn-shift-up (x (prod)) (k (clz)) (n (- 105 (clz))))))))
+		        (:instance bitn-shift-up (x (prod)) (k (clz*)) (n (- 105 (clz*))))))))
 
 (local-defthmd case-2-18
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (expo (lprodshft)) 104))
   :hints (("Goal" :in-theory (enable bvecp)
@@ -1753,7 +1753,7 @@
 (local-defthmd case-2-19
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (expinc)
 	          (mulovf)))
   :hints (("Goal" :in-theory (enable lexpinc expdiffbiasedzero-rewrite))))
@@ -1761,7 +1761,7 @@
 (local-defthmd case-2-20
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (frac105)
 	          (bits (* 2 (lprodshft)) 104 0)))
@@ -1771,7 +1771,7 @@
 (local-defthmd case-2-21
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (frac105)
 	          (* 2 (bits (lprodshft) 103 0))))
@@ -1781,7 +1781,7 @@
 (local-defthmd case-2-22
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (lprodshft)
 	          (+ (expt 2 104) (bits (lprodshft) 103 0))))
@@ -1796,20 +1796,20 @@
 (local-defthmd case-2-23
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb) -104) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb) -104) (clz*)))
 		     (lprodshft))))
   :hints (("Goal" :in-theory (e/d (abs-prod case-2-13) (abs)))))
 
 (local-defthmd case-2-24
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb) -104) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb) -104) (clz*)))
 		     (+ (expt 2 104) (bits (lprodshft) 103 0)))))
   :hints (("Goal" :use (case-2-22)
                   :in-theory (e/d (case-2-23) (abs)))))
@@ -1817,17 +1817,17 @@
 (local-defthmd case-2-25
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb)) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb)) (clz*)))
 		     (1+ (* (expt 2 -105) (frac105))))))
   :hints (("Goal" :in-theory (e/d (case-2-24 case-2-21) (abs)))))
 
 (local-defthmd case-2-26
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (eab))
@@ -1837,7 +1837,7 @@
 (local-defthmd case-2-27
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (expo (lprodshft)) 105))
   :hints (("Goal" :in-theory (enable bvecp)
@@ -1850,7 +1850,7 @@
 (defthmd case-2-28
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (frac105)
 	          (bits (lprodshft) 104 0)))
@@ -1860,7 +1860,7 @@
 (defthmd case-2-29
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (lprodshft)
 	          (+ (expt 2 105) (bits (lprodshft) 104 0))))
@@ -1875,20 +1875,20 @@
 (local-defthmd case-2-30
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb) -104) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb) -104) (clz*)))
 		     (lprodshft))))
   :hints (("Goal" :in-theory (e/d (abs-prod case-2-13) (abs)))))
 
 (local-defthmd case-2-31
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb) -104) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb) -104) (clz*)))
 		     (+ (expt 2 105) (bits (lprodshft) 104 0)))))
   :hints (("Goal" :use (case-2-29)
                   :in-theory (e/d (case-2-30) (abs)))))
@@ -1896,17 +1896,17 @@
 (local-defthmd case-2-32
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (abs (* (a) (b)))
-	          (* (expt 2 (- (+ (ea) (eb) 1) (clz)))
+	          (* (expt 2 (- (+ (ea) (eb) 1) (clz*)))
 		     (1+ (* (expt 2 -105) (frac105))))))
   :hints (("Goal" :in-theory (e/d (case-2-31 case-2-28) (abs)))))
 
 (local-defthmd case-2-33
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (eab))
@@ -1916,7 +1916,7 @@
 (local-defthmd case-2-34
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (eab))
 		     (1+ (* (expt 2 -105) (frac105))))))
@@ -1925,26 +1925,26 @@
 (local-defthmd case-2-35
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (equal (lshift) (1- (clz))))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (equal (lshift) (1- (clz*))))
   :hints (("Goal" :in-theory (enable bvecp lshift expdiffbiasedzero-rewrite expdiffbiasedpos-rewrite)
                   :use (clz-bounds))))
 
 (local-defthmd case-2-36
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-           (< (* (expt 2 (1- (clz))) (prod))
+           (< (* (expt 2 (1- (clz*))) (prod))
 	      (expt 2 105)))
   :hints (("Goal" :in-theory (enable bvecp lprodshft)
-                  :use (bvecp-prod clz-bounds expo-product (:instance expo>= (x (prod)) (n (- 106 (clz)))))
+                  :use (bvecp-prod clz-bounds expo-product (:instance expo>= (x (prod)) (n (- 106 (clz*)))))
 		  :nonlinearp t)))
 
 (defthmd case-2-37
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lprodshft)
-	          (* (expt 2 (1- (clz)))
+	          (* (expt 2 (1- (clz*)))
 		     (prod))))
   :hints (("Goal" :in-theory (enable bvecp lprodshft case-2-35 ash-rewrite)
                   :use (bvecp-prod clz-bounds case-2-36))))
@@ -1952,79 +1952,79 @@
 (local-defthmd case-2-38
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (member (expo (lprodshft)) '(104 103)))
   :hints (("Goal" :in-theory (enable bvecp case-2-37)
                   :use (expo-product bvecp-prod clz-bounds
-		        (:instance expo-shift (x (prod)) (n (1- (clz))))))))
+		        (:instance expo-shift (x (prod)) (n (1- (clz*))))))))
 
 (local-defthmd case-2-39
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (ovfmask)
-	          (expt 2 (- 64 (clz)))))
+	          (expt 2 (- 64 (clz*)))))
   :hints (("Goal" :in-theory (enable bvecp ovfmask ash-rewrite case-2-35)
                   :use (clz-bounds))))
 
 (local-defthmd case-2-40
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (mulovf)
-	          (bitn (prod) (- 106 (clz)))))
+	          (bitn (prod) (- 106 (clz*)))))
   :hints (("Goal" :in-theory (enable bitn-bits case-2-39 mulovf lexpinc expdiffbiasedzero-rewrite)
                   :use (clz-bounds
-		        (:instance bitn-0-1 (x (prod)) (n (- 106 (clz))))
+		        (:instance bitn-0-1 (x (prod)) (n (- 106 (clz*))))
 		        (:instance logand-bit (x (bits (prod) 105 42)) (n (- 64
-                                                                             (clz))))))))
+                                                                             (clz*))))))))
 
 (local-defthmd case-2-41
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (< (prod) (expt 2 (- 106 (clz)))))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (< (prod) (expt 2 (- 106 (clz*)))))
   :hints (("Goal" :in-theory (enable bvecp) :nonlinearp t
                   :use (clz-bounds expo-product
-		        (:instance expo>= (x (prod)) (n (- 106 (clz))))))))
+		        (:instance expo>= (x (prod)) (n (- 106 (clz*))))))))
 
 (local-defthmd case-2-42
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (mulovf) 0))
   :hints (("Goal" :in-theory (enable bvecp case-2-40)
                   :use (clz-bounds case-2-41 bvecp-prod
-		        (:instance bitn-plus-bits (x (prod)) (n (- 106 (clz))) (m 0))
-		        (:instance bits-bounds (x (prod)) (i (- 105 (clz))) (j 0))
-		        (:instance bitn-0-1 (x (prod)) (n (- 106 (clz))))
-		        (:instance expo>= (x (prod)) (n (- 106 (clz))))))))
+		        (:instance bitn-plus-bits (x (prod)) (n (- 106 (clz*))) (m 0))
+		        (:instance bits-bounds (x (prod)) (i (- 105 (clz*))) (j 0))
+		        (:instance bitn-0-1 (x (prod)) (n (- 106 (clz*))))
+		        (:instance expo>= (x (prod)) (n (- 106 (clz*))))))))
 
 (local-defthmd case-2-43
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lexpinc)
-	          (bitn (prod) (- 105 (clz)))))
+	          (bitn (prod) (- 105 (clz*)))))
   :hints (("Goal" :in-theory (enable bitn-bits ash-rewrite sub2norm case-2-39 case-2-42 lexpinc expdiffbiasedzero-rewrite)
                   :use (clz-bounds
-		        (:instance bitn-0-1 (x (prod)) (n (- 104 (clz))))
-		        (:instance logand-bit (x (bits (prod) 104 42)) (n (- 63 (clz))))))))
+		        (:instance bitn-0-1 (x (prod)) (n (- 104 (clz*))))
+		        (:instance logand-bit (x (bits (prod) 104 42)) (n (- 63 (clz*))))))))
 
 (defthmd case-2-44
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (expinc)
 	          (bitn (lprodshft) 104)))
   :hints (("Goal" :in-theory (enable case-2-37 case-2-43)
                   :use (clz-bounds bvecp-prod
-		        (:instance bitn-shift-up (x (prod)) (k (1- (clz))) (n (- 105 (clz))))))))
+		        (:instance bitn-shift-up (x (prod)) (k (1- (clz*))) (n (- 105 (clz*))))))))
 
 (local-defthmd case-2-45
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -102 (expt 2 10)))
 		     (lprodshft))))
@@ -2034,7 +2034,7 @@
 (defthmd case-2-46
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (frac105)
 	          (* 2 (bits (lprodshft) 103 0))))
   :hints (("Goal" :in-theory (enable case-2-42 ash-rewrite bvecp lfrac105)
@@ -2045,7 +2045,7 @@
 (local-defthmd case-2-47
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (eab)
 	          (+ -1023 (expinc))))
   :hints (("Goal" :in-theory (enable expdiffbiasedpos-rewrite bvecp eab lexpshftint si-expdiffint-rewrite)
@@ -2054,7 +2054,7 @@
 (local-defthmd case-2-48
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (expo (lprodshft)) 104))
   :hints (("Goal" :in-theory (enable case-2-44 bvecp)
@@ -2067,7 +2067,7 @@
 (defthmd case-2-49
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
            (equal (lprodshft)
 	          (+ (expt 2 104) (bits (lprodshft) 103 0))))
@@ -2082,7 +2082,7 @@
 (local-defthmd case-2-50
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 1))
 	   (and (= (eab) -1022)
                 (equal (abs (* (a) (b)))
@@ -2094,7 +2094,7 @@
 (local-defthmd case-2-51
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (expo (lprodshft)) 103))
   :hints (("Goal" :in-theory (enable case-2-44 bvecp)
@@ -2107,7 +2107,7 @@
 (local-defthmd case-2-52
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (frac105)
 	          (* 2 (lprodshft))))
@@ -2118,7 +2118,7 @@
 (local-defthmd case-2-53
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -103 (expt 2 10)))
@@ -2128,7 +2128,7 @@
 (local-defthmd case-2-54
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -51 (expt 2 10)))
@@ -2141,7 +2141,7 @@
 (local-defthmd case-2-55
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*))
 		(= (expinc) 0))
 	   (and (= (eab) -1023)
                 (<=  (* (expt 2 (- -51 (expt 2 10)))
@@ -2162,7 +2162,7 @@
 (local-defthmd case-2-56
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (bits (+ (expint (expa)) (expint (expb))) 5 0)))
   :hints (("Goal" :in-theory (enable bits-bits lshift expprodm1int EXPDIFFBIASEDZERO-rewrite EXPDIFFBIASEDPOS-rewrite))))
@@ -2170,7 +2170,7 @@
 (local-defthmd case-2-57
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (expint (expa)) (expint (expb))) 64)))
   :hints (("Goal" :in-theory (enable case-2-56 bits-mod))))
@@ -2178,7 +2178,7 @@
 (local-defthmd case-2-57
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (expint (expa)) (expint (expb))) 64)))
   :hints (("Goal" :in-theory (enable case-2-56 bits-mod))))
@@ -2186,7 +2186,7 @@
 (local-defthmd case-2-58
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (si (expint (expa)) 12) (expint (expb))) 64)))
   :hints (("Goal" :in-theory (enable case-2-57 si)
@@ -2195,7 +2195,7 @@
 (local-defthmd case-2-59
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (si (expint (expa)) 12) (si (expint (expb)) 12)) 64)))
   :hints (("Goal" :in-theory (enable case-2-58 si)
@@ -2204,7 +2204,7 @@
 (local-defthmd case-2-60
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (ea) (eb) -2) 64)))
   :hints (("Goal" :in-theory (enable si-expaint si-expbint case-2-59))))
@@ -2212,7 +2212,7 @@
 (local-defthmd case-2-61
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (mod (+ (ea) (eb) 1022) 64)))
   :hints (("Goal" :in-theory (enable case-2-60)
@@ -2221,7 +2221,7 @@
 (local-defthmd case-2-62
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lshift)
 	          (+ (ea) (eb) 1022)))
   :hints (("Goal" :in-theory (enable case-2-61)
@@ -2230,24 +2230,24 @@
 (defthmd case-2-63
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (< (prod) (expt 2 (- 106 (clz)))))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (< (prod) (expt 2 (- 106 (clz*)))))
   :hints (("Goal" :in-theory (enable bvecp)
                   :nonlinearp t
-                  :use (clz-bounds bvecp-prod expo-product (:instance expo>= (x (prod)) (n (- 106 (clz))))))))
+                  :use (clz-bounds bvecp-prod expo-product (:instance expo>= (x (prod)) (n (- 106 (clz*))))))))
 
 (defthmd lshift-bound
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (<= (lshift) (- (clz) 2)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (<= (lshift) (- (clz*) 2)))
   :hints (("Goal" :in-theory (enable case-2-62)
                   :use (clz-bounds))))
 
 (defthmd case-2-65
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (< (* (expt 2 (lshift)) (prod))
 	      (expt 2 104)))
   :hints (("Goal" :in-theory (enable bvecp)
@@ -2257,7 +2257,7 @@
 (defthmd case-2-66
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (lprodshft)
 	          (* (prod) (expt 2 (lshift)))))
   :hints (("Goal" :in-theory (enable lprodshft ash-rewrite bvecp)
@@ -2266,7 +2266,7 @@
 (local-defthmd case-2-67
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (ovfmask)
 	          (expt 2 (- 63 (lshift)))))
   :hints (("Goal" :in-theory (enable bvecp ovfmask ash-rewrite)
@@ -2275,7 +2275,7 @@
 (defthmd case-2-68
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (mulovf)
 	          (bitn (prod) (- 105 (lshift)))))
   :hints (("Goal" :in-theory (enable bitn-bits case-2-67 mulovf lexpinc expdiffbiasedzero-rewrite expdiffbiasedneg-rewrite)
@@ -2286,8 +2286,8 @@
 (local-defthmd case-2-69
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
-           (< (expt 2 (- 106 (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
+           (< (expt 2 (- 106 (clz*)))
 	      (expt 2 (- 105 (lshift)))))
   :hints (("Goal" :nonlinearp t
                   :use (clz-bounds lshift-bound))))
@@ -2295,14 +2295,14 @@
 (defthmd case-2-70
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (< (prod) (expt 2 (- 105 (lshift)))))
   :hints (("Goal" :in-theory (theory 'minimal-theory) :use (clz-bounds case-2-63 case-2-69))))
 
 (defthmd case-2-71
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (mulovf) 0))
   :hints (("Goal" :in-theory (enable case-2-68 bvecp)
                   :use (case-2-70 bvecp-prod))))
@@ -2310,7 +2310,7 @@
 (defthmd case-2-72
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (frac105)
 	          (* 2 (lprodshft))))
   :hints (("Goal" :in-theory (enable case-2-71 case-2-66 ash-rewrite bvecp lfrac105)
@@ -2320,7 +2320,7 @@
 (local-defthmd case-2-73
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -102 (expt 2 10)))
 		     (lprodshft))))
@@ -2330,7 +2330,7 @@
 (local-defthmd case-2-74
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -103 (expt 2 10)))
 		     (frac105))))
@@ -2339,7 +2339,7 @@
 (local-defthmd case-2-75
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (abs (* (a) (b)))
 	          (* (expt 2 (- -51 (expt 2 10)))
 		     (+ (bits (frac105) 104 52)
@@ -2351,7 +2351,7 @@
 (local-defthmd case-2-76
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (eab) -1023))
   :hints (("Goal" :in-theory (enable expdiffbiasedzero-rewrite expdiffbiasedpos-rewrite lexpinc bvecp eab si
                                      case-2-71 lexpshftint))))
@@ -2359,7 +2359,7 @@
 (local-defthmd case-2-77
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
 	   (and (= (eab) -1023)
                 (<=  (* (expt 2 (- -51 (expt 2 10)))
 		        (bits (frac105) 104 52))

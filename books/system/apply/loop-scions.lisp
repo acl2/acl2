@@ -112,12 +112,7 @@
 ; -----------------------------------------------------------------
 ; From-to-by and Its Tail Recursive Counterpart
 
-(defun$ from-to-by-measure (i j)
-  (if (and (integerp i)
-           (integerp j)
-           (<= i j))
-      (+ 1 (- j i))
-      0))
+; Note that from-to-by-measure is defined in ACL2 source file apply-prim.lisp.
 
 (defthm natp-from-to-by-measure
   (natp (from-to-by-measure i j))
@@ -236,7 +231,7 @@
              ((<= i j)
               (alt-def-from-to-by-recursion i (- j k) k (cons (+ i (* k (floor (- j i) k))) lst)))
              (t lst)))
-           (t nil))))  
+           (t nil))))
 
   (local
    (defthm from-to-by-ac-i-i

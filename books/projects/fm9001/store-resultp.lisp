@@ -87,7 +87,7 @@
       (g2 (znv) b-or (z nv))
       (g3 (mux) store-resultp-mux (s1 s2 s3 c v n z cz nv znv))
       (g4 (result) b-xor (s0 mux))))
-   
+
    *store-resultp-mux*))
 
 (defthmd b-store-resultp-okp

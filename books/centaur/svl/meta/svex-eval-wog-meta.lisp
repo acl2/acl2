@@ -108,9 +108,7 @@
    (let* ((x.kind (svex-kind-wog x)))
      (case
        x.kind
-       (:quote (mv (cond ((atom x) (list 'quote x))
-                         ((atom (cdr x)) (list 'quote (sv::4vec-x)))
-                         (t (list 'quote (cadr x))))
+       (:quote (mv (list 'quote x)
                    t))
        (:var (if good-env-flg
                  (mv (let* ((val (hons-get x env-falist)))
@@ -186,9 +184,7 @@
    (let* ((x.kind (svexl-node-kind-wog x)))
      (case
        x.kind
-       (:quote (mv (cond ((atom x) (list 'quote x))
-                         ((atom (cdr x)) (list 'quote (sv::4vec-x)))
-                         (t (list 'quote (cadr x))))
+       (:quote (mv (list 'quote x)
                    t))
        (:var (if good-env-flg
                  (mv (let* ((val (hons-get x env-falist)))
@@ -322,7 +318,7 @@
       svex-eval-wog))))
 
 (local
- (defthmd svex-eval-wog-eval 
+ (defthmd svex-eval-wog-eval
    (implies (and (rp-evl-meta-extract-global-facts)
                  (svex-eval-wog-formula-checks state)
                  (consp x)
@@ -532,8 +528,6 @@
                                (:rewrite
                                 sv::4vec-p-when-member-equal-of-4veclist-p)
                                (:rewrite sv::maybe-4vec-p-when-4vec-p)
-                               (:rewrite
-                                sv::car-of-4veclist-fix-x-normalize-const-under-4vec-equiv)
                                (:rewrite sv::4vec-p-of-nth-when-4veclist-p)
                                (:type-prescription svex-eval-wog-formula-checks)
                                (:type-prescription o<)
@@ -856,7 +850,7 @@
                                svex-eval-wog-meta-lst
                                rp::is-falist)
                               ()))))
-   
+
    (defthm-svexl-node-eval-wog-meta
      (defthmd rp-termp-svexl-node-eval-wog-meta
        (implies (and (if good-env-flg
@@ -889,7 +883,7 @@
                                rp::is-falist)
                               ()))))
 
-   
+
 
    (local
     (defthm lemma2

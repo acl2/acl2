@@ -32,6 +32,7 @@
 (include-book "butlast")
 (include-book "append")
 (include-book "revappend")
+(include-book "remove-duplicates-equal")
 (include-book "remove-equal")
 (include-book "remove1-equal")
 (include-book "union-equal")
@@ -41,6 +42,8 @@
 (include-book "subsequencep")
 
 ;; Books about non-built-in functions:
+(include-book "equiv-def")
+(include-book "find-index")
 (include-book "firstn-def")
 (include-book "firstn")
 (include-book "repeat")
@@ -56,3 +59,32 @@
 (include-book "subrange")
 (include-book "subsequencep-equal")
 (include-book "update-nth2")
+(include-book "last-elem")
+(include-book "finalcdr")
+(include-book "all-equal-dollar")
+(include-book "all-equal-dollar2")
+(include-book "all-eql-dollar")
+(include-book "all-same")
+(include-book "all-same-eql")
+(include-book "update-subrange")
+(include-book "add-to-end")
+(include-book "first-non-member")
+(include-book "count-occs")
+(include-book "prefixp")
+(include-book "prefixp2")
+
+(include-book "len-at-least")
+
+(include-book "take2")
+(include-book "memberp2")
+
+(include-book "group")
+(include-book "group2")
+(include-book "ungroup")
+(include-book "group-and-ungroup")
+(include-book "group-rules")
+
+(include-book "rules")
+(include-book "rules2")
+
+(include-book "append-with-key")

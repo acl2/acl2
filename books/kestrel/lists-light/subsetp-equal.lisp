@@ -195,6 +195,12 @@
                   (subsetp-equal x y)))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
+(defthmd subsetp-equal-of-remove1-equal-arg2-irrel
+  (implies (not (member-equal a x))
+           (equal (subsetp-equal x (remove1-equal a y))
+                  (subsetp-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
 (defthm subsetp-equal-of-remove1-equal-arg1-irrel-cheap
   (implies (member-equal a y)
            (equal (subsetp-equal (remove1-equal a x) y)

@@ -9,11 +9,14 @@
 (defthm make-character-list-makes-character-list
   (character-listp (make-character-list x)))
 
-;; The following is redundant with the definition in
-;; books/std/lists/append.lisp, from where it was taken with thanks.
+;; The following are redundant with the definition in
+;; books/std/lists/append.lisp, from where they were taken with thanks.
 (defthm len-of-append
   (equal (len (append x y))
          (+ (len x) (len y))))
+(defthm consp-of-append
+  (equal (consp (append x y))
+         (or (consp x) (consp y))))
 
 (defthm len-of-make-character-list
   (equal (len (make-character-list x)) (len x)))
@@ -201,6 +204,11 @@
    (:rewrite
     :corollary (implies (and (subsetp x y) (not (member a y)))
                         (not (member a x))))))
+(defthm subsetp-trans2
+  (implies (and (subsetp y z)
+                (subsetp x y))
+           (subsetp x z))
+  :hints(("Goal" :in-theory (enable subsetp-member))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.
@@ -425,10 +433,6 @@
              (nthcdr n1 x)
            (update-nth (- (nfix n2) (nfix n1)) val (nthcdr n1 x)))))
 
-(defthmd car-of-assoc-equal
-  (let ((sd (assoc-equal x alist)))
-    (implies (consp sd) (equal (car sd) x))))
-
 (defthm update-nth-of-update-nth-1
   (implies (not (equal (nfix key1) (nfix key2)))
            (equal (update-nth key1 val1 (update-nth key2 val2 l))
@@ -541,7 +545,7 @@
   (("goal" :in-theory (disable revappend-of-binary-append-1))))
 
 (defthm
-  character-listp-of-member-equal
+  character-listp-of-member
   (implies (character-listp lst)
            (character-listp (member-equal x lst)))
   :rule-classes
@@ -552,7 +556,7 @@
                   (consp (member-equal x lst)))
              (character-listp (cdr (member-equal x lst)))))))
 
-(defthm true-listp-of-member-equal
+(defthm true-listp-of-member
   (implies (true-listp lst)
            (true-listp (member-equal x lst)))
   :rule-classes
@@ -563,12 +567,12 @@
                   (consp (member-equal x lst)))
              (true-listp (cdr (member-equal x lst)))))))
 
-(defthm len-of-member-equal
+(defthm len-of-member
   (<= (len (member-equal x lst))
       (len lst))
   :rule-classes :linear)
 
-(defthm len-of-remove1-assoc-equal
+(defthm len-of-remove1-assoc
   (implies (consp (assoc-equal key alist))
            (equal (len (remove1-assoc-equal key alist))
                   (- (len alist) 1))))
@@ -581,9 +585,9 @@
            (len l))))
 
 (defthm
-  assoc-equal-of-remove1-assoc-equal
+  assoc-of-remove1-assoc
   (implies
-   (and (not (equal key1 nil))
+   (and (case-split (not (null key1)))
         (not (consp (assoc-equal key1 alist))))
    (not (consp (assoc-equal key1
                             (remove1-assoc-equal key2 alist))))))
@@ -655,38 +659,12 @@
   (implies (and (>= x 0) (>= y 0))
            (not (< (+ x y) 0))))
 
-(defthmd
-  painful-debugging-lemma-6
-  (equal (< x (+ x y)) (> y 0))
-  :hints
-  (("goal"
-    :use (:instance painful-debugging-lemma-4 (x (+ x y))
-                    (y (- y))))))
-
 (defthm
-  painful-debugging-lemma-7
+  painful-debugging-lemma-6
   (equal (- (- x)) (fix x)))
 
-(defthm
-  painful-debugging-lemma-8
-  (implies (not (zp x))
-           (iff (< (binary-* x (len y)) x)
-                (atom y))))
-
 (defthmd
-  painful-debugging-lemma-9
-  (implies (and (integerp x) (integerp y) (< x y))
-           (equal (< (+ 1 x) y)
-                  (not (equal (+ 1 x) y)))))
-
-(defthmd
-  painful-debugging-lemma-10
-  (implies (not (zp x1))
-           (iff (equal (* x1 (len x2)) 0)
-                (atom x2))))
-
-(defthmd
-  painful-debugging-lemma-11
+  painful-debugging-lemma-7
   (implies (not (zp x1))
            (equal (< 0 (* x1 (len x2)))
                   (consp x2))))
@@ -758,7 +736,7 @@
          (nthcdr (+ (nfix a) (nfix b)) x))
   :hints(("goal" :induct (nthcdr b x))))
 
-(defthm acl2-count-of-member-equal
+(defthm acl2-count-of-member
   (<= (acl2-count (member-equal x lst))
       (acl2-count lst))
   :rule-classes :linear)
@@ -807,32 +785,30 @@
              (update-nth key val (take n l))
            (take n l))))
 
-(defthmd remember-that-time-with-update-nth-lemma-1
-  (implies (and (equal (nfix key) (- (len l) 1))
-                (true-listp l))
-           (equal (revappend ac (update-nth key val l))
-                  (append (first-n-ac key l ac)
-                          (list val))))
-  :hints (("goal" :induct (mv (first-n-ac key l ac)
-                              (update-nth key val l))
-           :expand ((len l) (len (cdr l))))))
+(encapsulate
+  ()
 
-(defthmd
-  remember-that-time-with-update-nth
-  (implies (and (equal (nfix key) (- (len l) 1))
-                (true-listp l))
-           (equal (update-nth key val l)
-                  (append (take key l) (list val))))
-  :hints
-  (("goal"
-    :use (:instance remember-that-time-with-update-nth-lemma-1
-                    (ac nil)))))
+  (local
+   (defthmd lemma
+     (implies (and (equal (nfix key) (- (len l) 1))
+                   (true-listp l))
+              (equal (revappend ac (update-nth key val l))
+                     (append (first-n-ac key l ac)
+                             (list val))))
+     :hints (("goal" :induct (mv (first-n-ac key l ac)
+                                 (update-nth key val l))
+              :expand ((len l) (len (cdr l)))))))
 
-(defthm append-of-take-and-cons
-  (implies (and (natp n) (equal x (nth n l)))
-           (equal (append (take n l) (cons x y))
-                  (append (take (+ n 1) l) y)))
-  :hints (("Goal" :induct (take n l)) ))
+  (defthmd
+    remember-that-time-with-update-nth
+    (implies (and (equal (nfix key) (- (len l) 1))
+                  (true-listp l))
+             (equal (update-nth key val l)
+                    (append (take key l) (list val))))
+    :hints
+    (("goal"
+      :use (:instance lemma
+                      (ac nil))))))
 
 (defthmd take-of-nthcdr
   (equal (take n1 (nthcdr n2 l))
@@ -964,15 +940,17 @@
              (remove-assoc key alist)
            (put-assoc name val (remove-assoc key alist)))))
 
-(defthm last-of-member-equal
+(defthm last-of-member
   (equal (last (member-equal x lst))
          (if (member-equal x lst)
              (last lst)
            nil)))
 
 (defthm integerp-of-car-of-last-when-integer-listp
-  (implies (and (integer-listp l) (consp l))
-           (integerp (car (last l)))))
+  (implies (integer-listp l)
+           (equal
+            (integerp (car (last l)))
+            (consp l))))
 
 (defthm non-negativity-of-car-of-last-when-nat-listp
   (implies (nat-listp l)
@@ -987,8 +965,9 @@
                       (+ 1 (len alist))))))
 
 (defthm remove-assoc-when-absent-1
-  (implies (and (not (null x))
-                (atom (assoc-equal x alist)))
+  (implies (and
+            (atom (assoc-equal x alist))
+            (case-split (not (null x))))
            (equal (remove-assoc-equal x alist)
                   (true-list-fix alist))))
 
@@ -1283,20 +1262,6 @@
                 (consp (assoc-equal x1 alist)))
            (consp (remove-assoc-equal x2 alist))))
 
-;; The following is redundant with the eponymous theorem in
-;; books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
-;; discussion with Eric Smith.
-(defthm nthcdr-iff
-  (iff (nthcdr n x)
-       (if (< (nfix n) (len x))
-           t
-         (if (equal (nfix n) (len x))
-             ;; If we know true-listp, this simplifies to nil and get merged
-             ;; with the nil branch below.
-             (not (true-listp x))
-           nil)))
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
 (defthm assoc-of-true-list-fix
   (equal (assoc-equal x (true-list-fix l))
          (assoc-equal x l))
@@ -1561,7 +1526,7 @@
        (remove-equal (car l2)
                      (set-difference-equal l1 (cdr l2)))))
     :hints (("goal" :use (lemma-1 lemma-2)))
-    :rule-classes :definition))
+    :rule-classes ((:definition :install-body nil))))
 
 (defthm len-of-remove-when-member-1
   (implies (member-equal x l)
@@ -1729,10 +1694,8 @@
          (if (zp n)
              nil
              (append (take (- n 1) l)
-                     (list (nth (- n 1) l))))))
-
-(theory-invariant (incompatible (:rewrite take-as-append-and-nth)
-                                (:rewrite append-of-take-and-cons)))
+                     (list (nth (- n 1) l)))))
+  :rule-classes ((:definition :install-body nil)))
 
 (defthm consp-of-assoc-of-nth-of-strip-cars
   (implies (not (null (nth n (strip-cars alist))))
@@ -1795,7 +1758,11 @@
   (defthm nfix-when-natp
     (implies (natp x) (equal (nfix x) x))
     :hints (("goal" :do-not-induct t
-             :in-theory (enable nfix natp)))))
+             :in-theory (enable nfix natp))))
+
+  (defthm nfix-when-zp
+    (implies (zp x) (equal (nfix x) 0))
+    :hints (("goal" :in-theory (enable nfix natp)))))
 
 ;; The following are redundant with the eponymous theorems in
 ;; books/std/lists/take.lisp, from where they were taken with thanks.
@@ -1805,9 +1772,6 @@
              (take n x)
              (append x (take (- n (len x)) y))))
   :hints (("goal" :induct (take n x))))
-(defthm take-under-iff
-  (iff (take n xs)
-       (not (zp n))))
 
 (encapsulate () (local (in-theory (disable subseq string-append)))
 
@@ -1916,7 +1880,7 @@
               (:instance (:rewrite coerce-inverse-2) (x str1))
               (:instance (:rewrite coerce-inverse-1)
                          (x (make-character-list
-                             (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list)))))))))
+                             (take (- end (len (coerce str1 'list))) (coerce str2 'list)))))))))
 
   (defthm then-subseq-empty-1
     (implies (and (stringp seq)
@@ -1950,3 +1914,121 @@
 (defthm when-append-same
   (iff (equal x (append x y))
        (equal y (if (consp x) (cdr (last x)) x))))
+
+(defthm
+  set-difference$-becomes-intersection$
+  (equal (set-difference-equal l1 (set-difference-equal l1 l2))
+         (intersection-equal l1 l2))
+  :hints
+  (("goal"
+    :expand
+    (:with
+     set-difference$-redefinition
+     (set-difference-equal (cdr l1)
+                           (cons (car l1)
+                                 (set-difference-equal (cdr l1) l2)))))))
+
+(defthm subsetp-of-set-difference$-2
+  (equal (subsetp-equal z (set-difference-equal x y))
+         (and (subsetp-equal z x)
+              (not (intersectp-equal z y))))
+  :hints (("goal" :in-theory (e/d () (intersectp-is-commutative))
+           :induct (mv (intersectp-equal z y) (subsetp-equal z x)))))
+
+(defthm intersectp-when-subsetp
+  (implies (subsetp-equal x y)
+           (equal (intersectp-equal x y)
+                  (consp x))))
+
+(defthm nth-under-iff-1
+  (implies (not (member-equal nil l))
+           (iff (nth n l) (< (nfix n) (len l)))))
+
+(defthm consp-when-member
+  (implies (member-equal x lst)
+           (consp lst))
+  :rule-classes :forward-chaining)
+
+(encapsulate ()
+  (local (in-theory (disable min)))
+
+  (defthm painful-debugging-lemma-11 (iff (< (min x y) y) (< x y))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-22
+    (implies (equal (+ w y) z)
+             (iff (equal (+ w (min x y)) z)
+                  (<= y x)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-17
+    (zp (+ (- x) (min x y)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable min)))))
+
+(defthmd
+  painful-debugging-lemma-8
+  (implies (not (zp cluster-size))
+           (and
+            (equal (ceiling cluster-size cluster-size) 1)
+            (equal (ceiling 0 cluster-size) 0))))
+
+(defthm painful-debugging-lemma-9
+  (implies (and (not (zp j)) (integerp i) (>= i 0))
+           (>= (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
+
+(defthm painful-debugging-lemma-10
+  (implies (and (not (zp j)) (integerp i) (> i 0))
+           (> (ceiling i j) 0))
+  :rule-classes (:linear :type-prescription))
+
+(defthm member-of-nth-when-not-intersectp
+  (implies (and (not (intersectp-equal l x))
+                (< (nfix n) (len l)))
+           (not (member-equal (nth n l) x))))
+
+(defthm true-list-listp-of-remove
+  (implies (true-list-listp l)
+           (true-list-listp (remove-equal x l))))
+
+(defthm subsetp-of-set-difference$-when-subsetp
+  (implies (subsetp-equal x y)
+           (subsetp-equal (set-difference-equal x z)
+                          (set-difference-equal y z)))
+  :hints (("goal" :induct (mv (set-difference-equal x z)
+                              (subsetp-equal x y))
+           :in-theory (e/d nil (intersectp-is-commutative)))))
+
+(defthm
+  true-list-listp-of-set-difference
+  (implies (true-list-listp l1)
+           (true-list-listp (set-difference-equal l1 l2)))
+  :hints (("goal" :in-theory (enable set-difference-equal true-list-listp))))
+
+(defthm last-of-append
+  (equal (last (append x y))
+         (cond ((consp y) (last y))
+               ((consp x) (cons (car (last x)) y))
+               (t y))))
+
+;; This only addresses the linear part, because the integerp part is covered by
+;; integerp-of-nth-when-integer-listp.
+(defthm natp-of-nth-when-nat-listp
+  (implies (nat-listp l) (<= 0 (nth n l)))
+  :hints (("goal" :in-theory (enable nth nat-listp)))
+  :rule-classes :linear)
+
+(defthm acl2-number-listp-when-rational-listp
+  (implies (rational-listp l)
+           (acl2-number-listp l)))
+
+(defthm rational-listp-when-integer-listp
+  (implies (integer-listp l)
+           (rational-listp l)))
+
+(defthm integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l)))
+
+(defthm consp-of-strip-cars (equal (consp (strip-cars x)) (consp x)))

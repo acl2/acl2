@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -154,6 +154,12 @@
                   x))
   :hints (("Goal" :use (:instance getbit-identity)
            :in-theory (disable getbit-identity))))
+
+;; In case we are using bitp instead of unsigned-byte-p as the normal form.
+(defthm getbit-of-0-when-bitp
+  (implies (bitp x)
+           (equal (getbit 0 x)
+                  x)))
 
 (defthm high-getbit-of-getbit-is-0
   (implies (and (<= 1 m)
@@ -334,3 +340,35 @@
                                   (slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    bvchop-1-becomes-getbit)))))
+
+(defthm bitp-of-getbit
+  (bitp (getbit n x)))
+
+;; could restrict to when the v's are identical
+(defthmd getbit-leibniz
+  (implies (and (equal n1 n2)
+                (equal v1 v2))
+           (equal (equal (getbit n1 v1) (getbit n2 v2))
+                  t)))
+
+(defthm getbit-of-1-of-+-of-*-of-2
+  (implies (and (bitp bit1)
+                (bitp bit2))
+           (equal (getbit 1 (+ bit1 (* 2 bit2)))
+                  bit2))
+  :hints (("Goal" :in-theory (e/d (bitp)
+                                  (bitp-becomes-unsigned-byte-p)))))
+
+(defthm getbit-when-not-1
+  (implies (not (equal 1 (getbit n x)))
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm getbit-when-not-0
+  (implies (not (equal 0 (getbit n x)))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))

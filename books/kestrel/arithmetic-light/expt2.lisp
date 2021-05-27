@@ -85,7 +85,7 @@
                   (expt 2 (+ a n)))))
 
 ;todo: can this loop with the definition of expt?
-(defthm expt-hack
+(defthmd expt-hack
   (implies (integerp n)
            (equal (* 2 (expt 2 (+ -1 n)))
                   (expt 2 n)))
@@ -102,7 +102,7 @@
   :hints (("Goal" :induct (expt 2 i)
            :in-theory (e/d (expt
                             expt-of-+)
-                           (expt-hack)))))
+                           ()))))
 
 (defthm equal-of-1-and-expt
   (equal (equal 1 (expt 2 n))
@@ -113,8 +113,7 @@
                             zip
                             expt-bound-when-negative
                             )
-                           (normalize-factors-gather-exponents
-                            expt-hack)))))
+                           (normalize-factors-gather-exponents)))))
 
 (defthmd even-not-equal-odd-hack
   (implies (and (evenp y)
@@ -129,7 +128,7 @@
                          (* 2 x))
                   nil))
   :hints (("Goal" :in-theory (e/d (expt even-not-equal-odd-hack)
-                                  (expt-hack)))))
+                                  ()))))
 
 (defthm expt-bound-linear
   (implies (and (< i1 i2)
@@ -138,11 +137,32 @@
            (< (expt 2 i1) (expt 2 i2)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (e/d (expt)
-                                  (expt-hack)))))
+                                  ()))))
 
-;strengthen?
-(defthm expt-integer-hack
-  (implies (posp n)
-           (integerp (* 1/2 (expt 2 n))))
+(defthm integerp-of-*-of-1/2-and-expt-2
+  (implies (integerp n)
+           (equal (integerp (* 1/2 (expt 2 n)))
+                  (< 0 n)))
   :hints (("Goal" :in-theory (e/d (expt)
-                                  (expt-hack)))))
+                                  ()))))
+
+(defthmd expt-diff-collect
+  (implies (and (integerp m)
+                (integerp n))
+           (equal (* (/ (expt 2 n)) (expt 2 m))
+                  (expt 2 (- m n))))
+  :hints (("Goal" :in-theory (e/d (expt-of-+)
+                                  (normalize-factors-gather-exponents)))))
+
+;;move and gen
+(defthm equal-of-expt-same
+  (equal (equal (expt 2 n) 2)
+         (equal 1 n))
+  :hints (("Goal" :in-theory (e/d (expt zip expt-of-+) ()))))
+
+;this helps a lot
+(defthm expt-of-one-less-linear
+  (implies (integerp size)
+           (equal (expt 2 size)
+                  (* 2 (expt 2 (+ -1 size)))))
+  :rule-classes :linear)

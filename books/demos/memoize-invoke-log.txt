@@ -1,0 +1,593 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
+                      (@ STANDARD-CO)
+                      STATE)
+<state>
+ACL2 !>>(DEFN F1 (X) (LIST (CAR (CONS X X))))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem 
+(AND (CONSP (F1 X)) (TRUE-LISTP (F1 X))).  We used primitive type reasoning.
+
+Computing the guard conjecture for F1....
+
+The guard conjecture for F1 is trivial to prove, given primitive type
+reasoning.  F1 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F1
+ACL2 !>>(DEFN G1 (X) (LIST X))
+
+Since G1 is non-recursive, its admission is trivial.  We observe that
+the type of G1 is described by the theorem 
+(AND (CONSP (G1 X)) (TRUE-LISTP (G1 X))).  We used primitive type reasoning.
+
+Computing the guard conjecture for G1....
+
+The guard conjecture for G1 is trivial to prove.  G1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G1
+ACL2 !>>(MEMOIZE 'F1 :INVOKE 'G1)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'F1
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'G1)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+
+HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
+set memoize-table:  The following event must be admitted (possibly
+with differing name or macro) before memoizing function F1 with :INVOKE
+value G1.  See :DOC memoize.
+
+(DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X)) :RULE-CLASSES NIL)
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
+debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
+on the key F1 and value 
+((:CONDITION-FN)
+ (:INLINE)
+ (:COMMUTATIVE)
+ (:FORGET)
+ (:MEMO-TABLE-INIT-SIZE . 60)
+ (:AOKP)
+ (:STATS)
+ ...)
+could not be evaluated.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+
+ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X))
+                :RULE-CLASSES NIL)
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |F1-is-G1| ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION G1)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CAR-CONS))
+ |F1-is-G1|
+ACL2 !>>(MEMOIZE 'F1 :INVOKE 'G1)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'F1
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'G1)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'F1
+                                         (MACRO-ALIASES (W STATE))))
+F1
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ F1
+ACL2 !>>(TRACE$ G1)
+ ((G1))
+ACL2 !>>(F1 3)
+1> (G1 3)
+<1 (G1 (3))
+(3)
+ACL2 !>>(DEFUN FIB (N)
+               (DECLARE (XARGS :GUARD (NATP N)))
+               (IF (ZP N)
+                   0
+                   (IF (EQL N 1)
+                       1 (+ (FIB (- N 1)) (FIB (- N 2))))))
+
+For the admission of FIB we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (NOT (ZP N)) (NOT (EQL N 1)))
+         (O< (ACL2-COUNT (+ -2 N))
+             (ACL2-COUNT N))).
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION O<))
+
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the measure theorem for FIB.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of FIB is described by the theorem 
+(AND (INTEGERP (FIB N)) (<= 0 (FIB N))).  We used primitive type reasoning.
+
+Computing the guard conjecture for FIB....
+
+The non-trivial part of the guard conjecture for FIB, given the :compound-
+recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER,
+the :executable-counterpart of EQLABLEP, primitive type reasoning and
+the :type-prescription rule FIB, is
+
+Goal
+(IMPLIES (AND (NATP N)
+              (NOT (ZP N))
+              (NOT (EQL N 1)))
+         (NATP (+ -2 N))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FIB.  FIB is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FIB ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION EQL)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART EQLABLEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:TYPE-PRESCRIPTION FIB))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION O<))
+ FIB
+ACL2 !>>(DEFUN FIB2 (N)
+               (DECLARE (XARGS :GUARD (NATP N)))
+               (IF (= N 40) 102334155 (FIB N)))
+
+Since FIB2 is non-recursive, its admission is trivial.  We observe
+that the type of FIB2 is described by the theorem 
+(AND (INTEGERP (FIB2 N)) (<= 0 (FIB2 N))).  We used the :type-prescription
+rule FIB.
+
+Computing the guard conjecture for FIB2....
+
+The guard conjecture for FIB2 is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER.  FIB2 is compliant with Common
+Lisp.
+
+Summary
+Form:  ( DEFUN FIB2 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:TYPE-PRESCRIPTION FIB))
+ FIB2
+ACL2 !>>(MEMOIZE 'FIB :INVOKE 'FIB2)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'FIB
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'FIB2)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+
+HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
+set memoize-table:  The following event must be admitted (possibly
+with differing name or macro) before memoizing function FIB with :INVOKE
+value FIB2.  See :DOC memoize.
+
+(DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N)) :RULE-CLASSES NIL)
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
+debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
+on the key FIB and value 
+((:CONDITION-FN)
+ (:INLINE)
+ (:COMMUTATIVE)
+ (:FORGET)
+ (:MEMO-TABLE-INIT-SIZE . 60)
+ (:AOKP)
+ (:STATS)
+ ...)
+could not be evaluated.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+
+ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |FIB-is-FIB2| ...)
+Rules: ((:DEFINITION FIB2)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FIB))
+ |FIB-is-FIB2|
+ACL2 !>>(MEMOIZE 'FIB :INVOKE 'FIB2)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'FIB
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'FIB2)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB
+                                         (MACRO-ALIASES (W STATE))))
+FIB
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ FIB
+ACL2 !>>(FIB 40)
+102334155
+ACL2 !>>(FIB 41)
+165580141
+ACL2 !>>(DEFUN F2 (X)
+               (DECLARE (XARGS :GUARD (CONSP X)))
+               (CAR X))
+
+Since F2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F2.
+
+Computing the guard conjecture for F2....
+
+The guard conjecture for F2 is trivial to prove.  F2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: NIL
+ F2
+ACL2 !>>(F2 3)
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (F2 X), which
+is (CONSP X), is violated by the arguments in the call (F2 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(DEFUN G2 (X)
+               (DECLARE (XARGS :GUARD (LISTP X)))
+               (CAR X))
+
+Since G2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G2.
+
+Computing the guard conjecture for G2....
+
+The guard conjecture for G2 is trivial to prove.  G2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: NIL
+ G2
+ACL2 !>>(DEFTHM |F-is-G| (EQUAL (F2 X) (G2 X))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |F-is-G| ...)
+Rules: ((:DEFINITION F2) (:DEFINITION G2))
+ |F-is-G|
+ACL2 !>>(MEMOIZE 'F2 :INVOKE 'G2)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'F2
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'G2)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+
+HARD ACL2 ERROR in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to
+set memoize-table:  The following event must be admitted (possibly
+with differing name or macro) before memoizing function F2 with :INVOKE
+value G2.  See :DOC memoize.
+
+(VERIFY-GUARD-IMPLICATION F2 G2)
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Evaluation aborted.  To
+debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  The TABLE :guard for MEMOIZE-TABLE
+on the key F2 and value 
+((:CONDITION-FN)
+ (:INLINE)
+ (:COMMUTATIVE)
+ (:FORGET)
+ (:MEMO-TABLE-INIT-SIZE . 60)
+ (:AOKP)
+ (:STATS)
+ ...)
+could not be evaluated.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+
+ACL2 Error in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(VERIFY-GUARD-IMPLICATION F2 G2)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |F2-guard-implies-G2-guard| ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (LET ...))
+Rules: NIL
+ |F2-guard-implies-G2-guard|
+ACL2 !>>(MEMOIZE 'F2 :INVOKE 'G2)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'F2
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN NIL)
+                     (CONS :INLINE NIL)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS NIL)
+                     (CONS :TOTAL NIL)
+                     (CONS :INVOKE 'G2)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'F2
+                                         (MACRO-ALIASES (W STATE))))
+F2
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ F2
+ACL2 !>>(TRACE$ G2)
+ ((G2))
+ACL2 !>>(F2 3)
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (F2 X), which
+is (CONSP X), is violated by the arguments in the call (F2 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(F2 '(A B C))
+1> (G2 (A B C))
+<1 (G2 A)
+A
+ACL2 !>>(DEFN F3 (X Y)
+              (DECLARE (TYPE RATIONAL X Y))
+              (+ X Y))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (ACL2-NUMBERP (F3 X Y)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for F3....
+
+The guard conjecture for F3 is trivial to prove.  F3 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F3
+ACL2 !>>(DEFN G3 (X Y)
+              (DECLARE (TYPE RATIONAL X Y))
+              (+ 1 -1 X Y))
+
+Since G3 is non-recursive, its admission is trivial.  We observe that
+the type of G3 is described by the theorem (ACL2-NUMBERP (G3 X Y)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for G3....
+
+The guard conjecture for G3 is trivial to prove, given primitive type
+reasoning.  G3 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN G3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G3
+ACL2 !>>(DEFTHM |F3-is-G3| (EQUAL (F3 X Y) (G3 X Y))
+                :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM |F3-is-G3| ...)
+Rules: ((:DEFINITION F3)
+        (:DEFINITION G3)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+ |F3-is-G3|
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (MEMOIZE 'F3
+                                   :INVOKE 'G3
+                                   :COMMUTATIVE T))
+ T
+ACL2 !>>(TRACE$ G3)
+ ((G3))
+ACL2 !>>(F3 3 4)
+1> (G3 3 4)
+<1 (G3 7)
+7
+ACL2 !>>Bye.

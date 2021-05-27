@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,54 @@
 
 (include-book "std/util/defines" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-equal-formals-actuals ((formals symbol-listp)
+                                      (actuals pseudo-term-listp))
+  :guard (= (len formals) (len actuals))
+  :returns (mv (new-formals symbol-listp :hyp (symbol-listp formals))
+               (new-actuals pseudo-term-listp :hyp (pseudo-term-listp actuals)))
+  :parents (remove-trivial-vars)
+  :short "Remove equal formals and actuals
+          from two lists of the same length."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee remove-trivial-vars),
+     but it may be more generally useful.
+     In fact, it could be generalized to an operation on lists."))
+  (b* (((when (endp formals)) (mv nil nil))
+       ((unless (mbt (consp actuals))) (mv nil nil))
+       (formal (car formals))
+       (actual (car actuals))
+       ((when (eq formal actual))
+        (remove-equal-formals-actuals (cdr formals) (cdr actuals)))
+       ((mv rest-formals rest-actuals)
+        (remove-equal-formals-actuals (cdr formals) (cdr actuals))))
+    (mv (cons formal rest-formals)
+        (cons actual rest-actuals)))
+  ///
+
+  (defthmd remove-equal-formals-actuals-same-len
+    (equal (len (mv-nth 0 (remove-equal-formals-actuals formals actuals)))
+           (len (mv-nth 1 (remove-equal-formals-actuals formals actuals)))))
+
+  (more-returns
+   (new-formals true-listp :rule-classes :type-prescription))
+
+  (more-returns
+   (new-actuals true-listp :rule-classes :type-prescription))
+
+  (defret acl2-count-of-remove-equal-formals-actuals.formals
+    (<= (acl2-count new-formals)
+        (acl2-count formals))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-remove-equal-formals-actuals.actuals
+    (<= (acl2-count new-actuals)
+        (acl2-count actuals))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,10 +111,7 @@
      This way, every lambda expression corresponds to a @(tsee let)
      without any trivial bindings.
      In other languages,
-     @(tsee let) expressions are normally not closed.")
-   (xdoc::@def "remove-trivial-vars")
-   (xdoc::@def "remove-trivial-vars-lst")
-   (xdoc::@def "remove-trivial-vars-aux"))
+     @(tsee let) expressions are normally not closed."))
 
   (define remove-trivial-vars ((term pseudo-termp))
     :returns (new-term pseudo-termp :hyp (pseudo-termp term))
@@ -81,7 +126,7 @@
          ((unless (mbt (equal (len formals)
                               (len actuals)))) nil) ; for termination
          ((mv nontrivial-formals nontrivial-actuals)
-          (remove-trivial-vars-aux formals actuals))
+          (remove-equal-formals-actuals formals actuals))
          ((when (eq nontrivial-formals nil)) (remove-trivial-vars body)))
       (fcons-term (make-lambda nontrivial-formals
                                (remove-trivial-vars body))
@@ -99,37 +144,5 @@
 
   :guard-hints (("Goal" :expand ((pseudo-termp term))))
 
-  :returns-hints (("Goal" :in-theory (enable remove-trivial-vars-aux-same-len)))
-
-  :prepwork
-  ((define remove-trivial-vars-aux ((formals symbol-listp)
-                                    (actuals pseudo-term-listp))
-     :guard (= (len formals) (len actuals))
-     :returns (mv (new-formals symbol-listp
-                               :hyp (symbol-listp formals))
-                  (new-actuals pseudo-term-listp
-                               :hyp (pseudo-term-listp actuals)))
-     :parents (remove-trivial-vars)
-     (b* (((when (endp formals)) (mv nil nil))
-          ((unless (mbt (consp actuals))) (mv nil nil))
-          (formal (car formals))
-          (actual (car actuals))
-          ((when (eq formal actual))
-           (remove-trivial-vars-aux (cdr formals) (cdr actuals)))
-          ((mv rest-formals rest-actuals)
-           (remove-trivial-vars-aux (cdr formals) (cdr actuals))))
-       (mv (cons formal rest-formals)
-           (cons actual rest-actuals)))
-     ///
-
-     (defthmd remove-trivial-vars-aux-same-len
-       (equal (len (mv-nth 0 (remove-trivial-vars-aux formals actuals)))
-              (len (mv-nth 1 (remove-trivial-vars-aux formals actuals)))))
-
-     (more-returns
-      (new-formals true-listp :rule-classes :type-prescription))
-
-     (defret remove-trivial-vars-termination-lemma
-       (<= (acl2-count new-actuals)
-           (acl2-count actuals))
-       :rule-classes :linear))))
+  :returns-hints
+  (("Goal" :in-theory (enable remove-equal-formals-actuals-same-len))))

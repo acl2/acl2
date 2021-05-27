@@ -29,6 +29,12 @@
                (strip-cars x)))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
+(defthm strip-cars-of-acons
+  (equal (strip-cars (acons key datum alist))
+         (cons key
+               (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
 (defthm car-of-strip-cars
   (equal (car (strip-cars x))
          (car (car x)))
@@ -50,6 +56,13 @@
                  (strip-cars y)))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
+(defthm strip-cars-when-not-consp-cheap
+  (implies (not (consp x))
+           (equal (strip-cars x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
 ;; Not sure which form is better
 (defthmd strip-cars-of-cdr
   (equal (strip-cars (cdr x))
@@ -57,3 +70,14 @@
   :hints (("Goal" :in-theory (enable strip-cars))))
 
 (theory-invariant (incompatible (:rewrite strip-cars-of-cdr) (:definition strip-cars)))
+
+(defthmd member-equal-of-strip-cars-iff
+  (implies (alistp alist)
+           (iff (member-equal key (strip-cars alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
+
+(defthm strip-cars-of-pairlis$
+  (equal (strip-cars (pairlis$ x y))
+         (true-list-fix x))
+  :hints (("Goal" :in-theory (enable strip-cars))))

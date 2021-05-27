@@ -296,7 +296,12 @@
                           :use ((:instance nbalist-lookup-of-cons
                                  (id ,witness)
                                  (x nbalist)))
-                          :in-theory (disable nbalist-lookup-of-cons)))))))
+                          :in-theory
+                          (disable nbalist-lookup-of-cons
+; Matt K. mod, 11/28/2020: Accommodate fix for storing patterned congruences.
+                                   (:congruence cons-bit-equiv-congruence-on-v-under-nbalist-equiv)
+                                   
+                                   (:congruence cons-nat-equiv-congruence-on-k-under-nbalist-equiv))))))))
 
   (defthm aignet-pathcond-eval-implies-lookup-not-opposite
     (implies (and (aignet-pathcond-eval aignet nbalist invals regvals)
@@ -1272,5 +1277,3 @@
     :hints(("Goal" :in-theory (enable nth nbalist-to-cube)
             :induct (nth-of-nbalist-ind n nbalist)
             :expand ((nbalist-to-cube nbalist))))))
-
-

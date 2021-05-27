@@ -915,16 +915,16 @@
 
 (defthm
   l6-stricter-fs-p-correctness-1-lemma-4
-  (implies
-   (and (mv-nth 1 (l6-list-all-ok-indices fs fa-table))
-        (l6-fs-p fs)
-        (fat32-entry-list-p fa-table))
-   (indices-marked-listp (l4-collect-all-index-lists
-                          (l6-to-l4-fs-helper fs fa-table))
-                         (fa-table-to-alv fa-table)))
+  (implies (and (mv-nth 1 (l6-list-all-ok-indices fs fa-table))
+                (l6-fs-p fs)
+                (fat32-entry-list-p fa-table))
+           (indices-marked-listp
+            (l4-collect-all-index-lists (l6-to-l4-fs-helper fs fa-table))
+            (fa-table-to-alv fa-table)))
   :hints (("goal" :in-theory (enable l6-list-all-ok-indices
-                                     l3-regular-file-entry-p))
-          ("subgoal *1/10.5'"
+                                     l3-regular-file-entry-p)
+           :induct (mv (l6-fs-p fs)
+                       (l6-list-all-ok-indices fs fa-table))
            :expand (l6-to-l4-fs-helper (cdr (car fs))
                                        fa-table))))
 

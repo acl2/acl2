@@ -1,0 +1,5025 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
+                      (@ STANDARD-CO)
+                      STATE)
+<state>
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ "[books]/projects/apply/top.lisp"
+ACL2 !>>(DEFCONST
+         *TESTS*
+         '((TRACE$ HELLO)
+           (APPLY$ 'HELLO '(JOHN))
+           (EV$ '(HELLO E) '((E . JOHN)))
+           (APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+           (APPLY$ (CONS 'LAMBDA
+                         (CONS (CONS 'E 'NIL)
+                               (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                     'NIL)))
+                   '(JOHN))
+           (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+           (LOOP$ FOR E IN '(JOHN MARY)
+                  COLLECT (HELLO E))
+           (LOOP$ FOR E IN '("John" "Mary")
+                  COLLECT (HELLO E))
+           (SET-GUARD-CHECKING NIL)
+           (LOOP$ FOR E IN '("John" "Mary")
+                  COLLECT (HELLO E))
+           (SET-GUARD-CHECKING T)
+           (DEFUN CALLER1 (E)
+                  (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                  (APPLY$ 'HELLO (LIST E)))
+           (VERIFY-GUARDS CALLER1)
+           (TRACE$ CALLER1)
+           (CALLER1 'JOHN)
+           (CALLER1 "Mary and Tom")
+           (SET-GUARD-CHECKING NIL)
+           (CALLER1 "Mary and Tom")
+           (SET-GUARD-CHECKING T)
+           (DEFUN CALLER2 (E)
+                  (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                  :VERIFY-GUARDS NIL))
+                  (APPLY$ (LAMBDA$ (D)
+                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                   (HELLO D))
+                          (LIST E)))
+           (VERIFY-GUARDS CALLER2)
+           (TRACE$ CALLER2)
+           (CALLER2 'JOHN)
+           (CALLER2 "Mary and Tom")
+           (SET-GUARD-CHECKING NIL)
+           (CALLER2 "Mary and Tom")
+           (SET-GUARD-CHECKING T)
+           (THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                       '(HI JOHN)))
+           (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                       '(HI JOHN)))
+           (THM
+            (EQUAL
+             (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+             '(HI JOHN)))
+           (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                       '(HI JOHN))
+                :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+           (THM (IMPLIES (WARRANT HELLO)
+                         (EQUAL (APPLY$ 'HELLO '(JOHN))
+                                '(HI JOHN))))
+           (THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+           (THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+           (DEFUN CALLER3 (E)
+                  (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                  (APPLY$ (CAR (CONS 'HELLO NIL))
+                          (LIST E)))
+           (VERIFY-GUARDS CALLER3)
+           (CALLER3 'JOHN)
+           (CALLER3 "Mary and Tom")
+           (SET-GUARD-CHECKING NIL)
+           (CALLER3 "Mary and Tom")
+           (SET-GUARD-CHECKING T)
+           (THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))))
+
+Summary
+Form:  ( DEFCONST *TESTS* ...)
+Rules: NIL
+ *TESTS*
+ACL2 !>>(DEFCONST
+         *SECTIONS*
+         '((0 "HELLO is an undefined symbol")
+           (1 "HELLO is an unbadged :program mode function")
+           (2 "HELLO is a badged :program mode function")
+           (3 "HELLO is a badged but unwarranted :logic mode function")
+           (4 "HELLO is a badged and warranted :logic mode function.")
+           (5
+            "HELLO is a badged and warranted, guard-verified :logic mode function")))
+
+Summary
+Form:  ( DEFCONST *SECTIONS* ...)
+Rules: NIL
+ *SECTIONS*
+ACL2 !>>(DEFMACRO
+         SECTION (N)
+         (CONS
+          'PPROGN
+          (CONS
+           (CONS
+            'FMS
+            (CONS
+             '"~%-----------------------------------------------------------------~%~
+               ~x0. ~@1~%"
+             (CONS
+              (CONS
+               'LIST
+               (CONS
+                (CONS 'CONS (CONS '#\0 (CONS N 'NIL)))
+                (CONS
+                 (CONS
+                  'CONS
+                  (CONS
+                    '#\1
+                    (CONS (CONS 'CDR
+                                (CONS (CONS 'ASSOC
+                                            (CONS N (CONS '*SECTIONS* 'NIL)))
+                                      'NIL))
+                          'NIL)))
+                 'NIL)))
+              (CONS (CONS '@ (CONS 'STANDARD-CO 'NIL))
+                    (CONS 'STATE (CONS 'NIL 'NIL))))))
+           (CONS (CONS 'VALUE (CONS ':INVISIBLE 'NIL))
+                 'NIL))))
+
+Summary
+Form:  ( DEFMACRO SECTION ...)
+Rules: NIL
+ SECTION
+ACL2 !>>(SECTION 0)
+
+
+-----------------------------------------------------------------
+0. HELLO is an undefined symbol
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(DEFBADGE HELLO)
+
+
+ACL2 Error in (DEFBADGE HELLO ...):  Only defined function symbols
+can be badged and HELLO is not one.
+
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+
+
+ACL2 Error in TRACE$:  Ignoring request to trace function HELLO, because
+this symbol does not have an ACL2 function definition.  Consider using
+option :native, :def, or :formals.  See :DOC trace$.
+
+ NIL
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+
+
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+
+
+ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(HELLO 'JOHN).
+
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context (HELLO E).
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+
+ACL2 Error in ( DEFUN CALLER1 ...):  The body for CALLER1 uses the
+unbadged symbol HELLO in one or more :FN or :EXPR slots.  We require
+that all such symbols be badged function symbols.  See :DOC defun and
+defbadge.
+
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN CALLER1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  CALLER1 is not a function
+symbol or a theorem name in the current ACL2 world.  See :DOC verify-
+guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER1)
+
+
+ACL2 Error in TRACE$:  Ignoring request to trace function CALLER1,
+because this symbol does not have an ACL2 function definition.  Consider
+using option :native, :def, or :formals.  See :DOC trace$.
+
+ NIL
+ACL2 !>>>(CALLER1 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 'JOHN).
+
+ACL2 !>>>(CALLER1 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 "Mary and Tom").
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 "Mary and Tom").
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+
+ACL2 Error in ( DEFUN CALLER2 ...):  The symbol HELLO (in package "ACL2")
+has neither a function nor macro definition in ACL2.  Please define
+it.  See :DOC near-misses.  Note:  this error occurred in the context
+(HELLO D).
+
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN CALLER2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  CALLER2 is not a function
+symbol or a theorem name in the current ACL2 world.  See :DOC verify-
+guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER2)
+
+
+ACL2 Error in TRACE$:  Ignoring request to trace function CALLER2,
+because this symbol does not have an ACL2 function definition.  Consider
+using option :native, :def, or :formals.  See :DOC trace$.
+
+ NIL
+ACL2 !>>>(CALLER2 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 'JOHN).
+
+ACL2 !>>>(CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 "Mary and Tom").
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 "Mary and Tom").
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(HELLO 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+
+
+ACL2 Error in ( THM ...):  The symbol HELLO (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(HELLO 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+
+
+ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (APPLY$-WARRANT-HELLO).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 !>>>(CALLER3 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO is not a known function symbol.
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT! 'EVENTUALLY-UNDO-BACK-TO-HERE)
+           5:x(DEFMACRO SECTION (N) ...)
+ACL2 !>>(SECTION 1)
+
+
+-----------------------------------------------------------------
+1. HELLO is an unbadged :program mode function
+ACL2 !>>(DEFUN HELLO (X)
+               (DECLARE (XARGS :MODE :PROGRAM
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LIST 'HI X))
+
+Summary
+Form:  ( DEFUN HELLO ...)
+Rules: NIL
+ HELLO
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+ ((HELLO))
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+
+
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in (HELLO E)
+and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
+a workaround if you really mean to have an ill-formed LAMBDA-like constant
+in your code.  You may see this message without having explicitly typed
+a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
+into calls of scions that use LAMBDA objects generated from the UNTIL,
+WHEN, and operator expressions.  If you are defining a function that
+calls itself recursively from within a loop$ you must include the xargs
+:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
+in the context (LAMBDA$ (E) (HELLO E)).
+
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+
+
+ACL2 Error in TOP-LEVEL:  The value of BADGE-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+
+
+ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
+and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
+a workaround if you really mean to have an ill-formed LAMBDA-like constant
+in your code.  You may see this message without having explicitly typed
+a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
+into calls of scions that use LAMBDA objects generated from the UNTIL,
+WHEN, and operator expressions.  If you are defining a function that
+calls itself recursively from within a loop$ you must include the xargs
+:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
+in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in 
+((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
+lambda-object-restrictions for a workaround if you really mean to have
+an ill-formed LAMBDA-like constant in your code.  You may see this
+message without having explicitly typed a LAMBDA if you used a loop$
+statement.  Loop$ statements are translated into calls of scions that
+use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+:MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ (LOOP$-IVAR)
+         (LET ((E LOOP$-IVAR))
+              (DECLARE (IGNORABLE E))
+              (HELLO E))).
+
+
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in 
+((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
+lambda-object-restrictions for a workaround if you really mean to have
+an ill-formed LAMBDA-like constant in your code.  You may see this
+message without having explicitly typed a LAMBDA if you used a loop$
+statement.  Loop$ statements are translated into calls of scions that
+use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+:MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ (LOOP$-IVAR)
+         (LET ((E LOOP$-IVAR))
+              (DECLARE (IGNORABLE E))
+              (HELLO E))).
+
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+
+
+ACL2 Error in TOP-LEVEL:  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in 
+((LAMBDA (E) (HELLO E)) LOOP$-IVAR) and has no badge.  See :DOC gratuitous-
+lambda-object-restrictions for a workaround if you really mean to have
+an ill-formed LAMBDA-like constant in your code.  You may see this
+message without having explicitly typed a LAMBDA if you used a loop$
+statement.  Loop$ statements are translated into calls of scions that
+use LAMBDA objects generated from the UNTIL, WHEN, and operator expressions.
+If you are defining a function that calls itself recursively from within
+a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
+:MEASURE.  Note:  this error occurred in the context 
+(LAMBDA$ (LOOP$-IVAR)
+         (LET ((E LOOP$-IVAR))
+              (DECLARE (IGNORABLE E))
+              (HELLO E))).
+
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+
+ACL2 Error in ( DEFUN CALLER1 ...):  The body for CALLER1 uses the
+unbadged symbol HELLO in one or more :FN or :EXPR slots.  We require
+that all such symbols be badged function symbols.  See :DOC defun and
+defbadge.
+
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN CALLER1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  CALLER1 is not a function
+symbol or a theorem name in the current ACL2 world.  See :DOC verify-
+guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER1)
+
+
+ACL2 Error in TRACE$:  Ignoring request to trace function CALLER1,
+because this symbol does not have an ACL2 function definition.  Consider
+using option :native, :def, or :formals.  See :DOC trace$.
+
+ NIL
+ACL2 !>>>(CALLER1 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 'JOHN).
+
+ACL2 !>>>(CALLER1 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 "Mary and Tom").
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 "Mary and Tom").
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+
+ACL2 Error in ( DEFUN CALLER2 ...):  The body of a LAMBDA object, lambda$
+term, or loop$ statement should be fully badged but HELLO is used in
+(HELLO D) and has no badge.  See :DOC gratuitous-lambda-object-restrictions
+for a workaround if you really mean to have an ill-formed LAMBDA-like
+constant in your code.  You may see this message without having explicitly
+typed a LAMBDA if you used a loop$ statement.  Loop$ statements are
+translated into calls of scions that use LAMBDA objects generated from
+the UNTIL, WHEN, and operator expressions.  If you are defining a function
+that calls itself recursively from within a loop$ you must include
+the xargs :LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this
+error occurred in the context 
+(LAMBDA$ (D) (DECLARE (XARGS :GUARD (SYMBOLP D))) (HELLO D)).
+
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN CALLER2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  CALLER2 is not a function
+symbol or a theorem name in the current ACL2 world.  See :DOC verify-
+guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER2)
+
+
+ACL2 Error in TRACE$:  Ignoring request to trace function CALLER2,
+because this symbol does not have an ACL2 function definition.  Consider
+using option :native, :def, or :formals.  See :DOC trace$.
+
+ NIL
+ACL2 !>>>(CALLER2 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 'JOHN).
+
+ACL2 !>>>(CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 "Mary and Tom").
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 "Mary and Tom").
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
+and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
+a workaround if you really mean to have an ill-formed LAMBDA-like constant
+in your code.  You may see this message without having explicitly typed
+a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
+into calls of scions that use LAMBDA objects generated from the UNTIL,
+WHEN, and operator expressions.  If you are defining a function that
+calls itself recursively from within a loop$ you must include the xargs
+:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
+in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+
+
+ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but HELLO is used in (HELLO 'JOHN)
+and has no badge.  See :DOC gratuitous-lambda-object-restrictions for
+a workaround if you really mean to have an ill-formed LAMBDA-like constant
+in your code.  You may see this message without having explicitly typed
+a LAMBDA if you used a loop$ statement.  Loop$ statements are translated
+into calls of scions that use LAMBDA objects generated from the UNTIL,
+WHEN, and operator expressions.  If you are defining a function that
+calls itself recursively from within a loop$ you must include the xargs
+:LOOP$-RECURSION T and an explicit :MEASURE.  Note:  this error occurred
+in the context (LAMBDA$ NIL (HELLO 'JOHN)).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+
+
+ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (APPLY$-WARRANT-HELLO).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The symbol CALLER1 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER1 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+
+
+ACL2 Error in ( THM ...):  The symbol CALLER2 (in package "ACL2") has
+neither a function nor macro definition in ACL2.  Please define it.
+See :DOC near-misses.  Note:  this error occurred in the context 
+(CALLER2 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 !>>>(CALLER3 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The value of APPLY$-USERFN is not specified
+on HELLO because HELLO has not been badged.
+
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT! 'EVENTUALLY-UNDO-BACK-TO-HERE)
+ P         6:x(DEFUN HELLO (X) ...)
+ACL2 !>>(SECTION 2)
+
+
+-----------------------------------------------------------------
+2. HELLO is a badged :program mode function
+ACL2 !>>(DEFBADGE HELLO)
+ T
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+ ((HELLO))
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+1> (ACL2_*1*_ACL2::HELLO MARY)
+<1 (ACL2_*1*_ACL2::HELLO (HI MARY))
+((HI JOHN) (HI MARY))
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the :program function call
+(HELLO X), which is (SYMBOLP X), is violated by the arguments in the
+call (HELLO "John").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+<1 (ACL2_*1*_ACL2::HELLO (HI "John"))
+1> (ACL2_*1*_ACL2::HELLO "Mary")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
+((HI "John") (HI "Mary"))
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER1 ...):  The
+definition of CALLER1 is in :LOGIC mode but mentions the :PROGRAM mode
+function HELLO in one or more :FN or :EXPR slots.  Conjectures about
+CALLER1 may not be provable until this program is converted to :LOGIC
+mode and warranted!  See :DOC verify-termination and defwarrant.
+
+
+Since CALLER1 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER1.
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+Warnings:  Problematic-quoted-fns
+ CALLER1
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  The body for CALLER1 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER1)
+ ((CALLER1))
+ACL2 !>>>(CALLER1 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the :program function call
+(HELLO X), which is (SYMBOLP X), is violated by the arguments in the
+call (HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER2 ...):  The
+definition of CALLER2 is in :LOGIC mode but mentions the :PROGRAM mode
+function HELLO in one or more :FN or :EXPR slots.  Conjectures about
+CALLER2 may not be provable until this program is converted to :LOGIC
+mode and warranted!  See :DOC verify-termination and defwarrant.
+
+
+Since CALLER2 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER2.
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+Warnings:  Problematic-quoted-fns
+ CALLER2
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  The body for CALLER2 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER2)
+ ((CALLER2))
+ACL2 !>>>(CALLER2 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (CALLER2 E),
+which is (SYMBOLP E), is violated by the arguments in the call 
+(CALLER2 "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+
+
+ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (APPLY$-WARRANT-HELLO).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER1)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO D) '((D . JOHN))))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER2)
+        (:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO D) '((D . JOHN))))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the :program function call
+(HELLO X), which is (SYMBOLP X), is violated by the arguments in the
+call (HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT! 'EVENTUALLY-UNDO-BACK-TO-HERE)
+           7:x(DEFBADGE HELLO)
+ACL2 !>>(SECTION 3)
+
+
+-----------------------------------------------------------------
+3. HELLO is a badged but unwarranted :logic mode function
+ACL2 !>>(VERIFY-TERMINATION HELLO)
+
+Since HELLO is non-recursive, its admission is trivial.  We observe
+that the type of HELLO is described by the theorem 
+(AND (CONSP (HELLO X)) (TRUE-LISTP (HELLO X))).  We used primitive
+type reasoning.
+
+ACL2 Observation in untracing:  Untracing HELLO.
+
+Summary
+Form:  ( DEFUN HELLO ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ HELLO
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+ ((HELLO))
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+1> (ACL2_*1*_ACL2::HELLO MARY)
+<1 (ACL2_*1*_ACL2::HELLO (HI MARY))
+((HI JOHN) (HI MARY))
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "John").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+<1 (ACL2_*1*_ACL2::HELLO (HI "John"))
+1> (ACL2_*1*_ACL2::HELLO "Mary")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
+((HI "John") (HI "Mary"))
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER1 ...):  The
+definition of CALLER1 is in :LOGIC mode but mentions the unwarranted
+function HELLO in one or more :FN or :EXPR slots.  Conjectures about
+CALLER1 may not be provable until this unwarranted function is warranted!
+See :DOC defwarrant.
+
+
+Since CALLER1 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER1.
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+Warnings:  Problematic-quoted-fns
+ CALLER1
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  The body for CALLER1 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER1)
+ ((CALLER1))
+ACL2 !>>>(CALLER1 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER2 ...):  The
+definition of CALLER2 is in :LOGIC mode but mentions the unwarranted
+function HELLO in one or more :FN or :EXPR slots.  Conjectures about
+CALLER2 may not be provable until this unwarranted function is warranted!
+See :DOC defwarrant.
+
+
+Since CALLER2 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER2.
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+Warnings:  Problematic-quoted-fns
+ CALLER2
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  The body for CALLER2 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER2)
+ ((CALLER2))
+ACL2 !>>>(CALLER2 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (CALLER2 E),
+which is (SYMBOLP E), is violated by the arguments in the call 
+(CALLER2 "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO 'JOHN) NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+
+
+ACL2 Error in ( THM ...):  The symbol APPLY$-WARRANT-HELLO (in package
+"ACL2") has neither a function nor macro definition in ACL2.  Please
+define it.  See :DOC near-misses.  Note:  this error occurred in the
+context (APPLY$-WARRANT-HELLO).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER1)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO D) '((D . JOHN))))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER2)
+        (:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(HELLO D) '((D . JOHN))))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CONS))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ 'HELLO '(JOHN))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT 'EVENTUALLY-UNDO-BACK-TO-HERE)
+ L         8:x(VERIFY-TERMINATION HELLO)
+ACL2 !>>(SECTION 4)
+
+
+-----------------------------------------------------------------
+4. HELLO is a badged and warranted :logic mode function.
+ACL2 !>>(DEFWARRANT HELLO)
+
+
+HELLO is now warranted by APPLY$-WARRANT-HELLO, with badge 
+(APPLY$-BADGE 1 1 . T).
+
+ T
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+ ((HELLO))
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+1> (ACL2_*1*_ACL2::HELLO MARY)
+<1 (ACL2_*1*_ACL2::HELLO (HI MARY))
+((HI JOHN) (HI MARY))
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "John").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+<1 (ACL2_*1*_ACL2::HELLO (HI "John"))
+1> (ACL2_*1*_ACL2::HELLO "Mary")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
+((HI "John") (HI "Mary"))
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+Since CALLER1 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER1.
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+ CALLER1
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  The body for CALLER1 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER1)
+ ((CALLER1))
+ACL2 !>>>(CALLER1 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+Since CALLER2 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER2.
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+ CALLER2
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  The body for CALLER2 calls
+the function HELLO, the guards of which have not yet been verified.
+See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS CALLER2):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(TRACE$ CALLER2)
+ ((CALLER2))
+ACL2 !>>>(CALLER2 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::HELLO JOHN)
+  <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (CALLER2 E),
+which is (SYMBOLP E), is violated by the arguments in the call 
+(CALLER2 "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal).
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+Proof succeeded.
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER1 JOHN)
+Goal'
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER1)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (ACL2_*1*_ACL2::CALLER2 JOHN)
+Goal'
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER2)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT 'EVENTUALLY-UNDO-BACK-TO-HERE)
+   d       9:x(DEFWARRANT HELLO)
+ACL2 !>>(SECTION 5)
+
+
+-----------------------------------------------------------------
+5. HELLO is a badged and warranted, guard-verified :logic mode function
+ACL2 !>>(VERIFY-GUARDS HELLO)
+
+Computing the guard conjecture for HELLO....
+
+The guard conjecture for HELLO is trivial to prove.  HELLO is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS HELLO)
+Rules: NIL
+ HELLO
+ACL2 !>>(DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE)
+
+Summary
+Form:  ( DEFLABEL EVENTUALLY-UNDO-BACK-TO-HERE ...)
+Rules: NIL
+ EVENTUALLY-UNDO-BACK-TO-HERE
+ACL2 !>>(LD *TESTS*
+            :LD-ERROR-ACTION :CONTINUE
+            :LD-PRE-EVAL-PRINT T)
+ACL2 !>>>(TRACE$ HELLO)
+ ((HELLO))
+ACL2 !>>>(APPLY$ 'HELLO '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(EV$ '(HELLO E) '((E . JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (CONS 'LAMBDA
+                       (CONS (CONS 'E 'NIL)
+                             (CONS (CONS 'HELLO (CONS 'E 'NIL))
+                                   'NIL)))
+                 '(JOHN))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+1> (HELLO JOHN)
+<1 (HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(LOOP$ FOR E IN '(JOHN MARY)
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+1> (ACL2_*1*_ACL2::HELLO MARY)
+  2> (HELLO MARY)
+  <2 (HELLO (HI MARY))
+<1 (ACL2_*1*_ACL2::HELLO (HI MARY))
+((HI JOHN) (HI MARY))
+ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
+                COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "John").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(LOOP$ FOR E IN '("John" "Mary")
+               COLLECT (HELLO E))
+1> (ACL2_*1*_ACL2::HELLO "John")
+<1 (ACL2_*1*_ACL2::HELLO (HI "John"))
+1> (ACL2_*1*_ACL2::HELLO "Mary")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary"))
+((HI "John") (HI "Mary"))
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER1 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ 'HELLO (LIST E)))
+
+Since CALLER1 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER1.
+
+Summary
+Form:  ( DEFUN CALLER1 ...)
+Rules: NIL
+ CALLER1
+ACL2 !>>>(VERIFY-GUARDS CALLER1)
+
+Computing the guard conjecture for CALLER1....
+
+The non-trivial part of the guard conjecture for CALLER1 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER1.  CALLER1
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER1)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER1
+ACL2 !>>>(TRACE$ CALLER1)
+ ((CALLER1))
+ACL2 !>>>(CALLER1 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (CALLER1 JOHN)
+    3> (ACL2_*1*_ACL2::HELLO JOHN)
+      4> (HELLO JOHN)
+      <4 (HELLO (HI JOHN))
+    <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+  <2 (CALLER1 (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (CALLER1 "Mary and Tom")
+    3> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER1 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER1 "Mary and Tom")
+  2> (CALLER1 "Mary and Tom")
+    3> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+    <3 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+  <2 (CALLER1 (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER1 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(DEFUN CALLER2 (E)
+                (DECLARE (XARGS :GUARD (SYMBOLP E)
+                                :VERIFY-GUARDS NIL))
+                (APPLY$ (LAMBDA$ (D)
+                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                 (HELLO D))
+                        (LIST E)))
+
+Since CALLER2 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER2.
+
+Summary
+Form:  ( DEFUN CALLER2 ...)
+Rules: NIL
+ CALLER2
+ACL2 !>>>(VERIFY-GUARDS CALLER2)
+
+Computing the guard conjecture for CALLER2....
+
+The non-trivial part of the guard conjecture for CALLER2 is
+
+Goal
+(IMPLIES
+    (SYMBOLP E)
+    (APPLY$-GUARD
+         '(LAMBDA (D)
+                  (DECLARE (XARGS :GUARD (SYMBOLP D)
+                                  :SPLIT-TYPES T)
+                           (IGNORABLE D))
+                  (RETURN-LAST 'PROGN
+                               '(LAMBDA$ (D)
+                                         (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                         (HELLO D))
+                               (HELLO D)))
+         (LIST E))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER2.  CALLER2
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER2)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:DEFINITION APPLY$-LAMBDA-GUARD)
+        (:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CDR-CONS))
+ CALLER2
+ACL2 !>>>(TRACE$ CALLER2)
+ ((CALLER2))
+ACL2 !>>>(CALLER2 'JOHN)
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (CALLER2 JOHN)
+    3> (HELLO JOHN)
+    <3 (HELLO (HI JOHN))
+  <2 (CALLER2 (HI JOHN))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (CALLER2 E),
+which is (SYMBOLP E), is violated by the arguments in the call 
+(CALLER2 "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER2 "Mary and Tom")
+1> (ACL2_*1*_ACL2::CALLER2 "Mary and Tom")
+  2> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+  <2 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+<1 (ACL2_*1*_ACL2::CALLER2 (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                     '(HI JOHN)))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal).
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM
+          (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'HELLO
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                     '(HI JOHN))
+              :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (APPLY$ (LAMBDA$ NIL '(HI JOHN)) NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (IMPLIES (WARRANT HELLO)
+                       (EQUAL (APPLY$ 'HELLO '(JOHN))
+                              '(HI JOHN))))
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+Proof succeeded.
+ACL2 !>>>(THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER1 JOHN)
+  2> (CALLER1 JOHN)
+    3> (ACL2_*1*_ACL2::CALLER1 JOHN)
+      4> (CALLER1 JOHN)
+Goal'
+        5> (ACL2_*1*_ACL2::HELLO JOHN)
+          6> (HELLO JOHN)
+          <6 (HELLO (HI JOHN))
+        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER1)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+1> (ACL2_*1*_ACL2::CALLER2 JOHN)
+  2> (CALLER2 JOHN)
+    3> (ACL2_*1*_ACL2::CALLER2 JOHN)
+      4> (CALLER2 JOHN)
+Goal'
+        5> (ACL2_*1*_ACL2::HELLO JOHN)
+          6> (HELLO JOHN)
+          <6 (HELLO (HI JOHN))
+        <5 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER2)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-HELLO)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>(DEFUN CALLER3 (E)
+                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+                (APPLY$ (CAR (CONS 'HELLO NIL))
+                        (LIST E)))
+
+Since CALLER3 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of CALLER3.
+
+Summary
+Form:  ( DEFUN CALLER3 ...)
+Rules: NIL
+ CALLER3
+ACL2 !>>>(VERIFY-GUARDS CALLER3)
+
+Computing the guard conjecture for CALLER3....
+
+The non-trivial part of the guard conjecture for CALLER3 is
+
+Goal
+(APPLY$-GUARD 'HELLO (LIST E)).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for CALLER3.  CALLER3
+is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS CALLER3)
+Rules: ((:DEFINITION APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ CALLER3
+ACL2 !>>>(CALLER3 'JOHN)
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+(HI JOHN)
+ACL2 !>>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+
+
+ACL2 Error in TOP-LEVEL:  The guard for the function call (HELLO X),
+which is (SYMBOLP X), is violated by the arguments in the call 
+(HELLO "Mary and Tom").
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>>(CALLER3 "Mary and Tom")
+1> (ACL2_*1*_ACL2::HELLO "Mary and Tom")
+<1 (ACL2_*1*_ACL2::HELLO (HI "Mary and Tom"))
+(HI "Mary and Tom")
+ACL2 >>>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>>(THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))
+Goal'
+1> (ACL2_*1*_ACL2::HELLO JOHN)
+  2> (HELLO JOHN)
+  <2 (HELLO (HI JOHN))
+<1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying (:REWRITE APPLY$-HELLO).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION CALLER3)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART HELLO)
+        (:REWRITE APPLY$-HELLO))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-HELLO)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>>Bye.
+ :EOF
+ACL2 !>>(UBT 'EVENTUALLY-UNDO-BACK-TO-HERE)
+          10:x(VERIFY-GUARDS HELLO)
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (UNDEFINED 'JOHN))
+                            NIL)
+                    (APPLY$ 'UNDEFINED '(JOHN)))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                     ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+
+
+ACL2 Error in ( THM ...):  The symbol UNDEFINED (in package "ACL2")
+has neither a function nor macro definition in ACL2.  Please define
+it.  See :DOC near-misses.  Note:  this error occurred in the context
+(UNDEFINED 'JOHN).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'UNDEFINED
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           (APPLY$ 'UNDEFINED '(JOHN)))
+         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                 ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ '(LAMBDA NIL (UNDEFINED 'JOHN))
+               NIL)
+       (APPLY$ 'UNDEFINED '(JOHN)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ '(LAMBDA NIL (UNDEFINED 'JOHN))
+               NIL)
+       (APPLY$ 'UNDEFINED '(JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN PROGRAM-MODE-WITH-NO-BADGE (X)
+               (DECLARE (XARGS :MODE :PROGRAM))
+               (LIST 'HI X))
+
+Summary
+Form:  ( DEFUN PROGRAM-MODE-WITH-NO-BADGE ...)
+Rules: NIL
+ PROGRAM-MODE-WITH-NO-BADGE
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+                            NIL)
+                    '(HI JOHN))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                     ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+
+
+ACL2 Error in ( THM ...):  The body of a LAMBDA object, lambda$ term,
+or loop$ statement should be fully badged but PROGRAM-MODE-WITH-NO-BADGE
+is used in (PROGRAM-MODE-WITH-NO-BADGE 'JOHN) and has no badge.  See
+:DOC gratuitous-lambda-object-restrictions for a workaround if you
+really mean to have an ill-formed LAMBDA-like constant in your code.
+You may see this message without having explicitly typed a LAMBDA if
+you used a loop$ statement.  Loop$ statements are translated into calls
+of scions that use LAMBDA objects generated from the UNTIL, WHEN, and
+operator expressions.  If you are defining a function that calls itself
+recursively from within a loop$ you must include the xargs :LOOP$-
+RECURSION T and an explicit :MEASURE.  Note:  this error occurred in
+the context (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN)).
+
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'PROGRAM-MODE-WITH-NO-BADGE
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN))
+         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                 ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ '(LAMBDA NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ '(LAMBDA NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (EQUAL
+           (APPLY$
+                (CONS 'LAMBDA
+                      (CONS 'NIL
+                            (CONS (CONS 'PROGRAM-MODE-WITH-NO-BADGE
+                                        (CONS (CONS 'QUOTE (CONS 'JOHN 'NIL))
+                                              'NIL))
+                                  'NIL)))
+                NIL)
+           '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-NO-BADGE 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-NO-BADGE 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
+               (X)
+               (DECLARE (XARGS :MODE :PROGRAM))
+               (LIST 'HI X))
+
+Summary
+Form:  ( DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT ...)
+Rules: NIL
+ PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
+ACL2 !>>(DEFBADGE PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+ T
+ACL2 !>>(THM
+         (EQUAL
+             (APPLY$ (LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                     NIL)
+             '(HI JOHN))
+         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                 ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL
+                        (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL
+                        (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (EQUAL
+             (APPLY$ (LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                     NIL)
+             '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (EQUAL
+             (APPLY$ (LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                     NIL)
+             '(HI JOHN))
+         :HINTS
+         (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (11 subgoals).
+  if-intro: ((:DEFINITION EV$)
+             (:DEFINITION NOT)
+             (:DEFINITION SUITABLY-TAMEP-LISTP)
+             (:DEFINITION TAMEP)
+             (:DEFINITION TAMEP-FUNCTIONP)
+             (:REWRITE ZP-OPEN))
+
+Subgoal 11
+
+([ A key checkpoint:
+
+Subgoal 11
+(IMPLIES (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+         (EQUAL (UNTAME-EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                            NIL)
+                '(HI JOHN)))
+
+*1 (Subgoal 11) is pushed for proof by induction.
+
+])
+Subgoal 10
+Subgoal 10'
+
+([ A key checkpoint:
+
+Subgoal 10'
+(IMPLIES (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     1)
+              (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+              (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     T))
+         (EQUAL (APPLY$ 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
+                        '(JOHN))
+                '(HI JOHN)))
+
+Normally we would attempt to prove Subgoal 10' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION EV$)
+        (:DEFINITION NOT)
+        (:DEFINITION SUITABLY-TAMEP-LISTP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TAMEP)
+        (:DEFINITION TAMEP-FUNCTIONP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$-LIST)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE ZP-OPEN))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION EV$)
+             (:DEFINITION NOT)
+             (:DEFINITION SUITABLY-TAMEP-LISTP)
+             (:DEFINITION TAMEP)
+             (:DEFINITION TAMEP-FUNCTIONP)
+             (:REWRITE ZP-OPEN))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 11
+(IMPLIES (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+         (EQUAL (UNTAME-EV$ '(PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                            NIL)
+                '(HI JOHN)))
+
+Subgoal 10'
+(IMPLIES (AND (EQUAL (CADR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     1)
+              (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+              (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     T))
+         (EQUAL (APPLY$ 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
+                        '(JOHN))
+                '(HI JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT (X)
+               (DECLARE (XARGS :MODE :LOGIC
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LIST 'HI X))
+
+Since LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT is non-recursive, its admission
+is trivial.  We observe that the type of LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+is described by the theorem 
+(AND (CONSP (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT X))
+     (TRUE-LISTP (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT X))).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+ACL2 !>>(DEFBADGE LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+ T
+ACL2 !>>(THM
+          (EQUAL
+               (APPLY$ (LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                       NIL)
+               '(HI JOHN))
+          :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                  ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL
+                        (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL (APPLY$ (LAMBDA$ NIL
+                        (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+          (EQUAL
+               (APPLY$ (LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                       NIL)
+               '(HI JOHN)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                  NIL))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+          (EQUAL
+               (APPLY$ (LAMBDA$ NIL
+                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                       NIL)
+               '(HI JOHN))
+          :HINTS
+          (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (11 subgoals).
+  if-intro: ((:DEFINITION EV$)
+             (:DEFINITION NOT)
+             (:DEFINITION SUITABLY-TAMEP-LISTP)
+             (:DEFINITION TAMEP)
+             (:DEFINITION TAMEP-FUNCTIONP)
+             (:REWRITE ZP-OPEN))
+
+Subgoal 11
+
+([ A key checkpoint:
+
+Subgoal 11
+(IMPLIES (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+         (EQUAL (UNTAME-EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                            NIL)
+                '(HI JOHN)))
+
+*1 (Subgoal 11) is pushed for proof by induction.
+
+])
+Subgoal 10
+Subgoal 10'
+
+([ A key checkpoint:
+
+Subgoal 10'
+(IMPLIES (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     1)
+              (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+              (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     T))
+         (EQUAL (APPLY$ 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+                        '(JOHN))
+                '(HI JOHN)))
+
+Normally we would attempt to prove Subgoal 10' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION EV$)
+        (:DEFINITION NOT)
+        (:DEFINITION SUITABLY-TAMEP-LISTP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TAMEP)
+        (:DEFINITION TAMEP-FUNCTIONP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$-LIST)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART SYMBOLP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE ZP-OPEN))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION EV$)
+             (:DEFINITION NOT)
+             (:DEFINITION SUITABLY-TAMEP-LISTP)
+             (:DEFINITION TAMEP)
+             (:DEFINITION TAMEP-FUNCTIONP)
+             (:REWRITE ZP-OPEN))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 11
+(IMPLIES (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+         (EQUAL (UNTAME-EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN)
+                            NIL)
+                '(HI JOHN)))
+
+Subgoal 10'
+(IMPLIES (AND (EQUAL (CADR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     1)
+              (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+              (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
+                     T))
+         (EQUAL (APPLY$ 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+                        '(JOHN))
+                '(HI JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFWARRANT PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+
+
+ACL2 Error in (DEFWARRANT PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT ...):
+Defwarrant expects a defined, :logic mode function symbol as its argument
+and PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT is not one.
+
+ACL2 !>>(DEFUN LOGIC-MODE-WITH-BADGE-AND-WARRANT (X)
+               (DECLARE (XARGS :MODE :LOGIC
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LIST 'HI X))
+
+Since LOGIC-MODE-WITH-BADGE-AND-WARRANT is non-recursive, its admission
+is trivial.  We observe that the type of LOGIC-MODE-WITH-BADGE-AND-WARRANT
+is described by the theorem 
+(AND (CONSP (LOGIC-MODE-WITH-BADGE-AND-WARRANT X))
+     (TRUE-LISTP (LOGIC-MODE-WITH-BADGE-AND-WARRANT X))).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN LOGIC-MODE-WITH-BADGE-AND-WARRANT ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ LOGIC-MODE-WITH-BADGE-AND-WARRANT
+ACL2 !>>(DEFBADGE LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+ T
+ACL2 !>>(DEFWARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+
+LOGIC-MODE-WITH-BADGE-AND-WARRANT is now warranted by 
+APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT, with badge 
+(APPLY$-BADGE 1 1 . T).
+
+ T
+ACL2 !>>(THM
+           (EQUAL (APPLY$ (LAMBDA$ NIL
+                                   (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          NIL)
+                  '(HI JOHN))
+           :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                   ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+Forcing Round 1 is pending (caused first by Goal').
+Goal''
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying 
+(:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (IMPLIES
+           (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+           (EQUAL (APPLY$ (LAMBDA$ NIL
+                                   (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          NIL)
+                  '(HI JOHN)))
+         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                 ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+Goal''
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+        (:REWRITE BETA-REDUCTION))
+
+Proof succeeded.
+ACL2 !>>(THM
+         (IMPLIES
+           (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+           (EQUAL (APPLY$ (LAMBDA$ NIL
+                                   (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          NIL)
+                  '(HI JOHN))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+ (EQUAL
+  (HIDE
+   (COMMENT
+    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+    (EV$ '(LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN)
+         NIL)))
+  '(HI JOHN)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES
+ (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+ (EQUAL
+  (HIDE
+   (COMMENT
+    "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+    (EV$ '(LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN)
+         NIL)))
+  '(HI JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+         (IMPLIES
+           (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+           (EQUAL (APPLY$ (LAMBDA$ NIL
+                                   (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          NIL)
+                  '(HI JOHN)))
+         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))
+                 ("Goal''" :IN-THEORY (ENABLE BETA-REDUCTION))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+         (EQUAL (APPLY$ (LAMBDA$ NIL
+                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                        NIL)
+                '(HI JOHN)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION NOT))
+Warnings:  rewrite-lambda-object
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+         (EQUAL (APPLY$ (LAMBDA$ NIL
+                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                        NIL)
+                '(HI JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
+               (DECLARE (XARGS :MODE :LOGIC :GUARD (SYMBOLP X)))
+               (LOOP$ FOR E IN (LIST X)
+                      COLLECT :GUARD (SYMBOLP E)
+                      (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+
+
+ACL2 Error in ( DEFUN RUN-THIS-VERSION-1 ...):  The body for 
+RUN-THIS-VERSION-1 calls the function PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT,
+the guards of which have not yet been verified.  See :DOC verify-guards.
+
+
+Summary
+Form:  ( DEFUN RUN-THIS-VERSION-1 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN RUN-THIS-VERSION-1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
+               (DECLARE (XARGS :MODE :LOGIC
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LOOP$ FOR E IN (LIST X)
+                      COLLECT :GUARD (SYMBOLP E)
+                      (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN RUN-THIS-VERSION-1
+...):  The definition of RUN-THIS-VERSION-1 is in :LOGIC mode but mentions
+the :PROGRAM mode function PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT in
+one or more :FN or :EXPR slots.  Conjectures about RUN-THIS-VERSION-1
+may not be provable until this program is converted to :LOGIC mode
+and warranted!  See :DOC verify-termination and defwarrant.
+
+
+Since RUN-THIS-VERSION-1 is non-recursive, its admission is trivial.
+We observe that the type of RUN-THIS-VERSION-1 is described by the
+theorem (TRUE-LISTP (RUN-THIS-VERSION-1 X)).  We used the :type-prescription
+rule COLLECT$.
+
+Summary
+Form:  ( DEFUN RUN-THIS-VERSION-1 ...)
+Rules: ((:TYPE-PRESCRIPTION COLLECT$))
+Warnings:  Problematic-quoted-fns
+ RUN-THIS-VERSION-1
+ACL2 !>>(VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+
+
+ACL2 Error in ( VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT):
+PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT is in :program mode.  Only :logic
+mode functions can have their guards verified.  See :DOC verify-guards.
+
+
+Summary
+Form:  ( VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
+Rules: NIL
+
+ACL2 Error in ( VERIFY-GUARDS PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RUN-THIS-VERSION-2 (X)
+               (DECLARE (XARGS :MODE :LOGIC
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LOOP$ FOR E IN (LIST X)
+                      COLLECT :GUARD (SYMBOLP E)
+                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+
+ACL2 Warning [Problematic-quoted-fns] in ( DEFUN RUN-THIS-VERSION-2
+...):  The definition of RUN-THIS-VERSION-2 is in :LOGIC mode but mentions
+the unwarranted function LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT in one
+or more :FN or :EXPR slots.  Conjectures about RUN-THIS-VERSION-2 may
+not be provable until this unwarranted function is warranted!  See
+:DOC defwarrant.
+
+
+Since RUN-THIS-VERSION-2 is non-recursive, its admission is trivial.
+We observe that the type of RUN-THIS-VERSION-2 is described by the
+theorem (TRUE-LISTP (RUN-THIS-VERSION-2 X)).  We used the :type-prescription
+rule COLLECT$.
+
+Summary
+Form:  ( DEFUN RUN-THIS-VERSION-2 ...)
+Rules: ((:TYPE-PRESCRIPTION COLLECT$))
+Warnings:  Problematic-quoted-fns
+ RUN-THIS-VERSION-2
+ACL2 !>>(VERIFY-GUARDS LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+
+Computing the guard conjecture for LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT....
+
+The guard conjecture for LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT is trivial
+to prove.  LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT is compliant with Common
+Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
+Rules: NIL
+ LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
+ACL2 !>>(VERIFY-GUARDS RUN-THIS-VERSION-2)
+
+Computing the guard conjecture for RUN-THIS-VERSION-2....
+
+The non-trivial part of the guard conjecture for RUN-THIS-VERSION-2,
+given the :executable-counterpart of APPLY$-GUARD and primitive type
+reasoning, is
+
+Goal
+(IMPLIES (AND (SYMBOLP X)
+              (MEMBER-EQUAL NEWV (LIST X)))
+         (LET ((E NEWV)) (SYMBOLP E))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for RUN-THIS-VERSION-2.
+RUN-THIS-VERSION-2 is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-2)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META APPLY$-PRIM-META-FN-CORRECT)
+        (:REWRITE ALWAYS$-SINGLETON)
+        (:REWRITE APPLY$-PRIMITIVE)
+        (:REWRITE CAR-CONS)
+        (:REWRITE PLAIN-UQI-SYMBOL-LISTP))
+ RUN-THIS-VERSION-2
+ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-2 'JOHN)
+                    '((HI JOHN))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT LOOP$-IVAR)
+                  '((LOOP$-IVAR . JOHN))))
+       '(HI JOHN))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE)
+        (:DEFINITION RUN-THIS-VERSION-2)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE COLLECT$-SINGLETON)
+        (:REWRITE CONS-EQUAL))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (HIDE (EV$ '(LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT LOOP$-IVAR)
+                  '((LOOP$-IVAR . JOHN))))
+       '(HI JOHN))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN RUN-THIS-VERSION-3 (X)
+               (DECLARE (XARGS :MODE :LOGIC
+                               :GUARD (SYMBOLP X)
+                               :VERIFY-GUARDS NIL))
+               (LOOP$ FOR E IN (LIST X)
+                      COLLECT :GUARD (SYMBOLP E)
+                      (LOGIC-MODE-WITH-BADGE-AND-WARRANT E)))
+
+Since RUN-THIS-VERSION-3 is non-recursive, its admission is trivial.
+We observe that the type of RUN-THIS-VERSION-3 is described by the
+theorem (TRUE-LISTP (RUN-THIS-VERSION-3 X)).  We used the :type-prescription
+rule COLLECT$.
+
+Summary
+Form:  ( DEFUN RUN-THIS-VERSION-3 ...)
+Rules: ((:TYPE-PRESCRIPTION COLLECT$))
+ RUN-THIS-VERSION-3
+ACL2 !>>(VERIFY-GUARDS LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+Computing the guard conjecture for LOGIC-MODE-WITH-BADGE-AND-WARRANT....
+
+The guard conjecture for LOGIC-MODE-WITH-BADGE-AND-WARRANT is trivial
+to prove.  LOGIC-MODE-WITH-BADGE-AND-WARRANT is compliant with Common
+Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+Rules: NIL
+ LOGIC-MODE-WITH-BADGE-AND-WARRANT
+ACL2 !>>(VERIFY-GUARDS RUN-THIS-VERSION-3)
+
+Computing the guard conjecture for RUN-THIS-VERSION-3....
+
+The non-trivial part of the guard conjecture for RUN-THIS-VERSION-3,
+given the :executable-counterpart of APPLY$-GUARD and primitive type
+reasoning, is
+
+Goal
+(IMPLIES (AND (SYMBOLP X)
+              (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+              (MEMBER-EQUAL NEWV (LIST X)))
+         (LET ((E NEWV)) (SYMBOLP E))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for RUN-THIS-VERSION-3.
+RUN-THIS-VERSION-3 is compliant with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS RUN-THIS-VERSION-3)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:META APPLY$-PRIM-META-FN-CORRECT)
+        (:REWRITE ALWAYS$-SINGLETON)
+        (:REWRITE APPLY$-PRIMITIVE)
+        (:REWRITE CAR-CONS)
+        (:REWRITE PLAIN-UQI-SYMBOL-LISTP))
+ RUN-THIS-VERSION-3
+ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-3 'JOHN)
+                    '((HI JOHN))))
+Goal'
+
+Forcing Round 1 is pending (caused first by Goal').
+
+q.e.d. (given one forced hypothesis)
+
+Modulo one forced goal, that completes the proof of the input Goal.
+See :DOC forcing-round.
+
+[1]Goal was forced in Goal' by applying 
+(:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT).
+
+We now undertake Forcing Round 1.
+[1]Goal
+
+([ A key checkpoint:
+
+[1]Goal
+(APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+[1]*1 ([1]Goal) is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by [1]*1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION RUN-THIS-VERSION-3)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART EV$)
+        (:EXECUTABLE-COUNTERPART FORCE)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:REWRITE APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE COLLECT$-SINGLETON)
+        (:REWRITE CONS-EQUAL))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.  Note that
+at least one checkpoint is in a forcing round, so you may want to see
+a full proof.
+---
+
+*** Key checkpoint at the top level: ***
+
+[1]Goal
+(APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM
+           (EQUAL (RUN-THIS-VERSION-3 'JOHN)
+                  '((HI JOHN)))
+           :HINTS (("Goal" :IN-THEORY (DISABLE (FORCE) RUN-THIS-VERSION-3))))
+
+ACL2 Warning [Disable] in ( THM ...):  Forcing has transitioned from
+enabled to disabled.
+See :DOC force.
+
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(EQUAL
+ (HIDE
+  (COMMENT
+   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+   (RUN-THIS-VERSION-3 'JOHN)))
+ '((HI JOHN)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION HIDE))
+Warnings:  Disable
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(EQUAL
+ (HIDE
+  (COMMENT
+   "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
+   (RUN-THIS-VERSION-3 'JOHN)))
+ '((HI JOHN)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>Bye.

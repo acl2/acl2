@@ -51,13 +51,18 @@
   :hints (("Goal" :use (:instance integerp-of-- (x (+ x y)))
            :in-theory (disable integerp-of--))))
 
-(local (include-book "mod"))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
-;; two different ways of say an integer is odd
+(defthm integerp-choice
+  (implies (integerp x)
+           (or (integerp (/ x 2))
+               (integerp (/ (+ 1 x) 2))))
+  :rule-classes nil
+  :hints (("Goal" :cases ((equal 0 (mod x 2))))))
+
+;; two different ways to say an integer is odd
 (defthm integerp-of-+-of-1/2-and-*-of-1/2
   (implies (integerp x)
            (equal (integerp (+ 1/2 (* 1/2 x)))
                   (not (integerp (* 1/2 x)))))
-  :hints (("Goal" :use (:instance integerp-of-*-of-/-becomes-equal-of-0-and-mod
-                                  (x (- x 1))
-                                  (y 2)))))
+  :hints (("Goal" :use (:instance integerp-choice))))

@@ -177,7 +177,7 @@
                    (if ,(make-or atom-tests)
                        nil ;; empty list
                      ;;use a let in case a formal appears more than once?
-                     (cons ,(my-sublis-var (pairlis$ list-formals cars-of-list-formals) term)
+                     (cons ,(sublis-var-simple (pairlis$ list-formals cars-of-list-formals) term)
                            (,map-fn ,@recursive-call-args)))))
          ;;fixme problems occur when we map a predicate that is known to be t, if we don't include the :type-prescription rule for the predicate here, but that is awkward:
          (theory `(:in-theory (union-theories '((:definition ,map-fn)) (theory 'minimal-theory)))) ;does this allow for induction??
@@ -193,14 +193,14 @@
                        ;;have each name reflect the formal it's replacing?
                        (fresh-vars (fresh-var-names (len fixed-formals) 'tmp (cons fresh-var all-formals)))
                        (fresh-var-alist (pairlis$ fixed-formals fresh-vars) )
-                       (fresh-formals (my-sublis-var-lst fresh-var-alist all-formals))
-                       (fresh-term (my-sublis-var fresh-var-alist term))
+                       (fresh-formals (sublis-var-simple-lst fresh-var-alist all-formals))
+                       (fresh-term (sublis-var-simple fresh-var-alist term))
                        (fixed-formal-bindings (make-doublets fresh-vars fixed-formals))
 
                        (bindings `((generic-fn (lambda (,list-formal) ,fresh-term))
                                    (generic-map (lambda (,list-formal) (,map-fn ,@fresh-formals))))))
                   `((defthm ,(pack$ map-fn '-of-nil)
-                      (equal (,map-fn ,@(my-sublis-var-lst
+                      (equal (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal *nil* nil)
                                          all-formals))
                              nil)
@@ -212,10 +212,10 @@
                                ,@theory)))
 
                     (defthm ,(pack$ map-fn '-of-cons)
-                      (equal (,map-fn ,@(my-sublis-var-lst
+                      (equal (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(cons ,fresh-var ,list-formal) nil)
                                          all-formals))
-                             (cons ,(my-sublis-var (acons list-formal fresh-var nil)
+                             (cons ,(sublis-var-simple (acons list-formal fresh-var nil)
                                                    term)
                                    (,map-fn ,@all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance generic-map-of-cons ,@bindings)
@@ -225,7 +225,7 @@
                                ,@theory)))
 
                     (defthm ,(pack$ map-fn '-of-true-list-fix)
-                      (equal (,map-fn ,@(my-sublis-var-lst
+                      (equal (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(true-list-fix ,list-formal) nil)
                                          all-formals))
                              (,map-fn ,@all-formals))
@@ -237,9 +237,9 @@
                     (defthmd ,(pack$ map-fn '-opener)
                       (implies (consp (double-rewrite ,list-formal))
                                (equal (,map-fn ,@all-formals)
-                                      (cons ,(my-sublis-var (acons list-formal `(car (double-rewrite ,list-formal)) nil)
+                                      (cons ,(sublis-var-simple (acons list-formal `(car (double-rewrite ,list-formal)) nil)
                                                             term)
-                                            (,map-fn ,@(my-sublis-var-lst (acons list-formal `(cdr ,list-formal) nil)
+                                            (,map-fn ,@(sublis-var-simple-lst (acons list-formal `(cdr ,list-formal) nil)
                                                                           all-formals)))))
                       :hints (("Goal" :use (:instance (:functional-instance generic-map-opener ,@bindings)
 ;                                                      (a ,fresh-var)
@@ -248,11 +248,11 @@
                                ,@theory)))
 
                     (defthm ,(pack$ map-fn '-of-append)
-                      (equal (,map-fn ,@(my-sublis-var-lst
+                      (equal (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(append ,list-formal ,fresh-var) nil)
                                          all-formals))
                              (append (,map-fn ,@all-formals)
-                                     (,map-fn ,@(my-sublis-var-lst
+                                     (,map-fn ,@(sublis-var-simple-lst
                                                  (acons list-formal fresh-var nil)
                                                  all-formals))))
                       :hints (("Goal" :use (:instance (:functional-instance generic-map-of-append ,@bindings)
@@ -264,7 +264,7 @@
                     (defthm ,(pack$ 'car-of- map-fn)
                       (equal (car (,map-fn ,@all-formals))
                              (if (consp (double-rewrite ,list-formal))
-                                 ,(my-sublis-var (acons list-formal `(car (double-rewrite ,list-formal)) nil) term)
+                                 ,(sublis-var-simple (acons list-formal `(car (double-rewrite ,list-formal)) nil) term)
                                nil))
                       :hints (("Goal" :use (:instance (:functional-instance car-of-generic-map ,@bindings)
                                                       (x ,list-formal)
@@ -273,7 +273,7 @@
 
                     (defthm ,(pack$ 'cdr-of- map-fn)
                       (equal (cdr (,map-fn ,@all-formals))
-                             (,map-fn ,@(my-sublis-var-lst
+                             (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(cdr ,list-formal) nil)
                                          all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance cdr-of-generic-map ,@bindings)
@@ -315,7 +315,7 @@
 
                     (defthm ,(pack$ 'firstn-of- map-fn)
                       (equal (firstn ,fresh-var (,map-fn ,@all-formals))
-                             (,map-fn ,@(my-sublis-var-lst
+                             (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(firstn ,fresh-var (double-rewrite,list-formal)) nil)
                                          all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance firstn-of-generic-map ,@bindings)
@@ -327,7 +327,7 @@
                     (defthm ,(pack$ 'take-of- map-fn)
                       (implies (<= ,fresh-var (len (double-rewrite ,list-formal)))
                                (equal (take ,fresh-var (,map-fn ,@all-formals))
-                                      (,map-fn ,@(my-sublis-var-lst
+                                      (,map-fn ,@(sublis-var-simple-lst
                                                   (acons list-formal `(take ,fresh-var (double-rewrite ,list-formal)) nil)
                                                   all-formals))))
                       :hints (("Goal" :use (:instance (:functional-instance take-of-generic-map ,@bindings)
@@ -340,7 +340,7 @@
                       (implies (natp ,fresh-var)
                                (equal (nth ,fresh-var (,map-fn ,@all-formals))
                                       (if (< ,fresh-var (len (double-rewrite ,list-formal)))
-                                          ,(my-sublis-var (acons list-formal `(nth ,fresh-var (double-rewrite ,list-formal)) nil) term)
+                                          ,(sublis-var-simple (acons list-formal `(nth ,fresh-var (double-rewrite ,list-formal)) nil) term)
                                         'nil)))
                       :hints (("Goal" :use (:instance (:functional-instance nth-of-generic-map ,@bindings)
                                                       (x ,list-formal)
@@ -350,7 +350,7 @@
 
                     (defthm ,(pack$ 'nthcdr-of- map-fn)
                       (equal (nthcdr ,fresh-var (,map-fn ,@all-formals))
-                             (,map-fn ,@(my-sublis-var-lst
+                             (,map-fn ,@(sublis-var-simple-lst
                                          (acons list-formal `(nthcdr ,fresh-var ,list-formal) nil)
                                          all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance nthcdr-of-generic-map ,@bindings)

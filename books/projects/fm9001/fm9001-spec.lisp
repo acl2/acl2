@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -138,10 +138,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 0 9))
 
-;; (defthm true-listp-a-immediate
-;;   (true-listp (a-immediate i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-a-immediate
   (equal (len (a-immediate i-reg)) 9))
 
@@ -154,10 +150,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 0 4))
 
-;; (defthm true-listp-rn-a
-;;   (true-listp (rn-a i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-rn-a
   (equal (len (rn-a i-reg)) 4))
 
@@ -169,10 +161,6 @@ Register Numbers for "a" and "b".
 (defun mode-a (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 4 6))
-
-;; (defthm true-listp-mode-a
-;;   (true-listp (mode-a i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-mode-a
   (equal (len (mode-a i-reg)) 2))
@@ -187,10 +175,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 10 14))
 
-;; (defthm true-listp-rn-b
-;;   (true-listp (rn-b i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-rn-b
   (equal (len (rn-b i-reg)) 4))
 
@@ -202,10 +186,6 @@ Register Numbers for "a" and "b".
 (defun mode-b (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 14 16))
-
-;; (defthm true-listp-mode-b
-;;   (true-listp (mode-b i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-mode-b
   (equal (len (mode-b i-reg)) 2))
@@ -222,10 +202,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 16 20))
 
-;; (defthm true-listp-set-flags
-;;   (true-listp (set-flags i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-set-flags
   (equal (len (set-flags i-reg)) 4))
 
@@ -238,10 +214,6 @@ Register Numbers for "a" and "b".
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 20 24))
 
-;; (defthm true-listp-store-cc
-;;   (true-listp (store-cc i-reg))
-;;   :rule-classes :type-prescription)
-
 (defthm len-store-cc
   (equal (len (store-cc i-reg)) 4))
 
@@ -253,10 +225,6 @@ Register Numbers for "a" and "b".
 (defun op-code (instruction)
   (declare (xargs :guard (true-listp instruction)))
   (subseq-list instruction 24 28))
-
-;; (defthm true-listp-op-code
-;;   (true-listp (op-code i-reg))
-;;   :rule-classes :type-prescription)
 
 (defthm len-op-code
   (equal (len (op-code i-reg)) 4))
@@ -480,6 +448,28 @@ Register Numbers for "a" and "b".
 (defund flags (st)
   (declare (xargs :guard (true-listp st)))
   (nth 1 st))
+
+;; Pretty print the FM9001 state
+
+(defund st-pprint (st)
+  (declare (xargs :guard t))
+  (if (atom st)
+      st
+    (if (bvp st)
+        (v-to-nat st)
+      (cons (st-pprint (car st))
+            (st-pprint (cdr st))))))
+
+(defund fm9001-state-pprint (st)
+  (declare (xargs :guard (true-list-listp st)))
+  (st-pprint
+   (list "Processor state:"
+         (list "Register file:"
+               (caar st)
+               "Flags:"
+               (cadar st))
+         "Memory state:"
+         (cadr st))))
 
 ;; ======================================================================
 
