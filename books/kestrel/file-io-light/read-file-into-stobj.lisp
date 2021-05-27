@@ -96,9 +96,8 @@
 
 ;; Returns (mv erp bytes-stobj state) where either ERP is non-nil (meaning an error
 ;; occurred) or else the bytes field of BYTES-STOBJ contains the contents of FILENAME.
-(defund read-file-into-bytes-stobj (filename bytes-stobj state)
+(defund read-file-into-stobj (filename bytes-stobj state)
   (declare (xargs :guard (stringp filename)
-                  :guard-debug t
                   :stobjs (bytes-stobj state)))
   (mv-let (file-length state)
     (file-length$ filename state)
