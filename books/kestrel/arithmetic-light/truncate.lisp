@@ -13,6 +13,8 @@
 
 (local (include-book "floor"))
 (local (include-book "numerator"))
+(local (include-book "times"))
+(local (include-book "plus"))
 
 (in-theory (disable truncate))
 
@@ -156,3 +158,12 @@
            (equal (truncate i -1)
                   (- i)))
   :hints (("Goal" :in-theory (enable truncate))))
+
+(defthm truncate-of-truncate
+  (implies (and (rationalp i)
+                (<= 0 i) ;gen?
+                (natp j1)
+                (natp j2))
+           (equal (truncate (truncate i j1) j2)
+                  (truncate i (* j1 j2))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
