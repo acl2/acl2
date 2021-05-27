@@ -171,3 +171,9 @@
   (implies (open-channels-p channels)
            (open-channels-p (remove1-assoc-equal channel channels)))
   :hints (("Goal" :in-theory (enable open-channels-p))))
+
+(defthm open-input-channel-p1-forward-to-assoc-equal
+  (implies (open-input-channel-p1 channel typ state)
+           (assoc-equal channel (open-input-channels state)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable open-input-channel-p1))))
