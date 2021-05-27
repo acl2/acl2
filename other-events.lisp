@@ -22362,13 +22362,66 @@
                                 'invariant-risk invariant-risk wrld))
                       (t wrld))))))))
 
-(defun equal-cdrs (x y)
-  (declare (xargs :guard (and (true-list-listp x)
-                              (true-list-listp y)
-                              (equal (length x) (length y)))))
-  (cond ((endp x) t)
-        (t (and (equal (cdar x) (cdar y))
-                (equal-cdrs (cdr x) (cdr y))))))
+(defun key-position-from-end-eq (key alist)
+  (declare (xargs :guard (and (symbolp key)
+                              (alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq key (caar alist))
+         (length (cdr alist)))
+        (t (key-position-from-end-eq key (cdr alist)))))
+
+(defun congruent-absstobj-tuples-rec (tuples1 tuples2 all-tuples1 all-tuples2)
+  (cond
+   ((endp tuples1) (null tuples2))
+   (t
+    (let ((x1 (car tuples1))
+          (x2 (car tuples2)))
+      (and (or (equal (cdr x1) (cdr x2))
+               (and (eq (cadr x1) (cadr x2))
+                    (eq (caddr x1) (caddr x2))
+                    (let ((up1 (cdddr x1))
+                          (up2 (cdddr x2)))
+                      (and up1
+                           up2
+                           (eql (key-position-from-end-eq up1 all-tuples1)
+                                (key-position-from-end-eq up2 all-tuples2))))))
+           (congruent-absstobj-tuples-rec (cdr tuples1) (cdr tuples2)
+                                          all-tuples1 all-tuples2))))))
+
+(defun congruent-absstobj-tuples (tuples1 tuples2)
+
+; Each of tuples1 and tuples2 has the shape of an :absstobj-tuples field of an
+; absstobj-info record, which is created by make-absstobj-tuples as a list of
+; tuples of the form (name logic exec . updater).  When tuples1 and tuples2 are
+; absstobj-info records for abstract stobjs st1 and st2, congruence of st1 and
+; st2 is defined by equality of those tuples except for treatment of non-nil
+; updaters.  For corresponding tuples (name1 logic1 exec1 . updater1) and
+; (name2 logic2 exec2 . updater2) with non-nil updater1 and updater2,
+; congruence demands that updater1 and updater2 are names of tuples having the
+; same position in those lists of tuples.  A relevant example is in community
+; books file
+; books/system/tests/abstract-stobj-nesting/nested-abstract-stobjs-input.lsp,
+; where admission of abstract stobjs top2, specified to be congruent to
+; abstract stobj top, generates the following call of
+; congruent-absstobj-tuples.  Notice that corresponding tuples are equal except
+; for those with a non-nil updater, where the only difference is in those
+; updaters, which however each have the same position (second to last) in the
+; lists of tuples.
+
+;   (congruent-absstobj-tuples ((top2p top$ap top$cp)
+;                               (create-top2 create-top$a create-top$c)
+;                               (sub02 sub0$a sub0$c . update-sub02)
+;                               (sub02-again sub0$a sub0$c . update-sub02)
+;                               (update-sub02 update-sub0$a update-sub0$c)
+;                               (misc2 misc$a misc$c))
+;                              ((topp top$ap top$cp)
+;                               (create-top create-top$a create-top$c)
+;                               (sub0 sub0$a sub0$c . update-sub0)
+;                               (sub0-again sub0$a sub0$c . update-sub0)
+;                               (update-sub0 update-sub0$a update-sub0$c)
+;                               (misc misc$a misc$c)))
+
+  (congruent-absstobj-tuples-rec tuples1 tuples2 tuples1 tuples2))
 
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only
@@ -22426,9 +22479,10 @@
                 st$c
                 see-doc))
            ((and congruent-to
-                 (not (equal-cdrs absstobj-tuples
-                                  (access absstobj-info old-absstobj-info
-                                          :absstobj-tuples))))
+                 (not (congruent-absstobj-tuples
+                       absstobj-tuples
+                       (access absstobj-info old-absstobj-info
+                               :absstobj-tuples))))
             (er soft ctx
                 "The value provided for :congruent-to, ~x0, is illegal.  ACL2 ~
                  requires that the :LOGIC, :EXEC, and :UPDATER functions ~
