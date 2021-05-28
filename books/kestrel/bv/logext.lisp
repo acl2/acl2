@@ -481,3 +481,16 @@
              -1
            0))
   :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd <-of-logext-and-0
+  (implies (posp size)
+           (equal (< (logext size k) 0)
+                  (equal 1 (getbit (+ -1 size) k))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd <-of-0-and-logext-alt
+  (implies (posp size)
+           (equal (< 0 (logext size x))
+                  (and (equal 0 (getbit (+ -1 size) x))
+                       (not (equal 0 (bvchop (+ -1 size) x))))))
+  :hints (("Goal" :in-theory (enable logext))))

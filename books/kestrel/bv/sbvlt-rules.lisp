@@ -13,6 +13,7 @@
 
 (include-book "sbvlt")
 (include-book "bvlt")
+(local (include-book "logext"))
 (include-book "kestrel/utilities/myif-def" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -35,3 +36,27 @@
   (equal (myif (sbvlt size 0 x) nil (equal 0 x))
          (equal x 0))
   :hints (("Goal" :in-theory (enable myif))))
+
+(defthm sbvlt-becomes-bvlt-better
+  (implies (and (unsigned-byte-p (+ -1 size) x)
+                (unsigned-byte-p (+ -1 size) y)
+                (posp size))
+           (equal (sbvlt size x y)
+                  (bvlt (+ -1 size) x y)))
+  :hints (("Goal" :in-theory (enable sbvlt bvlt))))
+
+;fixme weaken hyps to sbvle?  hmm. then it might loop?!
+;expensive..
+(defthmd sbvlt-becomes-bvlt
+  (implies (and (sbvlt size 0 x)
+                (sbvlt size 0 y)
+                (posp size))
+           (equal (sbvlt size x y)
+                  (bvlt (+ -1 size) x y)))
+  :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-better
+                                  (x (bvchop size x))
+                                  (y (bvchop size y))
+                                  (size size))
+           :in-theory (e/d (sbvlt <-of-0-and-logext-alt
+                                  unsigned-byte-p-of-bvchop-one-more)
+                           (sbvlt-becomes-bvlt-better)))))

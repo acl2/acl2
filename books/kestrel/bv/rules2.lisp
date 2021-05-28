@@ -36,4 +36,4 @@
            (equal (sbvlt size (bvsx size n x) 0)
                   (equal 1 (getbit (+ -1 n) x))))
   :hints (("Goal"; :cases ((< (BINARY-+ '1 (BINARY-+ (UNARY-- N) SIZE)) '0))
-           :in-theory (enable bvsx))))
+           :in-theory (enable bvsx sbvlt))))

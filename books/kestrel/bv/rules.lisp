@@ -6826,7 +6826,7 @@
 
 (defthmd <-of-logext-and-0
   (implies (posp size)
-           (equal (< (LOGEXT size K) 0)
+           (equal (< (logext size k) 0)
                   (equal 1 (getbit (+ -1 size) k))))
   :hints (("Goal" :in-theory (enable logext))))
 
@@ -7642,15 +7642,6 @@
                                                   bvlt-of-plus-arg2
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
-
-(defthm sbvlt-becomes-bvlt-better
-  (implies (and (unsigned-byte-p (+ -1 size) x)
-                (unsigned-byte-p (+ -1 size) y)
-                (posp size)
-                )
-           (equal (sbvlt size x y)
-                  (bvlt (+ -1 size) x y)))
-  :hints (("Goal" :in-theory (enable sbvlt bvlt))))
 
 (defthm bvlt-when-not-bvlt-one-more
   (implies (and (syntaxp (quotep const)) ;new
@@ -8471,3 +8462,12 @@
                   (equal 0 (getbit high x))))
   :hints (("Goal" :use (:instance split-bv (y (slice high low x)) (n (+ 1 (- low) high)) (m (- high low)))
            :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
+
+;; if the top bit is clear, there's no way dividing can make it set
+(defthm getbit-of-bvdiv-when-equal-0-of-getbit
+  (implies (and (equal 0 (getbit 31 x))
+                (integerp x)
+                (integerp y))
+           (equal (getbit 31 (bvdiv 32 x y))
+                  0))
+  :hints (("Goal" :in-theory (enable bvdiv))))

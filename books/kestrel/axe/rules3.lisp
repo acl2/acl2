@@ -897,20 +897,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-;fixme weaken hyps to sbvle?  hmm. then it might loop?!
-;expensive..
-(defthm sbvlt-becomes-bvlt
-  (implies (and (sbvlt 32 0 x)
-                (sbvlt 32 0 y))
-           (equal (sbvlt 32 x y)
-                  (bvlt 31 x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt sbvlt LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE)
-                                  (<-BECOMES-BVLT-ALT
-                                   <-BECOMES-BVLT
-                                   <-BECOMES-BVLT-free
-                                   )
-                                  ))))
-
 (defthm sbvlt-when-bvlt-constants
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 31 free i))
@@ -919,8 +905,7 @@
                 (unsigned-byte-p 31 k) ;gen??
                 (natp free)
                 (integerp i))
-           (equal (sbvlt 32 k i)
-                  nil))
+           (not (sbvlt 32 k i)))
   :hints (("Goal" :in-theory (e/d (logapp sbvlt bvlt logext logapp-0 <=-OF-BVCHOP-SAME-LINEAR)
                                   (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                       TIMES-4-BECOMES-LOGAPP)))))
@@ -929,8 +914,7 @@
 (defthm sbvlt-transitive-free-back
   (implies (and (not (sbvlt size x free))
                 (not (sbvlt size free y)))
-           (equal (sbvlt size x y)
-                  nil))
+           (not (sbvlt size x y)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up

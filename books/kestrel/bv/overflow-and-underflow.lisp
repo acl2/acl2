@@ -87,19 +87,6 @@
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
-;move
-;may be expensive? restrict to constant n?
-(defthm equal-of-getbit-and-1-forward-to-bound
-  (implies (and (equal 1 (getbit n x))
-                (natp x)
-                (natp n))
-           (<= (expt 2 n) x))
-  :rule-classes ((:forward-chaining))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
-
 (defthm signed-addition-underflowsp-correct
   (implies (and (posp size)
                 (unsigned-byte-p size x)
