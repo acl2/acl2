@@ -78,3 +78,13 @@
                    (floor i (expt 2 (- size2 size)))))
   :hints (("Goal" :in-theory (e/d (floor-normalize-denominator expt-of-+)
                                   (FLOOR-OF-*-OF-/-AND-1)))))
+
+(defthm unsigned-byte-p-of-floor-of-expt
+  (implies (and (integerp x)
+                (natp m))
+           (equal (unsigned-byte-p n (floor x (expt 2 m)))
+                  (and (natp n)
+                       (unsigned-byte-p (+ n m) x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p
+                                     <-of-floor-arg1
+                                     expt-of-+))))

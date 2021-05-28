@@ -5081,18 +5081,6 @@
                   (BVPLUS '4 x (slice 8 5 i))))
   :hints (("Goal" :in-theory (enable BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
-(defthm unsigned-byte-p-of-floor-of-expt
-  (implies (and (integerp x)
-                (natp m)
-;(natp n)
-                )
-           (equal (unsigned-byte-p n (floor x (expt 2 m)))
-                  (and (natp n)
-                       (unsigned-byte-p (+ n m) x))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     <-of-floor-arg1
-                                     expt-of-+))))
-
 (defthm unsigned-byte-p-of-floor-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
