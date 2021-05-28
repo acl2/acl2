@@ -221,8 +221,8 @@
     bvplus-of-bvcat-irrel-arg1
     bvplus-of-bvcat-irrel-arg2
     ;;these also seem safe (perhaps trimming constants is always safe?):
-    bvcat-trim-constant-arg2
-    bvcat-trim-constant-arg4
+    bvcat-normalize-constant-arg2
+    bvcat-normalize-constant-arg4
     bvplus-trim-leading-constant))
 
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp

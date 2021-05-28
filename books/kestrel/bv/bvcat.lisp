@@ -1142,7 +1142,7 @@
   :hints (("Goal" :cases ((integerp lowval))
            :in-theory (e/d (bvcat) ()))))
 
-(defthm bvcat-fix-constant-arg2
+(defthm bvcat-normalize-constant-arg2
   (implies (and (syntaxp (and (quotep highval)
                               (quotep highsize)))
                 (not (unsigned-byte-p highsize highval))
@@ -1158,7 +1158,7 @@
                   (bvchop lowsize lowval)))
   :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
-(defthm bvcat-fix-constant-arg4
+(defthm bvcat-normalize-constant-arg4
   (implies (and (syntaxp (and (quotep lowval)
                               (quotep lowsize)))
                 (not (unsigned-byte-p lowsize lowval))
