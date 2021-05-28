@@ -297,3 +297,15 @@
                 (natp n)
                 )
            (not (< k x))))
+
+(defthmd unsigned-byte-p-of-+-arg1-a
+  (implies (and (unsigned-byte-p size1 x)
+                (natp size2))
+           (unsigned-byte-p (+ size1 size2) x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthmd unsigned-byte-p-of-+-arg1-b
+  (implies (and (unsigned-byte-p size2 x)
+                (natp size1))
+           (unsigned-byte-p (+ size1 size2) x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
