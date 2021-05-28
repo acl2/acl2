@@ -132,3 +132,12 @@
   (implies (<= 0 x)
            (<= (bvdiv size x y) x))
   :rule-classes :linear)
+
+(defthm bvdiv-of-constant-trim-arg1
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops (means that k is the reason that (unsigned-byte-p size k) is false)
+                )
+           (equal (bvdiv size k x)
+                  (bvdiv size (bvchop size k) x))))
