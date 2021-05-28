@@ -216,18 +216,20 @@
     :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd bvif-trim-constant-arg1
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep size)))
                 (not (unsigned-byte-p size x))
+                (natp size) ; prevent loops
                 )
            (equal (bvif size test x y)
                   (bvif size test (bvchop size x) y)))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthmd bvif-trim-constant-arg2
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep size)))
                 (not (unsigned-byte-p size x))
+                (natp size) ; prevent loops
                 )
            (equal (bvif size test y x)
                   (bvif size test y (bvchop size x))))
@@ -395,23 +397,6 @@
                 (natp size))
            (unsigned-byte-p n (bvif size test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
-
-;bozo gen somehow?
-(defthm bvif-trim-constant-1
-  (implies (and (syntaxp (and (quotep x) (quotep n)))
-                (not (unsigned-byte-p n x))
-                (natp n))
-           (equal (bvif n test x y)
-                  (bvif n test (bvchop n x) y)))
-  :hints (("Goal" :in-theory (enable bvif))))
-
-(defthm bvif-trim-constant-2
-  (implies (and (syntaxp (and (quotep y) (quotep n)))
-                (not (unsigned-byte-p n y))
-                (natp n))
-           (equal (bvif n test x y)
-                  (bvif n test x (bvchop n y))))
-  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bvif-of-myif-1
   (equal (bvif size test (myif a b c) d)

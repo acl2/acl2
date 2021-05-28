@@ -3252,17 +3252,6 @@
 
 ;stuff for rc6 recursive equivalence proof
 
-;move
-(defthm bvplus-trim-leading-constant
-  (implies (and (syntaxp (quotep k))
-                (not (unsigned-byte-p size k))
-                (natp size) ;can loop without this?
-                )
-           (equal (bvplus size k x)
-                  (bvplus size (bvchop size k) x)))
-  :hints (("Goal" :in-theory (enable bvplus)
-           :cases ((natp size)))))
-
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
 ;or just pass slice through?
 (defthm slice-of-bvxor-too-high
@@ -3776,9 +3765,9 @@
   :hints (("Goal" :in-theory (enable myif boolxor))))
 
 ;gross proof?
-(defthm unsigned-byte-p-of-one-less-than-INTEGER-LENGTH
-  (NOT (UNSIGNED-BYTE-P (+ -1 (INTEGER-LENGTH K)) K))
-  :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P INTEGER-LENGTH))))
+(defthm not-unsigned-byte-p-of-one-less-than-integer-length
+  (not (unsigned-byte-p (+ -1 (integer-length k)) k))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p integer-length))))
 
 (defthm getbit-of-one-less-than-integer-length
   (implies (posp k)
@@ -7186,26 +7175,6 @@
                        (sbvlt 32 x (- (expt 2 31) k)))))
   :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus)
                                   (sbvlt-rewrite <-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
-(defthm sbvlt-trim-constant-right
-  (implies (and (syntaxp (and (quotep k) (quotep size)))
-                (posp size)
-                (not (unsigned-byte-p size k)))
-           (equal (sbvlt size x k)
-                  (sbvlt size x (bvchop size k))))
-  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
-           :cases ((natp size)))))
-
-(defthm sbvlt-trim-constant-left
-  (implies (and (syntaxp (and (quotep k) (quotep size)))
-                (posp size)
-                (not (unsigned-byte-p size k)))
-           (equal (sbvlt size k x)
-                  (sbvlt size (bvchop size k) x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
-           :cases ((natp size)))))
-
-
 
 ;trying enabled..
 (defthm <-of-bvplus-of-minus-1

@@ -403,8 +403,7 @@
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p size k))
                 (natp size))
-           (equal (equal k (bvchop size x))
-                  nil)))
+           (not (equal k (bvchop size x)))))
 
 (defthm bvchop-of-expt-0
   (implies (and (<= size1 size2)
@@ -488,6 +487,7 @@
                       (+ -1 (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
+;rename
 (defthm bvchop-chop-leading-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))

@@ -381,3 +381,14 @@
 
 (theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG3) (:definition bvplus)))
 (theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG2) (:definition bvplus)))
+
+(defthm bvplus-trim-leading-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
+           (equal (bvplus size k x)
+                  (bvplus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvplus)
+           :cases ((natp size)))))

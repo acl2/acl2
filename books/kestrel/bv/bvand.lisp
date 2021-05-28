@@ -131,7 +131,9 @@
 (defthm bvand-of-constant
    (implies (and (syntaxp (and (quotep k)
                                (quotep size)))
-                 (not (unsigned-byte-p size k)))
+                 (not (unsigned-byte-p size k))
+                 (natp size) ; prevents loops
+                 )
             (equal (bvand size k x)
                    (bvand size (bvchop size k) x)))
    :hints (("Goal" :in-theory (enable bvand))))

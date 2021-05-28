@@ -342,3 +342,21 @@
 (defthm size-of--1-and-0
   (sbvlt size -1 0)
   :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-trim-constant-right
+  (implies (and (syntaxp (and (quotep k) (quotep size)))
+                (not (unsigned-byte-p size k))
+                (posp size))
+           (equal (sbvlt size x k)
+                  (sbvlt size x (bvchop size k))))
+  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
+           :cases ((natp size)))))
+
+(defthm sbvlt-trim-constant-left
+  (implies (and (syntaxp (and (quotep k) (quotep size)))
+                (not (unsigned-byte-p size k))
+                (posp size))
+           (equal (sbvlt size k x)
+                  (sbvlt size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
+           :cases ((natp size)))))

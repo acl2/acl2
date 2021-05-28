@@ -78,7 +78,9 @@
 (defthm bvlt-trim-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (unsigned-byte-p size k)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
            (equal (bvlt size x k)
                   (bvlt size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvlt))))
@@ -87,7 +89,9 @@
 (defthm bvlt-trim-constant-arg1
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (unsigned-byte-p size k)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
            (equal (bvlt size k x)
                   (bvlt size (bvchop size k) x)))
   :hints (("Goal" :in-theory (enable bvlt))))

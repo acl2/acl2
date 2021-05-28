@@ -368,7 +368,8 @@
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (unsigned-byte-p size k))
-                (integerp size))
+                (natp size) ; means that k is the reason that (unsigned-byte-p size k) is false
+                )
            (equal (bvxor size k x)
                   (bvxor size (bvchop size k) x))))
 
@@ -409,22 +410,6 @@
                 (posp n))
            (equal (bvxor n x (+ y (* k z)))
                   (bvxor n x y))))
-
-
-;move
-;rename?
-(defthm bvxor-of-negative-constant
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep x)
-                              (not (unsigned-byte-p (unquote size) (unquote x)))))
-                (integerp size)
-                (< 0 size)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvxor size x y)
-                  (bvxor size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-of-bvchop-tighten-2
    (implies (and (< size1 size2)
