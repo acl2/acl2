@@ -567,11 +567,14 @@
 ;can this be expensive?
 ;rename?
 (defthm bvchop-bound-rw
-  (implies (and (natp x)
-                (natp size))
-           (equal (< x (bvchop size x))
-                  nil))
+  (implies (<= 0 x)
+           (not (< x (bvchop size x))))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm <=-of-bvchop-same-linear
+  (implies (<= 0 x)
+           (<= (bvchop n x) x))
+  :rule-classes :linear)
 
 (defthm <-of-bvchop-and-bvchop-same
   (implies (and (<= s1 s2)
@@ -583,11 +586,6 @@
            :use (:instance bvchop-bound-rw (x (bvchop s2 x)) (size s1))
            :in-theory (disable bvchop-bound-rw))))
 
-(defthm <=-of-bvchop-same-linear
-  (implies (natp x)
-           (<= (bvchop n x) x))
-  :rule-classes ((:linear))
-  :hints (("Goal" :cases ((posp n)))))
 
 ;Not sure this will fire if SMALL and BIG are constants, due to the free var.
 (defthm <=-of-bvchop-same-linear-2
