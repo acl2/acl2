@@ -109,3 +109,26 @@
 (defthm bvdiv-of-1-arg3
   (equal (bvdiv size x 1)
          (bvchop size x)))
+
+(defthm <-of-bvdiv-self
+  (implies (and (unsigned-byte-p size x) ;gen?
+                (< 1 (bvchop size y)))
+           (equal (< (bvdiv size x y) x)
+                  (not (equal 0 (bvchop size x)))))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
+;; dividing x by y (usually) makes it smaller
+(defthm <-of-bvdiv-linear
+  (implies (and (<= 0 x)
+                (< 1 (bvchop size y))
+                (not (equal 0 (bvchop size x)))
+                (natp size))
+           (< (bvdiv size x y) x))
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance <-of-bvdiv-self
+                                  (x (bvchop size x))))))
+
+(defthm <=-of-bvdiv-linear
+  (implies (<= 0 x)
+           (<= (bvdiv size x y) x))
+  :rule-classes :linear)

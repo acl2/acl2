@@ -8155,13 +8155,6 @@
                   (equal 0 (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))
 
-(defthm <-of-bvdiv-self
-  (implies (and (unsigned-byte-p size x) ;gen?
-                (< 1 (bvchop size y)))
-           (equal (< (bvdiv size x y) x)
-                  (not (equal 0 (bvchop size x)))))
-  :hints (("Goal" :in-theory (enable bvdiv bvlt))))
-
 (defthm bvchop-subst-when-equal-of-bvchops-gen
   (implies (and (equal (bvchop size2 x) (bvchop size2 free))
                 (syntaxp (smaller-termp free x))
