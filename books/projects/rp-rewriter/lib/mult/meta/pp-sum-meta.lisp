@@ -336,6 +336,7 @@
         binary-not binary-and bitp binary-or binary-? bit-of binary-xor
         f2 m2
         d2 --
+        flatten-pp
         ;;resolve-pp-sum-order-rec
         #|resolve-pp-sum-order-rec-2||#
         ;;resolve-pp-sum-order
@@ -1920,3 +1921,22 @@
 
 (in-theory (disable (:e rp::merge-pp+)
                     (:e rp::p+)))
+
+
+(define flatten-pp-main-aux (term)
+  (case-match term
+    (('flatten-pp x)
+     (mv (flatten-pp-main x) t))
+    (& (mv term nil))))
+
+(rp::add-meta-rule
+ :meta-fnc flatten-pp-main-aux
+ :trig-fnc flatten-pp
+ :valid-syntaxp t
+ :formula-checks pp-flatten-formula-checks
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d (flatten-pp-main-aux
+                           rp-trans
+                           rp-evl-of-flatten-pp-when-pp-flatten-formula-checks)
+                          (rp-termp)))))

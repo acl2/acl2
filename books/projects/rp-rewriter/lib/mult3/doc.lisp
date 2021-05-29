@@ -44,22 +44,27 @@
 (xdoc::defxdoc
  Multiplier-Verification
  :parents (rp-rewriter/applications)
- :short "An efficient library to verify large integer multiplier designs."
+ :short "An efficient library to verify large integer multiplier designs
+ following the S-C-Rewriting algorithm."
  :long "  <p> Implemented and verified  completely in ACL2, we  provide a novel
  method to  verify complex integer  multiplier designs implemented  in (System)
  Verilog. With a very efficient proof-time scaling factor, this tool can verify
  integer  multipliers that  may  be implemented  with  Booth Encoding,  various
  summation trees  such as Wallace  and Dadda,  and numerous final  stage adders
- such as carry-lookahead.  For example, we can verify  64x64-bit multipliers in
+ such as carry-lookahead.  For example,  we can verify 64x64-bit multipliers in
  around  a  second;  128x128  in  2-4 seconds;  256x256  in  6-12  seconds  and
  1024x1024-bit  multipliers in  around  5  minutes as  tested  with almost  100
- different designs. </p>
+ different  designs.  This library  can  also  verify other  multiplier-centric
+ designs such as multiply-accumulate and dot-product. Designs can be truncated,
+ right-shifted, bit-masked, and input sizes can be arbitrary.</p>
 
 <p> The outline of this new verification method appeared in CAV 2020 (Automated
 and  Scalable  Verification  of  Integer Multipliers  by  Mertcan  Temel,  Anna
-Slobodova,     Warren     A.     Hunt,      Jr.)     available     here:     <a
+Slobodova,     Warren     A.      Hunt,    Jr.)      available     here:     <a
 href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
-http://doi.org/10.1007/978-3-030-53288-8_23</a>.  </p>
+http://doi.org/10.1007/978-3-030-53288-8_23</a>.  More  improvements have  been
+made  to this  method  after this  paper  and they  are  implemented into  this
+library. </p>
 
 <p> Our framework currently supports  (System) Verilog with design hierarchy as
 inputs only.  These  designs are translated to @(see  SVL) design without
@@ -82,11 +87,11 @@ designs. @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
-for various operations  such as FMA, dot-product and  merged multiplication. It
+for various operations  such as MAC dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit.  </p>
 
 <p>  Alternatively,   we  present  a   different  framework  that   uses  @(see
-defsvtv) instead of @(see svl). Defsvtv is more capable than SVL at
+defsvtv) instead of @(see SVL). Defsvtv is more capable than SVL at
 handling combinational loops but it  flattens designs completely. This prevents
 our method from working properly because we need to identify instantiated adder
 modules. Therefore,  we soundly replace  adder modules with  their identifiable
@@ -97,13 +102,13 @@ described in @(see Multiplier-Verification-demo-3).
 
 
 <p> There  are two older  versions of  this library. If  you would like  to use
-those    for   any    reason,   you    may   view    their   demo    files   at
+those   for    some   reason,    you   may   view    their   demo    files   at
 @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult/demo.lisp')    and
 @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult2/demo.lisp')     .
 The second  version implements the  exact method as  described in our  CAV 2020
 paper. The third version (i.e., the  library we describe in this documentation)
-have some  significant improvements,  especially for Booth-Encoded  designs but
-the essentials of the method are similar.  </p>
+have some  significant improvements but  the methods are essentially  the same.
+</p>
 "
 )
 
@@ -186,28 +191,268 @@ Booth-Encoded designs.
 
 ")
 
+
+(xdoc::defxdoc
+ Multiplier-Verification-demo-1
+ :parents (Multiplier-Verification)
+ :short "First demo for @(see  Multiplier-Verification) showing how an isolated
+ integer multiplier is verified."
+ :long " <p> Below is a demo that  shows how to input a multiplier design coded
+in (System) Verilog into ACL2, and verify it efficiently. We choose a 64x64-bit
+Booth Encoded Dadda Tree multiplier with  Han-Carlson adder as our example.  If
+you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
+complex arithmetic module.  </p>
+
+
+<p>   The   exact   events   given   in   this   page   are   also   given   in
+@('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-1.lisp')
+</p>
+
+<p>
+1. Include the books to convert Verilog designs to SVL format.
+</p>
+<code>
+(include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
+(include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
+(include-book \"oslib/ls\" :dir :system)
+(include-book \"centaur/svl/top\" :dir :system)
+</code>
+<p>
+@(see SVL) system uses @(see SV) and @(see VL) packages.
+</p>
+
+<p> 2. Load VL design for  the modules in DT_SB4_HC_64_64_multgen.sv. This file
+is                                 located                                under
+@('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo').   This is
+a 64x64 Signed,  Booth radix-4 encoded, Dadda Tree  integer multiplier.  <code>
+@('
+(acl2::defconsts
+ (*vl-design* state)
+ (b* (((mv loadresult state)
+       (vl::vl-load (vl::make-vl-loadconfig
+                     :start-files '(\"DT_SB4_HC_64_64_multgen.sv\")))))
+   (mv ({vl::vl-loadresult->design loadresult) state)))
+')
+</code>
+</p>
+
+<p>
+3. Load SV design:
+<code>
+@('
+(acl2::defconsts
+ (*sv-design*
+  *simplified-good*
+  *simplified-bad*)
+ (b* (((mv errmsg sv-design good bad)
+       (vl::vl-design->sv-design \"DT_SB4_HC_64_64\"
+                                 *vl-design* (vl::make-vl-simpconfig))))
+   (and errmsg
+        (acl2::raise \"~@0~%\" errmsg))
+   (mv sv-design good bad)))
+')
+</code>
+</p>
+
+
+<p>
+4. Load SVL Design:
+<code>
+@('(acl2::defconsts (*svl-design* rp::rp-state)
+                 (svl-flatten-design *sv-design*
+                                     *vl-design*
+                                     :dont-flatten :all))
+')
+</code>
+
+</p>
+
+<p>  SVL  design is  a  simulation-ready  version  of  SV design  with  circuit
+hierarchy maintained. Note  that we are telling the program  not to flatten all
+the modules (with the ':dont-flatten :all' argument), which will reserve design
+hierarchy, which  we will  use while  verifying the module.   If users  wish to
+flatten some modules, they should at  least have the adder module names instead
+of ':all'. See @(see svl-flatten-design).  </p>
+
+
+
+<p>
+5. Include the book that has the rewrite and meta rules
+for multiplier proofs:
+<code>
+(include-book \"projects/rp-rewriter/lib/mult3/svl-top\" :dir :system)
+</code>
+</p>
+
+
+<p>
+6. Rewrite the adder modules with our specification:
+
+</p>
+
+<code>
+(def-rp-rule svl-run-phase-of-FullAdder
+  (implies (and (bitp x)
+                (bitp y)
+                (bitp z))
+           (equal (svl::svl-run-phase-wog \"fa\"
+                                          (list x y z)
+                                          svl::*empty-state*
+                                          *svl-design*)
+                  (mv (s-c-spec (list x y z))
+                      svl::*empty-state*)))
+  :hints ((\"Goal\"
+           :do-not-induct t
+           :in-theory (e/d (bitp)
+                           ()))))
+</code>
+<code>
+(def-rp-rule svl-run-phase-of-HalfAdder
+  (implies (and (bitp x)
+                (bitp y))
+           (equal (svl::svl-run-phase-wog \"ha\"
+                                          (list x y)
+                                          svl::*empty-state*
+                                          *svl-design*)
+                  (mv (s-c-spec (list x y))
+                      svl::*empty-state*)))
+  :hints ((\"Goal\"
+           :do-not-induct t
+           :in-theory (e/d (bitp)
+                           ()))))
+</code>
+
+<p>
+The multiplier we are working on uses two types of bit-level adders: a
+full-adder with module name \"fa\", and a half-adder with module name
+\"ha\". We rewrite them with the lemmas given above. We use @(see rp::def-rp-rule)
+to save these in the @(see rp::RP-Rewriter)'s rule-set. ACL2 can prove these lemmas
+easily by case-splitting with @('bitp') and trying all the combinations.
+</p>
+
+<code>
+(defthmrp final-stage-adder-correct
+  (implies (and (integerp in1)
+                (integerp in2))
+           (equal (svl::svl-run-phase-wog \"HC_128\"
+                                          (list in1 in2)
+                                          svl::*empty-state*
+                                          *svl-design*)
+                  (mv (list (loghead 129 (+ (loghead 128 in1)
+                                            (loghead 128 in2)))
+                      svl::*empty-state*)))
+  :disable-meta-rules (s-c-spec-meta)
+  :enable-rules rp::*adder-rules*)
+</code>
+
+<p>
+This multiplier  module uses  a Han-Carlson parallel  prefix adder  with module
+name \"HC_128\".   We use our  suggested rewriting  scheme to prove  this adder
+equivalent  to   our  specification.   The  macro   @(see  rp::defthmrp)  calls
+RP-Rewriter as a  clause processor. In proofs for adder  modules, the arguments
+':disable-meta-rules (s-c-spec-meta)' and ':enable-rules rp::*adder-rules*' are
+standard. These arguments disable the  rules specific to multiplier modules and
+enable the ones for adders.
+
+</p>
+
+<p>
+Rewriting all the adder logic in terms of their specification as given above is
+a crucial step for multiplier correctness proofs. The adder proofs are usually
+very fast and takes a split second. 
+</p>
+
+<p>
+7. Finally, prove the multiplier correct:
+<code>
+(defthmrp multiplier-correct-v1
+  (implies (and (integerp in1)
+                (integerp in2))
+           (equal (svl::svl-run-phase-wog \"DT_SB4_HC_64_64\"
+                                          (list in1 in2)
+                                          svl::*empty-state*
+                                          *svl-design*)
+                  (mv  (list (loghead 128 (* (sign-ext in1 64)
+                                             (sign-ext in2 64))))
+                       svl::*empty-state*))))
+</code>
+
+This proof takes about 1.5 seconds to finish. Alternatively, users can run
+a similar proof as follows with a simulation pattern instead:
+
+<code>
+(progn
+  (defconst *input-bindings*
+    '((\"IN1\" a)
+      (\"IN2\" b)))
+
+  (defconst *output-bindings*
+    '((\"result\" out)))
+
+  ;; Another way to state correctness proof for the multiplier.
+  ;; Similar to SVTV-run
+  ;; takes around 1.5 seconds
+  (defthmrp multiplier-correct-v1
+    (implies (and (integerp in1)
+                  (integerp in2))
+             (equal (svl-run \"DT_SB4_HC_64_64\"
+                             `((a . ,in1)
+                               (b . ,in2))
+                             *input-bindings*
+                             *output-bindings*
+                             *svl-design*)
+                    `((out . ,(loghead 128 (* (sign-ext in1 64)
+                                              (sign-ext in2 64)))))))))
+</code>
+
+
+Once we can successfully submit one of these events, we can conclude that the
+given design is functionally correct.
+
+</p>
+
+<p> This program  is tested for multipliers up to  1024x1024; and they each finished
+in at most 5 minutes on our machines.  </p>
+
+<p>
+For large multipliers, users may need to increase the stack size in ACL2 image
+(e.g., saved_acl2 under you ACL2 directory) and run the proofs again. In our
+tests, we have observed SBCL to be faster than CCL; however, for large
+multipliers garbage collector of CCL does a better job with @(see
+acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
+errors. 
+</p>
+
+
+<p>
+You may continue to @(see Multiplier-Verification-demo-2).
+</p>
+
+"
+ )
+
 (xdoc::defxdoc
  Multiplier-Verification-demo-2
  :parents (Multiplier-Verification)
- :short  "Second  demo  for   @(see  Multiplier-Verification)  showing  how  an
- industrial-design-mimicking module  including an  FMA, dot-product  and merged
+ :short  "The second  demo  for   @(see  Multiplier-Verification)  showing  how  an
+ industrial-design-mimicking module  including a MAC, dot-product  and merged
  multipliers can be verified."
  :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
- shown how  our tool can be  used on a  stand-alone multiplier. This is  a good
+ shown how  our tool can  be used  on an isolated  multiplier.  This is  a good
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
  strategies  and   compiled  a   more  complex   multiplier  module   given  in
  @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
- may      find      this      file      on       <a
+ may            find            this           file            on            <a
  href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
  target=\"_blank\"> GitHub </a> as well.   This module allocates four identical
  33x33-bit  signed  multipliers,  two  final  stage  adders  and  some  smaller
  reduction  trees to  perform  different multiplier  operations. These  include
- signed/unsigned four-laned 32x32-bit multiplication
- (or FMA), one-lane 64x64-bit  multiplication (or FMA), 4-32x32-bit dot-product
- modes (with or without an  accumulator). These operations can be combinational
- or sequential,  in which case an  accumulator is used to  store results across
- different clock cycles. </p>
+ signed/unsigned  four-laned 32x32-bit  multiply-add (or  multiply-accumulate),
+ one-lane  64x64-bit  multiply-add,  4-32x32-bit  dot-product  modes  (with  or
+ without an accumulator). These operations  can be combinational or sequential,
+ in which case  an accumulator is used to store  results across different clock
+ cycles. </p>
 
 
 <p>  The fact  that  this multiplier  module reuses  the  same smaller  integer
@@ -340,10 +585,13 @@ seconds in total. </p>
 
 
 
-<p> 4. We  create a new function called @('mode') to calculate the value of the
-signal of the same name in integrated_multipliers.sv. This will make our proofs
-more readable and easier to manage.
-</p>
+<p> 4. The integrated multiplier module has an input signal called
+@('mode'). As the name implied, this signal determines the mode of operation
+(e.g., dot-product or  4-lane multiplication) that the module needs  to run. We
+create a  new function  also called  @('mode') to calculate  the value  of this
+signal. This will make  our proofs more readable and easier  to manage. You may
+find a description of how this signal should be assigned in the comments in the
+Verilog file.</p>
 
 <code>
 @('
@@ -377,7 +625,7 @@ four-lanes-hi and one-lane should be set to 1.~%\")
 </code> 
 
 <p> 5.  We  are now ready to  verify the top module  for various multiplication
-modes. First,  we verify various  combinational modes (one-lane  64x64-bit FMA,
+modes. First,  we verify various  combinational modes (one-lane  64x64-bit MAC
 4-32x32-bit  dot-product, and four-lane  32x32-bit  multiplication  with lower  and
 higher half truncation), then we show verification for a sequential mode
 (accumulated dot-product).  </p>
@@ -411,7 +659,7 @@ sign-extended)] and the complete result is  truncated at 128 bits.  This is the
 specification of this multiplication mode.   When writing the specification, it
 is imperative to have @(see acl2::loghead) wrapping the arithmetic functions as
 seen here. Proving this lemma takes around a second. Alternatively, we could set
-in3 to  \"0\", and verify  only the multiplication  function (but not  FMA). In
+in3 to  \"0\", and verify  only the multiplication  function (but not  MAC). In
 fact, we could set any portion of any input signals to any constants.
 
 <code>
@@ -798,255 +1046,6 @@ product specification function as given below.
 ")
 
 
-
-(xdoc::defxdoc
- Multiplier-Verification-demo-1
- :parents (Multiplier-Verification)
- :short "First demo for @(see Multiplier-Verification) showing how a
- stand-alone integer multiplier is verified."
- :long "
-<p> 
-Below is a demo  that shows how to input a multiplier  design coded in (System)
- Verilog into  ACL2, and  verify it  efficiently. We  choose a  64x64-bit Booth
- Encoded Dadda Tree  multiplier with Han-Carlson adder as our  example.  If you
- wish, you can skip to @(see Multiplier-Verification-demo-2).
-</p>
-
-
-<p>   The   exact   events   given   in   this   page   are   also   given   in
-@('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-1.lisp')
-</p>
-
-<p>
-1. Include the books to convert Verilog designs to SVL format.
-</p>
-<code>
-(include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
-(include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
-(include-book \"oslib/ls\" :dir :system)
-(include-book \"centaur/svl/top\" :dir :system)
-</code>
-<p>
-@(see SVL) system uses @(see SV) and @(see VL) packages.
-</p>
-
-<p>
-2. Load VL design for the modules in DT_SB4_HC_64_64_multgen.sv. This file is
-located under books/projects/rp-rewriter/lib/mult3/demo.
-This is a 64x64 Signed, Booth radix-4 encoded, Dadda Tree integer multiplier.
-<code>
-@('
-(acl2::defconsts
- (*vl-design* state)
- (b* (((mv loadresult state)
-       (vl::vl-load (vl::make-vl-loadconfig
-                     :start-files '(\"DT_SB4_HC_64_64_multgen.sv\")))))
-   (mv ({vl::vl-loadresult->design loadresult) state)))
-')
-</code>
-</p>
-
-<p>
-3. Load SV design:
-<code>
-@('
-(acl2::defconsts
- (*sv-design*
-  *simplified-good*
-  *simplified-bad*)
- (b* (((mv errmsg sv-design good bad)
-       (vl::vl-design->sv-design \"DT_SB4_HC_64_64\"
-                                 *vl-design* (vl::make-vl-simpconfig))))
-   (and errmsg
-        (acl2::raise \"~@0~%\" errmsg))
-   (mv sv-design good bad)))
-')
-</code>
-</p>
-
-
-<p>
-4. Load SVL Design:
-<code>
-@('(acl2::defconsts (*svl-design* rp::rp-state)
-                 (svl-flatten-design *sv-design*
-                                     *vl-design*
-                                     :dont-flatten :all))
-')
-</code>
-
-</p>
-
-<p>
-SVL design is a simulation-ready version of SV design with circuit hierarchy
-maintained. We cannot use @(see defsvtv) because our multiplier
-verification method requires maintained hierarchy for adder modules used by the
-main multiplier module.The ':dont-flatten :all' argument retains circuit
-hierarchy.  If users wants to flatten some modules, they should at least have
-the adder module names instead of ':all'. See @(see svl-flatten-design).
-</p>
-
-
-
-<p>
-5. Include the book that has the rewrite and meta rules
-for multiplier proofs:
-<code>
-(include-book \"projects/rp-rewriter/lib/mult3/svl-top\" :dir :system)
-</code>
-</p>
-
-
-<p>
-6. Rewrite the adder modules with our specification:
-
-</p>
-
-<code>
-(def-rp-rule svl-run-phase-of-FullAdder
-  (implies (and (bitp x)
-                (bitp y)
-                (bitp z))
-           (equal (svl::svl-run-phase-wog \"fa\"
-                                          (list x y z)
-                                          '(nil nil)
-                                          *svl-design*)
-                  (mv (s-c-spec (list x y z))
-                      '(nil nil))))
-  :hints ((\"Goal\"
-           :do-not-induct t
-           :in-theory (e/d (bitp)
-                           ()))))
-</code>
-<code>
-(def-rp-rule svl-run-phase-of-HalfAdder
-  (implies (and (bitp x)
-                (bitp y))
-           (equal (svl::svl-run-phase-wog \"ha\"
-                                          (list x y)
-                                          '(nil nil)
-                                          *svl-design*)
-                  (mv (s-c-spec (list x y))
-                      '(nil nil))))
-  :hints ((\"Goal\"
-           :do-not-induct t
-           :in-theory (e/d (bitp)
-                           ()))))
-</code>
-
-<p>
-The multiplier we are working on uses two types of bit-level adders: a
-full-adder with module name \"fa\", and a half-adder with module name
-\"ha\". We rewrite them with the lemmas given above. We use @(see rp::def-rp-rule)
-to save these in the @(see rp::RP-Rewriter)'s rule-set. ACL2 can prove these lemmas
-easily by case-splitting with @('bitp') and trying all the combinations.
-</p>
-
-<code>
-(defthmrp final-stage-adder-correct
-  (implies (and (integerp in1)
-                (integerp in2))
-           (equal (svl::svl-run-phase-wog \"HC_128\"
-                                          (list in1 in2)
-                                          '(nil nil)
-                                          *svl-design*)
-                  (mv (list (loghead 129 (+ (loghead 128 in1)
-                                            (loghead 128 in2)))
-                      (svl::make-svl-env))))
-  :disable-meta-rules (s-c-spec-meta)
-  :enable-rules rp::*adder-rules*)
-</code>
-
-<p>
-This multiplier  module uses  a Han-Carlson parallel  prefix adder  with module
-name \"HC_128\".   We use our  suggested rewriting  scheme to prove  this adder
-equivalent  to   our  specification.   The  macro   @(see  rp::defthmrp)  calls
-RP-Rewriter as a  clause processor. In proofs for adder  modules, the arguments
-':disable-meta-rules (s-c-spec-meta)' and ':enable-rules rp::*adder-rules*' are
-standard. These arguments disable the  rules specific to multiplier modules and
-enable the ones for adders.
-
-</p>
-
-<p>
-Rewriting all the adder logic in terms of their specification as given above is
-a crucial step for multiplier correctness proofs. The adder proofs are usually
-very fast and takes a split second. 
-</p>
-
-<p>
-7. Finally, prove the multiplier correct:
-<code>
-(defthmrp multiplier-correct-v1
-  (implies (and (integerp in1)
-                (integerp in2))
-           (equal (svl::svl-run-phase-wog \"DT_SB4_HC_64_64\"
-                                          (list in1 in2)
-                                          '(nil nil)
-                                          *svl-design*)
-                  (mv  (list (loghead 128 (* (sign-ext in1 64)
-                                             (sign-ext in2 64))))
-                       (svl::make-svl-env)))))
-</code>
-
-This proof takes about 1.5 seconds to finish. Alternatively, users can run
-a similar proof as follows:
-
-<code>
-(progn
-  (defconst *input-bindings*
-    '((\"IN1\" a)
-      (\"IN2\" b)))
-
-  (defconst *output-bindings*
-    '((\"result\" out)))
-
-  ;; Another way to state correctness proof for the multiplier.
-  ;; Similar to SVTV-run
-  ;; takes around 1.5 seconds
-  (defthmrp multiplier-correct-v1
-    (implies (and (integerp in1)
-                  (integerp in2))
-             (equal (svl-run \"DT_SB4_HC_64_64\"
-                             `((a . ,in1)
-                               (b . ,in2))
-                             *input-bindings*
-                             *output-bindings*
-                             *svl-design*)
-                    `((out . ,(loghead 128 (* (sign-ext in1 64)
-                                              (sign-ext in2 64)))))))))
-</code>
-
-
-Once we can successfully submit one of these events, we can conclude that the
-given design is functionally correct.
-
-</p>
-
-<p>
-This program is tested for multipliers up to 1024x1024 with simple partial
-products, and 512x512 with Booth Encoded partial products; and they finished in
-5-10 minutes each. 
-</p> 
-
-<p>
-For large multipliers, users may need to increase the stack size in ACL2 image
-(e.g., saved_acl2 under you ACL2 directory) and run the proofs again. In our
-tests, we have observed SBCL to be faster than CCL; however, for large
-multipliers garbage collector of CCL does a better job with @(see
-acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
-errors. 
-</p>
-
-
-<p>
-You may continue to @(see Multiplier-Verification-demo-2).
-</p>
-
-"
- )
-
-
 (xdoc::defxdoc
  Multiplier-Verification-demo-3
  :parents (Multiplier-Verification)
@@ -1086,7 +1085,7 @@ multiplier with Han-Carlson  final stage adder. The same events  given here can
 also be  found in  /books/projects/rp-rewriter/lib/mult3/demo/demo-3.lisp. This
 file   also   shows   the   same   procedure  for   the   module   from   @(see
 Multiplier-Verification-demo-2), which is a more complex multiplier module that
-can perform  FMA, dot  product etc.  You can see  these demo  files also  on <a
+can perform  MAC dot  product etc.  You can see  these demo  files also  on <a
 href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/\"
 target=\"_blank\">GitHub</a> </p>
 

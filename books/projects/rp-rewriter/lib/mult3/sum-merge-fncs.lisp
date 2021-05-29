@@ -99,6 +99,7 @@
                   (y rp-termp))
    :measure (+ (cons-count x)
                (cons-count y))
+   :returns (mv order equals)
    (b* ((x (ex-from-rp$ x))
         (y (ex-from-rp$ y)))
      (cond ((equal x y)
@@ -117,6 +118,7 @@
                       (lst2 rp-term-listp))
    :measure (+ (cons-count lst1)
                (cons-count lst2))
+   :returns (mv order equals)
    (cond ((or (atom lst1)
               (atom lst2))
           (if (equal lst1 lst2)
@@ -130,6 +132,31 @@
                   (s-order-lst (cdr lst1) (cdr lst2))))
               (mv cdr-order cdr-equal))))))
 
+
+(defret-mutual
+  s-order-sanity
+  (std::defretd s-order-sanity
+    (and (implies (mv-nth 0 (s-order x y))
+                  (not (mv-nth 0 (s-order y x))))
+         (implies (mv-nth 1 (s-order x y))
+                  (and (not (mv-nth 0 (s-order x y)))
+                       (not (mv-nth 0 (s-order y x)))))
+         (equal (mv-nth 1 (s-order y x))
+                (mv-nth 1 (s-order x y)))) 
+    :fn s-order)
+  (std::defretd s-order-lst-sanity
+    (and (implies (mv-nth 0 (s-order-lst lst1 lst2))
+                  (not (mv-nth 0 (s-order-lst lst2 lst1))))
+         (implies (mv-nth 1 (s-order-lst lst1 lst2))
+                  (and (not (mv-nth 0 (s-order-lst lst2 lst1)))
+                       (not (mv-nth 0 (s-order-lst lst1 lst2)))))
+         (equal (mv-nth 1 (s-order-lst lst1 lst2))
+                (mv-nth 1 (s-order-lst lst2 lst1))))
+    :fn s-order-lst)
+  :hints (("Goal"
+           :in-theory (e/d (s-order
+                            s-order-lst)
+                           ()))))
 
 (encapsulate
   nil
@@ -154,18 +181,6 @@
           ((is-rp x)
            (ex-from-rp/-- (caddr x)))
           (t x)))
-           
-    #|(cond ((and (consp x)
-                (consp (cdr x)))
-           (if (and (equal (car x) '--)
-                    (not (cddr x)))
-               (ex-from-rp/-- (cadr x))
-             (if (and (equal (car x) 'rp)
-                      (consp (cddr x))
-                      (not (cdddr x)))
-                 (ex-from-rp/-- (caddr x))
-               x)))
-          (t x))||#
 
   (define ex-from--- (x)
     :inline t
@@ -385,6 +400,15 @@
           (and (not (equal neg1 neg2))
                terms-are-equal))))
 
+  (define s-sum-ordered-listp ((lst rp-term-listp))
+    (if (atom lst)
+        (equal lst nil)
+      (if (atom (cdr lst))
+          t
+        (and (b* (((mv order &) (s-order-and-negated-termsp (cadr lst) (car lst))))
+               (not order))
+             (s-sum-ordered-listp (cdr lst))))))
+        
   (define s-sum-merge-aux ((s1-lst rp-term-listp)
                            (s2-lst rp-term-listp))
     :measure (+ (cons-count s1-lst)

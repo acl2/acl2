@@ -3321,6 +3321,31 @@
                                bitp
                                rp-evlt-of-ex-from-rp))))))
 
+(local
+ (defthm rp-evlt-of-ex-from-rp-equivalance
+   (and (equal (equal (RP-EVLT (EX-FROM-RP x) A)
+                      (RP-EVLT x A))
+               t)
+        (equal (equal (RP-EVLT x A)
+                      (RP-EVLT (EX-FROM-RP x) A))
+               t)
+        (equal (equal (SUM-LIST (RP-EVLT x A))
+                      (SUM-LIST (RP-EVLT (EX-FROM-RP x) A)))
+               t))))
+
+(local
+ (defthm dummy-lemma3
+   (implies (and
+             (equal (sum a b c) d1)
+             (equal x y)
+             (equal d1 d2))
+            (and (equal (equal (sum a b c x)
+                          (sum d2 y))
+                        t)
+                 (equal (equal (sum a b c x)
+                               (sum y d2))
+                   t)))))
+
 (defthm new-sum-merge-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -3336,6 +3361,7 @@
                   (valid-sc s a)
                   (valid-sc pp a)
                   (valid-sc c/d a))))
+  ;;:otf-flg t
   :hints (("Goal"
            :do-not-induct t
            :induct (new-sum-merge-aux term)
@@ -3348,22 +3374,51 @@
                              c-res
                              ;;regular-eval-lemmas-with-ex-from-rp
                              RP-EVLT-OF-EX-FROM-RP-REVERSE-2
+                             
                              new-sum-merge-aux-correct-lemma1
                              new-sum-merge-aux-correct-lemma2
+                             
+                             #|(:REWRITE
+                              REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)||#
                              (:REWRITE
-                              REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_CONS_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
+                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE
                               REGULAR-RP-EVL-OF_D_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
-                              REGULAR-RP-EVL-OF_SUM-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              REGULAR-RP-EVL-OF_D_WHEN_MULT-FORMULA-CHECKS)
+                             #|(:REWRITE
+                              regular-rp-evl-of_sum-list_when_mult-formula-checks_with-ex-from-rp)||#
+                             (:REWRITE
+                              regular-rp-evl-of_sum-list_when_mult-formula-checks)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS)
                              )
                             (valid-sc
+                             (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
+                             (:DEFINITION EVAL-AND-ALL)
+                             (:REWRITE VALID-SC-EX-FROM-RP-2)
+                             (:REWRITE RP-EVL-OF-UNARY-/-CALL)
+                             (:REWRITE RP-EVL-OF-TYPESPEC-CHECK-CALL)
+                             (:REWRITE EX-FROM-RP-X2)
+                             (:REWRITE RP-EVLT-WHEN-QUOTEP)
+                             (:REWRITE
+                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                             (:TYPE-PRESCRIPTION EVAL-AND-ALL)
+                             (:TYPE-PRESCRIPTION CONTEXT-FROM-RP)
+                             (:REWRITE IS-RP-PSEUDO-TERMP)
+                             (:REWRITE VALID-SC-LEMMA1)
+                             (:DEFINITION WELL-FORMED-NEW-SUM)
+                             4vec->pp-term
+                             pp-flatten
+                             pp-sum-merge
                              (:REWRITE RP-EVL-OF-VARIABLE)
                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                              (:REWRITE RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS)

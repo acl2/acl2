@@ -306,13 +306,13 @@
    (defthm-insert-iff-to-force
      (defthm rp-evl-of-insert-off-to-force-lemma
        (if iff-flg
-           (iff (rp-evl (insert-iff-to-force term rule-name iff-flg) a)
+           (iff (rp-evl (insert-iff-to-force term rule-name iff-flg in-hyps) a)
                 (rp-evl term a))
-         (equal (rp-evl (insert-iff-to-force term rule-name iff-flg) a)
+         (equal (rp-evl (insert-iff-to-force term rule-name iff-flg in-hyps) a)
                 (rp-evl term a)))
        :flag insert-iff-to-force)
      (defthm rp-evl-lst-of-insert-off-to-force-lst
-       (equal (rp-evl-lst (insert-iff-to-force-lst lst rule-name) a)
+       (equal (rp-evl-lst (insert-iff-to-force-lst lst rule-name in-hyps) a)
               (rp-evl-lst lst a))
        :flag insert-iff-to-force-lst)
      :hints (("Goal"
@@ -326,9 +326,9 @@
                                (:type-prescription insert-iff-to-force))))))
 
    (defthm rp-evl-of-insert-off-to-force
-     (and (iff (rp-evl (insert-iff-to-force term rule-name t) a)
+     (and (iff (rp-evl (insert-iff-to-force term rule-name t in-hyps) a)
                (rp-evl term a))
-          (equal (rp-evl (insert-iff-to-force term rule-name nil) a)
+          (equal (rp-evl (insert-iff-to-force term rule-name nil in-hyps) a)
                  (rp-evl term a)))
      :hints (("Goal"
               :use ((:instance rp-evl-of-insert-off-to-force-lemma

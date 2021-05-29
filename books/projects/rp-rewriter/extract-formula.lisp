@@ -179,7 +179,7 @@
 
 
 (mutual-recursion
- (defun insert-iff-to-force (term rule-name iff-flg)
+ (defun insert-iff-to-force (term rule-name iff-flg in-hyps)
    (declare (xargs :guard t))
    (cond ((or (atom term)
               (quotep term))
@@ -187,31 +187,36 @@
          (t
           (case-match term
             (('implies p q)
-             `(implies ,(insert-iff-to-force p rule-name t)
-                       ,(insert-iff-to-force q rule-name t)))
+             `(implies ,(insert-iff-to-force p rule-name t t)
+                       ,(insert-iff-to-force q rule-name t in-hyps)))
             (('force x)
-             (if iff-flg
-                 `(force$ (if ,(insert-iff-to-force x rule-name iff-flg) 't
-                            'nil)
-                          ',rule-name
-                          ',term)
-               `(force$ ,(insert-iff-to-force x rule-name iff-flg)
-                        ',rule-name
-                        ',term)))
+             (if in-hyps
+                 (if iff-flg
+                     `(force$ (if ,(insert-iff-to-force x rule-name iff-flg t) 't
+                                'nil)
+                              ',rule-name
+                              ',term)
+                   `(force$ ,(insert-iff-to-force x rule-name iff-flg t)
+                            ',rule-name
+                            ',term))
+               (cons-with-hint
+                'force
+                (cons-with-hint (insert-iff-to-force x rule-name iff-flg nil) nil (cdr term))
+                term)))
             (('if test then else)
-             `(if ,(insert-iff-to-force test rule-name t)
-                  ,(insert-iff-to-force then rule-name iff-flg)
-                ,(insert-iff-to-force else rule-name iff-flg)))
+             `(if ,(insert-iff-to-force test rule-name t in-hyps)
+                  ,(insert-iff-to-force then rule-name iff-flg in-hyps)
+                ,(insert-iff-to-force else rule-name iff-flg in-hyps)))
             (&
              (cons-with-hint (car term)
-                             (insert-iff-to-force-lst (cdr term) rule-name)
+                             (insert-iff-to-force-lst (cdr term) rule-name in-hyps)
                              term))))))
- (defun insert-iff-to-force-lst (lst rule-name)
+ (defun insert-iff-to-force-lst (lst rule-name in-hyps)
    (if (atom lst)
        nil
-     (cons-with-hint (insert-iff-to-force (car lst) rule-name nil)
-                     (insert-iff-to-force-lst (cdr lst) rule-name)
-                     lst))))  
+     (cons-with-hint (insert-iff-to-force (car lst) rule-name nil in-hyps)
+                     (insert-iff-to-force-lst (cdr lst) rule-name in-hyps)
+                     lst))))
 
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
@@ -247,7 +252,7 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       (formula (insert-iff-to-force formula rule-name nil))
+       (formula (insert-iff-to-force formula rule-name nil nil))
        #|((when (equal formula ''t))
         nil)||#
        ((when (not (pseudo-termp formula)))

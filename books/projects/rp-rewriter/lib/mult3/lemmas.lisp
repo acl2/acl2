@@ -585,7 +585,7 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-(defthm m2-of-m2
+(def-rp-rule m2-of-m2
   (and (equal (m2 (m2 x))
               (m2 x))
        (equal (m2 (sum (m2 x) y))

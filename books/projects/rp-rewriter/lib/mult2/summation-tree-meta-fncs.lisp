@@ -1370,11 +1370,10 @@
     :returns (res booleanp)
     (case-match term
       (('cons x rest)
-       (b* ((x (ex-from-rp-loose x))
+       (b* ((?orig x)
+            (x (ex-from-rp-loose x))
             (rest-res (well-formed-new-sum rest)))
-         (cond ((good-4vec-term-p x)
-                rest-res)
-               ((case-match x (('s & &) t))
+         (cond ((case-match x (('s & &) t))
                 rest-res)
                ((case-match x (('c & & &) t))
                 rest-res)
@@ -1385,6 +1384,8 @@
                ((case-match x (('sum-list ('list . &)) t))
                 rest-res)
                ((equal x ''0)
+                rest-res)
+               ((good-4vec-term-p orig)
                 rest-res)
                (t
                 nil))))
@@ -1419,12 +1420,7 @@
             (limit (expt 2 40))
             (x-orig x)
             (x (ex-from-rp-loose x)))
-         (cond ((good-4vec-term-p x) ;; (pp-term-p x)
-                (b* ((x (4vec->pp-term x)))
-                  (mv s-rest
-                      (mv-nth-0-of-2 (pp-sum-merge (pp-flatten x nil) pp-rest))
-                      c/d-rest)))
-               ((case-match x (('s & &) t))
+         (cond ((case-match x (('s & &) t))
                 (mv (s-sum-merge `(list ,x-orig) s-rest)
                     pp-rest
                     c/d-rest))
@@ -1456,6 +1452,11 @@
                     c/d-rest))
                ((equal x ''0)
                 (mv s-rest pp-rest c/d-rest))
+               ((good-4vec-term-p x-orig) ;; (pp-term-p x)
+                (b* ((x (4vec->pp-term x-orig)))
+                  (mv s-rest
+                      (mv-nth-0-of-2 (pp-sum-merge (pp-flatten x nil) pp-rest))
+                      c/d-rest)))
                (t
                 (progn$ (cw "not well-formed term for new sums= ~p0 ~%" x)
                         (mv ''nil ''nil ''0))))))

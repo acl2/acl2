@@ -442,3 +442,27 @@
   ///
   (def-rp-rule bitp-ba4
     (bitp (ba4 n1 i1 n2 i2 n3 i3 n4 i4))))
+
+(define is-rp-bitp (term)
+  (case-match term
+    (('rp ''bitp &)
+     t)))
+
+(define adder-mux ((select bitp)
+                   (i0 bitp)
+                   (i1 bitp))
+  :returns (res bitp)
+  (if (equal (bit-fix select) 0)
+      (bit-fix i0)
+    (bit-fix i1))
+  ///
+  (add-rp-rule bitp-of-adder-mux))
+
+(define m2-p (term)
+    :inline t
+    (case-match term (('m2 &) t))
+    ///
+    (defthm m2-p-implies-fc
+      (implies (m2-p term)
+               (case-match term (('m2 &) t)))
+      :rule-classes :forward-chaining))
