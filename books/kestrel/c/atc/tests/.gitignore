@@ -13,6 +13,9 @@ checksum
 conditionals.c
 conditionals
 
+constants.c
+constants
+
 conversions.c
 conversions
 
