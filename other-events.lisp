@@ -24846,7 +24846,6 @@
                                    unify-subst0 ttree0 type-alist
                                    keep-unify-subst wrld state ens ttree)
 
-; This function is adapted from ACL2 function relieve-hyps1-iter.
 ; Keep-unify-subst must be t, nil, or :FAILED.
 
   (mv-let

@@ -18692,6 +18692,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(and (mbt* ,test)
         ,form))
 
+(defun comment-window-co ()
+
+; This function provides an interface to *standard-co* that can be redefined
+; with a trust tag, as in support of community book
+; books/demos/brr-free-variables-book.lisp.
+
+  (declare (xargs :guard t))
+  *standard-co*)
+
 (defun fmt-to-comment-window (str alist col evisc-tuple print-base-radix)
 
 ; WARNING: Keep this in sync with fmt-to-comment-window!.
@@ -18720,7 +18729,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (progn
     (cond
      ((null print-base-radix) ; common case
-      (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple))
+      (fmt1 str alist col (comment-window-co) *the-live-state* evisc-tuple))
      (t
       (mv-let (new-print-base new-print-radix state)
         (cond ((consp print-base-radix)
@@ -18738,7 +18747,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (pprogn
           (set-print-base new-print-base state)
           (mv-let (col state)
-            (fmt1 str alist col *standard-co* *the-live-state* evisc-tuple)
+            (fmt1 str alist col (comment-window-co) *the-live-state*
+                  evisc-tuple)
             (value col)))))))
     nil))
 
@@ -18755,7 +18765,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (progn
     (cond
      ((null print-base-radix) ; common case
-      (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple))
+      (fmt1! str alist col (comment-window-co) *the-live-state* evisc-tuple))
      (t
       (mv-let (new-print-base new-print-radix state)
         (cond ((consp print-base-radix)
@@ -18773,7 +18783,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (pprogn
           (set-print-base new-print-base state)
           (mv-let (col state)
-            (fmt1! str alist col *standard-co* *the-live-state* evisc-tuple)
+            (fmt1! str alist col (comment-window-co) *the-live-state*
+                   evisc-tuple)
             (value col)))))))
     nil))
 
@@ -25419,8 +25430,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
         (ld-fn (append
                 `((standard-oi . (,form . ,*standard-oi*))
-                  (standard-co . ,*standard-co*)
-                  (proofs-co . ,*standard-co*))
+                  (standard-co . ,(comment-window-co))
+                  (proofs-co . ,(comment-window-co)))
                 ld-specials)
                state
                t)

@@ -2202,10 +2202,24 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
               (error "Unable to determine CCL program pathname!")))
          (os (get-os))
-         (ccl-program (qfuncall pathname-os-to-unix
-                                (our-truename ccl-program0 t)
-                                os
-                                *the-live-state*))
+         (ccl-program1 (ignore-errors (our-truename ccl-program0 :safe)))
+         (ccl-program (cond
+                       (ccl-program1
+                        (qfuncall pathname-os-to-unix
+                                  ccl-program1
+                                  os
+                                  *the-live-state*))
+                       (t
+                        (when (probe-file *acl2-status-file*)
+                          (delete-file *acl2-status-file*))
+                        (error "Your CCL was apparently invoked as ~s.~%~
+                                In order to save an ACL2 executable, ACL2~%~
+                                must determine the absolute pathname of the~%~
+                                CCL executable.  That determination failed.~%~
+                                Failure can occur if you invoked CCL as a~%~
+                                soft link on your Unix PATH rather than as a~%~
+                                regular file."
+                               ccl-program0))))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
          (core-name-given core-name)
          (core-name (unix-full-pathname core-name

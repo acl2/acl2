@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "brr-free-variables")
+
+; Help dependency scanner.
+#||
+(depends-on "brr-free-variables-input.lsp")
+(depends-on "brr-free-variables-log.txt")
+||#
+
+; cert-flags: ? t :ttags (:brr-free-variables) :defaxioms-okp t
