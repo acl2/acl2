@@ -28,8 +28,8 @@
 
 (defun integer-to-sint-expr (x)
   (if (>= x 0)
-      `(c::sint-const ,x)
-    `(c::minus-sint (c::sint-const ,(- x)))))
+      `(c::sint-dec-const ,x)
+    `(c::minus-sint (c::sint-dec-const ,(- x)))))
 
 ; Name of the ACL2 function that models a unary or binary operator
 ; and name of the C function to test the operator.

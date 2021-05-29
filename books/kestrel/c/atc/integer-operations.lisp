@@ -26,14 +26,17 @@
      the integer types supported in our model,
      namely the standard unsigned and signed integers, except @('_Bool').")
    (xdoc::p
-    "We introduce functions @('<type>-const')
+    "We introduce functions @('<type>-<base>-const')
      to construct integer constants.
      Following [C:6.4.4.1], these have non-negative values
      and may have only certain integer types,
      namely those with the same rank as @('int') or higher.
-     Thus we introduce a function for each integer type in those ranks.
+     Thus we introduce three functions for each integer type in those ranks,
+     one function per possible base (decimal, octal, hexadecimal).
      Each takes a natural number as argument,
-     which the guard further constrains to be representable in the type.")
+     which the guard further constrains to be representable in the type.
+     The three functions for the three bases have the same definition,
+     but they represent syntactically different constants in C.")
    (xdoc::p
     "We introduce functions @('boolean-from-<type>')
      to turn C integers into ACL2 booleans,
@@ -251,7 +254,9 @@
        (<type1>-integerp (pack <type1> '-integerp))
        (<type1>-integerp-alt-def (pack <type1>-integerp '-alt-def))
        (<type1>-fix (pack <type1> '-fix))
-       (<type1>-const (pack <type1> '-const))
+       (<type1>-dec-const (pack <type1> '-dec-const))
+       (<type1>-oct-const (pack <type1> '-oct-const))
+       (<type1>-hex-const (pack <type1> '-hex-const))
        (boolean-from-<type1> (pack 'boolean-from- <type1>))
        (<type1>-integer-value (pack <type1> '-integer-value))
        (<type> (atc-integer-type-fixtype type))
@@ -289,11 +294,40 @@
        ,@(and
           samep
           `((atc-defun-integer
-             ,<type1>-const
+             ,<type1>-dec-const
              :arg-type natp
              :guard (,<type1>-integerp x)
              :res-type ,<type1>p
-             :short ,(str::cat "Integer constant of " type1-string ".")
+             :short ,(str::cat
+                      "Decimal integer constant of " type1-string ".")
+             :body (,<type1> x)
+             :no-fix t)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          samep
+          `((atc-defun-integer
+             ,<type1>-oct-const
+             :arg-type natp
+             :guard (,<type1>-integerp x)
+             :res-type ,<type1>p
+             :short ,(str::cat
+                      "Octal integer constant of " type1-string ".")
+             :body (,<type1> x)
+             :no-fix t)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       ,@(and
+          samep
+          `((atc-defun-integer
+             ,<type1>-hex-const
+             :arg-type natp
+             :guard (,<type1>-integerp x)
+             :res-type ,<type1>p
+             :short ,(str::cat
+                      "Hexadecimal integer constant of " type1-string ".")
              :body (,<type1> x)
              :no-fix t)))
 

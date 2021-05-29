@@ -27,7 +27,7 @@
                               (c::sintp |y|))))
   (let* ((|a| (c::bitand-sint-sint |x| |y|))
          (|a| (c::bitnot-sint |a|)))
-    (c::gt-sint-sint |a| (c::sint-const 0))))
+    (c::gt-sint-sint |a| (c::sint-dec-const 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +41,7 @@
                                  :in-theory
                                  (enable c::add-sint-sint-okp
                                          c::sint-integerp-alt-def)))))
-  (let ((|a| (c::add-sint-sint |a| (c::sint-const 200))))
+  (let ((|a| (c::add-sint-sint |a| (c::sint-dec-const 200))))
     (c::lt-sint-sint |b| |a|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -62,7 +62,7 @@
   (declare (xargs :guard (and (c::sintp |p|)
                               (c::sintp |q|))))
   (let ((|x| (c::bitand-sint-sint |p| |q|)))
-    (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-const 33)))
+    (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-dec-const 33)))
         (let ((|x| (c::bitnot-sint |x|)))
           (c::bitior-sint-sint |q| |x|))
       (let* ((|x| (c::lognot-sint |x|))
@@ -73,12 +73,14 @@
 
 (defun |j| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
-  (let ((|y| (c::sint-const 0)))
+  (let ((|y| (c::sint-dec-const 0)))
     (let ((|y| (if (c::boolean-from-sint
-                    (c::lt-sint-sint |x| (c::sint-const 100)))
-                   (let ((|y| (c::bitior-sint-sint |y| (c::sint-const 6666))))
+                    (c::lt-sint-sint |x| (c::sint-dec-const 100)))
+                   (let ((|y| (c::bitior-sint-sint |y|
+                                                   (c::sint-dec-const 6666))))
                      |y|)
-                 (let ((|y| (c::bitxor-sint-sint |y| (c::sint-const 7777))))
+                 (let ((|y| (c::bitxor-sint-sint |y|
+                                                 (c::sint-dec-const 7777))))
                    |y|))))
       (c::bitand-sint-sint |x| |y|))))
 
@@ -93,8 +95,8 @@
       (if (c::boolean-from-sint |y|)
           (let ((|a| (c::bitnot-sint |a|)))
             (mv |a| |b|))
-        (let* ((|b| (c::sint-const 2))
-               (|a| (c::sint-const 14)))
+        (let* ((|b| (c::sint-dec-const 2))
+               (|a| (c::sint-dec-const 14)))
           (mv |a| |b|)))
       (c::bitxor-sint-sint |a| |b|))))
 
@@ -126,7 +128,7 @@ On macOS or Linux, you can compile and run this code as follows:
    (declare (xargs :guard (and (c::uintp |x|) (c::uintp |y|))))
    (let ((|x| (let ((|w| (c::add-uint-uint |x| |y|)))
                 |w|)))
-     (c::add-uint-uint |x| (c::uint-const 7))))
+     (c::add-uint-uint |x| (c::uint-dec-const 7))))
  (must-fail
   (c::atc |foo| :output-file "foo.c")))
 
@@ -137,7 +139,7 @@ On macOS or Linux, you can compile and run this code as follows:
 (must-succeed*
  (defun |foo| (|x| |y|)
    (declare (xargs :guard (and (c::uintp |x|) (c::uintp |y|))))
-   (let ((|x| (let* ((|y| (c::uint-const 0))
+   (let ((|x| (let* ((|y| (c::uint-dec-const 0))
                      (|x| (c::add-uint-uint |x| |y|)))
                 |x|)))
      (c::add-uint-uint |x| |y|)))
@@ -155,7 +157,7 @@ On macOS or Linux, you can compile and run this code as follows:
    (declare (xargs :guard (c::sintp |x|)))
    (let ((|y| (c::bitnot-sint |x|)))
      (let ((|x| (if (c::boolean-from-sint |y|)
-                    (let* ((|y| (c::sint-const 0))
+                    (let* ((|y| (c::sint-dec-const 0))
                            (|x| |y|))
                       |x|)
                   |x|)))
