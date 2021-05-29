@@ -52,7 +52,7 @@
                                          c::sub-sint-sint)
                                         (c::sint->get-upper-bound))))))
     (c::mul-sint-sint (c::add-sint-sint |x| |y|)
-                      (c::sub-sint-sint |z| (c::sint-const 3)))))
+                      (c::sub-sint-sint |z| (c::sint-dec-const 3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

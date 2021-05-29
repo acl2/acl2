@@ -68,12 +68,12 @@
                                                       c::shl-sint
                                                       c::bitand-sint-sint)))))
     (c::bitand-sint-sint
-     (c::add-sint-sint |current|
-                       (c::add-sint-sint (c::shl-sint-sint |hibyte|
-                                                           (c::sint-const
-                                                            8))
-                                         |lobyte|))
-     (c::sint-const 65535))))
+     (c::add-sint-sint
+      |current|
+      (c::add-sint-sint (c::shl-sint-sint |hibyte|
+                                          (c::sint-dec-const 8))
+                        |lobyte|))
+     (c::sint-dec-const 65535))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

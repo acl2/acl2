@@ -212,6 +212,15 @@
   :tag :iconst
   :pred iconstp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-iconst ()
+  :returns (iconst iconstp)
+  :short "An irrelevant integer constant, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (iconst-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-iconst))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum const
