@@ -174,15 +174,19 @@
 
 (def-rp-rule binary-xor-of-1
   (implies (bitp x)
-           (equal (rp::binary-xor 1 x)
-                  (rp::binary-not x)))
+           (and (equal (rp::binary-xor 1 x)
+                       (rp::binary-not x))
+                (equal (rp::binary-xor x 1)
+                       (rp::binary-not x))))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
 (progn
   (def-rp-rule binary-xor-1-of-s
-    (equal (binary-xor 1 (s hash-code pp c/d))
-           (sum 1 (-- (s hash-code pp c/d))))
+    (and (equal (binary-xor 1 (s hash-code pp c/d))
+                (sum 1 (-- (s hash-code pp c/d))))
+         (equal (binary-xor (s hash-code pp c/d) 1)
+                (sum 1 (-- (s hash-code pp c/d)))))
     :hints (("Goal"
              :in-theory (e/d (binary-xor m2)
                              ()))))
@@ -278,11 +282,21 @@
                               (not (equal side2 0))
                               (not (equal side1 ''0))
                               (not (equal side2 ''0))
-                              #|(or (pp-has-bitp-rp side1)
-                                  (single-s-p (ex-from-rp-loose side1))
-                                  (bit-of-p (ex-from-rp-loose side1))
-                                  (binary-fnc-p (ex-from-rp-loose side1)))
-                              (or (pp-has-bitp-rp side2)
+                              (or ;;(pp-has-bitp-rp side1)
+                               (single-s-p (ex-from-rp-loose side1))
+                               (s-c-res-p (ex-from-rp-loose side1))
+                               (single-c-p (ex-from-rp-loose side1))
+                               (binary-fnc-p (ex-from-rp-loose side1))
+                               (binary-sum-p (ex-from-rp-loose side1))
+                               
+                               (single-s-p (ex-from-rp-loose side2))
+                               (s-c-res-p (ex-from-rp-loose side1))
+                               (single-c-p (ex-from-rp-loose side2))
+                               (binary-fnc-p (ex-from-rp-loose side2))
+                               (binary-sum-p (ex-from-rp-loose side2))
+                                  ;;(bit-of-p (ex-from-rp-loose side1))
+                               )
+                              #|(or (pp-has-bitp-rp side2)
                                   (single-s-p (ex-from-rp-loose side2))
                                   (bit-of-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
