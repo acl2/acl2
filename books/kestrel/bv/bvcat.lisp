@@ -870,8 +870,7 @@
                 (<= (+ -1 (expt 2 (+ lowsize highsize))) k)
                 (natp lowsize)
                 (natp highsize))
-           (equal (< k (bvcat highsize highval lowsize lowval))
-                  nil))
+           (not (< k (bvcat highsize highval lowsize lowval))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
                                   (n (+ lowsize highsize))
                                   )
@@ -1318,8 +1317,7 @@
 (defthm bvchop-not-0-when-getbit-not-0
   (implies (and (not (equal 0 (getbit (+ -1 size) x)))
                 (posp size))
-           (equal (equal (bvchop size x) 0)
-                  nil))
+           (not (equal (bvchop size x) 0)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal" :use (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT (n (+ -1 size)))
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT ; BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
@@ -1328,8 +1326,7 @@
 (defthm bvchop-not-0-when-low-bit-not-0
   (implies (and (not (equal 0 (getbit 0 x)))
                 (posp size))
-           (equal (equal (bvchop size x) 0)
-                  nil))
+           (not (equal (bvchop size x) 0)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal"
            :in-theory (disable BVCHOP-SUBST-CONSTANT BVCAT-SLICE-SAME)

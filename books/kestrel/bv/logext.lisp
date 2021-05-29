@@ -183,13 +183,11 @@
 
 (defthm logbitp-when-j-is-not-integerp
   (implies (not (integerp j))
-           (equal (logbitp i j)
-                  nil))
+           (not (logbitp i j)))
   :hints (("Goal" :in-theory (enable logbitp))))
 
 (defthm logbitp-of-0
-  (equal (logbitp n 0)
-         nil)
+  (not (logbitp n 0))
   :hints (("Goal" :in-theory (enable logbitp))))
 
 (defthm oddp-of-bvchop
@@ -466,13 +464,11 @@
 
 ;for axe
 (defthmd logext-not-nil1
-  (equal (equal (logext n x) nil)
-         nil))
+  (not (equal (logext n x) nil)))
 
 ;for axe
 (defthm logext-not-nil2
-  (equal (equal nil (logext n x))
-         nil))
+  (not (equal nil (logext n x))))
 
 ;; A bit odd
 (defthm logext-of-0-arg1

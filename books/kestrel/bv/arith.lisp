@@ -78,20 +78,6 @@
 ;;                  :GENERALIZE ;todo: do we want this?
 ;;                  ))
 
-(defthmd even-not-equal-odd-hack
-  (implies (and (evenp y)
-                (not (evenp x)))
-           (equal (equal x y)
-                  nil)))
-
-(defthm even-odd-expt-hack
-  (implies (and (integerp x)
-                (posp n))
-           (equal (EQUAL (+ -1 (EXPT 2 N))
-                         (* 2 x))
-                  nil))
-  :hints (("Goal" :in-theory (enable expt even-not-equal-odd-hack))))
-
 (DEFTHM EXPT->-1
   (IMPLIES (AND (< 1 R)
                 (< 0 I)
@@ -282,15 +268,13 @@
   (implies (and (< (+ free y) x)
                 (syntaxp (quotep free))
                 (<= 0 free))
-           (equal (equal x y)
-                  nil)))
+           (not (equal x y))))
 
 (defthm equal-when-<-of-+-alt
   (implies (and (< (+ free y) x)
                 (syntaxp (quotep free))
                 (<= 0 free))
-           (equal (equal y x)
-                  nil)))
+           (not (equal y x))))
 
 ;more generally, (* m n) + (* n x) should become (* (+ m n) x) when m and n are constants
 (defthm hack1

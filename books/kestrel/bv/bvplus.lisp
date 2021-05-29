@@ -283,8 +283,7 @@
                 (integerp freesize))
            (equal (bvplus size x y)
                   (bvplus size freeval y)))
-  :hints (("Goal" :in-theory (e/d (bvplus)
-                                  nil))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-when-equal-of-constant-and-bvchop-arg3
   (implies (and (equal (bvchop freesize x) freeval) ;freeval comes second so that this is not a binding hyp

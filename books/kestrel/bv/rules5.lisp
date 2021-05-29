@@ -351,10 +351,10 @@
                                   (signed-addition-overflowsp)))))
 
 ;for overflow to happen (bvuminus 32 k2) must be positive, so k2 must be negative...
+;rename
 (defthm signed-addition-overflowsp-of-bvuminus-and-bvplus-same
   (implies (not (signed-addition-underflowsp 32 k2 x)) ;this also works: (sbvlt 32 (bvuminus 32 k2) x) ;todo: gen
-           (equal (signed-addition-overflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))
-                  nil))
+           (not (signed-addition-overflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))))
   :hints (("Goal":in-theory (e/d (signed-addition-overflowsp
                                   bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                   bvuminus
@@ -372,11 +372,11 @@
 
 
 ;for underflow to happen, (bvuminus 32 k2) must be negative, so k2 must be positive
+;rename
 (defthm signed-addition-underflowsp-of-bvuminus-and-bvplus-same
   (implies (and (not (signed-addition-overflowsp 32 k2 x))
                 (not (equal (bvchop 32 k2) (expt 2 31)))) ;k2 not min int
-           (equal (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))
-                  nil))
+           (not (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))))
   :hints (("Goal":in-theory (e/d (signed-addition-underflowsp
                                   bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
                                   bvuminus
