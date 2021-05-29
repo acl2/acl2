@@ -360,3 +360,29 @@
                   (sbvlt size (bvchop size k) x)))
   :hints (("Goal" :in-theory (e/d (sbvlt) nil)
            :cases ((natp size)))))
+
+(defthm sbvlt-transitive-free
+  (implies (and (sbvlt size x free)
+;                (syntaxp (and (quotep free) (quotep size)))
+                (sbvlt size free y))
+           (sbvlt size x y))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;restrict?
+(defthm sbvlt-transitive-free-back
+  (implies (and (not (sbvlt size x free))
+                (not (sbvlt size free y)))
+           (not (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-transitive-1
+  (implies (and (sbvlt 32 i free)
+                (not (sbvlt 32 len free)))
+           (sbvlt 32 i len)))
+
+;todo: flesh out this theory fully
+;could be expensive...
+(defthm sbvlt-transitive-another
+  (implies (and (not (sbvlt 32 free x))
+                (sbvlt 32 free y))
+           (sbvlt 32 x y)))

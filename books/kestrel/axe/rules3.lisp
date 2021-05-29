@@ -364,13 +364,6 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer nth2 ceiling-of-lg)
                                   (nth-of-bv-array-write-becomes-bv-array-read)))))
 
-(defthm sbvlt-transitive-free
-  (implies (and (sbvlt size x free)
-;                (syntaxp (and (quotep free) (quotep size)))
-                (sbvlt size free y))
-           (sbvlt size x y))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
 (defthm sbvlt-of-one-more-hack
   (implies (integerp x)
            (equal (sbvlt 32 4 (+ 1 x))
@@ -910,13 +903,6 @@
   :hints (("Goal" :in-theory (e/d (logapp sbvlt bvlt logext logapp-0 <=-OF-BVCHOP-SAME-LINEAR)
                                   (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                       TIMES-4-BECOMES-LOGAPP)))))
-
-;restrict?
-(defthm sbvlt-transitive-free-back
-  (implies (and (not (sbvlt size x free))
-                (not (sbvlt size free y)))
-           (not (sbvlt size x y)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
@@ -17776,11 +17762,6 @@
   :hints (("Goal" :in-theory (disable ;sbvlt-rewrite sbvle SBVLT-WHEN-SBVMODDOWN-HACK4
                               ))))
 
-(defthm sbvlt-transitive-1
-  (implies (and (sbvlt 32 i free)
-                (not (sbvlt 32 len free)))
-           (sbvlt 32 i len)))
-
 (defthm myif-of-myif-of-myif-same-1
  (equal (MYIF test a (MYIF b (MYIF test c d) e))
         (MYIF test a (MYIF b d e)))
@@ -17816,10 +17797,11 @@
   :hints (("Goal" :in-theory (e/d (sbvlt bvminus) (;BVPLUS-OF-MINUS-1
                                                    )))))
 (defthm bvlt-of-plus-hack9
-  (implies (and (bvlt 31 x y)
+  (implies (and (syntaxp (quotep x)) ; prevent overly agressive matches
+                (bvlt 31 x y)
                 (integerp x)
                 (not (equal 0 (bvchop 31 x))))
-           (BVLT '31 (+ 2147483647 x) y))
+           (bvlt 31 (+ 2147483647 x) y))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases)
                                   (;BVPLUS-OF-MINUS-1
                                    )))))
@@ -17853,14 +17835,6 @@
                 (sbvlt 32 x 4))
            (sbvlt '32 (bvmult '32 '4 x) '16))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
-
-
-;todo: flesh out this theory fully
-;could be expensive...
-(defthm sbvlt-transitive-another
-  (implies (and (not (sbvlt 32 free x))
-                (sbvlt 32 free y))
-           (sbvlt 32 x y)))
 
 ;in case we don't chose a normal form:
 ;TODO: Add other variants of this.  Or just choose a normal form...
