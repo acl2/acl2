@@ -14364,9 +14364,9 @@
       (pprogn
        (io? event nil state
             (expansion-filename)
-            (fms "Writing book expansion file, ~s0."
-                 (list (cons #\0 expansion-filename))
-                 (proofs-co state) state nil))
+            (fms! "Note: Writing book expansion file, ~s0."
+                  (list (cons #\0 expansion-filename))
+                  (proofs-co state) state nil))
 
 ; Note: We replace the in-package form at the top of the original file, because
 ; we want to print in the ACL2 package.  See the Essay on Hash Table Support
@@ -15113,9 +15113,9 @@
       (t (pprogn
           (io? event nil state
                (port-file)
-               (fms "Note: Writing .port file, ~s0.~|"
-                    (list (cons #\0 port-file))
-                    (proofs-co state) state nil))
+               (fms! "Note: Writing .port file, ~s0.~|"
+                     (list (cons #\0 port-file))
+                     (proofs-co state) state nil))
           (with-print-defaults
            ((current-package "ACL2")
             (print-circle (f-get-global 'print-circle-files state))
@@ -16089,18 +16089,23 @@
         (cond (channel
                (mv-let (alist state)
                  (read-file-iterate-safe channel nil state)
-                 (pprogn (close-input-channel channel state)
+                 (pprogn (io? event nil state
+                              (useless-runes-filename)
+                              (fms! "Note: Consulting useless-runes file, ~s0."
+                                    (list (cons #\0 useless-runes-filename))
+                                    (standard-co state) state nil))
+                         (close-input-channel channel state)
                          (read-useless-runes1 (abs val)
                                               alist useless-runes-filename
                                               ctx state))))
               ((< val 0) (value nil))
               (t (er soft ctx
-                     "Unable to open file ~x0 for reading useless runes data ~
+                     "Unable to open file ~x0 for reading useless-runes data ~
                       (as specified by ~@1); see :DOC useless-runes."
                      useless-runes-filename
                      (if envp
                          (msg "the value ~x0 of environment variable ~
-                             ACL2_USELESS_RUNES"
+                               ACL2_USELESS_RUNES"
                               envp)
                        (msg "certify-book option :useless-runes ~x0"
                             useless-runes-r/w))))))))))

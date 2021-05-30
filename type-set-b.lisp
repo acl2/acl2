@@ -1490,10 +1490,15 @@
 ; This is analogous to expansion-filename, but for the file containing useless
 ; rune information.  See expansion-filename.
 
-  (let ((len (length full-book-name)))
-    (assert$ (equal (subseq full-book-name (- len 5) len) ".lisp")
+  (let ((len (length full-book-name))
+        (posn (search *directory-separator-string* full-book-name
+                      :from-end t)))
+    (assert$ (and (equal (subseq full-book-name (- len 5) len) ".lisp")
+                  posn)
              (concatenate 'string
-                          (subseq full-book-name 0 (- len 5))
+                          (subseq full-book-name 0 posn)
+                          "/.sys"
+                          (subseq full-book-name posn (- len 5))
                           "@useless-runes.lsp"))))
 
 (defun active-useless-runes-filename (state)
