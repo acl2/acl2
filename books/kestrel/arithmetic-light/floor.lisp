@@ -1208,3 +1208,10 @@
   :hints (("Goal"
            :cases ((equal 0 y))
            :in-theory (enable unsigned-byte-p))))
+
+(defthm floor-of-*-and-*-cancel-arg2-arg2
+  (equal (floor (* x z) (* y z))
+         (if (equal (fix z) 0)
+             0
+           (floor x y)))
+  :hints (("Goal" :in-theory (enable floor))))
