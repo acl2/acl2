@@ -76,8 +76,7 @@
 ;; (mv pid state).  Throws a hard error if something goes wrong.
 (defund get-process-id (state)
   (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable BOUNDP-GLOBAL call-script))) ;todo
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable boundp-global)))))
   (if (boundp-global 'process-id state)
       (let ((pid (f-get-global 'process-id state)))
         (if (not (stringp pid)) ;todo: check that this is a string containing only digits?
