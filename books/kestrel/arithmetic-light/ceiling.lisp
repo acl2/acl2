@@ -208,3 +208,10 @@
   :hints (("Goal" :use (:instance ceiling-monotone
                                   (i1 i) (i2 (+ -1 k)))
            :in-theory (disable ceiling-monotone))))
+
+(defthm ceiling-of-*-and-*-cancel-arg2-arg2
+  (equal (ceiling (* x z) (* y z))
+         (if (equal (fix z) 0)
+             0
+           (ceiling x y)))
+  :hints (("Goal" :in-theory (enable ceiling))))

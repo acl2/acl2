@@ -734,3 +734,10 @@
                                   (x (+ x y))
                                   (y y))
            :in-theory (disable acl2::mod-when-<))))
+
+(defthm mod-of-*-and-*-cancel-arg2-arg2
+  (equal (mod (* x z) (* y z))
+         (if (equal (fix z) 0)
+             0
+           (* z (mod x y))))
+  :hints (("Goal" :in-theory (enable mod))))
