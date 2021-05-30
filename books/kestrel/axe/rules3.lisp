@@ -1112,7 +1112,9 @@
 
 ;rename?
 ;bad rule?
-(defthm bvlt-by-4
+;the turns into a fact about a slice being 0..
+;did we need this? which we we prefer bounds or usb claims?
+(defthmd bvlt-by-4
   (equal (bvlt 31 x 4)
          (unsigned-byte-p 2 (bvchop 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt) (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
@@ -3391,10 +3393,6 @@
            (equal (unsigned-byte-p size x)
                   (bvlt free x (expt 2 size))))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) (<-becomes-bvlt <-becomes-bvlt-alt)))))
-
-
-
-(in-theory (disable BVLT-BY-4)) ;did we need this? which we we prefer bounds or usb claims?
 
 ;; ;this doesn't fire, perhaps because it is hung on not..
 ;; (defthm not-bvlt-when-not-usb
