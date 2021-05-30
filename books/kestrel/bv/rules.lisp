@@ -8440,3 +8440,74 @@
            (equal (getbit 31 (bvdiv 32 x y))
                   0))
   :hints (("Goal" :in-theory (enable bvdiv))))
+
+;; x-1 < y becomes x <= y
+(defthmd bvlt-of-bvplus-of-minus1
+  (implies (natp size)
+           (equal (bvlt size (bvplus size -1 x) y)
+                  (if (equal (bvchop size x) 0)
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+(defthm bvlt-of-bvplus-of-minus1-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvlt size (bvplus size k x) y)
+                  (if (equal (bvchop size x) 0)
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+;; x < 1+y becomes x <= y
+(defthm bvlt-of-bvplus-of-1-arg2
+  (implies (natp size)
+           (equal (bvlt size x (bvplus size 1 y))
+                  (if (equal (bvchop size y)  (+ -1 (expt 2 size)))
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+;; (defthm getbit-of-bvplus-of--1-top
+;;   (implies (integerp x)
+;;            (equal (getbit 31 (bvplus 32 (+ -1 (expt 2 31)) x))
+;;                   (if (equal (bvchop 32 x) (expt 2 31))
+;;                       0
+;;                     (if (equal (bvchop 32 x) (expt 2 31))
+;;                         1
+;;                       (getbit 31 x)))))
+;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
+;;                                         bvchop-of-sum-cases
+;;                                         getbit
+;;                                         slice)
+;;                                   (slice-becomes-getbit
+;;                                    bvchop-1-becomes-getbit)))))
+
+;; since x>=y, x is usually not less than y+1
+(defthmd bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (not (bvlt size x y))
+                (natp size))
+           (equal (bvlt size x (bvplus size k y))
+                  (if (equal 0 (bvchop size y))
+                      (bvlt size x k) ;odd case
+                    nil)))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+(defthm bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt-cheap
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (not (bvlt size x y))
+                (natp size))
+           (equal (bvlt size x (bvplus size k y))
+                  (if (equal 0 (bvchop size y))
+                      (bvlt size x k) ;odd case
+                    nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil nil 0 nil)))
+  :hints (("Goal" :by bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt)))
