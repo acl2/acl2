@@ -222,8 +222,7 @@
                 (syntaxp (quotep freesize))
                 ;gets computed:
                 (not (equal free (bvchop freesize const))))
-           (equal (equal const x)
-                  nil)))
+           (not (equal const x))))
 
 (defthm bvchop-of-1
   (equal (bvchop n 1)
@@ -262,7 +261,7 @@
   (implies (not (posp size))
            (equal (bvchop size i) 0))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bvchop) nil))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvchop-of-minus
   (equal (bvchop size (- x))
@@ -540,8 +539,7 @@
 (defthm bvchop-numeric-bound
   (implies (and (syntaxp (quotep k))
                 (<= k 0))
-           (equal (< (bvchop size x) k)
-                  nil)))
+           (not (< (bvchop size x) k))))
 
 (defthm bvchop-subst-constant
   (implies (and (syntaxp (not (quotep x)))
@@ -580,8 +578,7 @@
   (implies (and (<= s1 s2)
                 (natp s1)
                 (natp s2))
-           (equal (< (bvchop s2 x) (bvchop s1 x))
-                  nil))
+           (not (< (bvchop s2 x) (bvchop s1 x))))
   :hints (("Goal"
            :use (:instance bvchop-bound-rw (x (bvchop s2 x)) (size s1))
            :in-theory (disable bvchop-bound-rw))))

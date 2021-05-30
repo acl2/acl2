@@ -107,9 +107,9 @@
 
 ;; (thm
 ;;  (implies (posp size)
-;;           (equal (EQUAL (EXPT 2 SIZE)
+;;           (not (EQUAL (EXPT 2 SIZE)
 ;;                         (BVCHOP (+ -1 SIZE) X))
-;;                  nil)))
+;;                  )))
 
 (defthm mod-of-minus-of-expt-and-bvchop-arg1
   (implies (and (rationalp x)

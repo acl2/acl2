@@ -136,8 +136,7 @@
 
 (defthm logtail-non-neg
   (implies (<= 0 x)
-           (equal (< (logtail n x) 0)
-                  nil))
+           (not (< (logtail n x) 0)))
   :hints (("Goal"
            :use (:instance LOGTAIL-LESSP (pos n) (i x) (j 0))
            :in-theory (e/d (expt-of-+)

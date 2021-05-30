@@ -202,8 +202,7 @@
                 (natp xsize) ;drop?
                 (integerp size)
                 (unsigned-byte-p-forced xsize x))
-           (equal (bvlt size k x)
-                  nil))
+           (not (bvlt size k x)))
   :hints (("Goal" :use (:instance bvlt-of-constant-when-usb)
            :in-theory (disable bvlt-of-constant-when-usb))))
 

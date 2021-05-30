@@ -128,8 +128,7 @@
                 (unsigned-byte-p size k)
                 (unsigned-byte-p size2 j)
                 (unsigned-byte-p size x))
-           (equal (bvlt size2 j (bvmod size x k))
-                  nil))
+           (not (bvlt size2 j (bvmod size x k))))
   :hints (("Goal" :in-theory (enable bvlt bvmod bvchop-of-sum-cases bvchop))))
 
 (defthm bvlt-of-bvmod-false
@@ -140,8 +139,7 @@
                 (>= (bvchop size2 j) (+ -1 (bvchop size k)))
                 (posp (bvchop size k)) ;weird?
                 (natp size))
-           (equal (bvlt size2 j (bvmod size x k))
-                  nil))
+           (not (bvlt size2 j (bvmod size x k))))
   :hints (("Goal" :use (:instance bvlt-of-bvmod-false-helper
                                   (k (bvchop size k))
                                   (x (bvchop size x))

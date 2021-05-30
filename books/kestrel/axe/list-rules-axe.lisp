@@ -34,8 +34,7 @@
 
 ;only useful for Axe since ACL2 knows this by types
 (defthmd equal-of-nil-and-len
-  (equal (equal nil (len x))
-         nil))
+  (not (equal nil (len x))))
 
 ;We also have equal-of-car-and-nth-of-0, so this variant is just for Axe.
 ;This helps when we don't want to commit to either form.
@@ -57,9 +56,9 @@
 (defthm booleanp-of-memberp
   (booleanp (memberp a x)))
 
+;rename
 (defthm member-equal-of-nil
-  (equal (member-equal a nil)
-         nil))
+  (not (member-equal a nil)))
 
 (defthm equal-of-append-arg1
   (equal (equal (append y z) x)
