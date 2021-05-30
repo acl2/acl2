@@ -90,6 +90,21 @@
                      (bounded-dag-exprp nodenum expr)
                      (weak-dagp-aux (cdr dag))))))))
 
+(defthm bounded-dag-exprp-of-cdr-of-car-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (consp dag)
+                (<= (car (car dag)) nodenum)
+                )
+           (bounded-dag-exprp nodenum (cdr (car dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthm dag-exprp0-of-cdr-of-car-when-weak-dagp-aux
+  (implies (and (weak-dagp-aux dag)
+                (consp dag)
+                )
+           (dag-exprp0 (cdr (car dag))))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
 (defthm symbolp-of-cdar-when-weak-dagp-aux-cheap
   (implies (and (weak-dagp-aux dag)
                 (consp dag)
@@ -652,7 +667,8 @@
   (declare (xargs :guard (and (true-listp dag)
                               (weak-dagp-aux dag)
                               (symbol-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable dag-exprp0)))))
+                  :guard-hints (("Goal" :in-theory (enable dag-exprp0
+                                                           symbolp-of-car-when-dag-exprp0)))))
   (if (endp dag)
       acc
     (let* ((entry (car dag))
@@ -805,8 +821,7 @@
            :in-theory (e/d (PSEUDO-TERMP
                             ;;PSEUDO-DAGP
                             DARGP-LESS-THAN
-                            dag-exprp0
-                            )
+                            dag-exprp0)
                            (DARGP
                             TOP-NODENUM
                             MYQUOTEP

@@ -596,8 +596,7 @@
                             (if (consp (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc)))
                                 (car (car (mv-nth 0 (build-reduced-dag2 n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))))
                               -1)))
-  :hints (("subgoal *1/1" :cases ((equal 0 dag-len)))
-          ("Goal" :induct (build-reduced-dag2 n top-nodenum
+  :hints (("Goal" :induct (build-reduced-dag2 n top-nodenum
                                               dag-array-name dag-array tag-array
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1)
