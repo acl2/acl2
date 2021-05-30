@@ -115,10 +115,12 @@
   "@('prog-const') is the symbol specified by @('const-name').
    This is @('nil') if @('proofs') is @('nil')."
 
-  "@('wf-thm') is the name of the generated program well-formedness theorem."
+  "@('wf-thm') is the name of the generated program well-formedness theorem.
+   This is @('nil') if @('proofs') is @('nil')."
 
   "@('fn-thms') is an alist from @('fn1'), ..., @('fnp')
-   to the names of the generated respective correctness theorems."
+   to the names of the generated respective correctness theorems.
+   This is @('nil') if @('proofs') is @('nil')."
 
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
@@ -266,7 +268,12 @@
     "The name of each theorem is obtained by
      appending something to the name of the constant.
      The thing appended differs across the theorems:
-     thus, their names are all distinct by construction."))
+     thus, their names are all distinct by construction.")
+   (xdoc::p
+    "If the @(':proofs') input is @('nil'),
+     the @(':const-name') input must be absent
+     and we return @('nil') for this as well as for the theorem names.
+     No constant and theorems are generated when @(':proofs') is @('nil')."))
   (b* (((when (not proofs))
         (if const-name?
             (er-soft+ ctx t nil
@@ -274,7 +281,7 @@
                        the :CONST-NAME input must be absent, ~
                        but it is ~x0 instead."
                       const-name)
-          (acl2::value nil)))
+          (acl2::value (list nil nil nil))))
        ((er &) (acl2::ensure-value-is-symbol$ const-name
                                               "The :CONST-NAME input"
                                               t
