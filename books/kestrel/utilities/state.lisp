@@ -29,7 +29,10 @@
                     read-files-p
                     readable-files-p
                     writeable-files-p
-                    written-files-p))
+                    written-files-p
+                    ;; so the rules below fire:
+                    boundp-global
+                    boundp-global1))
 
 (local (in-theory (disable assoc-equal nth update-nth)))
 
@@ -413,3 +416,35 @@
            (state-p1 (close-input-channel channel state)))
   :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
                                   (open-input-channel-p1)))))
+
+(local (in-theory (disable true-listp))) ;prevent induction
+
+(local
+ (defthm assoc-equal-when-all-boundp
+  (implies (and (all-boundp alist1 alist2) ; alist1 is a free var
+                (member-equal key (strip-cars alist1)))
+           (assoc-equal key alist2))
+  :hints (("Goal" :in-theory (enable assoc-equal all-boundp member-equal)))))
+
+;; todo: these are true for anything in *initial-global-table*?:
+
+(defthm boundp-global1-of-system-books-dir-when-state-p1
+  (implies (state-p1 state)
+           (boundp-global1 'system-books-dir state))
+  :hints (("Goal" :in-theory (enable state-p1 boundp-global1))))
+
+;; The conclusion matches the guard of get-global
+(defthm assoc-equal-of-system-books-dir-and-global-table-when-state-p1
+  (implies (state-p1 state)
+           (assoc-equal 'system-books-dir (global-table state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+;; (defthm boundp-global-of-system-books-dir-when-state-p1
+;;   (implies (state-p state)
+;;            (boundp-global 'system-books-dir state))
+;;   :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm boundp-global-of-system-books-dir-when-state-p
+  (implies (state-p state)
+           (boundp-global 'system-books-dir state))
+  :hints (("Goal" :in-theory (enable state-p state-p1 boundp-global))))
