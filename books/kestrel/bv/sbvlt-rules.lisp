@@ -17,18 +17,24 @@
 (include-book "kestrel/utilities/myif-def" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
+;;Splits into cases based on the signs of x and y
 (defthmd sbvlt-rewrite
   (implies (posp size)
            (equal (sbvlt size x y)
                   (if (equal 0 (getbit (+ -1 size) x))
                       (if (equal 0 (getbit (+ -1 size) y))
+                          ;; both non-negative:
                           (bvlt (+ -1 size) x y)
+                        ;; x non-negative, y negative:
                         nil)
                     (if (equal 0 (getbit (+ -1 size) y))
+                        ;; x negative, y non-negative:
                         t
+                      ;; both negative:
                       (bvlt (+ -1 size) x y)))))
   :hints (("Goal" :in-theory (e/d (sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
-                                         logext-when-negative logext-when-positive logext-when-negative-2) (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free)))))
+                                         logext-when-negative logext-when-positive logext-when-negative-2)
+                                  (<-becomes-bvlt-alt <-becomes-bvlt <-becomes-bvlt-free)))))
 
 ;gen?
 ; but myif-of-nil-special seems to not fire
