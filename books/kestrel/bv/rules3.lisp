@@ -13,7 +13,6 @@
 
 (include-book "rules")
 (include-book "bvashr")
-(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 ;(local (include-book "arith"))
 (local (include-book "rules0"))

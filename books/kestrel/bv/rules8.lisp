@@ -30,7 +30,8 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "arithmetic/equalities" :dir :system)) ;for reciprocal-minus
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
 ;drop or move hyps?
 ;expensive?
@@ -61,10 +62,12 @@
   :hints (("Goal" :use (:instance floor-minus-arg2 (y (- (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE y)))))
            :in-theory (disable floor-minus-arg2))))
 
+;move
 (defthmd minus-of-times-arg2
   (equal (- (* x y))
          (* x (- y))))
 
+;move
 (defthmd minus-of-/
   (equal (- (/ x))
          (/ (- x))))
@@ -76,9 +79,10 @@
   :hints (("Goal" :use (:instance INTEGERP-OF--(x (* x (/ (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE Y))))))
            :do-not '(preprocess)
            :in-theory (e/d (minus-of-times-arg2 minus-of-/)
-                           (reciprocal-minus
+                           (/-of--
                             INTEGERP-OF--
-                            FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-right)))))
+                            ;FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-right
+                            )))))
 
 ;move or drop
 (defthm slice-31-2-minus-4-alt

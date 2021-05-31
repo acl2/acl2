@@ -350,9 +350,8 @@
                                   (x (* (/ (- y)) x))))))
 
 (defthm /-of--
-  (implies (rationalp x)
-           (equal (/ (- x))
-                  (- (/ x)))))
+  (equal (/ (- x))
+         (- (/ x))))
 
 (defthm /-of-*
   (equal (/ (* x y))
