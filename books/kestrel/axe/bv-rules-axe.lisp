@@ -27,6 +27,7 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ;todo: make local
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
+(include-book "kestrel/bv/rules" :dir :system) ;drop?
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
@@ -1032,14 +1033,6 @@
 (defthm cancel-<-+
   (equal (< (+ k x) x)
          (< k 0)))
-
-;todo: move these up?
-(include-book "kestrel/bv/rules" :dir :system)
-(local (include-book "arithmetic/equalities" :dir :system))
-(local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-(local (include-book "ihs/math-lemmas" :dir :system))
-;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
-;(local (include-book "kestrel/lists-light/firstn" :dir :system))
 
 
 ;drop? rename?
