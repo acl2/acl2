@@ -17,7 +17,6 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "rules") ;reduce?
-(local (include-book "arithmetic/inequalities" :dir :system))
 (local (include-book "arith"))
 (local (include-book "arith2"))
 
