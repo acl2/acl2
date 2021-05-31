@@ -282,10 +282,20 @@
            (bounded-dag-exprp m (aref1 dag-array-name dag-array m)))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper))))
 
+(defthm bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen
+  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
+                (natp m)
+                (<= m n)
+                (natp n)
+                (<= m bound))
+           (bounded-dag-exprp bound (aref1 dag-array-name dag-array m)))
+  :hints (("Goal" :use (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux)
+           :in-theory (disable bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux))))
+
 (defthm bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                (natp m)
                 (<= n m)
+                (integerp m)
                 (natp n))
            (bounded-dag-exprp m (aref1 dag-array-name dag-array n)))
   :hints (("Goal" :in-theory (e/d (pseudo-dag-arrayp
@@ -310,7 +320,8 @@
            (cdr (AREF1 DAG-ARRAY-NAME DAG-ARRAY m)))
   :hints (("Goal" :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux)
            :in-theory (e/d (BOUNDED-DAG-EXPRP dag-exprp0 CAR-BECOMES-NTH-OF-0)
-                           (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
+                           (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
+                            BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-GEN)))))
 
 (defthm consp-of-cdr-of-aref1-when-PSEUDO-DAG-ARRAYP-AUX-and-quotep
   (IMPLIES (AND (PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY n)
@@ -323,7 +334,8 @@
            :in-theory (e/d (bounded-DAG-EXPRP; CAR-BECOMES-NTH-OF-0
                             dag-exprp0
                             )
-                           (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
+                           (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
+                            BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-GEN)))))
 
 (defthm symbolp-of-car-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -337,7 +349,8 @@
                                   (dag-array-name dag-array-name)
                                   (m nodenum)
                                   (n nodenum))
-           :in-theory (disable bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux))))
+           :in-theory (disable bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
+                               BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-GEN))))
 
 
 
@@ -554,7 +567,9 @@
            (pseudo-dag-arrayp-list (dargs (aref1 dag-array-name dag-array nodenum)) dag-array-name dag-array))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list
                                      pseudo-dag-arrayp
-                                     dargs-when-not-consp-cheap)
+                                     dargs-when-not-consp-cheap
+                                     bounded-dag-exprp ;why?
+                                     )
            :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)))))
 
 ;for when we turn car into nth of 0
@@ -1296,7 +1311,8 @@
   (implies (and (bounded-dag-exprp nodenum expr) ;nodenum is a free var - introduce a weak-dag-exprp?
                 (not (eq 'quote (car expr))))
            (all-natp (keep-atoms (dargs expr))))
-  :hints (("Goal" :in-theory (enable dargs-when-not-consp-cheap))))
+  :hints (("Goal" :in-theory (enable dargs-when-not-consp-cheap
+                                     bounded-dag-exprp))))
 
 (defthm all-natp-of-keep-atoms-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array top-nodenum)
@@ -1599,9 +1615,11 @@
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
            :in-theory (e/d (<-of-nth-when-all-dargp-less-than
                             MEMBER-EQUAL-BECOMES-MEMBERP
-                            dargs-when-not-consp-cheap)
+                            dargs-when-not-consp-cheap
+                            bounded-dag-exprp)
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
+                            bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen
                             DAG-EXPRP0-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
                             ALL-DARGP-LESS-THAN-OF-DARGS-OF-AREF1
                             ALL-DARGP-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
@@ -2140,6 +2158,7 @@
                                   (m n))
            :in-theory (e/d (BOUNDED-DAG-EXPRP DAG-EXPRP0 DAG-FUNCTION-CALL-EXPRP)
                            (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
+                            BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-gen
                             DAG-EXPRP0-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
                             LEN-OF-AREF1-WHEN-QUOTEP-AND-PSEUDO-DAG-ARRAYP-AUX
                             DAG-FUNCTION-CALL-EXPRP-REDEF
@@ -2160,6 +2179,7 @@
                                   (m n))
            :in-theory (e/d (BOUNDED-DAG-EXPRP DAG-EXPRP0 DAG-FUNCTION-CALL-EXPRP)
                            (BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
+                            BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX-gen
                             DAG-EXPRP0-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
                             LEN-OF-AREF1-WHEN-QUOTEP-AND-PSEUDO-DAG-ARRAYP-AUX
                             DAG-FUNCTION-CALL-EXPRP-REDEF

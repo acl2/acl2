@@ -165,17 +165,6 @@
 ;;                 )
 ;;            (not (< (+ -1 n) (largest-non-quotep (dargs (aref1 dag-array-name dag-array n))))))
 
-(defthm bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen
-  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
-                (natp m)
-                (<= m n)
-                (natp m2)
-                (<= m m2)
-                (natp n))
-           (bounded-dag-exprp m2 (aref1 dag-array-name dag-array m)))
-  :hints (("Goal" :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux)
-           :in-theory (disable bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux))))
-
 (defthm all-myquotep-of-dargs-of-aref1-of-0
   (implies (and (consp (aref1 dag-array-name dag-array 0))
                 (not (equal (car (aref1 dag-array-name dag-array 0))
