@@ -177,7 +177,7 @@
          (value t)))))
 
 (defxdoc irrelevant-formals-ok
-  :parents (irrelevant-formals system-utilities-non-built-in)
+  :parents (std/system system-utilities-non-built-in irrelevant-formals)
   :short "Determine whether @(see irrelevant-formals) are OK in definitions."
   :long "<p>This utility returns a Boolean.  For a related utility that can
  cause an error, see @(see chk-irrelevant-formals-ok).</p>
@@ -283,7 +283,7 @@
  </ul>")
 
 (defxdoc chk-irrelevant-formals-ok
-  :parents (irrelevant-formals system-utilities-non-built-in)
+  :parents (std/system system-utilities-non-built-in irrelevant-formals)
   :short "Determine whether @(see irrelevant-formals) are OK in definitions."
   :long "<p>As discussed below, this variant of the utility @(tsee
   irrelevant-formals-ok) returns an @(see error-triple).</p>

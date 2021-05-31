@@ -1015,6 +1015,11 @@
     "The utility @('acceptable-rewrite-rulep') has been moved
      from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
 
+   (xdoc::p
+    "New utilities @(tsee irrelevant-formals-ok) and @(tsee
+     chk-irrelevant-formals-ok) have been added, to perform an @(see
+     irrelevant-formals) check on a given definition or list of definitions.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
