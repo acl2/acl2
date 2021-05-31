@@ -5788,22 +5788,6 @@
                                    getbit-of-+ ;looped
                                    )))))
 
-;ffixme how is this different from the regular rule?
-(defthm bvlt-trim-arg1-new
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize
-                                                                        x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvlt size x y)
-                  (bvlt size (trim size x) y)))
-
-  :HINTS
-  (("Goal"
-    :by BVLT-TRIM-ARG1)))
-
-(in-theory (disable BVLT-TRIM-ARG1)) ;to make this fire first
-
 (DEFTHM UNSIGNED-BYTE-P-WHEN-BVLT-TIGHTEN
   (IMPLIES (AND (BVLT SIZE X FREE) ;allow one more fixme
                 (SYNTAXP (QUOTEP FREE))
