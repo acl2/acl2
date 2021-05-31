@@ -390,9 +390,14 @@
          (logext size i))
   :hints (("Goal" :cases ((posp size)))))
 
-(defthm <-of-logext-linear-upper
+;; (defthm <-of-logext-linear-upper
+;;   (implies (posp size)
+;;            (< (logext size x) (expt 2 (+ -1 size))))
+;;   :rule-classes :linear)
+
+(defthm <=-of-logext-linear-upper
   (implies (posp size)
-           (< (logext size x) (expt 2 (+ -1 size))))
+           (<= (logext size x) (+ -1 (expt 2 (+ -1 size)))))
   :rule-classes :linear)
 
 (defthm <-of-logext-linear-lower
@@ -490,3 +495,8 @@
                   (and (equal 0 (getbit (+ -1 size) x))
                        (not (equal 0 (bvchop (+ -1 size) x))))))
   :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-of-maxint
+  (implies (posp size)
+           (equal (logext size (+ -1 (expt 2 (+ -1 size))))
+                  (+ -1 (expt 2 (+ -1 size))))))

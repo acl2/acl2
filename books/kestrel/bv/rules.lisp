@@ -8433,13 +8433,27 @@
            :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 ;; if the top bit is clear, there's no way dividing can make it set
-(defthm getbit-of-bvdiv-when-equal-0-of-getbit
-  (implies (and (equal 0 (getbit 31 x))
+(defthmd getbit-of-bvdiv-when-equal-0-of-getbit
+  (implies (and (equal size-1 (+ -1 size))
+                (equal 0 (getbit size-1 x))
                 (integerp x)
-                (integerp y))
-           (equal (getbit 31 (bvdiv 32 x y))
+                (integerp y)
+                (natp size))
+           (equal (getbit size-1 (bvdiv size x y))
                   0))
-  :hints (("Goal" :in-theory (enable bvdiv))))
+  :hints (("Goal" :cases ((equal size 0))
+           :in-theory (enable bvdiv))))
+
+(defthm getbit-of-bvdiv-when-equal-0-of-getbit-constant-version
+  (implies (and (syntaxp (quotep size)) ;this version
+                (equal size-1 (+ -1 size))
+                (equal 0 (getbit size-1 x))
+                (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (getbit size-1 (bvdiv size x y))
+                  0))
+  :hints (("Goal" :by getbit-of-bvdiv-when-equal-0-of-getbit)))
 
 ;; x-1 < y becomes x <= y
 (defthmd bvlt-of-bvplus-of-minus1
