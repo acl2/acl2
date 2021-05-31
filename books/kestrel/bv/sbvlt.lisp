@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -386,3 +386,10 @@
   (implies (and (not (sbvlt 32 free x))
                 (sbvlt 32 free y))
            (sbvlt 32 x y)))
+
+(defthm not-sbvlt-of-maxint
+  (implies (and (syntaxp (quotep k))
+                (equal k (- (expt 2 (- size 1)) 1))
+                (posp size))
+           (not (sbvlt size k x)))
+  :hints (("Goal" :in-theory (e/d (sbvlt) nil))))
