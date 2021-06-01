@@ -1016,7 +1016,7 @@
      from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
 
    (xdoc::p
-    "New utilities @(tsee irrelevant-formals-ok) and @(tsee
+    "New utilities @(tsee irrelevant-formals-info) and @(tsee
      chk-irrelevant-formals-ok) have been added, to perform an @(see
      irrelevant-formals) check on a given definition or list of definitions.")
 

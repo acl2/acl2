@@ -1,0 +1,169 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IRRELEVANT-FORMALS-INFO '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                                         (DECLARE (XARGS :GUARD (NATP X2)))
+                                         (IF (CONSP X0)
+                                             (F (CDR X0) X1 X2 X5 X4 X3)
+                                             NIL)))
+(X1 X3 X4 X5)
+ACL2 !>>(IRRELEVANT-FORMALS-INFO '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                                         (DECLARE (IRRELEVANT X1 X3 X5 X4)
+                                                  (XARGS :GUARD (NATP X2)))
+                                         (IF (CONSP X0)
+                                             (F (CDR X0) X1 X2 X5 X4 X3)
+                                             NIL)))
+(X1 X3 X4 X5)
+ACL2 !>>(IRRELEVANT-FORMALS-INFO '((DEFUN F (X0 X1 X2 X3 X4 X5)
+                                          (DECLARE (XARGS :GUARD (NATP X2)))
+                                          (IF (CONSP X0)
+                                              (F (CDR X0) X1 X2 X5 X4 X3)
+                                              NIL))))
+(X1 X3 X4 X5)
+ACL2 !>>(IRRELEVANT-FORMALS-INFO '((DEFUN F (X0 X1 X2 X3 X4 X5)
+                                          (DECLARE (XARGS :GUARD (NATP X2)))
+                                          (IF (CONSP X0)
+                                              (F (CDR X0) X1 X2 X5 X4 X3)
+                                              NIL)))
+                                 :DCLS NIL)
+(X1 X2 X3 X4 X5)
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '((DEFUN F1 (X Y)
+                      (IF (CONSP X) (F2 (CDR X) Y) T))
+               (DEFUN F2 (X Y)
+                      (IF (CONSP X) (F1 (CDR X) Y) NIL))))
+((F1 . Y) (F2 . Y))
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                       (IF (CONSP X) (F2 (CDR X) Y) T))
+                                (DEFUN F2 (X Y)
+                                       (IF (CONSP X) (F1 (CDR X) Y) NIL))))
+((F1 . Y) (F2 . Y))
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                       (IF (CONSP X) (F2 (CDR X)) T))
+                                (DEFUN F2 (X Y)
+                                       (IF (CONSP X) (F1 (CDR X) Y) NIL))))
+
+
+HARD ACL2 ERROR in IRRELEVANT-FORMALS-INFO:  F2 takes 2 arguments but
+in the call (F2 (CDR X)) it is given 1 argument.  The formal parameters
+list for F2 is (X Y).
+
+
+
+ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
+gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                       (IF (CONSP X) (F2 (CDR X) Y) T))
+                                (DEFUN F2 (X Y)
+                                       (IF (CONSP X) (F1 (CDR X) Y) NIL)))
+             :RESULT :MSG)
+("~@0~@1See :DOC irrelevant-formals."
+ (#\0
+  "The ~*0 ~#1~[is~/are~] irrelevant but not declared ~
+                         to be irrelevant.  "
+  (#\0 "" "~@*" "~@* and the " "~@* the "
+       (("~n0 formal of ~x1, ~x2," (#\0 2)
+                                   (#\1 . F1)
+                                   (#\2 . Y))
+        ("~n0 formal of ~x1, ~x2," (#\0 2)
+                                   (#\1 . F2)
+                                   (#\2 . Y))))
+  (#\1 . 1))
+ (#\1 . ""))
+ACL2 !>>(FMS
+         "~@0"
+         (LIST
+          (CONS
+           #\0
+           (IRRELEVANT-FORMALS-INFO
+                '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                          (IF (CONSP X) (F2 (CDR X) Y) T))
+                                   (DEFUN F2 (X Y)
+                                          (IF (CONSP X) (F1 (CDR X) Y) NIL)))
+                :RESULT :MSG)))
+         (STANDARD-CO STATE)
+         STATE NIL)
+
+The second formal of F1, Y, and the second formal of F2, Y, are irrelevant
+but not declared to be irrelevant.  See :DOC irrelevant-formals.<state>
+ACL2 !>>(IRRELEVANT-FORMALS-INFO
+             '(MUTUAL-RECURSION (DEFUND F1 (X Y Z)
+                                        (DECLARE (IRRELEVANT Z))
+                                        (IF (CONSP X) (F2 (CDR X) Y Z) Z))
+                                (DEFUND F2 (X Y Z)
+                                        (IF (CONSP X) (F1 (CDR X) Y Z) NIL)))
+             :RESULT :RAW)
+(((F1 Z)) ((F1 1 . Y) (F2 1 . Y)))
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                                           (DECLARE (IRRELEVANT X1 X3 X5 X4)
+                                                    (XARGS :GUARD (NATP X2)))
+                                           (IF (CONSP X0)
+                                               (F (CDR X0) X1 X2 X5 X4 X3)
+                                               NIL)))
+ T
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK
+             '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                     (DECLARE (IRRELEVANT X1 X2 X3 X5 X4)
+                              (XARGS :GUARD (NATP X2)))
+                     (IF (CONSP X0)
+                         (F (CDR X0) X1 X2 X5 X4 X3)
+                         NIL)))
+
+
+ACL2 Error in CHK-IRRELEVANT-FORMALS-OK:  The formal X2 of F is falsely
+declared irrelevant.  See :DOC irrelevant-formals.
+
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                                           (DECLARE (IRRELEVANT X1 X3)
+                                                    (XARGS :GUARD (NATP X2)))
+                                           (IF (CONSP X0)
+                                               (F (CDR X0) X1 X2 X5 X4 X3)
+                                               NIL)))
+
+
+ACL2 Error in CHK-IRRELEVANT-FORMALS-OK:  The fifth formal of F, X4,
+and the sixth formal of F, X5, are irrelevant but not declared to be
+irrelevant.  See :DOC irrelevant-formals.
+
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK '(DEFUN F (X0 X1 X2 X3 X4 X5)
+                                           (DECLARE (IRRELEVANT X0 X3)
+                                                    (XARGS :GUARD (NATP X2)))
+                                           (IF (CONSP X0)
+                                               (F (CDR X0) X1 X2 X5 X4 X3)
+                                               NIL)))
+
+
+ACL2 Error in CHK-IRRELEVANT-FORMALS-OK:  The second formal of F, X1,
+the fifth formal of F, X4, and the sixth formal of F, X5, are irrelevant
+but not declared to be irrelevant.  The formal X0 of F is falsely declared
+irrelevant.  See :DOC irrelevant-formals.
+
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK
+             '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                       (DECLARE (XARGS :GUARD (CONSP Y)))
+                                       (IF (CONSP X) (F2 (CDR X) Y) T))
+                                (DEFUN F2 (X Y)
+                                       (IF (CONSP X) (F1 (CDR X) Y) NIL))))
+ T
+ACL2 !>>(CHK-IRRELEVANT-FORMALS-OK
+             '(MUTUAL-RECURSION (DEFUN F1 (X Y)
+                                       (IF (CONSP X) (F2 (CDR X) Y) T))
+                                (DEFUN F2 (X Y)
+                                       (IF (CONSP X) (F1 (CDR X) Y) NIL))))
+
+
+ACL2 Error in CHK-IRRELEVANT-FORMALS-OK:  The second formal of F1,
+Y, and the second formal of F2, Y, are irrelevant but not declared
+to be irrelevant.  See :DOC irrelevant-formals.
+
+ACL2 !>>Bye.
