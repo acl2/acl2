@@ -144,8 +144,6 @@
                                            BVCHOP-TIMES-CANCEL-BETTER-ALT
                                            BVCHOP-TIMES-CANCEL-BETTER
                                            BVCHOP-OF-*-OF-BVCHOP-ARG2
-                                           BVCHOP-TIMES-CANCEL
-                                           BVCHOP-N-TIMES-DROP
                                            BVCHOP-OF-*-OF-BVCHOP
                                            )))))
 

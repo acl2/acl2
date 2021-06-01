@@ -40,6 +40,7 @@
 (include-book "sbvrem")
 (include-book "bvdiv")
 (include-book "sbvdiv")
+(include-book "sbvdivdown")
 (include-book "bvsx")
 (include-book "repeatbit2")
 (include-book "bvshr")
@@ -2988,15 +2989,6 @@
                   (* 2 x)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm bvchop-times-cancel-alt
-  (implies (and (integerp x)
-                (integerp y)
-                (natp n))
-           (equal (BVCHOP n (* y (BVCHOP n x)))
-                  (BVCHOP n (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel)
-           :use (:instance bvchop-times-cancel))))
-
 ;drop the y?
 (defthm additive-inverse-hack
   (implies (and (integerp x)
@@ -3023,21 +3015,6 @@
           :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
                 ))))
 
-(defthm bvchop-times-cancel-gen
-  (implies (and (<= size n)
-                (integerp x)
-                (integerp y)
-                (natp n))
-           (equal (bvchop size (* (bvchop n x) y))
-                  (bvchop size (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel-alt bvchop-times-cancel)
-           :use ((:instance bvchop-times-cancel
-                            (n size)
-                            (x (bvchop n x)))
-                 (:instance bvchop-times-cancel
-                            (n size)
-                            (x x))))))
-
 (defthm bvchop-times-logext
   (implies (and (<= size n)
                 (integerp x)
@@ -3045,11 +3022,14 @@
                 (integerp n))
            (equal (bvchop size (* (logext n x) y))
                   (bvchop size (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel)
-           :use ((:instance bvchop-times-cancel-gen
-                            (x (logext n x)))
-                 (:instance bvchop-times-cancel-gen
-                            (x x))))))
+  :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop
+                                      bvchop-times-cancel-better)
+           :use ((:instance bvchop-times-cancel-better
+                            (x (logext n x))
+                            (m size))
+                 (:instance bvchop-times-cancel-better
+                            (x x)
+                            (m size))))))
 
 (defthm bvchop-times-logext-alt
   (implies (and (<= size n)

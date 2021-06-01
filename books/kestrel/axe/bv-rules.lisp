@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Move this book to the bv library
+
 (include-book "kestrel/bv/rules6" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
 
@@ -142,9 +144,9 @@
                 )
            (EQUAL (BVCHOP 32 (* z x))
                   (BVCHOP 32 (* z free))))
-  :hints (("Goal" :use ((:instance bvchop-n-times-drop (n 32) (x x) (y z))
-                        (:instance bvchop-n-times-drop (n 32) (x free) (y z)))
-           :in-theory (disable bvchop-n-times-drop))))
+  :hints (("Goal" :use ((:instance bvchop-of-*-of-bvchop (n 32) (x x) (y z))
+                        (:instance bvchop-of-*-of-bvchop (n 32) (x free) (y z)))
+           :in-theory (disable bvchop-of-*-of-bvchop))))
 
 (defthmd apply-logext-32-to-both-sides
   (implies (and (equal x y)
@@ -207,10 +209,11 @@
            (EQUAL (GETBIT 0 (* X Y))
                   (GETBIT 0 (* (GETBIT 0 X) Y))))
   :HINTS
-  (("Goal" :use (:instance bvchop-n-times-drop (n 1))
+  (("Goal" :use (:instance bvchop-of-*-of-bvchop (n 1))
     :IN-THEORY
     (E/D (GETBIT)
-         (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT bvchop-n-times-drop)))))
+         (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT bvchop-of-*-of-bvchop
+                                  )))))
 
 ;bozo more
 (defthm bvchop-times-logext-32
@@ -218,9 +221,9 @@
                 (integerp y))
            (equal (BVCHOP 32 (* x (LOGEXT 32 y)))
                   (BVCHOP 32 (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-n-times-drop)
-           :use ((:instance bvchop-n-times-drop (n 32) (x (logext 32 y)) (y x))
-                 (:instance bvchop-n-times-drop (n 32) (x y) (y x))))))
+  :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop)
+           :use ((:instance bvchop-of-*-of-bvchop (n 32) (x (logext 32 y)) (y x))
+                 (:instance bvchop-of-*-of-bvchop (n 32) (x y) (y x))))))
 
 ;sort of strength reduction
 ;gen
