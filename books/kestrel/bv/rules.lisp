@@ -40,6 +40,7 @@
 (include-book "sbvrem")
 (include-book "bvdiv")
 (include-book "sbvdiv")
+(include-book "sbvdivdown")
 (include-book "bvsx")
 (include-book "repeatbit2")
 (include-book "bvshr")
@@ -2988,15 +2989,6 @@
                   (* 2 x)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm bvchop-times-cancel-alt
-  (implies (and (integerp x)
-                (integerp y)
-                (natp n))
-           (equal (BVCHOP n (* y (BVCHOP n x)))
-                  (BVCHOP n (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel)
-           :use (:instance bvchop-times-cancel))))
-
 ;drop the y?
 (defthm additive-inverse-hack
   (implies (and (integerp x)
@@ -3023,21 +3015,6 @@
           :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
                 ))))
 
-(defthm bvchop-times-cancel-gen
-  (implies (and (<= size n)
-                (integerp x)
-                (integerp y)
-                (natp n))
-           (equal (bvchop size (* (bvchop n x) y))
-                  (bvchop size (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel-alt bvchop-times-cancel)
-           :use ((:instance bvchop-times-cancel
-                            (n size)
-                            (x (bvchop n x)))
-                 (:instance bvchop-times-cancel
-                            (n size)
-                            (x x))))))
-
 (defthm bvchop-times-logext
   (implies (and (<= size n)
                 (integerp x)
@@ -3045,11 +3022,14 @@
                 (integerp n))
            (equal (bvchop size (* (logext n x) y))
                   (bvchop size (* x y))))
-  :hints (("Goal" :in-theory (disable bvchop-times-cancel)
-           :use ((:instance bvchop-times-cancel-gen
-                            (x (logext n x)))
-                 (:instance bvchop-times-cancel-gen
-                            (x x))))))
+  :hints (("Goal" :in-theory (disable bvchop-of-*-of-bvchop
+                                      bvchop-times-cancel-better)
+           :use ((:instance bvchop-times-cancel-better
+                            (x (logext n x))
+                            (m size))
+                 (:instance bvchop-times-cancel-better
+                            (x x)
+                            (m size))))))
 
 (defthm bvchop-times-logext-alt
   (implies (and (<= size n)
@@ -8433,10 +8413,95 @@
            :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 ;; if the top bit is clear, there's no way dividing can make it set
-(defthm getbit-of-bvdiv-when-equal-0-of-getbit
-  (implies (and (equal 0 (getbit 31 x))
+(defthmd getbit-of-bvdiv-when-equal-0-of-getbit
+  (implies (and (equal size-1 (+ -1 size))
+                (equal 0 (getbit size-1 x))
                 (integerp x)
-                (integerp y))
-           (equal (getbit 31 (bvdiv 32 x y))
+                (integerp y)
+                (natp size))
+           (equal (getbit size-1 (bvdiv size x y))
                   0))
-  :hints (("Goal" :in-theory (enable bvdiv))))
+  :hints (("Goal" :cases ((equal size 0))
+           :in-theory (enable bvdiv))))
+
+(defthm getbit-of-bvdiv-when-equal-0-of-getbit-constant-version
+  (implies (and (syntaxp (quotep size)) ;this version
+                (equal size-1 (+ -1 size))
+                (equal 0 (getbit size-1 x))
+                (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (getbit size-1 (bvdiv size x y))
+                  0))
+  :hints (("Goal" :by getbit-of-bvdiv-when-equal-0-of-getbit)))
+
+;; x-1 < y becomes x <= y
+(defthmd bvlt-of-bvplus-of-minus1
+  (implies (natp size)
+           (equal (bvlt size (bvplus size -1 x) y)
+                  (if (equal (bvchop size x) 0)
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+(defthm bvlt-of-bvplus-of-minus1-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvlt size (bvplus size k x) y)
+                  (if (equal (bvchop size x) 0)
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+;; x < 1+y becomes x <= y
+(defthm bvlt-of-bvplus-of-1-arg2
+  (implies (natp size)
+           (equal (bvlt size x (bvplus size 1 y))
+                  (if (equal (bvchop size y)  (+ -1 (expt 2 size)))
+                      nil
+                    (bvle size x y))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+;; (defthm getbit-of-bvplus-of--1-top
+;;   (implies (integerp x)
+;;            (equal (getbit 31 (bvplus 32 (+ -1 (expt 2 31)) x))
+;;                   (if (equal (bvchop 32 x) (expt 2 31))
+;;                       0
+;;                     (if (equal (bvchop 32 x) (expt 2 31))
+;;                         1
+;;                       (getbit 31 x)))))
+;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
+;;                                         bvchop-of-sum-cases
+;;                                         getbit
+;;                                         slice)
+;;                                   (slice-becomes-getbit
+;;                                    bvchop-1-becomes-getbit)))))
+
+;; since x>=y, x is usually not less than y+1
+(defthmd bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (not (bvlt size x y))
+                (natp size))
+           (equal (bvlt size x (bvplus size k y))
+                  (if (equal 0 (bvchop size y))
+                      (bvlt size x k) ;odd case
+                    nil)))
+  :hints (("Goal" :in-theory (enable bvlt bvplus
+                                     bvchop-of-sum-cases))))
+
+(defthm bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt-cheap
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (not (bvlt size x y))
+                (natp size))
+           (equal (bvlt size x (bvplus size k y))
+                  (if (equal 0 (bvchop size y))
+                      (bvlt size x k) ;odd case
+                    nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil nil 0 nil)))
+  :hints (("Goal" :by bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt)))

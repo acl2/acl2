@@ -142,8 +142,6 @@
            :in-theory (disable integerp-of-expt-when-natp)
            :use (:instance integerp-of-expt-when-natp (r 2) (I (- i))))))
 
-(local (include-book "arithmetic/rationals" :dir :system))
-
 (defthmd integerp-squeeze
   (implies (and (< 0 x)
                 (< x 1))

@@ -167,3 +167,12 @@
            (equal (truncate (truncate i j1) j2)
                   (truncate i (* j1 j2))))
   :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
+
+;; (thm
+;;  (implies (and (signed-byte-p size x)
+;;                (signed-byte-p size y))
+;;           (equal (signed-byte-p size (truncate x y))
+;;                  (not (and (equal x (- (expt 2 (+ -1 size))))
+;;                            (equal y -1)))))
+;;  :hints (("Goal" :cases ((< x 0))
+;;           :in-theory (enable truncate-becomes-floor-gen))))

@@ -22,13 +22,46 @@
 
 ;; Check that EXPR is a suitable DAG expr for node NODENUM.  That is, EXPR must
 ;; be a dag-expr and all nodenums it mentions must be less that NODENUM.
-(defun bounded-dag-exprp (nodenum expr)
+(defund bounded-dag-exprp (nodenum expr)
   (declare (type (integer 0 *) nodenum))
   (and (dag-exprp0 expr)
        (if (and (consp expr)
                 (not (eq 'quote (car expr))))
            (all-dargp-less-than (dargs expr) nodenum)
          t)))
+
+(defthm bounded-dag-exprp-when-not-consp-cheap
+  (implies (not (consp expr))
+           (equal (bounded-dag-exprp nodenum expr)
+                  (symbolp expr)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp0))))
+
+(defthm bounded-dag-exprp-of-cons
+  (equal (bounded-dag-exprp nodenum (cons fn args))
+         (if (equal 'quote fn)
+             (and (consp args)
+                  (equal nil (cdr args)))
+           (and (symbolp fn)
+                (true-listp args)
+                (all-dargp-less-than args nodenum))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
+(defthm all-dargp-less-than-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp nodenum expr)
+                ;; (consp expr)
+                (not (eq 'quote (car expr))))
+           (all-dargp-less-than (dargs expr) nodenum))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp
+                                     dargs-when-not-consp-cheap))))
+
+(defthm all-dargp-less-than-when-bounded-dag-exprp-gen
+  (implies (and (bounded-dag-exprp free expr)
+                ;; (consp expr)
+                (not (eq 'quote (car expr)))
+                (<= free nodenum))
+           (all-dargp-less-than (dargs expr) nodenum))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 (defthm bounded-dag-exprp-and-consp-forward-to-true-listp-of-dargs
   (implies (and (bounded-dag-exprp nodenum expr)
@@ -302,10 +335,11 @@
 
 (defthm all-dargp-less-than-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr)
-                (consp expr)
+                ;; (consp expr)
                 (not (equal 'quote (car expr))))
            (all-dargp-less-than (dargs expr) nodenum))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp
+                                     dargs-when-not-consp-cheap))))
 
 (defthm natp-of-+-of-a-and-largest-non-quotep
   (implies (all-dargp items)

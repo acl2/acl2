@@ -26,10 +26,9 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "bvcat")) ;for BVCHOP-OF-LOGAPP-BIGGER
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
+(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-type-4
 
 (in-theory (disable logext))
 
@@ -390,9 +389,14 @@
          (logext size i))
   :hints (("Goal" :cases ((posp size)))))
 
-(defthm <-of-logext-linear-upper
+;; (defthm <-of-logext-linear-upper
+;;   (implies (posp size)
+;;            (< (logext size x) (expt 2 (+ -1 size))))
+;;   :rule-classes :linear)
+
+(defthm <=-of-logext-linear-upper
   (implies (posp size)
-           (< (logext size x) (expt 2 (+ -1 size))))
+           (<= (logext size x) (+ -1 (expt 2 (+ -1 size)))))
   :rule-classes :linear)
 
 (defthm <-of-logext-linear-lower
@@ -490,3 +494,8 @@
                   (and (equal 0 (getbit (+ -1 size) x))
                        (not (equal 0 (bvchop (+ -1 size) x))))))
   :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-of-maxint
+  (implies (posp size)
+           (equal (logext size (+ -1 (expt 2 (+ -1 size))))
+                  (+ -1 (expt 2 (+ -1 size))))))

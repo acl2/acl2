@@ -1,0 +1,9 @@
+(include-book "irrelevant-formals")
+(include-book "tools/run-script" :dir :system)
+(run-script "irrelevant-formals")
+
+; Help dependency scanner.
+#||
+(depends-on "irrelevant-formals-input.lsp")
+(depends-on "irrelevant-formals-log.txt")
+||#

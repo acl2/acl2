@@ -123,19 +123,19 @@
   :hints (("Goal" :use (:instance bvchop-bvchop-better-helper (size (ifix size)) (size1 (ifix size1)))
            :in-theory (disable bvchop-bvchop-better-helper))))
 
+;allow the sizes to differ?
+;or just use the meta rule...
 (defthm bvchop-of-*-of-bvchop
    (implies (and (integerp x)
-                 (integerp y)
-                 (integerp n))
-            (equal (bvchop n (* (bvchop n y) x))
+                 (integerp y))
+            (equal (bvchop n (* (bvchop n x) y))
                    (bvchop n (* x y))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :in-theory (enable bvchop))))
 
 (defthm bvchop-of-*-of-bvchop-arg2
    (implies (and (integerp x)
-                 (integerp y)
-                 (integerp n))
+                 (integerp y))
             (equal (bvchop n (* x (bvchop n y)))
                    (bvchop n (* x y))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -275,29 +275,11 @@
                                bvchop-when-size-is-not-posp
                                expt))))
 
-;rename
-(defthm bvchop-n-times-drop
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (bvchop n (* (bvchop n x) y))
-                   (bvchop n (* x y))))
-   :hints (("Goal" :in-theory (enable bvchop))))
-
 ;i guess this one is an abbreviation rule
 (defthm unsigned-byte-p-bvchop-same
   (equal (unsigned-byte-p size (bvchop size i))
          (natp size))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
-;allow the sizes to differ?
-;or just use the meta rule...
-(defthm bvchop-times-cancel
-  (implies (and (integerp x)
-                (integerp y)
-                (natp n))
-           (equal (bvchop n (* (bvchop n x) y))
-                  (bvchop n (* x y))))
-  :hints (("Goal" :in-theory (e/d (bvchop) (mod-cancel)))))
 
 ;rename
 (defthm bvchop-shift-gen
@@ -499,24 +481,24 @@
                   (bvchop size (+ (bvchop size k) x))))
   :hints (("Goal" :cases ((natp size)))))
 
+;rename
 (defthm bvchop-times-cancel-better
   (implies (and  (<= m n)
                  (integerp x)
                  (integerp y)
-                 (natp n)
-                 (natp m))
+                 (natp n))
            (equal (bvchop m (* (bvchop n x) y))
                   (bvchop m (* x y))))
   :hints (("Goal" :in-theory (e/d (bvchop) (mod-of-*-of-mod))
            :use ((:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (y x))
                  (:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (y (mod x (expt 2 n))))))))
 
+;rename
 (defthm bvchop-times-cancel-better-alt
   (implies (and  (<= m n)
                  (integerp x)
                  (integerp y)
-                 (natp n)
-                 (natp m))
+                 (natp n))
            (equal (bvchop m (* y (bvchop n x)))
                   (bvchop m (* y x))))
   :hints (("Goal" :use (:instance bvchop-times-cancel-better)
@@ -764,3 +746,16 @@
   :hints (("Goal" :cases ((<= low high))
            :use (:instance bound-when-usb (x (bvchop n x)))
            :in-theory (disable bound-when-usb))))
+
+(defthmd bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop
+  (implies (and (integerp x)
+                (integerp y))
+           (implies (unsigned-byte-p size (* (bvchop size x) (bvchop size y)))
+                    (equal (bvchop size (* x y))
+                           (* (bvchop size x) (bvchop size y)))))
+  :hints (("Goal" :use ((:instance bvchop-of-*-of-bvchop (n size))
+                        (:instance bvchop-of-*-of-bvchop-arg2 (n size)
+                                   (x (bvchop size x))))
+           :in-theory (disable bvchop-of-*-of-bvchop
+                               bvchop-of-*-of-bvchop-arg2
+                               bvchop-times-cancel-better-alt))))

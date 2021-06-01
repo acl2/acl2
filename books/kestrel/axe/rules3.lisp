@@ -364,13 +364,6 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer nth2 ceiling-of-lg)
                                   (nth-of-bv-array-write-becomes-bv-array-read)))))
 
-(defthm sbvlt-transitive-free
-  (implies (and (sbvlt size x free)
-;                (syntaxp (and (quotep free) (quotep size)))
-                (sbvlt size free y))
-           (sbvlt size x y))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
 (defthm sbvlt-of-one-more-hack
   (implies (integerp x)
            (equal (sbvlt 32 4 (+ 1 x))
@@ -911,13 +904,6 @@
                                   (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                       TIMES-4-BECOMES-LOGAPP)))))
 
-;restrict?
-(defthm sbvlt-transitive-free-back
-  (implies (and (not (sbvlt size x free))
-                (not (sbvlt size free y)))
-           (not (sbvlt size x y)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
 ;; (thm
@@ -1126,7 +1112,9 @@
 
 ;rename?
 ;bad rule?
-(defthm bvlt-by-4
+;the turns into a fact about a slice being 0..
+;did we need this? which we we prefer bounds or usb claims?
+(defthmd bvlt-by-4
   (equal (bvlt 31 x 4)
          (unsigned-byte-p 2 (bvchop 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt) (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
@@ -3405,10 +3393,6 @@
            (equal (unsigned-byte-p size x)
                   (bvlt free x (expt 2 size))))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) (<-becomes-bvlt <-becomes-bvlt-alt)))))
-
-
-
-(in-theory (disable BVLT-BY-4)) ;did we need this? which we we prefer bounds or usb claims?
 
 ;; ;this doesn't fire, perhaps because it is hung on not..
 ;; (defthm not-bvlt-when-not-usb
@@ -5803,22 +5787,6 @@
                                    slice-of-+
                                    getbit-of-+ ;looped
                                    )))))
-
-;ffixme how is this different from the regular rule?
-(defthm bvlt-trim-arg1-new
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize
-                                                                        x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvlt size x y)
-                  (bvlt size (trim size x) y)))
-
-  :HINTS
-  (("Goal"
-    :by BVLT-TRIM-ARG1)))
-
-(in-theory (disable BVLT-TRIM-ARG1)) ;to make this fire first
 
 (DEFTHM UNSIGNED-BYTE-P-WHEN-BVLT-TIGHTEN
   (IMPLIES (AND (BVLT SIZE X FREE) ;allow one more fixme
@@ -17776,11 +17744,6 @@
   :hints (("Goal" :in-theory (disable ;sbvlt-rewrite sbvle SBVLT-WHEN-SBVMODDOWN-HACK4
                               ))))
 
-(defthm sbvlt-transitive-1
-  (implies (and (sbvlt 32 i free)
-                (not (sbvlt 32 len free)))
-           (sbvlt 32 i len)))
-
 (defthm myif-of-myif-of-myif-same-1
  (equal (MYIF test a (MYIF b (MYIF test c d) e))
         (MYIF test a (MYIF b d e)))
@@ -17816,10 +17779,11 @@
   :hints (("Goal" :in-theory (e/d (sbvlt bvminus) (;BVPLUS-OF-MINUS-1
                                                    )))))
 (defthm bvlt-of-plus-hack9
-  (implies (and (bvlt 31 x y)
+  (implies (and (syntaxp (quotep x)) ; prevent overly agressive matches
+                (bvlt 31 x y)
                 (integerp x)
                 (not (equal 0 (bvchop 31 x))))
-           (BVLT '31 (+ 2147483647 x) y))
+           (bvlt 31 (+ 2147483647 x) y))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases)
                                   (;BVPLUS-OF-MINUS-1
                                    )))))
@@ -17853,14 +17817,6 @@
                 (sbvlt 32 x 4))
            (sbvlt '32 (bvmult '32 '4 x) '16))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
-
-
-;todo: flesh out this theory fully
-;could be expensive...
-(defthm sbvlt-transitive-another
-  (implies (and (not (sbvlt 32 free x))
-                (sbvlt 32 free y))
-           (sbvlt 32 x y)))
 
 ;in case we don't chose a normal form:
 ;TODO: Add other variants of this.  Or just choose a normal form...
