@@ -163,7 +163,12 @@
   (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
-                  "At least one target function must be supplied.")))
+                  "At least one target function must be supplied."))
+       ((er &) (acl2::ensure-list-has-no-duplicates$
+                fn1...fnp
+                (msg "The list of target functions ~x0" fn1...fnp)
+                t
+                nil)))
     (acl2::value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
