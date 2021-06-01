@@ -32,26 +32,24 @@
                     (not (bvlt size x y)))))
   :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
-;gen?
 (defthmd bvdiv-of-bvdiv-arg2
-  (implies (and (natp size)
-                (unsigned-byte-p size y1)
-                (unsigned-byte-p size y2)
-                (unsigned-byte-p size (* y1 y2)))
+  (implies (and (integerp y1)
+                (integerp y2)
+                (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))) ;gen?
+                )
            (equal (bvdiv size (bvdiv size x y1) y2)
                   (bvdiv size
                          x
-                         (* y1 y2) ;(bvchop size (* y1 y2))
+                         (* y1 y2)
                          )))
-  :hints (("Goal" :in-theory (e/d (bvdiv) ( ;BVCHOP-IDENTITY
-                                           ;;todo: clean these up:
-                                           BVCHOP-TIMES-CANCEL-BETTER-ALT
-                                           BVCHOP-TIMES-CANCEL-BETTER
-                                           BVCHOP-OF-*-OF-BVCHOP-ARG2
-                                           BVCHOP-TIMES-CANCEL
-                                           BVCHOP-N-TIMES-DROP
-                                           BVCHOP-OF-*-OF-BVCHOP
-                                           )))))
+  :hints (("Goal" :in-theory (e/d (bvdiv
+                                   bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop)
+                                  ( ;BVCHOP-IDENTITY
+                                   ;;todo: clean these up:
+                                   bvchop-times-cancel-better-alt
+                                   bvchop-times-cancel-better
+                                   bvchop-of-*-of-bvchop-arg2
+                                   bvchop-of-*-of-bvchop)))))
 
 ;gen?
 (defthm bvdiv-of-bvdiv-arg2-combine-constants
@@ -59,10 +57,9 @@
                               (quotep y1)
                               (quotep y2)))
                 ;; all get computed:
-                (natp size)
-                (unsigned-byte-p size y1)
-                (unsigned-byte-p size y2)
-                (unsigned-byte-p size (* y1 y2)))
+                (integerp y1)
+                (integerp y2)
+                (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))))
            (equal (bvdiv size (bvdiv size x y1) y2)
                   (bvdiv size
                          x

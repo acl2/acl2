@@ -19,7 +19,7 @@
 
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
-(defun bvdiv (n x y)
+(defund bvdiv (n x y)
   (declare (type (integer 1 *) n)
            (type integer x)
            (type integer y)
@@ -108,7 +108,8 @@
 ;; x/1 becomes x (roughly)
 (defthm bvdiv-of-1-arg3
   (equal (bvdiv size x 1)
-         (bvchop size x)))
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm <-of-bvdiv-self
   (implies (and (unsigned-byte-p size x) ;gen?
@@ -125,13 +126,15 @@
                 (natp size))
            (< (bvdiv size x y) x))
   :rule-classes :linear
-  :hints (("Goal" :use (:instance <-of-bvdiv-self
-                                  (x (bvchop size x))))))
+  :hints (("Goal" :in-theory (enable bvdiv)
+           :use (:instance <-of-bvdiv-self
+                           (x (bvchop size x))))))
 
 (defthm <=-of-bvdiv-linear
   (implies (<= 0 x)
            (<= (bvdiv size x y) x))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm bvdiv-of-constant-trim-arg1
   (implies (and (syntaxp (and (quotep k)
