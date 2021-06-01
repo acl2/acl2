@@ -733,7 +733,11 @@
   (defrule atc-fn-infop-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-fninfo-alistp x)
                   (assoc-equal k x))
-             (atc-fn-infop (cdr (assoc-equal k x))))))
+             (atc-fn-infop (cdr (assoc-equal k x)))))
+
+  (defruled symbol-listp-of-strip-cars-when-atc-symbol-fninfo-alistp
+    (implies (atc-symbol-fninfo-alistp prec-fns)
+             (symbol-listp (strip-cars prec-fns)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2845,6 +2849,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-new-function-name ((fn-name stringp)
+                                     (prec-fns atc-symbol-fninfo-alistp))
+  :returns (mv
+            (okp booleanp)
+            (conflicting-fn
+             symbolp
+             :hyp (atc-symbol-fninfo-alistp prec-fns)
+             :hints
+              (("Goal"
+                :in-theory
+                (enable
+                 symbol-listp-of-strip-cars-when-atc-symbol-fninfo-alistp)))))
+  :short "Check that a C function name is new."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, ensure that the symbol name of @('fn')
+     differs from the ones in @('prec-fns').
+     It is not enough that the symbols are different:
+     the symbol names must be different,
+     because package names are ignored when translating to C.
+     We return a boolean saying whether the check succeeds or not.
+     If it does not, we return the function that causes the conflict,
+     i.e. that has the same symbol name as @('fn')."))
+  (atc-check-new-function-name-aux fn-name (strip-cars prec-fns))
+
+  :prepwork
+  ((define atc-check-new-function-name-aux ((fn-name stringp)
+                                            (fns symbol-listp))
+     :returns (mv (okp booleanp)
+                  (conflicting-fn symbolp :hyp (symbol-listp fns)))
+     :parents nil
+     (cond ((endp fns) (mv t nil))
+           ((equal fn-name (symbol-name (car fns))) (mv nil (car fns)))
+           (t (atc-check-new-function-name-aux fn-name (cdr fns)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-ext-declon ((fn symbolp)
                             (prec-fns atc-symbol-fninfo-alistp)
                             (proofs booleanp)
@@ -2886,6 +2928,14 @@
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
+       ((mv okp conflicting-fn) (atc-check-new-function-name name prec-fns))
+       ((when (not okp))
+        (er-soft+ ctx t nil
+                  "The symbol name ~s0 of the function ~x1 ~
+                   must be distinct from the symbol names of ~
+                   the oher ACL2 functions translated to C functions, ~
+                   but the function ~x2 has the same symbol name."
+                  name fn conflicting-fn))
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
@@ -2960,14 +3010,6 @@
      we use the extended @('prec-fns') for the subsequent functions."))
   (b* (((when (endp fns)) (acl2::value (list nil nil nil names-to-avoid)))
        ((cons fn rest-fns) fns)
-       (dup? (member-eq fn rest-fns))
-       ((when dup?)
-        (er-soft+ ctx t nil
-                  "The target functions must have distinct symbol names ~
-                   (i.e. they may not differ only in the package names), ~
-                   but the functions ~x0 and ~x1 ~
-                   have the same symbol name."
-                  fn (car dup?)))
        ((er (list ext local-events exported-events prec-fns names-to-avoid))
         (atc-gen-ext-declon fn prec-fns proofs prog-const fn-thms
                             print names-to-avoid ctx state))
