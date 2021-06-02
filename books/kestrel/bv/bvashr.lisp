@@ -47,3 +47,8 @@
                   (bvsx width (- width shift-amount)
                         (bvshr width x shift-amount))))
   :hints (("Goal" :in-theory (enable bvashr))))
+
+(defthm bvashr-of-0-arg2
+  (equal (bvashr width 0 shift-amount)
+         0)
+  :hints (("Goal" :in-theory (enable bvashr))))
