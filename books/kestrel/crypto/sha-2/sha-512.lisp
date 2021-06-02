@@ -19,7 +19,7 @@
 
 (include-book "../../bv/ops64")
 (include-book "../../bv/rightrotate")
-(include-book "../../bv/defs-shifts")
+(include-book "../../bv/bvshr-def")
 (include-book "../../bv-lists/packbv")
 (include-book "../../bv-lists/unpackbv")
 (include-book "../../bv-lists/bytes-to-bits")
