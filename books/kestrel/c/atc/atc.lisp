@@ -706,6 +706,7 @@
    (xdoc::p
     "This consists of
      the C output type of the function,
+     an optional (loop) statement represented by the function if recursive,
      the name of the locally generated theorem that asserts
      that the function returns a C value,
      the name of the locally generated theorem that asserts
@@ -715,6 +716,7 @@
      to execute the function completely on any arguments.
      The latter is calculated when C code is generated for the function."))
   ((type typep)
+   (loop? stmt-optionp)
    (returns-value-thm symbolp)
    (exec-var-limit-correct-thm symbolp)
    (limit natp))
@@ -2979,6 +2981,7 @@
                          limit names-to-avoid wrld))
        (info (make-atc-fn-info
               :type type
+              :loop? nil
               :returns-value-thm fn-returns-value-thm
               :exec-var-limit-correct-thm fn-exec-var-limit-correct-thm
               :limit limit)))
