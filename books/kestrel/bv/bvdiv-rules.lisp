@@ -66,3 +66,21 @@
                          (* y1 y2) ;(bvchop size (* y1 y2))
                          )))
   :hints (("Goal" :in-theory (enable bvdiv-of-bvdiv-arg2))))
+
+;todo: let the sizes differ
+(defthm bvlt-of-bvdiv-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (< 0 k1)
+                (< 0 k2)
+                (unsigned-byte-p size k1)
+                (unsigned-byte-p size k2)
+                (unsigned-byte-p size (* k1 k2)))
+           (equal (bvlt size (bvdiv size x k1) k2)
+                  (bvlt size x (* k1 k2))))
+  :hints (("Goal" :in-theory (enable bvdiv bvlt)
+           :use (:instance <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN
+                           (x (BVCHOP size X))
+                           (k k2)
+                           (k1 k1)))))
