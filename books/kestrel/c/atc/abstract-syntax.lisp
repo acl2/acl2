@@ -673,6 +673,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption stmt-option
+  stmt
+  :short "Fixtype of optional statements."
+  :pred stmt-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-stmt ()
   :returns (stmt stmtp)
   :short "An irrelevant statement, usable as a dummy return value."
