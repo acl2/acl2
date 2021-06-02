@@ -761,6 +761,7 @@
 
 
 (defines match-regex-rec
+  :flag-local nil
   (define match-regex-rec ((pat regex-p)
                            (x stringp)
                            (st matchstate-p)
@@ -1635,6 +1636,11 @@
   (and (matchresult->loc x) t)
   ///
   (fty::deffixequiv matchresult->matchedp)
+
+  (defthm matchresult->matchedp-of-matchresult
+    (iff (matchresult->matchedp (make-matchresult :loc loc :len len :str str :backrefs backrefs))
+         loc))
+
   (defthm natp-of-matchresult->loc
     (iff (natp (matchresult->loc x))
          (matchresult->matchedp x))
@@ -2015,3 +2021,260 @@
              (undup-equiv (match-regex-rec res str st mode)
                           (match-regex-rec (regex-disjunct (list x y)) str st mode)))
     :hints(("Goal" :in-theory (enable regex-disjunct2)))))
+
+
+
+
+(defsection matchresult->captured-substr-of-match-regex-when-regex-definitely-captures
+
+  (defines regex-definitely-captures
+    (define regex-definitely-captures ((name) (x regex-p))
+      :measure (regex-count x)
+      (regex-case x
+        :exact nil
+        :repeat (and (< 0 x.min)
+                     (regex-definitely-captures name x.pat))
+        :concat (regexlist-definitely-captures name x.lst)
+        :disjunct (regexlist-disjunct-definitely-captures name x.lst)
+        :group (or (equal x.index name)
+                   (regex-definitely-captures name x.pat))
+        :reverse-pref (regex-definitely-captures name x.pat)
+        :no-backtrack (regex-definitely-captures name x.pat)
+        :case-sens (regex-definitely-captures name x.pat)
+        ;; :zerolength ;; ??
+        ;; (regex-definitely-captures name x.pat)
+        :otherwise nil))
+    (define regexlist-definitely-captures ((name) (x regexlist-p))
+      :measure (regexlist-count x)
+      (if (atom x)
+          nil
+        (or (regex-definitely-captures name (car x))
+            (regexlist-definitely-captures name (cdr x)))))
+    (define regexlist-disjunct-definitely-captures ((name) (x regexlist-p))
+      :measure (regexlist-count x)
+      (and (consp x)
+           (regex-definitely-captures name (car x))
+           (or (atom (cdr x))
+               (regexlist-disjunct-definitely-captures name (cdr x))))))
+
+  (local (defthm alistp-when-backref-alist-p-rw
+           (implies (backref-alist-p x)
+                    (alistp x))))
+
+  (define matchstatelist-all-have-backref ((name) (x matchstatelist-p))
+    (if (atom x)
+        t
+      (and (assoc-equal name (matchstate->backrefs (car x)))
+           (matchstatelist-all-have-backref name (cdr x))))
+    ///
+    (defthm matchstatelist-all-have-backref-of-remove
+      (implies (assoc-equal name (matchstate->backrefs x1))
+               (iff (matchstatelist-all-have-backref name (remove-equal x1 x))
+                    (matchstatelist-all-have-backref name x)))
+      :hints(("Goal" :in-theory (enable remove-equal))))
+    (defthm matchstatelist-all-have-backref-of-undup
+      (iff (matchstatelist-all-have-backref name (undup x))
+           (matchstatelist-all-have-backref name x))
+      :hints(("Goal" :in-theory (enable undup))))
+    (defthm matchstatelist-all-have-backref-of-nil
+      (matchstatelist-all-have-backref name nil))
+    (defthm matchstatelist-all-have-backref-of-append
+      (iff (matchstatelist-all-have-backref name (append x y))
+           (and (matchstatelist-all-have-backref name x)
+                (matchstatelist-all-have-backref name y))))
+    (defthm matchstatelist-all-have-backref-of-set-difference
+      (implies (matchstatelist-all-have-backref name x)
+               (matchstatelist-all-have-backref name (set-difference-equal x y))))
+    (defthm matchstatelist-all-have-backref-of-matches-remove-zero-length
+      (implies (matchstatelist-all-have-backref name x)
+               (matchstatelist-all-have-backref name
+                                                (matches-remove-zero-length n x)))
+      :hints(("Goal" :in-theory (enable matches-remove-zero-length))))
+    (defthm matchstatelist-all-have-backref-of-cons
+      (equal (matchstatelist-all-have-backref name (cons a b))
+             (and (assoc-equal name (matchstate->backrefs a))
+                  (matchstatelist-all-have-backref name b))))
+    (defthm matchstatelist-all-have-backref-of-rev
+      (iff (matchstatelist-all-have-backref name (rev x))
+           (matchstatelist-all-have-backref name x))
+      :hints(("Goal" :in-theory (enable rev))))
+    (defthm matchstatelist-all-have-backref-of-matches-add-backref
+      (implies (matchstatelist-all-have-backref name x)
+               (matchstatelist-all-have-backref name
+                                                (matches-add-backref name1 start-idx x)))
+      :hints(("Goal" :in-theory (enable matches-add-backref
+                                        match-add-backref))))
+
+    (defthm matchstatelist-all-have-backref-of-matches-add-backref-same
+      (matchstatelist-all-have-backref name
+                                       (matches-add-backref name start-idx x))
+      :hints(("Goal" :in-theory (enable matches-add-backref
+                                        match-add-backref))))
+    )
+
+
+  (local (defthm maybe-natp-fix-when-x
+           (implies x
+                    (natp (maybe-natp-fix x)))
+           :hints(("Goal" :in-theory (enable maybe-natp-fix)))
+           :rule-classes :type-prescription))
+
+  (defret-mutual have-backref-when-already-has-backref
+    :mutual-recursion match-regex-rec
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (assoc-equal name (matchstate->backrefs st))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>)))
+      :fn match-regex-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (assoc-equal name (matchstate->backrefs st))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>)))
+      :fn match-concat-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (matchstatelist-all-have-backref name sts)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (matchstatelist-all-have-backref name sts))))
+      :fn match-concat-sts-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (assoc-equal name (matchstate->backrefs st))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>)))
+      :fn match-disjunct-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (matchstatelist-all-have-backref name sts)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (matchstatelist-all-have-backref name sts))))
+      :fn match-regex-sts-nonzero-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (matchstatelist-all-have-backref name sts)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (matchstatelist-all-have-backref name sts))))
+      :fn match-regex-sts-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (matchstatelist-all-have-backref name sts)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand ((:free (min) <call>))))
+      :fn match-repeat-sts-minimum-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (matchstatelist-all-have-backref name sts)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand ((:free (max) <call>))))
+      :fn match-repeat-sts-rec)
+    (defret have-backref-when-already-has-backref-of-<fn>
+      (implies (assoc-equal name (matchstate->backrefs st))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand ((:free (max) <call>))))
+      :fn match-repeat-rec)
+    :skip-others t)
+
+  (local (defthm match-disjunct-rec-of-atom
+           (implies (not (consp pat))
+                    (equal (match-disjunct-rec pat x st mode) nil))
+           :hints (("goal" :expand ((match-disjunct-rec pat x st mode))))))
+
+
+  (defret-mutual have-backref-when-regex-definitely-captures
+    :mutual-recursion match-regex-rec
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regex-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (regex-definitely-captures name pat))))
+      :fn match-regex-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regexlist-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (regexlist-definitely-captures name pat))))
+      :fn match-concat-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regexlist-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (regexlist-definitely-captures name pat))))
+      :fn match-concat-sts-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regexlist-disjunct-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (regexlist-disjunct-definitely-captures name pat))))
+      :fn match-disjunct-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regex-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>)))
+      :fn match-regex-sts-nonzero-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (regex-definitely-captures name pat)
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand (<call>
+                         (matchstatelist-all-have-backref name sts))))
+      :fn match-regex-sts-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (and (regex-definitely-captures name pat)
+                    (< 0 (nfix min)))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand ((:free (min) <call>))))
+      :fn match-repeat-sts-minimum-rec)
+    ;; (defret have-backref-when-regex-definitely-captures-of-<fn>
+    ;;   (implies (matchstatelist-all-have-backref name sts)
+    ;;            (matchstatelist-all-have-backref name matches))
+    ;;   :hints ('(:expand ((:free (max) <call>))))
+    ;;   :fn match-repeat-sts-rec)
+    (defret have-backref-when-regex-definitely-captures-of-<fn>
+      (implies (and (regex-definitely-captures name pat)
+                    (< 0 (nfix min)))
+               (matchstatelist-all-have-backref name matches))
+      :hints ('(:expand ((:free (max) <call>))))
+      :fn match-repeat-rec)
+    :skip-others t)
+
+
+  (local (defthm backref-present-of-car-when-matchstatelist-all-have-backref
+           (implies (and (matchstatelist-all-have-backref name x)
+                         (consp x))
+                    (assoc-equal name (matchstate->backrefs (car x))))))
+
+  (defret have-backref-of-match-regex-locs-when-regex-definitely-captures
+    (implies (and (regex-definitely-captures name pat)
+                  (matchresult->matchedp match))
+             (assoc-equal name (matchresult->backrefs match)))
+    :hints(("Goal" :expand ((:free (pat x mode) <call>))
+            :in-theory (e/d ((:i <fn>))
+                            (matchresult->loc-under-iff))
+            :induct <call>))
+    :fn match-regex-locs)
+
+
+  (defret have-backref-of-match-regex-when-regex-definitely-captures
+    (implies (and (regex-definitely-captures name regex)
+                  (matchresult->matchedp match))
+             (assoc-equal name (matchresult->backrefs match)))
+    :hints(("Goal" :in-theory (enable <fn>)))
+    :fn match-regex)
+
+
+  (local (defthm cdr-assoc-equal-under-iff-of-backref-alist
+           (implies (backref-alist-p x)
+                    (iff (cdr (assoc-equal name x))
+                         (assoc-equal name x)))))
+
+  (defret matchresult->captured-substr-of-match-regex-when-regex-definitely-captures
+    (implies (and (regex-definitely-captures name regex)
+                  (matchresult->matchedp match))
+             (matchresult->captured-substr name match))
+    :hints(("Goal" :in-theory (enable matchresult->captured-substr)))
+    :fn match-regex)
+
+  (defret stringp-of-matchresult->captured-substr-of-match-regex-when-regex-definitely-captures
+    (implies (and (regex-definitely-captures name regex)
+                  (matchresult->matchedp match))
+             (stringp (matchresult->captured-substr name match)))
+    :hints(("Goal" :in-theory (enable matchresult->captured-substr)))
+    :fn match-regex))
+
+
