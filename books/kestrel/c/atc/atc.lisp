@@ -1151,7 +1151,11 @@
     "If the check is successful, we return
      the called function along with the arguments.
      We also return the result type of the function
-     and the limit sufficient to execute the function."))
+     and the limit sufficient to execute the function.")
+   (xdoc::p
+    "This is used on C-valued terms,
+     so the called function must be non-recursive,
+     i.e. it must represent a C function, not a C loop."))
   (case-match term
     ((fn . args) (b* (((unless (symbolp fn))
                        (mv nil nil nil (irr-type) 0))
@@ -1162,6 +1166,8 @@
                        (mv nil nil nil (irr-type) 0))
                       (info (cdr fn+info))
                       (type (type-fix (atc-fn-info->type info)))
+                      ((when (atc-fn-info->loop? info))
+                       (mv nil nil nil (irr-type) 0))
                       (limit (lnfix (atc-fn-info->limit info))))
                    (mv t fn args type limit)))
     (& (mv nil nil nil (irr-type) 0)))
@@ -1705,7 +1711,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-xforming-term-for-let ((term pseudo-termp))
+(define atc-loop-fn-p ((fn symbolp) (prec-fns atc-symbol-fninfo-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 function represents a C loop."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the function is in @('prec-fns'),
+     i.e. it has already been translated to C
+     as we go through the target functions,
+     and the function is recursive,
+     which is indicated by the presence of a C (loop) statement
+     in the alist of function information."))
+  (b* ((fn+info (assoc-eq fn prec-fns))
+       ((unless (consp fn+info)) nil)
+       (info (cdr fn+info))
+       (loop? (atc-fn-info->loop? info)))
+    (and loop? t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-xforming-term-for-let ((term pseudo-termp)
+                                   (prec-fns atc-symbol-fninfo-alistp))
   :returns (yes/no booleanp)
   :short "Check if a term @('term') has the basic structure
           required for being a transforming term in
@@ -1718,13 +1745,16 @@
      Here we perform a shallow check,
      because we will examine the term in full detail
      when recursively generating C code from it.
-     In essence, here we check that the term is
-     an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$)."))
+     In essence, here we check that the term is either
+     (i) an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$) or
+     (ii) a call of a (preceding) recursive target function."))
   (case-match term
     ((fn test . &) (and (eq fn 'if)
                         (case-match test
                           ((fn . &) (not (member-eq fn '(mbt mbt$))))
                           (& t))))
+    ((fn . &) (and (symbolp fn)
+                   (atc-loop-fn-p fn prec-fns)))
     (& nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1953,7 +1983,7 @@
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
                         fn vars))
-             ((unless (atc-xforming-term-for-let val))
+             ((unless (atc-xforming-term-for-let val prec-fns))
               (er-soft+ ctx t (list nil (irr-type) 0)
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
@@ -2020,7 +2050,7 @@
                          an attempt is being made ~
                          to modify a non-assignable variable ~x1."
                         fn var))
-             (xforming-val (atc-xforming-term-for-let val))
+             (xforming-val (atc-xforming-term-for-let val prec-fns))
              ((when xforming-val)
               (b* (((er (list xform-items & xform-limit))
                     (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
