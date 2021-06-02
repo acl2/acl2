@@ -482,7 +482,7 @@
                 (syntaxp (and (quotep k)
                               (quotep size)))
                 (unsigned-byte-p (+ -1 size) k) ;k is non-negative (this gets evaluated)
-                (sbvle size k y) ;the subtraction doesn't underflow
+                (sbvle size k y) ; y-k doesn't underflow
                 (posp size))
            (sbvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases getbit-of-plus bvplus
