@@ -113,19 +113,25 @@
       (& (mv 0 ''nil ''nil nil nil)))))
 
 (progn
+
+  (define hash-coef ()
+    :inline t
+    1)
+  
   (define pp-instance-hash (e)
     :returns (hash integerp)
     :inline t
-    (case-match e
-      (('and-list ('quote hash) &)
-       (ifix hash))
-      (('-- ('and-list ('quote hash) &))
-       (- (ifix hash)))
-      (''1
-       1)
-      (''-1
-       -1)
-      (& 0)))
+    (* (hash-coef)
+       (case-match e
+         (('and-list ('quote hash) &)
+          (ifix hash))
+         (('-- ('and-list ('quote hash) &))
+          (- (ifix hash)))
+         (''1
+          1)
+         (''-1
+          -1)
+         (& 0))))
 
   (defwarrant pp-instance-hash$inline)
 
@@ -143,12 +149,13 @@
   (define calculate-pp-hash (pp)
     :returns (hash-code integerp)
     :inline t
-    (case-match pp
-      (('list . pp-lst)
-       ;;(let ((len (len pp-lst))) (* len len))
-       (pp-lst-hash pp-lst)
-       )
-      (& 0)))
+    (* (hash-coef)
+       (case-match pp
+         (('list . pp-lst)
+          ;;(let ((len (len pp-lst))) (* len len))
+          (pp-lst-hash pp-lst)
+          )
+         (& 0))))
 
   (defwarrant calculate-pp-hash$inline)
 
@@ -235,62 +242,63 @@
   (define calculate-s-hash ((pp rp-termp)
                             (c rp-termp))
     :returns (hash-code integerp)
-    (+ (* 5 (calculate-pp-hash pp))
-       (* 3 (get-hash-code-of-c c))))
+    (* (hash-coef)
+       (+ (* 5 (calculate-pp-hash pp))
+          (* 3 (get-hash-code-of-c c)))))
 
   (define calculate-c-hash ((s rp-termp)
                             (pp rp-termp)
                             (c rp-termp))
     :returns (hash-code)
-    (b* ((hash-code-base (calculate-s-hash pp c))
-         ((mv s-hash-codes1 s-hash-codes2)
+    (b* ((?hash-code-base (calculate-s-hash pp c))
+         ((mv ?s-hash-codes1 ?s-hash-codes2)
           (get-hash-code-of-s s)))
-      (cons (+ hash-code-base s-hash-codes1)
-            (+ hash-code-base s-hash-codes2)))))
+      (cons (* (hash-coef) (+ hash-code-base s-hash-codes1))
+            (* (hash-coef) (+ hash-code-base s-hash-codes2))
+            ))))
 
 (local
  (in-theory (disable rp-termp)))
 
 (local
  (defthm measure-lemma-loose1
-   (IMPLIES (AND
-             (CONSP (ex-from-rp MAX-TERM))
-             (CONSP (CDR (ex-from-rp MAX-TERM)))
-             (NOT (CDDR (ex-from-rp MAX-TERM))))
-            (O< (CONS-COUNT (CADR (ex-from-rp MAX-TERM)))
-                (CONS-COUNT MAX-TERM)))
-   :hints (("Goal"
-            :induct (ex-from-rp MAX-TERM)
+   (implies (and
+             (consp (ex-from-rp max-term))
+             (consp (cdr (ex-from-rp max-term)))
+             (not (cddr (ex-from-rp max-term))))
+            (o< (cons-count (cadr (ex-from-rp max-term)))
+                (cons-count max-term)))
+   :hints (("goal"
+            :induct (ex-from-rp max-term)
             :do-not-induct t
             :in-theory (e/d (ex-from-rp
                              measure-lemmas)
-                            ((:REWRITE MEASURE-LEMMA1)
-                             (:REWRITE CONS-COUNT-ATOM)
-
-                             (:REWRITE DEFAULT-CDR)
-                             (:REWRITE MEASURE-LEMMA6-5)
-                             (:DEFINITION EX-FROM-RP)
-                             (:REWRITE MEASURE-LEMMA1-2)))))))
+                            ((:rewrite measure-lemma1)
+                             (:rewrite cons-count-atom)
+                             (:rewrite default-cdr)
+                             (:rewrite measure-lemma6-5)
+                             (:definition ex-from-rp)
+                             (:rewrite measure-lemma1-2)))))))
 (local
  (defthm measure-lemma-loose2
-   (IMPLIES (AND  (CONSP (ex-from-rp MAX-TERM))
-                  (CONSP (CDR (ex-from-rp MAX-TERM)))
-                  (CONSP (CDDR (ex-from-rp MAX-TERM)))
-                  (CONSP (CDDDR (ex-from-rp MAX-TERM)))
-                  (CONSP (CDDDDR (ex-from-rp MAX-TERM)))
-                  (NOT (CDR (CDDDDR (ex-from-rp MAX-TERM)))))
-            (O< (CONS-COUNT (CDR (CAR (CDDDDR (ex-from-rp MAX-TERM)))))
-                (CONS-COUNT MAX-TERM)))
-   :hints (("Goal"
-            :induct (ex-from-rp MAX-TERM)
+   (implies (and  (consp (ex-from-rp max-term))
+                  (consp (cdr (ex-from-rp max-term)))
+                  (consp (cddr (ex-from-rp max-term)))
+                  (consp (cdddr (ex-from-rp max-term)))
+                  (consp (cddddr (ex-from-rp max-term)))
+                  (not (cdr (cddddr (ex-from-rp max-term)))))
+            (o< (cons-count (cdr (car (cddddr (ex-from-rp max-term)))))
+                (cons-count max-term)))
+   :hints (("goal"
+            :induct (ex-from-rp max-term)
             :do-not-induct t
             :in-theory (e/d (ex-from-rp
                              measure-lemmas)
-                            ((:REWRITE DEFAULT-CDR)
-;(:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
-                             (:DEFINITION RP-TERMP)
-                             (:REWRITE MEASURE-LEMMA1-2)
-                             (:REWRITE MEASURE-LEMMA1)))))))
+                            ((:rewrite default-cdr)
+;(:rewrite ex-from-rp-loose-is-rp-termp)
+                             (:definition rp-termp)
+                             (:rewrite measure-lemma1-2)
+                             (:rewrite measure-lemma1)))))))
 
 (local
  (defthm measure-lemma-loose3
@@ -1907,7 +1915,7 @@
                  (list (cons #\0 (list type1 single-c1))
                        (cons #\1 (list type2 single-c2))))
                 (mv nil nil nil nil))))
-    (cond ((and (= c1-hash-code (+ 5 c2-hash-code))
+    (cond ((and (or (= (hash-coef) 0) (= c1-hash-code (+ 5 c2-hash-code)))
                 (consp (list-to-lst pp-arg1))
                 (equal (car (list-to-lst pp-arg1)) ''1)
                 (equal s-arg1 s-arg2)
@@ -1944,7 +1952,7 @@
                  (t
                   (mv (list-to-lst s-arg1) (list-to-lst pp-arg2) c-arg1-lst
                       t))))
-          ((and (= c2-hash-code (+ 5 c1-hash-code))
+          ((and (or (= (hash-coef) 0) (= c2-hash-code (+ 5 c1-hash-code)))
                 (consp (list-to-lst pp-arg2))
                 (equal (car (list-to-lst pp-arg2)) ''1)
                 (equal s-arg1 s-arg2)
@@ -2375,7 +2383,22 @@
                )
   (b* (((unless (c-of-s-fix-mode))
         (c-sum-merge* c1-lst c2-lst auto-swap clean-c1-lst cough-c-lst))
-       (merged-c-lst (s-sum-merge-aux c1-lst c2-lst)))
+       (merged-c-lst (s-sum-merge-aux c1-lst c2-lst))
+       #|(- (or (s-sum-ordered-listp c1-lst)
+              (hard-error 'c-sum-merge-main
+                          "c1-lst is not ordered. ~p0 ~%"
+                          (list (cons #\0 c1-lst)))))
+       (- (or (s-sum-ordered-listp c2-lst)
+              (hard-error 'c-sum-merge-main
+                          "c2-lst is not ordered. ~p0 ~%"
+                          (list (cons #\0 c2-lst)))))
+       (- (or (s-sum-ordered-listp merged-c-lst)
+              (hard-error 'c-sum-merge-main
+                          "merged-c-lst is not ordered. ~p0. c1-lst: ~p1
+                          c2-lst: ~p2 ~%"
+                          (list (cons #\0 merged-c-lst)
+                                (cons #\1 c1-lst)
+                                (cons #\2 c2-lst)))))||#)
     (mv ''nil nil merged-c-lst nil)))
 
 (define c-of-s-fix-lst ((arg-s-lst rp-term-listp)
@@ -2795,9 +2818,9 @@
      ((quote-p abs-term)
       (b* ((pp-lst (pp-sum-merge-aux (list term-orig)  pp-lst)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
-     ((pp-term-p abs-term)
+     ((pp-term-p ABS-TERM-W/-SC)
       (b* (;;(abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten abs-term negated))
+           (pp-lst2 (pp-flatten ABS-TERM-W/-SC negated))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      (t

@@ -12,6 +12,9 @@
 (local (include-book "std/lists/prefixp" :dir :system))
 (local (include-book "std/lists/intersectp" :dir :system))
 
+; Matt K.: Avoid ACL2(p) error (proof failed with checkpoint)
+(set-waterfall-parallelism nil)
+
 (local
  (in-theory
   (e/d

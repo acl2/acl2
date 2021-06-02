@@ -4500,7 +4500,7 @@
                               SV::4VEC->LOWER
                               sv::4vec-bitor
                               SV::3VEC-BITOR) ()))))
-  (defthmd logior-to-4vec-bitor-side-cond
+  (def-rp-rule integerp-4vec-bitor
     (implies (and (integerp x)
                   (integerp y))
              (integerp (4vec-bitor x y)))
@@ -4509,7 +4509,7 @@
                               SV::3VEC-BITOR) ()))))
 
   (rp-attach-sc logior-to-4vec-bitor
-                logior-to-4vec-bitor-side-cond))
+                integerp-4vec-bitor))
 
 (progn
   (def-rp-rule$ t nil
@@ -4546,7 +4546,7 @@
                               SV::4VEC->LOWER
                               sv::4vec-bitxor
                               SV::3VEC-BITXOR) ()))))
-  (defthmd logxor-to-4vec-bitxor-side-cond
+  (def-rp-rule integerp-of-4vec-bitxor
     (implies (and (integerp x)
                   (integerp y))
              (integerp (sv::4vec-bitxor x y)))
@@ -4555,10 +4555,10 @@
                               SV::3VEC-BITXOR) ()))))
 
   (rp-attach-sc logxor-to-4vec-bitxor
-                logxor-to-4vec-bitxor-side-cond))
+                integerp-of-4vec-bitxor))
 
 (progn
-  (def-rp-rule$ t nil
+  (def-rp-rule$ t t
     binary-+-to-4vec-plus
     (implies (and (integerp x)
                   (integerp y))
@@ -4619,7 +4619,8 @@
                  (natp index))
             (sv::4vec-p (nth index lst)))
    :hints (("Goal"
-            :in-theory (e/d (4vec-p) ()))))
+            :in-theory (e/d (4vec-p)
+                            ()))))
 
 
 (def-rp-rule sv::4vec-xdet-opener
@@ -4708,3 +4709,10 @@
                              4VEC-SHIFT-CORE
                              SV::3VEC-REDUCTION-OR)
                            ()))))
+
+
+(def-rp-rule integerp-3vec-fix
+  (implies (integerp x)
+           (integerp (sv::3vec-fix x)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::3vec-fix) ()))))

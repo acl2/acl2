@@ -2218,7 +2218,8 @@
                name
                (untranslate xconcl t wrld)))
           (t
-           (let* ((all-vars-hyps (all-vars-in-hyps hyps))
+           (let* ((all-vars-hyps (and (null trigger-terms) ; optimization
+                                      (all-vars-in-hyps hyps)))
                   (potential-free-vars
                    (free-vars-in-hyps-considering-bind-free hyps nil wrld))
                   (all-vars-in-poly-lst
@@ -2435,7 +2436,8 @@
          (lst (and (null trigger-terms) ; optimization
                    (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
-         (all-vars-hyps (all-vars-in-hyps hyps))
+         (all-vars-hyps (and (null trigger-terms) ; optimization
+                             (all-vars-in-hyps hyps)))
          (max-terms
           (or trigger-terms
               (maximal-terms (all-vars-in-poly-lst (car lst))
@@ -7701,9 +7703,17 @@
 
 (defun chk-legal-linear-trigger-terms1 (term lst name ctx state)
   (cond ((null lst) (value nil))
-        ((subsetp-eq (set-difference-eq (all-vars (cdar lst))
-                                        (all-vars1-lst (caar lst) nil))
-                     (all-vars term))
+        ((let ((hyp-vars (all-vars-in-hyps (caar lst))))
+
+; We use all-vars-in-hyps here, in checking that the explicitly supplied
+; :trigger-terms are all maximal terms, for consistency with the use of
+; all-vars-in-hyps in add-linear-rule2 and chk-acceptable-linear-rule2 to
+; compute maximal terms heuristically.
+
+           (or (eq hyp-vars t)
+               (subsetp-eq (set-difference-eq (all-vars (cdar lst))
+                                              hyp-vars)
+                           (all-vars term))))
          (chk-legal-linear-trigger-terms1 term (cdr lst) name ctx state))
         (t (er soft ctx
                "Each term in the :TRIGGER-TERMS of a :LINEAR rule should be a ~

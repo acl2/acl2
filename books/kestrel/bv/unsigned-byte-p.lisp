@@ -122,13 +122,12 @@
 
 (defthm size-non-negative-when-unsigned-byte-p-free
   (implies (unsigned-byte-p size free)
-           (equal (< size 0)
-                  nil))
+           (not (< size 0)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm size-non-negative-when-unsigned-byte-p-free-linear
   (implies (unsigned-byte-p size free)
-           (equal (< size 0)
+           (equal (< size 0) ;todo: why can I not phrase this with not?
                   nil))
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
@@ -213,10 +212,10 @@
                        (natp n))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-strong (x k) (size n) (y x)))))
 
+;rename
 (defthm unsigned-byte-p-when-size-is-negative-limited
   (implies (< size 0)
-           (equal (unsigned-byte-p size x)
-                  nil))
+           (not (unsigned-byte-p size x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 (defthm natp-when-unsigned-byte-p-size-arg
@@ -297,3 +296,15 @@
                 (natp n)
                 )
            (not (< k x))))
+
+(defthmd unsigned-byte-p-of-+-arg1-a
+  (implies (and (unsigned-byte-p size1 x)
+                (natp size2))
+           (unsigned-byte-p (+ size1 size2) x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthmd unsigned-byte-p-of-+-arg1-b
+  (implies (and (unsigned-byte-p size2 x)
+                (natp size1))
+           (unsigned-byte-p (+ size1 size2) x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))

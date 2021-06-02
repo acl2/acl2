@@ -542,47 +542,16 @@ UPDATE-FLD-NIL-BAD.
 
 [Illegal-State] >>(CONTINUE-FROM-ILLEGAL-STATE)
  :CONTINUING
-ACL2 !>>(THM (EQUAL X X)
+ACL2 !>>(WITH-OUTPUT
+         :OFF ERROR
+         (THM
+             (EQUAL X X)
              :HINTS (("Goal" :INSTRUCTIONS ((CL-PROC :FUNCTION SIMPLE-CL-PROC
-                                                     :HINT NIL)))))
-
-
-ACL2 Error in :PROVE:  ACL2 cannot ev the call of non-executable function
-STOP on argument list:
-
-NIL
-
-To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
-
-
-
-ACL2 Error in :PROVE:  Evaluation failed for the :clause-processor
-hint.
-
-
-Saving proof-builder error state; see :DOC instructions.  To retrieve:
-(RETRIEVE :ERROR1)
-
-ACL2 Error in PROOF-BUILDER-CL-PROC:  The above :INSTRUCTIONS hint
-failed.  For a discussion of ``failed'', follow the link to the SEQUENCE
-command under :DOC proof-builder-commands.
-
-
-
-ACL2 Error in ( THM ...):  Error in clause-processor hint:
-
-  (PROOF-BUILDER-CL-PROC CLAUSE
-                         '((CL-PROC :FUNCTION SIMPLE-CL-PROC
-                                    :HINT NIL))
-                         STATE)
-
-
+                                                     :HINT NIL))))))
 
 Summary
 Form:  ( THM ...)
 Rules: NIL
-
-*** Note: No checkpoints to print. ***
 
 ACL2 Error in ( THM ...):  See :DOC failure.
 

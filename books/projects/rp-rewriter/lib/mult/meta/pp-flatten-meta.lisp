@@ -753,6 +753,7 @@
   (def-formula-checks
     pp-flatten-formula-checks
     (merge-pp-and
+     flatten-pp
      ;;flatten-pp-main
      merge-pp-or
      binary-not
@@ -2915,4 +2916,6 @@
                             EVAL-OF----
                             --
                             pp-sum)))))
+
+
 

@@ -20,6 +20,7 @@
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor")) ;for FLOOR-DIVIDE-BY-same
+(local (include-book "../arithmetic-light/floor2"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm getbit-type
@@ -372,3 +373,38 @@
                   1))
   :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+;may be expensive? restrict to constant n?
+(defthm equal-of-getbit-and-1-forward-to-bound
+  (implies (and (equal 1 (getbit n x))
+                (natp x)
+                (natp n))
+           (<= (expt 2 n) x))
+  :rule-classes ((:forward-chaining))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
+
+(local
+ (defthm unsigned-byte-p-of-bvchop-one-more-helper
+   (implies (and (equal size-1 (+ -1 size))
+                 (natp x)
+                 (posp size))
+            (equal (unsigned-byte-p size-1 (bvchop size x))
+                   (equal 0 (getbit size-1 x))))
+   :hints (("Goal" :cases ((equal 0 x))
+            :in-theory (e/d (getbit slice logtail bvchop unsigned-byte-p
+                                    mod-of-floor-equal-rewrite
+                                    EXPT-HACK)
+                            (slice-becomes-getbit
+                             bvchop-1-becomes-getbit))))))
+
+(defthmd unsigned-byte-p-of-bvchop-one-more
+   (implies (and (equal size-1 (+ -1 size))
+                 (posp size))
+            (equal (unsigned-byte-p size-1 (bvchop size x))
+                   (equal 0 (getbit size-1 x))))
+   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvchop-one-more-helper
+                                   (x (bvchop size x)))
+            :in-theory (disable unsigned-byte-p-of-bvchop-one-more-helper))))

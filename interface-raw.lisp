@@ -9314,9 +9314,9 @@
   (delete-file os-expansion-filename)
   (io? event nil state
        (full-book-name)
-       (fms "Note: Deleting expansion file for the book,~%~s0.~|"
-            (list (cons #\0 full-book-name))
-            (proofs-co state) state nil)))
+       (fms! "Note: Deleting expansion file for the book, ~s0.~|"
+             (list (cons #\0 full-book-name))
+             (proofs-co state) state nil)))
 
 (defun compile-uncompiled-defuns (file &optional (fns :some) gcl-flg
                                        &aux (state *the-live-state*))

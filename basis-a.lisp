@@ -6497,6 +6497,10 @@
 ; an array of stobjs, if 0 <= i < n then the ith element of a1 will be EQ to
 ; the ith element of a2 after the copy is complete.
 
+; Addition of (type simple-array a1 a2) to the declare form did not affect the
+; output of disassemble in either CCL or SBCL.  So it seems best not to
+; consider whether a1 and a2 must be simple-arrays.
+
   (cond
    ((>= i n) a2)
    (t (setf (aref a2 i)
@@ -6551,44 +6555,6 @@
   `(or (and (typep ,name 'vector)
             (not (stringp ,name)))
        (typep ,name 'hash-table)))
-
-(defconst *expt2-28* (expt 2 28))
-
-(defun array-etype-is-fixnum-type (array-etype)
-  (declare (xargs :guard
-                  (implies (consp array-etype)
-                           (true-listp array-etype))))
-  (and (consp array-etype)
-       (case (car array-etype)
-             (integer
-              (let* ((e1 (cadr array-etype))
-                     (int1 (if (integerp e1)
-                               e1
-                             (and (consp e1)
-                                  (integerp (car e1))
-                                  (1- (car e1)))))
-                     (e2 (caddr array-etype))
-                     (int2 (if (integerp e2)
-                               e2
-                             (and (consp e2)
-                                  (integerp (car e2))
-                                  (1- (car e2))))))
-                (and int1
-                     int2
-                     (>= int1 (- *expt2-28*))
-                     (< int2 *expt2-28*))))
-             (mod
-              (and (integerp (cadr array-etype))
-                   (< (cadr array-etype)
-                      *expt2-28*)))
-             (unsigned-byte
-              (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype)
-                       29)))
-             (signed-byte
-              (and (integerp (cadr array-etype))
-                   (<= (cadr array-etype)
-                       30))))))
 
 (defun absstobj-name (name type)
 
@@ -6853,10 +6819,6 @@
                        (if (eq (car simple-type) 'simple-vector)
                            'svref
                          'aref)))
-            (fix-vref (and arrayp
-                           (if (array-etype-is-fixnum-type array-etype)
-                               'fix-aref
-                             vref)))
             (accessor-name (access defstobj-field-template
                                    field-template
                                    :accessor-name))
@@ -7015,7 +6977,7 @@
                       (prog1 (setf ,(if single-fieldp
                                         'var
                                       `(svref var ,n))
-                                   (,(pack2 'copy-array- fix-vref)
+                                   (,(pack2 'copy-array- vref)
                                     old new 0 min-index))
                         ,@(and stobj-creator
                                `((when (< (length old) i)

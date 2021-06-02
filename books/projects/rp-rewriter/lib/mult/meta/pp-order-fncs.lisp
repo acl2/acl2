@@ -333,3 +333,7 @@
              :in-theory (e/d (pp-and$-order
                               lexorder2-sanity)
                              ())))))
+
+(define flatten-pp (x)
+  :enabled t
+  x)

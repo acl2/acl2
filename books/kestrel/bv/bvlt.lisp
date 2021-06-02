@@ -44,9 +44,9 @@
            (type (integer 0 *) size))
   (not (bvlt size x y)))
 
+;rename
 (defthm bvlt-of-0-arg3
-  (equal (bvlt size x 0)
-         nil)
+  (not (bvlt size x 0))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;use polarity?
@@ -59,26 +59,28 @@
   (equal (booleanp (bvlt size x y))
          t))
 
+;rename
 (defthm bvlt-self
-  (equal (bvlt size x x)
-         nil)
+  (not (bvlt size x x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;rename
 (defthm equal-when-bvlt
   (implies (bvlt freesize x y)
-           (equal (equal x y)
-                  nil)))
+           (not (equal x y))))
 
+;rename
 (defthm equal-when-bvlt-alt
   (implies (bvlt freesize y x)
-           (equal (equal x y)
-                  nil)))
+           (not (equal x y))))
 
 ;replace with general trim rule?
 (defthm bvlt-trim-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (unsigned-byte-p size k)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
            (equal (bvlt size x k)
                   (bvlt size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvlt))))
@@ -87,22 +89,24 @@
 (defthm bvlt-trim-constant-arg1
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (unsigned-byte-p size k)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
            (equal (bvlt size k x)
                   (bvlt size (bvchop size k) x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;rename
 (defthm bvlt-of-max
-  (equal (bvlt size (+ -1 (expt 2 size)) x)
-         nil)
+  (not (bvlt size (+ -1 (expt 2 size)) x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;rename
 (defthm bvlt-of-max-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (equal k (+ -1 (expt 2 size)))) ;gets computed
-           (equal (bvlt size k x)
-                  nil)))
+           (not (bvlt size k x))))
 
 ;todo: use polarities?
 (defthm bvlt-max-arg3
@@ -210,8 +214,7 @@
 (defthmd bvlt-transitive-core-3
   (implies (and (not (bvlt size free y))
                 (not (bvlt size x free)))
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-transitive-3-a
@@ -220,8 +223,7 @@
                 (not (bvlt size free y))
                 (syntaxp (quotep free))
                 (not (bvlt size k free)))
-           (equal (bvlt size k y)
-                  nil))
+           (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-transitive-3-b
@@ -230,8 +232,7 @@
                 (not (bvlt size x free))
                 (syntaxp (quotep free))
                 (not (bvlt size free k)))
-           (equal (bvlt size x k)
-                  nil))
+           (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;;y<free and free-1<=x imply y<=x
@@ -241,8 +242,7 @@
                 (integerp free)
                 (natp size)
 		)
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 (defthm bvlt-transitive-4-a
@@ -253,8 +253,7 @@
                 (not (bvlt size k (+ -1 free))) ;gets computed (what if free=0?  well, (bvlt size y free) above should not hold)
                 (integerp free)
                 (natp size))
-           (equal (bvlt size k y)
-                  nil))
+           (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-4))))
 
 (defthm bvlt-transitive-4-b
@@ -266,8 +265,7 @@
                 (integerp free)
                 (natp size)
 		)
-           (equal (bvlt size x k)
-                  nil))
+           (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)  :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
 
 ;y<=free+1 and free<x imply y<=x
@@ -276,8 +274,7 @@
                 (bvlt size free x)
                 (integerp free)
                 (natp size))
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 (defthm bvlt-transitive-5-a
@@ -289,8 +286,7 @@
                 (bvle size free k) ;gets computed
                 (integerp free)
                 (natp size))
-           (equal (bvlt size k y)
-                  nil))
+           (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)
            :use (:instance bvlt-transitive-core-5 (x k) (free (+ -1 free))))))
 
@@ -302,8 +298,7 @@
                 (not (bvlt size (+ 1 free) k)) ;gets computed
                 (integerp free)
                 (natp size))
-           (equal (bvlt size x k)
-                  nil))
+           (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-5))))
 
 ;same as bvlt-transitive-core-4-b?
@@ -314,8 +309,8 @@
 ;;                 (not (bvlt size x free))
 ;;                 (syntaxp (quotep free))
 ;;                 (bvle size y free))
-;;            (equal (bvlt size x y)
-;;                   nil))
+;;            (not (bvlt size x y)
+;;                   ))
 ;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; (defthm bvlt-transitive-free2
@@ -437,16 +432,17 @@
                             ;;BVLT-TRANSITIVE-FREE2-BACK
                             )))))
 
+;rename
 (defthm bvlt-when-not-posp
   (implies (not (posp size))
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal"
            :cases ((equal 0 size))
            :in-theory (enable bvlt))))
 
 ;is this expensive?
 ;the quotep hyps are new
+;rename
 (defthm equal-of-bvchop-impossible
   (implies (and (syntaxp (and (quotep val)
                               (quotep size)))
@@ -454,12 +450,12 @@
                 (syntaxp (quotep free))
                 (bvle size val free) ;gets evaluated
                 (natp size))
-           (equal (equal val (bvchop size x))
-                  nil)))
+           (not (equal val (bvchop size x)))))
 
 ;this seemed to be involved in loops
 ;so the syntaxp hyps are new
 ;this was the same as the non-alt version.  just fixed it Tue Jan 26 00:16:17 2010
+;rename
 (defthm equal-of-bvchop-impossible-alt
   (implies (and (syntaxp (and (quotep val)
                               (quotep size)))
@@ -467,8 +463,7 @@
                 (syntaxp (quotep free))
                 (bvle size val free) ;gets evaluated
                 (natp size))
-           (equal (equal (bvchop size x) val)
-                  nil)))
+           (not (equal (bvchop size x) val))))
 
 ;rename to <-of-constant-becomes-bvlt
 ;disabled during library proofs
@@ -525,8 +520,7 @@
                 (bvle size free2 x)
                 (equal free free2) ;hack?
                 )
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT-FREE <-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
 
 ;fixme think this through
@@ -538,8 +532,7 @@
                 (syntaxp (quotep free))
                 (bvle size free x)
                 )
-           (equal (bvlt size x y)
-                  nil))
+           (not (bvlt size x y)))
   :hints (("Goal" :use (:instance bvlt-transitive-free2-back (free2 free))
            :in-theory (disable bvlt-transitive-free2-back))))
 
@@ -549,8 +542,7 @@
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
                 (bvle freesize const free))
-           (equal (equal const x)
-                  nil)))
+           (not (equal const x))))
 
 (defthm equal-of-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
@@ -558,8 +550,7 @@
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
                 (bvle freesize free const))
-           (equal (equal const x)
-                  nil)))
+           (not (equal const x))))
 
 (defthm equal-of-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
@@ -567,8 +558,7 @@
                 (syntaxp (quotep freesize))
                 (syntaxp (quotep free))
                 (bvlt freesize const free))
-           (equal (equal const x)
-                  nil)))
+           (not (equal const x))))
 
 (defthm equal-of-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
@@ -576,8 +566,7 @@
                 (syntaxp (quotep freesize))
                 (syntaxp (quotep free))
                 (bvlt freesize free const))
-           (equal (equal const x)
-                  nil)))
+           (not (equal const x))))
 
 ; can we drop the -alt rules?
 
@@ -587,8 +576,7 @@
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
                 (bvle freesize const free))
-           (equal (equal x const)
-                  nil)))
+           (not (equal x const))))
 
 (defthm equal-of-constant-when-bvlt-constant-2-alt
   (implies (and (syntaxp (quotep const))
@@ -596,8 +584,7 @@
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
                 (bvle freesize free const))
-           (equal (equal x const)
-                  nil)))
+           (not (equal x const))))
 
 (defthm equal-of-bvchop-and-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
@@ -607,8 +594,7 @@
                 (syntaxp (quotep freesize))
                 (bvle freesize const free)
                 (integerp size))
-           (equal (equal const (bvchop size x))
-                  nil)))
+           (not (equal const (bvchop size x)))))
 
 (defthm equal-of-bvchop-and-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
@@ -618,8 +604,7 @@
                 (syntaxp (quotep freesize))
                 (bvle freesize free const)
                 (integerp size))
-           (equal (equal const (bvchop size x))
-                  nil)))
+           (not (equal const (bvchop size x)))))
 
 (defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
@@ -629,8 +614,7 @@
                 (syntaxp (quotep free))
                 (bvlt freesize const free)
                 (integerp size))
-           (equal (equal const (bvchop size x))
-                  nil)))
+           (not (equal const (bvchop size x)))))
 
 (defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
@@ -640,8 +624,7 @@
                 (syntaxp (quotep free))
                 (bvlt freesize free const)
                 (integerp size))
-           (equal (equal const (bvchop size x))
-                  nil)))
+           (not (equal const (bvchop size x)))))
 
 (defthm bvlt-of-bvchop-arg3-same
   (equal (bvlt size x (bvchop size y))
@@ -680,8 +663,7 @@
                 (bvle size k free)
                 (natp bigsize)
                 (natp size))
-           (equal (bvlt bigsize x k)
-                  nil))
+           (not (bvlt bigsize x k)))
   :hints (("Goal" :use (:instance bvlt-when-bvlt-wider (k free) (free k))
            :in-theory (disable bvlt-when-bvlt-wider))))
 
@@ -695,8 +677,7 @@
                 (bvle size free k)
                 (natp bigsize)
                 (natp size))
-           (equal (bvlt size k x)
-                  nil))
+           (not (bvlt size k x)))
   :hints (("Goal"  :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
            :in-theory (e/d (bvlt) (<-of-bvchop-and-bvchop-same)))))
 
@@ -833,8 +814,7 @@
                  (bvle size free (+ 1 k))
                  (integerp k)
                  (natp size))
-            (equal (bvlt size k x)
-                   nil))
+            (not (bvlt size k x)))
    :hints
    (("Goal"
      :cases ((integerp k))

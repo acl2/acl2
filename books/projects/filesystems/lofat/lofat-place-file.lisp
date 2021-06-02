@@ -5,6 +5,9 @@
 
 ;  lofat-place-file.lisp                                Mihir Mehta
 
+; Matt K.: Avoid ACL2(p) error (stack overflow)
+(set-waterfall-parallelism nil)
+
 ;; get-cc-alt really should be disabled here if it can!
 (local
  (in-theory (e/d ((:rewrite hifat-equiv-of-cons-lemma-4)

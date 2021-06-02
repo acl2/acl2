@@ -216,18 +216,20 @@
     :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd bvif-trim-constant-arg1
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep size)))
                 (not (unsigned-byte-p size x))
+                (natp size) ; prevent loops
                 )
            (equal (bvif size test x y)
                   (bvif size test (bvchop size x) y)))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthmd bvif-trim-constant-arg2
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep size)))
                 (not (unsigned-byte-p size x))
+                (natp size) ; prevent loops
                 )
            (equal (bvif size test y x)
                   (bvif size test y (bvchop size x))))
@@ -396,23 +398,6 @@
            (unsigned-byte-p n (bvif size test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-;bozo gen somehow?
-(defthm bvif-trim-constant-1
-  (implies (and (syntaxp (and (quotep x) (quotep n)))
-                (not (unsigned-byte-p n x))
-                (natp n))
-           (equal (bvif n test x y)
-                  (bvif n test (bvchop n x) y)))
-  :hints (("Goal" :in-theory (enable bvif))))
-
-(defthm bvif-trim-constant-2
-  (implies (and (syntaxp (and (quotep y) (quotep n)))
-                (not (unsigned-byte-p n y))
-                (natp n))
-           (equal (bvif n test x y)
-                  (bvif n test x (bvchop n y))))
-  :hints (("Goal" :in-theory (enable bvif))))
-
 (defthm bvif-of-myif-1
   (equal (bvif size test (myif a b c) d)
          (bvif size test (bvif size a b c) d))
@@ -453,3 +438,35 @@
   (equal (bvif size (bool-fix test) x y)
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+;; If we have an assumption about x's size, try to show that y is the same size.
+(defthmd myif-becomes-bvif-when-unsigned-byte-p-arg1
+  (implies (and (unsigned-byte-p xsize x) ;xsize is a free variable
+                (unsigned-byte-p xsize y))
+           (equal (myif test x y)
+                  (bvif xsize test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+;; If we have an assumption about y's size, try to show that x is the same size
+(defthmd myif-becomes-bvif-when-unsigned-byte-p-arg2
+  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
+                (unsigned-byte-p ysize x))
+           (equal (myif test x y)
+                  (bvif ysize test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+;; Just guesses that the size is 32
+(defthmd myif-becomes-bvif-32
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (myif test y x)
+                  (bvif 32 test y x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+;; Just guesses that the size is 64
+(defthmd myif-becomes-bvif-64
+  (implies (and (unsigned-byte-p 64 x)
+                (unsigned-byte-p 64 y))
+           (equal (myif test y x)
+                  (bvif 64 test y x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))

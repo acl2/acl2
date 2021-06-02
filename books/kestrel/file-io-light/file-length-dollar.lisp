@@ -11,6 +11,13 @@
 
 (in-package "ACL2")
 
+;move
+(local
+ (defthm state-p1-of-read-acl2-oracle
+   (implies (state-p1 state)
+            (state-p1 (mv-nth 2 (read-acl2-oracle state))))
+   :hints (("Goal" :in-theory (enable read-acl2-oracle)))))
+
 (in-theory (disable file-length$
                     open-input-channel-p
                     mv-nth))
@@ -24,3 +31,13 @@
                                      file-length$
                                      read-acl2-oracle
                                      update-acl2-oracle))))
+
+(defthm state-p1-of-mv-nth-1-of-file-length$
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 1 (file-length$ filename state))))
+  :hints (("Goal" :in-theory (enable file-length$))))
+
+(defthm state-p-of-mv-nth-1-of-file-length$
+  (implies (state-p state)
+           (state-p (mv-nth 1 (file-length$ filename state))))
+  :hints (("Goal" :in-theory (enable state-p))))

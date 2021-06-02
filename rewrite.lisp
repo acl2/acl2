@@ -8722,6 +8722,18 @@
             (strip-cdrs pairs)
             (show-ancestors-stack-msg state evisc-tuple)))))))
 
+(defun get-evg (q ctx)
+
+; Q is a quotep, or at least we expect it to be.  We cause a hard error if not,
+; else we return the "explicit value guts".
+
+  (if (quotep q)
+      (cadr q)
+    (er hard ctx
+        "We expected a quotep in this context, variables, but ~x0 is not a ~
+         quotep!"
+        q)))
+
 (mutual-recursion
 
 (defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
@@ -8820,17 +8832,32 @@
                                               (strip-cars unify-subst))))
                   ((eq (caddr failure-reason) 'elided)
                    (msg ":HYP ~x0 contains free variables (further reasons ~
-                           elided, as noted above)."
+                         elided, as noted above)."
                         n))
                   (t
                    (msg
                     "~@0~@1"
                     (if (eql level 1)
-                        (msg ":HYP ~x0 contains free variables. The ~
-                                following display summarizes the attempts to ~
-                                relieve hypotheses by binding free variables; ~
-                                see :DOC free-variables.~|~@1~%"
+                        (msg ":HYP ~x0 ~@1.  The following display summarizes ~
+                              the attempts to relieve hypotheses by binding ~
+                              free variables; see :DOC free-variables.~|~@2~%"
                              n
+                             (if (let* ((hyp
+                                         (nth (1- n)
+                                              (access rewrite-rule
+                                                      (get-brr-local 'lemma state)
+                                                      :hyps)))
+                                        (evg
+                                         (and (ffn-symb-p hyp 'synp)
+                                              (quotep (fargn hyp 2))
+                                              (unquote (fargn hyp 2)))))
+                                   (and evg
+                                        (consp evg)
+                                        (eq (car evg) 'bind-free)))
+                                 (msg "uses ~x0 to produce unsuccessful free ~
+                                       variable bindings"
+                                      'bind-free)
+                               "contains free variables")
                              (if elided-p
                                  (msg
                                   "     Also, if you want to avoid ~
@@ -10038,18 +10065,6 @@
 
                         nil t)))))
 
-(defun get-evg (q ctx)
-
-; Q is a quotep, or at least we expect it to be.  We cause a hard error if not,
-; else we return the "explicit value guts".
-
-  (if (quotep q)
-      (cadr q)
-    (er hard ctx
-        "We expected a quotep in this context, variables, but ~x0 is not a ~
-         quotep!"
-        q)))
-
 (defun ev-synp (synp-term unify-subst mfc state)
 
 ; Synp-term is the quotation of the term to be evaluated.  Unify-subst is the
@@ -11153,8 +11168,9 @@
 
 ; There are two cases, which we call the "normal-failure" case and the
 ; "free-failure" case.  In the free-failure case, a preceding hypothesis bound
-; a free variable without using bind-free or being a binding hypothesis;
-; otherwise, we are in the normal-failure case.
+; a free variable without being a binding hypothesis or being a call of
+; bind-free that returns a single substitution; otherwise, we are in the
+; normal-failure case.
 
 ; Consider first the normal-failure case.  Then the :unify-subst is the
 ; restriction of a failed attempt to rewrite the nth hypothesis, stored in
@@ -14768,16 +14784,21 @@
                               (accumulate-rw-cache t ttree0 ttree)
                               memo)))))))))))))))
 
-(defun relieve-hyps1-iter (rune target hyps backchain-limit-lst
-                                unify-subst-lst unify-subst bkptr unify-subst0
-                                ttree0 allp
-                                rw-cache-alist
-                                rw-cache-alist-new ; &extra formals
-                                rdepth step-limit
-                                type-alist obj geneqv pequiv-info wrld state
-                                fnstack ancestors backchain-limit
-                                simplify-clause-pot-lst rcnst gstack
-                                ttree)
+(defun relieve-hyps1-unify-subst-lst (unify-subst-lst
+                                      rune target hyps backchain-limit-lst
+                                      unify-subst bkptr
+                                      unify-subst0
+                                      ttree0 allp
+                                      rw-cache-alist
+                                      rw-cache-alist-new ; &extra formals
+                                      rdepth step-limit
+                                      type-alist obj geneqv pequiv-info
+                                      wrld state
+                                      fnstack ancestors backchain-limit
+                                      simplify-clause-pot-lst rcnst gstack
+                                      ttree)
+
+; WARNING: Keep this in sync with relieve-hyps1-free-1.
 
 ; This function calls relieve-hyps1 on each alist in unify-subst-list (which is
 ; non-empty) until the hypotheses are relieved, extending the given unify-subst
@@ -14787,28 +14808,79 @@
 ; user.  If there are user complaints about that, we can consider a more
 ; elaborate form of failure reporting.
 
-  (declare (ignore obj geneqv pequiv-info))
-  (sl-let
-   (relieve-hyps1-ans failure-reason unify-subst1 ttree1 allp
-                      rw-cache-alist-new)
-   (rewrite-entry
-    (relieve-hyps1 rune target hyps backchain-limit-lst
-                   (extend-unify-subst (car unify-subst-lst) unify-subst)
-                   bkptr unify-subst0 ttree0 allp
-                   rw-cache-alist rw-cache-alist-new)
-    :obj nil :geneqv nil :pequiv-info nil ; all ignored
-    )
-   (cond ((or (endp (cdr unify-subst-lst))
-              relieve-hyps1-ans)
-          (mv step-limit relieve-hyps1-ans failure-reason unify-subst1 ttree1
-              allp rw-cache-alist-new))
-         (t (rewrite-entry
-             (relieve-hyps1-iter rune target hyps backchain-limit-lst
-                                 (cdr unify-subst-lst) unify-subst bkptr
-                                 unify-subst0 ttree0 allp
-                                 rw-cache-alist rw-cache-alist-new)
-             :obj nil :geneqv nil :pequiv-info nil ; all ignored
-             )))))
+  (declare (ignore obj geneqv pequiv-info)
+           (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   7
+   (signed-byte 30)
+
+; In relieve-hyps1-free-1 we extend unify-subst to new-unify-subst by searching
+; a type-alist.  Here we perform that extension by taking the first element of
+; unify-subst-list.
+
+   (let ((new-unify-subst
+          (extend-unify-subst (car unify-subst-lst) unify-subst)))
+     (mv-let
+       (cached-failure-reason-free cached-failure-reason)
+       (rw-cached-failure-pair new-unify-subst rw-cache-alist)
+       (sl-let
+        (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
+                          inferior-rw-cache-alist-new)
+        (cond
+         (cached-failure-reason
+          (mv step-limit nil
+              (and (f-get-global 'gstackp state) ; cons optimization
+                   (cons 'cached cached-failure-reason))
+              unify-subst ttree allp nil))
+         (t
+          (rewrite-entry
+           (relieve-hyps1 rune target (cdr hyps)
+                          (cdr backchain-limit-lst)
+                          new-unify-subst
+                          (1+ bkptr) unify-subst0 ttree0 allp
+                          (cdr cached-failure-reason-free)
+                          nil)
+           :obj nil :geneqv nil :pequiv-info nil ; all ignored
+           )))
+        (let ((rw-cache-alist-new
+               (extend-rw-cache-alist-free rcnst
+                                           new-unify-subst
+                                           inferior-rw-cache-alist-new
+                                           rw-cache-alist-new)))
+
+          (cond
+           (relieve-hyps-ans
+            (mv step-limit relieve-hyps-ans nil unify-subst1 ttree1 allp
+                rw-cache-alist-new))
+           (t
+            (let ((rw-cache-alist-new ; add normal-failure reason
+                   (rw-cache-add-failure-reason rcnst
+                                                new-unify-subst
+                                                failure-reason
+                                                rw-cache-alist-new)))
+              (cond
+               ((endp (cdr unify-subst-lst))
+                (mv step-limit nil
+                    (and (f-get-global 'gstackp state) ; cons optimization
+                         (list (cons new-unify-subst
+                                     failure-reason)))
+                    unify-subst0
+                    (accumulate-rw-cache t ttree1 ttree0)
+                    nil ; allp
+                    rw-cache-alist-new))
+               (t ; try the next unify-subst in unify-subst-lst
+                (rewrite-entry-extending-failure
+                 new-unify-subst
+                 failure-reason
+                 (relieve-hyps1-unify-subst-lst
+                  (cdr unify-subst-lst)
+                  rune target hyps backchain-limit-lst
+                  unify-subst bkptr
+                  unify-subst0 ttree0 allp
+                  rw-cache-alist rw-cache-alist-new)
+                 :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                 :ttree (accumulate-rw-cache t ttree1 ttree0)))))))))))))
 
 (defun relieve-hyps1 (rune target hyps backchain-limit-lst
                            unify-subst bkptr unify-subst0
@@ -14892,17 +14964,40 @@
 ; The hypothesis (car hyps) is a call of bind-free that has produced a list of
 ; unify-substs.
 
-        (rewrite-entry
-         (relieve-hyps1-iter rune target (cdr hyps)
-                             (cdr backchain-limit-lst)
-                             new-unify-subst ; a list of alists
-                             unify-subst
-                             (1+ bkptr)
-                             unify-subst0 ttree0
-                             allp
-                             rw-cache-alist rw-cache-alist-new)
-         :obj nil :geneqv nil :pequiv-info nil ; all ignored
-         :ttree new-ttree))
+        (sl-let (relieve-hyps-ans failure-reason-lst unify-subst
+                                  ttree allp rw-cache-alist-new)
+                (rewrite-entry (relieve-hyps1-unify-subst-lst
+                                new-unify-subst ; a list of alists
+                                rune target hyps
+                                backchain-limit-lst
+                                unify-subst bkptr
+                                unify-subst0
+                                ttree0
+                                (activate-memo allp)
+                                rw-cache-alist
+                                rw-cache-alist-new)
+                               :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                               )
+                (mv step-limit relieve-hyps-ans
+                    (and (null relieve-hyps-ans)
+                         (cond ((null (f-get-global 'gstackp state))
+                                nil) ; save some conses
+                               (t    ; hence (consp failure-reason-lst)
+                                (list* bkptr
+                                       'free-vars
+
+; Note that we use 'free-vars here for bind-free; the function
+; tilde-@-failure-reason-phrase1 distinguishes between bind-free hypotheses and
+; hypotheses that have free variables.
+
+; Note that we reverse below even though we do not reverse in the analogous
+; function, relieve-hyps1-free-1.  That is because in relieve-hyps1-free-1, the
+; the failure-reason-lst is built by traversing a type-alist whose entries are
+; in reverse order from the order of hypotheses encountered that created those
+; entries; but here, the unify-subst-lst is processed in order.
+
+                                       (reverse failure-reason-lst)))))
+                    unify-subst ttree allp rw-cache-alist-new)))
        (relieve-hyp-ans
 
 ; As explained in the "SPECIAL CASE" comment in relieve-hyp, relieve-hyp
@@ -14977,6 +15072,8 @@
         backchain-limit
         simplify-clause-pot-lst rcnst gstack
         ttree)
+
+; WARNING: Keep this in sync with relieve-hyps1-unify-subst-lst.
 
 ; We search the type-alist in order to extend unify-subst so that a
 ; corresponding instance of term has type typ.  Then (with a call to

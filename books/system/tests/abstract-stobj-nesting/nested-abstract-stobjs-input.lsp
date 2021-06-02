@@ -137,6 +137,22 @@
             (update-sub0 :logic update-sub0$a :exec update-sub0$c)
             (misc :logic misc$a :exec misc$c)))
 
+; Sol Swords supplied the following variant of top.  It checks that congruent
+; stobjs can be accepted even with :updater fields (which will differ between
+; the two abstract stobjs).  Since this was added after an earlier version of
+; this file, we immediately undo it in order to avoid a name conflict with a
+; later abstract stobj also named top2.
+(defabsstobj top2 :concrete top$c
+  :recognizer (top2p :logic top$ap :exec top$cp)
+  :creator (create-top2 :logic create-top$a :exec create-top$c)
+  :corr-fn top-corr
+  :exports ((sub02 :logic sub0$a :exec sub0$c :updater update-sub02)
+            (sub02-again :logic sub0$a :exec sub0$c :updater update-sub02)
+            (update-sub02 :logic update-sub0$a :exec update-sub0$c)
+            (misc2 :logic misc$a :exec misc$c))
+  :congruent-to top)
+(u) ; see comment above
+
 ; The following event succeeds; no surprises here.  But below we show how an
 ; attempt to update both stobj fields fails, as it should.
 (defun foo (top)

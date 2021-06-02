@@ -1118,6 +1118,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Plus to 2vec-adder
 
+
+
+
+(add-rp-rule ACL2::LOGHEAD-TYPE)
+
+(def-rp-rule integerp-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (+ x y))))
+
 (encapsulate
   nil
 
@@ -1228,36 +1238,104 @@
      :hints (("Goal"
               :in-theory (e/d (bitp) ())))))
 
+  (local
+   (defthmd
+     loghead-binary-+-of-loghead
+     (implies (and (integerp x)
+                   (integerp y))
+              (equal (loghead size (+ (loghead size x) y))
+                     (loghead size (+ x y))
+                     ))
+     :hints (("Goal"
+              :in-theory (e/d* ((:REWRITE ACL2::|(* (expt c m) (expt d n))|)
+                                (:REWRITE ACL2::|(* 1 x)|)
+                                (:REWRITE ACL2::|(* x (- y))|)
+                                (:REWRITE ACL2::|(+ x (- x))|)
+                                (:REWRITE ACL2::|(+ y (+ x z))|)
+                                (:REWRITE ACL2::|(+ y x)|)
+                                (:REWRITE ACL2::|(/ (expt x n))|)
+                                (:REWRITE ACL2::|(mod (+ x y) z) where (<= 0 z)|
+                                          . 1)
+                                (:REWRITE ACL2::BUBBLE-DOWN-*-MATCH-1)
+                                (:REWRITE ACL2::BUBBLE-DOWN-+-MATCH-1)
+                                (:DEFINITION ACL2::EXPT2$INLINE)
+                                (:DEFINITION ACL2::IMOD$INLINE)
+                                (:DEFINITION ACL2::LOGHEAD$INLINE)
+                                (:REWRITE ACL2::SIMPLIFY-MOD-+-MOD)
+                                ;;(:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP)
+                                ;;(:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONZERO)
+                                ;;(:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE)
+                                (:TYPE-PRESCRIPTION IFIX)
+                                (:TYPE-PRESCRIPTION ACL2::INTEGERP-MOD)
+                                (:TYPE-PRESCRIPTION ACL2::MOD-TYPE . 4)
+                                (:TYPE-PRESCRIPTION NFIX)
+                                (:TYPE-PRESCRIPTION ACL2::RATIONALP-MOD)
+                                (:REWRITE ACL2::NORMALIZE-ADDENDS)
+                                (:REWRITE ACL2::NORMALIZE-FACTORS-GATHER-EXPONENTS)
+                                (:REWRITE ACL2::SIMPLIFY-MOD-+-MOD)
+                                (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                                (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                                (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE))
+                               (+-IS-SUM))))))
+
+  (local
+   (defthmd loghead-of-+-is-2vec-adder-lemma
+     (implies (and (integerp x)
+                   (integerp y)
+                   (bitp carry))
+              (and (equal (loghead size (+ x y carry))
+                          (2vec-adder x y carry size))
+                   (equal (loghead size (+ x carry y))
+                          (2vec-adder x y carry size))
+                   (equal (loghead size (+ carry x y))
+                          (2vec-adder x y carry size))))
+     :otf-flg t
+     :hints (("Goal"
+              :induct (2vec-adder x y carry size)
+              :do-not-induct t
+              :in-theory (e/d* (2vec-adder
+                                s-spec
+                                BITOPS::LOGCDR-OF-LOGHEAD
+                                sum-list
+                                BIT-OF
+                                c-spec
+                                bit-concat)
+                               (D2-OF-MINUS
+                                SUM-OF-F2S))))))
 
   (defthm loghead-of-+-is-2vec-adder
     (implies (and (integerp x)
                   (integerp y)
                   (bitp carry))
              (and (equal (loghead size (+ x y carry))
-                         (2vec-adder x y carry size))
+                         (2vec-adder (loghead size x) (loghead size y) carry size))
                   (equal (loghead size (+ x carry y))
-                         (2vec-adder x y carry size))
+                         (2vec-adder (loghead size x) (loghead size y) carry size))
                   (equal (loghead size (+ carry x y))
-                         (2vec-adder x y carry size))))
+                         (2vec-adder (loghead size x) (loghead size y) carry size))))
     :otf-flg t
     :hints (("Goal"
-             :induct (2vec-adder x y carry size)
              :do-not-induct t
-             :in-theory (e/d* (2vec-adder
-                               s-spec
-                               BITOPS::LOGCDR-OF-LOGHEAD
-                               sum-list
-                               BIT-OF
-                               c-spec
-                               bit-concat)
-                              (D2-OF-MINUS
-                               SUM-OF-F2S)))))
-  
+             :in-theory (disable +-IS-SUM)
+             ;;:in-theory (theory 'ground-zero)
+             :use ((:instance loghead-of-+-is-2vec-adder-lemma
+                              (x (loghead size x))
+                              (y (loghead size y)))
+                   (:instance loghead-binary-+-of-loghead
+                              (x x)
+                              (y (+ (loghead size y) carry))
+                              )
+                   (:instance loghead-binary-+-of-loghead
+                              (x y)
+                              (y (+ x carry))
+                              ))
+             )))
+
   (defthm loghead-of-+-is-2vec-adder-without-carry
     (implies (and (integerp x)
                   (integerp y))
              (equal (loghead size (+ x y))
-                    (2vec-adder x y 0 size)))
+                    (2vec-adder (loghead size x) (loghead size y) 0 size)))
     :otf-flg t
     :hints (("Goal"
              :use ((:instance loghead-of-+-is-2vec-adder
@@ -1266,7 +1344,5 @@
              :in-theory (e/d ()
                              (loghead-of-+-is-2vec-adder))))))
 
-
 (add-rp-rule loghead-of-+-is-2vec-adder-without-carry)
 (add-rp-rule loghead-of-+-is-2vec-adder)
-

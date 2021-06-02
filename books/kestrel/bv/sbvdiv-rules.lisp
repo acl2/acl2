@@ -125,3 +125,46 @@
                              my-FLOOR-upper-BOUND
                              ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                              floor-bound)))))
+
+;gen!
+(defthmd sbvdiv-of-sbvdiv-arg2
+  (implies (and (natp size)
+                (unsigned-byte-p (+ -1 size) x)  ; x is non-negative (gen?)
+                (unsigned-byte-p (+ -1 size) y1) ; y1 is non-negative (gen?)
+                (unsigned-byte-p (+ -1 size) y2) ; y2 is non-negative (gen?)
+                )
+           (equal (sbvdiv size (sbvdiv size x y1) y2)
+                  (if (unsigned-byte-p (+ -1 size) (* y1 y2)) ; the product is non-negative
+                      (sbvdiv size
+                              x
+                              (* y1 y2) ;(bvchop size (* y1 y2))
+                              )
+                    ;; divisor is so big we get 0:
+                    0)))
+  :hints (("Goal" :in-theory (e/d (SBVDIV-WHEN-BOTH-POSITIVE sbvlt bvdiv unsigned-byte-p)
+                                  ( ;BVCHOP-IDENTITY
+                                   ;;todo: clean these up:
+                                   BVCHOP-TIMES-CANCEL-BETTER-ALT
+                                   BVCHOP-TIMES-CANCEL-BETTER
+                                   BVCHOP-OF-*-OF-BVCHOP-ARG2
+                                   BVCHOP-OF-*-OF-BVCHOP
+                                   )))))
+
+;gen!
+(defthm sbvdiv-of-sbvdiv-arg2-combine-constants
+  (implies (and (syntaxp (and (quotep size)
+                              (quotep y1)
+                              (quotep y2)))
+                (unsigned-byte-p (+ -1 size) x)
+                ;; all get computed:
+                (natp size)
+                (unsigned-byte-p (+ -1 size) y1)
+                (unsigned-byte-p (+ -1 size) y2))
+           (equal (sbvdiv size (sbvdiv size x y1) y2)
+                  (if (unsigned-byte-p (+ -1 size) (* y1 y2)) ;gets computed
+                      (sbvdiv size
+                              x
+                              (* y1 y2) ;(bvchop size (* y1 y2))
+                              )
+                    0)))
+  :hints (("Goal" :in-theory (enable sbvdiv-of-sbvdiv-arg2))))

@@ -26,6 +26,13 @@
   )
  (io file-io-light))
 
+;; (depends-on "read-file-into-byte-list.lisp")
+(acl2::gen-xdoc-for-file
+ "read-file-into-byte-list.lisp"
+ ((read-file-into-byte-list "Read a file into a list of bytes.")
+  )
+ (io file-io-light))
+
 
 ;; (depends-on "write-bytes-to-channel.lisp")
 (acl2::gen-xdoc-for-file

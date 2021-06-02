@@ -849,40 +849,67 @@
 
 (define atc-check-iconst ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
-               (val natp :rule-classes :type-prescription)
-               (unsignedp booleanp)
-               (suffix iconst-tysuffixp)
+               (const iconstp)
                (type typep))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the term is a call of a function @('<type>-const')
+    "If the term is a call of a function @('<type>-<base>-const')
      on a quoted integer constant,
-     we return the value of the integer constant
-     (which must be non-negative due to guard verification,
-     but here we need to check it because we do not have
-     guard verification as a contextual assumption on the term),
-     along with an indication of unsignedness and type suffix information,
-     and also the C integer type of the constant."))
+     we return the C integer constant represented by this call.
+     We also return the C integer type of the constant."))
   (case-match term
     ((fn ('quote val))
      (b* (((when (not (symbolp fn)))
-           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))
-          ((mv okp type const) (atc-check-symbol-2part fn))
+           (mv nil (irr-iconst) (irr-type)))
+          ((mv okp type base const) (atc-check-symbol-3part fn))
           ((unless (and okp
+                        (member-eq type '(sint uint slong ulong sllong ullong))
+                        (member-eq base '(dec oct hex))
                         (eq const 'const)
                         (natp val)))
-           (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))
-       (case type
-         (sint (mv t val nil (iconst-tysuffix-none) (type-sint)))
-         (uint (mv t val t (iconst-tysuffix-none) (type-uint)))
-         (slong (mv t val nil (iconst-tysuffix-long) (type-slong)))
-         (ulong (mv t val t (iconst-tysuffix-long) (type-ulong)))
-         (sllong (mv t val nil (iconst-tysuffix-llong) (type-sllong)))
-         (ullong (mv t val t (iconst-tysuffix-llong) (type-ullong)))
-         (t (mv nil 0 nil (irr-iconst-tysuffix) (irr-type))))))
-    (& (mv nil 0 nil (irr-iconst-tysuffix) (irr-type)))))
+           (mv nil (irr-iconst) (irr-type)))
+          (base (case base
+                  (dec (iconst-base-dec))
+                  (oct (iconst-base-oct))
+                  (hex (iconst-base-hex))
+                  (t (impossible))))
+          ((mv const type)
+           (case type
+             (sint (mv (make-iconst :value val
+                                    :base base
+                                    :unsignedp nil
+                                    :type (iconst-tysuffix-none))
+                       (type-sint)))
+             (uint (mv (make-iconst :value val
+                                    :base base
+                                    :unsignedp t
+                                    :type (iconst-tysuffix-none))
+                       (type-uint)))
+             (slong (mv (make-iconst :value val
+                                     :base base
+                                     :unsignedp nil
+                                     :type (iconst-tysuffix-long))
+                        (type-slong)))
+             (ulong (mv (make-iconst :value val
+                                     :base base
+                                     :unsignedp t
+                                     :type (iconst-tysuffix-long))
+                        (type-ulong)))
+             (sllong (mv (make-iconst :value val
+                                      :base base
+                                      :unsignedp nil
+                                      :type (iconst-tysuffix-llong))
+                         (type-sllong)))
+             (ullong (mv (make-iconst :value val
+                                      :base base
+                                      :unsignedp t
+                                      :type (iconst-tysuffix-llong))
+                         (type-ullong)))
+             (t (mv (impossible) (impossible))))))
+       (mv t const type)))
+    (& (mv nil (irr-iconst) (irr-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1264,15 +1291,11 @@
             (acl2::value
              (list (expr-ident (make-ident :name (symbol-name term)))
                    (type-fix type)))))
-         ((mv okp val unsignedp suffix type) (atc-check-iconst term))
+         ((mv okp const type) (atc-check-iconst term))
          ((when okp)
           (acl2::value
-           (list
-            (expr-const (const-int (make-iconst :value val
-                                                :base (iconst-base-dec)
-                                                :unsignedp unsignedp
-                                                :type suffix)))
-            type)))
+           (list (expr-const (const-int const))
+                 type)))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-cval-pure arg
@@ -2254,7 +2277,7 @@
     (xdoc::li
      "A formal parameter is constrained to be a value by the guard.")
     (xdoc::li
-     "Calls of @(tsee sint-const), @(tsee add-sint-sint), etc.
+     "Calls of @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
       are known to return values.")
     (xdoc::li
      "A @(tsee let) variable is equal to a term that,
@@ -2268,7 +2291,7 @@
     "This suggests a coarse but adequate proof strategy:
      We use the theory consisting of
      the definition of @('fn'),
-     the return type theorems of @(tsee sint-const) and related functions,
+     the return type theorems of @(tsee sint-dec-const) and related functions,
      and the theorems about the preceding functions;
      we also add a @(':use') hint for the guard theorem of @('fn').")
    (xdoc::p
@@ -2297,12 +2320,24 @@
                   *atc-integer-convs-return-rewrite-rules*
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-returns-value-thms prec-fns)
-                    sintp-of-sint-const
-                    uintp-of-uint-const
-                    slongp-of-slong-const
-                    ulongp-of-ulong-const
-                    sllongp-of-sllong-const
-                    ullongp-of-ullong-const
+                    sintp-of-sint-dec-const
+                    sintp-of-sint-oct-const
+                    sintp-of-sint-hex-const
+                    uintp-of-uint-dec-const
+                    uintp-of-uint-oct-const
+                    uintp-of-uint-hex-const
+                    slongp-of-slong-dec-const
+                    slongp-of-slong-oct-const
+                    slongp-of-slong-hex-const
+                    ulongp-of-ulong-dec-const
+                    ulongp-of-ulong-oct-const
+                    ulongp-of-ulong-hex-const
+                    sllongp-of-sllong-dec-const
+                    sllongp-of-sllong-oct-const
+                    sllongp-of-sllong-hex-const
+                    ullongp-of-ullong-dec-const
+                    ullongp-of-ullong-oct-const
+                    ullongp-of-ullong-hex-const
                     sintp-of-sint-from-boolean
                     ucharp-of-uchar-array-read-sint))
                  :use (:guard-theorem ,fn))))

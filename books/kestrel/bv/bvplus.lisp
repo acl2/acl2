@@ -283,8 +283,7 @@
                 (integerp freesize))
            (equal (bvplus size x y)
                   (bvplus size freeval y)))
-  :hints (("Goal" :in-theory (e/d (bvplus)
-                                  nil))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-when-equal-of-constant-and-bvchop-arg3
   (implies (and (equal (bvchop freesize x) freeval) ;freeval comes second so that this is not a binding hyp
@@ -381,3 +380,14 @@
 
 (theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG3) (:definition bvplus)))
 (theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG2) (:definition bvplus)))
+
+(defthm bvplus-trim-leading-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
+           (equal (bvplus size k x)
+                  (bvplus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvplus)
+           :cases ((natp size)))))

@@ -552,15 +552,16 @@
     "We expand @(tsee condexpr) because it is just a wrapper
      that signifies a conditional expression instead of statement.")
    (xdoc::p
-    "It may seem surprising that we expand functions like @(tsee sint-const),
+    "It may seem surprising that
+     we expand functions like @(tsee sint-dec-const),
      since those correspond to C constructs;
      we certainly do not expand functions like @(tsee add-sint-sint).
-     The reason is that functions like @(tsee sint-const)
+     The reason is that functions like @(tsee sint-dec-const)
      are used to represent C constants in ACL2 functions,
      but in the dynamic semantics,
      @(tsee exec-iconst) (which we expand, obviously)
      produces terms of the form @('(sint <quoted-integer>)').
-     By expanding @(tsee sint-const) in the ACL2 functions,
+     By expanding @(tsee sint-dec-const) in the ACL2 functions,
      we produce terms of the form @('(sint <quoted-integer>)'),
      which therefore match the ones from @(tsee exec-iconst).")
    (xdoc::p
@@ -622,12 +623,24 @@
      push-frame
      read-var
      sint-from-boolean
-     sint-const
-     uint-const
-     slong-const
-     ulong-const
-     sllong-const
-     ullong-const
+     sint-dec-const
+     sint-oct-const
+     sint-hex-const
+     uint-dec-const
+     uint-oct-const
+     uint-hex-const
+     slong-dec-const
+     slong-oct-const
+     slong-hex-const
+     ulong-dec-const
+     ulong-oct-const
+     ulong-hex-const
+     sllong-dec-const
+     sllong-oct-const
+     sllong-hex-const
+     ullong-dec-const
+     ullong-oct-const
+     ullong-hex-const
      top-frame
      type-of-value
      uaconvert-values

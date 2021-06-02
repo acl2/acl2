@@ -152,7 +152,7 @@
      asserting the correctness of the C code.")
 
    (xdoc::p
-    "This currently covers a relatively simple subset of ACL2 and C.
+    "This currently covers a relatively limited subset of ACL2 and C.
      The coverage is being extended.")
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -163,6 +163,13 @@
     "This currently covers just
      character sets, bytes, and keywords.
      The coverage is being extended.")
+
+   (xdoc::p
+    "A preliminary formalization of
+     the static and dynamic semantics of a subset of C
+     can be found as part of "
+    (xdoc::seetopic "c::atc" "ATC")
+    ". Some of that material may be moved here in the future.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1007,6 +1014,11 @@
    (xdoc::p
     "The utility @('acceptable-rewrite-rulep') has been moved
      from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
+
+   (xdoc::p
+    "New utilities @(tsee irrelevant-formals-info) and @(tsee
+     chk-irrelevant-formals-ok) have been added, to perform an @(see
+     irrelevant-formals) check on a given definition or list of definitions.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

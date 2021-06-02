@@ -1,0 +1,1333 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(DEFTTAG :BRR-FREE-VARIABLES)
+ :BRR-FREE-VARIABLES
+ACL2 !>>(SET-RAW-MODE T)
+ACL2 P>>(DEFVAR *SAVED-STANDARD-CO* *STANDARD-CO*)
+*SAVED-STANDARD-CO*
+ACL2 P>>(PROGN (SETQ *STANDARD-CO* (STANDARD-CO STATE))
+               T)
+T
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(DEFLABEL START)
+
+Summary
+Form:  ( DEFLABEL START ...)
+Rules: NIL
+ START
+ACL2 !>>(DEFSTUB P2 (X Y) T)
+
+Summary
+Form:  (DEFSTUB P2 ...)
+Rules: NIL
+ P2
+ACL2 !>>(DEFAXIOM P2-TRANS
+                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                           (P2 X Z)))
+
+ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
+from P2-TRANS contains the free variable Y.  This variable will be
+chosen by searching for an instance of (P2 X Y) in the context of the
+term being rewritten.  This is generally a severe restriction on the
+applicability of a :REWRITE rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( DEFAXIOM P2-TRANS ...)
+Rules: NIL
+Warnings:  Free
+ P2-TRANS
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P2-TRANS))
+
+Proof succeeded.
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE P2-TRANS)
+
+
+ACL2 Error in ADD-MATCH-FREE-OVERRIDE:  Unless add-match-free-override
+is given a single argument of T, its arguments must be :rewrite, :linear,
+or :forward-chaining runes in the current ACL2 world with free variables
+in their hypotheses.  The following argument is thus illegal:  P2-TRANS.
+
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE (:REWRITE P2-TRANS))
+ ((:REWRITE P2-TRANS))
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+         (P2 A D))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL T)
+ NIL
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P2-TRANS))
+
+Proof succeeded.
+ACL2 !>>(U)
+           5:x(ADD-MATCH-FREE-OVERRIDE :ONCE (:REWRITE P2-TRANS))
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :CLEAR T)
+
+
+ACL2 Error in ADD-MATCH-FREE-OVERRIDE:  When the first argument of
+add-match-free-override is :clear, it must be the only argument.
+
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :CLEAR)
+ :CLEAR
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P2-TRANS))
+
+Proof succeeded.
+ACL2 !>>(UBT! 'P2-TRANS)
+ v         3:x(DEFSTUB P2 (X Y) ...)
+ACL2 !>>(SET-MATCH-FREE-ERROR T)
+<state>
+ACL2 !>>(DEFAXIOM P2-TRANS
+                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                           (P2 X Z)))
+
+ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
+from P2-TRANS contains the free variable Y.  This variable will be
+chosen by searching for an instance of (P2 X Y) in the context of the
+term being rewritten.  This is generally a severe restriction on the
+applicability of a :REWRITE rule.  See :DOC free-variables.
+
+
+
+ACL2 Error in ( DEFAXIOM P2-TRANS ...):  The warning above has caused
+this error in order to make it clear that there are free variables
+in the hypotheses of a :REWRITE rule generated from P2-TRANS.  This
+error can be suppressed for the rest of this ACL2 session by submitting
+the following form:
+
+(SET-MATCH-FREE-ERROR NIL)
+
+However, you are advised not to do so until you have read the documentation
+on ``free variables'' (see :DOC free-variables) in order to understand
+the issues.  In particular, you can supply a :match-free value for
+the :rewrite rule class (see :DOC rule-classes) or a default for the
+book under development (see :DOC set-match-free-default).
+
+
+Summary
+Form:  ( DEFAXIOM P2-TRANS ...)
+Rules: NIL
+Warnings:  Free
+
+ACL2 Error in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFAXIOM P2-TRANS
+                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                           (P2 X Z))
+                  :RULE-CLASSES ((:REWRITE :MATCH-FREE NIL)))
+
+
+ACL2 Error in ( DEFAXIOM P2-TRANS ...):  The legal values of :MATCH-
+FREE are :ALL and :ONCE. Thus, (:REWRITE :MATCH-FREE NIL) is illegal.
+See :DOC free-variables.
+
+
+Summary
+Form:  ( DEFAXIOM P2-TRANS ...)
+Rules: NIL
+
+ACL2 Error in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFAXIOM P2-TRANS
+                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                           (P2 X Z))
+                  :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+
+Summary
+Form:  ( DEFAXIOM P2-TRANS ...)
+Rules: NIL
+ P2-TRANS
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+         (P2 A D))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL (:REWRITE P2-TRANS))
+ NIL
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P2-TRANS))
+
+Proof succeeded.
+ACL2 !>>(U)
+           4:x(DEFAXIOM P2-TRANS (IMPLIES # #) ...)
+ACL2 !>>(U)
+ v         3:x(DEFSTUB P2 (X Y) ...)
+ACL2 !>>(SET-MATCH-FREE-DEFAULT :ONCE)
+ :ONCE
+ACL2 !>>(DEFAXIOM P2-TRANS
+                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                           (P2 X Z)))
+
+ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
+from P2-TRANS contains the free variable Y.  This variable will be
+chosen by searching for an instance of (P2 X Y) in the context of the
+term being rewritten.  This is generally a severe restriction on the
+applicability of a :REWRITE rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( DEFAXIOM P2-TRANS ...)
+Rules: NIL
+Warnings:  Free
+ P2-TRANS
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+         (P2 A D))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ALL T)
+ NIL
+ACL2 !>>(THM (IMPLIES (AND (P2 A C) (P2 A B) (P2 C D))
+                      (P2 A D)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P2-TRANS))
+
+Proof succeeded.
+ACL2 !>>(UBU! 'START)
+           2:x(DEFLABEL START)
+ACL2 !>>(ENCAPSULATE (((P1 *) => *)
+                      ((P2 * *) => *)
+                      ((P3 *) => *)
+                      ((A) => *)
+                      ((B) => *))
+                     (LOCAL (DEFUN P1 (X) X))
+                     (LOCAL (DEFUN P2 (X Y) (LIST X Y)))
+                     (LOCAL (DEFUN P3 (X) X))
+                     (LOCAL (DEFUN A NIL 0))
+                     (LOCAL (DEFUN B NIL 0)))
+
+To verify that the five encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P1 (X) X))
+
+Since P1 is non-recursive, its admission is trivial.  We observe that
+the type of P1 is described by the theorem (EQUAL (P1 X) X).  
+
+Summary
+Form:  ( DEFUN P1 ...)
+Rules: NIL
+P1
+
+
+ACL2 !>>>(LOCAL (DEFUN P2 (X Y) (LIST X Y)))
+
+Since P2 is non-recursive, its admission is trivial.  We observe that
+the type of P2 is described by the theorem 
+(AND (CONSP (P2 X Y)) (TRUE-LISTP (P2 X Y))).  We used primitive type
+reasoning.
+
+Summary
+Form:  ( DEFUN P2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+P2
+
+
+ACL2 !>>>(LOCAL (DEFUN P3 (X) X))
+
+Since P3 is non-recursive, its admission is trivial.  We observe that
+the type of P3 is described by the theorem (EQUAL (P3 X) X).  
+
+Summary
+Form:  ( DEFUN P3 ...)
+Rules: NIL
+P3
+
+
+ACL2 !>>>(LOCAL (DEFUN A NIL 0))
+
+Since A is non-recursive, its admission is trivial.  We observe that
+the type of A is described by the theorem (EQUAL (A) 0).  
+
+Summary
+Form:  ( DEFUN A ...)
+Rules: NIL
+A
+
+
+ACL2 !>>>(LOCAL (DEFUN B NIL 0))
+
+Since B is non-recursive, its admission is trivial.  We observe that
+the type of B is described by the theorem (EQUAL (B) 0).  
+
+Summary
+Form:  ( DEFUN B ...)
+Rules: NIL
+B
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE (((P1 * ...) ...) ...) ...)
+Rules: NIL
+ (P1 P2 P3 A B)
+ACL2 !>>(SET-MATCH-FREE-ERROR NIL)
+<state>
+ACL2 !>>(DEFAXIOM AX1
+                  (IMPLIES (AND (P2 X Y) (P1 Y)) (P3 X)))
+
+ACL2 Warning [Free] in ( DEFAXIOM AX1 ...):  A :REWRITE rule generated
+from AX1 contains the free variable Y.  This variable will be chosen
+by searching for an instance of (P2 X Y) in the context of the term
+being rewritten.  This is generally a severe restriction on the applicability
+of a :REWRITE rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( DEFAXIOM AX1 ...)
+Rules: NIL
+Warnings:  Free
+ AX1
+ACL2 !>>(DEFAXIOM P2-A-B (P2 (A) (B)))
+
+Summary
+Form:  ( DEFAXIOM P2-A-B ...)
+Rules: NIL
+ P2-A-B
+ACL2 !>>(DEFAXIOM P2-A-A (P2 (A) (A)))
+
+Summary
+Form:  ( DEFAXIOM P2-A-A ...)
+Rules: NIL
+ P2-A-A
+ACL2 !>>(DEFAXIOM P1-B (P1 (B)))
+
+Summary
+Form:  ( DEFAXIOM P1-B ...)
+Rules: NIL
+ P1-B
+ACL2 !>>(THM (IMPLIES (P2 (A) Y) (P3 (A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE AX1)
+        (:REWRITE P1-B)
+        (:REWRITE P2-A-B))
+
+Proof succeeded.
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE T)
+ ((:REWRITE AX1)
+  (:REWRITE APPLY$-WARRANT-MEMPOS-NECC)
+  (:REWRITE APPLY$-WARRANT-APPEND$+-NECC)
+  (:REWRITE APPLY$-WARRANT-APPEND$+-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-APPEND$-NECC)
+  (:REWRITE APPLY$-WARRANT-APPEND$-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-COLLECT$+-NECC)
+  (:REWRITE APPLY$-WARRANT-COLLECT$+-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-COLLECT$-NECC)
+  (:REWRITE APPLY$-WARRANT-COLLECT$-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-THEREIS$+-NECC)
+  (:REWRITE APPLY$-WARRANT-THEREIS$-NECC)
+  (:REWRITE APPLY$-WARRANT-ALWAYS$+-NECC)
+  (:REWRITE APPLY$-WARRANT-ALWAYS$-NECC)
+  (:REWRITE APPLY$-WARRANT-SUM$+-NECC)
+  (:REWRITE APPLY$-WARRANT-SUM$+-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-SUM$-NECC)
+  (:REWRITE APPLY$-WARRANT-SUM$-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-WHEN$+-NECC)
+  (:REWRITE APPLY$-WARRANT-WHEN$+-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-WHEN$-NECC)
+  (:REWRITE APPLY$-WARRANT-WHEN$-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-UNTIL$+-NECC)
+  (:REWRITE APPLY$-WARRANT-UNTIL$+-AC-NECC)
+  (:REWRITE APPLY$-WARRANT-UNTIL$-NECC)
+  (:REWRITE APPLY$-WARRANT-UNTIL$-AC-NECC)
+  (:REWRITE APPLY$-EQUIVALENCE-NECC)
+  (:REWRITE ARITIES-OKP-IMPLIES-LOGICP)
+  (:REWRITE ARITIES-OKP-IMPLIES-ARITY)
+  (:REWRITE TERM-LISTP-IMPLIES-PSEUDO-TERM-LISTP)
+  (:REWRITE TERMP-IMPLIES-PSEUDO-TERMP)
+  (:REWRITE ANCESTORS-CHECK-CONSTRAINT)
+  (:REWRITE ANCESTORS-CHECK-BUILTIN-PROPERTY)
+  (:REWRITE LEXORDER-TRANSITIVE)
+  (:REWRITE ALPHORDER-TRANSITIVE)
+  (:REWRITE BAD-ATOM<=-TRANSITIVE)
+  (:REWRITE STRING<-L-TRICHOTOMY)
+  (:REWRITE SYMBOL-<-TRANSITIVE)
+  (:REWRITE STRING<-L-TRANSITIVE)
+  (:LINEAR ARRAY2P-LINEAR)
+  (:LINEAR ARRAY2P-LINEAR)
+  (:LINEAR ARRAY2P-LINEAR)
+  (:LINEAR ARRAY2P-LINEAR)
+  (:LINEAR ARRAY1P-LINEAR)
+  (:LINEAR ARRAY1P-LINEAR)
+  (:LINEAR ARRAY1P-LINEAR))
+ACL2 !>>(THM (IMPLIES (P2 (A) Y) (P3 (A))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (P2 (A) Y) (P3 (A)))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :CLEAR)
+ :CLEAR
+ACL2 !>>(THM (IMPLIES (P2 (A) Y) (P3 (A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE AX1)
+        (:REWRITE P1-B)
+        (:REWRITE P2-A-B))
+
+Proof succeeded.
+ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE (:REWRITE STRING<-L-TRICHOTOMY))
+ ((:REWRITE STRING<-L-TRICHOTOMY))
+ACL2 !>>(THM (IMPLIES (P2 (A) Y) (P3 (A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE AX1)
+        (:REWRITE P1-B)
+        (:REWRITE P2-A-B))
+
+Proof succeeded.
+ACL2 !>>(UBU! 'START)
+           2:x(DEFLABEL START)
+ACL2 !>>(ENCAPSULATE ((P1 (U X) T)
+                      (BAD (X) T)
+                      (P2 (X Y Z) T)
+                      (BAR (X Y) T)
+                      (FOO (X Y) T)
+                      (POO (X Y) T)
+                      (PROP (U) T))
+                     (LOCAL (DEFUN P1 (U X)
+                                   (DECLARE (IGNORE U X))
+                                   NIL))
+                     (LOCAL (DEFUN BAD (X)
+                                   (DECLARE (IGNORE X))
+                                   NIL))
+                     (LOCAL (DEFUN P2 (X Y Z)
+                                   (DECLARE (IGNORE X Y Z))
+                                   NIL))
+                     (LOCAL (DEFUN BAR (X Y)
+                                   (DECLARE (IGNORE X Y))
+                                   NIL))
+                     (LOCAL (DEFUN FOO (X Y)
+                                   (DECLARE (IGNORE X Y))
+                                   NIL))
+                     (LOCAL (DEFUN POO (X Y)
+                                   (DECLARE (IGNORE X Y))
+                                   NIL))
+                     (LOCAL (DEFUN PROP (U) (DECLARE (IGNORE U)) T))
+                     (DEFTHM FOO-POO
+                             (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
+                                      (EQUAL (FOO X Y) (POO X Y))))
+                     (DEFTHM LEMMA-1
+                             (IMPLIES (AND (P1 U X)
+                                           (BAD X)
+                                           (P2 X Y Z)
+                                           (BAR X Y)
+                                           (EQUAL X X)
+                                           (FOO X Y))
+                                      (PROP U))
+                             :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL))))
+
+To verify that the nine encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P1 (U X)
+                       (DECLARE (IGNORE U X))
+                       NIL))
+
+Since P1 is non-recursive, its admission is trivial.  We observe that
+the type of P1 is described by the theorem (EQUAL (P1 U X) NIL).  
+
+Summary
+Form:  ( DEFUN P1 ...)
+Rules: NIL
+P1
+
+
+ACL2 !>>>(LOCAL (DEFUN BAD (X)
+                       (DECLARE (IGNORE X))
+                       NIL))
+
+Since BAD is non-recursive, its admission is trivial.  We observe that
+the type of BAD is described by the theorem (EQUAL (BAD X) NIL).  
+
+Summary
+Form:  ( DEFUN BAD ...)
+Rules: NIL
+BAD
+
+
+ACL2 !>>>(LOCAL (DEFUN P2 (X Y Z)
+                       (DECLARE (IGNORE X Y Z))
+                       NIL))
+
+Since P2 is non-recursive, its admission is trivial.  We observe that
+the type of P2 is described by the theorem (EQUAL (P2 X Y Z) NIL).
+
+Summary
+Form:  ( DEFUN P2 ...)
+Rules: NIL
+P2
+
+
+ACL2 !>>>(LOCAL (DEFUN BAR (X Y)
+                       (DECLARE (IGNORE X Y))
+                       NIL))
+
+Since BAR is non-recursive, its admission is trivial.  We observe that
+the type of BAR is described by the theorem (EQUAL (BAR X Y) NIL).
+
+Summary
+Form:  ( DEFUN BAR ...)
+Rules: NIL
+BAR
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X Y)
+                       (DECLARE (IGNORE X Y))
+                       NIL))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem (EQUAL (FOO X Y) NIL).
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(LOCAL (DEFUN POO (X Y)
+                       (DECLARE (IGNORE X Y))
+                       NIL))
+
+Since POO is non-recursive, its admission is trivial.  We observe that
+the type of POO is described by the theorem (EQUAL (POO X Y) NIL).
+
+Summary
+Form:  ( DEFUN POO ...)
+Rules: NIL
+POO
+
+
+ACL2 !>>>(LOCAL (DEFUN PROP (U) (DECLARE (IGNORE U)) T))
+
+Since PROP is non-recursive, its admission is trivial.  We observe
+that the type of PROP is described by the theorem (EQUAL (PROP U) T).
+
+Summary
+Form:  ( DEFUN PROP ...)
+Rules: NIL
+PROP
+
+
+ACL2 !>>>(DEFTHM FOO-POO
+                 (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
+                          (EQUAL (FOO X Y) (POO X Y))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM FOO-POO ...):  A :REWRITE rule generated
+from FOO-POO will be triggered only by terms containing the function
+symbol FOO, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM FOO-POO ...):  The previously added
+rule FOO subsumes a newly proposed :REWRITE rule generated from FOO-POO,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO-POO ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FOO)
+        (:TYPE-PRESCRIPTION POO))
+Warnings:  Subsume and Non-rec
+FOO-POO
+
+
+ACL2 !>>>(DEFTHM LEMMA-1
+                 (IMPLIES (AND (P1 U X)
+                               (BAD X)
+                               (P2 X Y Z)
+                               (BAR X Y)
+                               (EQUAL X X)
+                               (FOO X Y))
+                          (PROP U))
+                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-1 ...):  A :REWRITE rule generated
+from LEMMA-1 will be triggered only by terms containing the function
+symbol PROP, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-1 ...):  As noted, we will
+instantiate the free variables, X, Z and Y, of a :REWRITE rule generated
+from LEMMA-1, by searching for the set of hypotheses shown above. 
+However, these hypotheses mention the function symbols P1 and P2, which
+have non-recursive definitions.  Unless these definitions are disabled,
+those function symbols are unlikely to occur in the conjecture being
+proved and hence the search for the required hypotheses will likely
+fail.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM LEMMA-1 ...):  The previously added
+rule PROP subsumes a newly proposed :REWRITE rule generated from LEMMA-1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of LEMMA-1 depends upon the :type-prescription rule PROP.
+
+Summary
+Form:  ( DEFTHM LEMMA-1 ...)
+Rules: ((:TYPE-PRESCRIPTION P1)
+        (:TYPE-PRESCRIPTION PROP))
+Warnings:  Subsume and Non-rec
+LEMMA-1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+P1, BAD, P2, BAR, FOO, POO and PROP:
+
+(AND (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
+              (EQUAL (FOO X Y) (POO X Y)))
+     (IMPLIES (AND (P1 U X)
+                   (BAD X)
+                   (P2 X Y Z)
+                   (BAR X Y)
+                   (EQUAL X X)
+                   (FOO X Y))
+              (PROP U)))
+
+Summary
+Form:  ( ENCAPSULATE ((P1 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+ (P1 BAD P2 BAR FOO POO PROP)
+ACL2 !>>:BRR T
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+NIL
+ T
+ACL2 !>>:MONITOR (:REWRITE LEMMA-1) '(:TARGET :UNIFY-SUBST :GO)
+(((:REWRITE LEMMA-1)
+  '(:TARGET :UNIFY-SUBST :GO)))
+ACL2 !>>(THM (IMPLIES (AND (P1 U0 X1)
+                           (BAD X1)
+                           (BAD X3)
+                           (BAR X3 Y1)
+                           (BAR X3 Y3)
+                           (P1 U0 X2)
+                           (P1 U0 X3)
+                           (P2 X3 Y1 Z1)
+                           (P2 X3 Y3 Z1))
+                      (PROP U0)))
+
+(1 Breaking (:REWRITE LEMMA-1) on (PROP U0):
+1 ACL2 >:TARGET
+(PROP U0)
+1 ACL2 >:UNIFY-SUBST
+     U : U0
+1 ACL2 >:GO
+
+1x (:REWRITE LEMMA-1) failed because :HYP 1 contains free variables.
+The following display summarizes the attempts to relieve hypotheses
+by binding free variables; see :DOC free-variables.
+
+    [1] X : X1
+Failed because :HYP 3 contains free variables Y and Z, for which no
+suitable bindings were found.
+    [1] X : X2
+Failed because :HYP 2 rewrote to (BAD X2).
+    [1] X : X3
+        [3] Z : Z1
+            Y : Y1
+Failed because :HYP 6 rewrote to (FOO X3 Y1).
+        [3] Z : Z1
+            Y : Y3
+Failed because :HYP 6 rewrote to (POO X3 Y3).
+1)
+
+(1 Breaking (:REWRITE LEMMA-1) on (PROP U0):
+1 ACL2 >:TARGET
+(PROP U0)
+1 ACL2 >:UNIFY-SUBST
+     U : U0
+1 ACL2 >:GO
+
+1x (:REWRITE LEMMA-1) failed because :HYP 1 contains free variables.
+The following display summarizes the attempts to relieve hypotheses
+by binding free variables; see :DOC free-variables.
+
+    [1] X : X1
+Failed because :HYP 3 contains free variables Y and Z, for which no
+suitable bindings were found.
+    [1] X : X2
+Failed because :HYP 2 rewrote to (BAD X2).
+    [1] X : X3
+        [3] Z : Z1
+            Y : Y1
+Failed because :HYP 6 rewrote to (FOO X3 Y1).
+        [3] Z : Z1
+            Y : Y3
+Failed because :HYP 6 rewrote to (POO X3 Y3).
+1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (AND (P1 U0 X1)
+              (BAD X1)
+              (BAD X3)
+              (BAR X3 Y1)
+              (BAR X3 Y3)
+              (P1 U0 X2)
+              (P1 U0 X3)
+              (P2 X3 Y1 Z1)
+              (P2 X3 Y3 Z1))
+         (PROP U0))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBU! 'START)
+           2:x(DEFLABEL START)
+ACL2 !>>(DEFUN F (X) (DECLARE (IGNORE X)) T)
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X) T).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+ F
+ACL2 !>>(DEFUN G (X) X)
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X) X).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+ G
+ACL2 !>>(DEFUN H (X) X)
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+ H
+ACL2 !>>(DEFUN K (X) X)
+
+Since K is non-recursive, its admission is trivial.  We observe that
+the type of K is described by the theorem (EQUAL (K X) X).  
+
+Summary
+Form:  ( DEFUN K ...)
+Rules: NIL
+ K
+ACL2 !>>(DEFTHM F-K-H (F (K (H X))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM F-K-H ...):  A :REWRITE rule generated
+from F-K-H will be triggered only by terms containing the function
+symbols F, K and H, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F-K-H ...):  The previously added
+rule F subsumes a newly proposed :REWRITE rule generated from F-K-H,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of F-K-H depends upon the :type-prescription rule F.
+
+Summary
+Form:  ( DEFTHM F-K-H ...)
+Rules: ((:TYPE-PRESCRIPTION F))
+Warnings:  Subsume and Non-rec
+ F-K-H
+ACL2 !>>(DEFTHM G-REWRITE
+                (IMPLIES (AND (EQUAL Y (K X)) (F Y))
+                         (EQUAL (G X) Y)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM G-REWRITE ...):  A :REWRITE rule
+generated from G-REWRITE will be triggered only by terms containing
+the function symbol G, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM G-REWRITE ...):  The previously
+added rule G subsumes a newly proposed :REWRITE rule generated from
+G-REWRITE, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G-REWRITE ...)
+Rules: ((:DEFINITION F)
+        (:DEFINITION G)
+        (:DEFINITION K))
+Warnings:  Subsume and Non-rec
+ G-REWRITE
+ACL2 !>>(IN-THEORY (UNION-THEORIES (THEORY 'MINIMAL-THEORY)
+                                   '(F-K-H G-REWRITE)))
+
+Summary
+Form:  ( IN-THEORY (UNION-THEORIES ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(THM (EQUAL (G (H A)) (K (H A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE F-K-H)
+        (:REWRITE G-REWRITE))
+
+Proof succeeded.
+ACL2 !>>(UBU! 'START)
+           2:x(DEFLABEL START)
+ACL2 !>>(DEFUN MY-EQUIV (X Y) (EQUAL X Y))
+
+Since MY-EQUIV is non-recursive, its admission is trivial.  We observe
+that the type of MY-EQUIV is described by the theorem 
+(OR (EQUAL (MY-EQUIV X Y) T) (EQUAL (MY-EQUIV X Y) NIL)).  We used
+primitive type reasoning.
+
+Summary
+Form:  ( DEFUN MY-EQUIV ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ MY-EQUIV
+ACL2 !>>(DEFEQUIV MY-EQUIV)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM MY-EQUIV-IS-AN-EQUIVALENCE ...)
+Rules: ((:DEFINITION MY-EQUIV)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Summary
+Form:  ( MAKE-EVENT (DEFEQUIV-FORM ...))
+Rules: NIL
+ MY-EQUIV-IS-AN-EQUIVALENCE
+ACL2 !>>(DEFUN F (X) (DECLARE (IGNORE X)) T)
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X) T).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+ F
+ACL2 !>>(DEFUN G (X) X)
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X) X).  
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+ G
+ACL2 !>>(DEFUN H1 (X) X)
+
+Since H1 is non-recursive, its admission is trivial.  We observe that
+the type of H1 is described by the theorem (EQUAL (H1 X) X).  
+
+Summary
+Form:  ( DEFUN H1 ...)
+Rules: NIL
+ H1
+ACL2 !>>(DEFUN H2 (X) X)
+
+Since H2 is non-recursive, its admission is trivial.  We observe that
+the type of H2 is described by the theorem (EQUAL (H2 X) X).  
+
+Summary
+Form:  ( DEFUN H2 ...)
+Rules: NIL
+ H2
+ACL2 !>>(DEFTHM LEMMA-1 (MY-EQUIV (H1 X) (H2 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-1 ...):  A :REWRITE rule generated
+from LEMMA-1 will be triggered only by terms containing the function
+symbol H1, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM LEMMA-1 ...):  The previously added
+rule H1 subsumes a newly proposed :REWRITE rule generated from LEMMA-1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEMMA-1 ...)
+Rules: ((:DEFINITION H1)
+        (:DEFINITION H2)
+        (:DEFINITION MY-EQUIV))
+Warnings:  Subsume and Non-rec
+ LEMMA-1
+ACL2 !>>(DEFTHM LEMMA-2 (F (H2 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-2 ...):  A :REWRITE rule generated
+from LEMMA-2 will be triggered only by terms containing the function
+symbols F and H2, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM LEMMA-2 ...):  The previously added
+rule F subsumes a newly proposed :REWRITE rule generated from LEMMA-2,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of LEMMA-2 depends upon the :type-prescription rule F.
+
+Summary
+Form:  ( DEFTHM LEMMA-2 ...)
+Rules: ((:TYPE-PRESCRIPTION F))
+Warnings:  Subsume and Non-rec
+ LEMMA-2
+ACL2 !>>(DEFTHM LEMMA-3
+                (IMPLIES (AND (MY-EQUIV Y (DOUBLE-REWRITE X))
+                              (F Y))
+                         (EQUAL (G X) Y)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-3 ...):  A :REWRITE rule generated
+from LEMMA-3 will be triggered only by terms containing the function
+symbol G, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM LEMMA-3 ...):  The previously added
+rule G subsumes a newly proposed :REWRITE rule generated from LEMMA-3,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEMMA-3 ...)
+Rules: ((:DEFINITION DOUBLE-REWRITE)
+        (:DEFINITION F)
+        (:DEFINITION G)
+        (:DEFINITION MY-EQUIV))
+Warnings:  Subsume and Non-rec
+ LEMMA-3
+ACL2 !>>(IN-THEORY
+             (UNION-THEORIES (THEORY 'MINIMAL-THEORY)
+                             '(LEMMA-1 LEMMA-2
+                                       LEMMA-3 MY-EQUIV-IS-AN-EQUIVALENCE)))
+
+Summary
+Form:  ( IN-THEORY (UNION-THEORIES ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(THM (EQUAL (G (H1 A)) (H2 A)))
+
+(1 Breaking (:REWRITE LEMMA-1) on (H1 A):
+1 ACL2 >:TARGET
+(H1 A)
+1 ACL2 >:UNIFY-SUBST
+     X : A
+1 ACL2 >:GO
+
+1 (:REWRITE LEMMA-1) produced (H2 A).
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DOUBLE-REWRITE)
+        (:EQUIVALENCE MY-EQUIV-IS-AN-EQUIVALENCE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE LEMMA-1)
+        (:REWRITE LEMMA-2)
+        (:REWRITE LEMMA-3))
+
+Proof succeeded.
+ACL2 !>>(IN-THEORY (UNION-THEORIES (THEORY 'MINIMAL-THEORY)
+                                   '(LEMMA-1 LEMMA-2 LEMMA-3)))
+
+Summary
+Form:  ( IN-THEORY (UNION-THEORIES ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(THM (EQUAL (G (H1 A)) (H2 A)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(EQUAL (G (H1 A)) (H2 A))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBU! 'START)
+           2:x(DEFLABEL START)
+ACL2 !>>(DEFSTUB F (X) NIL)
+
+Summary
+Form:  (DEFSTUB F ...)
+Rules: NIL
+ F
+ACL2 !>>(DEFSTUB G (X) NIL)
+
+Summary
+Form:  (DEFSTUB G ...)
+Rules: NIL
+ G
+ACL2 !>>(DEFAXIOM G-REWRITE
+                  (IMPLIES (AND (F Y)
+                                (SYNTAXP (NOT (CW "rewrite trying ~x0~%" Y)))
+                                (EQUAL X Y))
+                           (EQUAL (G X) Y)))
+
+ACL2 Warning [Free] in ( DEFAXIOM G-REWRITE ...):  A :REWRITE rule
+generated from G-REWRITE contains the free variable Y.  This variable
+will be chosen by searching for an instance of (F Y) in the context
+of the term being rewritten.  This is generally a severe restriction
+on the applicability of a :REWRITE rule.  See :DOC free-variables.
+
+
+Summary
+Form:  ( DEFAXIOM G-REWRITE ...)
+Rules: NIL
+Warnings:  Free
+ G-REWRITE
+ACL2 !>>(DEFAXIOM
+         G-BIND-FREE
+         (IMPLIES (AND (BIND-FREE (CONS (CONS (CONS 'Y 'A) 'NIL)
+                                        (CONS (CONS (CONS 'Y 'B) 'NIL) 'NIL))
+                                  (Y))
+                       (SYNTAXP (NOT (CW "bind trying ~x0~%" Y)))
+                       (F Y)
+                       (EQUAL X Y))
+                  (EQUAL (G X) Y)))
+
+Summary
+Form:  ( DEFAXIOM G-BIND-FREE ...)
+Rules: NIL
+ G-BIND-FREE
+ACL2 !>>:MONITOR (:REWRITE G-BIND-FREE) '(:TARGET :GO)
+(((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+ ((:REWRITE LEMMA-1)
+  '(:TARGET :UNIFY-SUBST :GO)))
+ACL2 !>>:MONITOR (:REWRITE G-REWRITE) '(:TARGET :GO)
+(((:REWRITE G-REWRITE) '(:TARGET :GO))
+ ((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+ ((:REWRITE LEMMA-1)
+  '(:TARGET :UNIFY-SUBST :GO)))
+ACL2 !>>:BRR T
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+(((:REWRITE G-REWRITE) '(:TARGET :GO))
+ ((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+ ((:REWRITE LEMMA-1)
+  '(:TARGET :UNIFY-SUBST :GO)))
+ T
+ACL2 !>>(THM (IMPLIES (AND (F A) (F B))
+                      (EQUAL (G X) X)))
+
+(1 Breaking (:REWRITE G-BIND-FREE) on (G X):
+1 ACL2 >:TARGET
+(G X)
+1 ACL2 >:GO
+bind trying A
+bind trying B
+
+1x (:REWRITE G-BIND-FREE) failed because :HYP 1 uses BIND-FREE to produce
+unsuccessful free variable bindings.  The following display summarizes
+the attempts to relieve hypotheses by binding free variables; see :DOC
+free-variables.
+
+    [1] Y : A
+Failed because :HYP 4 rewrote to (EQUAL X A).
+    [1] Y : B
+Failed because :HYP 4 rewrote to (EQUAL X B).
+1)
+
+(1 Breaking (:REWRITE G-REWRITE) on (G X):
+1 ACL2 >:TARGET
+(G X)
+1 ACL2 >:GO
+rewrite trying B
+rewrite trying A
+
+1x (:REWRITE G-REWRITE) failed because :HYP 1 contains free variables.
+The following display summarizes the attempts to relieve hypotheses
+by binding free variables; see :DOC free-variables.
+
+    [1] Y : A
+Failed because :HYP 3 rewrote to (EQUAL X A).
+    [1] Y : B
+Failed because :HYP 3 rewrote to (EQUAL X B).
+1)
+
+(1 Breaking (:REWRITE G-BIND-FREE) on (G X):
+1 ACL2 >:TARGET
+(G X)
+1 ACL2 >:GO
+bind trying A
+bind trying B
+
+1x (:REWRITE G-BIND-FREE) failed because :HYP 1 uses BIND-FREE to produce
+unsuccessful free variable bindings.  The following display summarizes
+the attempts to relieve hypotheses by binding free variables; see :DOC
+free-variables.
+
+    [1] Y : A
+Failed because :HYP 4 rewrote to (EQUAL X A).
+    [1] Y : B
+Failed because :HYP 4 rewrote to (EQUAL X B).
+1)
+
+(1 Breaking (:REWRITE G-REWRITE) on (G X):
+1 ACL2 >:TARGET
+(G X)
+1 ACL2 >:GO
+rewrite trying B
+rewrite trying A
+
+1x (:REWRITE G-REWRITE) failed because :HYP 1 contains free variables.
+The following display summarizes the attempts to relieve hypotheses
+by binding free variables; see :DOC free-variables.
+
+    [1] Y : A
+Failed because :HYP 3 rewrote to (EQUAL X A).
+    [1] Y : B
+Failed because :HYP 3 rewrote to (EQUAL X B).
+1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (AND (F A) (F B))
+         (EQUAL (G X) X))
+
+ACL2 Error in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFTTAG :BRR-FREE-VARIABLES)
+
+TTAG NOTE: Adding ttag :BRR-FREE-VARIABLES from the top level loop.
+ :BRR-FREE-VARIABLES
+ACL2 !>>(SET-RAW-MODE T)
+ACL2 P>>(SETQ *STANDARD-CO* *SAVED-STANDARD-CO*)
+ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(U)
+           6:x(DEFAXIOM G-BIND-FREE (IMPLIES # #))
+ACL2 !>>Bye.

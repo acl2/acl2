@@ -48,6 +48,21 @@
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
+(defthm equal-of-+-cancel-same-alt
+  (equal (equal x (+ x y))
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-alt-2
+  (equal (equal x (+ y x))
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-3
+  (equal (equal (+ y x) x)
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
 (defthm equal-of-+-and-+-cancel-1
   (equal (equal (+ x y1) (+ x y2))
          (equal (fix y1) (fix y2))))

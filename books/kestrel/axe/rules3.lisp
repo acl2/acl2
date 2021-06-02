@@ -51,6 +51,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
@@ -362,13 +363,6 @@
                   (bv-array-read size (expt 2 n) x data)))
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer nth2 ceiling-of-lg)
                                   (nth-of-bv-array-write-becomes-bv-array-read)))))
-
-(defthm sbvlt-transitive-free
-  (implies (and (sbvlt size x free)
-;                (syntaxp (and (quotep free) (quotep size)))
-                (sbvlt size free y))
-           (sbvlt size x y))
-  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-of-one-more-hack
   (implies (integerp x)
@@ -897,20 +891,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-;fixme weaken hyps to sbvle?  hmm. then it might loop?!
-;expensive..
-(defthm sbvlt-becomes-bvlt
-  (implies (and (sbvlt 32 0 x)
-                (sbvlt 32 0 y))
-           (equal (sbvlt 32 x y)
-                  (bvlt 31 x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt sbvlt LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE)
-                                  (<-BECOMES-BVLT-ALT
-                                   <-BECOMES-BVLT
-                                   <-BECOMES-BVLT-free
-                                   )
-                                  ))))
-
 (defthm sbvlt-when-bvlt-constants
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 31 free i))
@@ -919,19 +899,10 @@
                 (unsigned-byte-p 31 k) ;gen??
                 (natp free)
                 (integerp i))
-           (equal (sbvlt 32 k i)
-                  nil))
+           (not (sbvlt 32 k i)))
   :hints (("Goal" :in-theory (e/d (logapp sbvlt bvlt logext logapp-0 <=-OF-BVCHOP-SAME-LINEAR)
                                   (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
                                                       TIMES-4-BECOMES-LOGAPP)))))
-
-;restrict?
-(defthm sbvlt-transitive-free-back
-  (implies (and (not (sbvlt size x free))
-                (not (sbvlt size free y)))
-           (equal (sbvlt size x y)
-                  nil))
-  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (in-theory (disable PLUS-BVCAT-WITH-0)) ;move up
 
@@ -1141,7 +1112,9 @@
 
 ;rename?
 ;bad rule?
-(defthm bvlt-by-4
+;the turns into a fact about a slice being 0..
+;did we need this? which we we prefer bounds or usb claims?
+(defthmd bvlt-by-4
   (equal (bvlt 31 x 4)
          (unsigned-byte-p 2 (bvchop 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt) (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
@@ -3420,10 +3393,6 @@
            (equal (unsigned-byte-p size x)
                   (bvlt free x (expt 2 size))))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) (<-becomes-bvlt <-becomes-bvlt-alt)))))
-
-
-
-(in-theory (disable BVLT-BY-4)) ;did we need this? which we we prefer bounds or usb claims?
 
 ;; ;this doesn't fire, perhaps because it is hung on not..
 ;; (defthm not-bvlt-when-not-usb
@@ -5818,22 +5787,6 @@
                                    slice-of-+
                                    getbit-of-+ ;looped
                                    )))))
-
-;ffixme how is this different from the regular rule?
-(defthm bvlt-trim-arg1-new
-  (implies (and (bind-free (bind-var-to-unsigned-term-size-if-trimmable 'xsize
-                                                                        x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvlt size x y)
-                  (bvlt size (trim size x) y)))
-
-  :HINTS
-  (("Goal"
-    :by BVLT-TRIM-ARG1)))
-
-(in-theory (disable BVLT-TRIM-ARG1)) ;to make this fire first
 
 (DEFTHM UNSIGNED-BYTE-P-WHEN-BVLT-TIGHTEN
   (IMPLIES (AND (BVLT SIZE X FREE) ;allow one more fixme
@@ -17791,11 +17744,6 @@
   :hints (("Goal" :in-theory (disable ;sbvlt-rewrite sbvle SBVLT-WHEN-SBVMODDOWN-HACK4
                               ))))
 
-(defthm sbvlt-transitive-1
-  (implies (and (sbvlt 32 i free)
-                (not (sbvlt 32 len free)))
-           (sbvlt 32 i len)))
-
 (defthm myif-of-myif-of-myif-same-1
  (equal (MYIF test a (MYIF b (MYIF test c d) e))
         (MYIF test a (MYIF b d e)))
@@ -17831,10 +17779,11 @@
   :hints (("Goal" :in-theory (e/d (sbvlt bvminus) (;BVPLUS-OF-MINUS-1
                                                    )))))
 (defthm bvlt-of-plus-hack9
-  (implies (and (bvlt 31 x y)
+  (implies (and (syntaxp (quotep x)) ; prevent overly agressive matches
+                (bvlt 31 x y)
                 (integerp x)
                 (not (equal 0 (bvchop 31 x))))
-           (BVLT '31 (+ 2147483647 x) y))
+           (bvlt 31 (+ 2147483647 x) y))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases)
                                   (;BVPLUS-OF-MINUS-1
                                    )))))
@@ -17868,14 +17817,6 @@
                 (sbvlt 32 x 4))
            (sbvlt '32 (bvmult '32 '4 x) '16))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
-
-
-;todo: flesh out this theory fully
-;could be expensive...
-(defthm sbvlt-transitive-another
-  (implies (and (not (sbvlt 32 free x))
-                (sbvlt 32 free y))
-           (sbvlt 32 x y)))
 
 ;in case we don't chose a normal form:
 ;TODO: Add other variants of this.  Or just choose a normal form...
@@ -18031,3 +17972,70 @@
   (equal (< (bvminus 32 *minus-1* x) (bvminus 32 0 x))
          (not (equal (bvchop 32 x) 0)))
   :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
+
+;use a true trim rule?
+(defthm bvlt-of-bvuminus-arg3-trim
+  (equal (bvlt (+ -1 size) x (bvuminus size y))
+         (bvlt (+ -1 size) x (bvuminus (+ -1 size) y)))
+  :hints (("Goal" :in-theory (enable bvuminus bvminus bvlt
+                                     bvchop-of-sum-cases ;todo
+                                     ))))
+
+(defthm bvdiv-32-of-+-of-2^32
+  (implies (and (syntaxp (not (quotep x))) ; prevent overly aggressive matching
+                (integerp x))
+           (equal (bvdiv 32 (+ 4294967296 x) y)
+                  (bvdiv 32 x y)))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
+(defthm sbvlt-of-0-and-sbvdiv-when-pos-and-nneg
+  (implies (and (integerp x)
+                (integerp y)
+                (sbvlt size 0 y)
+                (sbvle size 0 x) ;gen!
+                (posp size)
+                )
+           (equal (sbvlt size 0 (sbvdiv size x y))
+                  (not (sbvlt size x y))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv-rewrite
+                                   bvminus
+                                   bvuminus
+                                   bvdiv
+                                   bvlt
+                                   getbit-of-plus)
+                                  (floor-minus-arg1-hack)))))
+
+(defthm sbvlt-of-sbvdiv-and-0-when-pos-and-neg
+  (implies (and (sbvlt size 0 x)
+                (sbvlt size y 0)
+                (integerp x)
+                (integerp y)
+                (posp size))
+           (not (sbvlt size 0 (sbvdiv size x y))))
+  :hints (("Goal" :in-theory (enable getbit-of-bvdiv-when-equal-0-of-getbit))))
+
+(defthm sbvlt-of-sbvdiv-and-0-when-neg-and-pos
+  (implies (and (sbvlt size x 0)
+                (sbvlt size 0 y)
+                (equal size 32) ;fixme
+                (integerp x)
+                (integerp y)
+                (posp size))
+           (not (sbvlt size 0 (sbvdiv size x y))))
+  :hints (("Goal" :cases ((not (equal (bvchop (+ -1 size) x) 0))
+                          (and (equal (bvchop (+ -1 size) x) 0) (equal (bvchop size y) 1)))
+           :in-theory (enable sbvdiv-rewrite
+                              ;bvuminus
+                              ;;bvlt-of-constant-arg2-strengthen
+                              ))))
+
+(local (include-book "kestrel/bv/bvdiv-rules" :dir :system))
+
+;; 0 < x div y becomes x >= y
+(defthm sbvlt-of-0-and-sbvdiv
+  (implies (and (sbvlt 32 0 y)
+                (integerp x)
+                (integerp y))
+           (equal (sbvlt 32 0 (sbvdiv 32 x y))
+                  (not (sbvlt 32 x y))))
+  :hints (("Goal" :cases ((sbvle 32 0 x)))))

@@ -31,11 +31,11 @@
 
 (defun |g| (|e|)
   (declare (xargs :guard (c::sintp |e|)))
-  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-const 0)))
-      (if (c::boolean-from-sint (c::lt-sint-sint |e| (c::sint-const 1000)))
-          (c::sint-const 1)
-        (c::sint-const 2))
-    (c::sint-const 3)))
+  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-dec-const 0)))
+      (if (c::boolean-from-sint (c::lt-sint-sint |e| (c::sint-dec-const 1000)))
+          (c::sint-dec-const 1)
+        (c::sint-dec-const 2))
+    (c::sint-dec-const 3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,14 +45,15 @@
                               ;; x > 0:
                               (> (c::sint->get |x|) 0))
                   :guard-hints (("Goal"
-                                 :in-theory (enable c::sub-sint-sint-okp
-                                                    c::sint-integerp-alt-def)))))
+                                 :in-theory
+                                 (enable c::sub-sint-sint-okp
+                                         c::sint-integerp-alt-def)))))
   (c::sub-sint-sint |x|
                     (c::condexpr
                      (if (c::boolean-from-sint
-                          (c::ge-sint-sint |y| (c::sint-const 18)))
-                         (c::sint-const 0)
-                       (c::sint-const 1)))))
+                          (c::ge-sint-sint |y| (c::sint-dec-const 18)))
+                         (c::sint-dec-const 0)
+                       (c::sint-dec-const 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,9 +69,9 @@
       (c::sub-sint-sint |a|
                         (c::condexpr
                          (if (c::boolean-from-sint
-                              (c::eq-sint-sint |b| (c::sint-const 3)))
-                             (c::sint-const 0)
-                           (c::sint-const 1))))
+                              (c::eq-sint-sint |b| (c::sint-dec-const 3)))
+                             (c::sint-dec-const 0)
+                           (c::sint-dec-const 1))))
     |b|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,9 +84,9 @@
                                                     c::lt-sint-sint
                                                     c::sub-sint-sint-okp
                                                     c::mul-sint-sint-okp)))))
-  (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-const 1000)))
-      (c::mul-sint-sint |x| (c::sint-const 10))
-    (c::sub-sint-sint |x| (c::sint-const 10000))))
+  (if (c::boolean-from-sint (c::lt-sint-sint |x| (c::sint-dec-const 1000)))
+      (c::mul-sint-sint |x| (c::sint-dec-const 10))
+    (c::sub-sint-sint |x| (c::sint-dec-const 10000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

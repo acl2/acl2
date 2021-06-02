@@ -26,10 +26,9 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "bvcat")) ;for BVCHOP-OF-LOGAPP-BIGGER
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
+(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-type-4
 
 (in-theory (disable logext))
 
@@ -183,13 +182,11 @@
 
 (defthm logbitp-when-j-is-not-integerp
   (implies (not (integerp j))
-           (equal (logbitp i j)
-                  nil))
+           (not (logbitp i j)))
   :hints (("Goal" :in-theory (enable logbitp))))
 
 (defthm logbitp-of-0
-  (equal (logbitp n 0)
-         nil)
+  (not (logbitp n 0))
   :hints (("Goal" :in-theory (enable logbitp))))
 
 (defthm oddp-of-bvchop
@@ -392,9 +389,14 @@
          (logext size i))
   :hints (("Goal" :cases ((posp size)))))
 
-(defthm <-of-logext-linear-upper
+;; (defthm <-of-logext-linear-upper
+;;   (implies (posp size)
+;;            (< (logext size x) (expt 2 (+ -1 size))))
+;;   :rule-classes :linear)
+
+(defthm <=-of-logext-linear-upper
   (implies (posp size)
-           (< (logext size x) (expt 2 (+ -1 size))))
+           (<= (logext size x) (+ -1 (expt 2 (+ -1 size)))))
   :rule-classes :linear)
 
 (defthm <-of-logext-linear-lower
@@ -466,13 +468,11 @@
 
 ;for axe
 (defthmd logext-not-nil1
-  (equal (equal (logext n x) nil)
-         nil))
+  (not (equal (logext n x) nil)))
 
 ;for axe
 (defthm logext-not-nil2
-  (equal (equal nil (logext n x))
-         nil))
+  (not (equal nil (logext n x))))
 
 ;; A bit odd
 (defthm logext-of-0-arg1
@@ -481,3 +481,21 @@
              -1
            0))
   :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd <-of-logext-and-0
+  (implies (posp size)
+           (equal (< (logext size k) 0)
+                  (equal 1 (getbit (+ -1 size) k))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthmd <-of-0-and-logext-alt
+  (implies (posp size)
+           (equal (< 0 (logext size x))
+                  (and (equal 0 (getbit (+ -1 size) x))
+                       (not (equal 0 (bvchop (+ -1 size) x))))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+(defthm logext-of-maxint
+  (implies (posp size)
+           (equal (logext size (+ -1 (expt 2 (+ -1 size))))
+                  (+ -1 (expt 2 (+ -1 size))))))

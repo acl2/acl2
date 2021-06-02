@@ -513,6 +513,29 @@ Summary
 Form:  ( DEFABSSTOBJ TOP ...)
 Rules: NIL
  TOP
+ACL2 !>>(DEFABSSTOBJ TOP2
+                     :CONCRETE TOP$C
+                     :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOP$CP)
+                     :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
+                                           :EXEC CREATE-TOP$C)
+                     :CORR-FN TOP-CORR
+                     :EXPORTS ((SUB02 :LOGIC SUB0$A
+                                      :EXEC SUB0$C
+                                      :UPDATER UPDATE-SUB02)
+                               (SUB02-AGAIN :LOGIC SUB0$A
+                                            :EXEC SUB0$C
+                                            :UPDATER UPDATE-SUB02)
+                               (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
+                                             :EXEC UPDATE-SUB0$C)
+                               (MISC2 :LOGIC MISC$A :EXEC MISC$C))
+                     :CONGRUENT-TO TOP)
+
+Summary
+Form:  ( DEFABSSTOBJ TOP2 ...)
+Rules: NIL
+ TOP2
+ACL2 !>>(U)
+   d      21:x(DEFABSSTOBJ TOP :RECOGNIZER ...)
 ACL2 !>>(DEFUN FOO (TOP)
                (DECLARE (XARGS :STOBJS TOP))
                (STOBJ-LET ((SUB$C (SUB0 TOP)))

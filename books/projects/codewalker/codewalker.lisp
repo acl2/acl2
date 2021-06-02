@@ -5356,7 +5356,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                    (cons #\2 str2))
                              0
                              :fmt-control-alist
-                             (list (cons 'print-base base)))
+                             (list (cons 'print-base base)
+                                   (cons 'current-package
+                                         (access model-api api :package-witness))))
              (declare (ignore col))
              str)
      (access model-api api :package-witness))))
@@ -7717,13 +7719,19 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                          '(#\0 #\1 #\2 #\3 #\4
                                            #\5 #\6 #\7 #\8 #\9)
                                          args)
-                                        0)
+                                        0
+                                        :fmt-control-alist
+                                        (list (cons 'current-package
+                                                    (current-package state))))
                         (declare (ignore col))
                         str)))))
           (t ; gmm is a msg
            (value
             (mv-let (col str)
-                    (fmt1-to-string (car gmm) (cdr gmm) 0)
+                    (fmt1-to-string (car gmm) (cdr gmm) 0
+                                    :fmt-control-alist
+                                    (list (cons 'current-package
+                                                (current-package state))))
                     (declare (ignore col))
                     str)))))
    ((stringp gmm) (value gmm))
@@ -7759,7 +7767,10 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
             (fmt1-to-string "~s0-~x1"
                             (list (cons #\0 root-str)
                                   (cons #\1 i))
-                            0)
+                            0
+                            :fmt-control-alist
+                            (list (cons 'current-package
+                                        (access model-api api :package-witness))))
             (declare (ignore col))
             (ensure-uniqueness-of-variable-name
              root-str

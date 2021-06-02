@@ -465,14 +465,17 @@
    "Besides unary and binary @('int') operations,
     C includes @('int') constants [C:6.4.4.1]
     (more precisely, integer constants, some of which have type @('int')),
-    which may be regarded as (a large number nullary) of @('int') operations.
+    which may be regarded as (a large number of nullary) @('int') operations.
     Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
-    provides a function @(tsee sint-const),
+    provides functions
+    @(tsee sint-dec-const),
+    @(tsee sint-oct-const), and
+    @(tsee sint-hex-const)
     whose calls on suitable ACL2 quoted integer constants
-    represent @('int') constants.
+    represent decimal, octal, and hexadecimal @('int') constants.
     The quoted integer constant arguments must be
     a natural number in the range of signed two's complement 32-bit integers:
-    this is enforced by the guard of @(tsee sint-const).
+    this is enforced by the guard of the three aforementioned functions.
     Note that C integer constants are always non-negative.")
 
   (xdoc::p
@@ -586,7 +589,7 @@
   (xdoc::codeblock
    "(defun |f| (|x| |y| |z|)"
    "  (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
-   "                    (c::sub-sint-sint |z| (c::sint-const 3))))")
+   "                    (c::sub-sint-sint |z| (c::sint-dec-const 3))))")
   (xdoc::p
    "We represent the expression of the @('return') statement
     that forms the body of the function @('f').
@@ -598,7 +601,7 @@
     when the function is defined in a different ACL2 package from @('\"C\"').
     The package of the symbols @('|f|'), @('|x|'), etc. do not matter,
     in the sense that they do not represent anything in the C code.
-    However the functions @(tsee sint-const), @(tsee add-sint-sint), etc.
+    However the functions @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
     from the file @('[books]/kestrel/c/atc/integers.lisp').")
 
@@ -634,7 +637,7 @@
    "                              (c::sintp |z|)"
    "                              ...))) ; more conjuncts, described below"
    "  (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
-   "                    (c::sub-sint-sint |z| (c::sint-const 3))))")
+   "                    (c::sub-sint-sint |z| (c::sint-dec-const 3))))")
 
   (xdoc::p
    "When generating C code for @('|f|'),
@@ -673,7 +676,7 @@
     This ensures that the ACL2 functions that represent C operations
     are always applied to values whose result is well-defined
     according to [C].
-    It also ensures that @(tsee sint-const) is always applied
+    It also ensures that @(tsee sint-dec-const) is always applied
     to a natural number representable as an @('int').")
 
   (xdoc::p
@@ -746,7 +749,7 @@
    "                                           c::add-sint-sint"
    "                                           c::sub-sint-sint)))))"
    "    (c::mul-sint-sint (c::add-sint-sint |x| |y|)"
-   "                      (c::sub-sint-sint |z| (c::sint-const 3)))))")
+   "                      (c::sub-sint-sint |z| (c::sint-dec-const 3)))))")
 
   (xdoc::p
    "The proof is carried out on the ACL2 integers
@@ -1424,7 +1427,7 @@
    "                              (c::sintp |y|))))"
    "  (let* ((|a| (c::bitand-sint-sint |x| |y|))"
    "         (|a| (c::bitnot-sint |a|)))"
-   "    (c::gt-sint-sint |a| (c::sint-const 0))))")
+   "    (c::gt-sint-sint |a| (c::sint-dec-const 0))))")
   (xdoc::p
    "represents the C function")
   (xdoc::codeblock
@@ -1470,7 +1473,7 @@
    "                                 :in-theory"
    "                                 (enable c::add-sint-sint-okp"
    "                                         c::sint-integerp-alt-def)))))"
-   "  (let ((|a| (c::add-sint-sint |a| (c::sint-const 200))))"
+   "  (let ((|a| (c::add-sint-sint |a| (c::sint-dec-const 200))))"
    "    (c::lt-sint-sint |b| |a|)))")
   (xdoc::p
    "represents the C function")
@@ -1564,11 +1567,12 @@
   (xdoc::codeblock
    "(defun |g| (|e|)"
    "  (declare (xargs :guard (c::sintp |e|)))"
-   "  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-const 0)))"
-   "      (if (c::boolean-from-sint (c::lt-sint-sint |e| (c::sint-const 1000)))"
-   "          (c::sint-const 1)"
-   "        (c::sint-const 2))"
-   "    (c::sint-const 3)))"
+   "  (if (c::boolean-from-sint (c::ge-sint-sint |e| (c::sint-dec-const 0)))"
+   "      (if (c::boolean-from-sint"
+   "           (c::lt-sint-sint |e| (c::sint-dec-const 1000)))"
+   "          (c::sint-dec-const 1)"
+   "        (c::sint-dec-const 2))"
+   "    (c::sint-dec-const 3)))"
    "   )")
   (xdoc::p
    "represents the C function")
@@ -1630,13 +1634,14 @@
    "                              ;; x > 0:"
    "                              (> (c::sint->get |x|) 0))"
    "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable c::sub-sint-sint-okp"
-   "                                                    c::sint-integerp-alt-def"
-   "                                                    c::sint-integer-fix"
-   "                                                    c::sint->get)))))"
+   "                                 :in-theory"
+   "                                 (enable c::sub-sint-sint-okp"
+   "                                         c::sint-integerp-alt-def"
+   "                                         c::sint-integer-fix"
+   "                                         c::sint->get)))))"
    "  (c::sub-sint-sint"
    "   |x|"
-   "   (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-const 18)))"
+   "   (if (c::boolean-from-sint (c::ge-sint-sint |y| (c::sint-dec-const 18)))"
    "       (c::sint 0)"
    "     (c::sint 1))))")
   (xdoc::p
@@ -1653,18 +1658,19 @@
    "  (declare (xargs :guard (and (c::sintp |a|)"
    "                              (c::sintp |b|))"
    "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable c::boolean-from-sint"
-   "                                                    c::sint-integerp-alt-def"
-   "                                                    c::sint-integer-fix"
-   "                                                    c::gt-sint-sint"
-   "                                                    c::sub-sint-sint-okp"
-   "                                                    c::sint->get)))))"
+   "                                 :in-theory"
+   "                                 (enable c::boolean-from-sint"
+   "                                         c::sint-integerp-alt-def"
+   "                                         c::sint-integer-fix"
+   "                                         c::gt-sint-sint"
+   "                                         c::sub-sint-sint-okp"
+   "                                         c::sint->get)))))"
    "  (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))"
    "      (c::sub-sint-sint |a|"
    "                        (if (c::boolean-from-sint"
-        "                        (c::eq-sint-sint |b| (c::sint-const 3)))"
-   "                            (c::sint-const 0)"
-   "                          (c::sint-const 1)))"
+        "                        (c::eq-sint-sint |b| (c::sint-dec-const 3)))"
+   "                            (c::sint-dec-const 0)"
+   "                          (c::sint-dec-const 1)))"
    "    |b|))")
   (xdoc::p
    "represents the C function")
@@ -1773,7 +1779,7 @@
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
    "  (if (mbt (c::sintp |x|))"
-   "      (c::lt-sint-sint |x| (c::sint-const 100))"
+   "      (c::lt-sint-sint |x| (c::sint-dec-const 100))"
    "    (list :this-is-not-translated-to-c)))")
   (xdoc::p
    "and the ACL2 function")
@@ -1781,7 +1787,7 @@
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
    "  (if (mbt$ (c::sintp |x|))"
-   "      (c::lt-sint-sint |x| (c::sint-const 100))"
+   "      (c::lt-sint-sint |x| (c::sint-dec-const 100))"
    "    (list :this-is-not-translated-to-c)))")
   (xdoc::p
    "represent the C function")
@@ -1794,7 +1800,7 @@
   (xdoc::codeblock
    "(defun |f| (|x|)"
    "  (declare (xargs :guard (c::sintp |x|)))"
-   "  (c::lt-sint-sint |x| (c::sint-const 100)))"))
+   "  (c::lt-sint-sint |x| (c::sint-dec-const 100)))"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

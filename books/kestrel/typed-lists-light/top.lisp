@@ -14,6 +14,7 @@
 (include-book "rational-listp")
 (include-book "nat-listp")
 (include-book "pseudo-term-listp")
+(include-book "string-listp")
 (include-book "symbol-listp")
 (include-book "symbol-listp2")
 

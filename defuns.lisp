@@ -8460,6 +8460,53 @@
   (list "" "~@*" "~@*; and the " "~@*; the "
         (tilde-*-bogus-irrelevants-alist-msg1 alist)))
 
+(defun chk-irrelevant-formals-msg (fns arglists guards split-types-terms
+                                       measures ignores ignorables
+                                       irrelevants-alist bodies rawp)
+
+; This code was originally part of chk-irrelevant-formals.  It has been split
+; out in support of community book
+; books/kestrel/utilities/irrelevant-formals.lisp.
+
+  (let ((irrelevant-slots
+         (irrelevant-non-lambda-slots-clique
+          fns arglists guards split-types-terms measures ignores ignorables
+          bodies)))
+    (cond
+     ((and (null irrelevant-slots)
+           (null irrelevants-alist)) ; optimize for common case
+      nil)
+     (t
+      (let ((bogus-irrelevants-alist ; declared irrelevant but not
+             (bogus-irrelevants-alist irrelevant-slots irrelevants-alist))
+            (missing-irrelevant-slots ; irrelevant but not declared
+             (missing-irrelevant-slots irrelevant-slots
+                                       irrelevants-alist)))
+        (cond
+         ((and (null bogus-irrelevants-alist)
+               (null missing-irrelevant-slots))
+          nil)
+         (rawp (list bogus-irrelevants-alist
+                     missing-irrelevant-slots))
+         (t (msg
+             "~@0~@1See :DOC irrelevant-formals."
+             (if missing-irrelevant-slots
+                 (msg "The ~*0 ~#1~[is~/are~] irrelevant but not declared ~
+                         to be irrelevant.  "
+                      (tilde-*-irrelevant-formals-msg
+                       missing-irrelevant-slots)
+                      (if (cdr missing-irrelevant-slots) 1 0))
+               "")
+             (if bogus-irrelevants-alist
+                 (msg "The ~*0 ~#1~[is~/are~] falsely declared irrelevant.  "
+                      (tilde-*-bogus-irrelevants-alist-msg
+                       bogus-irrelevants-alist)
+                      (if (or (cdr bogus-irrelevants-alist)
+                              (cddr (car bogus-irrelevants-alist)))
+                          1
+                        0))
+               "")))))))))
+
 (defun chk-irrelevant-formals (fns arglists guards split-types-terms measures
                                    ignores ignorables irrelevants-alist bodies
                                    ctx state)
@@ -8471,51 +8518,15 @@
           (and (eq irrelevant-formals-ok :warn)
                (warning-disabled-p "Irrelevant-formals")))
       (value nil))
-     (t
-      (let ((irrelevant-slots
-             (irrelevant-non-lambda-slots-clique
-              fns arglists guards split-types-terms measures ignores ignorables
-              bodies)))
-        (cond
-         ((and (null irrelevant-slots)
-               (null irrelevants-alist)) ; optimize for common case
-          (value nil))
-         (t
-          (let ((bogus-irrelevants-alist ; declared irrelevant but not
-                 (bogus-irrelevants-alist irrelevant-slots irrelevants-alist))
-                (missing-irrelevant-slots ; irrelevant but not declared
-                 (missing-irrelevant-slots irrelevant-slots
-                                           irrelevants-alist)))
-            (cond
-             ((and (null bogus-irrelevants-alist)
-                   (null missing-irrelevant-slots))
-              (value nil))
-             (t
-              (let ((msg (msg
-                          "~@0~@1See :DOC irrelevant-formals."
-                          (if missing-irrelevant-slots
-                              (msg "The ~*0 ~#1~[is~/are~] irrelevant but not ~
-                                    declared to be irrelevant.  "
-                                   (tilde-*-irrelevant-formals-msg
-                                    missing-irrelevant-slots)
-                                   (if (cdr missing-irrelevant-slots) 1 0))
-                            "")
-                          (if bogus-irrelevants-alist
-                              (msg "The ~*0 ~#1~[is~/are~] falsely declared ~
-                                    irrelevant.  "
-                                   (tilde-*-bogus-irrelevants-alist-msg
-                                    bogus-irrelevants-alist)
-                                   (if (or (cdr bogus-irrelevants-alist)
-                                           (cddr (car bogus-irrelevants-alist)))
-                                       1
-                                     0))
-                            ""))))
-                (cond
-                 ((eq irrelevant-formals-ok :warn)
-                  (pprogn
-                   (warning$ ctx ("Irrelevant-formals") "~@0" msg)
-                   (value nil)))
-                 (t (er soft ctx "~@0" msg))))))))))))))
+     (t (let ((msg (chk-irrelevant-formals-msg fns arglists guards
+                                               split-types-terms
+                                               measures ignores ignorables
+                                               irrelevants-alist bodies nil)))
+          (cond ((null msg) (value nil))
+                ((eq irrelevant-formals-ok :warn)
+                 (pprogn (warning$ ctx ("Irrelevant-formals") "~@0" msg)
+                         (value nil)))
+                (t (er soft ctx "~@0" msg))))))))
 
 ; Essay on the Use of :PROGRAM Mode Functions by :LOGIC Mode Functions
 

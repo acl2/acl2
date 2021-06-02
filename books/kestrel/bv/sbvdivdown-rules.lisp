@@ -14,13 +14,16 @@
 
 (include-book "sbvrem-rules")
 (include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
-(local (include-book "arithmetic/equalities" :dir :system)) ;for reciprocal-minus
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
 
 (in-theory (enable floor-when-multiple)) ;drop?
 
@@ -73,9 +76,9 @@
   (implies (unsigned-byte-p 31 x) ;gen!
            (equal (sbvdivdown 32 (bvplus 32 4294967292 x) 4)
                   (bvplus 32 -1 (sbvdivdown 32 x 4))))
-  :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus) (
-                                                        BVLT-OF-BVCHOP-ARG2
-                                                        BVLT-OF-BVCHOP-ARG3)))))
+  :hints (("Goal" :in-theory (e/d (sbvdivdown bvplus bvdiv)
+                                  (BVLT-OF-BVCHOP-ARG2
+                                   BVLT-OF-BVCHOP-ARG3)))))
 
 ;(local (in-theory (disable SBVLT-REWRITE)))
 

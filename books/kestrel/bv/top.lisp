@@ -79,6 +79,7 @@
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
 (include-book "sbvdiv-rules")
+(include-book "sbvdivdown")
 (include-book "sbvdivdown-rules")
 (include-book "sbvrem")
 (include-book "sbvrem-rules")
@@ -108,7 +109,6 @@
 (include-book "bvshl")
 (include-book "bvshr")
 (include-book "bvashr")
-(include-book "defs-shifts")
 
 ;; Counting one bits:
 (include-book "bvcount")

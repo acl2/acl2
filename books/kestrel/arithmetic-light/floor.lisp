@@ -940,12 +940,31 @@
                                                 <-OF-*-OF-/-ARG2)))))
 
 (defthm floor-bound-arg1-linear
-  (implies (and (rationalp i)
-                (<= 0 i)
-                (integerp j)
-                (<= 0 j))
+  (implies (and (<= 0 i)
+                ;; The only bad values of j are in in interval (0,1).
+                (or (integerp j)
+                    (<= 1 j)
+                    (<= j 0))
+                (rationalp i))
            (<= (floor i j) i))
-  :rule-classes ((:linear :trigger-terms ((floor i j)))))
+  :rule-classes ((:linear :trigger-terms ((floor i j))))
+  :hints (("Goal" :cases ((< j 0))))
+  )
+
+;todo
+;; (defthm floor-bound-arg1-linear-negative
+;;   (implies (and (rationalp i)
+;;                 (<= i 0) ; this case
+;;                 ;; The only bad values of j are in in interval (0,1).
+;;                 (or (integerp j)
+;;                     (<= 1 j)
+;;                     (<= j 0)))
+;;            (<= i (floor i j)))
+;;   :rule-classes ((:linear :trigger-terms ((floor i j))))
+;;   :hints (("Goal" :cases ((< j 0))
+;;            :use (:instance my-floor-lower-bound)
+;;            :in-theory (disable my-floor-lower-bound
+;;                                my-floor-lower-bound-alt))))
 
 ;todo
 ;; (defthm equal-of-floor-and-i
@@ -1208,3 +1227,10 @@
   :hints (("Goal"
            :cases ((equal 0 y))
            :in-theory (enable unsigned-byte-p))))
+
+(defthm floor-of-*-and-*-cancel-arg2-arg2
+  (equal (floor (* x z) (* y z))
+         (if (equal (fix z) 0)
+             0
+           (floor x y)))
+  :hints (("Goal" :in-theory (enable floor))))

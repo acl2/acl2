@@ -364,7 +364,7 @@
        This represents the corresponding C local variable,
        as an expression.")
      (xdoc::li
-      "A call of a function @('<type>-const') on a quoted integer,
+      "A call of a function @('<type>-<base>-const') on a quoted integer,
        where @('<type>') is among"
       (xdoc::ul
        (xdoc::li "@('sint')")
@@ -373,8 +373,14 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
+      "and @('<base>') is among"
+      (xdoc::ul
+       (xdoc::li "@('dec')")
+       (xdoc::li "@('oct')")
+       (xdoc::li "@('hex')"))
       "This represents a C integer constants
-       of the C type indicated by the name of the function.
+       of the C type indicated by the name of the function,
+       expressed in decimal, octal, or hexadecimal base.
        The guard verification requirement ensures that
        the quoted integer is non-negative and within the range of the type.")
      (xdoc::li

@@ -175,9 +175,10 @@
 
 (continue-from-illegal-state)
 
-(thm (equal x x)
-     :hints (("Goal"
-              :instructions ((cl-proc :function simple-cl-proc :hint nil)))))
+(with-output :off error ; avoid discrepancy between ACL2 and ACL2(p)
+  (thm (equal x x)
+       :hints (("Goal"
+                :instructions ((cl-proc :function simple-cl-proc :hint nil))))))
 
 (continue-from-illegal-state)
 

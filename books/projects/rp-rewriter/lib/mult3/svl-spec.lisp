@@ -636,7 +636,6 @@
 (in-theory (enable svl-mult-final-spec))
 
 
-
 (define 4vec-adder ((x integerp)
                     (y integerp)
                     (carry-in integerp)

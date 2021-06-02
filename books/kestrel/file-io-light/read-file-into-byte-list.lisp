@@ -115,8 +115,8 @@
       (if ;; This check is needed for the guard of close-input-channel (can
           ;; this ever happen?):
           (member-eq channel
-                     '(acl2-input-channel::standard-object-input-0
-                       acl2-input-channel::standard-character-input-0))
+                     '(acl2-input-channel::standard-character-input-0
+                       acl2-input-channel::standard-object-input-0))
           ;; Error:
           (mv `(:bad-channel ,filename) nil state)
         (mv-let (bytes state)

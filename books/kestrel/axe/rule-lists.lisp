@@ -221,8 +221,8 @@
     bvplus-of-bvcat-irrel-arg1
     bvplus-of-bvcat-irrel-arg2
     ;;these also seem safe (perhaps trimming constants is always safe?):
-    bvcat-trim-constant-arg2
-    bvcat-trim-constant-arg4
+    bvcat-normalize-constant-arg2
+    bvcat-normalize-constant-arg4
     bvplus-trim-leading-constant))
 
 ;;includes rules from bv-rules-axe.lisp (bad?) and axerulescore.lisp and dagrulesmore.lisp and dagrules.lisp
@@ -293,6 +293,7 @@
      sbvlt-transitive-3-a
      sbvlt-transitive-3-b
      sbvlt-transitive-another-cheap ;    sbvlt-transitive-another ;;trying to remove this Mon Feb  1 17:00:34 2016
+     sbvdiv-of-sbvdiv-arg2-combine-constants
 
      bvif-of-equal-1-0                       ;Mon Apr 25 14:56:14 2016
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
