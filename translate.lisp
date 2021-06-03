@@ -5080,12 +5080,11 @@
                      (mv nil val latches))
                     (t (mv nil
                            val
-                           (latch-stobjs
-                            (if latches
-                                (actual-stobjs-out fn arg-exprs w)
-                              (stobjs-out fn w))
-                            val
-                            latches)))))))))))))))))
+                           (and latches
+                                (latch-stobjs
+                                 (actual-stobjs-out fn arg-exprs w)
+                                 val
+                                 latches))))))))))))))))))
 
 (defun ev-fncall-rec (fn arg-values arg-exprs w user-stobj-alist big-n
                          safe-mode gc-off latches hard-error-returns-nilp aok)

@@ -5406,7 +5406,16 @@
              'include-book)
             (raw-include-book-dir!-alist
              (assert$ (not (raw-include-book-dir-p state))
-                      (table-alist 'include-book-dir!-table (w state)))))
+                      (table-alist 'include-book-dir!-table (w state))))
+            (raw-include-book-dir-alist
+
+; We do not expect to consult raw-include-book-dir-alist until we are under
+; load-compiled-book, where it is bound to nil anyhow.  So why bind it here?
+; We do so to preserve the invariant that raw-include-book-dir!-alist is
+; :ignore if and only if raw-include-book-dir-alist is :ignore; see
+; raw-include-book-dir-p and see the Essay on Include-book-dir-alist.
+
+             nil))
            (progn (include-book-raw
                    full-book-name directory-name
                    load-compiled-file dir ctx state)

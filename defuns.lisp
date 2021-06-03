@@ -1374,6 +1374,8 @@
 ; This is like union-equal, but where a common element is removed from the
 ; second argument instead of the first.
 
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
   (cond ((intersectp-equal x y)
          (append x (set-difference-equal y x)))
         (t (append x y))))
@@ -11708,13 +11710,17 @@
          state))))))
 
 (defun strip-non-hidden-package-names (known-package-alist)
-  (if (endp known-package-alist)
-      nil
+  (declare (xargs :guard (known-package-alistp known-package-alist)))
+  (cond
+   ((endp known-package-alist) nil)
+   (t
     (let ((package-entry (car known-package-alist)))
-      (cond ((package-entry-hidden-p package-entry)
-             (strip-non-hidden-package-names (cdr known-package-alist)))
-            (t (cons (package-entry-name package-entry)
-                     (strip-non-hidden-package-names (cdr known-package-alist))))))))
+      (cond
+       ((package-entry-hidden-p package-entry)
+        (strip-non-hidden-package-names (cdr known-package-alist)))
+       (t
+        (cons (package-entry-name package-entry)
+              (strip-non-hidden-package-names (cdr known-package-alist)))))))))
 
 (defun in-package-fn (str state)
 

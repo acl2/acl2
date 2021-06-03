@@ -3901,6 +3901,9 @@
                                (standard-co state) state nil))))
           (value :invisible))))))
 
+(defmacro get-guard-checking ()
+  `(f-get-global 'guard-checking-on state))
+
 ; Next: dmr
 
 (defun dmr-stop-fn (state)

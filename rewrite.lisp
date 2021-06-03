@@ -8096,7 +8096,10 @@
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis "(r)"
+                     #+:non-standard-analysis
+                     (if (f-get-global 'script-mode state)
+                         ""
+                       "(r)")
                      #-:non-standard-analysis ""))
          0 channel state nil)))
 

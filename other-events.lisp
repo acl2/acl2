@@ -12791,6 +12791,22 @@
              (value t))))
 
 (defun include-book-dir (dir state)
+  (declare
+   (xargs :stobjs state
+          :guard
+          (and (symbolp dir)
+               (or (not (raw-include-book-dir-p state))
+                   (and (symbol-alistp
+                         (f-get-global 'raw-include-book-dir!-alist state))
+                        (symbol-alistp
+                         (f-get-global 'raw-include-book-dir-alist state))))
+               (let ((wrld (w state)))
+                 (and (alistp (table-alist 'acl2-defaults-table wrld))
+                      (alistp (cdr (assoc-eq :include-book-dir-alist
+                                             (table-alist 'acl2-defaults-table
+                                                          wrld))))
+                      (alistp (table-alist 'include-book-dir!-table wrld)))))
+          :guard-hints (("Goal" :in-theory (enable state-p1)))))
   (cond
    ((eq dir :system)
     (f-get-global 'system-books-dir state))
@@ -20862,6 +20878,7 @@
 ;    (< X '3)
 ;    (< '-2 X))
 
+  (declare (xargs :guard (pseudo-termp term)))
   (case-match term
     (('if t1 t2 t3)
      (cond ((equal t2 *nil*)
