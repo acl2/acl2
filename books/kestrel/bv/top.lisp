@@ -109,7 +109,6 @@
 (include-book "bvshl")
 (include-book "bvshr")
 (include-book "bvashr")
-(include-book "defs-shifts")
 
 ;; Counting one bits:
 (include-book "bvcount")

@@ -99,6 +99,8 @@
 (verify-termination string-prefixp-1) ; and guards
 (verify-termination string-prefixp) ; and guards
 (verify-termination relativize-book-path) ; and guards
+(verify-termination include-book-dir) ; and guards
+(verify-termination strip-non-hidden-package-names) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by Matt Kaufmann.

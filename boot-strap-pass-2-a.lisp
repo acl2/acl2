@@ -98,6 +98,8 @@
 (verify-termination-boot-strap unmake-true-list-cons-nest) ; and guards
 (verify-termination-boot-strap dumb-negate-lit) ; and guards
 (verify-termination-boot-strap flatten-ands-in-lit) ; and guards
+(verify-termination-boot-strap union-equal-to-end) ; and guards
+(verify-termination-boot-strap flatten-ands-in-lit!) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

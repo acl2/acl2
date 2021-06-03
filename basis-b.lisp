@@ -3198,22 +3198,28 @@
                            '(add-include-book-dir!
                              delete-include-book-dir!)))))
           (t state))
-         (f-put-global 'raw-include-book-dir-alist
-                       (cond (old-raw-mode
+         (without-interrupts
+
+; By using without-interrupts, we intend to preserve the invariant that the two
+; state globals beingn set here are either both :ignore or else neither is
+; :ignore.
+
+          (f-put-global 'raw-include-book-dir-alist
+                        (cond (old-raw-mode
 
 ; We are leaving raw-mode and are not under include-book-fn.
 
-                              :ignore)
-                             (t old-table-include-book-dir-alist))
-                       state)
-         (f-put-global 'raw-include-book-dir!-alist
-                       (cond (old-raw-mode
+                               :ignore)
+                              (t old-table-include-book-dir-alist))
+                        state)
+          (f-put-global 'raw-include-book-dir!-alist
+                        (cond (old-raw-mode
 
 ; We are leaving raw-mode and are not under include-book-fn.
 
-                              :ignore)
-                             (t old-table-include-book-dir!-alist))
-                       state)))))))
+                               :ignore)
+                              (t old-table-include-book-dir!-alist))
+                        state))))))))
 
 #+acl2-loop-only
 (defmacro progn! (&rest r)

@@ -18,13 +18,6 @@
 
 (local (in-theory (disable len true-listp member-equal nth update-nth)))
 
-;dup
-(local
- (defthm length-becomes-len ;todo: just don't use length in state-p1?
-   (implies (not (stringp x))
-            (equal (length x)
-                   (len x)))))
-
 (in-theory (disable open-input-channel
                     open-input-channel-p  ;so that a rule below fires
                     open-input-channel-p1
@@ -69,7 +62,6 @@
                                    all-boundp
                                    file-clock-p
                                    len
-                                   length
                                    make-input-channel
                                    natp
                                    open-channels-p

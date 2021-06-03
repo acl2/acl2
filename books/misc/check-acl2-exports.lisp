@@ -205,6 +205,7 @@
 
     CTXP
     DOUBLET-LISTP
+    GET-GUARD-CHECKING
     MONITOR!
 
   ))

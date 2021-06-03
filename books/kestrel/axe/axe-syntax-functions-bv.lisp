@@ -193,10 +193,19 @@
                              (and (natp term)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
   (if (not (and (myquotep quoted-width)
-                (natp (unquote quoted-width))  ;check natp or posp?
+                (natp (unquote quoted-width)) ;check natp or posp?
                 (or (equal operators ''all)
                     (equal operators ''non-arithmetic))))
-      (er hard? 'term-should-be-trimmed-axe "Unexpected arguments.")
+      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0).~%"
+                  (if (myquotep quoted-width)
+                      quoted-width
+                    ;; simplify this?:
+                    (if (and (not (myquotep term))
+                             (natp quoted-width)
+                             (< quoted-width (alen1 'dag-array dag-array)))
+                        (aref1 'dag-array dag-array quoted-width)
+                      :unknown)))
+              nil)
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 
@@ -210,7 +219,16 @@
                 (natp (unquote quoted-width))
                 (or (equal operators ''all)
                     (equal operators ''non-arithmetic))))
-      (er hard? 'term-should-be-trimmed-axe-plus-one "Unexpected arguments.")
+      (prog2$ (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected arguments (width: ~x0).~%"
+                  (if (quotep quoted-width)
+                      quoted-width
+                    ;; simplify this?:
+                    (if (and (not (myquotep term))
+                             (natp quoted-width)
+                             (< quoted-width (alen1 'dag-array dag-array)))
+                        (aref1 'dag-array dag-array quoted-width)
+                      :unknown)))
+              nil)
     (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
       (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 

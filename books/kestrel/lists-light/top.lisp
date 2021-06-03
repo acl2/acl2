@@ -40,6 +40,7 @@
 (include-book "add-to-set-equal")
 (include-book "set-difference-equal")
 (include-book "subsequencep")
+(include-book "length")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")

@@ -17972,3 +17972,70 @@
   (equal (< (bvminus 32 *minus-1* x) (bvminus 32 0 x))
          (not (equal (bvchop 32 x) 0)))
   :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
+
+;use a true trim rule?
+(defthm bvlt-of-bvuminus-arg3-trim
+  (equal (bvlt (+ -1 size) x (bvuminus size y))
+         (bvlt (+ -1 size) x (bvuminus (+ -1 size) y)))
+  :hints (("Goal" :in-theory (enable bvuminus bvminus bvlt
+                                     bvchop-of-sum-cases ;todo
+                                     ))))
+
+(defthm bvdiv-32-of-+-of-2^32
+  (implies (and (syntaxp (not (quotep x))) ; prevent overly aggressive matching
+                (integerp x))
+           (equal (bvdiv 32 (+ 4294967296 x) y)
+                  (bvdiv 32 x y)))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
+(defthm sbvlt-of-0-and-sbvdiv-when-pos-and-nneg
+  (implies (and (integerp x)
+                (integerp y)
+                (sbvlt size 0 y)
+                (sbvle size 0 x) ;gen!
+                (posp size)
+                )
+           (equal (sbvlt size 0 (sbvdiv size x y))
+                  (not (sbvlt size x y))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv-rewrite
+                                   bvminus
+                                   bvuminus
+                                   bvdiv
+                                   bvlt
+                                   getbit-of-plus)
+                                  (floor-minus-arg1-hack)))))
+
+(defthm sbvlt-of-sbvdiv-and-0-when-pos-and-neg
+  (implies (and (sbvlt size 0 x)
+                (sbvlt size y 0)
+                (integerp x)
+                (integerp y)
+                (posp size))
+           (not (sbvlt size 0 (sbvdiv size x y))))
+  :hints (("Goal" :in-theory (enable getbit-of-bvdiv-when-equal-0-of-getbit))))
+
+(defthm sbvlt-of-sbvdiv-and-0-when-neg-and-pos
+  (implies (and (sbvlt size x 0)
+                (sbvlt size 0 y)
+                (equal size 32) ;fixme
+                (integerp x)
+                (integerp y)
+                (posp size))
+           (not (sbvlt size 0 (sbvdiv size x y))))
+  :hints (("Goal" :cases ((not (equal (bvchop (+ -1 size) x) 0))
+                          (and (equal (bvchop (+ -1 size) x) 0) (equal (bvchop size y) 1)))
+           :in-theory (enable sbvdiv-rewrite
+                              ;bvuminus
+                              ;;bvlt-of-constant-arg2-strengthen
+                              ))))
+
+(local (include-book "kestrel/bv/bvdiv-rules" :dir :system))
+
+;; 0 < x div y becomes x >= y
+(defthm sbvlt-of-0-and-sbvdiv
+  (implies (and (sbvlt 32 0 y)
+                (integerp x)
+                (integerp y))
+           (equal (sbvlt 32 0 (sbvdiv 32 x y))
+                  (not (sbvlt 32 x y))))
+  :hints (("Goal" :cases ((sbvle 32 0 x)))))

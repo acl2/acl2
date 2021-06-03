@@ -292,14 +292,6 @@
            (file-clock-p (+ 1 x)))
   :hints (("Goal" :in-theory (enable file-clock-p))))
 
-(local
- (defthm length-becomes-len ;todo: just don't use length in state-p1?
-   (implies (not (stringp x))
-            (equal (length x)
-                   (len x)))))
-
-
-
 ;; implied by open-channels-p
 (defthm ordered-symbol-alistp-of-open-input-channels
   (implies (state-p1 state)

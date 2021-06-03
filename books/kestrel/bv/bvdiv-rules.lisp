@@ -32,18 +32,22 @@
                     (not (bvlt size x y)))))
   :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
+;todo: proof is by induction on expt
 (defthmd bvdiv-of-bvdiv-arg2
-  (implies (and (integerp y1)
-                (integerp y2)
-                (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))) ;gen?
-                )
+  (implies (and ;;(integerp y1)
+            ;;(integerp y2)
+            ;;(unsigned-byte-p size y1)
+            ;;(unsigned-byte-p size y2)
+            )
            (equal (bvdiv size (bvdiv size x y1) y2)
-                  (bvdiv size
-                         x
-                         (* y1 y2)
-                         )))
+                  (if (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2)))
+                      (bvdiv size
+                             x
+                             (* (bvchop size y1) (bvchop size y2)))
+                    0)))
   :hints (("Goal" :in-theory (e/d (bvdiv
-                                   bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop)
+                                   bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop
+                                   UNSIGNED-BYTE-P)
                                   ( ;BVCHOP-IDENTITY
                                    ;;todo: clean these up:
                                    bvchop-times-cancel-better-alt
@@ -53,16 +57,32 @@
 
 ;gen?
 (defthm bvdiv-of-bvdiv-arg2-combine-constants
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep y1)
-                              (quotep y2)))
-                ;; all get computed:
-                (integerp y1)
-                (integerp y2)
-                (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))))
+  (implies (syntaxp (and (quotep size)
+                         (quotep y1)
+                         (quotep y2)))
            (equal (bvdiv size (bvdiv size x y1) y2)
-                  (bvdiv size
-                         x
-                         (* y1 y2) ;(bvchop size (* y1 y2))
-                         )))
+                  (if (unsigned-byte-p size (* (bvchop size y1) (bvchop size y2))) ; get computed
+                      (bvdiv size
+                             x
+                             (* (bvchop size y1) (bvchop size y2)) ; get computed
+                             )
+                    0)))
   :hints (("Goal" :in-theory (enable bvdiv-of-bvdiv-arg2))))
+
+;todo: let the sizes differ
+(defthm bvlt-of-bvdiv-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (< 0 k1)
+                (< 0 k2)
+                (unsigned-byte-p size k1)
+                (unsigned-byte-p size k2)
+                (unsigned-byte-p size (* k1 k2)))
+           (equal (bvlt size (bvdiv size x k1) k2)
+                  (bvlt size x (* k1 k2))))
+  :hints (("Goal" :in-theory (enable bvdiv bvlt)
+           :use (:instance <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN
+                           (x (BVCHOP size X))
+                           (k k2)
+                           (k1 k1)))))

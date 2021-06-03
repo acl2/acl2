@@ -23487,8 +23487,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; See the Essay on Include-book-dir-alist.  An invariant is that the value of
 ; 'raw-include-book-dir-alist is :ignore if and only if the value of
-; 'raw-include-book-dir!-alist is :ignore, though quite possibly we do not need
-; to maintain that invariant.
+; 'raw-include-book-dir!-alist is :ignore.
 
   (declare (xargs :guard (and (state-p state)
                               (boundp-global 'raw-include-book-dir-alist state))))
