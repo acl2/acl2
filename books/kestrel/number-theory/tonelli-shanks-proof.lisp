@@ -1194,7 +1194,7 @@
                 (equal (tonelli-shanks-sqrt-aux n p z) y))
            (if (has-square-root? n p)
 	       (equal (mod (* y y) p) n)
-	     0))
+	     (equal y 0)))
   :hints (("Goal"
            :use ((:instance hyps-true-t-s-aux
                             (n n)
@@ -1231,7 +1231,6 @@
     (implies (and (natp n)
                   (natp z)
                   (> p 2)
-                  (has-square-root? n p)
                   (< n p)
                   (< z p)
                   (rtl::primep p)
@@ -1245,6 +1244,7 @@
              :use ((:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
                               (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt-aux n p z)))
+		   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt-aux n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)
@@ -1284,7 +1284,7 @@
                   (equal (tonelli-shanks-sqrt n p z) y))
 	     (if (has-square-root? n p)
 		 (equal (mod (* y y) p) n)
-	       0))
+	       (equal y 0)))
     :hints (("Goal"
              :use ((:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
 		   (:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
@@ -1309,7 +1309,6 @@
     (implies (and (natp n)
                   (natp z)
                   (> p 2)
-                  (has-square-root? n p)
                   (< n p)
                   (< z p)
                   (rtl::primep p)
@@ -1322,6 +1321,7 @@
     :hints (("Goal"
              :use ((:instance tonelli-shanks-is-sqrt-modp (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt n p z)))
+		   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)
