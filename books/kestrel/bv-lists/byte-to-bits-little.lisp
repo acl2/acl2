@@ -30,7 +30,8 @@
         (getbit 7 byte)))
 
 (defthm all-unsigned-byte-p-of-byte-to-bits-little
-  (all-unsigned-byte-p 1 (byte-to-bits-little byte))
+  (implies (posp size)
+           (all-unsigned-byte-p size (byte-to-bits-little byte)))
   :hints (("Goal" :in-theory (enable byte-to-bits-little))))
 
 (defthm all-integerp-of-byte-to-bits-little
