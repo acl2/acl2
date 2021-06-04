@@ -1796,10 +1796,9 @@
      (i) an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$) or
      (ii) a call of a (preceding) recursive target function."))
   (case-match term
-    ((fn test . &) (and (eq fn 'if)
-                        (case-match test
-                          ((fn . &) (not (member-eq fn '(mbt mbt$))))
-                          (& t))))
+    (('if test . &) (and (case-match test
+                           ((fn . &) (not (member-eq fn '(mbt mbt$))))
+                           (& t))))
     ((fn . &) (and (symbolp fn)
                    (atc-loop-fn-p fn prec-fns)))
     (& nil)))
@@ -2205,6 +2204,325 @@
     :rule-classes :type-prescription)
 
   (verify-guards atc-gen-stmt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-loop-body-stmt ((term pseudo-termp)
+                                (inscope atc-symbol-type-alist-listp)
+                                (xforming symbol-listp)
+                                (fn symbolp)
+                                (prec-fns atc-symbol-fninfo-alistp)
+                                ctx
+                                state)
+  :returns (mv erp
+               (items block-item-listp)
+               state)
+  :short "Generate a C statement in a loop body from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on loop body terms (see user documentation).
+     This is somewhat similar to @(tsee atc-gen-stmt);
+     the code should be refactored to avoid this duplication.
+     We only return a list of block items as result (when there is no error).
+     We do not return an optional type
+     because a loop body term always operates a transformation,
+     and never returns a C value (unlike a statement term).
+     We do not return a limit
+     because for now we do not generate proofs for loops;
+     this will change soon."))
+  (b* (((mv okp test then else) (acl2::check-if-call term))
+       ((when okp)
+        (b* (((mv erp test-expr state) (atc-gen-expr-bool test
+                                                          inscope
+                                                          fn
+                                                          ctx
+                                                          state))
+             ((when erp) (mv erp nil state))
+             ((er then-items)
+              (atc-gen-loop-body-stmt then
+                                      (cons nil inscope)
+                                      xforming
+                                      fn
+                                      prec-fns
+                                      ctx
+                                      state))
+             ((er else-items)
+              (atc-gen-loop-body-stmt else
+                                      (cons nil inscope)
+                                      xforming
+                                      fn
+                                      prec-fns
+                                      ctx
+                                      state)))
+          (acl2::value
+           (list
+            (block-item-stmt
+             (make-stmt-ifelse
+              :test test-expr
+              :then (make-stmt-compound :items then-items)
+              :else (make-stmt-compound :items else-items)))))))
+       ((mv okp & vars & val body) (acl2::check-mv-let-call term))
+       ((when okp)
+        (b* (((unless (> (len vars) 1))
+              (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
+                         term)
+                  nil
+                  state))
+             ((mv type?-list innermostp-list)
+              (atc-get-vars-check-innermost vars inscope))
+             ((when (member-eq nil type?-list))
+              (er-soft+ ctx t nil
+                        "When generating C code for the function ~x0, ~
+                         an attempt is made to modify the variables ~x1, ~
+                         not all of which are in scope."))
+             ((unless (atc-vars-assignablep vars innermostp-list xforming))
+              (er-soft+ ctx t nil
+                        "When generating C code for the function ~x0, ~
+                         an attempt is made to modify the variables ~x1, ~
+                         not all of which are assignable."
+                        fn vars))
+             ((unless (atc-xforming-term-for-let val prec-fns))
+              (er-soft+ ctx t nil
+                        "When generating C code for the function ~x0, ~
+                         an MV-LET has been encountered ~
+                         whose transforming term ~x1 ~
+                         to which the variables are bound ~
+                         does not have the required form."
+                        fn val))
+             ((mv erp (list xform-items & &) state)
+              (atc-gen-stmt val inscope vars fn prec-fns ctx state))
+             ((when erp) (mv erp nil state))
+             ((er body-items)
+              (atc-gen-loop-body-stmt body
+                                      inscope
+                                      xforming
+                                      fn
+                                      prec-fns
+                                      ctx
+                                      state))
+             (items (append xform-items body-items)))
+          (acl2::value items)))
+       ((mv okp var val body) (atc-check-let term))
+       ((when okp)
+        (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
+             ((when errorp)
+              (er-soft+ ctx t nil
+                        "When generating C code for the function ~x0, ~
+                         a new variable ~x1 has been encountered ~
+                         that has the same symbol name as, ~
+                         but different package name from, ~
+                         a variable already in scope. ~
+                         This is disallowed."
+                        fn var))
+             ((when (not type?))
+              (b* (((unless (atc-ident-stringp (symbol-name var)))
+                    (er-soft+ ctx t nil
+                              "The symbol name ~s0 of ~
+                               the LET variable ~x1 of the function ~x2 ~
+                               must be a portable ASCII C identifier, ~
+                               but it is not."
+                              (symbol-name var) var fn))
+                   ((mv erp (list init-expr init-type &) state)
+                    (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+                   ((when erp) (mv erp nil state))
+                   ((when (type-case init-type :pointer))
+                    (er-soft+ ctx t nil
+                              "The term ~x0 to which the variable ~x1 is bound ~
+                               must not have a C pointer type, but it does."
+                              val var))
+                   (declon (make-declon :type (atc-gen-tyspecseq init-type)
+                                        :declor (make-declor
+                                                 :ident
+                                                 (make-ident
+                                                  :name
+                                                  (symbol-name var)))
+                                        :init init-expr))
+                   (item (block-item-declon declon))
+                   (inscope (atc-add-var var init-type inscope))
+                   ((er body-items)
+                    (atc-gen-loop-body-stmt body
+                                            inscope
+                                            xforming
+                                            fn
+                                            prec-fns
+                                            ctx
+                                            state)))
+                (acl2::value (cons item body-items))))
+             ((unless (atc-var-assignablep var innermostp xforming))
+              (er-soft+ ctx t nil
+                        "When generating C code for the function ~x0, ~
+                         an attempt is being made ~
+                         to modify a non-assignable variable ~x1."
+                        fn var))
+             (xforming-val (atc-xforming-term-for-let val prec-fns))
+             ((when xforming-val)
+              (b* (((mv erp (list xform-items & &) state)
+                    (atc-gen-stmt val inscope (list var) fn prec-fns ctx state))
+                   ((when erp) (mv erp nil state))
+                   ((er body-items)
+                    (atc-gen-loop-body-stmt body
+                                            inscope
+                                            xforming
+                                            fn
+                                            prec-fns
+                                            ctx
+                                            state))
+                   (items (append xform-items body-items)))
+                (acl2::value items)))
+             (prev-type type?)
+             ((mv erp (list rhs-expr rhs-type &) state)
+              (atc-gen-expr-cval val inscope fn prec-fns ctx state))
+             ((when erp) (mv erp nil state))
+             ((unless (equal prev-type rhs-type))
+              (er-soft+ ctx t nil
+                        "The type ~x0 of the term ~x1 ~
+                         assigned to the LET variable ~x2 ~
+                         of the function ~x3 ~
+                         differs from the type ~x4 ~
+                         of a variable with the same symbol in scope."
+                        rhs-type val var fn prev-type))
+             (asg (make-expr-binary
+                   :op (binop-asg)
+                   :arg1 (expr-ident (make-ident :name (symbol-name var)))
+                   :arg2 rhs-expr))
+             (stmt (stmt-expr asg))
+             (item (block-item-stmt stmt))
+             ((er body-items)
+              (atc-gen-loop-body-stmt body
+                                      inscope
+                                      xforming
+                                      fn
+                                      prec-fns
+                                      ctx
+                                      state)))
+          (acl2::value (cons item body-items)))))
+    (case-match term
+      ((fn1 . args)
+       (b* (((unless (eq fn1 fn))
+             (er-soft+ ctx t nil
+                       "When generating C code for the recursive function ~x0, ~
+                        a call of a different function ~x1 ~
+                        has been encountered where it should not occur."
+                       fn fn1))
+            (formals (acl2::formals+ fn (w state)))
+            ((unless (equal args  formals))
+             (er-soft+ ctx t nil
+                       "When generating C code for the recursive function ~x0, ~
+                        a recursive call of ~x0 has been encountered ~
+                        that is on the arguments ~x1 ~
+                        instead of its formal parameters ~x2."
+                       fn args formals)))
+         (acl2::value nil)))
+      (& (er-soft+ ctx t nil
+                   "When generating C code for the recursive function ~x0, ~
+                    a term ~x1 has been encountered ~
+                    where a loop body term was expected ~
+                    (see user documentation)."
+                   fn term))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (verify-guards atc-gen-loop-body-stmt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-loop-stmt ((term pseudo-termp)
+                           (inscope atc-symbol-type-alist-listp)
+                           (fn symbolp)
+                           (prec-fns atc-symbol-fninfo-alistp)
+                           ctx
+                           state)
+  :returns (mv erp
+               (val (tuple (stmt stmtp)
+                           (xforming symbol-listp)
+                           val))
+               state)
+  :short "Generate a C loop statement from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on loop terms (see user documentation).")
+   (xdoc::p
+    "The term must be an @(tsee if).
+     If the test is an @(tsee mbt) or @(tsee mbt$),
+     test and `else' branch are ignored,
+     while the `then' branch is recursively processed.
+     Otherwise, the test must be a boolean term
+     from which we generate the loop test;
+     the `then' branch must be a loop body term,
+     from which we generate the loop body;
+     and the `else' branch must be either a single variable
+     or an @(tsee mv) call on variables,
+     which must be a subset of the function's formals,
+     and from those variables we determine
+     the variables transformed by the loop,
+     which we return along with the loop statement.")
+   (xdoc::p
+    "Note that we push a new scope before processing the loop body.
+     This is because the loop body is a block, which opens a new scope in C."))
+  (b* (((mv okp test then else) (acl2::check-if-call term))
+       ((unless okp)
+        (er-soft+ ctx t (list (irr-stmt) nil)
+                  "When generating C loop code for the recursive function ~x0, ~
+                   a term ~x1 that is not an IF has been encountered."
+                  fn term))
+       ((mv mbtp &) (acl2::check-mbt-call test))
+       ((when mbtp)
+        (atc-gen-loop-stmt then inscope fn prec-fns ctx state))
+       ((mv mbt$p &) (acl2::check-mbt$-call test))
+       ((when mbt$p)
+        (atc-gen-loop-stmt then inscope fn prec-fns ctx state))
+       ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                    inscope
+                                                    fn
+                                                    ctx
+                                                    state))
+       ((when erp) (mv erp (list (irr-stmt) nil) state))
+       (wrld (w state))
+       ((unless (plist-worldp wrld))
+        (prog2$ (raise "Internal error: world does not satisfy PLIST-WORLDP.")
+                (acl2::value (list (irr-stmt) nil))))
+       (formals (acl2::formals+ fn wrld))
+       ((mv okp xforming)
+        (b* (((when (member-equal else formals)) (mv t (list else)))
+             ((mv okp terms) (acl2::check-list-call else))
+             ((when (and okp
+                         (subsetp-eq terms formals)))
+              (mv t terms)))
+          (mv nil nil)))
+       ((unless okp)
+        (er-soft+ ctx t (list (irr-stmt) nil)
+                  "The non-recursive branch ~x0 of the function ~x1 ~
+                   does not have the required form. ~
+                   See the user documentation."
+                  else fn))
+       ((mv erp body-items state) (atc-gen-loop-body-stmt then
+                                                          (cons nil inscope)
+                                                          xforming
+                                                          fn
+                                                          prec-fns
+                                                          ctx
+                                                          state))
+       ((when erp) (mv erp (list (irr-stmt) nil) state))
+       (body-stmt (make-stmt-compound :items body-items))
+       (stmt (make-stmt-while :test test-expr :body body-stmt))
+       ((unless (symbol-listp xforming))
+        (prog2$ (raise "Internal error: ~x0 is not a list of symbols.")
+                (acl2::value (list (irr-stmt) nil)))))
+    (acl2::value (list stmt xforming)))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system)))
+
+  ///
+
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name cons-true-listp-of-atc-gen-loop-stmt-val
+        :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3102,6 +3420,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-loop ((fn symbolp)
+                      (prec-fns atc-symbol-fninfo-alistp)
+                      (proofs booleanp)
+                      ctx
+                      state)
+  :guard (acl2::irecursivep+ fn (w state))
+  :returns (mv erp
+               (updated-prec-fns atc-symbol-fninfo-alistp
+                                 :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                                           (symbolp fn)))
+               state)
+  :short "Generate a loop for a recursive target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called if @('fn') is a recursive target function.
+     We initialize a scope consisting of the formal parameters,
+     similarly to @(tsee atc-gen-ext-declon).
+     We process the function body as a loop term,
+     and update the @('prec-fns') alist with information about the function.")
+   (xdoc::p
+    "No C external declaration is generated for this function,
+     because this function just represents a loop used in oher functions.
+     No events are generated corresponding to this function for now,
+     because proof generation is not supported for loops yet;
+     in fact, we return an error if @(':proofs') is not @('nil')."))
+  (b* (((when proofs)
+        (er-soft+ ctx t nil
+                  "The target function ~x0 is recursive, ~
+                   and therefore represents a C loop; ~
+                   proof generation for loops is not supported yet. ~
+                   Thus the :PROOFS input must be NIL, ~
+                   but instead it is ~x1."
+                  fn proofs))
+       (wrld (w state))
+       (formals (acl2::formals+ fn wrld))
+       (guard (acl2::uguard+ fn wrld))
+       (guard-conjuncts (flatten-ands-in-lit guard))
+       ((mv erp (list & inscope &) state)
+        (atc-gen-param-declon-list formals fn guard-conjuncts guard ctx state))
+       ((when erp) (mv erp nil state))
+       (body (acl2::ubody+ fn wrld))
+       ((mv erp (list loop-stmt loop-xforming) state)
+        (atc-gen-loop-stmt body inscope fn prec-fns ctx state))
+       ((when erp) (mv erp nil state))
+       (info (make-atc-fn-info :type? nil
+                               :loop? loop-stmt
+                               :xforming loop-xforming
+                               :returns-value-thm nil
+                               :exec-var-limit-correct-thm nil
+                               :limit 0)))
+    (acl2::value (acons fn info prec-fns))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-ext-declon-list ((fns symbol-listp)
                                  (prec-fns atc-symbol-fninfo-alistp)
                                  (proofs booleanp)
@@ -3124,16 +3497,34 @@
   (xdoc::topstring
    (xdoc::p
     "After we process the first function @('fn') in @('fns'),
-     we use the extended @('prec-fns') for the subsequent functions."))
+     we use the extended @('prec-fns') for the subsequent functions.")
+   (xdoc::p
+    "We treat recursive and non-recursive functions differently."))
   (b* (((when (endp fns)) (acl2::value (list nil nil nil names-to-avoid)))
        ((cons fn rest-fns) fns)
-       ((er (list ext local-events exported-events prec-fns names-to-avoid))
-        (atc-gen-ext-declon fn prec-fns proofs prog-const fn-thms
-                            print names-to-avoid ctx state))
-       ((er (list exts more-local-events more-exported-events names-to-avoid))
+       ((er (list exts local-events exported-events prec-fns names-to-avoid))
+        (if (acl2::irecursivep+ fn (w state))
+            (b* (((mv erp prec-fns state)
+                  (atc-gen-loop fn prec-fns proofs ctx state))
+                 ((when erp) (mv erp (list nil nil nil nil) state)))
+              (acl2::value (list nil nil nil prec-fns names-to-avoid)))
+          (b* (((mv erp
+                    (list
+                     ext local-events exported-events prec-fns names-to-avoid)
+                    state)
+                (atc-gen-ext-declon fn prec-fns proofs prog-const fn-thms
+                                    print names-to-avoid ctx state))
+               ((when erp) (mv erp (list nil nil nil nil) state)))
+            (acl2::value (list (list ext)
+                               local-events
+                               exported-events
+                               prec-fns
+                               names-to-avoid)))))
+       ((er
+         (list more-exts more-local-events more-exported-events names-to-avoid))
         (atc-gen-ext-declon-list rest-fns prec-fns proofs prog-const fn-thms
                                  print names-to-avoid ctx state)))
-    (acl2::value (list (cons ext exts)
+    (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
                        names-to-avoid))))
