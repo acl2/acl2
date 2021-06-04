@@ -1075,8 +1075,7 @@
                                   good-lofat-oracle-steps-p-helper
                                   absfat-oracle-multi-step-refinement-lemma-2
                                   take-as-append-and-nth)
-        (hifat-mkdir hifat-pwrite
-                     take))
+        (hifat-mkdir hifat-pwrite take))
        :induct (dec-induct n)
        :do-not-induct t))))
 
