@@ -1973,7 +1973,7 @@
                                                           fn
                                                           ctx
                                                           state))
-             ((when erp) (mv erp (list nil (irr-type) 0) state))
+             ((when erp) (mv erp (list nil nil 0) state))
              ((er (list then-items then-type then-limit))
               (atc-gen-stmt then
                             (cons nil inscope)
@@ -1991,7 +1991,7 @@
                             ctx
                             state))
              ((unless (equal then-type else-type))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          two branches ~x1 and ~x2 of a conditional term ~
                          have different types ~x3 and ~x4; ~
@@ -2015,23 +2015,23 @@
         (b* (((unless (> (len vars) 1))
               (mv (raise "Internal error: MV-LET ~x0 has less than 2 variables."
                          term)
-                  (list nil (irr-type) 0)
+                  (list nil nil 0)
                   state))
              ((mv type?-list innermostp-list)
               (atc-get-vars-check-innermost vars inscope))
              ((when (member-eq nil type?-list))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are in scope."))
              ((unless (atc-vars-assignablep vars innermostp-list xforming))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
                          not all of which are assignable."
                         fn vars))
              ((unless (atc-xforming-term-for-let val prec-fns))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          an MV-LET has been encountered ~
                          whose transforming term ~x1 ~
@@ -2050,7 +2050,7 @@
        ((when okp)
         (b* (((mv type? innermostp errorp) (atc-check-var var inscope))
              ((when errorp)
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          a new variable ~x1 has been encountered ~
                          that has the same symbol name as, ~
@@ -2060,7 +2060,7 @@
                         fn var))
              ((when (not type?))
               (b* (((unless (atc-ident-stringp (symbol-name var)))
-                    (er-soft+ ctx t (list nil (irr-type) 0)
+                    (er-soft+ ctx t (list nil nil 0)
                               "The symbol name ~s0 of ~
                                the LET variable ~x1 of the function ~x2 ~
                                must be a portable ASCII C identifier, ~
@@ -2068,9 +2068,9 @@
                               (symbol-name var) var fn))
                    ((mv erp (list init-expr init-type init-limit) state)
                     (atc-gen-expr-cval val inscope fn prec-fns ctx state))
-                   ((when erp) (mv erp (list nil (irr-type) 0) state))
+                   ((when erp) (mv erp (list nil nil 0) state))
                    ((when (type-case init-type :pointer))
-                    (er-soft+ ctx t (list nil (irr-type) 0)
+                    (er-soft+ ctx t (list nil nil 0)
                               "The term ~x0 to which the variable ~x1 is bound ~
                                must not have a C pointer type, but it does."
                               val var))
@@ -2092,7 +2092,7 @@
                                    type
                                    limit))))
              ((unless (atc-var-assignablep var innermostp xforming))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          an attempt is being made ~
                          to modify a non-assignable variable ~x1."
@@ -2110,9 +2110,9 @@
              (prev-type type?)
              ((mv erp (list rhs-expr rhs-type rhs-limit) state)
               (atc-gen-expr-cval val inscope fn prec-fns ctx state))
-             ((when erp) (mv erp (list nil (irr-type) 0) state))
+             ((when erp) (mv erp (list nil nil 0) state))
              ((unless (equal prev-type rhs-type))
-              (er-soft+ ctx t (list nil (irr-type) 0)
+              (er-soft+ ctx t (list nil nil 0)
                         "The type ~x0 of the term ~x1 ~
                          assigned to the LET variable ~x2 ~
                          of the function ~x3 ~
@@ -2154,14 +2154,14 @@
                         fn loop-fn loop-args)))
           (acl2::value (list (list (block-item-stmt loop-stmt)) nil 0))))
        ((unless (null xforming))
-        (er-soft+ ctx t (list nil (irr-type) 0)
+        (er-soft+ ctx t (list nil nil 0)
                   "A statement term transforming ~x0 in the function ~x1 ~
                    does not end with the transformed variables, ~
                    but with the term ~x2 instead."
                   xforming fn term))
        ((mv erp (list expr type limit) state)
         (atc-gen-expr-cval term inscope fn prec-fns ctx state))
-       ((when erp) (mv erp (list nil (irr-type) 0) state))
+       ((when erp) (mv erp (list nil nil 0) state))
        (limit (+ 1 1 1 limit)))
     (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
                        type
