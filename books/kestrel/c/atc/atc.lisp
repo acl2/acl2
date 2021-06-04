@@ -1189,6 +1189,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-loop-fn ((term pseudo-termp)
+                           (prec-fns atc-symbol-fninfo-alistp))
+  :returns (mv (yes/no booleanp)
+               (fn symbolp)
+               (args pseudo-term-listp :hyp (pseudo-termp term))
+               (loop stmtp))
+  :short "Check if a term may represent a call of a loop function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether
+     the function has been previously processed
+     (i.e. it is in the @('prec-fns') alist)
+     and it is recursive (indicated by
+     the presence of the loop statement in its information).
+     If the checks succeed, we return
+     the function symbol, its arguments, and the associated loop statement."))
+  (case-match term
+    ((fn . args) (b* (((unless (symbolp fn)) (mv nil nil nil (irr-stmt)))
+                      ((when (eq fn 'quote)) (mv nil nil nil (irr-stmt)))
+                      (fn+info (assoc-eq fn prec-fns))
+                      ((unless (consp fn+info)) (mv nil nil nil (irr-stmt)))
+                      (info (cdr fn+info))
+                      (loop (atc-fn-info->loop? info))
+                      ((unless (stmtp loop)) (mv nil nil nil (irr-stmt))))
+                   (mv t fn args loop)))
+    (& (mv nil nil nil (irr-stmt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-let ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (var symbolp :hyp :guard)
@@ -1894,6 +1924,13 @@
      For the remaining block items, we need to add another 1
      to go from @(tsee exec-block-item-list) to its recursive call.")
    (xdoc::p
+    "If the term is a call of a recursive target function on its formals,
+     it represents a loop.
+     We retrieve the associated loop statement,
+     and we return it.
+     For now we return 0 as limit;
+     proof generation is currently not supported for loops.")
+   (xdoc::p
     "If the term is a single variable
      and @('xforming') is a singleton list with that variable,
      then we return nothing.
@@ -2104,6 +2141,18 @@
                    (>= (len terms) 2)
                    (equal terms xforming)))
         (acl2::value (list nil nil 0)))
+       ((mv okp loop-fn loop-args loop-stmt) (atc-check-loop-fn term prec-fns))
+       ((when okp)
+        (b* ((formals (acl2::formals+ loop-fn (w state)))
+             ((unless (equal formals loop-args))
+              (er-soft+ ctx t (list nil nil 0)
+                        "When generating C code for the function ~x0, ~
+                         a call of the recursive function ~x1 ~
+                         has been encountered that is not on its formals, ~
+                         but instead on the arguments ~x2.
+                         This is disallowed; see the ATC user documentation."
+                        fn loop-fn loop-args)))
+          (acl2::value (list (list (block-item-stmt loop-stmt)) nil 0))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil (irr-type) 0)
                   "A statement term transforming ~x0 in the function ~x1 ~
