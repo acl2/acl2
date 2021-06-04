@@ -704,18 +704,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of
-     the C output type of the function,
-     an optional (loop) statement represented by the function if recursive,
+    "This consists of:
+     an optional C type that is present,
+     and represents the function's output type,
+     when the function is not recursive;
+     an optional (loop) statement that is present,
+     and is represented by the function,
+     when the function is recursive;
      the name of the locally generated theorem that asserts
-     that the function returns a C value,
+     that the function returns a C value;
      the name of the locally generated theorem that asserts
      that the execution of the function (via @(tsee exec-fun))
-     with a variable limit is functionally correct,
+     with a variable limit is functionally correct;
      and a limit that suffices for @(tsee exec-fun)
-     to execute the function completely on any arguments.
-     The latter is calculated when C code is generated for the function."))
-  ((type typep)
+     to execute the function completely on any arguments
+     (currently 0 for recursive functions; this will be extended).
+     The latter is calculated when C code is generated for the function.")
+   (xdoc::p
+    "Note that exactly one of the first two fields is @('nil').
+     This is an invariant."))
+  ((type? type-optionp)
    (loop? stmt-optionp)
    (returns-value-thm symbolp)
    (exec-var-limit-correct-thm symbolp)
@@ -1142,7 +1150,7 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp :hyp (atc-symbol-fninfo-alistp prec-fns))
                (args pseudo-term-listp :hyp (pseudo-termp term))
-               (type typep)
+               (type typep :hyp (atc-symbol-fninfo-alistp prec-fns))
                (limit natp :rule-classes :type-prescription))
   :short "Check if a term may represent a call to a callable target function."
   :long
@@ -1165,8 +1173,8 @@
                       ((unless (consp fn+info))
                        (mv nil nil nil (irr-type) 0))
                       (info (cdr fn+info))
-                      (type (type-fix (atc-fn-info->type info)))
-                      ((when (atc-fn-info->loop? info))
+                      (type (atc-fn-info->type? info))
+                      ((when (null type))
                        (mv nil nil nil (irr-type) 0))
                       (limit (lnfix (atc-fn-info->limit info))))
                    (mv t fn args type limit)))
@@ -1570,7 +1578,8 @@
                (val (tuple (expr exprp)
                            (type typep)
                            (limit natp)
-                           val))
+                           val)
+                    :hyp (atc-symbol-fninfo-alistp prec-fns))
                state)
   :short "Generate a C expression from an ACL2 term
           that must be a C-valued term."
@@ -1768,7 +1777,8 @@
                       state)
   :returns (mv erp
                (val (tuple (items block-item-listp)
-                           (type type-optionp)
+                           (type type-optionp
+                                 :hyp (atc-symbol-fninfo-alistp prec-fns))
                            (limit natp)
                            val))
                state)
@@ -3010,7 +3020,7 @@
                          proofs prog-const fn-thms print
                          limit names-to-avoid wrld))
        (info (make-atc-fn-info
-              :type type
+              :type? type
               :loop? nil
               :returns-value-thm fn-returns-value-thm
               :exec-var-limit-correct-thm fn-exec-var-limit-correct-thm
