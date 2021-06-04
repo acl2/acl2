@@ -26,6 +26,139 @@
 
 (in-package "ACL2")
 
+; Case-match
+
+(defun equal-x-constant (x const)
+
+; x is an arbitrary term, const is a quoted constant, e.g., a list of
+; the form (QUOTE guts).  We return a term equivalent to (equal x
+; const).
+
+  (declare (xargs :guard (and (consp const)
+                              (eq (car const) 'quote)
+                              (consp (cdr const)))))
+  (let ((guts (cadr const)))
+    (cond ((symbolp guts)
+           (list 'eq x const))
+          ((or (acl2-numberp guts)
+               (characterp guts))
+           (list 'eql x guts))
+          ((stringp guts)
+           (list 'equal x guts))
+          (t (list 'equal x const)))))
+
+(defun match-tests-and-bindings (x pat tests bindings)
+
+; We return two results.  The first is a list of tests, in reverse
+; order, that determine whether x matches the structure pat.  We
+; describe the language of pat below.  The tests are accumulated onto
+; tests, which should be nil initially.  The second result is an alist
+; containing entries of the form (sym expr), suitable for use as the
+; bindings in the let we generate if the tests are satisfied.  The
+; bindings required by pat are accumulated onto bindings and thus are
+; reverse order, although their order is actually irrelevant.
+
+; For example, the pattern
+;   ('equal ('car ('cons u v)) u)
+; matches only first order instances of (EQUAL (CAR (CONS u v)) u).
+
+; The pattern
+;   ('equal (ev (simp x) a) (ev x a))
+; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
+; i.e., ev, simp, x, and a are all bound in the match.
+
+; In general, the match requires that the cons structure of x be isomorphic
+; to that of pat, down to the atoms in pat.  Symbols in the pat denote
+; variables that match anything and get bound to the structure matched.
+; Occurrences of a symbol after the first match only structures equal to
+; the binding.  Non-symbolp atoms match themselves.
+
+; There are some exceptions to the general scheme described above.  A cons
+; structure starting with QUOTE matches only itself.  A cons structure of the
+; form (QUOTE~ sym), where sym is a symbol, is like (QUOTE sym) except it
+; matches any symbol with the same symbol-name as sym.  The symbols nil and t,
+; and all symbols whose symbol-name starts with #\* match only structures equal
+; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
+; this exceptional treatment does not restrict us further.)  Any symbol
+; starting with #\! matches only the value of the symbol whose name is obtained
+; by dropping the #\!.  This is a way of referring to already bound variables
+; in the pattern. Finally, the symbol & matches anything and causes no binding.
+
+  (declare (xargs :guard (symbol-doublet-listp bindings)))
+  (cond
+   ((symbolp pat)
+    (cond
+     ((or (eq pat t)
+          (eq pat nil)
+          (keywordp pat))
+      (mv (cons (list 'eq x pat) tests) bindings))
+     ((let ((len (length (symbol-name pat))))
+        (and (> len 0)
+             (eql #\* (char (symbol-name pat) 0))
+             (eql #\* (char (symbol-name pat) (1- len)))))
+      (mv (cons (list 'equal x pat) tests) bindings))
+     ((and (> (length (symbol-name pat)) 0)
+           (eql #\! (char (symbol-name pat) 0)))
+      (mv (cons (list 'equal x
+                      (intern-in-package-of-symbol
+                       (subseq (symbol-name pat)
+                               1
+                               (length (symbol-name pat)))
+                       pat))
+                tests)
+          bindings))
+     ((eq pat '&) (mv tests bindings))
+     (t (let ((binding (assoc-eq pat bindings)))
+          (cond ((null binding)
+                 (mv tests (cons (list pat x) bindings)))
+                (t (mv (cons (list 'equal x (cadr binding)) tests)
+                       bindings)))))))
+   ((atom pat)
+    (mv (cons (equal-x-constant x (list 'quote pat)) tests)
+        bindings))
+   ((and (eq (car pat) 'quote)
+         (consp (cdr pat))
+         (null (cddr pat)))
+    (mv (cons (equal-x-constant x pat) tests)
+        bindings))
+   ((and (eq (car pat) 'quote~)
+         (consp (cdr pat))
+         (symbolp (cadr pat))
+         (null (cddr pat)))
+    (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
+        bindings))
+   (t (mv-let (tests1 bindings1)
+        (match-tests-and-bindings (list 'car x) (car pat)
+                                  (cons (list 'consp x) tests)
+                                  bindings)
+        (match-tests-and-bindings (list 'cdr x) (cdr pat)
+                                  tests1 bindings1)))))
+(defun match-clause (x pat forms)
+  (declare (xargs :guard t))
+  (mv-let (tests bindings)
+    (match-tests-and-bindings x pat nil nil)
+    (list (if (null tests)
+              t
+            (cons 'and (reverse tests)))
+          (cons 'let (cons (reverse bindings) forms)))))
+
+(defun match-clause-list (x clauses)
+  (declare (xargs :guard (alistp clauses)))
+  (cond ((consp clauses)
+         (if (eq (caar clauses) '&)
+             (list (match-clause x (caar clauses) (cdar clauses)))
+           (cons (match-clause x (caar clauses) (cdar clauses))
+                 (match-clause-list x (cdr clauses)))))
+        (t '((t nil)))))
+
+(defmacro case-match (&rest args)
+  (declare (xargs :guard (and (consp args)
+                              (symbolp (car args))
+                              (alistp (cdr args))
+                              (null (cdr (member-equal (assoc-eq '& (cdr args))
+                                                       (cdr args)))))))
+  (cons 'cond (match-clause-list (car args) (cdr args))))
+
 ; Essay on Wormholes
 
 ; Once upon a time (Version  3.6 and earlier) the wormhole function had a
@@ -273,6 +406,20 @@
                 alist)
           (t (acons key val alist)))))
 
+(defun wormhole-eval-early-null-exit-p (qlambda)
+
+; This function recognizes quoted lambdas that are subject to the wormhole-eval
+; optimization of returning immediately when the wormhole-data is nil, which is
+; reasonable since the old and new status are then equal.
+
+  (case-match qlambda
+    (('quote ('lambda (whs)
+               ('let ((info ('wormhole-data whs)))
+                 ('cond (('null info) whs) . &))))
+     (declare (ignore info whs))
+     t)
+    (& nil)))
+
 #-acl2-loop-only
 (defmacro wormhole-eval (qname qlambda free-vars)
   (declare (xargs :guard t))
@@ -307,8 +454,10 @@
 ; here, by default.
 
   (let* ((whs (car (cadr (cadr qlambda)))) ; non-nil in Case (i) only
+         (early-null-exit-p (and whs
+                                 (wormhole-eval-early-null-exit-p qlambda)))
          (val (gensym))
-         (form
+         (form1
           `(progn
              (cond (*wormholep*
                     (setq *wormhole-status-alist*
@@ -320,6 +469,7 @@
                            *wormhole-status-alist*))))
              (let* ((*wormholep* t)
                     ,@(and whs ; Case (i)
+                           (not early-null-exit-p) ; otherwise bind whs later
                            `((,whs
                               (cdr (assoc-equal ,qname
                                                 *wormhole-status-alist*)))))
@@ -333,10 +483,21 @@
                      (put-assoc-equal-destructive ,qname
                                                   ,val
                                                   *wormhole-status-alist*))
-               nil))))
-    (cond ((tree-occur-eq :no-wormhole-lock free-vars)
-           form)
-          (t `(with-wormhole-lock ,form)))))
+               nil)))
+         (form2 (cond ((tree-occur-eq :no-wormhole-lock free-vars)
+                       form1)
+                      (t `(with-wormhole-lock ,form1)))))
+    (cond (early-null-exit-p ; hence whs is non-nil
+           `(let ((,whs (cdr (assoc-equal ,qname
+                                          *wormhole-status-alist*))))
+              (cond ((null (wormhole-data ,whs))
+
+; Wormhole-data doesn't change (see wormhole-eval-early-null-exit-p), so we
+; simply return.
+
+                     nil)
+                    (t ,form2))))
+          (t form2))))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
@@ -7589,139 +7750,6 @@
 
 #-acl2-loop-only
 (initialize-state-globals)
-
-; Case-match (needed for parse-with-local-stobj, below)
-
-(defun equal-x-constant (x const)
-
-; x is an arbitrary term, const is a quoted constant, e.g., a list of
-; the form (QUOTE guts).  We return a term equivalent to (equal x
-; const).
-
-  (declare (xargs :guard (and (consp const)
-                              (eq (car const) 'quote)
-                              (consp (cdr const)))))
-  (let ((guts (cadr const)))
-    (cond ((symbolp guts)
-           (list 'eq x const))
-          ((or (acl2-numberp guts)
-               (characterp guts))
-           (list 'eql x guts))
-          ((stringp guts)
-           (list 'equal x guts))
-          (t (list 'equal x const)))))
-
-(defun match-tests-and-bindings (x pat tests bindings)
-
-; We return two results.  The first is a list of tests, in reverse
-; order, that determine whether x matches the structure pat.  We
-; describe the language of pat below.  The tests are accumulated onto
-; tests, which should be nil initially.  The second result is an alist
-; containing entries of the form (sym expr), suitable for use as the
-; bindings in the let we generate if the tests are satisfied.  The
-; bindings required by pat are accumulated onto bindings and thus are
-; reverse order, although their order is actually irrelevant.
-
-; For example, the pattern
-;   ('equal ('car ('cons u v)) u)
-; matches only first order instances of (EQUAL (CAR (CONS u v)) u).
-
-; The pattern
-;   ('equal (ev (simp x) a) (ev x a))
-; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
-; i.e., ev, simp, x, and a are all bound in the match.
-
-; In general, the match requires that the cons structure of x be isomorphic
-; to that of pat, down to the atoms in pat.  Symbols in the pat denote
-; variables that match anything and get bound to the structure matched.
-; Occurrences of a symbol after the first match only structures equal to
-; the binding.  Non-symbolp atoms match themselves.
-
-; There are some exceptions to the general scheme described above.  A cons
-; structure starting with QUOTE matches only itself.  A cons structure of the
-; form (QUOTE~ sym), where sym is a symbol, is like (QUOTE sym) except it
-; matches any symbol with the same symbol-name as sym.  The symbols nil and t,
-; and all symbols whose symbol-name starts with #\* match only structures equal
-; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
-; this exceptional treatment does not restrict us further.)  Any symbol
-; starting with #\! matches only the value of the symbol whose name is obtained
-; by dropping the #\!.  This is a way of referring to already bound variables
-; in the pattern. Finally, the symbol & matches anything and causes no binding.
-
-  (declare (xargs :guard (symbol-doublet-listp bindings)))
-  (cond
-   ((symbolp pat)
-    (cond
-     ((or (eq pat t)
-          (eq pat nil)
-          (keywordp pat))
-      (mv (cons (list 'eq x pat) tests) bindings))
-     ((let ((len (length (symbol-name pat))))
-        (and (> len 0)
-             (eql #\* (char (symbol-name pat) 0))
-             (eql #\* (char (symbol-name pat) (1- len)))))
-      (mv (cons (list 'equal x pat) tests) bindings))
-     ((and (> (length (symbol-name pat)) 0)
-           (eql #\! (char (symbol-name pat) 0)))
-      (mv (cons (list 'equal x
-                      (intern-in-package-of-symbol
-                       (subseq (symbol-name pat)
-                               1
-                               (length (symbol-name pat)))
-                       pat))
-                tests)
-          bindings))
-     ((eq pat '&) (mv tests bindings))
-     (t (let ((binding (assoc-eq pat bindings)))
-          (cond ((null binding)
-                 (mv tests (cons (list pat x) bindings)))
-                (t (mv (cons (list 'equal x (cadr binding)) tests)
-                       bindings)))))))
-   ((atom pat)
-    (mv (cons (equal-x-constant x (list 'quote pat)) tests)
-        bindings))
-   ((and (eq (car pat) 'quote)
-         (consp (cdr pat))
-         (null (cddr pat)))
-    (mv (cons (equal-x-constant x pat) tests)
-        bindings))
-   ((and (eq (car pat) 'quote~)
-         (consp (cdr pat))
-         (symbolp (cadr pat))
-         (null (cddr pat)))
-    (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
-        bindings))
-   (t (mv-let (tests1 bindings1)
-        (match-tests-and-bindings (list 'car x) (car pat)
-                                  (cons (list 'consp x) tests)
-                                  bindings)
-        (match-tests-and-bindings (list 'cdr x) (cdr pat)
-                                  tests1 bindings1)))))
-(defun match-clause (x pat forms)
-  (declare (xargs :guard t))
-  (mv-let (tests bindings)
-    (match-tests-and-bindings x pat nil nil)
-    (list (if (null tests)
-              t
-            (cons 'and (reverse tests)))
-          (cons 'let (cons (reverse bindings) forms)))))
-
-(defun match-clause-list (x clauses)
-  (declare (xargs :guard (alistp clauses)))
-  (cond ((consp clauses)
-         (if (eq (caar clauses) '&)
-             (list (match-clause x (caar clauses) (cdar clauses)))
-           (cons (match-clause x (caar clauses) (cdar clauses))
-                 (match-clause-list x (cdr clauses)))))
-        (t '((t nil)))))
-
-(defmacro case-match (&rest args)
-  (declare (xargs :guard (and (consp args)
-                              (symbolp (car args))
-                              (alistp (cdr args))
-                              (null (cdr (member-equal (assoc-eq '& (cdr args))
-                                                       (cdr args)))))))
-  (cons 'cond (match-clause-list (car args) (cdr args))))
 
 ; Local stobj support
 
