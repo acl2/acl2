@@ -25,6 +25,9 @@ int
 locvars.c
 locvars
 
+loops.c
+loops
+
 mbt.c
 mbt
 
