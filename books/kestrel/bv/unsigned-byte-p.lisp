@@ -125,13 +125,6 @@
            (not (< size 0)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm size-non-negative-when-unsigned-byte-p-free-linear
-  (implies (unsigned-byte-p size free)
-           (equal (< size 0) ;todo: why can I not phrase this with not?
-                  nil))
-  :rule-classes ((:linear))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
 (defthm usb-of-mask
   (implies (natp size)
            (unsigned-byte-p size (+ -1 (expt 2 size))))
