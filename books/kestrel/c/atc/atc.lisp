@@ -711,6 +711,8 @@
      an optional (loop) statement that is present,
      and is represented by the function,
      when the function is recursive;
+     a list of variables transormed by the function,
+     which is non-@('nil') when the function is recursive;
      the name of the locally generated theorem that asserts
      that the function returns a C value;
      the name of the locally generated theorem that asserts
@@ -725,6 +727,7 @@
      This is an invariant."))
   ((type? type-optionp)
    (loop? stmt-optionp)
+   (xforming symbol-listp)
    (returns-value-thm symbolp)
    (exec-var-limit-correct-thm symbolp)
    (limit natp))
@@ -1194,6 +1197,7 @@
   :returns (mv (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp :hyp (pseudo-termp term))
+               (xforming symbol-listp :hyp (atc-symbol-fninfo-alistp prec-fns))
                (loop stmtp))
   :short "Check if a term may represent a call of a loop function."
   :long
@@ -1205,17 +1209,21 @@
      and it is recursive (indicated by
      the presence of the loop statement in its information).
      If the checks succeed, we return
-     the function symbol, its arguments, and the associated loop statement."))
+     the function symbol,
+     its arguments,
+     the variables transformed by the loop,
+     and the associated loop statement."))
   (case-match term
-    ((fn . args) (b* (((unless (symbolp fn)) (mv nil nil nil (irr-stmt)))
-                      ((when (eq fn 'quote)) (mv nil nil nil (irr-stmt)))
+    ((fn . args) (b* (((unless (symbolp fn)) (mv nil nil nil nil (irr-stmt)))
+                      ((when (eq fn 'quote)) (mv nil nil nil nil (irr-stmt)))
                       (fn+info (assoc-eq fn prec-fns))
-                      ((unless (consp fn+info)) (mv nil nil nil (irr-stmt)))
+                      ((unless (consp fn+info)) (mv nil nil nil nil (irr-stmt)))
                       (info (cdr fn+info))
                       (loop (atc-fn-info->loop? info))
-                      ((unless (stmtp loop)) (mv nil nil nil (irr-stmt))))
-                   (mv t fn args loop)))
-    (& (mv nil nil nil (irr-stmt)))))
+                      ((unless (stmtp loop)) (mv nil nil nil nil (irr-stmt)))
+                      (xforming (atc-fn-info->xforming info)))
+                   (mv t fn args xforming loop)))
+    (& (mv nil nil nil nil (irr-stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2141,17 +2149,28 @@
                    (>= (len terms) 2)
                    (equal terms xforming)))
         (acl2::value (list nil nil 0)))
-       ((mv okp loop-fn loop-args loop-stmt) (atc-check-loop-fn term prec-fns))
+       ((mv okp loop-fn loop-args loop-xforming loop-stmt)
+        (atc-check-loop-fn term prec-fns))
        ((when okp)
         (b* ((formals (acl2::formals+ loop-fn (w state)))
              ((unless (equal formals loop-args))
               (er-soft+ ctx t (list nil nil 0)
                         "When generating C code for the function ~x0, ~
                          a call of the recursive function ~x1 ~
-                         has been encountered that is not on its formals, ~
+                         has been encountered ~
+                         that is not on its formals, ~
                          but instead on the arguments ~x2.
                          This is disallowed; see the ATC user documentation."
-                        fn loop-fn loop-args)))
+                        fn loop-fn loop-args))
+             ((unless (equal xforming loop-xforming))
+              (er-soft+ ctx t (list nil nil 0)
+                        "When generating C code for the function ~x0, ~
+                         a call of the recursive function ~x1 ~
+                         has been encountered
+                         that represents a loop transforming ~x2, ~
+                         which differs from the variables ~x3 ~
+                         being transformed here."
+                        fn loop-fn loop-xforming xforming)))
           (acl2::value (list (list (block-item-stmt loop-stmt)) nil 0))))
        ((unless (null xforming))
         (er-soft+ ctx t (list nil nil 0)
@@ -3071,6 +3090,7 @@
        (info (make-atc-fn-info
               :type? type
               :loop? nil
+              :xforming nil
               :returns-value-thm fn-returns-value-thm
               :exec-var-limit-correct-thm fn-exec-var-limit-correct-thm
               :limit limit)))
