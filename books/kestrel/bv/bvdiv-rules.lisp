@@ -69,6 +69,7 @@
                     0)))
   :hints (("Goal" :in-theory (enable bvdiv-of-bvdiv-arg2))))
 
+;; x div k1 < k2 becomes x < k1*k2 (usually)
 ;todo: let the sizes differ
 (defthm bvlt-of-bvdiv-constants
   (implies (and (syntaxp (and (quotep k1)
@@ -77,11 +78,12 @@
                 (< 0 k1)
                 (< 0 k2)
                 (unsigned-byte-p size k1)
-                (unsigned-byte-p size k2)
-                (unsigned-byte-p size (* k1 k2)))
+                (unsigned-byte-p size k2))
            (equal (bvlt size (bvdiv size x k1) k2)
-                  (bvlt size x (* k1 k2))))
-  :hints (("Goal" :in-theory (enable bvdiv bvlt)
+                  (if (unsigned-byte-p size (* k1 k2))
+                      (bvlt size x (* k1 k2))
+                    t)))
+  :hints (("Goal" :in-theory (enable bvdiv bvlt UNSIGNED-BYTE-P)
            :use (:instance <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN
                            (x (BVCHOP size X))
                            (k k2)
