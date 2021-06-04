@@ -84,6 +84,20 @@
   :hints (("Goal" :in-theory (e/d (--becomes-*-of--1)
                                   (*-of--1)))))
 
+(defthmd --of-*-push-into-arg1
+  (equal (- (* x y))
+         (* (- x) y)))
+
+(theory-invariant (incompatible (:rewrite --of-*-push-into-arg1)
+                                (:rewrite *-of---arg1)))
+
+(defthmd --of-*-push-into-arg2
+  (equal (- (* x y))
+         (* x (- y))))
+
+(theory-invariant (incompatible (:rewrite --of-*-push-into-arg2)
+                                (:rewrite *-of---arg2)))
+
 (defthm <-of-*-and-0
   (implies (and (rationalp x)
                 (rationalp y))

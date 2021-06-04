@@ -353,6 +353,13 @@
   (equal (/ (- x))
          (- (/ x))))
 
+(defthmd --of-/
+  (equal (- (/ x))
+         (/ (- x))))
+
+(theory-invariant (incompatible (:rewrite --of-/)
+                                (:rewrite /-of--)))
+
 (defthm /-of-*
   (equal (/ (* x y))
          (* (/ x) (/ y))))
