@@ -8,8 +8,9 @@ Applications) and "Binary-Compatible Verification of Filesystems with
 ACL2" (in the proceedings of the Tenth International Conference on
 Interactive Theorem Proving).
 
-These ACL2 books have been certified with ACL2 version 8.2, the most
-recent release of the theorem prover. In addition to certifiable
+These ACL2 books have been certified with a development version of
+ACL2 (https://github.com/acl2/acl2), identified by commit
+568ff7a813b33660b89b7a9a4bbb8aa0f97c0217. In addition to certifiable
 books, there is a co-simulation test suite in the test/
 subdirectory. The GNU/Linux programs mkfs.fat, diff, sudo, cp, mkdir,
 mv, rm, rmdir, stat, truncate, unlink, and wc are required in order to

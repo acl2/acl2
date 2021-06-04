@@ -32,7 +32,8 @@
         (getbit 0 byte)))
 
 (defthm all-unsigned-byte-p-of-byte-to-bits
-  (all-unsigned-byte-p 1 (byte-to-bits byte))
+  (implies (posp size)
+           (all-unsigned-byte-p size (byte-to-bits byte)))
   :hints (("Goal" :in-theory (enable byte-to-bits))))
 
 (defthm all-integerp-of-byte-to-bits

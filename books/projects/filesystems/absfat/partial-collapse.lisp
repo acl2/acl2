@@ -5037,8 +5037,7 @@
     :in-theory (e/d (frame-addrs-before-seq take-as-append-and-nth)
                     ((:rewrite binary-append-take-nthcdr)
                      (:rewrite frame-addrs-before-seq-of-append)
-                     take
-                     subsetp-append1))
+                     take subsetp-append1))
     :use
     ((:instance (:rewrite binary-append-take-nthcdr)
                 (l (take n seq))

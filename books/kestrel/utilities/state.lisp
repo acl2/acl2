@@ -32,7 +32,8 @@
                     written-files-p
                     ;; so the rules below fire:
                     boundp-global
-                    boundp-global1))
+                    boundp-global1
+                    w))
 
 (local (in-theory (disable assoc-equal nth update-nth)))
 
@@ -418,25 +419,40 @@
            (assoc-equal key alist2))
   :hints (("Goal" :in-theory (enable assoc-equal all-boundp member-equal)))))
 
+(defconst *initial-globals*
+  (strip-cars *initial-global-table*))
+
 ;; todo: these are true for anything in *initial-global-table*?:
 
-(defthm boundp-global1-of-system-books-dir-when-state-p1
-  (implies (state-p1 state)
-           (boundp-global1 'system-books-dir state))
-  :hints (("Goal" :in-theory (enable state-p1 boundp-global1))))
+(defthm boundp-global1-when-state-p1
+  (implies (and (member-equal global-name *initial-globals*)
+                (state-p1 state))
+           (boundp-global1 global-name state))
+  :hints (("Goal" :in-theory (e/d (state-p1 boundp-global1)
+                                  (member-equal)))))
 
 ;; The conclusion matches the guard of get-global
-(defthm assoc-equal-of-system-books-dir-and-global-table-when-state-p1
-  (implies (state-p1 state)
-           (assoc-equal 'system-books-dir (global-table state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+(defthm assoc-equal-of-global-table-when-state-p1
+  (implies (and (member-equal global-name *initial-globals*)
+                (state-p1 state))
+           (assoc-equal global-name (global-table state)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  (member-equal)))))
 
-;; (defthm boundp-global-of-system-books-dir-when-state-p1
-;;   (implies (state-p state)
-;;            (boundp-global 'system-books-dir state))
+;; (defthm boundp-global-when-state-p1
+;;   (implies (and (member-equal global-name *initial-globals*)
+;;                 (state-p state))
+;;            (boundp-global global-name state))
 ;;   :hints (("Goal" :in-theory (enable state-p1))))
 
-(defthm boundp-global-of-system-books-dir-when-state-p
-  (implies (state-p state)
-           (boundp-global 'system-books-dir state))
-  :hints (("Goal" :in-theory (enable state-p state-p1 boundp-global))))
+(defthm boundp-global-when-state-p
+  (implies (and (member-equal global-name *initial-globals*)
+                (state-p state))
+           (boundp-global global-name state))
+  :hints (("Goal" :in-theory (e/d (state-p state-p1 boundp-global)
+                                  (member-equal)))))
+
+(defthm plist-worldp-of-w-when-state-p1
+  (implies (state-p1 state)
+           (plist-worldp (w state)))
+  :hints (("Goal" :in-theory (enable state-p1 w))))
