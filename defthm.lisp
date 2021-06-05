@@ -2186,6 +2186,15 @@
        ""))
    extra))
 
+(defun all-non-numeric (lst ens wrld)
+  (cond ((endp lst) t)
+        (t (mv-let (ts ttree)
+             (type-set (car lst) nil nil nil ens wrld nil nil nil)
+             (declare (ignore ttree))
+             (cond ((ts-intersectp ts *ts-acl2-number*)
+                    nil)
+                   (t (all-non-numeric (cdr lst) ens wrld)))))))
+
 (defun chk-acceptable-linear-rule2 (name match-free trigger-terms hyps concl
                                          ctx ens wrld state)
 
@@ -2274,6 +2283,23 @@
                       non-recursive function in the intended applications of ~
                       this rule."
                      name all-vars-in-poly-lst))))
+              ((and (null trigger-terms) ; otherwise take what the user gives
+                    (all-non-numeric all-vars-in-poly-lst ens wrld))
+               (er soft ctx
+                   "The conclusion of a :LINEAR rule produces a polynomial ~
+                    c1*x1 + ... + cn*xn where each ci is a constant and each ~
+                    xi is a term.  See :DOC linear.  However, in this case ~
+                    the conclusion, ~x1, generates such a polynomial ~
+                    ~#2~[with a single term, ~x3, and that term is~/for which ~
+                    all of the terms xi are~] provably non-numeric; so the ~
+                    proposed rule ~x0 would not be reasonable.~#2~[~/  Here ~
+                    is that list of terms:~|~%~x3.~]"
+                   name
+                   (untranslate concl t wrld)
+                   (if (cdr all-vars-in-poly-lst) 1 0)
+                   (if (cdr all-vars-in-poly-lst)
+                       (untranslate-lst all-vars-in-poly-lst t wrld)
+                     (untranslate (car all-vars-in-poly-lst) t wrld))))
               (t
                (mv-let (bad-synp-hyp-msg bad-max-term)
                  (bad-synp-hyp-msg-for-linear max-terms hyps wrld)

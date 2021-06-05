@@ -74,6 +74,7 @@
                            BVCHOP-WHEN-TOP-BIT-1-CHEAP
                            BVCHOP-UPPER-BOUND-LINEAR-STRONG ;slow
                            <=-OF-BVCHOP-SAME-LINEAR ;slow
+                           SBVDIV-REWRITE ;move?
                            )))
 
 ;todo: move the rest of the prefixp rules out of this file
@@ -246,7 +247,8 @@
   (implies (natp x)
            (equal (SBVDIV 32 (BVCAT 2 x 2 2) 4)
                   (bvchop 2 x)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv bvcat logapp bvchop-of-logtail-becomes-slice)
+  :hints (("Goal" :in-theory (e/d (sbvdiv ;bvdiv
+                                          bvcat logapp bvchop-of-logtail-becomes-slice)
                                   (usb-plus-from-bounds
                                    bvplus-of-*-arg2
                                    times-2-of-bvplus-becomes-bvmult-of-bvplus
@@ -636,8 +638,6 @@
 ;;   (equal (< (expt 2 size) (bvchop size x))
 ;;          nil))
 
-
-
 ;could be bad?
 (defthm integerp-of-plus-of-minus
   (implies (and (integerp (+ (- x) y))
@@ -658,70 +658,6 @@
   :hints (("Goal" :use (:instance INTEGERP-OF-- (x (+ x (- y))))
            :in-theory (disable INTEGERP-OF--))))
 
-(defthmd sbvdiv-when-x-negative
-  (implies (and (integerp x)
-                (integerp y)
-                (sbvlt size x 0)
-                (sbvle size 0 y)
-                (posp size))
-           (equal (sbvdiv size x y)
-                  (bvuminus size (bvdiv size (bvuminus size x) y))))
-  :hints (("Goal" :expand ((BVCAT 1 1 (+ -1 size) X)
-                           (BVCAT 1 1 (+ -1 size) y)
-                           (:with logext (LOGEXT size X))
-                           (:with logext (LOGEXT size y)))
-           :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt BVCHOP-OF-SUM-CASES
-                                   FLOOR-MINUS-ARG1
-                                   bvchop-reduce-when-top-bit-known
-                                   truncate-becomes-floor-other)
-                           (;BVCHOP-LEQ ;these are for speed
-                            |0-1-SPLIT-CHEAP|
-                            FLOOR-BOUNDED-BY-/
-                            BVCHOP-UPPER-BOUND
-
-                            FLOOR-TYPE-3
-                             floor-of-minus-and-minus
-                             floor-minus
-    ;FLOOR-MINUS-ARG1
-                             PLUS-BVCAT-WITH-0
-                             bvplus-recollapse
-                             BVCAT-OF-+-LOW
-                             BVCAT-OF-GETBIT-AND-X-ADJACENT
-                             <-Y-*-Y-X
-                             my-FLOOR-upper-BOUND
-                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                             floor-bound)))))
-
-
-
-(defthmd sbvdiv-when-y-negative
-  (implies (and (integerp x)
-                (integerp y)
-                (sbvlt size y 0)
-                (sbvle size 0 x)
-                (posp size)
-                )
-           (equal (sbvdiv size x y)
-                  (bvuminus size (bvdiv size x (bvuminus size y)))))
-  :hints (("Goal" :expand ((BVCAT 1 1 (+ -1 size) X)
-                           (BVCAT 1 1 (+ -1 size) y)
-                           (:with logext (LOGEXT size X))
-                           (:with logext (LOGEXT size y)))
-           :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt BVCHOP-OF-SUM-CASES
-                                   bvchop-reduce-when-top-bit-known
-                                   truncate-becomes-floor-other)
-                           ( floor-of-minus-and-minus
-                             floor-minus
-                             FLOOR-MINUS-ARG1
-                             PLUS-BVCAT-WITH-0
-                             bvplus-recollapse
-                             BVCAT-OF-+-LOW
-                             BVCAT-OF-GETBIT-AND-X-ADJACENT
-                             <-Y-*-Y-X
-                             my-FLOOR-upper-BOUND
-                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                             floor-bound)))))
-
 (in-theory (disable bvdiv))
 
 ;gen
@@ -731,25 +667,6 @@
           (sbvlt size x 0))
  :rule-classes ((:rewrite :backchain-limit-lst (0)))
  :hints (("Goal" :in-theory (enable SBVLT))))
-
-;can we tighten any of the sizes?
-(defthm sbvdiv-rewrite
-  (implies (and (integerp x)
-                (integerp y)
-                (posp size))
-           (equal (sbvdiv size x y)
-                  (if (sbvle size 0 x)
-                      (if (sbvle size 0 y)
-                          (bvdiv (+ -1 size) x y)
-                        (bvuminus size (bvdiv size x (bvuminus size y))))
-                    (if (sbvle size 0 y)
-                        (bvuminus size (bvdiv size (bvuminus size x) y))
-                      (bvdiv size (bvuminus size x)
-                             (bvuminus size y))))))
-  :hints (("Goal" :in-theory (enable sbvdiv-when-y-negative
-                                     sbvdiv-when-x-negative
-                                     sbvdiv-when-both-negative
-                                     sbvdiv-when-both-positive))))
 
 ;; (thm
 ;;  (implies (and (NOT (INTEGERP (* (/ J) Y)))
@@ -2416,24 +2333,7 @@
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (+ -1 HIGH (- LOW))) (size2 (- high low)))
            :in-theory (e/d (expt-of-+) ( bvchop-of-expt-0 BVCHOP-OF-EXPT-2-N)))))
 
-(defthm slice-of-bvuminus
-  (implies (and (< high size)
-                (<= low high)
-                (integerp x)
-                (integerp size)
-                (natp low)
-                (natp high))
-           (equal (slice high low (bvuminus size x))
-                  (if (equal (bvchop low x) 0)
-                      (bvuminus (+ 1 high (- low)) (slice high low x))
-                    (bvminus (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low)))) (slice high low x)))))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
-                                            bvchop-of-sum-cases
-                                            ) (bvchop-of-*
-                                               ;BVMULT-OF-2-GEN ;why?
-                                               ;EQUAL-OF-BVMULT-AND-*-ALT
-                                               ;EQUAL-OF-BVMULT-AND-*
-                                               bvminus-becomes-bvplus-of-bvuminus)))))
+
 
 
 ;kill the other
@@ -3454,17 +3354,7 @@
          (bitnot x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm getbit-of-bvuminus
-  (implies (and (< low size)
-                (integerp x)
-                (integerp size)
-                (natp low))
-           (equal (getbit low (bvuminus size x))
-                  (if (equal (bvchop low x) 0)
-                      (getbit low x)
-                    (bitnot (getbit low x)))))
-  :hints (("Goal" :use (:instance slice-of-bvuminus (high low))
-           :in-theory (disable slice-of-bvuminus))))
+
 
 
 

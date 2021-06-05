@@ -182,7 +182,13 @@
            (equal (bvp-len (nthcdr n bvp) m)
                   (<= m (- (len bvp) n))))
   :hints (("Goal" :in-theory (enable bvp)))
-  :rule-classes :linear)
+; Matt K. mod: This was originally a linear rule, but after 6/4/2021 it is
+; illegal as a linear rule.  It was presumably useless anyhow, since it
+; was treated as the conjunction of
+; (<= (bvp-len (nthcdr n bvp) m) (<= m (- (len bvp) n)))
+; and
+; (>= (bvp-len (nthcdr n bvp) m) (<= m (- (len bvp) n))).
+  :rule-classes nil)
 
 (in-theory (disable bvp-len))
 

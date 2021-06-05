@@ -58,7 +58,13 @@
   (equal (bvp-len (tv-dec-pass c a tree) n)
          (<= n (1+ (tree-size tree))))
   :hints (("Goal" :in-theory (enable bvp-len)))
-  :rule-classes :linear)
+; Matt K. mod: This was originally a linear rule, but after 6/4/2021 it is
+; illegal as a linear rule.  It was presumably useless anyhow, since it
+; was treated as the conjunction of
+; (<= (bvp-len (tv-dec-pass c a tree) n) (<= n (1+ (tree-size tree))))
+; and
+; (>= (bvp-len (tv-dec-pass c a tree) n) (<= n (1+ (tree-size tree))))
+  :rule-classes nil)
 
 (defthmd tv-dec-pass-crock-1
   (implies (and (equal (len a) (tree-size tree))
@@ -157,7 +163,19 @@
              (<= n (1+ (tree-size tree)))
            (<= n (tree-size tree))))
   :hints (("Goal" :in-theory (enable bvp-len)))
-  :rule-classes :linear)
+; Matt K. mod: This was originally a linear rule, but after 6/4/2021 it is
+; illegal as a linear rule.  It was presumably useless anyhow, since it
+; was treated as the conjunction of
+;   (<= (bvp-len (tv-dec-pass-ng c a tree make-g) n)
+;       (if make-g
+;           (<= n (1+ (tree-size tree)))
+;         (<= n (tree-size tree))))
+; and
+;   (>= (bvp-len (tv-dec-pass-ng c a tree make-g) n)
+;       (if make-g
+;           (<= n (1+ (tree-size tree)))
+;         (<= n (tree-size tree)))).
+  :rule-classes nil)
 
 (defthmd tv-dec-pass-ng-is-tv-dec-pass-when-make-g
   (implies make-g
