@@ -26,15 +26,11 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/floor2" :dir :system)) ;for mod-is-0-when-multiple
 
 (local (in-theory (disable ;bound-from-natp-fact
                            bvchop-upper-bound-linear-strong)))
-
-(local
- (defthm *-of--1-arg1
-  (equal (* -1 x)
-         (- x))))
 
 ;TODO: really it's "non-negative"
 (defthmd sbvrem-when-positive
@@ -64,15 +60,11 @@
 (local (in-theory (disable sbvlt)))
 (local (in-theory (enable sbvlt-rewrite)))
 
-;dropp?
+;drop?
 (defthm bvlt-helper
   (implies (posp size)
-           (equal (BVLT (+ -1 SIZE) (+ -1 (EXPT 2 SIZE)) X)
-                  (BVLT (+ -1 SIZE) -1 X)))
-  :hints (("Goal" :in-theory (enable BVLT))))
-
-(defthm not-bvlt-of--1-arg1
-  (not (bvlt size -1 x))
+           (equal (bvlt (+ -1 size) (+ -1 (expt 2 size)) x)
+                  (bvlt (+ -1 size) -1 x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm mod-of-minus-of-expt-and-bvchop
@@ -103,12 +95,6 @@
                                             )
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    )))))
-;gen the exponent
-(defthm bvchop-of-plus-of-expt-bigger
-  (implies (and (posp size)
-                (integerp x))
-           (equal (BVCHOP (+ -1 SIZE) (+ x (EXPT 2 SIZE)))
-                  (BVCHOP (+ -1 SIZE) x))))
 
 ;; (thm
 ;;  (implies (posp size)

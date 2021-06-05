@@ -759,3 +759,10 @@
            :in-theory (disable bvchop-of-*-of-bvchop
                                bvchop-of-*-of-bvchop-arg2
                                bvchop-times-cancel-better-alt))))
+
+;gen the exponent
+(defthm bvchop-of-plus-of-expt-bigger
+  (implies (and (posp size)
+                (integerp x))
+           (equal (bvchop (+ -1 size) (+ x (expt 2 size)))
+                  (bvchop (+ -1 size) x))))
