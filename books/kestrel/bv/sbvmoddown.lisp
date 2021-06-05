@@ -20,6 +20,7 @@
 (include-book "sbvrem-rules")
 (include-book "logext")
 (include-book "unsigned-byte-p-forced")
+(local (include-book "rules"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))

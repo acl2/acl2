@@ -26,7 +26,6 @@
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-;(local (include-book "arith")) ;for PLUS-OF-EXPT-AND-MINUS-OF-EXPT-ONE-LESS
 
 (local (in-theory (disable DEFAULT-+-2 DEFAULT-*-2
                            )))
@@ -79,10 +78,6 @@
                                               carryin)
                             (+ -1 n) sumin))))
   :hints (("Goal" :in-theory (enable ripple-carry-adder))))
-
-;(local (include-book "kestrel/bv/arith" :dir :system))
-
-
 
 (defthm equal-of-sum-of-low-bits
   (implies (and (unsigned-byte-p n y)

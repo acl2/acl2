@@ -13,7 +13,6 @@
 
 (include-book "bvsx-def")
 (include-book "ihs/basic-definitions" :dir :system) ;for logext
-;(local (include-book "arith")) ;for expt-diff-collect
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

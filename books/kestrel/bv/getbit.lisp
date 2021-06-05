@@ -409,3 +409,14 @@
    :hints (("Goal" :use (:instance unsigned-byte-p-of-bvchop-one-more-helper
                                    (x (bvchop size x)))
             :in-theory (disable unsigned-byte-p-of-bvchop-one-more-helper))))
+
+(defthm getbit-of-*-of-2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (* 2 x))
+                  (if (equal n 0)
+                      0
+                    (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))

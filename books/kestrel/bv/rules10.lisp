@@ -20,12 +20,15 @@
 (include-book "rules") ;(local (include-book "rules"))
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
-(local (include-book "arith"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization/
 
@@ -179,12 +182,7 @@
                 (<= N XSIZE))
            (UNSIGNED-BYTE-P (- XSIZE n)
                             (FLOOR (* X (EXPT 2 (- N))) 1)))
-  :hints (("Goal"
-           :use (:instance acl2::<-of-*-and-*-same-forward-1
-                           (x1 X)
-                           (x2 (EXPT 2 XSIZE))
-                           (y (/ (EXPT 2 N))))
-           :in-theory (enable UNSIGNED-BYTE-P))))
+  :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
 
 (defthm ash-negative-becomes-slice
   (implies (and (< n 0)
