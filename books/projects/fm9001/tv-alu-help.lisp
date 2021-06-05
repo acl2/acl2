@@ -204,7 +204,13 @@
   (equal (bvp-len (tv-alu-help c a b mpg tree) n)
          (<= n (+ 2 (tree-size tree))))
   :hints (("Goal" :in-theory (enable bvp-len)))
-  :rule-classes :linear)
+; Matt K. mod: This was originally a linear rule, but after 6/4/2021 it is
+; illegal as a linear rule.  It was presumably useless anyhow, since it
+; was treated as the conjunction of
+; (<= (bvp-len (tv-alu-help c a b mpg tree) n) (<= n (+ 2 (tree-size tree))))
+; and
+; (>= (bvp-len (tv-alu-help c a b mpg tree) n) (<= n (+ 2 (tree-size tree))))
+  :rule-classes nil)
 
 ;; Proofs that TV-ALU-HELP "does the right thing."
 
