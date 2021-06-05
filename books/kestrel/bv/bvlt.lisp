@@ -833,3 +833,7 @@
            (not (bvlt size x k))) ; not(x < k), i.e., x>=k
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+(defthm not-bvlt-of--1-arg1
+  (not (bvlt size -1 x))
+  :hints (("Goal" :in-theory (enable bvlt))))

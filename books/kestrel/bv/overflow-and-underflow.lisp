@@ -18,7 +18,11 @@
 (include-book "bvminus")
 (include-book "rules") ;reduce?
 (local (include-book "arith"))
-(local (include-book "arith2"))
+;(local (include-book "arith2"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 ;;;
 ;;; signed-addition-overflowsp

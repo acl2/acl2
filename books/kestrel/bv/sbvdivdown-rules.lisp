@@ -13,7 +13,11 @@
 (in-package "ACL2")
 
 (include-book "sbvrem-rules")
+(include-book "sbvdivdown")
+(include-book "sbvdiv")
+(include-book "bvdiv")
 (include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
+(include-book "rules") ; make local
 (local (include-book "kestrel/bv/arith" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

@@ -29,17 +29,15 @@
 (local (include-book "getbit-rules"))
 (local (include-book "bvminus-rules"))
 
-;dup in bv/arith
-(DEFTHM PLUS-OF-MINUS-AND-TIMES-TWO
-  (EQUAL (+ (- X) (* 2 X) Y) (+ X Y)))
+;; ;dup in bv/arith
+;; (DEFTHM PLUS-OF-MINUS-AND-TIMES-TWO
+;;   (EQUAL (+ (- X) (* 2 X) Y) (+ X Y)))
 
 ;move
 (defthm bvuminus-of-1
   (equal (bvuminus 1 x)
          (bvchop 1 x))
-  :hints (("Goal" :in-theory (enable bvuminus
-                                     bvminus
-                                     ))))
+  :hints (("Goal" :in-theory (enable bvuminus bvminus))))
 
 (defthm slice-of-bvuminus
   (implies (and (< high size)

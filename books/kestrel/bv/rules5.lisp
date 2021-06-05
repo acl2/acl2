@@ -18,6 +18,7 @@
 (include-book "rules")
 (include-book "overflow-and-underflow")
 (local (include-book "arith"))
+;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))

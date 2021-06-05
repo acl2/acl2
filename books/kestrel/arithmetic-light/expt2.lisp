@@ -176,3 +176,11 @@
   (implies (integerp size)
            (equal (+ (expt 2 size) (- (expt 2 (+ -1 size))) extra)
                   (+ (expt 2 (+ -1 size)) extra))))
+
+(defthm integerp-of-/-of-expt-2
+  (equal (integerp (/ (expt 2 i)))
+         (or (not (integerp i))
+             (<= i 0)))
+  :hints (("Goal"
+           :in-theory (disable integerp-of-expt-when-natp)
+           :use (:instance integerp-of-expt-when-natp (r 2) (I (- i))))))
