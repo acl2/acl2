@@ -158,6 +158,7 @@
 (include-book "rules7")
 (include-book "rules8")
 (include-book "rules9")
+(include-book "rules10")
 
 ;; (include-book "bv-tests") ; not including this one because it just contains tests
 
