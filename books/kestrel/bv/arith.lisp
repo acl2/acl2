@@ -86,12 +86,6 @@
            (< 1 (EXPT R I)))
   :RULE-CLASSES :LINEAR)
 
-(defthm integerp-of-/-of-expt
-  (equal (integerp (/ (expt 2 m)))
-         (or (not (integerp m))
-             (<= m 0)))
-  :hints (("Goal" :in-theory (enable expt))))
-
 (defthm equal-of-plus-minus-move
   (implies (and (acl2-numberp x)
                 (acl2-numberp y))
@@ -133,14 +127,6 @@
                 (syntaxp (and (quotep free) (quotep k)))
                 (<= k free))
            (not (< x k))))
-
-(defthm integerp-of-/-of-expt-2
-  (equal (integerp (/ (expt 2 i)))
-         (or (not (integerp i))
-             (<= i 0)))
-  :hints (("Goal"
-           :in-theory (disable integerp-of-expt-when-natp)
-           :use (:instance integerp-of-expt-when-natp (r 2) (I (- i))))))
 
 (defthmd integerp-squeeze
   (implies (and (< 0 x)
