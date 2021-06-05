@@ -50,6 +50,8 @@
 (include-book "bitxnor")
 (include-book "slice2")
 (include-book "sbvlt-rules")
+(include-book "slice-rules")
+(include-book "getbit-rules")
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -6837,69 +6839,7 @@
   :hints (("Goal" :in-theory (enable bvplus bvlt sbvlt-rewrite
                                      getbit-when-bvlt-of-small-helper))))
 
-(defthm logtail-of-plus-helper
-  (implies (and (integerp x)
-                (natp size)
-                (integerp y))
-           (equal (logtail size (+ x y))
-                  (if (>= (+ (bvchop size x) (bvchop size y))
-                          (expt 2 size))
-                      (+ 1 (logtail size x) (logtail size y))
-                    (+ (logtail size x) (logtail size y)))))
-  :hints (("Goal" :in-theory (e/d (logtail floor-of-sum bvchop bvplus
-                                           ;;mod-cancel
-                                           )
-                                  (mod-of-expt-of-2
-                                   ;anti-bvplus
-                                   MOD-EXPT-SPLIT
-                                   MOD-FLOOR-2-EXPT-2
-;                                   MOD-X-Y-=-X
-                                   mod-type
-                                   MOD-BOUnded-by-modulus
-                                   SMALL-INT-HACK
-                                   ;<-OF-IF-ARG1
-                                   )))))
 
-(defthm logtail-of-plus
-  (implies (and (integerp x)
-                (natp size)
-                (integerp y))
-           (equal (logtail size (+ x y))
-                  (if (>= (bvplus (+ 1 size) (bvchop size x) (bvchop size y))
-                          (expt 2 size))
-                      (+ 1 (logtail size x) (logtail size y))
-                    (+ (logtail size x) (logtail size y)))))
-  :hints (("Goal" :use (:instance logtail-of-plus-helper)
-           :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
-                                      ;anti-bvplus
-                                      )))))
-
-(defthmd slice-of-sum-cases
-  (implies (and (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y))
-           (equal (slice high low (+ x y))
-                  (if (< high low)
-                      0
-                    (if (<= (expt 2 low)
-                            (+ (bvchop low x)
-                               (bvchop low y)))
-                        ;;if carry
-                        (bvchop (+ 1 high (- low))
-                                (+ 1
-                                   (slice high low x)
-                                   (slice high low y)))
-                      ;;no carry:
-                      (bvchop (+ 1 high (- low))
-                              (+ (slice high low x)
-                                 (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+)
-                                  ( ;bvlt-of-plus-arg2 bvlt-of-plus-arg1
-                                   anti-slice
-                                   bvchop-of-logtail
-                                   ;;logtail-of-sum
-                                   )))))
 
 ;gen!
 (defthm getbit-of-plus-of-expt-2
@@ -6922,14 +6862,7 @@
                                   (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    MOD-OF-EXPT-OF-2)))))
 
-(defthm logtail-of-minus
-  (implies (and (integerp x)
-                (natp size))
-           (equal (logtail size (- x))
-                  (if (equal 0 (bvchop size x))
-                      (- (logtail size x))
-                    (+ -1 (- (logtail size x))))))
-  :hints (("Goal" :in-theory (e/d (logtail bvchop) (MOD-OF-EXPT-OF-2)))))
+
 
 (defthm bvchop-of-times-of-expt-and-/-of-expt
   (implies (and (natp low)
@@ -6941,34 +6874,7 @@
 
 (local (in-theory (disable LOGTAIL-LESSP))) ;todo
 
-(defthm slice-of-minus
-  (implies (and (integerp x)
-                (<= low high)
-                (natp low)
-                (integerp high)
-                )
-           (equal (slice high low (- x))
-                  (if (equal (bvchop low x) 0)
-                      (bvchop (+ 1 high (- low)) (- (slice high low x)))
-                    (bvchop (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low))) (- (slice high low x)))))))
-  :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases)
-                                  (anti-slice ;anti-bvplus
-                                   bvlt-of-plus-arg1 bvlt-of-plus-arg2)))))
 
-(defthm getbit-of-minus
-  (implies (and (integerp x)
-                (natp n)
-                )
-           (equal (getbit n (- x))
-                  (if (EQUAL (BVCHOP N X) 0)
-                      (getbit n x)
-                    (bitnot (getbit n x)))))
-  :hints (("Goal" :in-theory (e/d (getbit bitnot)
-                                  (BVCHOP-1-BECOMES-GETBIT
-                                   SLICE-BECOMES-GETBIT
-                                   BITNOT-OF-SLICE ;bozo
-                                   BITXOR-OF-SLICE-ARG2 ;loops with defn getbit
-                                   )))))
 (defthm bvlt-tighten-when-getbit-0
   (implies (and (equal (getbit 31 x) 0)
                 (unsigned-byte-p 31 z))
