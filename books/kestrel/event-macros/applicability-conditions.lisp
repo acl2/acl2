@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -202,6 +202,11 @@
    (xdoc::p
     "The theorem is wrapped into @(tsee try-event)
      in order to provide a terser error message if the proof fails.
+     This wrapping is not performed if @(':print') is @(':all'),
+     to avoid the suppression of the error output done by @(tsee try-event).
+     This causes the print levels to be not quite ``monotonic'',
+     in the sense that @(':print :all') will not print
+     the custom error message passed to @(tsee try-event).
      This choice may be revisited at some point.")
    (xdoc::p
     "This function also takes a print specifier as input,
@@ -264,7 +269,9 @@
        (error-msg (msg
                    "The proof of the ~x0 applicability condition fails:~%~x1~|"
                    appcond.name thm-formula))
-       (try-thm-event (try-event thm-event ctx t nil error-msg))
+       (try?-thm-event (if (eq print :all)
+                           thm-event
+                         (try-event thm-event ctx t nil error-msg)))
        (show-progress-p (member-eq print '(:info :all)))
        (progress-start? (and show-progress-p
                              `((cw-event
@@ -274,7 +281,7 @@
        (progress-end? (and show-progress-p
                            `((cw-event "Done.~%"))))
        (event `(local (progn ,@progress-start?
-                             ,try-thm-event
+                             ,try?-thm-event
                              ,@progress-end?))))
     (mv event thm-name new-hints updated-names-to-avoid)))
 
