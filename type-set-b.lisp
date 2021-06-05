@@ -7247,13 +7247,13 @@
 ; be a accp-info record.  See the Essay on Wormholes.
 
                     (let ((info (wormhole-data whs)))
-                      (if (and info
-                               (or (null x-info)
-                                   (access accp-info info :xrunep)))
-                          (set-wormhole-data
-                           whs
-                           (push-accp-fn rune x-info info))
-                          whs)))
+                      (cond ((null info) whs)
+                            ((or (null x-info)
+                                 (access accp-info info :xrunep))
+                             (set-wormhole-data
+                              whs
+                              (push-accp-fn rune x-info info)))
+                            (t whs))))
 
 ; We avoid locking push-accp, in order to benefit the performance of ACL2(p).
 ; Note that accumulated persistence is disallowed when waterfall-parallelism is
@@ -7265,12 +7265,12 @@
   (wormhole-eval 'accumulated-persistence
                  '(lambda (whs)
                     (let ((info (wormhole-data whs)))
-                      (if (and info
-                               (or (null x-info)
-                                   (access accp-info info :xrunep)))
-                          (set-wormhole-data whs
-                                             (pop-accp-fn info success-p))
-                          whs)))
+                      (cond ((null info) whs)
+                            ((or (null x-info)
+                                 (access accp-info info :xrunep))
+                             (set-wormhole-data whs
+                                                (pop-accp-fn info success-p)))
+                            (t whs))))
 
 ; We avoid locking pop-accp, in order to benefit the performance of ACL2(p).
 ; Note that accumulated persistence is disallowed when waterfall-parallelism is
