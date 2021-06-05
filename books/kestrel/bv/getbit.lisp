@@ -157,6 +157,7 @@
            :in-theory (disable getbit-identity))))
 
 ;; In case we are using bitp instead of unsigned-byte-p as the normal form.
+;todo: can be expensive
 (defthm getbit-of-0-when-bitp
   (implies (bitp x)
            (equal (getbit 0 x)

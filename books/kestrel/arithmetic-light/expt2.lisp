@@ -166,3 +166,13 @@
            (equal (expt 2 size)
                   (* 2 (expt 2 (+ -1 size)))))
   :rule-classes :linear)
+
+(defthm +-of-expt-and---of-expt-of-one-less
+  (implies (integerp size)
+           (equal (+ (expt 2 size) (- (expt 2 (+ -1 size))))
+                  (expt 2 (+ -1 size)))))
+
+(defthm +-of-expt-and---of-expt-of-one-less-extra
+  (implies (integerp size)
+           (equal (+ (expt 2 size) (- (expt 2 (+ -1 size))) extra)
+                  (+ (expt 2 (+ -1 size)) extra))))
