@@ -868,6 +868,25 @@
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
        this theorem is not generated.")
+     (xdoc::p
+      "This theorem may fail when some ACL2 target function
+       includes unreachable code under the guard
+       (other than the `else' branch of an @(tsee if)
+       with an @(tsee mbt) or @(tsee mbt$) test)
+       that represents C code that is not statically correct in C
+       (e.g. that violates type checking).
+       The reason is that currently ATC relies on ACL2's guard verification
+       to ensure the the generated C code is statically correct;
+       however, ACL2's static semantics involves the theorem prover,
+       and is therefore stronger than C's static semantics.
+       Thus, if this theorem fails, it is likely that
+       some ACL2 target function includes unreachable code
+       of the kind described above,
+       which should be possible to avoid by rephrasing the function.
+       Future versions of ATC
+       will not rely solely on ACL2's guard verification
+       to ensure the static correctness of the C code,
+       but instead will check that based on C's weaker static semantics.")
 
      (xdoc::p
       "For each target function @('fn'), ATC generates an event")
