@@ -115,3 +115,9 @@
   :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (nth n lst)))))
   :hints (("Goal" :induct (NTH N LST)
            :in-theory (enable nth))))
+
+(defthm acl2-count-of-one-less-bound
+  (implies (posp bound)
+           (< (acl2-count (+ -1 bound))
+              (acl2-count bound)))
+  :hints (("Goal" :in-theory (enable acl2-count))))
