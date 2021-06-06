@@ -31,6 +31,7 @@
 (include-book "basic-rules") ;for equal-same
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
+(include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for MYIF-SAME-ARG1-ARG2-WHEN-BOOLEANP-AXE
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
@@ -56,6 +57,7 @@
 (include-book "kestrel/lists-light/subrange" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/booleans/booleans" :dir :system)
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ;for <-0-minus
 
 ;; The rules used by def-simplified by default.
 (defun def-simplified-rules ()
