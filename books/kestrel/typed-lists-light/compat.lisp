@@ -10,5 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "top")
+(include-book "centaur/fty/baselists" :dir :system)
 (include-book "std/typed-lists/top" :dir :system)
+(include-book "top")

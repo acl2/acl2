@@ -77,6 +77,12 @@
            :cases ((equal i 0))
            :in-theory (disable mod-of-expt-twice))))
 
+(defthm integerp-of-mod-of-expt
+  (implies (integerp i)
+           (integerp (mod i (expt 2 size))))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable mod floor-when-multiple))))
+
 ;gen the (expt 2 n) to anything even?
 (defthm integerp-of-half-of-mod-of-expt
   (implies (and (integerp i)
