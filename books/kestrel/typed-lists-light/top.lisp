@@ -13,6 +13,7 @@
 (include-book "character-listp")
 (include-book "rational-listp")
 (include-book "nat-listp")
+(include-book "integer-listp")
 (include-book "pseudo-term-listp")
 (include-book "string-listp")
 (include-book "symbol-listp")
@@ -25,7 +26,9 @@
 (include-book "all-integerp")
 (include-book "all-integerp2")
 (include-book "all-integerp-of-repeat") ;todo: combine with all-integerp2
+(include-book "all-rationalp")
 (include-book "all-all-integerp")
+(include-book "all-consp")
 
 (include-book "integer-lists")
 
@@ -46,7 +49,5 @@
 (include-book "all-less-than-or-equal-all")
 
 (include-book "all-greater")
-
-(include-book "all-consp")
 
 (include-book "doc")
