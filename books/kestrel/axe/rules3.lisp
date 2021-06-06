@@ -3354,10 +3354,6 @@
          (bitnot x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-
-
-
-
 ;could also do it for the bottom bit..
 (defthm bvlt-of-slice-when-top-bit-known
   (implies (and (syntaxp (quotep k))
@@ -3661,7 +3657,7 @@
 ;todo
 (include-book "rules2") ;drop (but that breaks SBVDIV-OF-SUBTRACT-4-BY-MINUS-4 below)? need BVCHOP-OF-SBP-EQUAL-CONSTANT
 
-(defthm bvuminus-when-top-bit-known
+(defthm bvuminus-of-slice-when-top-bit-known
   (implies (and (equal 1 (getbit high x))
                 (equal size (+ high 1 (- low)))
                 (natp low)
