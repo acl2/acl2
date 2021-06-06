@@ -15,6 +15,13 @@
 
 (in-theory (disable rational-listp))
 
+(defthm rationalp-of-car-when-rational-listp-cheap
+  (implies (and (rational-listp x)
+                (consp x))
+           (rationalp (car x)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable rational-listp))))
+
 (defthm rational-listp-of-cdr
   (implies (rational-listp x)
            (rational-listp (cdr x)))

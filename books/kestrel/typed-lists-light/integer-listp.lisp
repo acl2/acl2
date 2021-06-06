@@ -27,3 +27,17 @@
                   (<= (nfix n) (len lst))))
   :hints (("Goal" :in-theory (e/d (take integer-listp) (;TAKE-OF-CDR-BECOMES-SUBRANGE
                                               )))))
+
+;; better than the version in books/centaur/fty/baselists.lisp
+(defthm integerp-of-car-when-integer-listp-better
+  (implies (integer-listp x)
+           (equal (integerp (car x))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable integer-listp))))
+
+(defthm integerp-of-car-when-integer-listp-cheap
+  (implies (integer-listp x)
+           (equal (integerp (car x))
+                  (consp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable integer-listp))))
