@@ -14,12 +14,16 @@
 ;; book depends on and then to later spit out suitable depends-on forms for
 ;; cert.pl.
 
+;; Dependencies should be added by forms like this:
+;; (table acl2::depends-on-table PATH t)
+
 ;; Returns the list of all files that the current session has been declared to
-;; depends on (not counting included books).  Every path should be a key in the
-;; table and should be bound to t (this is so that we can add a new key very
-;; easily).
+;; depends on (not counting included books).  The paths are keys in the table
+;; (all bound to t), so that we can add a new key with a simple table event.
 (defund depends-on-files (wrld)
-  (strip-cars (table-alist 'acl2::depends-on-table wrld)))
+  ;; Reversing seems to give a result that starts with the dependencies that
+  ;; were added earliest:
+  (reverse (strip-cars (table-alist 'acl2::depends-on-table wrld))))
 
 (defun make-depends-on-lines (files) ; files should be a list of strings
   (declare (xargs :guard t))
