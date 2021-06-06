@@ -937,7 +937,8 @@
                                                 <-*-/-right
                                                 floor-bound-hack-eric
                                                 <-OF-*-OF-/-ARG1
-                                                <-OF-*-OF-/-ARG2)))))
+                                                <-OF-*-OF-/-ARG2
+                                                <-OF-*-SAME-ARG2)))))
 
 (defthm floor-bound-arg1-linear
   (implies (and (<= 0 i)

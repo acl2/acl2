@@ -363,6 +363,34 @@
                                   (x2 1))
            :in-theory (disable <-of-*-and-*-cancel))))
 
+(defthm <-of-*-same-arg2
+  (implies (and (<= 0 x)
+                (rationalp y)
+                (rationalp x))
+           (equal (< x (* x y))
+                  (if (equal x 0)
+                      nil
+                    (< 1 y))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                                  (x1 1)
+                                  (x2 y)
+                                  (y x))
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-same-arg3
+  (implies (and (<= 0 x)
+                (rationalp y)
+                (rationalp x))
+           (equal (< (* x y) x)
+                  (if (equal x 0)
+                      nil
+                    (< y 1))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                                  (x1 y)
+                                  (x2 1)
+                                  (y x))
+           :in-theory (disable <-of-*-and-*-cancel))))
+
 (defthm <-of-*-same-linear-special
   (implies (and (< 1 y)
                 (< 0 x)

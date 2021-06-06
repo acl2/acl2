@@ -23,17 +23,21 @@
 (include-book "kestrel/bv/rules3" :dir :system) ;for SLICE-TIGHTEN-TOP
 (include-book "kestrel/bv/rules6" :dir :system) ;for BVMULT-TIGHTEN
 (include-book "kestrel/bv/sbvrem-rules" :dir :system)
-(include-book "bv-rules-axe0") ;drop?
+;(include-book "bv-rules-axe0") ;drop?
 (include-book "axe-syntax-functions-bv")
-(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ;todo: make local
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/rules" :dir :system) ;drop?
+(include-book "kestrel/bv/rightrotate32" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (add-known-boolean bvlt)
 (add-known-boolean sbvlt)
@@ -52,6 +56,7 @@
     :in-theory (e/d (unsigned-byte-p-forced
                      natp slice
                      logtail unsigned-byte-p ;floor-bounded-by-/
+                     ;EXPT-OF-+
                      )
                     (anti-slice bvchop-of-floor-of-expt-of-2)))))
 
@@ -1446,11 +1451,9 @@
            (equal (bvplus size x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal"
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                           (r 2)
-                           (i XSIZE)
-                           (j ysize))
-           :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P unsigned-byte-p-forced)
+
+           :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P unsigned-byte-p-forced
+                                   expt-of-+)
                            (;anti-bvplus
                             ;;<-OF-EXPT-AND-EXPT
                             )))))
@@ -1505,6 +1508,7 @@
 ;          :expand (UNSIGNED-BYTE-P SIZE (+ X Y))
             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
                                     SLICE-TOO-HIGH-IS-0
+                                    expt-of-+
                                     ) (;anti-bvplus ;max
                                     sum-bound-lemma)))))
 
