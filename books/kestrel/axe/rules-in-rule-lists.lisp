@@ -19,6 +19,7 @@
 (include-book "basic-rules")
 (include-book "boolean-rules-axe")
 (include-book "bv-rules")
+(include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
 (include-book "bv-list-rules-axe")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
@@ -58,6 +59,7 @@
 (include-book "rule-lists")
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for <-0-MINUS
 
 ;;todo: add more like this:
 (ensure-rules-known (lookup-rules))
