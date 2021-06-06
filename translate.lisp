@@ -10577,6 +10577,9 @@
 
 (defun augment-ignore-vars (bound-vars value-forms acc)
 
+; For relevant background, see the Essay on Using Hide for Ignored
+; Let-bindings, below.
+
 ; Bound-vars and value-forms are lists of the same length.  Return the result
 ; of extending the list acc by each member of bound-vars for which the
 ; corresponding element of value-forms (i.e., in the same position) is a call
@@ -10584,6 +10587,10 @@
 ; function returns a list that contains every variable declared ignored in the
 ; original let form binding bound-vars to value-forms (or the corresponding
 ; untranslations of the terms in value-forms).
+
+; This function is used only when translating for logic, not code; for code,
+; the explicit ignore declarations are expected to be sufficient without
+; augmentation, for consistency with how Common Lisp handles ignores.
 
 ; We might not need this function if users never write lambda applications.
 ; But consider the following example.
@@ -10595,16 +10602,90 @@
 ; (let ((a (hide x))) t)
 
 ; and that, in turn, is passed to translate11-let.  Notice that a is not
-; declared ignored; however, it is treated as ignored because of
-; augment-ignore-vars, where a trace shows that (augment-ignore-vars (a) ((hide
-; x)) nil) returns (A).  This functionality might not seem important, but on
-; 6/24/2019 we tried eliminating augment-ignore-vars and found that community
-; book
+; declared ignored; however, when translating for logic (see note above about
+; that), a is treated as ignored because of augment-ignore-vars, where a trace
+; shows that (augment-ignore-vars (a) ((hide x)) nil) returns (A).  This
+; functionality might not seem important, but on 6/24/2019 we tried eliminating
+; augment-ignore-vars and found that community book
 ; books/workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/circuit.lisp
 ; failed to certify because of a form (definstance genericscheduling
-; check-compliance-ct-scheduling ...), which generates a lambda using hide
-; forms in order to deal with ignored variables.  So apparently people have
-; relied on this use of hide!
+; check-compliance-ct-scheduling ...), which generates a defthm whose body
+; contains a lambda that uses hide forms to deal with ignored variables.  (That
+; lambda is stored in a table that expects translated terms to which
+; substitutions may be applied.)  So apparently people have relied on this use
+; of hide in theorems!
+
+; Essay on Using Hide for Ignored Let-bindings
+
+; Here we elaborate on the item referencing this Essay in :DOC note-8-4.
+; Recall that ACL2 translates LET expressions to LAMBDA expressions.
+; The issue is how to deal appropriately with ignored variables when
+; translating and untranslating LET and LAMBDA expressions.  This issue is
+; illustrated nicely by submitting the following theorem to ACL2 after
+; executing (trace$ translate).
+
+;   (thm (equal (let ((x 0))
+;                 (declare (ignore x))
+;                 1)
+;               xxx))
+
+; The LET expression translates to ((LAMBDA (X) '1) (HIDE '0)).  The
+; Through Version_8.3 we could use this lambda expression in code, and the call
+; of HIDE was assumed to indicate an ignored variable as in the example above.
+; Thus, the following was admitted.
+
+;   (defun f () ((LAMBDA (X) '1) (HIDE '0)))
+
+; The following was also admitted, obtained by untranslated that lambda
+; application.
+
+;   (defun f2 () (LET ((X (HIDE 0))) 1))
+
+; That was a bit unfortunate, because it was at odds with CCL, which reports an
+; unused lexical variable in these two cases.  Also unfortunate was that an
+; analogous attempt to use HIDE to indicate ignored variables in mv-let
+; expression was not allowed, as pointed out by Alessandro Coglio (who also
+; supplied the LET form above) with the following example.
+
+;   :trans (mv-let (x y z) (mv (hide 1) (hide 2) 3) z) ; fails
+
+; Defining a zero-ary function with that expression as its body generates
+; warnings in CCL about unused lexical variables, so it seems appropriate not
+; to allow such a translation.
+
+; However, we do not want to disallow any of the translations above when we are
+; translating for logic rather than for executable code.  A basic reason for
+; allowing such translations is that there is no logical problem with them,
+; just as we allow numeric-mismatch violations involving mv-let in theorems,
+; such as (mv-let (x y) (mv 3 4 5) (list x y)).
+
+; Thus, in source function translate11-let we call augment-ignore-vars to
+; consider HIDE terms for avoiding errors about missing IGNORE declarations,
+; but only when stobjs-out = t -- i.e., only when we are translating for logic
+; (e.g., for defthm) rather than for executable code (as with :trans).
+
+; This treatment of LET extends naturally to MV-LET, whose calls generate calls
+; of LET that include the original IGNORE declarations.
+
+; We conclude this Essay by discussing the support for efficient rewriting
+; provided by the introduction of HIDE for ignored variables.  Note that
+; although untranslated lambda applications can use IGNORE declarations,
+; translated terms do not have this capability; and translated terms are, of
+; course, the terms seen by the ACL2 rewriter.  Since we can't include IGNORE
+; declarations in the translated terms, how to we inform the rewriter not to do
+; needless simplification in such cases?  This is accomplished by the
+; introduction of HIDE for ignored variables, as we now illustrate.  Consider a
+; modification of the first LET-expression above, which was (let ((x 0))
+; (declare (ignore x)) 1), where 0 is replaced by an expression that is
+; expensive to rewrite, and where 1 is replaced by an expression that is cheap
+; to rewrite but still doesn't mention x: say, (let ((x <expensive>)) (declare
+; (ignore x)) <cheap>).  This translates to ((LAMBDA (X) <c>) (HIDE <e>)) where
+; <e> and <c> are the respective translations of <expensive> and <cheap>.  The
+; presence of HIDE causes the rewriter to avoid the expense of rewriting <e>,
+; which is very likely a good thing since ultimately it will only rewrite <c>
+; anyhow, without using the rewrite of <e>.
+
+; End of Essay on Using Hide for Ignored Let-bindings
 
   (cond ((endp bound-vars)
          acc)
@@ -14909,9 +14990,12 @@
                               (intersection-eq used-vars ignore-vars)
                               bound-vars))
                   (t
-                   (let* ((ignore-vars (augment-ignore-vars bound-vars
-                                                            value-forms
-                                                            ignore-vars))
+                   (let* ((ignore-vars
+                           (if (eq stobjs-out t)
+                               (augment-ignore-vars bound-vars
+                                                    value-forms
+                                                    ignore-vars)
+                             ignore-vars))
                           (diff (set-difference-eq
                                  bound-vars
                                  (union-eq used-vars
@@ -17177,7 +17261,7 @@
                                       state-vars)))
                    (cond (dups-check
                           (trans-er-let*
-                           ((chk (translate11 dups-check 
+                           ((chk (translate11 dups-check
                                               nil ; ilk
                                               '(nil) bindings known-stobjs
                                               flet-alist cform ctx wrld
