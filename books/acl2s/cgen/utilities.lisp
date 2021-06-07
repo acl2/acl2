@@ -1151,5 +1151,6 @@ Mainly to be used for evaluating enum lists "
 (defun is-var-equality-hyp (term)
   (and (equal (len term) 3)
        (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL))
-       (or (proper-symbolp (second term))
-           (proper-symbolp (third term)))))
+       (and (or (proper-symbolp (second term))
+                (proper-symbolp (third term)))
+            (not (equal (second term) (third term))))))
