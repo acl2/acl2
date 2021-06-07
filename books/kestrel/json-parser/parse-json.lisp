@@ -15,8 +15,11 @@
 
 ;; Written from http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf.
 
-;; TODO: Add support for Unicode.  Currently, this uses ACL2 characters, of
-;; which there are only 256.
+;; TODO: Add more complete support for Unicode.  Currently, this uses ACL2 characters, of
+;; which there are only 256.  ACL2 characters are used as UTF-8 bytes in JSON strings.
+
+(include-book "unicode/utf8-encode" :dir :system) ; for uchar=>utf8
+(include-book "kestrel/bv-lists/string-to-bits" :dir :system)
 
 ;; TODO: If whitespace is optional, what if it occurs between digits?
 
@@ -160,10 +163,70 @@
   (declare (xargs :guard (characterp char)))
   (member char *hex-digit-chars*))
 
+(defund hex-digit-to-nat (d)
+  (declare (xargs :guard (and (characterp d) (hex-digitp d))))
+  (let ((code (char-code d)))
+    (cond ((and (<= 48 code) (<= code 57))
+           (- code 48))
+          ((and (<= 65 code) (<= code 70))
+           (- code 55))
+          ((and (<= 97 code) (<= code 102))
+           (- code 87))
+          (t #x110000)))) ; an error value that should never happen
+
+(defund encode-unicode-bmp (digit1 digit2 digit3 digit4)
+  (declare (xargs :guard (and (characterp digit1)
+                              (characterp digit2)
+                              (characterp digit3)
+                              (characterp digit4)
+                              (hex-digitp digit1)
+                              (hex-digitp digit2)
+                              (hex-digitp digit3)
+                              (hex-digitp digit4))))
+  (let ((unicode-scalar-value
+         (+ (* (hex-digit-to-nat digit1) (expt 16 3))
+            (* (hex-digit-to-nat digit2) (expt 16 2))
+            (* (hex-digit-to-nat digit3) 16)
+            (hex-digit-to-nat digit4))))
+      (if (uchar? unicode-scalar-value)
+          (uchar=>utf8 unicode-scalar-value)
+        ;; Otherwise return error flag, for illegal codepoints
+        ;; U+D800 through U+DFFF inclusive
+        (list #xC0))))
+
+(defthm unsigned-byte-list-of-encode-unicode-bmp
+  (implies (and (hex-digitp digit1)
+                (hex-digitp digit2)
+                (hex-digitp digit3)
+                (hex-digitp digit4))
+           (unsigned-byte-listp 8 (encode-unicode-bmp digit1 digit2 digit3 digit4)))
+  :hints (("Goal" :in-theory (enable encode-unicode-bmp))))
+
+(defund code-to-char-list (utf-8-byte-list)
+  (declare (xargs :guard (and (true-listp utf-8-byte-list)
+                              (unsigned-byte-listp 8 utf-8-byte-list))
+                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-listp unsigned-byte-p)))))
+  (if (endp utf-8-byte-list)
+      nil
+    (cons (code-char (car utf-8-byte-list))
+          (code-to-char-list (cdr utf-8-byte-list)))))
+
+(defthm character-listp-of-code-to-char-list
+  (implies (unsigned-byte-listp 8 x)
+           (character-listp (code-to-char-list x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp code-to-char-list))))
+
 ;; Returns (mv erp result remaining-chars) where RESULT is a list of
 ;; characters.
+;;   WARNING: this does not handle escapes for characters that are not in the BMP.
+;;   RFC 8259 states:
+;;     .. for example, a string containing only the G clef character (U+1D11E)
+;;     may be represented as "\uD834\uDD1E".
+;;   Usually, JSON writers will write those out in UTF-8, which is fine.
+;;   But a more complete JSON parser should handle these escapes.
 (defund parse-unicode-digits (chars)
-  (declare (xargs :guard (and (character-listp chars))))
+  (declare (xargs :guard (and (character-listp chars))
+                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-listp)))))
   (if (not (consp (rest (rest (rest chars)))))
       (mv :too-few-unicode-digits nil chars)
     (let ((digit1 (first chars))
@@ -175,12 +238,14 @@
                     (hex-digitp digit3)
                     (hex-digitp digit4)))
           (mv :bad-unicode-digits nil chars)
-        ;;todo: do the right thing here:
-        (mv nil
-            ;; For now, we just return the characters.  We should instead
-            ;; create proper Unicode characters, or perhaps use UTF-8.
-            (list #\\ #\u digit1 digit2 digit3 digit4)
-            (rest (rest (rest (rest chars)))))))))
+        (let ((encoded (encode-unicode-bmp digit1 digit2 digit3 digit4)))
+          (if (equal encoded (list #xC0))
+              (mv :bad-unicode-digits nil chars)
+            (mv nil
+                ;; Convert the bytes back to common lisp characters
+                ;; since that is what the caller expects.
+                (code-to-char-list encoded)
+                (rest (rest (rest (rest chars)))))))))))
 
 (defthm len-of-mv-nth-2-of-parse-unicode-digits-bound
   (implies (not (mv-nth 0 (parse-unicode-digits chars)))
