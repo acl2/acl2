@@ -757,3 +757,11 @@
                 (rationalp x2))
            (equal (mod (+ x1 x2) y)
                   (mod x2 y))))
+
+(defthm mod-of-*-of-/-arg2-arg2
+  (implies (and (rationalp y2)
+                (not (equal 0 y2)))
+           (equal (mod x (* y1 (/ y2)))
+                  (/ (mod (* y2 x) y1)
+                     y2)))
+  :hints (("Goal" :in-theory (enable mod-cancel))))
